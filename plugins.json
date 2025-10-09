@@ -1,0 +1,55 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2025-10-09T12:00:00Z",
+  "plugins": [
+    {
+      "id": "hello-world",
+      "name": "Hello World",
+      "description": "A simple test plugin that displays a customizable message",
+      "author": "LEDMatrix Team",
+      "category": "demo",
+      "tags": ["demo", "test", "simple"],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/hello-world",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-09",
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+        }
+      ],
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2025-10-09",
+      "verified": true,
+      "screenshot": ""
+    },
+    {
+      "id": "clock-simple",
+      "name": "Simple Clock",
+      "description": "A simple clock display with current time and date",
+      "author": "ChuckBuilds",
+      "category": "time",
+      "tags": ["clock", "time", "date"],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/clock-simple",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-09",
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+        }
+      ],
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2025-10-09",
+      "verified": true,
+      "screenshot": ""
+    }
+  ]
+}
+

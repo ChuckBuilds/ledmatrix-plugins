@@ -1,0 +1,12 @@
+{
+  "_comment": "Add this to your config/config.json to enable the Hello World plugin",
+  "hello-world": {
+    "enabled": true,
+    "message": "Hello, World!",
+    "show_time": true,
+    "color": [255, 255, 255],
+    "time_color": [0, 255, 255],
+    "display_duration": 10
+  }
+}
+
