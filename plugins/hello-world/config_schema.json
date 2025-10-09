@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Hello World Plugin Configuration",
+  "description": "Configuration schema for the Hello World test plugin",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable this plugin"
+    },
+    "message": {
+      "type": "string",
+      "default": "Hello, World!",
+      "minLength": 1,
+      "maxLength": 50,
+      "description": "The greeting message to display"
+    },
+    "show_time": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show the current time below the message"
+    },
+    "color": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [255, 255, 255],
+      "description": "RGB color for the message text [R, G, B]"
+    },
+    "time_color": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [0, 255, 255],
+      "description": "RGB color for the time text [R, G, B]"
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 10,
+      "minimum": 1,
+      "maximum": 300,
+      "description": "How long to display in seconds"
+    }
+  },
+  "required": ["enabled"],
+  "additionalProperties": false
+}
+

@@ -1,0 +1,27 @@
+{
+  "id": "clock-simple",
+  "name": "Simple Clock",
+  "version": "1.0.0",
+  "author": "ChuckBuilds",
+  "description": "A simple clock display with current time and date",
+  "homepage": "https://github.com/ChuckBuilds/ledmatrix-clock-simple",
+  "entry_point": "manager.py",
+  "class_name": "SimpleClock",
+  "category": "time",
+  "tags": ["clock", "time", "date"],
+  "compatible_versions": [">=2.0.0"],
+  "ledmatrix_version": "2.0.0",
+  "requires": {
+    "python": ">=3.9",
+    "display_size": {
+      "min_width": 64,
+      "min_height": 32
+    }
+  },
+  "config_schema": "config_schema.json",
+  "assets": {},
+  "update_interval": 1,
+  "default_duration": 15,
+  "display_modes": ["clock-simple"],
+  "api_requirements": []
+}
