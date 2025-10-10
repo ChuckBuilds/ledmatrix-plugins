@@ -1,0 +1,48 @@
+{
+  "flight-tracker": {
+    "enabled": true,
+    "update_interval": 5,
+    "skyaware_url": "http://192.168.86.30/skyaware/data/aircraft.json",
+    "center_latitude": 27.9506,
+    "center_longitude": -82.4572,
+    "map_radius_miles": 10,
+    "zoom_factor": 1.0,
+    "show_trails": false,
+    "trail_length": 10,
+    "map_background": {
+      "enabled": true,
+      "tile_provider": "osm",
+      "tile_size": 256,
+      "cache_ttl_hours": 8760,
+      "fade_intensity": 0.3,
+      "brightness": 1.0,
+      "contrast": 1.0,
+      "saturation": 1.0,
+      "custom_tile_server": null,
+      "disable_on_cache_error": false
+    },
+    "flight_plan_enabled": false,
+    "flightaware_api_key": "",
+    "max_api_calls_per_hour": 20,
+    "flight_plan_cache_ttl_hours": 12,
+    "min_callsign_length": 4,
+    "daily_api_budget": 60,
+    "airline_callsign_prefixes": [
+      "AAL", "UAL", "DAL", "SWA", "JBU", "ASQ", "ENY", "FFT", "NKS",
+      "F9", "G4", "B6", "WN", "AA", "UA", "DL"
+    ],
+    "proximity_alert": {
+      "enabled": true,
+      "distance_miles": 0.1,
+      "duration_seconds": 30
+    },
+    "background_service": {
+      "enabled": true,
+      "fetch_interval_hours": 4,
+      "max_calls_per_run": 10
+    },
+    "use_offline_database": true,
+    "display_duration": 30
+  }
+}
+
