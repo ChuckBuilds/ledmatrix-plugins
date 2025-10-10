@@ -9,6 +9,7 @@
   "class_name": "HelloWorldPlugin",
   "category": "demo",
   "tags": ["demo", "test", "simple"],
+  "icon": "👋",
   "compatible_versions": [">=2.0.0"],
   "ledmatrix_version": "2.0.0",
   "requires": {
