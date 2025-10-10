@@ -53,10 +53,16 @@ class SimpleClock(BasePlugin):
         self.date_color = tuple(config.get('date_color', [255, 128, 64]))
         self.ampm_color = tuple(config.get('ampm_color', [255, 255, 128]))
 
-        # Position
+        # Position - handle both dict and legacy string/invalid formats
         position = config.get('position', {'x': 0, 'y': 0})
-        self.pos_x = position.get('x', 0)
-        self.pos_y = position.get('y', 0)
+        if isinstance(position, dict):
+            self.pos_x = position.get('x', 0)
+            self.pos_y = position.get('y', 0)
+        else:
+            # Fallback for invalid/legacy position format
+            self.logger.warning(f"Invalid position format: {type(position)}. Using defaults (0, 0)")
+            self.pos_x = 0
+            self.pos_y = 0
 
         # Get timezone
         self.timezone = self._get_timezone()
