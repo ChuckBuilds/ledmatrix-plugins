@@ -17,6 +17,7 @@ Official plugin registry for [LEDMatrix](https://github.com/ChuckBuilds/LEDMatri
 | [Of The Day](plugins/of-the-day) | Daily rotating content (Word, Bible Verse, etc.) | Content | 1.0.0 | simple-plugins |
 | [Music Player](plugins/music) | Now Playing from Spotify or YouTube Music with album art | Media | 1.0.0 | simple-plugins |
 | [Google Calendar](plugins/calendar) | Display upcoming events from Google Calendar | Time | 1.0.0 | simple-plugins |
+| [Hockey Scoreboard](plugins/hockey-scoreboard) | Live, recent, and upcoming games: NHL, NCAA M/W Hockey | Sports | 1.0.0 | sports-plugins |
 
 ## Installation
 
@@ -107,10 +108,10 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 ## Stats
 
-- **Total Plugins**: 8
-- **Categories**: 6 (Demo, Time, Weather, Media, Text, Content)
-- **Verified Plugins**: 8
-- **Latest Release**: Phase 1 - Simple Plugins (Oct 2025)
+- **Total Plugins**: 9
+- **Categories**: 7 (Demo, Time, Weather, Media, Text, Content, Sports)
+- **Verified Plugins**: 9
+- **Latest Release**: Phase 2 - Sports Plugins (Oct 2025)
 
 ---
 
