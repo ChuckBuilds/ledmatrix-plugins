@@ -1,0 +1,29 @@
+{
+  "id": "of-the-day",
+  "name": "Of The Day Display",
+  "version": "1.0.0",
+  "author": "ChuckBuilds",
+  "description": "Display daily featured content like Word of the Day, Bible verses, or custom daily items. Supports multiple categories with rotating display and configurable data sources.",
+  "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+  "entry_point": "manager.py",
+  "class_name": "OfTheDayPlugin",
+  "category": "information",
+  "tags": ["word", "daily", "education", "content", "rotation"],
+  "icon": "fas fa-book-open",
+  "compatible_versions": [">=2.0.0"],
+  "ledmatrix_version": "2.0.0",
+  "requires": {
+    "python": ">=3.9",
+    "display_size": {
+      "min_width": 64,
+      "min_height": 32
+    }
+  },
+  "config_schema": "config_schema.json",
+  "assets": {},
+  "update_interval": 3600,
+  "default_duration": 40,
+  "display_modes": ["of_the_day"],
+  "api_requirements": []
+}
+

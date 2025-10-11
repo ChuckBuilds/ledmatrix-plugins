@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable the music plugin"
+    },
+    "preferred_source": {
+      "type": "string",
+      "enum": ["spotify", "ytm"],
+      "default": "ytm",
+      "description": "Preferred music source (spotify or ytm - YouTube Music)"
+    },
+    "POLLING_INTERVAL_SECONDS": {
+      "type": "number",
+      "default": 2,
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Polling interval in seconds for checking playback status"
+    },
+    "YTM_COMPANION_URL": {
+      "type": "string",
+      "default": "http://192.168.86.12:9863",
+      "description": "URL to YouTube Music Companion server"
+    },
+    "spotify_client_id": {
+      "type": "string",
+      "default": "",
+      "description": "Spotify API Client ID (or set SPOTIFY_CLIENT_ID environment variable)"
+    },
+    "spotify_client_secret": {
+      "type": "string",
+      "default": "",
+      "description": "Spotify API Client Secret (or set SPOTIFY_CLIENT_SECRET environment variable)"
+    },
+    "spotify_redirect_uri": {
+      "type": "string",
+      "default": "http://localhost:8888/callback",
+      "description": "Spotify OAuth Redirect URI"
+    },
+    "show_album_art": {
+      "type": "boolean",
+      "default": true,
+      "description": "Display album artwork if available"
+    },
+    "scroll_long_text": {
+      "type": "boolean",
+      "default": true,
+      "description": "Scroll text that's too long to fit on screen"
+    },
+    "scroll_speed": {
+      "type": "number",
+      "default": 1,
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Speed of text scrolling (higher = faster)"
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 30,
+      "minimum": 5,
+      "description": "How long to display music info in seconds"
+    }
+  },
+  "required": ["enabled", "preferred_source"]
+}
+
