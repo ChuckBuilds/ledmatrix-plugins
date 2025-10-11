@@ -1,0 +1,42 @@
+{
+  "id": "flight-tracker",
+  "name": "Flight Tracker",
+  "version": "1.0.0",
+  "author": "ChuckBuilds",
+  "description": "Advanced flight tracking with live ADS-B data, map visualization, and aircraft details. Displays real-time aircraft positions, flight statistics, and overhead aircraft information with optional map backgrounds.",
+  "homepage": "https://github.com/ChuckBuilds/ledmatrix-flight-tracker",
+  "entry_point": "manager.py",
+  "class_name": "FlightTrackerPlugin",
+  "category": "transportation",
+  "tags": ["flight", "tracking", "aviation", "adsb", "aircraft", "map", "skyaware"],
+  "icon": "fas fa-plane",
+  "compatible_versions": [">=2.0.0"],
+  "ledmatrix_version": "2.0.0",
+  "requires": {
+    "python": ">=3.9",
+    "display_size": {
+      "min_width": 64,
+      "min_height": 32
+    }
+  },
+  "config_schema": "config_schema.json",
+  "assets": {},
+  "update_interval": 5,
+  "default_duration": 30,
+  "display_modes": ["flight-tracker-map", "flight-tracker-overhead", "flight-tracker-stats"],
+  "api_requirements": [
+    {
+      "name": "SkyAware",
+      "required": true,
+      "description": "Local ADS-B receiver (dump1090/readsb) providing aircraft data",
+      "url": "http://192.168.86.30/skyaware/data/aircraft.json"
+    },
+    {
+      "name": "FlightAware AeroAPI",
+      "required": false,
+      "description": "Optional API for flight plan data (origin/destination)",
+      "url": "https://aeroapi.flightaware.com/"
+    }
+  ]
+}
+
