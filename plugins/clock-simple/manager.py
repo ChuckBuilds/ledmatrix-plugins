@@ -180,10 +180,8 @@ class SimpleClock(BasePlugin):
             force_clear: If True, clear display before rendering
         """
         try:
-            # Always clear before drawing to prevent stacking/artifacts
-            # The force_clear parameter is a hint from display controller,
-            # but we need to clear on every frame for proper rendering
-            self.display_manager.clear()
+            if force_clear:
+                self.display_manager.clear()
 
             # Get display dimensions
             width = self.display_manager.width
