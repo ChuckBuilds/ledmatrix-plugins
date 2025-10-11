@@ -2,12 +2,40 @@
 
 Official plugin registry for [LEDMatrix](https://github.com/ChuckBuilds/LEDMatrix).
 
+## 🎉 Phase 1 Release - Simple Plugins
+
+We've just released **6 new standalone plugins** with complete isolation and self-contained architecture!
+
+### New Features
+- ✨ **Complete Plugin Isolation**: All authentication files stored within plugin directories
+- 🔒 **Enhanced Security**: `.gitignore` files protect sensitive data
+- 🧹 **Clean Uninstall**: Delete plugin folder = no traces left
+- 🔧 **Self-Contained**: Authentication scripts and client libraries included
+- 📋 **Full Config Support**: Dynamic Web UI configuration pages
+- 🎨 **Font Manager Integration**: Override fonts from Web UI
+
+### New Plugins (on `simple-plugins` branch)
+- **Weather Display**: OpenWeatherMap integration with current, hourly, and daily forecasts
+- **Music Player**: Spotify/YouTube Music now playing with album art
+- **Google Calendar**: Display upcoming events from Google Calendar
+- **Of The Day**: Word of the Day, Bible Verse, custom daily content
+- **Static Image Display**: Show logos, images with scaling
+- **Scrolling Text Display**: Custom messages with font support
+
+📖 See individual plugin READMEs for detailed setup instructions.
+
 ## Available Plugins
 
-| Plugin | Description | Category | Version |
-|--------|-------------|----------|---------|
-| [Hello World](plugins/hello-world) | A simple test plugin that displays a customizable message | Demo | 1.0.0 |
-| [Simple Clock](plugins/clock-simple) | A simple clock display with current time and date | Time | 1.0.0 |
+| Plugin | Description | Category | Version | Branch |
+|--------|-------------|----------|---------|--------|
+| [Hello World](plugins/hello-world) | A simple test plugin that displays a customizable message | Demo | 1.0.0 | main |
+| [Simple Clock](plugins/clock-simple) | A simple clock display with current time and date | Time | 1.0.0 | main |
+| [Weather Display](plugins/weather) | Current weather, hourly & daily forecasts from OpenWeatherMap | Weather | 1.0.0 | simple-plugins |
+| [Static Image Display](plugins/static-image) | Display static images with scaling and transparency support | Media | 1.0.0 | simple-plugins |
+| [Scrolling Text Display](plugins/text-display) | Display static or scrolling text with customizable fonts | Text | 1.0.0 | simple-plugins |
+| [Of The Day](plugins/of-the-day) | Daily rotating content (Word, Bible Verse, etc.) | Content | 1.0.0 | simple-plugins |
+| [Music Player](plugins/music) | Now Playing from Spotify or YouTube Music with album art | Media | 1.0.0 | simple-plugins |
+| [Google Calendar](plugins/calendar) | Display upcoming events from Google Calendar | Time | 1.0.0 | simple-plugins |
 
 ## Installation
 
@@ -53,13 +81,14 @@ See the main [LEDMatrix Plugin Developer Guide](https://github.com/ChuckBuilds/L
 
 ## Plugin Categories
 
-- **Time**: Clocks, timers, countdowns
-- **Sports**: Scoreboards, schedules, stats
-- **Weather**: Forecasts, current conditions
-- **Finance**: Stocks, crypto, market data
-- **Entertainment**: Games, animations, media
+- **Time**: Clocks, timers, countdowns, calendars
+- **Weather**: Forecasts, current conditions, hourly/daily forecasts
+- **Media**: Music players, images, video displays
+- **Text**: Scrolling text, messages, announcements
+- **Content**: Daily content, quotes, verses
+- **Sports**: Scoreboards, schedules, stats *(coming in Phase 2)*
+- **Finance**: Stocks, crypto, market data *(coming in Phase 3)*
 - **Demo**: Example and test plugins
-- **Custom**: Unique displays
 
 ## Plugin Structure
 
@@ -97,9 +126,10 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 ## Stats
 
-- **Total Plugins**: 2
-- **Categories**: 2 (Demo, Time)
-- **Verified Plugins**: 2
+- **Total Plugins**: 8
+- **Categories**: 6 (Demo, Time, Weather, Media, Text, Content)
+- **Verified Plugins**: 8
+- **Latest Release**: Phase 1 - Simple Plugins (Oct 2025)
 
 ---
 
