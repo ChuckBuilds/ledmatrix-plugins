@@ -3,6 +3,8 @@
 Official plugin registry for [LEDMatrix](https://github.com/ChuckBuilds/LEDMatrix).
 
 
+📖 See individual plugin READMEs for detailed setup instructions.
+
 ## Available Plugins
 
 | Plugin | Description | Category | Version | Branch |
