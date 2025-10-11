@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2025-10-09T12:00:00Z",
+  "last_updated": "2025-10-11T12:00:00Z",
   "plugins": [
     {
       "id": "hello-world",
@@ -47,6 +47,150 @@
       "stars": 0,
       "downloads": 0,
       "last_updated": "2025-10-09",
+      "verified": true,
+      "screenshot": ""
+    },
+    {
+      "id": "weather",
+      "name": "Weather Display",
+      "description": "Displays current weather, hourly, and daily forecasts from OpenWeatherMap",
+      "author": "ChuckBuilds",
+      "category": "weather",
+      "tags": ["weather", "forecast", "temperature", "humidity"],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "simple-plugins",
+      "plugin_path": "plugins/weather",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-11",
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/simple-plugins.zip"
+        }
+      ],
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2025-10-11",
+      "verified": true,
+      "screenshot": ""
+    },
+    {
+      "id": "static-image",
+      "name": "Static Image Display",
+      "description": "Displays a static image on the LED matrix with scaling and transparency support",
+      "author": "ChuckBuilds",
+      "category": "media",
+      "tags": ["image", "static", "display", "logo"],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "simple-plugins",
+      "plugin_path": "plugins/static-image",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-11",
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/simple-plugins.zip"
+        }
+      ],
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2025-10-11",
+      "verified": true,
+      "screenshot": ""
+    },
+    {
+      "id": "text-display",
+      "name": "Scrolling Text Display",
+      "description": "Displays static or scrolling text with customizable fonts, colors, and speed",
+      "author": "ChuckBuilds",
+      "category": "text",
+      "tags": ["text", "scroll", "message", "custom"],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "simple-plugins",
+      "plugin_path": "plugins/text-display",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-11",
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/simple-plugins.zip"
+        }
+      ],
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2025-10-11",
+      "verified": true,
+      "screenshot": ""
+    },
+    {
+      "id": "of-the-day",
+      "name": "Of The Day",
+      "description": "Displays daily rotating content like Word of the Day, Bible Verse of the Day, etc.",
+      "author": "ChuckBuilds",
+      "category": "content",
+      "tags": ["word", "verse", "daily", "quote"],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "simple-plugins",
+      "plugin_path": "plugins/of-the-day",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-11",
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/simple-plugins.zip"
+        }
+      ],
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2025-10-11",
+      "verified": true,
+      "screenshot": ""
+    },
+    {
+      "id": "music",
+      "name": "Music Player",
+      "description": "Displays 'Now Playing' information from Spotify or YouTube Music, including album art and scrolling text",
+      "author": "ChuckBuilds",
+      "category": "media",
+      "tags": ["music", "spotify", "youtube music", "now playing", "album art"],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "simple-plugins",
+      "plugin_path": "plugins/music",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-11",
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/simple-plugins.zip"
+        }
+      ],
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2025-10-11",
+      "verified": true,
+      "screenshot": ""
+    },
+    {
+      "id": "calendar",
+      "name": "Google Calendar",
+      "description": "Displays upcoming events from Google Calendar",
+      "author": "ChuckBuilds",
+      "category": "time",
+      "tags": ["calendar", "events", "google", "schedule"],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "simple-plugins",
+      "plugin_path": "plugins/calendar",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-11",
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/simple-plugins.zip"
+        }
+      ],
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2025-10-11",
       "verified": true,
       "screenshot": ""
     }
