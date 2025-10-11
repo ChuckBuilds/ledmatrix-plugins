@@ -1,0 +1,43 @@
+{
+  "id": "hockey-scoreboard",
+  "name": "Hockey Scoreboard",
+  "version": "1.0.0",
+  "author": "ChuckBuilds",
+  "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
+  "homepage": "https://github.com/ChuckBuilds/ledmatrix-hockey-plugin",
+  "entry_point": "manager.py",
+  "class_name": "HockeyScoreboardPlugin",
+  "category": "sports",
+  "tags": ["hockey", "nhl", "ncaa", "sports", "scoreboard", "live-scores"],
+  "icon": "fas fa-hockey-puck",
+  "compatible_versions": [">=2.0.0"],
+  "ledmatrix_version": "2.0.0",
+  "requires": {
+    "python": ">=3.9",
+    "display_size": {
+      "min_width": 64,
+      "min_height": 32
+    }
+  },
+  "config_schema": "config_schema.json",
+  "assets": {
+    "logos": "Uses shared LEDMatrix assets/sports/nhl_logos and assets/sports/ncaa_logos directories"
+  },
+  "update_interval": 60,
+  "default_duration": 15,
+  "display_modes": [
+    "hockey_live",
+    "hockey_recent",
+    "hockey_upcoming"
+  ],
+  "api_requirements": [
+    {
+      "name": "ESPN API",
+      "required": true,
+      "description": "ESPN public API for NHL and NCAA hockey scores and schedules",
+      "url": "https://site.api.espn.com/apis/site/v2/sports/hockey/",
+      "rate_limit": "No official rate limit, but please use responsibly"
+    }
+  ]
+}
+
