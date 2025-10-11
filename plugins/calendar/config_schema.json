@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable the calendar plugin"
+    },
+    "update_interval": {
+      "type": "number",
+      "default": 300,
+      "minimum": 60,
+      "description": "Update interval in seconds (minimum 1 minute)"
+    },
+    "max_events": {
+      "type": "number",
+      "default": 3,
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Maximum number of events to fetch and display"
+    },
+    "calendars": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": ["primary"],
+      "description": "List of calendar IDs to fetch events from (use 'primary' for default calendar)"
+    },
+    "credentials_file": {
+      "type": "string",
+      "default": "credentials.json",
+      "description": "Filename for Google Calendar API credentials (stored in plugin directory)"
+    },
+    "token_file": {
+      "type": "string",
+      "default": "token.pickle",
+      "description": "Filename for OAuth token (stored in plugin directory)"
+    },
+    "show_all_day_events": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show all-day events"
+    },
+    "event_rotation_interval": {
+      "type": "number",
+      "default": 10,
+      "minimum": 5,
+      "description": "Seconds between rotating displayed events"
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 30,
+      "minimum": 10,
+      "description": "How long to display calendar info in seconds"
+    }
+  },
+  "required": ["enabled", "credentials_file"]
+}
+
