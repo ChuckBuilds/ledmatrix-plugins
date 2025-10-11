@@ -1,0 +1,19 @@
+# Hockey Scoreboard Plugin Dependencies
+
+# Image processing
+Pillow>=9.0.0
+
+# HTTP requests for ESPN API
+requests>=2.28.0
+
+# Timezone handling
+pytz>=2022.1
+
+# Required LEDMatrix base classes
+# These are imported from the main LEDMatrix installation:
+# - src.base_classes.hockey (Hockey, HockeyLive)
+# - src.base_classes.sports (SportsCore, SportsRecent, SportsUpcoming)
+# - src.plugin_system.base_plugin (BasePlugin)
+# - src.cache_manager (CacheManager)
+# - src.display_manager (DisplayManager)
+
