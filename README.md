@@ -2,25 +2,6 @@
 
 Official plugin registry for [LEDMatrix](https://github.com/ChuckBuilds/LEDMatrix).
 
-## 🎉 Phase 1 Release - Simple Plugins
-
-We've just released **6 new standalone plugins** with complete isolation and self-contained architecture!
-
-### New Features
-- ✨ **Complete Plugin Isolation**: All authentication files stored within plugin directories
-- 🔒 **Enhanced Security**: `.gitignore` files protect sensitive data
-- 🧹 **Clean Uninstall**: Delete plugin folder = no traces left
-- 🔧 **Self-Contained**: Authentication scripts and client libraries included
-- 📋 **Full Config Support**: Dynamic Web UI configuration pages
-- 🎨 **Font Manager Integration**: Override fonts from Web UI
-
-### New Plugins (on `simple-plugins` branch)
-- **Weather Display**: OpenWeatherMap integration with current, hourly, and daily forecasts
-- **Music Player**: Spotify/YouTube Music now playing with album art
-- **Google Calendar**: Display upcoming events from Google Calendar
-- **Of The Day**: Word of the Day, Bible Verse, custom daily content
-- **Static Image Display**: Show logos, images with scaling
-- **Scrolling Text Display**: Custom messages with font support
 
 📖 See individual plugin READMEs for detailed setup instructions.
 
