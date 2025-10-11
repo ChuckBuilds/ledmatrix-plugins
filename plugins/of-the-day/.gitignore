@@ -1,8 +1,0 @@
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-
-# User-created data files (optional - remove if you want to track them)
-# of_the_day/*.json
-

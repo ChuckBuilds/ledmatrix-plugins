@@ -1,9 +1,0 @@
-# Google Calendar OAuth credentials (user-specific)
-credentials.json
-token.pickle
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-
