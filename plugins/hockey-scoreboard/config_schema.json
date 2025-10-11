@@ -7,144 +7,310 @@
       "default": true,
       "description": "Enable or disable the hockey scoreboard plugin"
     },
-    "leagues": {
+    "nhl": {
       "type": "object",
-      "description": "Enable/disable specific hockey leagues",
-      "properties": {
-        "nhl": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show NHL games"
-        },
-        "ncaa_mens": {
-          "type": "boolean",
-          "default": false,
-          "description": "Show NCAA Men's Hockey games"
-        },
-        "ncaa_womens": {
-          "type": "boolean",
-          "default": false,
-          "description": "Show NCAA Women's Hockey games"
-        }
-      }
-    },
-    "display_modes": {
-      "type": "object",
-      "description": "Enable/disable display modes",
-      "properties": {
-        "hockey_live": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show live games in progress"
-        },
-        "hockey_recent": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show recently completed games"
-        },
-        "hockey_upcoming": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show upcoming scheduled games"
-        }
-      }
-    },
-    "favorite_teams": {
-      "type": "object",
-      "description": "Favorite teams by league (use team abbreviations)",
-      "properties": {
-        "nhl": {
-          "type": "array",
-          "items": {"type": "string"},
-          "default": [],
-          "description": "NHL team abbreviations (e.g., ['TB', 'TOR', 'BOS'])"
-        },
-        "ncaa_mens": {
-          "type": "array",
-          "items": {"type": "string"},
-          "default": [],
-          "description": "NCAA Men's team abbreviations"
-        },
-        "ncaa_womens": {
-          "type": "array",
-          "items": {"type": "string"},
-          "default": [],
-          "description": "NCAA Women's team abbreviations"
-        }
-      }
-    },
-    "prioritize_favorites": {
-      "type": "boolean",
-      "default": true,
-      "description": "Show favorite team games first"
-    },
-    "show_shots_on_goal": {
-      "type": "boolean",
-      "default": false,
-      "description": "Display shots on goal statistics during games"
-    },
-    "show_powerplay": {
-      "type": "boolean",
-      "default": true,
-      "description": "Highlight powerplay situations"
-    },
-    "update_interval": {
-      "type": "number",
-      "default": 60,
-      "minimum": 15,
-      "maximum": 300,
-      "description": "How often to refresh game data (in seconds)"
-    },
-    "display_duration": {
-      "type": "number",
-      "default": 15,
-      "minimum": 5,
-      "maximum": 60,
-      "description": "How long to display each game (in seconds)"
-    },
-    "recent_games_hours": {
-      "type": "number",
-      "default": 24,
-      "minimum": 1,
-      "maximum": 168,
-      "description": "How many hours back to show recent games"
-    },
-    "upcoming_games_hours": {
-      "type": "number",
-      "default": 72,
-      "minimum": 1,
-      "maximum": 336,
-      "description": "How many hours ahead to show upcoming games"
-    },
-    "background_service": {
-      "type": "object",
-      "description": "Background data fetching configuration",
+      "description": "NHL (National Hockey League) configuration",
       "properties": {
         "enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Use background service for data fetching"
+          "description": "Enable NHL games"
         },
-        "request_timeout": {
-          "type": "number",
-          "default": 30,
-          "minimum": 5,
-          "maximum": 120,
-          "description": "API request timeout in seconds"
+        "display_modes": {
+          "type": "object",
+          "description": "Display modes for NHL",
+          "properties": {
+            "live": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show NHL live games"
+            },
+            "recent": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show NHL recent games"
+            },
+            "upcoming": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show NHL upcoming games"
+            }
+          }
         },
-        "max_retries": {
-          "type": "number",
-          "default": 3,
-          "minimum": 0,
-          "maximum": 10,
-          "description": "Maximum number of retry attempts"
+        "favorite_teams": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": [],
+          "description": "NHL favorite team abbreviations (e.g., ['TB', 'TOR', 'BOS'])"
         },
-        "priority": {
+        "live_priority": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prioritize NHL live games over other leagues"
+        },
+        "show_odds": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show betting odds for NHL games"
+        },
+        "show_favorite_teams_only": {
+          "type": "boolean",
+          "default": false,
+          "description": "Only show NHL games with favorite teams"
+        },
+        "recent_games_to_show": {
           "type": "number",
-          "default": 2,
+          "default": 5,
           "minimum": 1,
-          "maximum": 5,
-          "description": "Request priority (1=highest, 5=lowest)"
+          "maximum": 20,
+          "description": "Number of recent NHL games to show"
+        },
+        "upcoming_games_to_show": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Number of upcoming NHL games to show"
+        },
+        "logo_dir": {
+          "type": "string",
+          "default": "assets/sports/nhl_logos",
+          "description": "Directory for NHL team logos"
+        },
+        "update_interval_seconds": {
+          "type": "number",
+          "default": 60,
+          "minimum": 15,
+          "maximum": 300,
+          "description": "NHL data update interval in seconds"
+        }
+      }
+    },
+    "ncaa_mens": {
+      "type": "object",
+      "description": "NCAA Men's Hockey configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable NCAA Men's Hockey games"
+        },
+        "display_modes": {
+          "type": "object",
+          "description": "Display modes for NCAA Men's Hockey",
+          "properties": {
+            "live": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show NCAA Men's Hockey live games"
+            },
+            "recent": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show NCAA Men's Hockey recent games"
+            },
+            "upcoming": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show NCAA Men's Hockey upcoming games"
+            }
+          }
+        },
+        "favorite_teams": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": [],
+          "description": "NCAA Men's Hockey favorite team abbreviations (e.g., ['BU', 'BC', 'MICH'])"
+        },
+        "live_priority": {
+          "type": "boolean",
+          "default": false,
+          "description": "Prioritize NCAA Men's Hockey live games"
+        },
+        "show_odds": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show betting odds for NCAA Men's Hockey games"
+        },
+        "show_favorite_teams_only": {
+          "type": "boolean",
+          "default": false,
+          "description": "Only show NCAA Men's Hockey games with favorite teams"
+        },
+        "recent_games_to_show": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Number of recent NCAA Men's Hockey games to show"
+        },
+        "upcoming_games_to_show": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Number of upcoming NCAA Men's Hockey games to show"
+        },
+        "logo_dir": {
+          "type": "string",
+          "default": "assets/sports/ncaa_logos",
+          "description": "Directory for NCAA Men's Hockey team logos"
+        },
+        "update_interval_seconds": {
+          "type": "number",
+          "default": 120,
+          "minimum": 30,
+          "maximum": 600,
+          "description": "NCAA Men's Hockey data update interval in seconds"
+        }
+      }
+    },
+    "ncaa_womens": {
+      "type": "object",
+      "description": "NCAA Women's Hockey configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable NCAA Women's Hockey games"
+        },
+        "display_modes": {
+          "type": "object",
+          "description": "Display modes for NCAA Women's Hockey",
+          "properties": {
+            "live": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show NCAA Women's Hockey live games"
+            },
+            "recent": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show NCAA Women's Hockey recent games"
+            },
+            "upcoming": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show NCAA Women's Hockey upcoming games"
+            }
+          }
+        },
+        "favorite_teams": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": [],
+          "description": "NCAA Women's Hockey favorite team abbreviations (e.g., ['WISC', 'MINN', 'OSU'])"
+        },
+        "live_priority": {
+          "type": "boolean",
+          "default": false,
+          "description": "Prioritize NCAA Women's Hockey live games"
+        },
+        "show_odds": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show betting odds for NCAA Women's Hockey games"
+        },
+        "show_favorite_teams_only": {
+          "type": "boolean",
+          "default": false,
+          "description": "Only show NCAA Women's Hockey games with favorite teams"
+        },
+        "recent_games_to_show": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Number of recent NCAA Women's Hockey games to show"
+        },
+        "upcoming_games_to_show": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Number of upcoming NCAA Women's Hockey games to show"
+        },
+        "logo_dir": {
+          "type": "string",
+          "default": "assets/sports/ncaa_logos",
+          "description": "Directory for NCAA Women's Hockey team logos"
+        },
+        "update_interval_seconds": {
+          "type": "number",
+          "default": 180,
+          "minimum": 60,
+          "maximum": 900,
+          "description": "NCAA Women's Hockey data update interval in seconds"
+        }
+      }
+    },
+    "global": {
+      "type": "object",
+      "description": "Global hockey scoreboard settings",
+      "properties": {
+        "show_all_live": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show all live games regardless of league priority"
+        },
+        "show_records": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show team records (wins-losses)"
+        },
+        "show_ranking": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show team rankings/standings"
+        },
+        "show_shots_on_goal": {
+          "type": "boolean",
+          "default": false,
+          "description": "Display shots on goal statistics during games"
+        },
+        "show_powerplay": {
+          "type": "boolean",
+          "default": true,
+          "description": "Highlight powerplay situations"
+        },
+        "display_duration": {
+          "type": "number",
+          "default": 15,
+          "minimum": 5,
+          "maximum": 60,
+          "description": "How long to display each game (in seconds)"
+        },
+        "background_service": {
+          "type": "object",
+          "description": "Background data fetching configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Use background service for data fetching"
+            },
+            "request_timeout": {
+              "type": "number",
+              "default": 30,
+              "minimum": 5,
+              "maximum": 120,
+              "description": "API request timeout in seconds"
+            },
+            "max_retries": {
+              "type": "number",
+              "default": 3,
+              "minimum": 0,
+              "maximum": 10,
+              "description": "Maximum number of retry attempts"
+            },
+            "priority": {
+              "type": "number",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Request priority (1=highest, 5=lowest)"
+            }
+          }
         }
       }
     },
@@ -174,6 +340,14 @@
             "family": {"type": "string", "default": "four_by_six"},
             "size": {"type": "number", "default": 6},
             "color": {"type": "string", "default": "#00FF00"}
+          }
+        },
+        "info": {
+          "type": "object",
+          "properties": {
+            "family": {"type": "string", "default": "four_by_six"},
+            "size": {"type": "number", "default": 6},
+            "color": {"type": "string", "default": "#CCCCCC"}
           }
         }
       }

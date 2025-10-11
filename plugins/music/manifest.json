@@ -1,0 +1,42 @@
+{
+  "id": "music",
+  "name": "Music Now Playing",
+  "version": "1.0.0",
+  "author": "ChuckBuilds",
+  "description": "Display now playing music from Spotify or YouTube Music with album art, track info, and smooth scrolling. Shows current song, artist, album, and playback status.",
+  "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+  "entry_point": "manager.py",
+  "class_name": "MusicPlugin",
+  "category": "media",
+  "tags": ["music", "spotify", "youtube-music", "now-playing", "media"],
+  "icon": "fas fa-music",
+  "compatible_versions": [">=2.0.0"],
+  "ledmatrix_version": "2.0.0",
+  "requires": {
+    "python": ">=3.9",
+    "display_size": {
+      "min_width": 64,
+      "min_height": 32
+    }
+  },
+  "config_schema": "config_schema.json",
+  "assets": {},
+  "update_interval": 2,
+  "default_duration": 30,
+  "display_modes": ["music"],
+  "api_requirements": [
+    {
+      "name": "Spotify",
+      "required": false,
+      "description": "Spotify API credentials for playback display",
+      "url": "https://developer.spotify.com/"
+    },
+    {
+      "name": "YouTube Music Companion",
+      "required": false,
+      "description": "YTM Companion server for YouTube Music playback",
+      "url": "https://github.com/keifufu/WebNowPlaying-Redux"
+    }
+  ]
+}
+

@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable the of-the-day plugin"
+    },
+    "update_interval": {
+      "type": "number",
+      "default": 3600,
+      "minimum": 60,
+      "description": "Update interval in seconds (checks for new day)"
+    },
+    "display_rotate_interval": {
+      "type": "number",
+      "default": 20,
+      "minimum": 5,
+      "description": "Seconds between rotating different display elements (title/definition/example)"
+    },
+    "subtitle_rotate_interval": {
+      "type": "number",
+      "default": 10,
+      "minimum": 5,
+      "description": "Seconds between rotating subtitle information"
+    },
+    "category_order": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": ["word_of_the_day", "slovenian_word_of_the_day"],
+      "description": "Order to display categories"
+    },
+    "categories": {
+      "type": "object",
+      "properties": {
+        "word_of_the_day": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "data_file": {
+              "type": "string",
+              "default": "of_the_day/word_of_the_day.json",
+              "description": "Path to data file (relative to plugin directory)"
+            },
+            "display_name": {
+              "type": "string",
+              "default": "Word of the Day"
+            }
+          }
+        },
+        "slovenian_word_of_the_day": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "data_file": {
+              "type": "string",
+              "default": "of_the_day/slovenian_word_of_the_day.json",
+              "description": "Path to data file (relative to plugin directory)"
+            },
+            "display_name": {
+              "type": "string",
+              "default": "Slovenian Word"
+            }
+          }
+        },
+        "bible_verse_of_the_day": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "data_file": {
+              "type": "string",
+              "default": "of_the_day/bible_verse_of_the_day.json",
+              "description": "Path to data file (relative to plugin directory)"
+            },
+            "display_name": {
+              "type": "string",
+              "default": "Bible Verse"
+            }
+          }
+        }
+      }
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 40,
+      "minimum": 10,
+      "description": "How long to display each category in seconds"
+    }
+  },
+  "required": ["enabled"]
+}
+
