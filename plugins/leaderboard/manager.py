@@ -461,8 +461,7 @@ class LeaderboardPlugin(BasePlugin):
             'min_duration': self.min_duration,
             'max_duration': self.max_duration,
             'leagues_config': leagues_config,
-            'global_config': self.global_config,
-            'background_config': self.background_config
+            'global_config': self.global_config
         })
         return info
 

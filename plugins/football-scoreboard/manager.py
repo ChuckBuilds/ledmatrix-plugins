@@ -515,8 +515,7 @@ class FootballScoreboardPlugin(BasePlugin):
             'recent_games': len([g for g in self.current_games if g.get('status', {}).get('state') == 'post']),
             'upcoming_games': len([g for g in self.current_games if g.get('status', {}).get('state') == 'pre']),
             'leagues_config': leagues_config,
-            'global_config': self.global_config,
-            'background_config': self.background_config
+            'global_config': self.global_config
         })
         return info
 

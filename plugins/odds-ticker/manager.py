@@ -345,8 +345,7 @@ class OddsTickerPlugin(BasePlugin):
             'show_favorite_teams_only': self.show_favorite_teams_only,
             'max_games_per_league': self.max_games_per_league,
             'leagues_config': leagues_config,
-            'global_config': self.global_config,
-            'background_config': self.background_config
+            'global_config': self.global_config
         })
         return info
 
