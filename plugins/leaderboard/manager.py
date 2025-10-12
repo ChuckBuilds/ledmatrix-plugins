@@ -440,6 +440,17 @@ class LeaderboardPlugin(BasePlugin):
     def get_info(self) -> Dict[str, Any]:
         """Return plugin info for web UI."""
         info = super().get_info()
+
+        # Get league-specific configurations
+        leagues_config = {}
+        for league_key, league_config in self.leagues.items():
+            leagues_config[league_key] = {
+                'enabled': league_config.get('enabled', False),
+                'conference': league_config.get('conference', 'both'),
+                'division': league_config.get('division', 'all'),
+                'show_rankings': league_config.get('show_rankings', True)
+            }
+
         info.update({
             'total_teams': len(self.current_standings),
             'enabled_leagues': [k for k, v in self.leagues.items() if v.get('enabled', False)],
@@ -448,7 +459,10 @@ class LeaderboardPlugin(BasePlugin):
             'scroll_speed': self.scroll_speed,
             'dynamic_duration': self.dynamic_duration,
             'min_duration': self.min_duration,
-            'max_duration': self.max_duration
+            'max_duration': self.max_duration,
+            'leagues_config': leagues_config,
+            'global_config': self.global_config,
+            'background_config': self.background_config
         })
         return info
 

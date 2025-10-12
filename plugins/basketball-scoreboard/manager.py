@@ -485,6 +485,19 @@ class BasketballScoreboardPlugin(BasePlugin):
     def get_info(self) -> Dict[str, Any]:
         """Return plugin info for web UI."""
         info = super().get_info()
+
+        # Get league-specific configurations
+        leagues_config = {}
+        for league_key, league_config in self.leagues.items():
+            leagues_config[league_key] = {
+                'enabled': league_config.get('enabled', False),
+                'favorite_teams': league_config.get('favorite_teams', []),
+                'display_modes': league_config.get('display_modes', {}),
+                'recent_games_to_show': league_config.get('recent_games_to_show', 5),
+                'upcoming_games_to_show': league_config.get('upcoming_games_to_show', 10),
+                'update_interval_seconds': league_config.get('update_interval_seconds', 60)
+            }
+
         info.update({
             'total_games': len(self.current_games),
             'enabled_leagues': [k for k, v in self.leagues.items() if v.get('enabled', False)],
@@ -495,7 +508,10 @@ class BasketballScoreboardPlugin(BasePlugin):
             'show_ranking': self.show_ranking,
             'live_games': len([g for g in self.current_games if g.get('status', {}).get('state') == 'in']),
             'recent_games': len([g for g in self.current_games if g.get('status', {}).get('state') == 'post']),
-            'upcoming_games': len([g for g in self.current_games if g.get('status', {}).get('state') == 'pre'])
+            'upcoming_games': len([g for g in self.current_games if g.get('status', {}).get('state') == 'pre']),
+            'leagues_config': leagues_config,
+            'global_config': self.global_config,
+            'background_config': self.background_config
         })
         return info
 

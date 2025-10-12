@@ -323,6 +323,19 @@ class OddsTickerPlugin(BasePlugin):
     def get_info(self) -> Dict[str, Any]:
         """Return plugin info for web UI."""
         info = super().get_info()
+
+        # Get league-specific configurations
+        leagues_config = {}
+        for league_key, league_config in self.leagues.items():
+            leagues_config[league_key] = {
+                'enabled': league_config.get('enabled', False),
+                'favorite_teams': league_config.get('favorite_teams', []),
+                'display_modes': league_config.get('display_modes', {}),
+                'recent_games_to_show': league_config.get('recent_games_to_show', 5),
+                'upcoming_games_to_show': league_config.get('upcoming_games_to_show', 10),
+                'update_interval_seconds': league_config.get('update_interval_seconds', 60)
+            }
+
         info.update({
             'total_games': len(self.current_odds),
             'enabled_leagues': [k for k, v in self.leagues.items() if v.get('enabled', False)],
@@ -330,7 +343,10 @@ class OddsTickerPlugin(BasePlugin):
             'display_duration': self.display_duration,
             'scroll_speed': self.scroll_speed,
             'show_favorite_teams_only': self.show_favorite_teams_only,
-            'max_games_per_league': self.max_games_per_league
+            'max_games_per_league': self.max_games_per_league,
+            'leagues_config': leagues_config,
+            'global_config': self.global_config,
+            'background_config': self.background_config
         })
         return info
 
