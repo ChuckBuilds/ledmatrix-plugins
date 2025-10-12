@@ -75,28 +75,28 @@ class HockeyScoreboardPlugin(BasePlugin):
             self.initialized = False
             return
 
-        # Configuration - simplified structure like original hockey manager
-        self.leagues_enabled = config.get('leagues', {
-            'nhl': True,
-            'ncaa_mens': False,
-            'ncaa_womens': False
+        # Configuration - per-league structure like original managers
+        self.leagues = {
+            'nhl': config.get('nhl', {}),
+            'ncaa_mens': config.get('ncaa_mens', {}),
+            'ncaa_womens': config.get('ncaa_womens', {})
+        }
+
+        # Global settings
+        self.global_config = config.get('global', {})
+        self.display_duration = self.global_config.get('display_duration', 15)
+        self.show_records = self.global_config.get('show_records', False)
+        self.show_ranking = self.global_config.get('show_ranking', False)
+        self.show_shots_on_goal = self.global_config.get('show_shots_on_goal', False)
+        self.show_powerplay = self.global_config.get('show_powerplay', True)
+
+        # Background service configuration
+        self.background_config = self.global_config.get('background_service', {
+            'enabled': True,
+            'request_timeout': 30,
+            'max_retries': 3,
+            'priority': 2
         })
-        self.display_modes_config = config.get('display_modes', {
-            'hockey_live': True,
-            'hockey_recent': True,
-            'hockey_upcoming': True
-        })
-        self.favorite_teams = config.get('favorite_teams', {})
-        self.live_priority = config.get('live_priority', True)
-        self.recent_games_to_show = config.get('recent_games_to_show', 5)
-        self.upcoming_games_to_show = config.get('upcoming_games_to_show', 10)
-        self.show_records = config.get('show_records', False)
-        self.show_ranking = config.get('show_ranking', False)
-        self.show_shots_on_goal = config.get('show_shots_on_goal', False)
-        self.show_powerplay = config.get('show_powerplay', True)
-        self.logo_dir_base = config.get('logo_dir', 'assets/sports')
-        self.update_interval = config.get('update_interval', 60)
-        self.display_duration = config.get('display_duration', 15)
 
         # State
         self.current_games = []
@@ -108,13 +108,14 @@ class HockeyScoreboardPlugin(BasePlugin):
         # Register fonts
         self._register_fonts()
 
-        # Log configuration
-        enabled_leagues = [k for k, v in self.leagues_enabled.items() if v]
-        enabled_modes = [k for k, v in self.display_modes_config.items() if v]
+        # Log enabled leagues and their settings
+        enabled_leagues = []
+        for league_key, league_config in self.leagues.items():
+            if league_config.get('enabled', False):
+                enabled_leagues.append(league_key)
+
         self.logger.info(f"Hockey scoreboard plugin initialized")
         self.logger.info(f"Enabled leagues: {enabled_leagues}")
-        self.logger.info(f"Enabled modes: {enabled_modes}")
-        self.logger.info(f"Live priority: {self.live_priority}, Recent: {self.recent_games_to_show}, Upcoming: {self.upcoming_games_to_show}")
     
     def _register_fonts(self):
         """Register fonts with the font manager."""
@@ -173,13 +174,13 @@ class HockeyScoreboardPlugin(BasePlugin):
             self.current_games = []
 
             # Fetch data for each enabled league
-            for league_key in self.leagues_enabled:
-                if self.leagues_enabled[league_key]:
-                    games = self._fetch_league_data(league_key)
+            for league_key, league_config in self.leagues.items():
+                if league_config.get('enabled', False):
+                    games = self._fetch_league_data(league_key, league_config)
                     if games:
                         # Add league info to each game
                         for game in games:
-                            game['league'] = league_key
+                            game['league_config'] = league_config
                         self.current_games.extend(games)
 
             # Sort games - prioritize live games and favorites
@@ -194,11 +195,14 @@ class HockeyScoreboardPlugin(BasePlugin):
     def _sort_games(self):
         """Sort games by priority and favorites."""
         def sort_key(game):
+            league_key = game.get('league')
+            league_config = game.get('league_config', {})
             status = game.get('status', {})
 
-            # Priority 1: Live games (if live_priority enabled)
+            # Priority 1: Live games (check if league has live priority)
             is_live = status.get('state') == 'in'
-            if is_live and self.live_priority:
+            # For now, prioritize NHL live games
+            if is_live and league_key == 'nhl':
                 live_score = 0
             else:
                 live_score = 1
@@ -213,13 +217,14 @@ class HockeyScoreboardPlugin(BasePlugin):
 
         self.current_games.sort(key=sort_key)
     
-    def _fetch_league_data(self, league_key: str) -> List[Dict]:
+    def _fetch_league_data(self, league_key: str, league_config: Dict) -> List[Dict]:
         """Fetch game data for a specific league."""
         cache_key = f"hockey_{league_key}_{datetime.now().strftime('%Y%m%d')}"
+        update_interval = league_config.get('update_interval_seconds', 60)
 
-        # Check cache first
+        # Check cache first (use league-specific interval)
         cached_data = self.cache_manager.get(cache_key)
-        if cached_data and (time.time() - self.last_update) < self.update_interval:
+        if cached_data and (time.time() - self.last_update) < update_interval:
             self.logger.debug(f"Using cached data for {league_key}")
             return cached_data
 
@@ -231,14 +236,14 @@ class HockeyScoreboardPlugin(BasePlugin):
                 return []
 
             self.logger.info(f"Fetching {league_key} data from ESPN API...")
-            response = requests.get(url, timeout=30)
+            response = requests.get(url, timeout=self.background_config.get('request_timeout', 30))
             response.raise_for_status()
 
             data = response.json()
-            games = self._process_api_response(data, league_key)
+            games = self._process_api_response(data, league_key, league_config)
 
-            # Cache for update_interval * 2
-            self.cache_manager.set(cache_key, games, ttl=self.update_interval * 2)
+            # Cache for league-specific interval
+            self.cache_manager.set(cache_key, games, ttl=update_interval * 2)
 
             return games
 
@@ -249,7 +254,7 @@ class HockeyScoreboardPlugin(BasePlugin):
             self.logger.error(f"Error processing {league_key} data: {e}")
             return []
     
-    def _process_api_response(self, data: Dict, league_key: str) -> List[Dict]:
+    def _process_api_response(self, data: Dict, league_key: str, league_config: Dict) -> List[Dict]:
         """Process ESPN API response into standardized game format."""
         games = []
 
@@ -258,7 +263,7 @@ class HockeyScoreboardPlugin(BasePlugin):
 
             for event in events:
                 try:
-                    game = self._extract_game_info(event, league_key)
+                    game = self._extract_game_info(event, league_key, league_config)
                     if game:
                         games.append(game)
                 except Exception as e:
@@ -270,7 +275,7 @@ class HockeyScoreboardPlugin(BasePlugin):
 
         return games
     
-    def _extract_game_info(self, event: Dict, league_key: str) -> Optional[Dict]:
+    def _extract_game_info(self, event: Dict, league_key: str, league_config: Dict) -> Optional[Dict]:
         """Extract game information from ESPN event."""
         try:
             competition = event.get('competitions', [{}])[0]
@@ -290,6 +295,7 @@ class HockeyScoreboardPlugin(BasePlugin):
             # Extract game details
             game = {
                 'league': league_key,
+                'league_config': league_config,
                 'game_id': event.get('id'),
                 'home_team': {
                     'name': home_team.get('team', {}).get('displayName', 'Unknown'),
@@ -320,7 +326,7 @@ class HockeyScoreboardPlugin(BasePlugin):
                 game['powerplay'] = situation.get('isPowerPlay', False)
                 game['penalties'] = situation.get('penalties', '')
 
-            # Add shots on goal if available and enabled
+            # Add shots on goal if available and enabled globally
             if self.show_shots_on_goal:
                 home_stats = home_team.get('statistics', [])
                 away_stats = away_team.get('statistics', [])
@@ -343,7 +349,8 @@ class HockeyScoreboardPlugin(BasePlugin):
     def _is_favorite_game(self, game: Dict) -> bool:
         """Check if game involves a favorite team."""
         league = game.get('league')
-        favorites = self.favorite_teams.get(league, [])
+        league_config = game.get('league_config', {})
+        favorites = league_config.get('favorite_teams', [])
 
         if not favorites:
             return False
@@ -368,11 +375,11 @@ class HockeyScoreboardPlugin(BasePlugin):
         # Determine which display mode to use - prioritize live games if enabled
         if not display_mode:
             # Auto-select mode based on available games and priorities
-            if self._has_live_games() and self.display_modes_config.get('hockey_live', True):
+            if self._has_live_games():
                 display_mode = 'hockey_live'
             else:
                 # Fall back to recent or upcoming
-                display_mode = 'hockey_recent' if self._has_recent_games() and self.display_modes_config.get('hockey_recent', True) else 'hockey_upcoming'
+                display_mode = 'hockey_recent' if self._has_recent_games() else 'hockey_upcoming'
 
         self.current_display_mode = display_mode
 
@@ -388,34 +395,38 @@ class HockeyScoreboardPlugin(BasePlugin):
         self._display_game(game, display_mode)
     
     def _filter_games_by_mode(self, mode: str) -> List[Dict]:
-        """Filter games based on display mode."""
+        """Filter games based on display mode and per-league settings."""
         filtered = []
 
         for game in self.current_games:
             league_key = game.get('league')
+            league_config = game.get('league_config', {})
             status = game.get('status', {})
             state = status.get('state')
 
-            # Check if this mode is enabled globally
-            mode_enabled = self.display_modes_config.get(mode, False)
+            # Check if this mode is enabled for this league
+            display_modes = league_config.get('display_modes', {})
+            mode_enabled = display_modes.get(mode.replace('hockey_', ''), False)
             if not mode_enabled:
                 continue
 
-            # Filter by game state and limits
+            # Filter by game state and per-league limits
             if mode == 'hockey_live' and state == 'in':
                 filtered.append(game)
 
             elif mode == 'hockey_recent' and state == 'post':
-                # Check recent games limit
-                recent_count = len([g for g in filtered if g.get('status', {}).get('state') == 'post'])
-                if recent_count >= self.recent_games_to_show:
+                # Check recent games limit for this league
+                recent_limit = league_config.get('recent_games_to_show', 5)
+                recent_count = len([g for g in filtered if g.get('league') == league_key and g.get('status', {}).get('state') == 'post'])
+                if recent_count >= recent_limit:
                     continue
                 filtered.append(game)
 
             elif mode == 'hockey_upcoming' and state == 'pre':
-                # Check upcoming games limit
-                upcoming_count = len([g for g in filtered if g.get('status', {}).get('state') == 'pre'])
-                if upcoming_count >= self.upcoming_games_to_show:
+                # Check upcoming games limit for this league
+                upcoming_limit = league_config.get('upcoming_games_to_show', 10)
+                upcoming_count = len([g for g in filtered if g.get('league') == league_key and g.get('status', {}).get('state') == 'pre'])
+                if upcoming_count >= upcoming_limit:
                     continue
                 filtered.append(game)
 
@@ -504,12 +515,10 @@ class HockeyScoreboardPlugin(BasePlugin):
         info = super().get_info()
         info.update({
             'total_games': len(self.current_games),
-            'enabled_leagues': [k for k, v in self.leagues_enabled.items() if v],
+            'enabled_leagues': [k for k, v in self.leagues.items() if v.get('enabled', False)],
             'current_mode': self.current_display_mode,
             'last_update': self.last_update,
-            'live_priority': self.live_priority,
-            'recent_games_to_show': self.recent_games_to_show,
-            'upcoming_games_to_show': self.upcoming_games_to_show,
+            'display_duration': self.display_duration,
             'show_records': self.show_records,
             'show_ranking': self.show_ranking,
             'show_shots_on_goal': self.show_shots_on_goal,
