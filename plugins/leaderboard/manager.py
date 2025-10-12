@@ -60,24 +60,24 @@ class LeaderboardPlugin(BasePlugin):
 
         # Configuration
         self.leagues = config.get('leagues', {})
-        self.global_config = config.get('global', {})
+        self.global_config = config
 
         # Display settings
-        self.display_duration = self.global_config.get('display_duration', 30)
-        self.scroll_speed = self.global_config.get('scroll_speed', 2)
-        self.scroll_delay = self.global_config.get('scroll_delay', 0.01)
-        self.dynamic_duration = self.global_config.get('dynamic_duration', True)
-        self.min_duration = self.global_config.get('min_duration', 30)
-        self.max_duration = self.global_config.get('max_duration', 300)
-        self.loop = self.global_config.get('loop', True)
+        self.display_duration = config.get('display_duration', 30)
+        self.scroll_speed = config.get('scroll_speed', 2)
+        self.scroll_delay = config.get('scroll_delay', 0.01)
+        self.dynamic_duration = config.get('dynamic_duration', True)
+        self.min_duration = config.get('min_duration', 30)
+        self.max_duration = config.get('max_duration', 300)
+        self.loop = config.get('loop', True)
 
-        # Background service configuration
-        self.background_config = self.global_config.get('background_service', {
+        # Background service configuration (internal only)
+        self.background_config = {
             'enabled': True,
             'request_timeout': 30,
             'max_retries': 3,
             'priority': 2
-        })
+        }
 
         # State
         self.current_standings = []

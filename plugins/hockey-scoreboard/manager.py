@@ -83,20 +83,20 @@ class HockeyScoreboardPlugin(BasePlugin):
         }
 
         # Global settings
-        self.global_config = config.get('global', {})
-        self.display_duration = self.global_config.get('display_duration', 15)
-        self.show_records = self.global_config.get('show_records', False)
-        self.show_ranking = self.global_config.get('show_ranking', False)
-        self.show_shots_on_goal = self.global_config.get('show_shots_on_goal', False)
-        self.show_powerplay = self.global_config.get('show_powerplay', True)
+        self.global_config = config
+        self.display_duration = config.get('display_duration', 15)
+        self.show_records = config.get('show_records', False)
+        self.show_ranking = config.get('show_ranking', False)
+        self.show_shots_on_goal = config.get('show_shots_on_goal', False)
+        self.show_powerplay = config.get('show_powerplay', True)
 
-        # Background service configuration
-        self.background_config = self.global_config.get('background_service', {
+        # Background service configuration (internal only)
+        self.background_config = {
             'enabled': True,
             'request_timeout': 30,
             'max_retries': 3,
             'priority': 2
-        })
+        }
 
         # State
         self.current_games = []

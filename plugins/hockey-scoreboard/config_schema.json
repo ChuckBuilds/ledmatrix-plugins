@@ -7,6 +7,30 @@
       "default": true,
       "description": "Enable or disable the hockey scoreboard plugin"
     },
+    "display_duration": {
+      "type": "number",
+      "default": 15,
+      "minimum": 5,
+      "maximum": 60,
+      "description": "Duration in seconds to display each game"
+    },
+    "show_records": {
+      "type": "boolean",
+      "default": false,
+      "description": "Show team records (wins-losses)"
+    },
+    "show_ranking": {
+      "type": "boolean",
+      "default": false,
+      "description": "Show team rankings (when available)"
+    },
+    "update_interval_seconds": {
+      "type": "integer",
+      "default": 60,
+      "minimum": 30,
+      "maximum": 300,
+      "description": "How often to fetch new data (seconds)"
+    },
     "nhl": {
       "type": "object",
       "description": "NHL (National Hockey League) configuration",

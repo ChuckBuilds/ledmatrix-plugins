@@ -60,25 +60,25 @@ class OddsTickerPlugin(BasePlugin):
 
         # Configuration
         self.leagues = config.get('leagues', {})
-        self.global_config = config.get('global', {})
+        self.global_config = config
 
         # Display settings
-        self.display_duration = self.global_config.get('display_duration', 30)
-        self.scroll_speed = self.global_config.get('scroll_speed', 2)
-        self.scroll_delay = self.global_config.get('scroll_delay', 0.05)
-        self.show_favorite_teams_only = self.global_config.get('show_favorite_teams_only', False)
-        self.games_per_favorite_team = self.global_config.get('games_per_favorite_team', 1)
-        self.max_games_per_league = self.global_config.get('max_games_per_league', 5)
-        self.show_odds_only = self.global_config.get('show_odds_only', False)
-        self.future_fetch_days = self.global_config.get('future_fetch_days', 7)
+        self.display_duration = config.get('display_duration', 30)
+        self.scroll_speed = config.get('scroll_speed', 2)
+        self.scroll_delay = config.get('scroll_delay', 0.05)
+        self.show_favorite_teams_only = config.get('show_favorite_teams_only', False)
+        self.games_per_favorite_team = config.get('games_per_favorite_team', 1)
+        self.max_games_per_league = config.get('max_games_per_league', 5)
+        self.show_odds_only = config.get('show_odds_only', False)
+        self.future_fetch_days = config.get('future_fetch_days', 7)
 
-        # Background service configuration
-        self.background_config = self.global_config.get('background_service', {
+        # Background service configuration (internal only)
+        self.background_config = {
             'enabled': True,
             'request_timeout': 30,
             'max_retries': 3,
             'priority': 2
-        })
+        }
 
         # State
         self.current_odds = []

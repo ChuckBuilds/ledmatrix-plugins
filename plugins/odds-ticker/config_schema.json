@@ -9,117 +9,79 @@
       "default": true,
       "description": "Enable or disable the odds ticker plugin"
     },
-    "global": {
-      "type": "object",
-      "properties": {
-        "display_duration": {
-          "type": "number",
-          "default": 30,
-          "minimum": 10,
-          "maximum": 300,
-          "description": "Duration in seconds to display the odds ticker"
-        },
-        "update_interval_seconds": {
-          "type": "integer",
-          "default": 3600,
-          "minimum": 300,
-          "maximum": 86400,
-          "description": "How often to fetch new odds data (seconds)"
-        },
-        "scroll_speed": {
-          "type": "number",
-          "default": 2,
-          "minimum": 0.5,
-          "maximum": 10,
-          "description": "Scrolling speed multiplier"
-        },
-        "scroll_delay": {
-          "type": "number",
-          "default": 0.05,
-          "minimum": 0.01,
-          "maximum": 0.5,
-          "description": "Delay between scroll steps in seconds"
-        },
-        "show_channel_logos": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show broadcast channel logos"
-        },
-        "show_favorite_teams_only": {
-          "type": "boolean",
-          "default": false,
-          "description": "Only show odds for favorite teams"
-        },
-        "games_per_favorite_team": {
-          "type": "integer",
-          "default": 1,
-          "minimum": 1,
-          "maximum": 5,
-          "description": "Number of games to show per favorite team"
-        },
-        "max_games_per_league": {
-          "type": "integer",
-          "default": 5,
-          "minimum": 1,
-          "maximum": 20,
-          "description": "Maximum number of games to show per league"
-        },
-        "show_odds_only": {
-          "type": "boolean",
-          "default": false,
-          "description": "Show only odds, no game details"
-        },
-        "fetch_odds": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable fetching of betting odds"
-        },
-        "future_fetch_days": {
-          "type": "integer",
-          "default": 7,
-          "minimum": 1,
-          "maximum": 14,
-          "description": "Days ahead to fetch upcoming games"
-        },
-        "loop": {
-          "type": "boolean",
-          "default": true,
-          "description": "Continuously loop the ticker"
-        },
-        "background_service": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": true,
-              "description": "Enable background data fetching"
-            },
-            "request_timeout": {
-              "type": "integer",
-              "default": 30,
-              "minimum": 10,
-              "maximum": 120,
-              "description": "Request timeout in seconds"
-            },
-            "max_retries": {
-              "type": "integer",
-              "default": 3,
-              "minimum": 1,
-              "maximum": 10,
-              "description": "Maximum number of retries for failed requests"
-            },
-            "priority": {
-              "type": "integer",
-              "default": 2,
-              "minimum": 1,
-              "maximum": 5,
-              "description": "Priority for background requests (1=highest, 5=lowest)"
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
+    "display_duration": {
+      "type": "number",
+      "default": 30,
+      "minimum": 10,
+      "maximum": 300,
+      "description": "Duration in seconds to display the odds ticker"
+    },
+    "update_interval_seconds": {
+      "type": "integer",
+      "default": 3600,
+      "minimum": 300,
+      "maximum": 86400,
+      "description": "How often to fetch new odds data (seconds)"
+    },
+    "scroll_speed": {
+      "type": "number",
+      "default": 2,
+      "minimum": 0.5,
+      "maximum": 10,
+      "description": "Scrolling speed multiplier"
+    },
+    "scroll_delay": {
+      "type": "number",
+      "default": 0.05,
+      "minimum": 0.01,
+      "maximum": 0.5,
+      "description": "Delay between scroll steps in seconds"
+    },
+    "show_channel_logos": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show broadcast channel logos"
+    },
+    "show_favorite_teams_only": {
+      "type": "boolean",
+      "default": false,
+      "description": "Only show odds for favorite teams"
+    },
+    "games_per_favorite_team": {
+      "type": "integer",
+      "default": 1,
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Number of games to show per favorite team"
+    },
+    "max_games_per_league": {
+      "type": "integer",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 20,
+      "description": "Maximum number of games to show per league"
+    },
+    "show_odds_only": {
+      "type": "boolean",
+      "default": false,
+      "description": "Show only odds, no game details"
+    },
+    "fetch_odds": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable fetching of betting odds"
+    },
+    "future_fetch_days": {
+      "type": "integer",
+      "default": 7,
+      "minimum": 1,
+      "maximum": 14,
+      "description": "Days ahead to fetch upcoming games"
+    },
+    "loop": {
+      "type": "boolean",
+      "default": true,
+      "description": "Continuously loop the ticker"
     },
     "leagues": {
       "type": "object",
