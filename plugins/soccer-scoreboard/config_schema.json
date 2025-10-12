@@ -1,0 +1,419 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Soccer Scoreboard Plugin Configuration",
+  "description": "Configuration schema for the Soccer Scoreboard plugin",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable the soccer scoreboard plugin"
+    },
+    "global": {
+      "type": "object",
+      "properties": {
+        "display_duration": {
+          "type": "number",
+          "default": 15,
+          "minimum": 5,
+          "maximum": 60,
+          "description": "Duration in seconds to display each game"
+        },
+        "show_records": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show team records (wins-losses)"
+        },
+        "show_ranking": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show team rankings (when available)"
+        },
+        "update_interval_seconds": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 300,
+          "description": "How often to fetch new data (seconds)"
+        },
+        "background_service": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable background data fetching"
+            },
+            "request_timeout": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 10,
+              "maximum": 120,
+              "description": "Request timeout in seconds"
+            },
+            "max_retries": {
+              "type": "integer",
+              "default": 3,
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Maximum number of retries for failed requests"
+            },
+            "priority": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Priority for background requests (1=highest, 5=lowest)"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "leagues": {
+      "type": "object",
+      "properties": {
+        "eng.1": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable Premier League games"
+            },
+            "favorite_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Premier League team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "description": "List of favorite Premier League teams to prioritize"
+            },
+            "display_modes": {
+              "type": "object",
+              "properties": {
+                "live": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show live Premier League games"
+                },
+                "recent": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show recently completed Premier League games"
+                },
+                "upcoming": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show upcoming Premier League games"
+                }
+              },
+              "additionalProperties": false
+            },
+            "recent_games_to_show": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum number of recent Premier League games to display"
+            },
+            "upcoming_games_to_show": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum number of upcoming Premier League games to display"
+            }
+          },
+          "additionalProperties": false
+        },
+        "esp.1": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable La Liga games"
+            },
+            "favorite_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "La Liga team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "description": "List of favorite La Liga teams to prioritize"
+            },
+            "display_modes": {
+              "type": "object",
+              "properties": {
+                "live": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show live La Liga games"
+                },
+                "recent": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show recently completed La Liga games"
+                },
+                "upcoming": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show upcoming La Liga games"
+                }
+              },
+              "additionalProperties": false
+            },
+            "recent_games_to_show": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum number of recent La Liga games to display"
+            },
+            "upcoming_games_to_show": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum number of upcoming La Liga games to display"
+            }
+          },
+          "additionalProperties": false
+        },
+        "ger.1": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable Bundesliga games"
+            },
+            "favorite_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Bundesliga team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 18,
+              "description": "List of favorite Bundesliga teams to prioritize"
+            },
+            "display_modes": {
+              "type": "object",
+              "properties": {
+                "live": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show live Bundesliga games"
+                },
+                "recent": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show recently completed Bundesliga games"
+                },
+                "upcoming": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show upcoming Bundesliga games"
+                }
+              },
+              "additionalProperties": false
+            },
+            "recent_games_to_show": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum number of recent Bundesliga games to display"
+            },
+            "upcoming_games_to_show": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum number of upcoming Bundesliga games to display"
+            }
+          },
+          "additionalProperties": false
+        },
+        "ita.1": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable Serie A games"
+            },
+            "favorite_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Serie A team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "description": "List of favorite Serie A teams to prioritize"
+            },
+            "display_modes": {
+              "type": "object",
+              "properties": {
+                "live": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show live Serie A games"
+                },
+                "recent": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show recently completed Serie A games"
+                },
+                "upcoming": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show upcoming Serie A games"
+                }
+              },
+              "additionalProperties": false
+            },
+            "recent_games_to_show": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum number of recent Serie A games to display"
+            },
+            "upcoming_games_to_show": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum number of upcoming Serie A games to display"
+            }
+          },
+          "additionalProperties": false
+        },
+        "fra.1": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable Ligue 1 games"
+            },
+            "favorite_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Ligue 1 team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 18,
+              "description": "List of favorite Ligue 1 teams to prioritize"
+            },
+            "display_modes": {
+              "type": "object",
+              "properties": {
+                "live": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show live Ligue 1 games"
+                },
+                "recent": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show recently completed Ligue 1 games"
+                },
+                "upcoming": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show upcoming Ligue 1 games"
+                }
+              },
+              "additionalProperties": false
+            },
+            "recent_games_to_show": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum number of recent Ligue 1 games to display"
+            },
+            "upcoming_games_to_show": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum number of upcoming Ligue 1 games to display"
+            }
+          },
+          "additionalProperties": false
+        },
+        "usa.1": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable MLS games"
+            },
+            "favorite_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "MLS team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 29,
+              "description": "List of favorite MLS teams to prioritize"
+            },
+            "display_modes": {
+              "type": "object",
+              "properties": {
+                "live": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show live MLS games"
+                },
+                "recent": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show recently completed MLS games"
+                },
+                "upcoming": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show upcoming MLS games"
+                }
+              },
+              "additionalProperties": false
+            },
+            "recent_games_to_show": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum number of recent MLS games to display"
+            },
+            "upcoming_games_to_show": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum number of upcoming MLS games to display"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "required": ["enabled"]
+}

@@ -1,0 +1,305 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Basketball Scoreboard Plugin Configuration",
+  "description": "Configuration schema for the Basketball Scoreboard plugin",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable the basketball scoreboard plugin"
+    },
+    "global": {
+      "type": "object",
+      "properties": {
+        "display_duration": {
+          "type": "number",
+          "default": 15,
+          "minimum": 5,
+          "maximum": 60,
+          "description": "Duration in seconds to display each game"
+        },
+        "show_records": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show team records (wins-losses)"
+        },
+        "show_ranking": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show team rankings (when available)"
+        },
+        "update_interval_seconds": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 300,
+          "description": "How often to fetch new data (seconds)"
+        },
+        "background_service": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable background data fetching"
+            },
+            "request_timeout": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 10,
+              "maximum": 120,
+              "description": "Request timeout in seconds"
+            },
+            "max_retries": {
+              "type": "integer",
+              "default": 3,
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Maximum number of retries for failed requests"
+            },
+            "priority": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Priority for background requests (1=highest, 5=lowest)"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "nba": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable NBA games"
+        },
+        "favorite_teams": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2,3}$",
+            "description": "NBA team abbreviation (e.g., 'LAL', 'BOS')"
+          },
+          "uniqueItems": true,
+          "maxItems": 30,
+          "description": "List of favorite NBA teams to prioritize"
+        },
+        "display_modes": {
+          "type": "object",
+          "properties": {
+            "live": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show live NBA games"
+            },
+            "recent": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show recently completed NBA games"
+            },
+            "upcoming": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show upcoming NBA games"
+            }
+          },
+          "additionalProperties": false
+        },
+        "recent_games_to_show": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum number of recent NBA games to display"
+        },
+        "upcoming_games_to_show": {
+          "type": "integer",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum number of upcoming NBA games to display"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ncaam_basketball": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable NCAA Men's Basketball games"
+        },
+        "favorite_teams": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2,4}$",
+            "description": "NCAA Men's Basketball team abbreviation (e.g., 'DUKE', 'UNC')"
+          },
+          "uniqueItems": true,
+          "maxItems": 350,
+          "description": "List of favorite NCAA Men's Basketball teams to prioritize"
+        },
+        "display_modes": {
+          "type": "object",
+          "properties": {
+            "live": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show live NCAA Men's Basketball games"
+            },
+            "recent": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show recently completed NCAA Men's Basketball games"
+            },
+            "upcoming": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show upcoming NCAA Men's Basketball games"
+            }
+          },
+          "additionalProperties": false
+        },
+        "recent_games_to_show": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum number of recent NCAA Men's Basketball games to display"
+        },
+        "upcoming_games_to_show": {
+          "type": "integer",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum number of upcoming NCAA Men's Basketball games to display"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ncaaw_basketball": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable NCAA Women's Basketball games"
+        },
+        "favorite_teams": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2,4}$",
+            "description": "NCAA Women's Basketball team abbreviation (e.g., 'UCONN', 'SCAR')"
+          },
+          "uniqueItems": true,
+          "maxItems": 350,
+          "description": "List of favorite NCAA Women's Basketball teams to prioritize"
+        },
+        "display_modes": {
+          "type": "object",
+          "properties": {
+            "live": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show live NCAA Women's Basketball games"
+            },
+            "recent": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show recently completed NCAA Women's Basketball games"
+            },
+            "upcoming": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show upcoming NCAA Women's Basketball games"
+            }
+          },
+          "additionalProperties": false
+        },
+        "recent_games_to_show": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum number of recent NCAA Women's Basketball games to display"
+        },
+        "upcoming_games_to_show": {
+          "type": "integer",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum number of upcoming NCAA Women's Basketball games to display"
+        }
+      },
+      "additionalProperties": false
+    },
+    "wnba": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable WNBA games"
+        },
+        "favorite_teams": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2,4}$",
+            "description": "WNBA team abbreviation (e.g., 'LVA', 'NYL')"
+          },
+          "uniqueItems": true,
+          "maxItems": 12,
+          "description": "List of favorite WNBA teams to prioritize"
+        },
+        "display_modes": {
+          "type": "object",
+          "properties": {
+            "live": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show live WNBA games"
+            },
+            "recent": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show recently completed WNBA games"
+            },
+            "upcoming": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show upcoming WNBA games"
+            }
+          },
+          "additionalProperties": false
+        },
+        "recent_games_to_show": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum number of recent WNBA games to display"
+        },
+        "upcoming_games_to_show": {
+          "type": "integer",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum number of upcoming WNBA games to display"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "required": ["enabled"]
+}

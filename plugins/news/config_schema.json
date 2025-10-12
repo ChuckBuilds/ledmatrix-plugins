@@ -1,0 +1,179 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "News Ticker Plugin Configuration",
+  "description": "Configuration schema for the News Ticker plugin",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable the news ticker plugin"
+    },
+    "global": {
+      "type": "object",
+      "properties": {
+        "display_duration": {
+          "type": "number",
+          "default": 30,
+          "minimum": 10,
+          "maximum": 300,
+          "description": "Duration in seconds to display the news ticker"
+        },
+        "update_interval_seconds": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 60,
+          "maximum": 3600,
+          "description": "How often to fetch new headlines (seconds)"
+        },
+        "scroll_speed": {
+          "type": "number",
+          "default": 2,
+          "minimum": 0.5,
+          "maximum": 10,
+          "description": "Scrolling speed multiplier"
+        },
+        "scroll_delay": {
+          "type": "number",
+          "default": 0.01,
+          "minimum": 0.001,
+          "maximum": 0.1,
+          "description": "Delay between scroll steps in seconds"
+        },
+        "dynamic_duration": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable dynamic duration based on content width"
+        },
+        "min_duration": {
+          "type": "integer",
+          "default": 30,
+          "minimum": 10,
+          "maximum": 300,
+          "description": "Minimum display duration when dynamic duration is enabled"
+        },
+        "max_duration": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 30,
+          "maximum": 600,
+          "description": "Maximum display duration when dynamic duration is enabled"
+        },
+        "rotation_enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable headline rotation after multiple cycles"
+        },
+        "rotation_threshold": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of cycles before rotating headlines"
+        },
+        "headlines_per_feed": {
+          "type": "integer",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of headlines to fetch per feed"
+        },
+        "font_size": {
+          "type": "integer",
+          "default": 12,
+          "minimum": 8,
+          "maximum": 20,
+          "description": "Font size for headlines"
+        },
+        "background_service": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable background data fetching"
+            },
+            "request_timeout": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 10,
+              "maximum": 120,
+              "description": "Request timeout in seconds"
+            },
+            "max_retries": {
+              "type": "integer",
+              "default": 3,
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Maximum number of retries for failed requests"
+            },
+            "priority": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Priority for background requests (1=highest, 5=lowest)"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "feeds": {
+      "type": "object",
+      "properties": {
+        "enabled_feeds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["MLB", "NFL", "NCAA FB", "NHL", "NBA", "TOP SPORTS", "BIG10", "NCAA", "Other"],
+            "description": "Predefined RSS feed categories"
+          },
+          "uniqueItems": true,
+          "default": ["NFL", "NCAA FB"],
+          "description": "List of enabled predefined RSS feeds"
+        },
+        "custom_feeds": {
+          "type": "object",
+          "patternProperties": {
+            ".*": {
+              "type": "string",
+              "format": "uri",
+              "description": "Custom RSS feed URL"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Custom RSS feed URLs with user-defined names"
+        },
+        "text_color": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 255, 255],
+          "description": "RGB color for headline text"
+        },
+        "separator_color": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 0, 0],
+          "description": "RGB color for separators between headlines"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "required": ["enabled"]
+}

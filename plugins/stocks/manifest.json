@@ -1,0 +1,32 @@
+{
+  "id": "stocks",
+  "name": "Stocks Ticker",
+  "description": "Displays scrolling stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies",
+  "author": "ChuckBuilds",
+  "category": "financial",
+  "tags": ["stocks", "financial", "ticker", "crypto", "market", "charts", "scrolling"],
+  "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+  "branch": "main",
+  "plugin_path": "plugins/stocks",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "ledmatrix_min": "2.0.0",
+      "released": "2025-10-12",
+      "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+    }
+  ],
+  "stars": 0,
+  "downloads": 0,
+  "last_updated": "2025-10-12",
+  "verified": true,
+  "screenshot": "",
+  "display_modes": [
+    "stocks_ticker"
+  ],
+  "dependencies": {
+    "managers": [
+      "cache_manager"
+    ]
+  }
+}

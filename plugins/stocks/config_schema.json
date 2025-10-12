@@ -1,0 +1,255 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Stocks Ticker Plugin Configuration",
+  "description": "Configuration schema for the Stocks Ticker plugin",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable the stocks ticker plugin"
+    },
+    "global": {
+      "type": "object",
+      "properties": {
+        "display_duration": {
+          "type": "number",
+          "default": 30,
+          "minimum": 10,
+          "maximum": 300,
+          "description": "Duration in seconds to display the stocks ticker"
+        },
+        "update_interval_seconds": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "How often to fetch new stock data (seconds)"
+        },
+        "scroll_speed": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0.5,
+          "maximum": 5,
+          "description": "Scrolling speed multiplier"
+        },
+        "scroll_delay": {
+          "type": "number",
+          "default": 0.01,
+          "minimum": 0.001,
+          "maximum": 0.1,
+          "description": "Delay between scroll steps in seconds"
+        },
+        "dynamic_duration": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable dynamic duration based on content width"
+        },
+        "min_duration": {
+          "type": "integer",
+          "default": 30,
+          "minimum": 10,
+          "maximum": 300,
+          "description": "Minimum display duration when dynamic duration is enabled"
+        },
+        "max_duration": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 30,
+          "maximum": 600,
+          "description": "Maximum display duration when dynamic duration is enabled"
+        },
+        "toggle_chart": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable chart display toggle"
+        },
+        "font_size": {
+          "type": "integer",
+          "default": 10,
+          "minimum": 8,
+          "maximum": 16,
+          "description": "Font size for stock information"
+        },
+        "background_service": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable background data fetching"
+            },
+            "request_timeout": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 10,
+              "maximum": 120,
+              "description": "Request timeout in seconds"
+            },
+            "max_retries": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Maximum number of retries for failed requests"
+            },
+            "priority": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Priority for background requests (1=highest, 5=lowest)"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "stocks": {
+      "type": "object",
+      "properties": {
+        "stock_symbols": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{1,5}$",
+            "description": "Stock symbol (e.g., AAPL, GOOGL)"
+          },
+          "uniqueItems": true,
+          "maxItems": 50,
+          "default": ["AAPL", "GOOGL", "MSFT", "TSLA"],
+          "description": "List of stock symbols to track"
+        },
+        "show_change": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show price change indicators"
+        },
+        "show_percentage": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show percentage change"
+        },
+        "show_volume": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show trading volume"
+        },
+        "show_market_cap": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show market capitalization"
+        },
+        "text_color": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 255, 255],
+          "description": "RGB color for stock text"
+        },
+        "positive_color": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [0, 255, 0],
+          "description": "RGB color for positive changes"
+        },
+        "negative_color": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 0, 0],
+          "description": "RGB color for negative changes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "crypto": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable cryptocurrency tracking"
+        },
+        "crypto_symbols": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{3,5}$",
+            "description": "Crypto symbol (e.g., BTC, ETH)"
+          },
+          "uniqueItems": true,
+          "maxItems": 20,
+          "default": ["BTC", "ETH", "ADA"],
+          "description": "List of cryptocurrency symbols to track"
+        },
+        "show_change": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show price change indicators"
+        },
+        "show_percentage": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show percentage change"
+        },
+        "text_color": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 215, 0],
+          "description": "RGB color for crypto text"
+        },
+        "positive_color": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [0, 255, 0],
+          "description": "RGB color for positive changes"
+        },
+        "negative_color": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 0, 0],
+          "description": "RGB color for negative changes"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "required": ["enabled"]
+}
