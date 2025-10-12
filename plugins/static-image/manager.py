@@ -61,7 +61,40 @@ class StaticImagePlugin(BasePlugin):
             self._load_image()
         
         self.logger.info(f"Static image plugin initialized with image: {self.image_path}")
-    
+
+        # Register fonts
+        self._register_fonts()
+
+    def _register_fonts(self):
+        """Register fonts with the font manager."""
+        try:
+            if not hasattr(self.plugin_manager, 'font_manager'):
+                return
+
+            font_manager = self.plugin_manager.font_manager
+
+            # Error message font
+            font_manager.register_manager_font(
+                manager_id=self.plugin_id,
+                element_key=f"{self.plugin_id}.error",
+                family="press_start",
+                size_px=8,
+                color=(255, 0, 0)  # Red for errors
+            )
+
+            # Info font
+            font_manager.register_manager_font(
+                manager_id=self.plugin_id,
+                element_key=f"{self.plugin_id}.info",
+                family="four_by_six",
+                size_px=6,
+                color=(150, 150, 150)
+            )
+
+            self.logger.info("Static image fonts registered")
+        except Exception as e:
+            self.logger.warning(f"Error registering fonts: {e}")
+
     def _load_image(self) -> bool:
         """
         Load and process the image for display.
@@ -190,25 +223,42 @@ class StaticImagePlugin(BasePlugin):
     def _display_error(self) -> None:
         """Display error message when image can't be loaded."""
         try:
-            from PIL import ImageDraw, ImageFont
-            
-            img = Image.new('RGB', 
-                          (self.display_manager.matrix.width, 
-                           self.display_manager.matrix.height), 
-                          (0, 0, 0))
-            draw = ImageDraw.Draw(img)
-            
+            # Get error font from font manager
+            error_font = None
             try:
-                font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)
-            except:
-                font = ImageFont.load_default()
-            
-            draw.text((5, 12), "Image", font=font, fill=(200, 0, 0))
-            draw.text((5, 20), "Error", font=font, fill=(200, 0, 0))
-            
-            self.display_manager.image = img.copy()
+                if hasattr(self.plugin_manager, 'font_manager'):
+                    font_manager = self.plugin_manager.font_manager
+                    error_font = font_manager.get_font(f"{self.plugin_id}.error")
+            except Exception as e:
+                self.logger.warning(f"Error getting font from font manager: {e}")
+
+            img = Image.new('RGB',
+                          (self.display_manager.matrix.width,
+                           self.display_manager.matrix.height),
+                          (0, 0, 0))
+
+            if error_font:
+                self.display_manager.image = img.copy()
+                self.display_manager.draw_text("Image", x=5, y=12, font=error_font, centered=False)
+                self.display_manager.draw_text("Error", x=5, y=20, font=error_font, centered=False)
+            else:
+                # Fallback to direct PIL if font manager fails
+                from PIL import ImageDraw, ImageFont
+                draw = ImageDraw.Draw(img)
+
+                try:
+                    font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)
+                except:
+                    font = ImageFont.load_default()
+
+                draw.text((5, 12), "Image", font=font, fill=(200, 0, 0))
+                draw.text((5, 20), "Error", font=font, fill=(200, 0, 0))
+
+                self.display_manager.image = img.copy()
+
             self.display_manager.update_display()
-        except:
+        except Exception as e:
+            self.logger.error(f"Error displaying error message: {e}")
             pass
     
     def set_image_path(self, image_path: str) -> bool:

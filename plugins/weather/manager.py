@@ -420,6 +420,23 @@ class WeatherPlugin(BasePlugin):
         self.display_manager.image = img.copy()
         self.display_manager.update_display()
     
+    def get_info(self) -> Dict[str, Any]:
+        """Return plugin info for web UI."""
+        info = super().get_info()
+        info.update({
+            'location': self.location,
+            'units': self.units,
+            'api_key_configured': bool(self.api_key),
+            'last_update': self.last_update,
+            'current_temp': self.weather_data.get('main', {}).get('temp') if self.weather_data else None,
+            'current_humidity': self.weather_data.get('main', {}).get('humidity') if self.weather_data else None,
+            'current_description': self.weather_data.get('weather', [{}])[0].get('description', '') if self.weather_data else '',
+            'forecast_available': bool(self.forecast_data),
+            'daily_forecast_count': len(self.daily_forecast) if hasattr(self, 'daily_forecast') else 0,
+            'hourly_forecast_count': len(self.hourly_forecast) if hasattr(self, 'hourly_forecast') else 0
+        })
+        return info
+
     def cleanup(self) -> None:
         """Cleanup resources."""
         self.weather_data = None

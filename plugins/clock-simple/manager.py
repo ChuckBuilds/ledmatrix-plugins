@@ -73,6 +73,48 @@ class SimpleClock(BasePlugin):
 
         self.logger.info(f"Clock plugin initialized for timezone: {self.timezone_str}")
 
+        # Register fonts
+        self._register_fonts()
+
+    def _register_fonts(self):
+        """Register fonts with the font manager."""
+        try:
+            if not hasattr(self.plugin_manager, 'font_manager'):
+                return
+
+            font_manager = self.plugin_manager.font_manager
+
+            # Time font
+            font_manager.register_manager_font(
+                manager_id=self.plugin_id,
+                element_key=f"{self.plugin_id}.time",
+                family="press_start",
+                size_px=12,
+                color=self.time_color
+            )
+
+            # Date font
+            font_manager.register_manager_font(
+                manager_id=self.plugin_id,
+                element_key=f"{self.plugin_id}.date",
+                family="press_start",
+                size_px=8,
+                color=self.date_color
+            )
+
+            # AM/PM font
+            font_manager.register_manager_font(
+                manager_id=self.plugin_id,
+                element_key=f"{self.plugin_id}.ampm",
+                family="press_start",
+                size_px=8,
+                color=self.ampm_color
+            )
+
+            self.logger.info("Clock fonts registered")
+        except Exception as e:
+            self.logger.warning(f"Error registering fonts: {e}")
+
     def _get_global_timezone(self) -> str:
         """Get the global timezone from the main config."""
         try:
@@ -191,34 +233,75 @@ class SimpleClock(BasePlugin):
             center_x = width // 2
             center_y = height // 2
 
+            # Get fonts from font manager
+            time_font = None
+            date_font = None
+            ampm_font = None
+
+            try:
+                if hasattr(self.plugin_manager, 'font_manager'):
+                    font_manager = self.plugin_manager.font_manager
+                    time_font = font_manager.get_font(f"{self.plugin_id}.time")
+                    date_font = font_manager.get_font(f"{self.plugin_id}.date")
+                    ampm_font = font_manager.get_font(f"{self.plugin_id}.ampm")
+            except Exception as e:
+                self.logger.warning(f"Error getting fonts from font manager: {e}")
+
             # Display time (centered)
-            self.display_manager.draw_text(
-                self.current_time,
-                x=center_x,
-                y=center_y - 8,
-                color=self.time_color,
-                centered=True
-            )
+            if time_font:
+                self.display_manager.draw_text(
+                    self.current_time,
+                    x=center_x,
+                    y=center_y - 8,
+                    font=time_font,
+                    centered=True
+                )
+            else:
+                self.display_manager.draw_text(
+                    self.current_time,
+                    x=center_x,
+                    y=center_y - 8,
+                    color=self.time_color,
+                    centered=True
+                )
 
             # Display AM/PM indicator (12h format only)
             if self.time_format == "12h" and hasattr(self, 'current_ampm'):
-                self.display_manager.draw_text(
-                    self.current_ampm,
-                    x=center_x + 40,  # Position to the right of time
-                    y=center_y - 8,
-                    color=self.ampm_color,
-                    centered=False
-                )
+                if ampm_font:
+                    self.display_manager.draw_text(
+                        self.current_ampm,
+                        x=center_x + 40,  # Position to the right of time
+                        y=center_y - 8,
+                        font=ampm_font,
+                        centered=False
+                    )
+                else:
+                    self.display_manager.draw_text(
+                        self.current_ampm,
+                        x=center_x + 40,  # Position to the right of time
+                        y=center_y - 8,
+                        color=self.ampm_color,
+                        centered=False
+                    )
 
             # Display date (below time, if enabled)
             if self.show_date and hasattr(self, 'current_date'):
-                self.display_manager.draw_text(
-                    self.current_date,
-                    x=center_x,
-                    y=center_y + 8,
-                    color=self.date_color,
-                    centered=True
-                )
+                if date_font:
+                    self.display_manager.draw_text(
+                        self.current_date,
+                        x=center_x,
+                        y=center_y + 8,
+                        font=date_font,
+                        centered=True
+                    )
+                else:
+                    self.display_manager.draw_text(
+                        self.current_date,
+                        x=center_x,
+                        y=center_y + 8,
+                        color=self.date_color,
+                        centered=True
+                    )
 
             # Update the physical display
             self.display_manager.update_display()

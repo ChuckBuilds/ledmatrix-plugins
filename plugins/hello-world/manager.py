@@ -43,6 +43,39 @@ class HelloWorldPlugin(BasePlugin):
 
         self.logger.info(f"Hello World plugin initialized with message: '{self.message}'")
 
+        # Register fonts
+        self._register_fonts()
+
+    def _register_fonts(self):
+        """Register fonts with the font manager."""
+        try:
+            if not hasattr(self.plugin_manager, 'font_manager'):
+                return
+
+            font_manager = self.plugin_manager.font_manager
+
+            # Message font
+            font_manager.register_manager_font(
+                manager_id=self.plugin_id,
+                element_key=f"{self.plugin_id}.message",
+                family="press_start",
+                size_px=10,
+                color=self.color
+            )
+
+            # Time font
+            font_manager.register_manager_font(
+                manager_id=self.plugin_id,
+                element_key=f"{self.plugin_id}.time",
+                family="press_start",
+                size_px=8,
+                color=self.time_color
+            )
+
+            self.logger.info("Hello World fonts registered")
+        except Exception as e:
+            self.logger.warning(f"Error registering fonts: {e}")
+
     def _load_font(self):
         """Load the 6x9 BDF font for text rendering."""
         if freetype is None:
@@ -105,39 +138,75 @@ class HelloWorldPlugin(BasePlugin):
             width = self.display_manager.width
             height = self.display_manager.height
             
+            # Get fonts from font manager
+            message_font = None
+            time_font = None
+
+            try:
+                if hasattr(self.plugin_manager, 'font_manager'):
+                    font_manager = self.plugin_manager.font_manager
+                    message_font = font_manager.get_font(f"{self.plugin_id}.message")
+                    time_font = font_manager.get_font(f"{self.plugin_id}.time")
+            except Exception as e:
+                self.logger.warning(f"Error getting fonts from font manager: {e}")
+
             # Calculate positions for centered text
             if self.show_time:
                 # Display message at top, time at bottom
                 message_y = height // 3
                 time_y = (2 * height) // 3
-                
+
                 # Draw the greeting message
-                self.display_manager.draw_text(
-                    self.message,
-                    x=width // 2,
-                    y=message_y,
-                    color=self.color,
-                    font=self.bdf_font
-                )
-                
-                # Draw the current time
-                if self.current_time_str:
+                if message_font:
                     self.display_manager.draw_text(
-                        self.current_time_str,
+                        self.message,
                         x=width // 2,
-                        y=time_y,
-                        color=self.time_color,
+                        y=message_y,
+                        font=message_font
+                    )
+                else:
+                    self.display_manager.draw_text(
+                        self.message,
+                        x=width // 2,
+                        y=message_y,
+                        color=self.color,
                         font=self.bdf_font
                     )
+
+                # Draw the current time
+                if self.current_time_str:
+                    if time_font:
+                        self.display_manager.draw_text(
+                            self.current_time_str,
+                            x=width // 2,
+                            y=time_y,
+                            font=time_font
+                        )
+                    else:
+                        self.display_manager.draw_text(
+                            self.current_time_str,
+                            x=width // 2,
+                            y=time_y,
+                            color=self.time_color,
+                            font=self.bdf_font
+                        )
             else:
                 # Display message centered
-                self.display_manager.draw_text(
-                    self.message,
-                    x=width // 2,
-                    y=height // 2,
-                    color=self.color,
-                    font=self.bdf_font
-                )
+                if message_font:
+                    self.display_manager.draw_text(
+                        self.message,
+                        x=width // 2,
+                        y=height // 2,
+                        font=message_font
+                    )
+                else:
+                    self.display_manager.draw_text(
+                        self.message,
+                        x=width // 2,
+                        y=height // 2,
+                        color=self.color,
+                        font=self.bdf_font
+                    )
             
             # Update the physical display
             self.display_manager.update_display()
