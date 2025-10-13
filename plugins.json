@@ -8,16 +8,20 @@
       "description": "A simple test plugin that displays a customizable message",
       "author": "LEDMatrix Team",
       "category": "demo",
-      "tags": ["demo", "test", "simple"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "demo",
+        "test",
+        "simple"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-hello-world",
       "branch": "main",
-      "plugin_path": "plugins/hello-world",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-09",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-hello-world/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -32,16 +36,20 @@
       "description": "A simple clock display with current time and date",
       "author": "ChuckBuilds",
       "category": "time",
-      "tags": ["clock", "time", "date"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "clock",
+        "time",
+        "date"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-clock-simple",
       "branch": "main",
-      "plugin_path": "plugins/clock-simple",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-09",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-clock-simple/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -56,16 +64,21 @@
       "description": "Displays current weather, hourly, and daily forecasts from OpenWeatherMap",
       "author": "ChuckBuilds",
       "category": "weather",
-      "tags": ["weather", "forecast", "temperature", "humidity"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "weather",
+        "forecast",
+        "temperature",
+        "humidity"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-weather",
       "branch": "main",
-      "plugin_path": "plugins/weather",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-11",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-weather/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -80,16 +93,21 @@
       "description": "Displays a static image on the LED matrix with scaling and transparency support",
       "author": "ChuckBuilds",
       "category": "media",
-      "tags": ["image", "static", "display", "logo"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "image",
+        "static",
+        "display",
+        "logo"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-static-image",
       "branch": "main",
-      "plugin_path": "plugins/static-image",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-11",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-static-image/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -104,16 +122,21 @@
       "description": "Displays static or scrolling text with customizable fonts, colors, and speed",
       "author": "ChuckBuilds",
       "category": "text",
-      "tags": ["text", "scroll", "message", "custom"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "text",
+        "scroll",
+        "message",
+        "custom"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-text-display",
       "branch": "main",
-      "plugin_path": "plugins/text-display",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-11",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-text-display/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -128,16 +151,21 @@
       "description": "Displays daily rotating content like Word of the Day, Bible Verse of the Day, etc.",
       "author": "ChuckBuilds",
       "category": "content",
-      "tags": ["word", "verse", "daily", "quote"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "word",
+        "verse",
+        "daily",
+        "quote"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-of-the-day",
       "branch": "main",
-      "plugin_path": "plugins/of-the-day",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-11",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-of-the-day/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -152,16 +180,22 @@
       "description": "Displays 'Now Playing' information from Spotify or YouTube Music, including album art and scrolling text",
       "author": "ChuckBuilds",
       "category": "media",
-      "tags": ["music", "spotify", "youtube music", "now playing", "album art"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "music",
+        "spotify",
+        "youtube music",
+        "now playing",
+        "album art"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-music",
       "branch": "main",
-      "plugin_path": "plugins/music",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-11",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-music/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -176,16 +210,21 @@
       "description": "Displays upcoming events from Google Calendar",
       "author": "ChuckBuilds",
       "category": "time",
-      "tags": ["calendar", "events", "google", "schedule"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "calendar",
+        "events",
+        "google",
+        "schedule"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-calendar",
       "branch": "main",
-      "plugin_path": "plugins/calendar",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-11",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-calendar/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -200,16 +239,23 @@
       "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
       "author": "ChuckBuilds",
       "category": "sports",
-      "tags": ["hockey", "nhl", "ncaa", "sports", "scoreboard", "live-scores"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "hockey",
+        "nhl",
+        "ncaa",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-hockey-scoreboard",
       "branch": "main",
-      "plugin_path": "plugins/hockey-scoreboard",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-11",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-hockey-scoreboard/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -224,16 +270,24 @@
       "description": "Live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, game status, and team logos",
       "author": "ChuckBuilds",
       "category": "sports",
-      "tags": ["football", "nfl", "ncaa", "college-football", "sports", "scoreboard", "live-scores"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "football",
+        "nfl",
+        "ncaa",
+        "college-football",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-football-scoreboard",
       "branch": "main",
-      "plugin_path": "plugins/football-scoreboard",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-12",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-football-scoreboard/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -248,16 +302,24 @@
       "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores and schedules",
       "author": "ChuckBuilds",
       "category": "sports",
-      "tags": ["basketball", "nba", "ncaa", "wnba", "sports", "scoreboard", "live-scores"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "basketball",
+        "nba",
+        "ncaa",
+        "wnba",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-basketball-scoreboard",
       "branch": "main",
-      "plugin_path": "plugins/basketball-scoreboard",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-12",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-basketball-scoreboard/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -272,16 +334,25 @@
       "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
       "author": "ChuckBuilds",
       "category": "sports",
-      "tags": ["baseball", "mlb", "milb", "ncaa", "college-baseball", "sports", "scoreboard", "live-scores"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "baseball",
+        "mlb",
+        "milb",
+        "ncaa",
+        "college-baseball",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-baseball-scoreboard",
       "branch": "main",
-      "plugin_path": "plugins/baseball-scoreboard",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-12",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-baseball-scoreboard/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -296,16 +367,28 @@
       "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, and more",
       "author": "ChuckBuilds",
       "category": "sports",
-      "tags": ["soccer", "football", "premier-league", "la-liga", "bundesliga", "serie-a", "ligue-1", "mls", "sports", "scoreboard", "live-scores"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "soccer",
+        "football",
+        "premier-league",
+        "la-liga",
+        "bundesliga",
+        "serie-a",
+        "ligue-1",
+        "mls",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-soccer-scoreboard",
       "branch": "main",
-      "plugin_path": "plugins/soccer-scoreboard",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-12",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-soccer-scoreboard/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -320,16 +403,26 @@
       "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
       "author": "ChuckBuilds",
       "category": "sports",
-      "tags": ["odds", "betting", "ticker", "sports", "nfl", "nba", "mlb", "ncaa", "scrolling"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "odds",
+        "betting",
+        "ticker",
+        "sports",
+        "nfl",
+        "nba",
+        "mlb",
+        "ncaa",
+        "scrolling"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-odds-ticker",
       "branch": "main",
-      "plugin_path": "plugins/odds-ticker",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-12",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-odds-ticker/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -344,16 +437,26 @@
       "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
       "author": "ChuckBuilds",
       "category": "sports",
-      "tags": ["leaderboard", "standings", "rankings", "sports", "nfl", "nba", "mlb", "ncaa", "scrolling"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "leaderboard",
+        "standings",
+        "rankings",
+        "sports",
+        "nfl",
+        "nba",
+        "mlb",
+        "ncaa",
+        "scrolling"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-leaderboard",
       "branch": "main",
-      "plugin_path": "plugins/leaderboard",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-12",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-leaderboard/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -368,16 +471,23 @@
       "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
       "author": "ChuckBuilds",
       "category": "content",
-      "tags": ["news", "headlines", "rss", "sports", "ticker", "scrolling"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "news",
+        "headlines",
+        "rss",
+        "sports",
+        "ticker",
+        "scrolling"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-news",
       "branch": "main",
-      "plugin_path": "plugins/news",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-12",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-news/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -392,16 +502,25 @@
       "description": "Displays scrolling stock-specific news headlines and financial updates from RSS feeds, focused on market news and company updates",
       "author": "ChuckBuilds",
       "category": "financial",
-      "tags": ["stock", "news", "financial", "market", "ticker", "headlines", "rss", "scrolling"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "stock",
+        "news",
+        "financial",
+        "market",
+        "ticker",
+        "headlines",
+        "rss",
+        "scrolling"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-stock-news",
       "branch": "main",
-      "plugin_path": "plugins/stock-news",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-12",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-stock-news/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -416,16 +535,24 @@
       "description": "Displays scrolling stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies",
       "author": "ChuckBuilds",
       "category": "financial",
-      "tags": ["stocks", "financial", "ticker", "crypto", "market", "charts", "scrolling"],
-      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "tags": [
+        "stocks",
+        "financial",
+        "ticker",
+        "crypto",
+        "market",
+        "charts",
+        "scrolling"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-stocks",
       "branch": "main",
-      "plugin_path": "plugins/stocks",
+      "plugin_path": "",
       "versions": [
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-12",
-          "download_url": "https://github.com/ChuckBuilds/ledmatrix-plugins/archive/refs/heads/main.zip"
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-stocks/archive/refs/tags/v1.0.0.zip"
         }
       ],
       "stars": 0,
@@ -436,4 +563,3 @@
     }
   ]
 }
-

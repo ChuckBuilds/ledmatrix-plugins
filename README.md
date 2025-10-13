@@ -1,12 +1,14 @@
-# LEDMatrix Official Plugins
+# LEDMatrix Official Plugins Registry
 
 🎉 **Complete Plugin Ecosystem** - Official plugin registry for [LEDMatrix](https://github.com/ChuckBuilds/LEDMatrix).
 
+> **⚠️ IMPORTANT:** As of October 2025, all plugins have been migrated to **individual repositories** for better version management. See [PLUGIN_MIGRATION_NOTICE.md](PLUGIN_MIGRATION_NOTICE.md) for details.
+
 ## 🚀 What's New
 
-**MIGRATION COMPLETE!** All LEDMatrix managers have been successfully migrated to standalone plugins, creating a modern, modular architecture with **18 production-ready plugins**.
+**REPOSITORY MIGRATION COMPLETE!** All 18 LEDMatrix plugins are now in individual GitHub repositories, each with independent versioning and release cycles. The plugin store (`plugins.json`) has been updated to point to the new repositories.
 
-📖 See individual plugin READMEs for detailed setup instructions.
+📖 See individual plugin repositories for detailed setup instructions and to contribute.
 
 ## 🔥 Featured Plugins
 
@@ -15,36 +17,36 @@ Multi-league scoreboards with live, recent, and upcoming games across all major 
 
 | Plugin | Description | Leagues | Category |
 |--------|-------------|---------|----------|
-| **[Football Scoreboard](plugins/football-scoreboard)** | NFL & NCAA Football | NFL, NCAA FB | Sports |
-| **[Hockey Scoreboard](plugins/hockey-scoreboard)** | NHL & NCAA Hockey | NHL, NCAA M/W | Sports |
-| **[Basketball Scoreboard](plugins/basketball-scoreboard)** | NBA & NCAA Basketball | NBA, NCAA M/W, WNBA | Sports |
-| **[Baseball Scoreboard](plugins/baseball-scoreboard)** | MLB & NCAA Baseball | MLB, MiLB, NCAA | Sports |
-| **[Soccer Scoreboard](plugins/soccer-scoreboard)** | Global Soccer Leagues | Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS | Sports |
-| **[Odds Ticker](plugins/odds-ticker)** | Betting Odds & Lines | NFL, NBA, MLB, NCAA | Sports |
+| **[Football Scoreboard](https://github.com/ChuckBuilds/ledmatrix-football-scoreboard)** | NFL & NCAA Football | NFL, NCAA FB | Sports |
+| **[Hockey Scoreboard](https://github.com/ChuckBuilds/ledmatrix-hockey-scoreboard)** | NHL & NCAA Hockey | NHL, NCAA M/W | Sports |
+| **[Basketball Scoreboard](https://github.com/ChuckBuilds/ledmatrix-basketball-scoreboard)** | NBA & NCAA Basketball | NBA, NCAA M/W, WNBA | Sports |
+| **[Baseball Scoreboard](https://github.com/ChuckBuilds/ledmatrix-baseball-scoreboard)** | MLB & NCAA Baseball | MLB, MiLB, NCAA | Sports |
+| **[Soccer Scoreboard](https://github.com/ChuckBuilds/ledmatrix-soccer-scoreboard)** | Global Soccer Leagues | Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS | Sports |
+| **[Odds Ticker](https://github.com/ChuckBuilds/ledmatrix-odds-ticker)** | Betting Odds & Lines | NFL, NBA, MLB, NCAA | Sports |
 
 ### 💰 Financial Suite (3 Plugins)
 Complete stock market and financial information display.
 
 | Plugin | Description | Features | Category |
 |--------|-------------|----------|----------|
-| **[Stocks Ticker](plugins/stocks)** | Stock & Crypto Prices | Real-time prices, charts, volume | Financial |
-| **[Stock News](plugins/stock-news)** | Financial Headlines | Stock-specific news, RSS feeds | Financial |
-| **[Sports Leaderboard](plugins/leaderboard)** | League Standings | Rankings, records, conference standings | Sports |
+| **[Stocks Ticker](https://github.com/ChuckBuilds/ledmatrix-stocks)** | Stock & Crypto Prices | Real-time prices, charts, volume | Financial |
+| **[Stock News](https://github.com/ChuckBuilds/ledmatrix-stock-news)** | Financial Headlines | Stock-specific news, RSS feeds | Financial |
+| **[Sports Leaderboard](https://github.com/ChuckBuilds/ledmatrix-leaderboard)** | League Standings | Rankings, records, conference standings | Sports |
 
 ### 📱 Content & Utility (9 Plugins)
 Essential displays for time, weather, media, and daily content.
 
 | Plugin | Description | Category |
 |--------|-------------|----------|
-| **[Simple Clock](plugins/clock-simple)** | Time and date display | Time |
-| **[Weather Display](plugins/weather)** | Weather forecasts and conditions | Weather |
-| **[Static Image Display](plugins/static-image)** | Image slideshow with effects | Media |
-| **[Scrolling Text Display](plugins/text-display)** | Custom text and messages | Text |
-| **[Of The Day](plugins/of-the-day)** | Daily quotes and verses | Content |
-| **[Music Player](plugins/music)** | Now playing with album art | Media |
-| **[Google Calendar](plugins/calendar)** | Event calendar display | Time |
-| **[News Ticker](plugins/news)** | RSS news headlines | Content |
-| **[Hello World](plugins/hello-world)** | Plugin development example | Demo |
+| **[Simple Clock](https://github.com/ChuckBuilds/ledmatrix-clock-simple)** | Time and date display | Time |
+| **[Weather Display](https://github.com/ChuckBuilds/ledmatrix-weather)** | Weather forecasts and conditions | Weather |
+| **[Static Image Display](https://github.com/ChuckBuilds/ledmatrix-static-image)** | Image slideshow with effects | Media |
+| **[Scrolling Text Display](https://github.com/ChuckBuilds/ledmatrix-text-display)** | Custom text and messages | Text |
+| **[Of The Day](https://github.com/ChuckBuilds/ledmatrix-of-the-day)** | Daily quotes and verses | Content |
+| **[Music Player](https://github.com/ChuckBuilds/ledmatrix-music)** | Now playing with album art | Media |
+| **[Google Calendar](https://github.com/ChuckBuilds/ledmatrix-calendar)** | Event calendar display | Time |
+| **[News Ticker](https://github.com/ChuckBuilds/ledmatrix-news)** | RSS news headlines | Content |
+| **[Hello World](https://github.com/ChuckBuilds/ledmatrix-hello-world)** | Plugin development example | Demo |
 
 ## Installation
 
@@ -70,15 +72,17 @@ The easiest way to install plugins is through the built-in Plugin Store in your 
 
 ### Manual Installation
 
-You can also install plugins manually by cloning this repository and copying plugin folders:
+You can also install plugins manually by cloning individual plugin repositories:
 
 ```bash
-# Clone this repository
-git clone https://github.com/ChuckBuilds/ledmatrix-plugins.git
+# Clone a specific plugin repository
+git clone https://github.com/ChuckBuilds/ledmatrix-football-scoreboard.git
 
-# Copy a plugin to your LEDMatrix plugins directory
-cp -r ledmatrix-plugins/plugins/football-scoreboard /path/to/LEDMatrix/plugins/
+# Copy to your LEDMatrix plugins directory
+cp -r ledmatrix-football-scoreboard /path/to/LEDMatrix/plugins/
 ```
+
+**Note:** Each plugin is now in its own repository. See [PLUGIN_MIGRATION_NOTICE.md](PLUGIN_MIGRATION_NOTICE.md) for the complete list of repository URLs.
 
 ## Plugin Categories
 
