@@ -1,63 +1,92 @@
-# Plugins Directory
+# Plugin Code Location
 
-This directory contains installed LEDMatrix plugins.
+## 🔄 Repository Structure Changed
 
-## Structure
+As of **October 2025**, all plugin code has been migrated to **individual GitHub repositories** for better version management and independent development.
 
-Each plugin is in its own subdirectory:
+## 📦 Where to Find Plugin Code
 
+Plugin code is no longer stored in this repository. Each plugin now has its own dedicated repository:
+
+### All Plugin Repositories
+
+Browse all LEDMatrix plugins at: **https://github.com/ChuckBuilds?tab=repositories&q=ledmatrix-**
+
+### Individual Plugin Links
+
+| Plugin | Repository |
+|--------|------------|
+| Hello World | https://github.com/ChuckBuilds/ledmatrix-hello-world |
+| Simple Clock | https://github.com/ChuckBuilds/ledmatrix-clock-simple |
+| Weather Display | https://github.com/ChuckBuilds/ledmatrix-weather |
+| Static Image | https://github.com/ChuckBuilds/ledmatrix-static-image |
+| Text Display | https://github.com/ChuckBuilds/ledmatrix-text-display |
+| Of The Day | https://github.com/ChuckBuilds/ledmatrix-of-the-day |
+| Music Player | https://github.com/ChuckBuilds/ledmatrix-music |
+| Calendar | https://github.com/ChuckBuilds/ledmatrix-calendar |
+| Hockey Scoreboard | https://github.com/ChuckBuilds/ledmatrix-hockey-scoreboard |
+| Football Scoreboard | https://github.com/ChuckBuilds/ledmatrix-football-scoreboard |
+| Basketball Scoreboard | https://github.com/ChuckBuilds/ledmatrix-basketball-scoreboard |
+| Baseball Scoreboard | https://github.com/ChuckBuilds/ledmatrix-baseball-scoreboard |
+| Soccer Scoreboard | https://github.com/ChuckBuilds/ledmatrix-soccer-scoreboard |
+| Odds Ticker | https://github.com/ChuckBuilds/ledmatrix-odds-ticker |
+| Leaderboard | https://github.com/ChuckBuilds/ledmatrix-leaderboard |
+| News Ticker | https://github.com/ChuckBuilds/ledmatrix-news |
+| Stock News | https://github.com/ChuckBuilds/ledmatrix-stock-news |
+| Stocks Ticker | https://github.com/ChuckBuilds/ledmatrix-stocks |
+
+## 📝 What This Repository Contains
+
+This repository (`ledmatrix-plugins`) now serves as the **official plugin registry**:
+
+- **plugins.json** - Registry of all available plugins
+- **Documentation** - Guides and references
+- **Submission guidelines** - How to add your plugin
+
+## 🚀 Installing Plugins
+
+Plugins are automatically downloaded from their individual repositories when you:
+1. Use the LEDMatrix web interface Plugin Store
+2. Use the LEDMatrix API to install plugins
+
+The system automatically fetches the latest version from each plugin's GitHub repository.
+
+## 🛠️ Contributing to Plugins
+
+To contribute to a plugin:
+1. Visit the plugin's individual repository (links above)
+2. Fork the repository
+3. Make your changes
+4. Submit a pull request to that plugin's repository
+
+## 📚 More Information
+
+- Main README: [../README.md](../README.md)
+- Migration Notice: [../PLUGIN_MIGRATION_NOTICE.md](../PLUGIN_MIGRATION_NOTICE.md)
+- Plugin Development Guide: https://github.com/ChuckBuilds/LEDMatrix/wiki/Plugin-Development
+
+## ⚡ Quick Reference
+
+**Old structure:**
 ```
-plugins/
-├── plugin-name/
-│   ├── manifest.json      # Plugin metadata
-│   ├── manager.py         # Plugin implementation
-│   ├── requirements.txt   # Python dependencies (optional)
-│   ├── config_schema.json # Configuration schema (optional)
-│   ├── assets/            # Plugin assets (optional)
-│   └── README.md          # Plugin documentation
+ledmatrix-plugins/
+└── plugins/
+    ├── weather/
+    ├── clock-simple/
+    └── ...
 ```
 
-## Installing Plugins
-
-### Via Web UI (Recommended)
-1. Navigate to the Plugin Store in the web interface
-2. Browse or search for plugins
-3. Click "Install" on the desired plugin
-
-### Via Command Line
-```bash
-# Install from registry
-python3 -c "from src.plugin_system.store_manager import PluginStoreManager; PluginStoreManager().install_plugin('plugin-id')"
-
-# Install from GitHub URL
-python3 -c "from src.plugin_system.store_manager import PluginStoreManager; PluginStoreManager().install_from_url('https://github.com/user/repo')"
+**New structure:**
+```
+Individual repositories:
+- https://github.com/ChuckBuilds/ledmatrix-weather
+- https://github.com/ChuckBuilds/ledmatrix-clock-simple
+- ...
 ```
 
-## Creating Plugins
-
-See the [Plugin Developer Guide](../docs/PLUGIN_DEVELOPER_GUIDE.md) for information on creating your own plugins.
-
-## Plugin Discovery
-
-Plugins in this directory are automatically discovered when the LEDMatrix system starts. A plugin must have a valid `manifest.json` file to be recognized.
-
-## Configuration
-
-Plugin configuration is stored in `config/config.json` under a key matching the plugin ID:
-
-```json
-{
-  "plugin-name": {
-    "enabled": true,
-    "display_duration": 15,
-    "custom_option": "value"
-  }
-}
-```
-
-## Support
-
-For issues with specific plugins, contact the plugin author via their GitHub repository.
-
-For issues with the plugin system itself, see the [main project repository](https://github.com/ChuckBuilds/LEDMatrix).
+This change enables:
+- ✅ Independent versioning per plugin
+- ✅ Easier contributions and maintenance
+- ✅ Better discoverability
+- ✅ Flexible development cycles
 

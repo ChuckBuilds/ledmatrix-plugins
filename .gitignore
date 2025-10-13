@@ -4,54 +4,37 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+dist/
+build/
 
-# Virtual Environment
+# Virtual environments
 venv/
 env/
 ENV/
-env.bak/
-venv.bak/
 
-# IDEs
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# OS
 .DS_Store
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# Logs
-*.log
-
-# Local development
-.env
-*.local
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
 
 # Temporary files
+*.log
 *.tmp
 *.bak
+*~
 
+# Don't track plugin code (they're in individual repos now)
+plugins/*/
+
+# Keep the plugins README
+!plugins/README.md

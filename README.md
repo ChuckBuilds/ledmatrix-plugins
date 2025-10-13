@@ -95,18 +95,15 @@ cp -r ledmatrix-football-scoreboard /path/to/LEDMatrix/plugins/
 - **📖 Content** (2): Daily content, quotes, news feeds
 - **🎮 Demo** (1): Example and test plugins
 
-## Plugin Architecture
+## Repository Structure
 
-Each plugin follows a standardized structure:
+This repository serves as the **official plugin registry** for LEDMatrix. It contains:
 
-```
-plugin-name/
-├── manifest.json       # Plugin metadata & capabilities
-├── manager.py          # Main plugin class (inherits BasePlugin)
-├── config_schema.json  # JSON schema for configuration validation
-├── requirements.txt    # Python dependencies
-└── README.md          # Comprehensive documentation
-```
+- **plugins.json** - The plugin registry with metadata and download URLs
+- **Documentation** - Guides for users and plugin developers
+- **Submission guidelines** - How to add your plugin to the registry
+
+**Plugin code** is now maintained in individual repositories. See the links above to access each plugin's source code.
 
 ## Key Features
 
@@ -136,11 +133,11 @@ plugin-name/
 
 ## Submitting Plugins
 
-See [SUBMISSION.md](SUBMISSION.md) for guidelines on submitting your plugin to the official registry.
+Want to add your plugin to the official registry? See [SUBMISSION.md](SUBMISSION.md) for guidelines.
 
 ## Creating Plugins
 
-See the main [LEDMatrix Plugin Developer Guide](https://github.com/ChuckBuilds/LEDMatrix/wiki/Plugin-Development) or use the existing plugins in this repository as examples.
+See the main [LEDMatrix Plugin Developer Guide](https://github.com/ChuckBuilds/LEDMatrix/wiki/Plugin-Development) or check out the [Hello World plugin](https://github.com/ChuckBuilds/ledmatrix-hello-world) as a starting template.
 
 ## Documentation
 
