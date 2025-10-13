@@ -4,10 +4,6 @@
 
 > **⚠️ IMPORTANT:** As of October 2025, all plugins have been migrated to **individual repositories** for better version management. See [PLUGIN_MIGRATION_NOTICE.md](PLUGIN_MIGRATION_NOTICE.md) for details.
 
-## 🚀 What's New
-
-**REPOSITORY MIGRATION COMPLETE!** All 18 LEDMatrix plugins are now in individual GitHub repositories, each with independent versioning and release cycles. The plugin store (`plugins.json`) has been updated to point to the new repositories.
-
 📖 See individual plugin repositories for detailed setup instructions and to contribute.
 
 ## 🔥 Featured Plugins
@@ -52,7 +48,7 @@ Essential displays for time, weather, media, and daily content.
 
 All plugins can be installed through the LEDMatrix web interface:
 
-1. Open web interface (http://your-pi-ip:5050)
+1. Open web interface (http://your-pi-ip:5000)
 2. Go to Plugin Store tab
 3. Browse or search for plugins
 4. Click Install
@@ -159,17 +155,3 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 - Open an issue in this repository for plugin-related questions
 - Visit the main [LEDMatrix repository](https://github.com/ChuckBuilds/LEDMatrix) for general support
 - Check the [Wiki](https://github.com/ChuckBuilds/LEDMatrix/wiki) for documentation
-
-## 📈 Stats
-
-- **🏆 Total Plugins**: 18
-- **📂 Categories**: 8 (Sports, Financial, Time, Weather, Media, Text, Content, Demo)
-- **✅ Verified Plugins**: 18
-- **🚀 Latest Release**: Complete Migration (18/18 plugins) - October 2025
-- **⭐ Most Popular**: Sports plugins (6 multi-league scoreboards)
-
----
-
-**Made with ❤️ for the LEDMatrix community**
-
-*🎉 This repository represents a complete architectural transformation from monolithic managers to a modern, extensible plugin ecosystem!*
