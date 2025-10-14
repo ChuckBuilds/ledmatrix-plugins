@@ -71,9 +71,21 @@
         "humidity"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-weather",
-      "branch": "main",
+      "branch": "master",
       "plugin_path": "",
       "versions": [
+        {
+          "version": "1.0.2",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-14",
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-weather/archive/refs/tags/v1.0.2.zip"
+        },
+        {
+          "version": "1.0.1",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-14",
+          "download_url": "https://github.com/ChuckBuilds/ledmatrix-weather/archive/refs/tags/v1.0.1.zip"
+        },
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
@@ -83,7 +95,7 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-11",
+      "last_updated": "2025-10-14",
       "verified": true,
       "screenshot": ""
     },
