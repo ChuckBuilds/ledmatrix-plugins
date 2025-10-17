@@ -26,9 +26,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-09",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "clock-simple",
@@ -54,9 +55,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-09",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "weather",
@@ -74,8 +76,13 @@
       "branch": "master",
       "plugin_path": "",
       "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-weather/archive/refs/tags/v{version}.zip",
-      "latest_version": "1.0.4",
+      "latest_version": "2.0.0",
       "versions": [
+        {
+          "version": "2.0.0",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-17"
+        },
         {
           "version": "1.0.4",
           "ledmatrix_min": "2.0.0",
@@ -104,7 +111,7 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-16",
+      "last_updated": "2025-10-17",
       "verified": true,
       "screenshot": ""
     },
@@ -133,9 +140,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-11",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "text-display",
@@ -162,9 +170,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-11",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "of-the-day",
@@ -191,9 +200,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-11",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "music",
@@ -221,9 +231,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-11",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "calendar",
@@ -250,9 +261,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-11",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "hockey-scoreboard",
@@ -281,9 +293,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-11",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "football-scoreboard",
@@ -313,9 +326,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-12",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "basketball-scoreboard",
@@ -345,9 +359,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-12",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "baseball-scoreboard",
@@ -378,9 +393,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-12",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "soccer-scoreboard",
@@ -414,9 +430,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-12",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "odds-ticker",
@@ -448,9 +465,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-12",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "leaderboard",
@@ -482,9 +500,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-12",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "news",
@@ -513,9 +532,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-12",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "stock-news",
@@ -546,9 +566,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-12",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "stocks",
@@ -578,9 +599,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-12",
+      "last_updated": "2025-10-17",
       "verified": true,
-      "screenshot": ""
+      "screenshot": "",
+      "latest_version": "1.0.0"
     }
   ]
 }

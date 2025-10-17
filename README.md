@@ -96,10 +96,37 @@ cp -r ledmatrix-football-scoreboard /path/to/LEDMatrix/plugins/
 This repository serves as the **official plugin registry** for LEDMatrix. It contains:
 
 - **plugins.json** - The plugin registry with metadata and download URLs
+- **update_registry.py** - Automated script to check GitHub for latest plugin versions
 - **Documentation** - Guides for users and plugin developers
 - **Submission guidelines** - How to add your plugin to the registry
 
 **Plugin code** is now maintained in individual repositories. See the links above to access each plugin's source code.
+
+### 🔄 Automated Registry Updates
+
+The plugin registry is automatically updated every 6 hours using GitHub Actions. The script checks each plugin's repository for new releases and updates `plugins.json` accordingly.
+
+You can also manually update the registry:
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Dry run to see what would be updated
+python update_registry.py --dry-run
+
+# Update the registry
+python update_registry.py
+
+# Use a GitHub token for higher API rate limits
+python update_registry.py --token YOUR_GITHUB_TOKEN
+```
+
+The automated workflow will:
+- ✅ Check for new releases on GitHub
+- ✅ Update version information in plugins.json
+- ✅ Automatically commit and push changes
+- ✅ Run every 6 hours or on-demand
 
 ## Key Features
 
