@@ -76,8 +76,13 @@
       "branch": "master",
       "plugin_path": "",
       "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-weather/archive/refs/tags/v{version}.zip",
-      "latest_version": "2.0.1",
+      "latest_version": "2.0.2",
       "versions": [
+        {
+          "version": "2.0.2",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-17"
+        },
         {
           "version": "2.0.1",
           "ledmatrix_min": "2.0.0",
