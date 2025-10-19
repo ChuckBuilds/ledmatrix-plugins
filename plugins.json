@@ -76,8 +76,13 @@
       "branch": "master",
       "plugin_path": "",
       "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-weather/archive/refs/tags/v{version}.zip",
-      "latest_version": "2.0.7",
+      "latest_version": "2.0.8",
       "versions": [
+        {
+          "version": "2.0.8",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-19"
+        },
         {
           "version": "2.0.7",
           "ledmatrix_min": "2.0.0",
@@ -353,6 +358,11 @@
       "plugin_path": "",
       "versions": [
         {
+          "version": "1.0.8",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-19"
+        },
+        {
           "version": "1.0.7",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-19"
@@ -394,7 +404,7 @@
       "last_updated": "2025-10-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.7",
+      "latest_version": "1.0.8",
       "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-football-scoreboard/archive/refs/tags/v{version}.zip"
     },
     {
