@@ -344,18 +344,13 @@
         "live-scores"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-football-scoreboard",
-      "branch": "main",
+      "branch": "master",
       "plugin_path": "",
       "versions": [
         {
           "version": "1.0.2",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-19"
-        },
-        {
-          "version": "2.0.0",
-          "ledmatrix_min": "2.0.0",
-          "released": "2025-10-17"
         },
         {
           "version": "1.0.0",
@@ -369,7 +364,8 @@
       "last_updated": "2025-10-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.2",
+      "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-football-scoreboard/archive/refs/tags/v{version}.zip"
     },
     {
       "id": "basketball-scoreboard",
