@@ -429,7 +429,13 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-baseball-scoreboard",
       "branch": "main",
       "plugin_path": "",
+      "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-baseball-scoreboard/archive/refs/tags/v{version}.zip",
       "versions": [
+        {
+          "version": "1.0.2",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-19"
+        },
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
@@ -439,10 +445,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-17",
+      "last_updated": "2025-10-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.2"
     },
     {
       "id": "soccer-scoreboard",
@@ -466,7 +472,13 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-soccer-scoreboard",
       "branch": "main",
       "plugin_path": "",
+      "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-soccer-scoreboard/archive/refs/tags/v{version}.zip",
       "versions": [
+        {
+          "version": "1.0.1",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-19"
+        },
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
@@ -476,10 +488,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-17",
+      "last_updated": "2025-10-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     },
     {
       "id": "odds-ticker",
@@ -501,7 +513,13 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-odds-ticker",
       "branch": "main",
       "plugin_path": "",
+      "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-odds-ticker/archive/refs/tags/v{version}.zip",
       "versions": [
+        {
+          "version": "1.0.2",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-19"
+        },
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
@@ -511,10 +529,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-17",
+      "last_updated": "2025-10-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.2"
     },
     {
       "id": "leaderboard",
@@ -536,7 +554,13 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-leaderboard",
       "branch": "main",
       "plugin_path": "",
+      "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-leaderboard/archive/refs/tags/v{version}.zip",
       "versions": [
+        {
+          "version": "1.0.2",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-19"
+        },
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
@@ -546,10 +570,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-17",
+      "last_updated": "2025-10-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.2"
     },
     {
       "id": "news",
@@ -568,7 +592,13 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-news",
       "branch": "main",
       "plugin_path": "",
+      "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-news/archive/refs/tags/v{version}.zip",
       "versions": [
+        {
+          "version": "1.0.2",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-19"
+        },
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
@@ -578,10 +608,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-17",
+      "last_updated": "2025-10-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.2"
     },
     {
       "id": "stock-news",
@@ -602,7 +632,13 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-stock-news",
       "branch": "main",
       "plugin_path": "",
+      "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-stock-news/archive/refs/tags/v{version}.zip",
       "versions": [
+        {
+          "version": "1.0.2",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-19"
+        },
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
@@ -612,10 +648,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-17",
+      "last_updated": "2025-10-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.2"
     },
     {
       "id": "stocks",
@@ -635,7 +671,13 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-stocks",
       "branch": "main",
       "plugin_path": "",
+      "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-stocks/archive/refs/tags/v{version}.zip",
       "versions": [
+        {
+          "version": "1.0.2",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-19"
+        },
         {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
@@ -645,10 +687,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-17",
+      "last_updated": "2025-10-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.2"
     }
   ]
 }
