@@ -585,6 +585,11 @@
       "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-soccer-scoreboard/archive/refs/tags/v{version}.zip",
       "versions": [
         {
+          "version": "1.0.3",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-20"
+        },
+        {
           "version": "1.0.2",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-20"
@@ -606,7 +611,7 @@
       "last_updated": "2025-10-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "odds-ticker",
