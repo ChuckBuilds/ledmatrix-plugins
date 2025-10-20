@@ -325,6 +325,11 @@
       "plugin_path": "",
       "versions": [
         {
+          "version": "1.0.1",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-20"
+        },
+        {
           "version": "1.0.0",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-11",
@@ -333,10 +338,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-17",
+      "last_updated": "2025-10-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     },
     {
       "id": "football-scoreboard",
@@ -472,6 +477,11 @@
       "plugin_path": "",
       "versions": [
         {
+          "version": "1.0.3",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-20"
+        },
+        {
           "version": "1.0.2",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-19"
@@ -485,10 +495,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-19",
+      "last_updated": "2025-10-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "baseball-scoreboard",
@@ -512,6 +522,11 @@
       "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-baseball-scoreboard/archive/refs/tags/v{version}.zip",
       "versions": [
         {
+          "version": "1.0.3",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-20"
+        },
+        {
           "version": "1.0.2",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-19"
@@ -525,10 +540,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-19",
+      "last_updated": "2025-10-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "soccer-scoreboard",
@@ -555,6 +570,11 @@
       "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-soccer-scoreboard/archive/refs/tags/v{version}.zip",
       "versions": [
         {
+          "version": "1.0.2",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-20"
+        },
+        {
           "version": "1.0.1",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-19"
@@ -568,10 +588,10 @@
       ],
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-19",
+      "last_updated": "2025-10-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.1"
+      "latest_version": "1.0.2"
     },
     {
       "id": "odds-ticker",
