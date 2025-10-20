@@ -9,6 +9,7 @@ import requests
 import sys
 import io
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional
 import argparse
 
@@ -240,13 +241,42 @@ def update_plugin_versions(registry_path: str = 'plugins.json', github_token: Op
         return False
 
 
+def load_github_token_from_config() -> Optional[str]:
+    """
+    Try to load GitHub token from LEDMatrix config_secrets.json.
+    
+    Returns:
+        GitHub token or None if not found
+    """
+    try:
+        # Try multiple possible locations
+        possible_paths = [
+            Path(__file__).parent.parent / "LEDMatrix" / "config" / "config_secrets.json",
+            Path.home() / "LEDMatrix" / "config" / "config_secrets.json",
+            Path("../LEDMatrix/config/config_secrets.json"),
+        ]
+        
+        for config_path in possible_paths:
+            if config_path.exists():
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                    token = config.get('github', {}).get('api_token', '').strip()
+                    if token and token != "YOUR_GITHUB_PERSONAL_ACCESS_TOKEN":
+                        print(f"✓ Loaded GitHub token from {config_path}")
+                        return token
+    except Exception as e:
+        print(f"Could not auto-load GitHub token: {e}")
+    
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Update plugins.json with latest versions from GitHub'
     )
     parser.add_argument(
         '--token',
-        help='GitHub personal access token (for higher API rate limits)',
+        help='GitHub personal access token (for higher API rate limits). If not provided, will try to load from LEDMatrix config_secrets.json',
         default=None
     )
     parser.add_argument(
@@ -262,8 +292,18 @@ def main():
     
     args = parser.parse_args()
     
+    # Auto-load token if not provided
+    github_token = args.token
+    if not github_token:
+        github_token = load_github_token_from_config()
+        if not github_token:
+            print("⚠️  No GitHub token found. API requests limited to 60/hour.")
+            print("   Add token to LEDMatrix/config/config_secrets.json or use --token argument")
+    else:
+        print("✓ Using GitHub token from command line argument")
+    
     try:
-        update_plugin_versions(args.registry, args.token, args.dry_run)
+        update_plugin_versions(args.registry, github_token, args.dry_run)
     except FileNotFoundError:
         print(f"Error: Could not find {args.registry}")
         sys.exit(1)
