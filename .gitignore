@@ -33,6 +33,9 @@ ehthumbs.db
 *.bak
 *~
 
+# Secrets (contains API tokens)
+config_secrets.json
+
 # Don't track plugin code (they're in individual repos now)
 plugins/*/
 

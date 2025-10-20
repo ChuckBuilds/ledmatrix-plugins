@@ -97,10 +97,37 @@ This repository serves as the **official plugin registry** for LEDMatrix. It con
 
 - **plugins.json** - The plugin registry with metadata and download URLs
 - **update_registry.py** - Automated script to check GitHub for latest plugin versions
-- **Documentation** - Guides for users and plugin developers
-- **Submission guidelines** - How to add your plugin to the registry
+- **config_secrets.template.json** - Template for GitHub API token configuration
 
-**Plugin code** is now maintained in individual repositories. See the links above to access each plugin's source code.
+## Registry Maintenance
+
+### Updating Plugin Versions
+
+The `update_registry.py` script automatically fetches the latest plugin versions from GitHub:
+
+```bash
+python update_registry.py
+```
+
+**Setting up GitHub API Token (Recommended):**
+
+To avoid GitHub API rate limits (60 requests/hour), set up your GitHub token:
+
+1. **Copy the template:**
+   ```bash
+   cp config_secrets.template.json config_secrets.json
+   ```
+
+2. **Add your GitHub token:**
+   Edit `config_secrets.json` and replace `YOUR_GITHUB_PERSONAL_ACCESS_TOKEN` with your actual token
+
+3. **Get a token:** [Create one here](https://github.com/settings/tokens/new) (no scopes needed for public repos)
+
+The script will automatically detect and use your token, giving you **5,000 requests/hour** instead of 60!
+
+**Alternative methods:**
+- Environment variable: `$env:GITHUB_TOKEN = "your_token"`
+- Command line: `python update_registry.py --token your_token`
 
 ### 🔄 Automated Registry Updates
 
