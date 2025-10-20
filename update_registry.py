@@ -243,7 +243,7 @@ def update_plugin_versions(registry_path: str = 'plugins.json', github_token: Op
 
 def load_github_token_from_config() -> Optional[str]:
     """
-    Try to load GitHub token from LEDMatrix config_secrets.json.
+    Try to load GitHub token from config_secrets.json.
     
     Returns:
         GitHub token or None if not found
@@ -251,6 +251,7 @@ def load_github_token_from_config() -> Optional[str]:
     try:
         # Try multiple possible locations
         possible_paths = [
+            Path(__file__).parent / "config_secrets.json",  # Local to this repo
             Path(__file__).parent.parent / "LEDMatrix" / "config" / "config_secrets.json",
             Path.home() / "LEDMatrix" / "config" / "config_secrets.json",
             Path("../LEDMatrix/config/config_secrets.json"),
@@ -265,7 +266,14 @@ def load_github_token_from_config() -> Optional[str]:
                         print(f"✓ Loaded GitHub token from {config_path}")
                         return token
     except Exception as e:
-        print(f"Could not auto-load GitHub token: {e}")
+        pass  # Silently continue to try other methods
+    
+    # Try environment variable as fallback
+    import os
+    env_token = os.environ.get('GITHUB_TOKEN') or os.environ.get('GH_TOKEN')
+    if env_token:
+        print("✓ Loaded GitHub token from environment variable")
+        return env_token
     
     return None
 
