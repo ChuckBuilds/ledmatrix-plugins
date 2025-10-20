@@ -1,0 +1,362 @@
+# LEDMatrix Plugin Development Rules
+
+## Plugin Version Management & Registry Updates
+
+### When Making Changes to Any Plugin
+
+**ALWAYS follow this exact sequence** when making changes to plugins:
+
+#### 1. Update Plugin Files
+- Make your code changes to `manager.py`, `config_schema.json`, etc.
+- Test changes if possible
+
+#### 2. Update `manifest.json`
+- **Bump version number** using semantic versioning:
+  - `MAJOR.MINOR.PATCH` (e.g., 1.2.3)
+  - **MAJOR**: Breaking changes, incompatible API changes
+  - **MINOR**: New features, backward-compatible functionality
+  - **PATCH**: Bug fixes, backward-compatible fixes
+- Update BOTH places in manifest.json:
+  ```json
+  "version": "1.2.3",  ← Update this
+  
+  "versions": [
+    {
+      "released": "2025-10-20",
+      "version": "1.2.3",  ← Add new entry here
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2025-10-20",
+      "version": "1.2.2",  ← Keep previous versions
+      ...
+    }
+  ]
+  ```
+- **IMPORTANT**: Add the NEW version FIRST in the versions array (most recent at top)
+
+#### 3. Update `CHANGELOG.md`
+- Add new section at the TOP of the file:
+  ```markdown
+  ## [1.2.3] - 2025-10-20
+  
+  ### Added
+  - New feature descriptions
+  
+  ### Changed
+  - Modified behavior descriptions
+  
+  ### Fixed
+  - Bug fix descriptions
+  
+  ### Removed
+  - Deprecated feature removals
+  ```
+
+#### 4. Commit and Tag the Plugin
+```bash
+cd plugin-repos/ledmatrix-<plugin-name>
+git add .
+git commit -m "Descriptive commit message - v1.2.3"
+git tag v1.2.3
+git push origin master
+git push origin v1.2.3
+```
+
+**CRITICAL**: The tag MUST match the version in manifest.json exactly (with 'v' prefix)
+
+#### 5. Update the Plugin Registry
+```bash
+cd ledmatrix-plugins
+python update_registry.py
+git add plugins.json
+git commit -m "Update <plugin-name> to v1.2.3 - Brief description"
+git push origin main
+```
+
+**What `update_registry.py` does**:
+- Checks GitHub for latest tags from each plugin repo
+- Compares with current versions in `plugins.json`
+- Automatically adds new versions to the registry
+- Updates download URLs and metadata
+
+#### 6. Verify in Web UI
+- Open web interface → Plugins tab
+- Click "Refresh Plugins" or reload page
+- The new version should appear in the update/install options
+
+---
+
+## Common Pitfalls & How to Avoid Them
+
+### ❌ **Mistake 1: Forgetting to Add Version to versions[] Array**
+**Problem**: Tag exists but registry doesn't find it
+**Solution**: Always add new version entry to `versions` array in manifest.json
+
+### ❌ **Mistake 2: Version Mismatch Between Tag and Manifest**
+**Problem**: Tag is `v1.2.3` but manifest says `1.2.4`
+**Solution**: Ensure `manifest.json` version matches the git tag exactly
+
+### ❌ **Mistake 3: Not Updating Registry**
+**Problem**: Tag is pushed but web UI doesn't show update
+**Solution**: Always run `update_registry.py` and push to ledmatrix-plugins
+
+### ❌ **Mistake 4: Wrong Version Order in versions[] Array**
+**Problem**: Newest version added at bottom instead of top
+**Solution**: ALWAYS add new versions at the TOP of the versions array
+
+### ❌ **Mistake 5: Forgetting to Push Tags**
+**Problem**: `git push origin master` but not `git push origin v1.2.3`
+**Solution**: Always push both the branch AND the tag
+
+### ❌ **Mistake 6: Skipping CHANGELOG.md**
+**Problem**: Users don't know what changed
+**Solution**: Always document changes in CHANGELOG.md before releasing
+
+---
+
+## Quick Reference Commands
+
+### Standard Plugin Update Workflow
+```bash
+# 1. Make changes to plugin code
+
+# 2. Update manifest.json version (manually in editor)
+
+# 3. Update CHANGELOG.md (manually in editor)
+
+# 4. Commit and tag plugin
+cd plugin-repos/ledmatrix-<plugin-name>
+git add .
+git commit -m "Description - v1.2.3"
+git tag v1.2.3
+git push origin master
+git push origin v1.2.3
+
+# 5. Update registry
+cd ../../ledmatrix-plugins
+python update_registry.py
+git add plugins.json
+git commit -m "Update <plugin-name> to v1.2.3"
+git push origin main
+
+# 6. Verify in web UI
+```
+
+### Emergency: Fix a Bad Tag
+```bash
+# Delete local tag
+git tag -d v1.2.3
+
+# Delete remote tag
+git push origin :refs/tags/v1.2.3
+
+# Recreate tag on correct commit
+git tag v1.2.3 <commit-hash>
+git push origin v1.2.3
+```
+
+---
+
+## Version Numbering Guidelines
+
+### When to Bump MAJOR (x.0.0)
+- Breaking changes to config schema (not backward compatible)
+- Removed features or config options
+- Complete rewrite or architecture change
+- Changes that require user intervention
+
+### When to Bump MINOR (1.x.0)
+- New features added
+- New config options (backward compatible)
+- Significant enhancements
+- New display modes or functionality
+
+### When to Bump PATCH (1.2.x)
+- Bug fixes
+- Performance improvements
+- Logging improvements
+- Documentation updates
+- Minor tweaks and adjustments
+
+---
+
+## Registry Update Automation
+
+The `update_registry.py` script:
+1. Reads `plugins.json` to get current versions
+2. Fetches latest releases/tags from each plugin's GitHub repo
+3. Compares versions
+4. Automatically updates `plugins.json` with new versions
+5. Preserves all existing metadata
+
+**You should run this after EVERY plugin version bump!**
+
+---
+
+## Multiple Plugins Update
+
+If updating multiple plugins at once:
+
+```bash
+# Update Plugin 1
+cd plugin-repos/ledmatrix-plugin-1
+git add . && git commit -m "Changes - v1.1.0" && git tag v1.1.0
+git push origin master && git push origin v1.1.0
+
+# Update Plugin 2  
+cd ../ledmatrix-plugin-2
+git add . && git commit -m "Changes - v2.0.0" && git tag v2.0.0
+git push origin master && git push origin v2.0.0
+
+# Update registry ONCE for all plugins
+cd ../../ledmatrix-plugins
+python update_registry.py  # Will detect both updates
+git add plugins.json
+git commit -m "Update plugin-1 to v1.1.0 and plugin-2 to v2.0.0"
+git push origin main
+```
+
+---
+
+## GitHub Rate Limits
+
+**Problem**: `update_registry.py` is rate limited (60 requests/hour)
+
+**Solution**: Add GitHub token to `LEDMatrix/config/config_secrets.json`:
+```json
+{
+  "github": {
+    "api_token": "ghp_your_token_here"
+  }
+}
+```
+
+Or use command line:
+```bash
+python update_registry.py --token ghp_your_token_here
+```
+
+**Rate limits**:
+- No token: 60 requests/hour
+- With token: 5,000 requests/hour
+
+---
+
+## Checklist Template
+
+Before pushing a plugin update, verify:
+
+- [ ] Code changes completed and tested
+- [ ] `manifest.json` version bumped (in 2 places!)
+- [ ] New version added to TOP of `versions` array
+- [ ] `CHANGELOG.md` updated with changes
+- [ ] Changes committed with descriptive message
+- [ ] Git tag created matching manifest version
+- [ ] Tag and branch pushed to origin
+- [ ] Registry updated with `update_registry.py`
+- [ ] `plugins.json` changes committed and pushed
+- [ ] Verified update appears in web UI
+
+---
+
+## Example: Complete Update Flow
+
+```bash
+# === STEP 1: Update Plugin Code ===
+cd plugin-repos/ledmatrix-football-scoreboard
+# (Make code changes to manager.py)
+
+# === STEP 2: Update Version Files ===
+# Edit manifest.json:
+#   - Change "version": "1.5.2" to "1.6.0"
+#   - Add new entry to versions array
+
+# Edit CHANGELOG.md:
+#   - Add new section for [1.6.0]
+
+# === STEP 3: Commit and Tag ===
+git add .
+git commit -m "Add nested config schema support - v1.6.0"
+git tag v1.6.0
+git push origin master
+git push origin v1.6.0
+
+# === STEP 4: Update Registry ===
+cd ../../ledmatrix-plugins
+python update_registry.py
+# Should show: "Update available: 1.5.2 → 1.6.0"
+
+git add plugins.json
+git commit -m "Update football-scoreboard to v1.6.0 - Nested config"
+git push origin main
+
+# === STEP 5: Verify ===
+# Open web UI → Plugins → Should see v1.6.0 available
+```
+
+---
+
+## Troubleshooting
+
+### "update_registry.py says already up to date but I pushed a new tag"
+
+**Cause**: Tag was pushed AFTER running update_registry.py
+
+**Fix**: Run update_registry.py again after pushing tags
+
+### "Web UI doesn't show my new version"
+
+**Checks**:
+1. Is tag pushed? `git ls-remote --tags origin | grep v1.2.3`
+2. Does manifest.json have the version?
+3. Is plugins.json updated? `git pull origin main` in ledmatrix-plugins
+4. Did you restart web service? `sudo systemctl restart ledmatrix-web`
+5. Clear browser cache: Ctrl+Shift+R
+
+### "Registry shows wrong download URL"
+
+**Cause**: `download_url_template` in manifest.json is incorrect
+
+**Fix**: Ensure template matches your GitHub structure:
+```json
+"download_url_template": "https://github.com/ChuckBuilds/ledmatrix-{plugin-name}/archive/refs/tags/v{version}.zip"
+```
+
+---
+
+## Best Practices
+
+1. **Test locally first** before releasing
+2. **Semantic versioning**: Be consistent with version bumps
+3. **Descriptive commits**: Explain what changed and why
+4. **CHANGELOG clarity**: Users read this to understand updates
+5. **Tag immediately**: Don't commit code without tagging the release
+6. **Update registry same day**: Keep plugins.json in sync with tags
+7. **Version in commit message**: Makes git history searchable
+
+---
+
+## Integration with LEDMatrix Core
+
+When updating the **LEDMatrix core** (not plugins), you don't need to update the registry.
+
+But if you update:
+- `plugin_system/base_plugin.py`
+- `web_interface/templates/v3/partials/plugins.html`
+- API endpoints used by plugins
+
+**Then** you should:
+1. Test all installed plugins still work
+2. Update minimum LEDMatrix version in affected plugin manifests
+3. Document breaking changes
+
+---
+
+## Notes
+
+- The registry (`plugins.json`) is the **source of truth** for the web UI
+- GitHub releases/tags are detected automatically by `update_registry.py`
+- Users see versions listed in `plugins.json`, not directly from GitHub
+- Always update `plugins.json` after pushing new plugin tags
+
