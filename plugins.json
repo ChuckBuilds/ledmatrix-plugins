@@ -368,6 +368,11 @@
       "plugin_path": "",
       "versions": [
         {
+          "version": "2.0.2",
+          "ledmatrix_min": "2.0.0",
+          "released": "2025-10-21"
+        },
+        {
           "version": "2.0.1",
           "ledmatrix_min": "2.0.0",
           "released": "2025-10-21"
@@ -529,7 +534,7 @@
       "last_updated": "2025-10-21",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.0.1",
+      "latest_version": "2.0.2",
       "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-football-scoreboard/archive/refs/tags/v{version}.zip"
     },
     {
