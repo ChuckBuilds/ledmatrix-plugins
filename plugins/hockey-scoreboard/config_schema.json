@@ -1084,6 +1084,532 @@
         }
       }
     },
+    "olympic_mens": {
+      "type": "object",
+      "description": "Olympic Men's Ice Hockey configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable Olympic Men's Ice Hockey games"
+        },
+        "display_modes": {
+          "type": "object",
+          "title": "Display Modes",
+          "description": "Control which game types to show and how they are displayed",
+          "properties": {
+            "live": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show Olympic Men's Hockey live games"
+            },
+            "live_display_mode": {
+              "type": "string",
+              "enum": ["switch", "scroll"],
+              "default": "switch",
+              "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+            },
+            "recent": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show Olympic Men's Hockey recent games"
+            },
+            "recent_display_mode": {
+              "type": "string",
+              "enum": ["switch", "scroll"],
+              "default": "switch",
+              "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+            },
+            "upcoming": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show Olympic Men's Hockey upcoming games"
+            },
+            "upcoming_display_mode": {
+              "type": "string",
+              "enum": ["switch", "scroll"],
+              "default": "switch",
+              "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+            }
+          }
+        },
+        "scroll_settings": {
+          "type": "object",
+          "title": "Scroll Settings",
+          "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
+          "properties": {
+            "scroll_speed": {
+              "type": "number",
+              "default": 50.0,
+              "minimum": 1.0,
+              "maximum": 200.0,
+              "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
+            },
+            "scroll_delay": {
+              "type": "number",
+              "default": 0.01,
+              "minimum": 0.001,
+              "maximum": 0.1,
+              "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
+            },
+            "gap_between_games": {
+              "type": "integer",
+              "default": 48,
+              "minimum": 8,
+              "maximum": 128,
+              "description": "Gap in pixels between game cards when scrolling"
+            },
+            "show_league_separators": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show league icons between different leagues"
+            },
+            "dynamic_duration": {
+              "type": "boolean",
+              "default": true,
+              "description": "Automatically calculate display duration based on content width"
+            }
+          }
+        },
+        "teams": {
+          "type": "object",
+          "description": "Team filtering and favorites configuration",
+          "properties": {
+            "favorite_teams": {
+              "type": "array",
+              "items": {"type": "string"},
+              "default": [],
+              "description": "Olympic Men's Hockey favorite country codes (e.g., ['USA', 'CAN', 'SWE', 'FIN'])"
+            },
+            "favorite_teams_only": {
+              "type": "boolean",
+              "default": false,
+              "description": "Only show Olympic Men's Hockey games with favorite teams"
+            },
+            "show_all_live": {
+              "type": "boolean",
+              "default": false,
+              "description": "Show all live Olympic Men's Hockey games, not just favorites"
+            }
+          }
+        },
+        "filtering": {
+          "type": "object",
+          "description": "Game filtering and quantity settings",
+          "properties": {
+            "recent_games_to_show": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+            },
+            "upcoming_games_to_show": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50,
+              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+            }
+          }
+        },
+        "update_intervals": {
+          "type": "object",
+          "description": "Data update frequency settings (in seconds)",
+          "properties": {
+            "base": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 300,
+              "description": "Base update interval for Olympic Men's Hockey data"
+            },
+            "live": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 10,
+              "maximum": 300,
+              "description": "Update interval for live Olympic Men's Hockey games"
+            },
+            "recent": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "Update interval for recent Olympic Men's Hockey games"
+            },
+            "upcoming": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "Update interval for upcoming Olympic Men's Hockey games"
+            }
+          }
+        },
+        "display_durations": {
+          "type": "object",
+          "description": "How long to display games on screen (in seconds)",
+          "properties": {
+            "base": {
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Base display duration for Olympic Men's Hockey games"
+            },
+            "live": {
+              "type": "number",
+              "default": 20,
+              "minimum": 5,
+              "maximum": 120,
+              "description": "Display duration for live Olympic Men's Hockey games"
+            },
+            "recent": {
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Display duration for recent Olympic Men's Hockey games"
+            },
+            "upcoming": {
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Display duration for upcoming Olympic Men's Hockey games"
+            }
+          }
+        },
+        "display_options": {
+          "type": "object",
+          "description": "What information to display on the scoreboard",
+          "properties": {
+            "show_records": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show Olympic Men's Hockey team records (wins-losses)"
+            },
+            "show_ranking": {
+              "type": "boolean",
+              "default": false,
+              "description": "Show Olympic Men's Hockey team rankings"
+            },
+            "show_odds": {
+              "type": "boolean",
+              "default": false,
+              "description": "Show betting odds for Olympic Men's Hockey games"
+            },
+            "show_shots_on_goal": {
+              "type": "boolean",
+              "default": true,
+              "description": "Display shots on goal statistics for Olympic Men's Hockey games"
+            },
+            "show_powerplay": {
+              "type": "boolean",
+              "default": true,
+              "description": "Highlight powerplay situations for Olympic Men's Hockey games"
+            }
+          }
+        },
+        "mode_durations": {
+          "type": "object",
+          "title": "Mode-Level Durations",
+          "description": "Control total duration for each mode type for Olympic Men's Hockey. If not set, uses dynamic calculation (total_games × per_game_duration).",
+          "properties": {
+            "recent_mode_duration": {
+              "type": ["number", "null"],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total duration in seconds for Recent mode before rotating to next mode."
+            },
+            "upcoming_mode_duration": {
+              "type": ["number", "null"],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total duration in seconds for Upcoming mode before rotating to next mode."
+            },
+            "live_mode_duration": {
+              "type": ["number", "null"],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total duration in seconds for Live mode before rotating to next mode."
+            }
+          }
+        },
+        "live_priority": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prioritize live Olympic Men's Hockey games over scheduled games"
+        }
+      }
+    },
+    "olympic_womens": {
+      "type": "object",
+      "description": "Olympic Women's Ice Hockey configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable Olympic Women's Ice Hockey games"
+        },
+        "display_modes": {
+          "type": "object",
+          "title": "Display Modes",
+          "description": "Control which game types to show and how they are displayed",
+          "properties": {
+            "live": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show Olympic Women's Hockey live games"
+            },
+            "live_display_mode": {
+              "type": "string",
+              "enum": ["switch", "scroll"],
+              "default": "switch",
+              "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+            },
+            "recent": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show Olympic Women's Hockey recent games"
+            },
+            "recent_display_mode": {
+              "type": "string",
+              "enum": ["switch", "scroll"],
+              "default": "switch",
+              "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+            },
+            "upcoming": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show Olympic Women's Hockey upcoming games"
+            },
+            "upcoming_display_mode": {
+              "type": "string",
+              "enum": ["switch", "scroll"],
+              "default": "switch",
+              "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+            }
+          }
+        },
+        "scroll_settings": {
+          "type": "object",
+          "title": "Scroll Settings",
+          "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
+          "properties": {
+            "scroll_speed": {
+              "type": "number",
+              "default": 50.0,
+              "minimum": 1.0,
+              "maximum": 200.0,
+              "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
+            },
+            "scroll_delay": {
+              "type": "number",
+              "default": 0.01,
+              "minimum": 0.001,
+              "maximum": 0.1,
+              "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
+            },
+            "gap_between_games": {
+              "type": "integer",
+              "default": 48,
+              "minimum": 8,
+              "maximum": 128,
+              "description": "Gap in pixels between game cards when scrolling"
+            },
+            "show_league_separators": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show league icons between different leagues"
+            },
+            "dynamic_duration": {
+              "type": "boolean",
+              "default": true,
+              "description": "Automatically calculate display duration based on content width"
+            }
+          }
+        },
+        "teams": {
+          "type": "object",
+          "description": "Team filtering and favorites configuration",
+          "properties": {
+            "favorite_teams": {
+              "type": "array",
+              "items": {"type": "string"},
+              "default": [],
+              "description": "Olympic Women's Hockey favorite country codes (e.g., ['USA', 'CAN', 'SWE', 'FIN'])"
+            },
+            "favorite_teams_only": {
+              "type": "boolean",
+              "default": false,
+              "description": "Only show Olympic Women's Hockey games with favorite teams"
+            },
+            "show_all_live": {
+              "type": "boolean",
+              "default": false,
+              "description": "Show all live Olympic Women's Hockey games, not just favorites"
+            }
+          }
+        },
+        "filtering": {
+          "type": "object",
+          "description": "Game filtering and quantity settings",
+          "properties": {
+            "recent_games_to_show": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+            },
+            "upcoming_games_to_show": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50,
+              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+            }
+          }
+        },
+        "update_intervals": {
+          "type": "object",
+          "description": "Data update frequency settings (in seconds)",
+          "properties": {
+            "base": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 300,
+              "description": "Base update interval for Olympic Women's Hockey data"
+            },
+            "live": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 10,
+              "maximum": 300,
+              "description": "Update interval for live Olympic Women's Hockey games"
+            },
+            "recent": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "Update interval for recent Olympic Women's Hockey games"
+            },
+            "upcoming": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "Update interval for upcoming Olympic Women's Hockey games"
+            }
+          }
+        },
+        "display_durations": {
+          "type": "object",
+          "description": "How long to display games on screen (in seconds)",
+          "properties": {
+            "base": {
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Base display duration for Olympic Women's Hockey games"
+            },
+            "live": {
+              "type": "number",
+              "default": 20,
+              "minimum": 5,
+              "maximum": 120,
+              "description": "Display duration for live Olympic Women's Hockey games"
+            },
+            "recent": {
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Display duration for recent Olympic Women's Hockey games"
+            },
+            "upcoming": {
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Display duration for upcoming Olympic Women's Hockey games"
+            }
+          }
+        },
+        "display_options": {
+          "type": "object",
+          "description": "What information to display on the scoreboard",
+          "properties": {
+            "show_records": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show Olympic Women's Hockey team records (wins-losses)"
+            },
+            "show_ranking": {
+              "type": "boolean",
+              "default": false,
+              "description": "Show Olympic Women's Hockey team rankings"
+            },
+            "show_odds": {
+              "type": "boolean",
+              "default": false,
+              "description": "Show betting odds for Olympic Women's Hockey games"
+            },
+            "show_shots_on_goal": {
+              "type": "boolean",
+              "default": true,
+              "description": "Display shots on goal statistics for Olympic Women's Hockey games"
+            },
+            "show_powerplay": {
+              "type": "boolean",
+              "default": true,
+              "description": "Highlight powerplay situations for Olympic Women's Hockey games"
+            }
+          }
+        },
+        "mode_durations": {
+          "type": "object",
+          "title": "Mode-Level Durations",
+          "description": "Control total duration for each mode type for Olympic Women's Hockey. If not set, uses dynamic calculation (total_games × per_game_duration).",
+          "properties": {
+            "recent_mode_duration": {
+              "type": ["number", "null"],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total duration in seconds for Recent mode before rotating to next mode."
+            },
+            "upcoming_mode_duration": {
+              "type": ["number", "null"],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total duration in seconds for Upcoming mode before rotating to next mode."
+            },
+            "live_mode_duration": {
+              "type": ["number", "null"],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total duration in seconds for Live mode before rotating to next mode."
+            }
+          }
+        },
+        "live_priority": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prioritize live Olympic Women's Hockey games over scheduled games"
+        }
+      }
+    },
     "customization": {
       "type": "object",
       "title": "Display Customization",

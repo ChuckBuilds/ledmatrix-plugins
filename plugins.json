@@ -18,10 +18,10 @@
       "plugin_path": "plugins/hello-world",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-19",
+      "last_updated": "2026-02-11",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.1"
+      "latest_version": "1.0.2"
     },
     {
       "id": "clock-simple",
@@ -196,10 +196,10 @@
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-11-06",
+      "last_updated": "2026-02-11",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.7"
+      "latest_version": "1.1.0"
     },
     {
       "id": "football-scoreboard",
@@ -301,10 +301,10 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-20",
+      "last_updated": "2026-02-11",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.3"
+      "latest_version": "1.1.0"
     },
     {
       "id": "odds-ticker",
@@ -501,10 +501,10 @@
       "plugin_path": "plugins/olympics",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-01-27",
+      "last_updated": "2026-02-11",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "2.0.0"
     },
     {
       "id": "youtube-stats",

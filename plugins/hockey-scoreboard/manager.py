@@ -41,6 +41,16 @@ from ncaaw_hockey_managers import (
     NCAAWHockeyRecentManager,
     NCAAWHockeyUpcomingManager,
 )
+from olympic_mens_hockey_managers import (
+    OlympicMensHockeyLiveManager,
+    OlympicMensHockeyRecentManager,
+    OlympicMensHockeyUpcomingManager,
+)
+from olympic_womens_hockey_managers import (
+    OlympicWomensHockeyLiveManager,
+    OlympicWomensHockeyRecentManager,
+    OlympicWomensHockeyUpcomingManager,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -93,8 +103,10 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.nhl_enabled = config.get("nhl", {}).get("enabled", False)
         self.ncaa_mens_enabled = config.get("ncaa_mens", {}).get("enabled", False)
         self.ncaa_womens_enabled = config.get("ncaa_womens", {}).get("enabled", False)
-        
-        self.logger.info(f"League enabled states - NHL: {self.nhl_enabled}, NCAA Men's: {self.ncaa_mens_enabled}, NCAA Women's: {self.ncaa_womens_enabled}")
+        self.olympic_mens_enabled = config.get("olympic_mens", {}).get("enabled", False)
+        self.olympic_womens_enabled = config.get("olympic_womens", {}).get("enabled", False)
+
+        self.logger.info(f"League enabled states - NHL: {self.nhl_enabled}, NCAA Men's: {self.ncaa_mens_enabled}, NCAA Women's: {self.ncaa_womens_enabled}, Olympic Men's: {self.olympic_mens_enabled}, Olympic Women's: {self.olympic_womens_enabled}")
 
         # Live priority settings
         self.nhl_live_priority = self.config.get("nhl", {}).get("live_priority", False)
@@ -102,6 +114,12 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             "live_priority", False
         )
         self.ncaa_womens_live_priority = self.config.get("ncaa_womens", {}).get(
+            "live_priority", False
+        )
+        self.olympic_mens_live_priority = self.config.get("olympic_mens", {}).get(
+            "live_priority", False
+        )
+        self.olympic_womens_live_priority = self.config.get("olympic_womens", {}).get(
             "live_priority", False
         )
 
@@ -236,7 +254,8 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             f"Hockey scoreboard plugin initialized - {self.display_width}x{self.display_height}"
         )
         self.logger.info(
-            f"NHL enabled: {self.nhl_enabled}, NCAA Men's enabled: {self.ncaa_mens_enabled}, NCAA Women's enabled: {self.ncaa_womens_enabled}"
+            f"NHL enabled: {self.nhl_enabled}, NCAA Men's enabled: {self.ncaa_mens_enabled}, NCAA Women's enabled: {self.ncaa_womens_enabled}, "
+            f"Olympic Men's enabled: {self.olympic_mens_enabled}, Olympic Women's enabled: {self.olympic_womens_enabled}"
         )
 
     def _initialize_managers(self):
@@ -246,6 +265,8 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             nhl_config = self._adapt_config_for_manager("nhl")
             ncaa_mens_config = self._adapt_config_for_manager("ncaa_mens")
             ncaa_womens_config = self._adapt_config_for_manager("ncaa_womens")
+            olympic_mens_config = self._adapt_config_for_manager("olympic_mens")
+            olympic_womens_config = self._adapt_config_for_manager("olympic_womens")
 
             # Initialize NHL managers if enabled
             if self.nhl_enabled:
@@ -316,6 +337,50 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                     if not hasattr(self, "ncaa_womens_upcoming"):
                         self.ncaa_womens_upcoming = None
 
+            # Initialize Olympic Men's managers if enabled
+            if self.olympic_mens_enabled:
+                try:
+                    self.olympic_mens_live = OlympicMensHockeyLiveManager(
+                        olympic_mens_config, self.display_manager, self.cache_manager
+                    )
+                    self.olympic_mens_recent = OlympicMensHockeyRecentManager(
+                        olympic_mens_config, self.display_manager, self.cache_manager
+                    )
+                    self.olympic_mens_upcoming = OlympicMensHockeyUpcomingManager(
+                        olympic_mens_config, self.display_manager, self.cache_manager
+                    )
+                    self.logger.info("Olympic Men's Hockey managers initialized")
+                except Exception as e:
+                    self.logger.error(f"Failed to initialize Olympic Men's Hockey managers: {e}", exc_info=True)
+                    if not hasattr(self, "olympic_mens_live"):
+                        self.olympic_mens_live = None
+                    if not hasattr(self, "olympic_mens_recent"):
+                        self.olympic_mens_recent = None
+                    if not hasattr(self, "olympic_mens_upcoming"):
+                        self.olympic_mens_upcoming = None
+
+            # Initialize Olympic Women's managers if enabled
+            if self.olympic_womens_enabled:
+                try:
+                    self.olympic_womens_live = OlympicWomensHockeyLiveManager(
+                        olympic_womens_config, self.display_manager, self.cache_manager
+                    )
+                    self.olympic_womens_recent = OlympicWomensHockeyRecentManager(
+                        olympic_womens_config, self.display_manager, self.cache_manager
+                    )
+                    self.olympic_womens_upcoming = OlympicWomensHockeyUpcomingManager(
+                        olympic_womens_config, self.display_manager, self.cache_manager
+                    )
+                    self.logger.info("Olympic Women's Hockey managers initialized")
+                except Exception as e:
+                    self.logger.error(f"Failed to initialize Olympic Women's Hockey managers: {e}", exc_info=True)
+                    if not hasattr(self, "olympic_womens_live"):
+                        self.olympic_womens_live = None
+                    if not hasattr(self, "olympic_womens_recent"):
+                        self.olympic_womens_recent = None
+                    if not hasattr(self, "olympic_womens_upcoming"):
+                        self.olympic_womens_upcoming = None
+
         except Exception as e:
             self.logger.error(f"Error initializing managers: {e}", exc_info=True)
 
@@ -381,7 +446,31 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 'upcoming': getattr(self, 'ncaa_womens_upcoming', None),
             }
         }
-        
+
+        # Olympic Men's Hockey league entry - fourth priority (4)
+        self._league_registry['olympic_mens'] = {
+            'enabled': self.olympic_mens_enabled,
+            'priority': 4,  # Fourth priority - shows after NCAA Women's
+            'live_priority': self.olympic_mens_live_priority,
+            'managers': {
+                'live': getattr(self, 'olympic_mens_live', None),
+                'recent': getattr(self, 'olympic_mens_recent', None),
+                'upcoming': getattr(self, 'olympic_mens_upcoming', None),
+            }
+        }
+
+        # Olympic Women's Hockey league entry - fifth priority (5)
+        self._league_registry['olympic_womens'] = {
+            'enabled': self.olympic_womens_enabled,
+            'priority': 5,  # Fifth priority - shows after Olympic Men's
+            'live_priority': self.olympic_womens_live_priority,
+            'managers': {
+                'live': getattr(self, 'olympic_womens_live', None),
+                'recent': getattr(self, 'olympic_womens_recent', None),
+                'upcoming': getattr(self, 'olympic_womens_upcoming', None),
+            }
+        }
+
         # Log registry state for debugging
         enabled_leagues = [lid for lid, data in self._league_registry.items() if data['enabled']]
         self.logger.info(
@@ -566,6 +655,8 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             'nhl': 'assets/sports/nhl_logos',
             'ncaa_mens': 'assets/sports/ncaa_logos',  # NCAA Men's Hockey uses ncaa_logos
             'ncaa_womens': 'assets/sports/ncaa_logos',  # NCAA Women's Hockey uses ncaa_logos
+            'olympic_mens': 'assets/sports/olympic_logos',  # Olympic Hockey uses country flags
+            'olympic_womens': 'assets/sports/olympic_logos',  # Olympic Hockey uses country flags
         }
         # Default to league-specific directory if not in map
         return logo_dir_map.get(league, f"assets/sports/{league}_logos")
@@ -580,7 +671,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         settings = {}
         
-        for league in ['nhl', 'ncaa_mens', 'ncaa_womens']:
+        for league in ['nhl', 'ncaa_mens', 'ncaa_womens', 'olympic_mens', 'olympic_womens']:
             league_config = self.config.get(league, {})
             display_modes_config = league_config.get("display_modes", {})
             
@@ -713,6 +804,8 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             "nhl": "nhl",
             "ncaa_mens": "ncaam_hockey",
             "ncaa_womens": "ncaaw_hockey",
+            "olympic_mens": "olympic_mens_hockey",
+            "olympic_womens": "olympic_womens_hockey",
         }
         sport_key = sport_key_map.get(league, league)
 
@@ -933,6 +1026,28 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             elif mode_type == "upcoming":
                 return self.ncaa_womens_upcoming
 
+        elif current_mode.startswith("olympic_mens_"):
+            if not self.olympic_mens_enabled:
+                return None
+            mode_type = current_mode.split("_", 2)[2]  # "live", "recent", "upcoming"
+            if mode_type == "live":
+                return self.olympic_mens_live
+            elif mode_type == "recent":
+                return self.olympic_mens_recent
+            elif mode_type == "upcoming":
+                return self.olympic_mens_upcoming
+
+        elif current_mode.startswith("olympic_womens_"):
+            if not self.olympic_womens_enabled:
+                return None
+            mode_type = current_mode.split("_", 2)[2]  # "live", "recent", "upcoming"
+            if mode_type == "live":
+                return self.olympic_womens_live
+            elif mode_type == "recent":
+                return self.olympic_womens_recent
+            elif mode_type == "upcoming":
+                return self.olympic_womens_upcoming
+
         return None
 
     def _ensure_manager_updated(self, manager) -> None:
@@ -986,6 +1101,28 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "ncaa_womens_live",
                     "ncaa_womens_recent",
                     "ncaa_womens_upcoming",
+                ):
+                    manager = getattr(self, attr, None)
+                    if manager:
+                        manager.update()
+
+            # Update Olympic Men's managers if enabled
+            if self.olympic_mens_enabled:
+                for attr in (
+                    "olympic_mens_live",
+                    "olympic_mens_recent",
+                    "olympic_mens_upcoming",
+                ):
+                    manager = getattr(self, attr, None)
+                    if manager:
+                        manager.update()
+
+            # Update Olympic Women's managers if enabled
+            if self.olympic_womens_enabled:
+                for attr in (
+                    "olympic_womens_live",
+                    "olympic_womens_recent",
+                    "olympic_womens_upcoming",
                 ):
                     manager = getattr(self, attr, None)
                     if manager:
@@ -1247,9 +1384,11 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         rankings = {}
         
         # Try to get rankings from each manager
-        for manager_attr in ['nhl_live', 'nhl_recent', 'nhl_upcoming', 
+        for manager_attr in ['nhl_live', 'nhl_recent', 'nhl_upcoming',
                             'ncaa_mens_live', 'ncaa_mens_recent', 'ncaa_mens_upcoming',
-                            'ncaa_womens_live', 'ncaa_womens_recent', 'ncaa_womens_upcoming']:
+                            'ncaa_womens_live', 'ncaa_womens_recent', 'ncaa_womens_upcoming',
+                            'olympic_mens_live', 'olympic_mens_recent', 'olympic_mens_upcoming',
+                            'olympic_womens_live', 'olympic_womens_recent', 'olympic_womens_upcoming']:
             manager = getattr(self, manager_attr, None)
             if manager:
                 manager_rankings = getattr(manager, '_team_rankings_cache', {})
@@ -1819,7 +1958,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                                 if manager_key in self._single_game_manager_start_times:
                                     start_time = self._single_game_manager_start_times[manager_key]
                                     # Extract league and mode_type from mode_name
-                                    league = 'nhl' if mode_name.startswith('nhl_') else ('ncaa_mens' if mode_name.startswith('ncaa_mens_') else ('ncaa_womens' if mode_name.startswith('ncaa_womens_') else None))
+                                    league = 'nhl' if mode_name.startswith('nhl_') else ('ncaa_mens' if mode_name.startswith('ncaa_mens_') else ('ncaa_womens' if mode_name.startswith('ncaa_womens_') else ('olympic_mens' if mode_name.startswith('olympic_mens_') else ('olympic_womens' if mode_name.startswith('olympic_womens_') else None))))
                                     mode_type_str = mode_name.split('_')[-1] if mode_name else None
                                     game_duration = self._get_game_duration(league, mode_type_str, manager) if league and mode_type_str else getattr(manager, 'game_display_duration', 15)
                                     current_time = time.time()
@@ -1858,7 +1997,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                         if manager and manager.__class__.__name__ == manager_class_name:
                             start_time = self._single_game_manager_start_times[manager_key]
                             # Extract league and mode_type from mode_name
-                            league = 'nhl' if mode_name.startswith('nhl_') else ('ncaa_mens' if mode_name.startswith('ncaa_mens_') else ('ncaa_womens' if mode_name.startswith('ncaa_womens_') else None))
+                            league = 'nhl' if mode_name.startswith('nhl_') else ('ncaa_mens' if mode_name.startswith('ncaa_mens_') else ('ncaa_womens' if mode_name.startswith('ncaa_womens_') else ('olympic_mens' if mode_name.startswith('olympic_mens_') else ('olympic_womens' if mode_name.startswith('olympic_womens_') else None))))
                             mode_type_str = mode_name.split('_')[-1] if mode_name else None
                             game_duration = self._get_game_duration(league, mode_type_str, manager) if league and mode_type_str else getattr(manager, 'game_display_duration', 15)
                             elapsed = time.time() - start_time
@@ -2008,6 +2147,8 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 self.nhl_enabled and self.nhl_live_priority,
                 self.ncaa_mens_enabled and self.ncaa_mens_live_priority,
                 self.ncaa_womens_enabled and self.ncaa_womens_live_priority,
+                self.olympic_mens_enabled and self.olympic_mens_live_priority,
+                self.olympic_womens_enabled and self.olympic_womens_live_priority,
             ]
         )
 
@@ -2102,22 +2243,68 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                         # No favorite teams configured, return True if any live games exist
                         ncaa_womens_live = True
 
-        result = nhl_live or ncaa_mens_live or ncaa_womens_live
-        
+        # Check Olympic Men's live content
+        olympic_mens_live = False
+        if (
+            self.olympic_mens_enabled
+            and self.olympic_mens_live_priority
+            and hasattr(self, "olympic_mens_live")
+        ):
+            live_games = getattr(self.olympic_mens_live, "live_games", [])
+            if live_games:
+                live_games = [g for g in live_games if not g.get("is_final", False)]
+                if hasattr(self.olympic_mens_live, "_is_game_really_over"):
+                    live_games = [g for g in live_games if not self.olympic_mens_live._is_game_really_over(g)]
+
+                if live_games:
+                    favorite_teams = getattr(self.olympic_mens_live, "favorite_teams", [])
+                    if favorite_teams:
+                        olympic_mens_live = any(
+                            game.get("home_abbr") in favorite_teams
+                            or game.get("away_abbr") in favorite_teams
+                            for game in live_games
+                        )
+                    else:
+                        olympic_mens_live = True
+
+        # Check Olympic Women's live content
+        olympic_womens_live = False
+        if (
+            self.olympic_womens_enabled
+            and self.olympic_womens_live_priority
+            and hasattr(self, "olympic_womens_live")
+        ):
+            live_games = getattr(self.olympic_womens_live, "live_games", [])
+            if live_games:
+                live_games = [g for g in live_games if not g.get("is_final", False)]
+                if hasattr(self.olympic_womens_live, "_is_game_really_over"):
+                    live_games = [g for g in live_games if not self.olympic_womens_live._is_game_really_over(g)]
+
+                if live_games:
+                    favorite_teams = getattr(self.olympic_womens_live, "favorite_teams", [])
+                    if favorite_teams:
+                        olympic_womens_live = any(
+                            game.get("home_abbr") in favorite_teams
+                            or game.get("away_abbr") in favorite_teams
+                            for game in live_games
+                        )
+                    else:
+                        olympic_womens_live = True
+
+        result = nhl_live or ncaa_mens_live or ncaa_womens_live or olympic_mens_live or olympic_womens_live
+
         # Throttle logging when returning False to reduce log noise
         # Always log True immediately (important), but only log False every 60 seconds
         current_time = time.time()
         should_log = result or (current_time - self._last_live_content_false_log >= self._live_content_log_interval)
-        
+
         if should_log:
             if result:
-                # Always log True results immediately
-                self.logger.info(f"has_live_content() returning {result}: nhl_live={nhl_live}, ncaa_mens_live={ncaa_mens_live}, ncaa_womens_live={ncaa_womens_live}")
+                self.logger.info(f"has_live_content() returning {result}: nhl_live={nhl_live}, ncaa_mens_live={ncaa_mens_live}, ncaa_womens_live={ncaa_womens_live}, olympic_mens_live={olympic_mens_live}, olympic_womens_live={olympic_womens_live}")
             else:
-                # Log False results only every 60 seconds
-                self.logger.info(f"has_live_content() returning {result}: nhl_live={nhl_live}, ncaa_mens_live={ncaa_mens_live}, ncaa_womens_live={ncaa_womens_live}")
+                self.logger.info(f"has_live_content() returning {result}: nhl_live={nhl_live}, ncaa_mens_live={ncaa_mens_live}, ncaa_womens_live={ncaa_womens_live}, olympic_mens_live={olympic_mens_live}, olympic_womens_live={olympic_womens_live}")
                 self._last_live_content_false_log = current_time
-        
+
         return result
 
     def get_live_modes(self) -> list:
@@ -2218,7 +2405,55 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                     else:
                         # No favorite teams configured, include if any live games exist
                         live_modes.append("ncaa_womens_live")
-        
+
+        # Check Olympic Men's live content
+        if (
+            self.olympic_mens_enabled
+            and self.olympic_mens_live_priority
+            and hasattr(self, "olympic_mens_live")
+        ):
+            live_games = getattr(self.olympic_mens_live, "live_games", [])
+            if live_games:
+                live_games = [g for g in live_games if not g.get("is_final", False)]
+                if hasattr(self.olympic_mens_live, "_is_game_really_over"):
+                    live_games = [g for g in live_games if not self.olympic_mens_live._is_game_really_over(g)]
+
+                if live_games:
+                    favorite_teams = getattr(self.olympic_mens_live, "favorite_teams", [])
+                    if favorite_teams:
+                        if any(
+                            game.get("home_abbr") in favorite_teams
+                            or game.get("away_abbr") in favorite_teams
+                            for game in live_games
+                        ):
+                            live_modes.append("olympic_mens_live")
+                    else:
+                        live_modes.append("olympic_mens_live")
+
+        # Check Olympic Women's live content
+        if (
+            self.olympic_womens_enabled
+            and self.olympic_womens_live_priority
+            and hasattr(self, "olympic_womens_live")
+        ):
+            live_games = getattr(self.olympic_womens_live, "live_games", [])
+            if live_games:
+                live_games = [g for g in live_games if not g.get("is_final", False)]
+                if hasattr(self.olympic_womens_live, "_is_game_really_over"):
+                    live_games = [g for g in live_games if not self.olympic_womens_live._is_game_really_over(g)]
+
+                if live_games:
+                    favorite_teams = getattr(self.olympic_womens_live, "favorite_teams", [])
+                    if favorite_teams:
+                        if any(
+                            game.get("home_abbr") in favorite_teams
+                            or game.get("away_abbr") in favorite_teams
+                            for game in live_games
+                        ):
+                            live_modes.append("olympic_womens_live")
+                    else:
+                        live_modes.append("olympic_womens_live")
+
         return live_modes
 
     def _should_use_scroll_mode(self, league: str, mode_type: str) -> bool:
@@ -2257,9 +2492,11 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         rankings = {}
         
         # Try to get rankings from each manager
-        for manager_attr in ['nhl_live', 'nhl_recent', 'nhl_upcoming', 
+        for manager_attr in ['nhl_live', 'nhl_recent', 'nhl_upcoming',
                             'ncaa_mens_live', 'ncaa_mens_recent', 'ncaa_mens_upcoming',
-                            'ncaa_womens_live', 'ncaa_womens_recent', 'ncaa_womens_upcoming']:
+                            'ncaa_womens_live', 'ncaa_womens_recent', 'ncaa_womens_upcoming',
+                            'olympic_mens_live', 'olympic_mens_recent', 'olympic_mens_upcoming',
+                            'olympic_womens_live', 'olympic_womens_recent', 'olympic_womens_upcoming']:
             manager = getattr(self, manager_attr, None)
             if manager:
                 manager_rankings = getattr(manager, '_team_rankings_cache', {})
@@ -2722,7 +2959,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         """Validate plugin configuration."""
         try:
             # Check that at least one league is enabled
-            if not (self.nhl_enabled or self.ncaa_mens_enabled or self.ncaa_womens_enabled):
+            if not (self.nhl_enabled or self.ncaa_mens_enabled or self.ncaa_womens_enabled or self.olympic_mens_enabled or self.olympic_womens_enabled):
                 self.logger.warning("No leagues enabled in hockey scoreboard plugin")
                 return False
 
@@ -2824,45 +3061,11 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                     managers_to_check.append((league, manager))
             else:
                 # Combined mode - check all enabled leagues
-                if mode_type == 'live':
-                    if self.nhl_enabled:
-                        nhl_manager = self._get_league_manager_for_mode('nhl', 'live')
-                        if nhl_manager:
-                            managers_to_check.append(('nhl', nhl_manager))
-                    if self.ncaa_mens_enabled:
-                        ncaa_mens_manager = self._get_league_manager_for_mode('ncaa_mens', 'live')
-                        if ncaa_mens_manager:
-                            managers_to_check.append(('ncaa_mens', ncaa_mens_manager))
-                    if self.ncaa_womens_enabled:
-                        ncaa_womens_manager = self._get_league_manager_for_mode('ncaa_womens', 'live')
-                        if ncaa_womens_manager:
-                            managers_to_check.append(('ncaa_womens', ncaa_womens_manager))
-                elif mode_type == 'recent':
-                    if self.nhl_enabled:
-                        nhl_manager = self._get_league_manager_for_mode('nhl', 'recent')
-                        if nhl_manager:
-                            managers_to_check.append(('nhl', nhl_manager))
-                    if self.ncaa_mens_enabled:
-                        ncaa_mens_manager = self._get_league_manager_for_mode('ncaa_mens', 'recent')
-                        if ncaa_mens_manager:
-                            managers_to_check.append(('ncaa_mens', ncaa_mens_manager))
-                    if self.ncaa_womens_enabled:
-                        ncaa_womens_manager = self._get_league_manager_for_mode('ncaa_womens', 'recent')
-                        if ncaa_womens_manager:
-                            managers_to_check.append(('ncaa_womens', ncaa_womens_manager))
-                elif mode_type == 'upcoming':
-                    if self.nhl_enabled:
-                        nhl_manager = self._get_league_manager_for_mode('nhl', 'upcoming')
-                        if nhl_manager:
-                            managers_to_check.append(('nhl', nhl_manager))
-                    if self.ncaa_mens_enabled:
-                        ncaa_mens_manager = self._get_league_manager_for_mode('ncaa_mens', 'upcoming')
-                        if ncaa_mens_manager:
-                            managers_to_check.append(('ncaa_mens', ncaa_mens_manager))
-                    if self.ncaa_womens_enabled:
-                        ncaa_womens_manager = self._get_league_manager_for_mode('ncaa_womens', 'upcoming')
-                        if ncaa_womens_manager:
-                            managers_to_check.append(('ncaa_womens', ncaa_womens_manager))
+                # Use league registry to get all enabled leagues for this mode type
+                for league_id in self._get_enabled_leagues_for_mode(mode_type):
+                    league_manager = self._get_league_manager_for_mode(league_id, mode_type)
+                    if league_manager:
+                        managers_to_check.append((league_id, league_manager))
             
             # CRITICAL: Update managers BEFORE checking game counts!
             self.logger.info(f"get_cycle_duration: updating {len(managers_to_check)} manager(s) before counting games")
@@ -2950,6 +3153,8 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "nhl_enabled": self.nhl_enabled,
                 "ncaa_mens_enabled": self.ncaa_mens_enabled,
                 "ncaa_womens_enabled": self.ncaa_womens_enabled,
+                "olympic_mens_enabled": self.olympic_mens_enabled,
+                "olympic_womens_enabled": self.olympic_womens_enabled,
                 "current_mode": current_mode,
                 "available_modes": self.modes,
                 "display_duration": self.display_duration,
@@ -2967,6 +3172,12 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "ncaa_womens_live": hasattr(self, "ncaa_womens_live"),
                     "ncaa_womens_recent": hasattr(self, "ncaa_womens_recent"),
                     "ncaa_womens_upcoming": hasattr(self, "ncaa_womens_upcoming"),
+                    "olympic_mens_live": hasattr(self, "olympic_mens_live"),
+                    "olympic_mens_recent": hasattr(self, "olympic_mens_recent"),
+                    "olympic_mens_upcoming": hasattr(self, "olympic_mens_upcoming"),
+                    "olympic_womens_live": hasattr(self, "olympic_womens_live"),
+                    "olympic_womens_recent": hasattr(self, "olympic_womens_recent"),
+                    "olympic_womens_upcoming": hasattr(self, "olympic_womens_upcoming"),
                 },
                 "live_priority": {
                     "nhl": self.nhl_enabled and self.nhl_live_priority,
@@ -2974,6 +3185,10 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                     and self.ncaa_mens_live_priority,
                     "ncaa_womens": self.ncaa_womens_enabled
                     and self.ncaa_womens_live_priority,
+                    "olympic_mens": self.olympic_mens_enabled
+                    and self.olympic_mens_live_priority,
+                    "olympic_womens": self.olympic_womens_enabled
+                    and self.olympic_womens_live_priority,
                 },
             }
 

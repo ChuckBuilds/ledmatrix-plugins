@@ -1,9 +1,9 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "author": "ChuckBuilds",
-  "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
+  "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, NCAA Women's, and Olympic hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-hockey-plugin",
   "entry_point": "manager.py",
   "class_name": "HockeyScoreboardPlugin",
@@ -12,6 +12,7 @@
     "hockey",
     "nhl",
     "ncaa",
+    "olympics",
     "sports",
     "scoreboard",
     "live-scores"
@@ -30,7 +31,7 @@
   },
   "config_schema": "config_schema.json",
   "assets": {
-    "logos": "Uses shared LEDMatrix assets/sports/nhl_logos and assets/sports/ncaa_logos directories"
+    "logos": "Uses shared LEDMatrix assets/sports/nhl_logos, assets/sports/ncaa_logos, and assets/sports/olympic_logos directories"
   },
   "update_interval": 60,
   "default_duration": 15,
@@ -43,19 +44,30 @@
     "ncaa_mens_live",
     "ncaa_womens_recent",
     "ncaa_womens_upcoming",
-    "ncaa_womens_live"
+    "ncaa_womens_live",
+    "olympic_mens_recent",
+    "olympic_mens_upcoming",
+    "olympic_mens_live",
+    "olympic_womens_recent",
+    "olympic_womens_upcoming",
+    "olympic_womens_live"
   ],
   "api_requirements": [
     {
       "name": "ESPN API",
       "required": true,
-      "description": "ESPN public API for NHL and NCAA hockey scores and schedules",
+      "description": "ESPN public API for NHL, NCAA, and Olympic hockey scores and schedules",
       "url": "https://site.api.espn.com/apis/site/v2/sports/hockey/",
       "rate_limit": "No official rate limit, but please use responsibly"
     }
   ],
   "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-hockey-scoreboard/archive/refs/tags/v{version}.zip",
   "versions": [
+    {
+      "version": "1.1.0",
+      "ledmatrix_min": "2.0.0",
+      "released": "2026-02-11"
+    },
     {
       "version": "1.0.8",
       "ledmatrix_min": "2.0.0",
@@ -97,7 +109,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2025-11-06",
+  "last_updated": "2026-02-11",
   "stars": 0,
   "downloads": 0,
   "verified": true,
