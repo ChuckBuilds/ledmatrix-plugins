@@ -17,7 +17,6 @@
   ],
   "entry_point": "manager.py",
   "class_name": "MQTTNotificationsPlugin",
-  "download_url_template": "",
   "versions": [
     {
       "released": "2025-01-20",

@@ -32,7 +32,6 @@
       "error_message": "Google Calendar authentication failed"
     }
   ],
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-calendar/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "released": "2025-10-19",

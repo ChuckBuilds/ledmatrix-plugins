@@ -16,7 +16,6 @@
   "display_modes": [
     "christmas-countdown"
   ],
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-christmas-countdown/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "released": "2025-01-27",
@@ -30,4 +29,3 @@
   "verified": true,
   "screenshot": ""
 }
-

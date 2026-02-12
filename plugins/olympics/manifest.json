@@ -22,7 +22,11 @@
   ],
   "vegas_mode": {
     "supported": true,
-    "modes": ["scroll", "fixed", "static"],
+    "modes": [
+      "scroll",
+      "fixed",
+      "static"
+    ],
     "default_mode": "scroll",
     "content_type": "multi"
   },
@@ -32,7 +36,6 @@
     "sport_filters": true,
     "country_tracking": true
   },
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-olympics-countdown/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "released": "2026-02-08",

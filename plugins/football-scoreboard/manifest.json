@@ -23,7 +23,6 @@
     "ncaa_fb_upcoming",
     "ncaa_fb_live"
   ],
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-football-scoreboard/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "version": "2.0.7",

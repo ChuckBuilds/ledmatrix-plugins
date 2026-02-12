@@ -16,7 +16,33 @@ Before submitting, ensure your plugin:
 - ✅ Uses logging appropriately
 - ✅ Has no hardcoded API keys or secrets
 
-## Submission Process
+## Submission Options
+
+### Option A: Add to the Monorepo (Preferred)
+
+Submit a PR to add your plugin directly to this repository:
+
+1. **Fork This Repo**
+   Fork [ledmatrix-plugins](https://github.com/ChuckBuilds/ledmatrix-plugins)
+
+2. **Add Your Plugin Directory**
+   ```
+   plugins/your-plugin-id/
+     manifest.json
+     manager.py
+     config_schema.json
+     requirements.txt
+     README.md
+   ```
+
+3. **Submit Pull Request**
+   Create PR with title: "Add plugin: your-plugin-name"
+
+After approval, your plugin will be added to `plugins.json` and available in the Plugin Store.
+
+### Option B: Keep Your Own Repository (3rd-Party)
+
+If you prefer to maintain your own repo:
 
 1. **Test Your Plugin**
    ```bash
@@ -25,41 +51,11 @@ Before submitting, ensure your plugin:
      -d '{"repo_url": "https://github.com/you/ledmatrix-your-plugin"}'
    ```
 
-2. **Create Release**
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
+2. **Open an Issue**
+   Open an issue on this repository with your repo URL, description, and screenshots.
 
-3. **Fork This Repo**
-   Fork [ledmatrix-plugins](https://github.com/ChuckBuilds/ledmatrix-plugins)
-
-4. **Update plugins.json**
-   Add your plugin entry:
-   ```json
-   {
-     "id": "your-plugin",
-     "name": "Your Plugin Name",
-     "description": "What it does",
-     "author": "YourName",
-     "category": "custom",
-     "tags": ["tag1", "tag2"],
-     "repo": "https://github.com/you/ledmatrix-your-plugin",
-     "branch": "main",
-     "versions": [
-       {
-         "version": "1.0.0",
-         "ledmatrix_min": "2.0.0",
-         "released": "2025-10-09",
-         "download_url": "https://github.com/you/ledmatrix-your-plugin/archive/refs/tags/v1.0.0.zip"
-       }
-     ],
-     "verified": false
-   }
-   ```
-
-5. **Submit Pull Request**
-   Create PR with title: "Add plugin: your-plugin-name"
+3. **After Review**
+   We'll add a registry entry in `plugins.json` pointing to your repo.
 
 ## Review Process
 
@@ -77,14 +73,15 @@ Before submitting, ensure your plugin:
 
 ## Updating Your Plugin
 
-To release a new version:
+### Monorepo Plugins (Option A)
+1. Submit a PR with your code changes
+2. Bump `version` in your plugin's `manifest.json`
+3. The pre-commit hook will automatically update `plugins.json`
 
-1. Create new release in your repo
-2. Update `versions` array in plugins.json
-3. Submit PR with changes
-4. We'll review and merge
+### 3rd-Party Plugins (Option B)
+1. Push updates to your repository
+2. Open a PR or issue to update the version in `plugins.json`
 
 ## Questions?
 
-Open an issue in this repo or the main LEDMatrix repo.
-
+Open an issue in this repo or the main [LEDMatrix repo](https://github.com/ChuckBuilds/LEDMatrix).

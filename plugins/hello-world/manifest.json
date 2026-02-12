@@ -15,7 +15,6 @@
   "display_modes": [
     "hello-world"
   ],
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-hello-world/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "released": "2025-10-19",
@@ -29,6 +28,7 @@
   "verified": true,
   "screenshot": "",
   "config_schema": "config_schema.json",
-   "compatible_versions": [">=2.0.0"],
+  "compatible_versions": [
+    ">=2.0.0"
+  ]
 }
-

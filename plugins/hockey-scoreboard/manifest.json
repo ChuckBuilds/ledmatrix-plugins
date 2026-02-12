@@ -4,7 +4,7 @@
   "version": "1.0.8",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
-  "homepage": "https://github.com/ChuckBuilds/ledmatrix-hockey-plugin",
+  "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
   "entry_point": "manager.py",
   "class_name": "HockeyScoreboardPlugin",
   "category": "sports",
@@ -54,7 +54,6 @@
       "rate_limit": "No official rate limit, but please use responsibly"
     }
   ],
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-hockey-scoreboard/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "version": "1.0.8",

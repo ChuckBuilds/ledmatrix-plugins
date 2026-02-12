@@ -17,7 +17,6 @@
   ],
   "entry_point": "manager.py",
   "class_name": "TextDisplayPlugin",
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-text-display/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "released": "2025-10-19",

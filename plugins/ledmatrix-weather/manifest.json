@@ -22,7 +22,6 @@
     "hourly_forecast",
     "daily_forecast"
   ],
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-weather/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "version": "2.0.9",

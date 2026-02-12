@@ -15,20 +15,17 @@ Display customizable countdowns with images on your LED matrix. Perfect for birt
 
 ## Installation
 
-### Via LEDMatrix Plugin Manager (Recommended)
+### From Plugin Store (Recommended)
 
-1. Open the LEDMatrix web UI
-2. Navigate to Settings > Plugins
-3. Click "Install from URL"
-4. Enter your repository URL
-5. Click Install
+1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
+2. Go to **Plugin Store**
+3. Find **Countdown Display** and click **Install**
 
 ### Manual Installation
 
-1. Clone or download this repository to your Raspberry Pi:
+1. Copy the plugin from the monorepo:
    ```bash
-   cd /path/to/LEDMatrix/plugin-repos/
-   git clone <your-repo-url> countdown
+   cp -r ledmatrix-plugins/plugins/countdown /path/to/LEDMatrix/plugin-repos/
    ```
 
 2. Restart LEDMatrix or reload plugins via the web UI

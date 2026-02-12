@@ -23,7 +23,6 @@
     "soccer_recent",
     "soccer_upcoming"
   ],
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-soccer-scoreboard/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "released": "2025-10-19",
