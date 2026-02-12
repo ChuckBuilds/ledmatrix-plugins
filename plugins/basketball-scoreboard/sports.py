@@ -195,7 +195,7 @@ class SportsCore(ABC):
             if not hasattr(self, "_last_warning_time"):
                 self._last_warning_time = 0
             if current_time - getattr(self, "_last_warning_time", 0) > 300:
-                self.logger.warning(
+                self.logger.debug(
                     f"No game data available to display in {self.__class__.__name__}"
                 )
                 setattr(self, "_last_warning_time", current_time)
@@ -1485,13 +1485,12 @@ class SportsUpcoming(SportsCore):
                 # Display away team info
                 if away_abbr:
                     if self.show_ranking and self.show_records:
-                        # When both rankings and records are enabled, rankings replace records completely
+                        # Rankings take priority, fall back to record for unranked teams
                         away_rank = self._team_rankings_cache.get(away_abbr, 0)
                         if away_rank > 0:
                             away_text = f"#{away_rank}"
                         else:
-                            # Show nothing for unranked teams when rankings are prioritized
-                            away_text = ""
+                            away_text = game.get("away_record", "")
                     elif self.show_ranking:
                         # Show ranking only if available
                         away_rank = self._team_rankings_cache.get(away_abbr, 0)
@@ -1500,7 +1499,6 @@ class SportsUpcoming(SportsCore):
                         else:
                             away_text = ""
                     elif self.show_records:
-                        # Show record only when rankings are disabled
                         away_text = game.get("away_record", "")
                     else:
                         away_text = ""
@@ -1520,13 +1518,12 @@ class SportsUpcoming(SportsCore):
                 # Display home team info
                 if home_abbr:
                     if self.show_ranking and self.show_records:
-                        # When both rankings and records are enabled, rankings replace records completely
+                        # Rankings take priority, fall back to record for unranked teams
                         home_rank = self._team_rankings_cache.get(home_abbr, 0)
                         if home_rank > 0:
                             home_text = f"#{home_rank}"
                         else:
-                            # Show nothing for unranked teams when rankings are prioritized
-                            home_text = ""
+                            home_text = game.get("home_record", "")
                     elif self.show_ranking:
                         # Show ranking only if available
                         home_rank = self._team_rankings_cache.get(home_abbr, 0)
@@ -1535,7 +1532,6 @@ class SportsUpcoming(SportsCore):
                         else:
                             home_text = ""
                     elif self.show_records:
-                        # Show record only when rankings are disabled
                         home_text = game.get("home_record", "")
                     else:
                         home_text = ""
@@ -2008,13 +2004,12 @@ class SportsRecent(SportsCore):
                 # Display away team info
                 if away_abbr:
                     if self.show_ranking and self.show_records:
-                        # When both rankings and records are enabled, rankings replace records completely
+                        # Rankings take priority, fall back to record for unranked teams
                         away_rank = self._team_rankings_cache.get(away_abbr, 0)
                         if away_rank > 0:
                             away_text = f"#{away_rank}"
                         else:
-                            # Show nothing for unranked teams when rankings are prioritized
-                            away_text = ""
+                            away_text = game.get("away_record", "")
                     elif self.show_ranking:
                         # Show ranking only if available
                         away_rank = self._team_rankings_cache.get(away_abbr, 0)
@@ -2023,7 +2018,6 @@ class SportsRecent(SportsCore):
                         else:
                             away_text = ""
                     elif self.show_records:
-                        # Show record only when rankings are disabled
                         away_text = game.get("away_record", "")
                     else:
                         away_text = ""
@@ -2043,13 +2037,12 @@ class SportsRecent(SportsCore):
                 # Display home team info
                 if home_abbr:
                     if self.show_ranking and self.show_records:
-                        # When both rankings and records are enabled, rankings replace records completely
+                        # Rankings take priority, fall back to record for unranked teams
                         home_rank = self._team_rankings_cache.get(home_abbr, 0)
                         if home_rank > 0:
                             home_text = f"#{home_rank}"
                         else:
-                            # Show nothing for unranked teams when rankings are prioritized
-                            home_text = ""
+                            home_text = game.get("home_record", "")
                     elif self.show_ranking:
                         # Show ranking only if available
                         home_rank = self._team_rankings_cache.get(home_abbr, 0)
@@ -2058,7 +2051,6 @@ class SportsRecent(SportsCore):
                         else:
                             home_text = ""
                     elif self.show_records:
-                        # Show record only when rankings are disabled
                         home_text = game.get("home_record", "")
                     else:
                         home_text = ""

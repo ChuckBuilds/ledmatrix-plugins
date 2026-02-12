@@ -240,11 +240,12 @@ class BasketballLive(Basketball, SportsLive):
                 # Display away team info
                 if away_abbr:
                     if self.show_ranking and self.show_records:
+                        # Rankings take priority, fall back to record for unranked teams
                         away_rank = self._team_rankings_cache.get(away_abbr, 0)
                         if away_rank > 0:
                             away_text = f"#{away_rank}"
                         else:
-                            away_text = ''
+                            away_text = game.get('away_record', '')
                     elif self.show_ranking:
                         away_rank = self._team_rankings_cache.get(away_abbr, 0)
                         if away_rank > 0:
@@ -255,7 +256,7 @@ class BasketballLive(Basketball, SportsLive):
                         away_text = game.get('away_record', '')
                     else:
                         away_text = ''
-                    
+
                     if away_text:
                         away_record_x = 3
                         self.logger.debug(f"Drawing away ranking '{away_text}' at ({away_record_x}, {record_y})")
@@ -264,11 +265,12 @@ class BasketballLive(Basketball, SportsLive):
                 # Display home team info
                 if home_abbr:
                     if self.show_ranking and self.show_records:
+                        # Rankings take priority, fall back to record for unranked teams
                         home_rank = self._team_rankings_cache.get(home_abbr, 0)
                         if home_rank > 0:
                             home_text = f"#{home_rank}"
                         else:
-                            home_text = ''
+                            home_text = game.get('home_record', '')
                     elif self.show_ranking:
                         home_rank = self._team_rankings_cache.get(home_abbr, 0)
                         if home_rank > 0:

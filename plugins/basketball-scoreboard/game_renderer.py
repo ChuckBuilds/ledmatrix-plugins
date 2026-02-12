@@ -66,10 +66,19 @@ class GameRenderer:
             'ncaaw': config.get('ncaaw', {}).get('logo_dir', 'assets/sports/ncaa_logos'),
         }
         
-        # Display options
-        defaults = config.get('defaults', {})
-        self.show_records = defaults.get('show_records', config.get('show_records', False))
-        self.show_ranking = defaults.get('show_ranking', config.get('show_ranking', False))
+        # Display options - check per-league display_options in config
+        # The config structure is: config[league].display_options.show_records/show_ranking
+        # Enable if ANY enabled league has the option enabled
+        self.show_records = False
+        self.show_ranking = False
+        for league_key in ('nba', 'wnba', 'ncaam', 'ncaaw'):
+            league_config = config.get(league_key, {})
+            if league_config.get('enabled', False):
+                display_options = league_config.get('display_options', {})
+                if display_options.get('show_records', False):
+                    self.show_records = True
+                if display_options.get('show_ranking', False):
+                    self.show_ranking = True
         
         # Rankings cache (populated externally)
         self._team_rankings_cache: Dict[str, int] = {}
@@ -274,15 +283,13 @@ class GameRenderer:
         league = game.get('league', 'nba')
         logo_dir = Path(self.logo_dirs.get(league, 'assets/sports/nba_logos'))
         
-        # Get team info (basketball uses home_team/away_team dicts)
-        home_team = game.get('home_team', {})
-        away_team = game.get('away_team', {})
-        home_abbr = home_team.get('abbrev', '')
-        away_abbr = away_team.get('abbrev', '')
-        
-        # Get logo paths from team data if available, otherwise construct from logo_dir
-        home_logo_path = home_team.get('logo_path', logo_dir / f"{home_abbr}.png")
-        away_logo_path = away_team.get('logo_path', logo_dir / f"{away_abbr}.png")
+        # Get team info - support flat format from sports.py game dicts
+        home_abbr = game.get('home_abbr', '')
+        away_abbr = game.get('away_abbr', '')
+
+        # Get logo paths from game data, otherwise construct from logo_dir
+        home_logo_path = game.get('home_logo_path', logo_dir / f"{home_abbr}.png")
+        away_logo_path = game.get('away_logo_path', logo_dir / f"{away_abbr}.png")
         
         # Load logos (using league+abbrev for cache key)
         home_logo = self._load_and_resize_logo(
@@ -319,8 +326,8 @@ class GameRenderer:
         main_img.paste(away_logo, (away_x, away_y), away_logo)
         
         # Draw scores (centered)
-        home_score = str(home_team.get("score", "0"))
-        away_score = str(away_team.get("score", "0"))
+        home_score = str(game.get("home_score", "0"))
+        away_score = str(game.get("away_score", "0"))
         score_text = f"{away_score}-{home_score}"
         score_width = draw_overlay.textlength(score_text, font=self.fonts['score'])
         score_x = (self.display_width - score_width) // 2
@@ -345,18 +352,16 @@ class GameRenderer:
     
     def _draw_live_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw status elements for a live basketball game."""
-        # Period and Clock (Top center)
-        status = game.get('status', {})
-        period = status.get('period', 0)
-        clock = status.get('display_clock', '')
-        state = status.get('state', '')
-        
-        if state == 'in':
-            period_clock_text = f"P{period} {clock}".strip()
-        elif state == 'post':
-            period_clock_text = "Final"
+        # Period and Clock (Top center) - use flat game dict format from sports.py
+        period_text = game.get('period_text', '')
+        clock = game.get('clock', '')
+
+        if game.get('is_halftime'):
+            period_clock_text = "Halftime"
+        elif period_text and clock:
+            period_clock_text = f"{period_text} {clock}".strip()
         else:
-            period_clock_text = status.get('short_detail', '')
+            period_clock_text = game.get('status_text', '')
         
         status_width = draw.textlength(period_clock_text, font=self.fonts['time'])
         status_x = (self.display_width - status_width) // 2
@@ -391,31 +396,22 @@ class GameRenderer:
         status_x = (self.display_width - status_width) // 2
         status_y = 1
         self._draw_text_with_outline(draw, status_text, (status_x, status_y), status_font)
-        
-        # Game date and time
-        start_time = game.get("start_time", "")
-        if start_time:
-            try:
-                from datetime import datetime
-                import pytz
-                
-                dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
-                local_dt = dt.astimezone(pytz.utc)  # Use UTC for now
-                
-                game_date = local_dt.strftime("%b %d")
-                game_time = local_dt.strftime("%I:%M %p")
-                
-                date_width = draw.textlength(game_date, font=self.fonts['time'])
-                date_x = (self.display_width - date_width) // 2
-                date_y = (self.display_height // 2) - 7
-                self._draw_text_with_outline(draw, game_date, (date_x, date_y), self.fonts['time'])
-                
-                time_width = draw.textlength(game_time, font=self.fonts['time'])
-                time_x = (self.display_width - time_width) // 2
-                time_y = date_y + 9
-                self._draw_text_with_outline(draw, game_time, (time_x, time_y), self.fonts['time'])
-            except Exception:
-                pass  # Skip date/time if parsing fails
+
+        # Game date and time - use flat format from sports.py
+        game_date = game.get("game_date", "")
+        game_time = game.get("game_time", "")
+
+        if game_date:
+            date_width = draw.textlength(game_date, font=self.fonts['time'])
+            date_x = (self.display_width - date_width) // 2
+            date_y = (self.display_height // 2) - 7
+            self._draw_text_with_outline(draw, game_date, (date_x, date_y), self.fonts['time'])
+
+        if game_time:
+            time_width = draw.textlength(game_time, font=self.fonts['time'])
+            time_x = (self.display_width - time_width) // 2
+            time_y = (self.display_height // 2) - 7 + 9
+            self._draw_text_with_outline(draw, game_time, (time_x, time_y), self.fonts['time'])
     
     def _draw_dynamic_odds(self, draw: ImageDraw.Draw, odds: Dict[str, Any]) -> None:
         """Draw odds with dynamic positioning."""
@@ -492,13 +488,11 @@ class GameRenderer:
         except IOError:
             record_font = ImageFont.load_default()
         
-        # Get team info (basketball uses home_team/away_team dicts)
-        home_team = game.get('home_team', {})
-        away_team = game.get('away_team', {})
-        away_abbr = away_team.get('abbrev', '')
-        home_abbr = home_team.get('abbrev', '')
-        away_record = away_team.get('record', '')
-        home_record = home_team.get('record', '')
+        # Get team info - support both flat format (from sports.py) and nested format
+        away_abbr = game.get('away_abbr', '')
+        home_abbr = game.get('home_abbr', '')
+        away_record = game.get('away_record', '')
+        home_record = game.get('home_record', '')
         
         record_bbox = draw.textbbox((0, 0), "0-0", font=record_font)
         record_height = record_bbox[3] - record_bbox[1]
@@ -523,11 +517,11 @@ class GameRenderer:
     def _get_team_display_text(self, abbr: str, record: str) -> str:
         """Get the display text for a team (ranking or record)."""
         if self.show_ranking and self.show_records:
-            # Rankings replace records when both are enabled
+            # Rankings take priority when both are enabled, fall back to record
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:
                 return f"#{rank}"
-            return ''
+            return record
         elif self.show_ranking:
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:

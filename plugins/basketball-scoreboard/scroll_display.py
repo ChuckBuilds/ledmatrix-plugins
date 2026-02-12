@@ -268,17 +268,17 @@ class ScrollDisplay:
         Determine the game type from the game's status.
 
         Args:
-            game: Game dictionary
+            game: Game dictionary (flat format from sports.py)
 
         Returns:
             Game type: 'live', 'recent', or 'upcoming'
         """
-        state = game.get('status', {}).get('state', '')
-        if state == 'in':
+        # Use flat game dict flags from sports.py
+        if game.get('is_live'):
             return 'live'
-        elif state == 'post':
+        elif game.get('is_final'):
             return 'recent'
-        elif state == 'pre':
+        elif game.get('is_upcoming'):
             return 'upcoming'
         else:
             # Default to upcoming if state is unknown
