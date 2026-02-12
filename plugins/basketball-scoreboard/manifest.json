@@ -1,6 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
+  "version": "1.0.5",
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores and schedules",
   "author": "ChuckBuilds",
   "category": "sports",
