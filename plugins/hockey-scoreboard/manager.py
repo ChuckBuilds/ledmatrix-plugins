@@ -1305,10 +1305,20 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                         getattr(self, 'ncaa_mens_upcoming', None)):
             self._current_display_league = 'ncaa_mens'
         # Check NCAA Women's managers
-        elif manager in (getattr(self, 'ncaa_womens_live', None), 
-                        getattr(self, 'ncaa_womens_recent', None), 
+        elif manager in (getattr(self, 'ncaa_womens_live', None),
+                        getattr(self, 'ncaa_womens_recent', None),
                         getattr(self, 'ncaa_womens_upcoming', None)):
             self._current_display_league = 'ncaa_womens'
+        # Check Olympic Men's managers
+        elif manager in (getattr(self, 'olympic_mens_live', None),
+                        getattr(self, 'olympic_mens_recent', None),
+                        getattr(self, 'olympic_mens_upcoming', None)):
+            self._current_display_league = 'olympic_mens'
+        # Check Olympic Women's managers
+        elif manager in (getattr(self, 'olympic_womens_live', None),
+                        getattr(self, 'olympic_womens_recent', None),
+                        getattr(self, 'olympic_womens_upcoming', None)):
+            self._current_display_league = 'olympic_womens'
 
     @staticmethod
     def _build_manager_key(mode_name: str, manager) -> str:
