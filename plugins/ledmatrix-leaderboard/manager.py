@@ -81,7 +81,9 @@ class LeaderboardPlugin(BasePlugin):
         self.max_duration = self.dynamic_duration_settings['max_duration_seconds']
         self.duration_buffer = self.dynamic_duration_settings['buffer_ratio']
         self.dynamic_duration_cap = self.dynamic_duration_settings['controller_cap_seconds']
-        self.loop = bool(self.global_config.get('loop', True))
+        # Determine loop behavior: scroll_mode takes precedence, then loop boolean
+        scroll_mode = self.global_config.get('scroll_mode', 'one_shot')
+        self.loop = scroll_mode == 'continuous' or bool(self.global_config.get('loop', False))
         
         # Request timeout
         self.request_timeout = self.global_config.get('request_timeout', 30)
@@ -168,6 +170,7 @@ class LeaderboardPlugin(BasePlugin):
             else:
                 pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
                 self.logger.info(f"Scroll speed: {pixels_per_second:.1f} px/s")
+        self.logger.info(f"Scroll mode: {'continuous' if self.loop else 'one_shot'}")
         self.logger.info(
             "Dynamic duration settings: enabled=%s, min=%ss, max=%ss, buffer=%.2f, controller_cap=%ss",
             self.dynamic_duration_enabled,
@@ -286,13 +289,18 @@ class LeaderboardPlugin(BasePlugin):
             self.scroll_helper.reset_scroll()
             self._cycle_complete = False
         
+        # In one-shot mode, stop scrolling once the cycle is complete
+        if not self.loop and self._cycle_complete:
+            self.display_manager.set_scrolling_state(False)
+            return
+
         # Signal scrolling state
         self.display_manager.set_scrolling_state(True)
         self.display_manager.process_deferred_updates()
-        
+
         # Update scroll position using the scroll helper
         self.scroll_helper.update_scroll_position()
-        if self.dynamic_duration_enabled and self.scroll_helper.is_scroll_complete():
+        if self.scroll_helper.is_scroll_complete():
             if not self._cycle_complete:
                 scroll_info = self.scroll_helper.get_scroll_info()
                 elapsed_time = scroll_info.get('elapsed_time')
@@ -478,6 +486,10 @@ class LeaderboardPlugin(BasePlugin):
         """Report whether the scrolling cycle has completed at least once."""
         if not self.dynamic_duration_enabled:
             return True
+        # In continuous loop mode, never report completion so the display
+        # controller keeps this plugin active until its duration expires
+        if self.loop:
+            return False
         return self._cycle_complete
     
     def get_cycle_duration(self, display_mode: str = None) -> Optional[float]:
