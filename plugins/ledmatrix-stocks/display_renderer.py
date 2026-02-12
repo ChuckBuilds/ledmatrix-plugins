@@ -24,7 +24,7 @@ class StockDisplayRenderer:
         self.logger = logger
         
         # Display configuration
-        self.toggle_chart = config.get('toggle_chart', True)
+        self.toggle_chart = config.get('display', {}).get('toggle_chart', True)
         
         # Load colors from customization structure (organized by element: symbol, price, price_delta)
         # Support both new format (customization.stocks.*) and old format (top-level) for backwards compatibility

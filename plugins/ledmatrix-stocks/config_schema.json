@@ -82,7 +82,7 @@
           "description": "List of stock symbols to track",
           "items": {
             "type": "string",
-            "pattern": "^[A-Z]{1,5}$"
+            "pattern": "^\\^?[A-Z]{1,5}$"
           },
           "default": ["ASTS", "SCHD", "INTC", "NVDA", "T", "VOO", "SMCI"],
           "maxItems": 20
@@ -117,7 +117,7 @@
           "description": "List of cryptocurrency symbols to track",
           "items": {
             "type": "string",
-            "pattern": "^[A-Z]{2,10}(-USD)?$"
+            "pattern": "^\\^?[A-Z]{2,10}(-USD)?$"
           },
           "default": ["BTC-USD", "ETH-USD"],
           "maxItems": 10
