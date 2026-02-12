@@ -20,7 +20,6 @@
   "display_modes": [
     "of_the_day"
   ],
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-of-the-day/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "released": "2025-10-19",

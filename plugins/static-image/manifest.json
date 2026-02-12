@@ -17,7 +17,6 @@
   "display_modes": [
     "static_image"
   ],
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-static-image/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "version": "1.0.2",

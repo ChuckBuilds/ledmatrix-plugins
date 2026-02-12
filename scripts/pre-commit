@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+# Pre-commit hook: auto-sync plugins.json from manifest versions.
+#
+# If any plugins/*/manifest.json was modified, runs update_registry.py
+# and stages plugins.json so the registry stays in sync automatically.
+#
+# Install: cp scripts/pre-commit .git/hooks/pre-commit
+#
+
+# Only run if a manifest was staged
+staged_manifests=$(git diff --cached --name-only -- 'plugins/*/manifest.json')
+
+if [ -z "$staged_manifests" ]; then
+    exit 0
+fi
+
+echo "Pre-commit: manifest change detected, syncing plugins.json..."
+
+# Run the registry update script
+python3 "$(git rev-parse --show-toplevel)/update_registry.py"
+rc=$?
+
+if [ $rc -ne 0 ]; then
+    echo "Error: update_registry.py failed (exit code $rc)"
+    exit 1
+fi
+
+# Stage plugins.json if it was modified
+if ! git diff --quiet -- plugins.json; then
+    git add plugins.json
+    echo "Pre-commit: plugins.json updated and staged."
+fi

@@ -1,19 +1,27 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
+  "version": "1.0.5",
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores and schedules",
   "author": "ChuckBuilds",
   "category": "sports",
-  "tags": ["basketball", "nba", "ncaa", "wnba", "sports", "scoreboard", "live-scores"],
-  "repo": "https://github.com/ChuckBuilds/ledmatrix-basketball-scoreboard",
+  "tags": [
+    "basketball",
+    "nba",
+    "ncaa",
+    "wnba",
+    "sports",
+    "scoreboard",
+    "live-scores"
+  ],
+  "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
     {
       "version": "1.0.5",
       "ledmatrix_min": "2.0.0",
-      "released": "2025-10-26",
-      "download_url": "https://github.com/ChuckBuilds/ledmatrix-basketball-scoreboard/archive/refs/tags/v1.0.5.zip"
+      "released": "2025-10-26"
     }
   ],
   "stars": 0,

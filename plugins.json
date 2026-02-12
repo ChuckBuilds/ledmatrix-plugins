@@ -328,10 +328,10 @@
       "plugin_path": "plugins/odds-ticker",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-19",
+      "last_updated": "2026-02-11",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "leaderboard",
@@ -379,10 +379,10 @@
       "plugin_path": "plugins/news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-19",
+      "last_updated": "2026-02-11",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "stock-news",

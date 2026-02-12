@@ -32,25 +32,20 @@ Screenshot Preview:
 
 ## Installation
 
-### From GitHub (Recommended)
+### From Plugin Store (Recommended)
 
-```bash
-./dev_plugin_setup.sh link-github olympics
-```
+1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
+2. Go to **Plugin Store**
+3. Find **Olympics Countdown** and click **Install**
 
 ### Manual Installation
 
-1. Clone the repository:
+1. Copy the plugin from the monorepo:
    ```bash
-   git clone https://github.com/ChuckBuilds/ledmatrix-olympics.git
+   cp -r ledmatrix-plugins/plugins/olympics /path/to/LEDMatrix/plugin-repos/
    ```
 
-2. Link to LEDMatrix plugins directory:
-   ```bash
-   ./dev_plugin_setup.sh link olympics /path/to/ledmatrix-olympics
-   ```
-
-3. Enable the plugin in `config/config.json`:
+2. Enable the plugin in `config/config.json`:
    ```json
    {
      "olympics": {

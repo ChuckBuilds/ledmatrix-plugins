@@ -187,15 +187,23 @@ ledmatrix-plugins/
     ...
 ```
 
+### Setup
+
+Install the git pre-commit hook so `plugins.json` stays in sync automatically:
+
+```bash
+cp scripts/pre-commit .git/hooks/pre-commit
+```
+
 ### Updating Plugin Versions
 
 After making changes to a plugin:
 
 1. Bump `version` in the plugin's `manifest.json`
-2. Run `python update_registry.py` to sync `plugins.json`
-3. Commit and push both changes
+2. Commit — the pre-commit hook automatically syncs `plugins.json`
 
 ```bash
+# Manual alternative (if hook isn't installed):
 python update_registry.py           # Update plugins.json
 python update_registry.py --dry-run # Preview changes
 ```

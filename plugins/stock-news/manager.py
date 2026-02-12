@@ -187,7 +187,10 @@ class StockNewsTickerPlugin(BasePlugin):
     def _fetch_stock_news(self, symbol: str) -> List[Dict]:
         """Fetch news for a specific stock symbol."""
         cache_key = f"stock_news_{symbol}_{datetime.now().strftime('%Y%m%d%H')}"
-        update_interval = self.global_config.get('update_interval_seconds', 300)
+        try:
+            update_interval = int(self.global_config.get('update_interval_seconds', 300))
+        except (ValueError, TypeError):
+            update_interval = 300
 
         # Check cache first
         cached_data = self.cache_manager.get(cache_key)
@@ -221,7 +224,10 @@ class StockNewsTickerPlugin(BasePlugin):
     def _fetch_feed_headlines(self, feed_name: str, feed_url: str) -> List[Dict]:
         """Fetch headlines from a custom RSS feed."""
         cache_key = f"stock_feed_{feed_name}_{datetime.now().strftime('%Y%m%d%H')}"
-        update_interval = self.global_config.get('update_interval_seconds', 300)
+        try:
+            update_interval = int(self.global_config.get('update_interval_seconds', 300))
+        except (ValueError, TypeError):
+            update_interval = 300
 
         # Check cache first
         cached_data = self.cache_manager.get(cache_key)

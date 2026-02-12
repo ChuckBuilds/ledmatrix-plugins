@@ -15,7 +15,6 @@
   "display_modes": [
     "clock-simple"
   ],
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-clock-simple/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "released": "2025-10-19",

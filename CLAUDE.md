@@ -12,8 +12,9 @@
 ### Steps for every plugin change:
 1. Make your code changes in `plugins/<plugin-id>/`
 2. Bump `version` in `plugins/<plugin-id>/manifest.json` (semver: major.minor.patch)
-3. Run `python update_registry.py` to sync `plugins.json`
-4. Commit both the plugin changes AND the updated `plugins.json`
+3. Commit — the pre-commit hook automatically runs `update_registry.py` and stages `plugins.json`
+
+> **Note:** The pre-commit hook only triggers when a `plugins/*/manifest.json` is staged. If it's not installed, run `cp scripts/pre-commit .git/hooks/pre-commit` to set it up.
 
 ### Version bump guidelines:
 - **Patch** (1.0.0 → 1.0.1): Bug fixes, minor text changes
@@ -44,3 +45,7 @@ Third-party plugins keep their own `repo` URL and empty `plugin_path`.
 - `python update_registry.py` — Update plugins.json from manifests
 - `python update_registry.py --dry-run` — Preview without writing
 - `scripts/archive_old_repos.sh` — Archive old individual repos (one-time, use `--apply`)
+
+## Git Hooks
+- `scripts/pre-commit` — Auto-syncs `plugins.json` when manifest versions change
+- Install: `cp scripts/pre-commit .git/hooks/pre-commit`

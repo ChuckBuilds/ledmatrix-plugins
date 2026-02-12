@@ -32,24 +32,22 @@ Real-time aircraft tracking plugin for LEDMatrix with ADS-B data, map background
 
 ## Installation
 
-### From GitHub (Recommended)
+### From Plugin Store (Recommended)
 
-```bash
-cd /path/to/LEDMatrix
-git submodule add https://github.com/ChuckBuilds/ledmatrix-flights.git plugins/ledmatrix-flights
-```
+1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
+2. Go to **Plugin Store**
+3. Find **Flight Tracker** and click **Install**
 
 ### Manual Installation
 
-1. Clone this repository into the `plugins/` directory:
+1. Copy the plugin from the monorepo:
 ```bash
-cd /path/to/LEDMatrix/plugins
-git clone https://github.com/ChuckBuilds/ledmatrix-flights.git
+cp -r ledmatrix-plugins/plugins/ledmatrix-flights /path/to/LEDMatrix/plugin-repos/
 ```
 
 2. Install dependencies:
 ```bash
-pip install -r plugins/ledmatrix-flights/requirements.txt
+pip install -r plugin-repos/ledmatrix-flights/requirements.txt
 ```
 
 ## Configuration

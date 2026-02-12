@@ -20,7 +20,6 @@
     "baseball_recent",
     "baseball_upcoming"
   ],
-  "download_url_template": "https://github.com/ChuckBuilds/ledmatrix-baseball-scoreboard/archive/refs/tags/v{version}.zip",
   "versions": [
     {
       "released": "2025-10-20",

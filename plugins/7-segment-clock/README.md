@@ -14,27 +14,22 @@ A retro-style 7-segment clock plugin for LEDMatrix that displays time using digi
 
 ## Installation
 
-### From Plugin Store (Coming Soon)
+### From Plugin Store (Recommended)
 
-The plugin can be installed via the LEDMatrix web interface plugin store.
+1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
+2. Go to **Plugin Store**
+3. Find **7-Segment Clock** and click **Install**
 
 ### Manual Installation
 
-1. Clone or download this repository to your LEDMatrix `plugins/` directory:
+1. Copy the plugin from the monorepo:
    ```bash
-   cd /path/to/LEDMatrix/plugins
-   git clone --recurse-submodules <repository-url> 7-segment-clock
-   ```
-   
-   **Note**: If you've already cloned without submodules, initialize them with:
-   ```bash
-   cd 7-segment-clock
-   git submodule update --init --recursive
+   cp -r ledmatrix-plugins/plugins/7-segment-clock /path/to/LEDMatrix/plugin-repos/
    ```
 
 2. Install dependencies:
    ```bash
-   pip install -r plugins/7-segment-clock/requirements.txt
+   pip install -r plugin-repos/7-segment-clock/requirements.txt
    ```
 
 3. Enable the plugin in `config/config.json`:
