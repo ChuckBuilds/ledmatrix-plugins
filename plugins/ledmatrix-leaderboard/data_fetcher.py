@@ -39,41 +39,30 @@ class DataFetcher:
     def fetch_standings(self, league_config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Fetch standings for a specific league from ESPN API with caching.
-        
+
         Args:
             league_config: League configuration dictionary
-            
+
         Returns:
             List of team standings dictionaries
         """
         league_key = league_config['league']
-        cache_key = f"leaderboard_{league_key}"
-        
-        # Try to get cached data first
-        cached_data = self.cache_manager.get_cached_data_with_strategy(cache_key, 'leaderboard')
-        if cached_data:
-            self.logger.info(f"Using cached leaderboard data for {league_key}")
-            return cached_data.get('standings', [])
-        
-        # Special handling for college football - use rankings endpoint
+
+        # Each fetch method handles its own caching with league-specific keys
         if league_key == 'college-football':
-            return self._fetch_ncaa_fb_rankings(league_config)
+            standings = self._fetch_ncaa_fb_rankings(league_config)
+        elif league_key == 'mens-college-hockey':
+            standings = self._fetch_ncaam_hockey_rankings(league_config)
+        elif league_key in ['mens-college-basketball', 'womens-college-basketball']:
+            standings = self._fetch_ncaa_basketball_rankings(league_config)
+        elif league_key in ['nfl', 'mlb', 'nhl', 'college-baseball']:
+            standings = self._fetch_standings_data(league_config)
+        else:
+            standings = self._fetch_teams_data(league_config)
 
-        # Special handling for mens-college-hockey - use rankings endpoint
-        if league_key == 'mens-college-hockey':
-            return self._fetch_ncaam_hockey_rankings(league_config)
-
-        # Special handling for college basketball - use rankings endpoint
-        # ESPN college basketball API requires numeric team IDs, not abbreviations
-        if league_key in ['mens-college-basketball', 'womens-college-basketball']:
-            return self._fetch_ncaa_basketball_rankings(league_config)
-
-        # Use standings endpoint for NFL, MLB, NHL, and NCAA Baseball
-        if league_key in ['nfl', 'mlb', 'nhl', 'college-baseball']:
-            return self._fetch_standings_data(league_config)
-
-        # For NBA and other leagues, use teams endpoint
-        return self._fetch_teams_data(league_config)
+        # Apply top_teams limit centrally so config changes take effect immediately
+        top_teams = league_config.get('top_teams', 10)
+        return standings[:top_teams]
     
     def _fetch_ncaa_fb_rankings(self, league_config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Fetch NCAA Football rankings from ESPN API using the rankings endpoint."""
@@ -151,24 +140,22 @@ class DataFetcher:
                     'ranking_name': ranking_name
                 })
             
-            top_teams = standings[:league_config.get('top_teams', 25)]
-            
-            # Cache the results
+            # Cache the full results (top_teams slicing is applied in fetch_standings)
             cache_data = {
-                'standings': top_teams,
+                'standings': standings,
                 'timestamp': time.time(),
                 'league': league_key,
                 'ranking_name': ranking_name
             }
             self.cache_manager.save_cache(cache_key, cache_data)
-            
-            self.logger.info(f"Fetched and cached {len(top_teams)} teams for {league_key}")
-            return top_teams
-            
+
+            self.logger.info(f"Fetched and cached {len(standings)} teams for {league_key}")
+            return standings
+
         except Exception as e:
             self.logger.error(f"Error fetching rankings for {league_key}: {e}")
             return []
-    
+
     def _fetch_ncaam_hockey_rankings(self, league_config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Fetch NCAA Men's Hockey rankings from ESPN API."""
         league_key = league_config['league']
@@ -225,19 +212,18 @@ class DataFetcher:
                     'ranking_name': ranking_name
                 })
             
-            top_teams = standings[:league_config.get('top_teams', 25)]
-            
+            # Cache the full results (top_teams slicing is applied in fetch_standings)
             cache_data = {
-                'standings': top_teams,
+                'standings': standings,
                 'timestamp': time.time(),
                 'league': league_key,
                 'ranking_name': ranking_name
             }
             self.cache_manager.save_cache(cache_key, cache_data)
-            
-            self.logger.info(f"Fetched and cached {len(top_teams)} teams for {league_key}")
-            return top_teams
-            
+
+            self.logger.info(f"Fetched and cached {len(standings)} teams for {league_key}")
+            return standings
+
         except Exception as e:
             self.logger.error(f"Error fetching rankings for {league_key}: {e}")
             return []
@@ -316,18 +302,17 @@ class DataFetcher:
                     'ranking_name': ranking_name
                 })
 
-            top_teams = standings[:league_config.get('top_teams', 25)]
-
+            # Cache the full results (top_teams slicing is applied in fetch_standings)
             cache_data = {
-                'standings': top_teams,
+                'standings': standings,
                 'timestamp': time.time(),
                 'league': league_key,
                 'ranking_name': ranking_name
             }
             self.cache_manager.save_cache(cache_key, cache_data)
 
-            self.logger.info(f"Fetched and cached {len(top_teams)} teams for {league_key}")
-            return top_teams
+            self.logger.info(f"Fetched and cached {len(standings)} teams for {league_key}")
+            return standings
 
         except Exception as e:
             self.logger.error(f"Error fetching rankings for {league_key}: {e}")
@@ -413,10 +398,9 @@ class DataFetcher:
             else:
                 self.logger.debug(f"Trusting API sort order for {len(standings)} teams")
             
-            top_teams = standings[:league_config.get('top_teams', 10)]
-            
+            # Cache the full results (top_teams slicing is applied in fetch_standings)
             cache_data = {
-                'standings': top_teams,
+                'standings': standings,
                 'timestamp': time.time(),
                 'league': league_key,
                 'level': params['level']
@@ -425,9 +409,9 @@ class DataFetcher:
             if 'season' in params:
                 cache_data['season'] = params['season']
             self.cache_manager.save_cache(cache_key, cache_data)
-            
-            self.logger.info(f"Fetched and cached {len(top_teams)} teams for {league_key} (from {len(standings)} total standings)")
-            return top_teams
+
+            self.logger.info(f"Fetched and cached {len(standings)} teams for {league_key}")
+            return standings
             
         except Exception as e:
             self.logger.error(f"Error fetching standings for {league_key}: {e}")
@@ -484,17 +468,17 @@ class DataFetcher:
                     })
             
             standings.sort(key=lambda x: x['win_percentage'], reverse=True)
-            top_teams = standings[:league_config.get('top_teams', 10)]
-            
+
+            # Cache the full results (top_teams slicing is applied in fetch_standings)
             cache_data = {
-                'standings': top_teams,
+                'standings': standings,
                 'timestamp': time.time(),
                 'league': league_key
             }
             self.cache_manager.save_cache(cache_key, cache_data)
-            
-            self.logger.info(f"Fetched and cached {len(top_teams)} teams for {league_config['league']}")
-            return top_teams
+
+            self.logger.info(f"Fetched and cached {len(standings)} teams for {league_config['league']}")
+            return standings
             
         except Exception as e:
             self.logger.error(f"Error fetching standings for {league_config['league']}: {e}")
