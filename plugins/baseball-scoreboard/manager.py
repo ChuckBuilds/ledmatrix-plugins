@@ -39,6 +39,13 @@ except ImportError:
     SportsRecent = None
     SportsUpcoming = None
 
+# Import data manager for background fetching
+try:
+    from data_manager import BaseballDataManager
+    DATA_MANAGER_AVAILABLE = True
+except ImportError:
+    BaseballDataManager = None
+    DATA_MANAGER_AVAILABLE = False
 
 # Import scroll display components
 try:
@@ -184,6 +191,15 @@ class BaseballScoreboardPlugin(BasePlugin):
             self.logger.info("Scroll display not available - scroll mode disabled")
 
         self.initialized = True
+
+        # Initialize data manager for background fetching
+        self.data_manager = None
+        if DATA_MANAGER_AVAILABLE:
+            try:
+                self.data_manager = BaseballDataManager(cache_manager, self.logger)
+                self.logger.info("Baseball data manager initialized with background service support")
+            except Exception as e:
+                self.logger.warning(f"Could not initialize data manager, using sync fetching: {e}")
 
         # Load fonts for rendering
         self.fonts = self._load_fonts()
@@ -352,7 +368,62 @@ class BaseballScoreboardPlugin(BasePlugin):
         self.current_games.sort(key=sort_key)
 
     def _fetch_league_data(self, league_key: str, league_config: Dict) -> List[Dict]:
-        """Fetch game data for a specific league."""
+        """Fetch game data for a specific league.
+
+        Uses data_manager with background_data_service when available,
+        falls back to direct synchronous API calls otherwise.
+        """
+        if self.data_manager:
+            return self._fetch_via_data_manager(league_key, league_config)
+        return self._fetch_league_data_sync(league_key, league_config)
+
+    def _fetch_via_data_manager(self, league_key: str, league_config: Dict) -> List[Dict]:
+        """Fetch game data via data_manager (supports background_data_service)."""
+        try:
+            if league_key == 'milb':
+                milb_games = self.data_manager.fetch_milb_games(league_config)
+                if not milb_games:
+                    return []
+                return [self._convert_milb_game(g) for g in milb_games.values()]
+            else:
+                result = self.data_manager.fetch_season_data(league_key, league_config)
+                if result and 'events' in result:
+                    return self._process_api_response(result, league_key, league_config)
+                return []
+        except Exception as e:
+            self.logger.exception(f"Error fetching {league_key} via data manager, falling back to sync")
+            return self._fetch_league_data_sync(league_key, league_config)
+
+    def _convert_milb_game(self, milb_data: Dict) -> Dict:
+        """Convert data_manager MiLB format to the game dict format used by display methods."""
+        return {
+            'league': 'milb',
+            'game_id': milb_data.get('id'),
+            'home_team': {
+                'name': '',
+                'abbrev': milb_data.get('home_team', ''),
+                'score': milb_data.get('home_score', 0),
+                'logo': None
+            },
+            'away_team': {
+                'name': '',
+                'abbrev': milb_data.get('away_team', ''),
+                'score': milb_data.get('away_score', 0),
+                'logo': None
+            },
+            'status': {
+                'state': milb_data.get('status_state', 'pre'),
+                'detail': milb_data.get('detailed_state', ''),
+                'short_detail': milb_data.get('detailed_state', ''),
+                'period': milb_data.get('inning', 0),
+                'display_clock': ''
+            },
+            'start_time': milb_data.get('start_time', ''),
+            'venue': ''
+        }
+
+    def _fetch_league_data_sync(self, league_key: str, league_config: Dict) -> List[Dict]:
+        """Synchronous fallback for fetching game data when data_manager is unavailable."""
         cache_key = f"baseball_{league_key}_{datetime.now().strftime('%Y%m%d')}"
         try:
             update_interval = int(league_config.get('update_interval_seconds', 60))
@@ -372,7 +443,7 @@ class BaseballScoreboardPlugin(BasePlugin):
                 self.logger.error(f"Unknown league key: {league_key}")
                 return []
 
-            self.logger.info(f"Fetching {league_key} data from ESPN API...")
+            self.logger.info(f"Fetching {league_key} data from ESPN API (sync)...")
             response = requests.get(url, timeout=league_config.get('background_service', {}).get('request_timeout', 30))
             response.raise_for_status()
 
@@ -990,4 +1061,7 @@ class BaseballScoreboardPlugin(BasePlugin):
         """Cleanup resources."""
         with self._games_lock:
             self.current_games = []
+        if hasattr(self, 'data_manager') and self.data_manager:
+            # Background service is a global singleton, no explicit shutdown needed
+            self.data_manager = None
         self.logger.info("Baseball scoreboard plugin cleaned up")
