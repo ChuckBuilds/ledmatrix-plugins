@@ -1344,6 +1344,77 @@
           "type": "boolean",
           "default": true,
           "description": "Prioritize live Olympic Men's Hockey games over scheduled games"
+        },
+        "dynamic_duration": {
+          "type": "object",
+          "description": "Dynamic duration settings - automatically adjust display time based on content",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable dynamic duration for Olympic Men's Hockey games"
+            },
+            "max_duration_seconds": {
+              "type": "number",
+              "minimum": 60,
+              "maximum": 600,
+              "description": "Maximum duration in seconds when dynamic duration is enabled"
+            },
+            "modes": {
+              "type": "object",
+              "description": "Per-mode dynamic duration settings",
+              "properties": {
+                "live": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable dynamic duration for Olympic Men's Hockey live games"
+                    },
+                    "max_duration_seconds": {
+                      "type": "number",
+                      "minimum": 60,
+                      "maximum": 600,
+                      "description": "Maximum duration for Olympic Men's Hockey live games"
+                    }
+                  }
+                },
+                "recent": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable dynamic duration for Olympic Men's Hockey recent games"
+                    },
+                    "max_duration_seconds": {
+                      "type": "number",
+                      "minimum": 60,
+                      "maximum": 600,
+                      "description": "Maximum duration for Olympic Men's Hockey recent games"
+                    }
+                  }
+                },
+                "upcoming": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable dynamic duration for Olympic Men's Hockey upcoming games"
+                    },
+                    "max_duration_seconds": {
+                      "type": "number",
+                      "minimum": 60,
+                      "maximum": 600,
+                      "description": "Maximum duration for Olympic Men's Hockey upcoming games"
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1607,6 +1678,77 @@
           "type": "boolean",
           "default": true,
           "description": "Prioritize live Olympic Women's Hockey games over scheduled games"
+        },
+        "dynamic_duration": {
+          "type": "object",
+          "description": "Dynamic duration settings - automatically adjust display time based on content",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable dynamic duration for Olympic Women's Hockey games"
+            },
+            "max_duration_seconds": {
+              "type": "number",
+              "minimum": 60,
+              "maximum": 600,
+              "description": "Maximum duration in seconds when dynamic duration is enabled"
+            },
+            "modes": {
+              "type": "object",
+              "description": "Per-mode dynamic duration settings",
+              "properties": {
+                "live": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable dynamic duration for Olympic Women's Hockey live games"
+                    },
+                    "max_duration_seconds": {
+                      "type": "number",
+                      "minimum": 60,
+                      "maximum": 600,
+                      "description": "Maximum duration for Olympic Women's Hockey live games"
+                    }
+                  }
+                },
+                "recent": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable dynamic duration for Olympic Women's Hockey recent games"
+                    },
+                    "max_duration_seconds": {
+                      "type": "number",
+                      "minimum": 60,
+                      "maximum": 600,
+                      "description": "Maximum duration for Olympic Women's Hockey recent games"
+                    }
+                  }
+                },
+                "upcoming": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable dynamic duration for Olympic Women's Hockey upcoming games"
+                    },
+                    "max_duration_seconds": {
+                      "type": "number",
+                      "minimum": 60,
+                      "maximum": 600,
+                      "description": "Maximum duration for Olympic Women's Hockey upcoming games"
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
