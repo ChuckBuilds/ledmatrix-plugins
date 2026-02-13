@@ -235,6 +235,7 @@
                       "type": "number",
                       "minimum": 10,
                       "maximum": 300,
+                      "default": 30,
                       "description": "Minimum duration for live mode"
                     },
                     "max_duration_seconds": {
@@ -258,6 +259,7 @@
                       "type": "number",
                       "minimum": 10,
                       "maximum": 300,
+                      "default": 30,
                       "description": "Minimum duration for recent mode"
                     },
                     "max_duration_seconds": {
@@ -281,6 +283,7 @@
                       "type": "number",
                       "minimum": 10,
                       "maximum": 300,
+                      "default": 30,
                       "description": "Minimum duration for upcoming mode"
                     },
                     "max_duration_seconds": {

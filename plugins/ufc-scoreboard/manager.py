@@ -91,7 +91,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.game_display_duration = float(config.get("game_display_duration", 15))
 
         # Live priority
-        self.ufc_live_priority = config.get("ufc", {}).get("live_priority", False)
+        self.ufc_live_priority = config.get("ufc", {}).get("live_priority", True)
 
         # Display mode settings
         self._display_mode_settings = self._parse_display_mode_settings()

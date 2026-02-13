@@ -358,21 +358,21 @@ class MMARecent(MMA, SportsRecent):
                 - fighter1_image.width
                 + fighter1_image.width // 4
                 + 2
-                + self._get_layout_offset("home_logo", "x_offset")
+                + self._get_layout_offset("fighter1_image", "x_offset")
             )
-            home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("home_logo", "y_offset")
+            home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("fighter1_image", "y_offset")
             main_img.paste(fighter1_image, (home_x, home_y), fighter1_image)
 
             # Fighter 2 (left side) headshot position
-            away_x = -2 - fighter2_image.width // 4 + self._get_layout_offset("away_logo", "x_offset")
-            away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("away_logo", "y_offset")
+            away_x = -2 - fighter2_image.width // 4 + self._get_layout_offset("fighter2_image", "x_offset")
+            away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("fighter2_image", "y_offset")
             main_img.paste(fighter2_image, (away_x, away_y), fighter2_image)
 
             # Result text (centered bottom)
             score_text = game.get("status_text", "Final")
             score_width = draw_overlay.textlength(score_text, font=self.fonts["score"])
-            score_x = (self.display_width - score_width) // 2 + self._get_layout_offset("score", "x_offset")
-            score_y = self.display_height - 14 + self._get_layout_offset("score", "y_offset")
+            score_x = (self.display_width - score_width) // 2 + self._get_layout_offset("result_text", "x_offset")
+            score_y = self.display_height - 14 + self._get_layout_offset("result_text", "y_offset")
             self._draw_text_with_outline(
                 draw_overlay, score_text, (score_x, score_y), self.fonts["score"]
             )
@@ -633,9 +633,9 @@ class MMAUpcoming(MMA, SportsUpcoming):
                 - fighter1_image.width
                 + fighter1_image.width // 4
                 + 2
-                + self._get_layout_offset("home_logo", "x_offset")
+                + self._get_layout_offset("fighter1_image", "x_offset")
             )
-            home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("home_logo", "y_offset")
+            home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("fighter1_image", "y_offset")
             main_img.paste(fighter1_image, (home_x, home_y), fighter1_image)
 
             # Fighter 2 short name (top left, near fighter 2 headshot)
@@ -647,8 +647,8 @@ class MMAUpcoming(MMA, SportsUpcoming):
             )
 
             # Fighter 2 (left side) headshot position
-            away_x = -2 - fighter2_image.width // 4 + self._get_layout_offset("away_logo", "x_offset")
-            away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("away_logo", "y_offset")
+            away_x = -2 - fighter2_image.width // 4 + self._get_layout_offset("fighter2_image", "x_offset")
+            away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("fighter2_image", "y_offset")
             main_img.paste(fighter2_image, (away_x, away_y), fighter2_image)
 
             # Fighter 1 short name (top right, near fighter 1 headshot)
@@ -675,8 +675,8 @@ class MMAUpcoming(MMA, SportsUpcoming):
                 score_text = game.get("status_text", "TBD")
 
             score_width = draw_overlay.textlength(score_text, font=self.fonts["score"])
-            score_x = (self.display_width - score_width) // 2 + self._get_layout_offset("score", "x_offset")
-            score_y = self.display_height - 14 + self._get_layout_offset("score", "y_offset")
+            score_x = (self.display_width - score_width) // 2 + self._get_layout_offset("result_text", "x_offset")
+            score_y = self.display_height - 14 + self._get_layout_offset("result_text", "y_offset")
             self._draw_text_with_outline(
                 draw_overlay, score_text, (score_x, score_y), self.fonts["score"]
             )
@@ -920,14 +920,14 @@ class MMALive(MMA, SportsLive):
             # Fighter 1 (right side) headshot with layout offsets
             home_x = (
                 self.display_width - fighter1_image.width + 10
-                + self._get_layout_offset("home_logo", "x_offset")
+                + self._get_layout_offset("fighter1_image", "x_offset")
             )
-            home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("home_logo", "y_offset")
+            home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("fighter1_image", "y_offset")
             main_img.paste(fighter1_image, (home_x, home_y), fighter1_image)
 
             # Fighter 2 (left side) headshot with layout offsets
-            away_x = -10 + self._get_layout_offset("away_logo", "x_offset")
-            away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("away_logo", "y_offset")
+            away_x = -10 + self._get_layout_offset("fighter2_image", "x_offset")
+            away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("fighter2_image", "y_offset")
             main_img.paste(fighter2_image, (away_x, away_y), fighter2_image)
 
             # Round and Clock (top center)
@@ -954,8 +954,8 @@ class MMALive(MMA, SportsLive):
             away_score = str(game.get("away_score", "0"))
             score_text = f"{away_score}-{home_score}"
             score_width = draw_overlay.textlength(score_text, font=self.fonts["score"])
-            score_x = (self.display_width - score_width) // 2 + self._get_layout_offset("score", "x_offset")
-            score_y = (self.display_height // 2) - 3 + self._get_layout_offset("score", "y_offset")
+            score_x = (self.display_width - score_width) // 2 + self._get_layout_offset("result_text", "x_offset")
+            score_y = (self.display_height // 2) - 3 + self._get_layout_offset("result_text", "y_offset")
             self._draw_text_with_outline(
                 draw_overlay, score_text, (score_x, score_y), self.fonts["score"]
             )
