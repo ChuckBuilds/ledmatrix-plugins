@@ -49,11 +49,16 @@ Daily Forecast:
 
 ### API Key
 
-Get a free 1000 Daily API Calls on their pay as you go plan (requires CC but won't charge) via their One Call API Key from [OpenWeatherMap](https://openweathermap.org/api):
-1. Sign up for an account
-2. Navigate to API Keys section
-3. Generate a new API key
-4. Add it to your plugin configuration
+This plugin requires a **One Call API 3.0** subscription from [OpenWeatherMap](https://openweathermap.org/api) (free tier: 1,000 calls/day):
+
+1. Sign up for an account at https://openweathermap.org
+2. Navigate to API Keys section and generate a new API key
+3. **Subscribe to One Call API 3.0** — this is a separate step from getting an API key:
+   - Go to https://openweathermap.org/api
+   - Find "One Call API 3.0" and click Subscribe
+   - The free tier requires adding payment info but will not charge you
+   - A standard API key alone will **not** work; you must subscribe to One Call 3.0
+4. Add the API key to your plugin configuration
 
 
 ### Configuration Options
@@ -83,11 +88,13 @@ The plugin automatically rotates through enabled display modes based on the `dis
 
 ## Troubleshooting
 
-**No weather data displayed:**
-- Check that your API key is valid
+**No weather data displayed / "No Data" on screen:**
+- **Most common cause**: Your API key is not subscribed to One Call API 3.0
+  - Check logs for "401 Unauthorized" errors
+  - Subscribe at https://openweathermap.org/api -> One Call API 3.0 -> Subscribe
+- Verify your API key is correct
 - Verify internet connection
-- Check logs for API errors
-- Ensure location is spelled correctly
+- Ensure location is spelled correctly (city name must match OpenWeatherMap's geocoding)
 
 **Slow updates:**
 - API has rate limits, respect the minimum update interval

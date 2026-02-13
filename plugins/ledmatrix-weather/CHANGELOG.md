@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.1.0] - 2026-02-13
+
+### Fixed
+- **CRITICAL: "No Data Available" with valid API key**: Added specific HTTP error handling
+  for One Call API 3.0 401 Unauthorized errors with actionable log messages guiding users
+  to subscribe to One Call 3.0
+- **Wind direction always showing "N"**: Fixed missing `wind_deg` field in weather data
+  storage; wind direction is now correctly read from the API response
+- **Geocoding failure causes infinite retry loop**: Empty geocoding results now set
+  `last_update` to prevent burning API calls on unresolvable locations
+
+### Improved
+- Diagnostic "no data" display now shows *why* there's no data (no API key, API
+  subscription error, unknown location) instead of generic "No Weather Data"
+- Updated config schema and README to clearly state the One Call API 3.0 subscription
+  requirement
+
 ## [2.0.9] - 2025-11-05
 
 ### Fixed

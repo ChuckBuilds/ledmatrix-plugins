@@ -25,7 +25,7 @@
     "api_key": {
       "type": "string",
       "default": "YOUR_OPENWEATHERMAP_API_KEY",
-      "description": "OpenWeatherMap API key (required - get one at https://openweathermap.org/api). Store in config_secrets.json for security.",
+      "description": "OpenWeatherMap API key (required). Must be subscribed to One Call API 3.0 at https://openweathermap.org/api (free tier available, requires payment info). Store in config_secrets.json for security.",
       "title": "API Key",
       "x-secret": true
     },

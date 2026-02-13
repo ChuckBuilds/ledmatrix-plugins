@@ -115,6 +115,7 @@ class WeatherPlugin(BasePlugin):
         self.max_consecutive_errors = 5
         self.error_log_throttle = 300  # Only log errors every 5 minutes
         self.last_error_log_time = 0
+        self._last_error_hint = None  # Human-readable hint for diagnostic display
         
         # State caching for display optimization
         self.last_weather_state = None
@@ -246,13 +247,16 @@ class WeatherPlugin(BasePlugin):
             self._fetch_weather()
             self.last_update = current_time
             self.consecutive_errors = 0
+            self._last_error_hint = None
         except Exception as e:
             self.consecutive_errors += 1
             self.last_error_time = current_time
-            
+            if not self._last_error_hint:
+                self._last_error_hint = str(e)[:40]
+
             # Exponential backoff: double the backoff time (max 1 hour)
             self.error_backoff_time = min(self.error_backoff_time * 2, 3600)
-            
+
             # Only log errors periodically to avoid spam
             if current_time - self.last_error_log_time > self.error_log_throttle:
                 self.logger.error(f"Error updating weather (attempt {self.consecutive_errors}/{self.max_consecutive_errors}): {e}")
@@ -280,16 +284,34 @@ class WeatherPlugin(BasePlugin):
         
         # Get coordinates using geocoding API
         geo_url = f"http://api.openweathermap.org/geo/1.0/direct?q={city},{state},{country}&limit=1&appid={self.api_key}"
-        
-        response = requests.get(geo_url, timeout=10)
-        response.raise_for_status()
+
+        try:
+            response = requests.get(geo_url, timeout=10)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code if e.response is not None else None
+            if status == 401:
+                self._last_error_hint = "Invalid API key"
+                self.logger.error(
+                    "Geocoding API returned 401 Unauthorized. "
+                    "Verify your API key is correct at https://openweathermap.org/api"
+                )
+            elif status == 429:
+                self._last_error_hint = "Rate limit exceeded"
+                self.logger.error("Geocoding API rate limit exceeded (429). Increase update_interval.")
+            else:
+                self._last_error_hint = f"Geo API error {status}"
+                self.logger.error(f"Geocoding API HTTP error {status}: {e}")
+            raise
         geo_data = response.json()
         
         # Increment API counter for geocoding call
         increment_api_counter('weather', 1)
         
         if not geo_data:
-            self.logger.error(f"Could not find coordinates for {city}, {state}")
+            self._last_error_hint = f"Unknown: {city}, {state}"
+            self.logger.error(f"Could not find coordinates for {city}, {state}, {country}")
+            self.last_update = time.time()  # Prevent immediate retry
             return
         
         lat = geo_data[0]['lat']
@@ -297,9 +319,27 @@ class WeatherPlugin(BasePlugin):
         
         # Get weather data using One Call API
         one_call_url = f"https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lon}&exclude=minutely,alerts&appid={self.api_key}&units={self.units}"
-        
-        response = requests.get(one_call_url, timeout=10)
-        response.raise_for_status()
+
+        try:
+            response = requests.get(one_call_url, timeout=10)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code if e.response is not None else None
+            if status == 401:
+                self._last_error_hint = "Subscribe to One Call 3.0"
+                self.logger.error(
+                    "One Call API 3.0 returned 401 Unauthorized. "
+                    "Your API key is NOT subscribed to One Call API 3.0. "
+                    "Subscribe (free tier available) at https://openweathermap.org/api "
+                    "-> One Call API 3.0 -> Subscribe."
+                )
+            elif status == 429:
+                self._last_error_hint = "Rate limit exceeded"
+                self.logger.error("One Call API rate limit exceeded (429). Increase update_interval.")
+            else:
+                self._last_error_hint = f"Weather API error {status}"
+                self.logger.error(f"One Call API HTTP error {status}: {e}")
+            raise
         one_call_data = response.json()
         
         # Increment API counter for weather data call
@@ -317,7 +357,8 @@ class WeatherPlugin(BasePlugin):
             },
             'weather': one_call_data['current']['weather'],
             'wind': {
-                'speed': one_call_data['current']['wind_speed']
+                'speed': one_call_data['current']['wind_speed'],
+                'deg': one_call_data['current'].get('wind_deg', 0)
             }
         }
         
@@ -470,22 +511,28 @@ class WeatherPlugin(BasePlugin):
         self.last_mode_switch = time.time()
     
     def _display_no_data(self) -> None:
-        """Display a message when no weather data is available."""
+        """Display a diagnostic message when no weather data is available."""
         img = Image.new('RGB', (self.display_manager.matrix.width, self.display_manager.matrix.height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
-        
-        # Simple text display
+
         from PIL import ImageFont
         try:
-            # Resolve font path relative to project root
             font_path = self.project_root / 'assets' / 'fonts' / '4x6-font.ttf'
             font = ImageFont.truetype(str(font_path), 8)
-        except:
+        except Exception:
             font = ImageFont.load_default()
-        
-        draw.text((5, 12), "No Weather", font=font, fill=(200, 200, 200))
-        draw.text((5, 20), "Data", font=font, fill=(200, 200, 200))
-        
+
+        if not self.api_key or self.api_key == "YOUR_OPENWEATHERMAP_API_KEY":
+            draw.text((2, 8), "Weather:", font=font, fill=(200, 200, 200))
+            draw.text((2, 18), "No API Key", font=font, fill=(255, 100, 100))
+        elif self._last_error_hint:
+            draw.text((2, 4), "Weather Err", font=font, fill=(200, 200, 200))
+            hint = self._last_error_hint[:22]
+            draw.text((2, 14), hint, font=font, fill=(255, 100, 100))
+        else:
+            draw.text((5, 8), "No Weather", font=font, fill=(200, 200, 200))
+            draw.text((5, 18), "Data", font=font, fill=(200, 200, 200))
+
         self.display_manager.image = img
         self.display_manager.update_display()
     
