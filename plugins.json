@@ -227,6 +227,30 @@
       "latest_version": "2.0.7"
     },
     {
+      "id": "ufc-scoreboard",
+      "name": "UFC Scoreboard",
+      "description": "Live, recent, and upcoming UFC fights with fighter headshots, records, odds, and fight results. Based on original work by Alex Resnick (legoguy1000).",
+      "author": "ChuckBuilds",
+      "category": "sports",
+      "tags": [
+        "ufc",
+        "mma",
+        "fighting",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/ufc-scoreboard",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-02-12",
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.0.0"
+    },
+    {
       "id": "basketball-scoreboard",
       "name": "Basketball Scoreboard",
       "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores and schedules",
