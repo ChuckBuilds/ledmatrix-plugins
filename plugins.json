@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-02-12",
+  "last_updated": "2026-02-13",
   "plugins": [
     {
       "id": "hello-world",
@@ -59,10 +59,10 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.0.9",
+      "latest_version": "2.1.0",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-11-05",
+      "last_updated": "2026-02-13",
       "verified": true,
       "screenshot": ""
     },
