@@ -1,6 +1,7 @@
 """UFC Manager Classes - Adapted from original work by Alex Resnick (legoguy1000) - PR #137"""
 
 import logging
+import threading
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -43,12 +44,13 @@ class BaseUFCManager(MMA):
         self._warning_cooldown = 60
         self._shared_data = None
         self._last_shared_update = 0
+        self._bg_lock = threading.Lock()
 
         # Check display modes to determine what data to fetch
         display_modes = self.mode_config.get("display_modes", {})
-        self.recent_enabled = display_modes.get("ufc_recent", False)
-        self.upcoming_enabled = display_modes.get("ufc_upcoming", False)
-        self.live_enabled = display_modes.get("ufc_live", False)
+        self.recent_enabled = display_modes.get("show_recent", False)
+        self.upcoming_enabled = display_modes.get("show_upcoming", False)
+        self.live_enabled = display_modes.get("show_live", False)
 
         self.logger.info(
             f"Initialized UFC manager with display dimensions: "
@@ -90,7 +92,7 @@ class BaseUFCManager(MMA):
                         f"{type(cached_data)}"
                     )
                     # Clear invalid cache
-                    self.cache_manager.clear_cache(cache_key)
+                    self.cache_manager.delete(cache_key)
 
         # Synchronous fallback when background service is not available
         if not self.background_enabled:
@@ -131,9 +133,10 @@ class BaseUFCManager(MMA):
                     f"Background fetch failed for {season_year}: {result.error}"
                 )
 
-            # Clean up request tracking
-            if season_year in self.background_fetch_requests:
-                del self.background_fetch_requests[season_year]
+            # Clean up request tracking (called from background thread)
+            with self._bg_lock:
+                if season_year in self.background_fetch_requests:
+                    del self.background_fetch_requests[season_year]
 
         # Get background service configuration
         background_config = self.mode_config.get("background_service", {})
@@ -156,7 +159,8 @@ class BaseUFCManager(MMA):
         )
 
         # Track the request
-        self.background_fetch_requests[season_year] = request_id
+        with self._bg_lock:
+            self.background_fetch_requests[season_year] = request_id
 
         # For immediate response, try to get partial data
         partial_data = self._get_weeks_data()

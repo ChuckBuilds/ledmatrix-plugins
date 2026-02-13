@@ -166,7 +166,7 @@ class MMA(SportsCore):
             )
             return None
 
-    def _extract_game_details(self, game_event: dict) -> Dict | None:
+    def _extract_game_details(self, game_event: dict) -> Optional[Dict]:
         if not game_event:
             return None
         try:
@@ -638,12 +638,12 @@ class MMAUpcoming(MMA, SportsUpcoming):
             home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("home_logo", "y_offset")
             main_img.paste(fighter1_image, (home_x, home_y), fighter1_image)
 
-            # Fighter 1 short name (top right, near fighter 1 headshot)
-            fighter1_name_text = game.get("fighter1_name_short", "")
-            status_x = 1 + self._get_layout_offset("status_text", "x_offset")
-            status_y = 1 + self._get_layout_offset("status_text", "y_offset")
+            # Fighter 2 short name (top left, near fighter 2 headshot)
+            fighter2_name_text = game.get("fighter2_name_short", "")
+            f2_name_x = 1 + self._get_layout_offset("status_text", "x_offset")
+            f2_name_y = 1 + self._get_layout_offset("status_text", "y_offset")
             self._draw_text_with_outline(
-                draw_overlay, fighter1_name_text, (status_x, status_y), self.fonts["odds"]
+                draw_overlay, fighter2_name_text, (f2_name_x, f2_name_y), self.fonts["odds"]
             )
 
             # Fighter 2 (left side) headshot position
@@ -651,15 +651,15 @@ class MMAUpcoming(MMA, SportsUpcoming):
             away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("away_logo", "y_offset")
             main_img.paste(fighter2_image, (away_x, away_y), fighter2_image)
 
-            # Fighter 2 short name (top right)
-            fighter2_name_text = game.get("fighter2_name_short", "")
-            fighter2_name_width = draw_overlay.textlength(
-                fighter2_name_text, font=self.fonts["odds"]
+            # Fighter 1 short name (top right, near fighter 1 headshot)
+            fighter1_name_text = game.get("fighter1_name_short", "")
+            fighter1_name_width = draw_overlay.textlength(
+                fighter1_name_text, font=self.fonts["odds"]
             )
-            fighter2_name_x = self.display_width - fighter2_name_width - 1
-            fighter2_name_y = 1
+            fighter1_name_x = self.display_width - fighter1_name_width - 1
+            fighter1_name_y = 1
             self._draw_text_with_outline(
-                draw_overlay, fighter2_name_text, (fighter2_name_x, fighter2_name_y), self.fonts["odds"]
+                draw_overlay, fighter1_name_text, (fighter1_name_x, fighter1_name_y), self.fonts["odds"]
             )
 
             # Date and time display (centered bottom)

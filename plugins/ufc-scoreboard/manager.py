@@ -11,6 +11,7 @@ Display Modes:
 Based on original work by Alex Resnick (legoguy1000) - PR #137
 """
 
+import copy
 import logging
 import time
 from typing import Dict, Any, Set, Optional, Tuple, List
@@ -260,9 +261,9 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         display_modes_config = league_config.get("display_modes", {})
 
         manager_display_modes = {
-            f"{league}_live": display_modes_config.get("show_live", True),
-            f"{league}_recent": display_modes_config.get("show_recent", True),
-            f"{league}_upcoming": display_modes_config.get("show_upcoming", True),
+            "show_live": display_modes_config.get("show_live", True),
+            "show_recent": display_modes_config.get("show_recent", True),
+            "show_upcoming": display_modes_config.get("show_upcoming", True),
         }
 
         # Get favorite fighters filtering
@@ -375,8 +376,13 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
             if display_modes.get("show_upcoming", True):
                 modes.append("ufc_upcoming")
 
+        # Only fall back to all modes if display_modes section was not
+        # configured at all.  When the user explicitly disabled every mode,
+        # respect that by returning an empty list.
         if not modes:
-            modes = ["ufc_live", "ufc_recent", "ufc_upcoming"]
+            ufc_config = self.config.get("ufc", {})
+            if "display_modes" not in ufc_config:
+                modes = ["ufc_live", "ufc_recent", "ufc_upcoming"]
 
         return modes
 
@@ -608,7 +614,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "last_log_time": current_time,
             }
 
-        if result is True or result is None:
+        if result is not False:
             manager_key = self._build_manager_key(actual_mode, manager)
 
             try:
@@ -1143,8 +1149,9 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                         "upcoming": "pre",
                     }
                     for fight in manager_fights:
-                        # Copy fight dict to avoid mutating manager state
-                        fight_copy = dict(fight)
+                        # Deep-copy to avoid mutating manager state
+                        # (shallow dict() would share nested dicts like status)
+                        fight_copy = copy.deepcopy(fight)
                         fight_copy["league"] = "ufc"
                         if not isinstance(fight_copy.get("status"), dict):
                             fight_copy["status"] = {}
@@ -1203,8 +1210,23 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
     def cleanup(self) -> None:
         """Clean up resources."""
         try:
-            if hasattr(self, "background_service") and self.background_service:
-                pass
+            # Clean up each manager
+            for attr in ("ufc_live", "ufc_recent", "ufc_upcoming"):
+                manager = getattr(self, attr, None)
+                if manager and hasattr(manager, "cleanup"):
+                    try:
+                        manager.cleanup()
+                    except Exception as e:
+                        self.logger.debug(f"Error cleaning up {attr}: {e}")
+
+            # Clean up scroll manager
+            if self._scroll_manager:
+                try:
+                    self._scroll_manager.reset()
+                except Exception as e:
+                    self.logger.debug(f"Error resetting scroll manager: {e}")
+                self._scroll_manager = None
+
             self.logger.info("UFC scoreboard plugin cleanup completed")
         except Exception as e:
             self.logger.error(f"Error during cleanup: {e}")
