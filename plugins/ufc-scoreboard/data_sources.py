@@ -7,10 +7,13 @@ UFC/MMA adaptation based on work by Alex Resnick (legoguy1000) - PR #137
 
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
-import requests
 import logging
-from datetime import datetime, timedelta
 import time
+from datetime import datetime, timedelta, timezone
+
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 
 class DataSource(ABC):
@@ -21,9 +24,6 @@ class DataSource(ABC):
         self.session = requests.Session()
 
         # Configure retry strategy
-        from requests.adapters import HTTPAdapter
-        from urllib3.util.retry import Retry
-
         retry_strategy = Retry(
             total=5,
             backoff_factor=1,
@@ -66,7 +66,7 @@ class ESPNDataSource(DataSource):
     def fetch_live_games(self, sport: str, league: str) -> List[Dict]:
         """Fetch live games from ESPN API."""
         try:
-            now = datetime.now()
+            now = datetime.now(timezone.utc)
             formatted_date = now.strftime("%Y%m%d")
             url = f"{self.base_url}/{sport}/{league}/scoreboard"
             response = self.session.get(

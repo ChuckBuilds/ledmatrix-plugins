@@ -13,6 +13,9 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Union
 from PIL import Image, ImageDraw, ImageFont
 
+# Pillow < 9.1.0 compat: Image.Resampling.LANCZOS was added in 9.1.0
+LANCZOS = getattr(Image, "Resampling", Image).LANCZOS
+
 logger = logging.getLogger(__name__)
 
 
@@ -117,7 +120,11 @@ class FightRenderer:
         """Get layout offset for an element from config."""
         layout_config = self.config.get("customization", {}).get("layout", {})
         element_config = layout_config.get(element, {})
-        return int(element_config.get(axis, default))
+        value = element_config.get(axis, default)
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
 
     def _draw_text_with_outline(
         self,
@@ -153,14 +160,15 @@ class FightRenderer:
                 download_missing_headshot(fighter_id, fighter_name, headshot_path, headshot_url)
 
             if headshot_path.exists():
-                img = Image.open(headshot_path)
-                if img.mode != "RGBA":
-                    img = img.convert("RGBA")
+                with Image.open(headshot_path) as img:
+                    if img.mode != "RGBA":
+                        img = img.convert("RGBA")
 
-                # Scale headshot to fit display height
-                max_width = int(self.display_width * 1.5)
-                max_height = int(self.display_height * 1.5)
-                img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+                    # Scale headshot to fit display height
+                    max_width = int(self.display_width * 1.5)
+                    max_height = int(self.display_height * 1.5)
+                    img.thumbnail((max_width, max_height), LANCZOS)
+                    img.load()  # Ensure pixel data is loaded before closing file
                 self._headshot_cache[fighter_id] = img
                 return img
             else:

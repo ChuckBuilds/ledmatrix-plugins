@@ -19,13 +19,6 @@ ESPN_UFC_SCOREBOARD_URL = (
 class BaseUFCManager(MMA):
     """Base class for UFC managers with common functionality."""
 
-    # Class variables for warning tracking
-    _no_data_warning_logged = False
-    _last_warning_time = 0
-    _warning_cooldown = 60  # Only log warnings once per minute
-    _shared_data = None
-    _last_shared_update = 0
-
     def __init__(
         self,
         config: Dict[str, Any],
@@ -43,6 +36,13 @@ class BaseUFCManager(MMA):
 
         self.league = "ufc"
         self.sport = "mma"
+
+        # Per-instance warning tracking (not shared across instances)
+        self._no_data_warning_logged = False
+        self._last_warning_time = 0
+        self._warning_cooldown = 60
+        self._shared_data = None
+        self._last_shared_update = 0
 
         # Check display modes to determine what data to fetch
         display_modes = self.mode_config.get("display_modes", {})
@@ -116,10 +116,15 @@ class BaseUFCManager(MMA):
 
         def fetch_callback(result):
             """Callback when background fetch completes."""
-            if result.success:
+            if result.success and result.data:
+                events = result.data.get("events", [])
                 self.logger.info(
                     f"Background fetch completed for {season_year}: "
-                    f"{len(result.data.get('events'))} events"
+                    f"{len(events)} events"
+                )
+            elif result.success:
+                self.logger.warning(
+                    f"Background fetch returned no data for {season_year}"
                 )
             else:
                 self.logger.error(
@@ -161,13 +166,8 @@ class BaseUFCManager(MMA):
         return None
 
     def _fetch_data(self) -> Optional[Dict]:
-        """Fetch data using shared data mechanism or direct fetch for live."""
-        if isinstance(self, UFCLiveManager):
-            # Live games should fetch only current games, not entire season
-            return self._fetch_todays_games()
-        else:
-            # Recent and Upcoming managers should use cached season data
-            return self._fetch_ufc_api_data(use_cache=True)
+        """Fetch data using cached season data. Overridden by UFCLiveManager."""
+        return self._fetch_ufc_api_data(use_cache=True)
 
 
 class UFCLiveManager(BaseUFCManager, MMALive):
@@ -180,7 +180,7 @@ class UFCLiveManager(BaseUFCManager, MMALive):
         cache_manager: Any,
     ):
         super().__init__(config, display_manager, cache_manager)
-        self.logger = logging.getLogger("UFCLiveManager")
+        self.logger = logging.getLogger("UFCLive")
 
         if self.test_mode:
             self.current_game = {
@@ -215,6 +215,10 @@ class UFCLiveManager(BaseUFCManager, MMALive):
         else:
             self.logger.info("Initialized UFCLiveManager in live mode")
 
+    def _fetch_data(self) -> Optional[Dict]:
+        """Live manager fetches only current games, not entire season."""
+        return self._fetch_todays_games()
+
 
 class UFCRecentManager(BaseUFCManager, MMARecent):
     """Manager for recently completed UFC fights."""
@@ -226,7 +230,7 @@ class UFCRecentManager(BaseUFCManager, MMARecent):
         cache_manager: Any,
     ):
         super().__init__(config, display_manager, cache_manager)
-        self.logger = logging.getLogger("UFCRecentManager")
+        self.logger = logging.getLogger("UFCRecent")
         self.logger.info(
             f"Initialized UFCRecentManager with "
             f"{len(self.favorite_fighters)} favorite fighters"
@@ -243,7 +247,7 @@ class UFCUpcomingManager(BaseUFCManager, MMAUpcoming):
         cache_manager: Any,
     ):
         super().__init__(config, display_manager, cache_manager)
-        self.logger = logging.getLogger("UFCUpcomingManager")
+        self.logger = logging.getLogger("UFCUpcoming")
         self.logger.info(
             f"Initialized UFCUpcomingManager with "
             f"{len(self.favorite_fighters)} favorite fighters"

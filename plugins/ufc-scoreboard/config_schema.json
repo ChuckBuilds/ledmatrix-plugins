@@ -109,13 +109,17 @@
           "description": "Duration in seconds to display each live fight before rotating to the next live fight"
         },
         "recent_game_duration": {
-          "type": "number",
+          "type": "integer",
           "default": 15,
+          "minimum": 5,
+          "maximum": 120,
           "description": "Duration in seconds to show each recent fight before rotating. Falls back to game_display_duration if not set."
         },
         "upcoming_game_duration": {
-          "type": "number",
+          "type": "integer",
           "default": 15,
+          "minimum": 5,
+          "maximum": 120,
           "description": "Duration in seconds to show each upcoming fight before rotating. Falls back to game_display_duration if not set."
         },
         "live_update_interval": {

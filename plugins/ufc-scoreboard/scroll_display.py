@@ -15,6 +15,9 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from PIL import Image
 
+# Pillow < 9.1.0 compat: LANCZOS was added in 9.1.0
+LANCZOS = getattr(Image, "Resampling", Image).LANCZOS
+
 try:
     from src.common.scroll_helper import ScrollHelper
 except ImportError:
@@ -84,6 +87,9 @@ class ScrollDisplayManager:
         self._last_log_time: float = 0
         self._log_interval: float = 5.0
 
+        # Cached fight renderer (lazily initialized)
+        self._renderer: Optional[FightRenderer] = None
+
         # Performance tracking
         self._frame_count: int = 0
         self._fps_sample_start: float = time.time()
@@ -95,11 +101,9 @@ class ScrollDisplayManager:
 
         scroll_settings = self._get_scroll_settings()
 
-        # Set scroll speed
         scroll_speed = scroll_settings.get("scroll_speed", 50.0)
         scroll_delay = scroll_settings.get("scroll_delay", 0.01)
 
-        self.scroll_helper.set_scroll_speed(scroll_speed)
         self.scroll_helper.set_scroll_delay(scroll_delay)
 
         # Enable dynamic duration
@@ -159,7 +163,7 @@ class ScrollDisplayManager:
                 aspect = ufc_icon.width / ufc_icon.height
                 new_width = int(separator_height * aspect)
                 ufc_icon = ufc_icon.resize(
-                    (new_width, separator_height), Image.Resampling.LANCZOS
+                    (new_width, separator_height), LANCZOS
                 )
                 self._separator_icons["ufc"] = ufc_icon
                 self.logger.debug(f"Loaded UFC separator icon: {new_width}x{separator_height}")
@@ -230,14 +234,16 @@ class ScrollDisplayManager:
         ufc_config = self.config.get("ufc", {})
         display_options = ufc_config.get("display_options", {})
 
-        # Create fight renderer
-        renderer = FightRenderer(
-            self.display_width,
-            self.display_height,
-            self.config,
-            headshot_cache=self._headshot_cache,
-            custom_logger=self.logger,
-        )
+        # Reuse cached fight renderer
+        if self._renderer is None:
+            self._renderer = FightRenderer(
+                self.display_width,
+                self.display_height,
+                self.config,
+                headshot_cache=self._headshot_cache,
+                custom_logger=self.logger,
+            )
+        renderer = self._renderer
 
         # Pre-render all fight cards
         content_items: List[Image.Image] = []

@@ -8,6 +8,9 @@ from typing import Any, Dict, Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
+# Pillow < 9.1.0 compat: LANCZOS was added in 9.1.0
+LANCZOS = getattr(Image, "Resampling", Image).LANCZOS
+
 from data_sources import ESPNDataSource
 from sports import SportsCore, SportsLive, SportsRecent, SportsUpcoming
 
@@ -36,6 +39,50 @@ class MMA(SportsCore):
     def _custom_scorebug_layout(self, game: dict, draw: ImageDraw.ImageDraw):
         """No-op hook for subclasses to add custom scorebug elements."""
         pass
+
+    def _draw_fighter_records(
+        self,
+        draw_overlay: ImageDraw.Draw,
+        game: Dict,
+        left_x: int = 0,
+        right_margin: int = 0,
+        bottom_offset: int = 0,
+    ) -> None:
+        """Draw fighter records at the bottom of the display.
+
+        Args:
+            draw_overlay: ImageDraw overlay to draw on
+            game: Fight data dict with fighter1_record/fighter2_record
+            left_x: X position for left-side record
+            right_margin: Pixels from right edge for right-side record
+            bottom_offset: Extra offset from the bottom
+        """
+        try:
+            record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+        except IOError:
+            record_font = ImageFont.load_default()
+
+        fighter1_record = game.get("fighter1_record", "")
+        fighter2_record = game.get("fighter2_record", "")
+
+        record_bbox = draw_overlay.textbbox((0, 0), "0-0-0", font=record_font)
+        record_height = record_bbox[3] - record_bbox[1]
+        record_y = self.display_height - record_height - bottom_offset
+
+        # Fighter 2 record (left side)
+        if fighter2_record:
+            self._draw_text_with_outline(
+                draw_overlay, fighter2_record, (left_x, record_y), record_font
+            )
+
+        # Fighter 1 record (right side)
+        if fighter1_record:
+            f1_bbox = draw_overlay.textbbox((0, 0), fighter1_record, font=record_font)
+            f1_width = f1_bbox[2] - f1_bbox[0]
+            f1_x = self.display_width - f1_width - right_margin
+            self._draw_text_with_outline(
+                draw_overlay, fighter1_record, (f1_x, record_y), record_font
+            )
 
     def _load_and_resize_headshot(
         self, fighter_id: str, fighter_name: str, image_path: Path, image_url: str
@@ -102,13 +149,14 @@ class MMA(SportsCore):
                 )
                 return None
 
-            logo = Image.open(image_path)
-            if logo.mode != "RGBA":
-                logo = logo.convert("RGBA")
+            with Image.open(image_path) as logo:
+                if logo.mode != "RGBA":
+                    logo = logo.convert("RGBA")
 
-            max_width = int(self.display_width * 1.5)
-            max_height = int(self.display_height * 1.5)
-            logo.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+                max_width = int(self.display_width * 1.5)
+                max_height = int(self.display_height * 1.5)
+                logo.thumbnail((max_width, max_height), LANCZOS)
+                logo.load()  # Ensure pixel data is loaded before closing file
             self._logo_cache[fighter_id] = logo
             return logo
 
@@ -345,50 +393,7 @@ class MMARecent(MMA, SportsRecent):
 
             # Draw records if enabled
             if self.show_records:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
-
-                fighter1_record = game.get("fighter1_record", "")
-                fighter2_record = game.get("fighter2_record", "")
-
-                record_bbox = draw_overlay.textbbox((0, 0), "0-0-0", font=record_font)
-                record_height = record_bbox[3] - record_bbox[1]
-                record_y = self.display_height - record_height
-                self.logger.debug(
-                    f"Record positioning: height={record_height}, record_y={record_y}, display_height={self.display_height}"
-                )
-
-                # Display fighter 2 record (left side)
-                if fighter2_record:
-                    fighter2_text = fighter2_record
-                    fighter2_record_x = 0
-                    self.logger.debug(
-                        f"Drawing fighter2 record '{fighter2_text}' at ({fighter2_record_x}, {record_y}) with font size {record_font.size if hasattr(record_font, 'size') else 'unknown'}"
-                    )
-                    self._draw_text_with_outline(
-                        draw_overlay, fighter2_text, (fighter2_record_x, record_y), record_font
-                    )
-
-                # Display fighter 1 record (right side)
-                if fighter1_record:
-                    fighter1_text = fighter1_record
-                    fighter1_record_bbox = draw_overlay.textbbox(
-                        (0, 0), fighter1_text, font=record_font
-                    )
-                    fighter1_record_width = fighter1_record_bbox[2] - fighter1_record_bbox[0]
-                    fighter1_record_x = self.display_width - fighter1_record_width
-                    self.logger.debug(
-                        f"Drawing fighter1 record '{fighter1_text}' at ({fighter1_record_x}, {record_y}) with font size {record_font.size if hasattr(record_font, 'size') else 'unknown'}"
-                    )
-                    self._draw_text_with_outline(
-                        draw_overlay, fighter1_text, (fighter1_record_x, record_y), record_font
-                    )
+                self._draw_fighter_records(draw_overlay, game)
 
             self._custom_scorebug_layout(game, draw_overlay)
 
@@ -633,7 +638,7 @@ class MMAUpcoming(MMA, SportsUpcoming):
             home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("home_logo", "y_offset")
             main_img.paste(fighter1_image, (home_x, home_y), fighter1_image)
 
-            # Fighter 1 short name (top left)
+            # Fighter 1 short name (top right, near fighter 1 headshot)
             fighter1_name_text = game.get("fighter1_name_short", "")
             status_x = 1 + self._get_layout_offset("status_text", "x_offset")
             status_y = 1 + self._get_layout_offset("status_text", "y_offset")
@@ -693,50 +698,7 @@ class MMAUpcoming(MMA, SportsUpcoming):
 
             # Draw records if enabled
             if self.show_records:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
-
-                fighter1_record = game.get("fighter1_record", "")
-                fighter2_record = game.get("fighter2_record", "")
-
-                record_bbox = draw_overlay.textbbox((0, 0), "0-0-0", font=record_font)
-                record_height = record_bbox[3] - record_bbox[1]
-                record_y = self.display_height - record_height
-                self.logger.debug(
-                    f"Record positioning: height={record_height}, record_y={record_y}, display_height={self.display_height}"
-                )
-
-                # Display fighter 2 record (left side)
-                if fighter2_record:
-                    fighter2_text = fighter2_record
-                    fighter2_record_x = 0
-                    self.logger.debug(
-                        f"Drawing fighter2 record '{fighter2_text}' at ({fighter2_record_x}, {record_y}) with font size {record_font.size if hasattr(record_font, 'size') else 'unknown'}"
-                    )
-                    self._draw_text_with_outline(
-                        draw_overlay, fighter2_text, (fighter2_record_x, record_y), record_font
-                    )
-
-                # Display fighter 1 record (right side)
-                if fighter1_record:
-                    fighter1_text = fighter1_record
-                    fighter1_record_bbox = draw_overlay.textbbox(
-                        (0, 0), fighter1_text, font=record_font
-                    )
-                    fighter1_record_width = fighter1_record_bbox[2] - fighter1_record_bbox[0]
-                    fighter1_record_x = self.display_width - fighter1_record_width
-                    self.logger.debug(
-                        f"Drawing fighter1 record '{fighter1_text}' at ({fighter1_record_x}, {record_y}) with font size {record_font.size if hasattr(record_font, 'size') else 'unknown'}"
-                    )
-                    self._draw_text_with_outline(
-                        draw_overlay, fighter1_text, (fighter1_record_x, record_y), record_font
-                    )
+                self._draw_fighter_records(draw_overlay, game)
 
             self._custom_scorebug_layout(game, draw_overlay)
 
@@ -787,23 +749,17 @@ class MMAUpcoming(MMA, SportsUpcoming):
                 game = self._extract_game_details(event)
                 if game and game["is_upcoming"]:
                     all_upcoming_games += 1
-                if game and game["is_upcoming"]:
                     if self.show_favorite_teams_only and (
-                        len(self.favorite_fighters) > 0
-                        or len(self.favorite_weight_class) > 0
+                        self.favorite_fighters or self.favorite_weight_class
                     ):
-                        if (
-                            not (
-                                game["fighter1_name"].lower() in self.favorite_fighters
-                                or game["fighter2_name"].lower()
-                                in self.favorite_fighters
-                            )
-                            and not game["fight_class"].lower()
-                            in self.favorite_weight_class
-                        ):
+                        is_favorite = (
+                            game["fighter1_name"].lower() in self.favorite_fighters
+                            or game["fighter2_name"].lower() in self.favorite_fighters
+                            or game["fight_class"].lower() in self.favorite_weight_class
+                        )
+                        if not is_favorite:
                             continue
-                        else:
-                            favorite_games_found += 1
+                        favorite_games_found += 1
                     if self.show_odds:
                         self._fetch_odds(game)
                     processed_games.append(game)
@@ -901,20 +857,27 @@ class MMALive(MMA, SportsLive):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
 
     def _test_mode_update(self):
-        if self.current_game and self.current_game["is_live"]:
-            minutes = int(self.current_game["clock"].split(":")[0])
-            seconds = int(self.current_game["clock"].split(":")[1])
+        if self.current_game and self.current_game.get("is_live"):
+            clock = self.current_game.get("clock", "05:00")
+            period = self.current_game.get("period", 1)
+            parts = clock.split(":")
+            if len(parts) == 2:
+                minutes = int(parts[0])
+                seconds = int(parts[1])
+            else:
+                minutes, seconds = 5, 0
             seconds -= 1
             if seconds < 0:
                 seconds = 59
                 minutes -= 1
                 if minutes < 0:
-                    minutes = 19
-                    if self.current_game["period"] < 3:
-                        self.current_game["period"] += 1
+                    minutes = 4  # MMA rounds are 5 minutes
+                    if period < 3:
+                        period += 1
                     else:
-                        self.current_game["period"] = 1
+                        period = 1
             self.current_game["clock"] = f"{minutes:02d}:{seconds:02d}"
+            self.current_game["period"] = period
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live MMA fight."""
@@ -1005,60 +968,9 @@ class MMALive(MMA, SportsLive):
 
             # Draw records if enabled
             if self.show_records:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
-
-                fighter2_name = game.get("fighter2_name", "")
-                fighter1_name = game.get("fighter1_name", "")
-
-                record_bbox = draw_overlay.textbbox((0, 0), "0-0", font=record_font)
-                record_height = record_bbox[3] - record_bbox[1]
-                record_y = self.display_height - record_height - 1
-                self.logger.debug(
-                    f"Record positioning: height={record_height}, record_y={record_y}, display_height={self.display_height}"
+                self._draw_fighter_records(
+                    draw_overlay, game, left_x=3, right_margin=3, bottom_offset=1
                 )
-
-                # Display fighter 2 record (left side)
-                if fighter2_name:
-                    fighter2_record = game.get("fighter2_record", "")
-                    if fighter2_record:
-                        fighter2_text = fighter2_record
-                        fighter2_record_x = 3
-                        self.logger.debug(
-                            f"Drawing fighter2 record '{fighter2_text}' at ({fighter2_record_x}, {record_y}) with font size {record_font.size if hasattr(record_font, 'size') else 'unknown'}"
-                        )
-                        self._draw_text_with_outline(
-                            draw_overlay,
-                            fighter2_text,
-                            (fighter2_record_x, record_y),
-                            record_font,
-                        )
-
-                # Display fighter 1 record (right side)
-                if fighter1_name:
-                    fighter1_record = game.get("fighter1_record", "")
-                    if fighter1_record:
-                        fighter1_text = fighter1_record
-                        fighter1_record_bbox = draw_overlay.textbbox(
-                            (0, 0), fighter1_text, font=record_font
-                        )
-                        fighter1_record_width = fighter1_record_bbox[2] - fighter1_record_bbox[0]
-                        fighter1_record_x = self.display_width - fighter1_record_width - 3
-                        self.logger.debug(
-                            f"Drawing fighter1 record '{fighter1_text}' at ({fighter1_record_x}, {record_y}) with font size {record_font.size if hasattr(record_font, 'size') else 'unknown'}"
-                        )
-                        self._draw_text_with_outline(
-                            draw_overlay,
-                            fighter1_text,
-                            (fighter1_record_x, record_y),
-                            record_font,
-                        )
 
             # Composite the text overlay onto the main image
             main_img = Image.alpha_composite(main_img, overlay)

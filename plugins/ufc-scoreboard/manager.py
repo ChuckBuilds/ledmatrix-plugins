@@ -577,7 +577,6 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         actual_mode = f"ufc_{mode_type}" if mode_type else display_mode
 
         # Track game transitions
-        manager_class_name = manager.__class__.__name__
         current_game = getattr(manager, "current_game", None)
         current_game_id = None
         if current_game:
@@ -616,8 +615,8 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                 self._record_dynamic_progress(
                     manager, actual_mode=actual_mode, display_mode=display_mode
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.debug(f"Error recording dynamic progress: {e}")
 
             if display_mode:
                 self._display_mode_to_managers.setdefault(display_mode, set()).add(
@@ -703,7 +702,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
             >= self._live_content_log_interval
         )
         if should_log and not ufc_live:
-            self.logger.info(f"has_live_content() returning False")
+            self.logger.info("has_live_content() returning False")
             self._last_live_content_false_log = current_time
 
         return ufc_live
@@ -1138,18 +1137,20 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
             if manager:
                 manager_fights = self._get_games_from_manager(manager, mt)
                 if manager_fights:
+                    state_map = {
+                        "live": "in",
+                        "recent": "post",
+                        "upcoming": "pre",
+                    }
                     for fight in manager_fights:
-                        fight["league"] = "ufc"
-                        if not isinstance(fight.get("status"), dict):
-                            fight["status"] = {}
-                        if "state" not in fight["status"]:
-                            state_map = {
-                                "live": "in",
-                                "recent": "post",
-                                "upcoming": "pre",
-                            }
-                            fight["status"]["state"] = state_map.get(mt, "pre")
-                    fights.extend(manager_fights)
+                        # Copy fight dict to avoid mutating manager state
+                        fight_copy = dict(fight)
+                        fight_copy["league"] = "ufc"
+                        if not isinstance(fight_copy.get("status"), dict):
+                            fight_copy["status"] = {}
+                        if "state" not in fight_copy["status"]:
+                            fight_copy["status"]["state"] = state_map.get(mt, "pre")
+                        fights.append(fight_copy)
                     self.logger.debug(
                         f"Collected {len(manager_fights)} UFC {mt} fights for scroll"
                     )

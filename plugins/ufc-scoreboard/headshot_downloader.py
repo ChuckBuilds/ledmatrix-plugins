@@ -8,10 +8,11 @@ Based on original work by Alex Resnick (legoguy1000) - PR #137
 """
 
 import logging
-import requests
 from typing import Optional
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+
+import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -55,100 +56,123 @@ class HeadshotDownloader:
             f"/i/headshots/mma/players/full/{fighter_id}.png"
         )
 
+    def download_missing_headshot(
+        self,
+        fighter_id: str,
+        fighter_name: str,
+        headshot_path: Path,
+        headshot_url: str = None,
+    ) -> bool:
+        """
+        Download missing headshot for a fighter.
+
+        Args:
+            fighter_id: ESPN fighter ID
+            fighter_name: Fighter's display name
+            headshot_path: Path where headshot should be saved
+            headshot_url: Optional headshot URL (constructed from fighter_id if not provided)
+
+        Returns:
+            True if headshot was downloaded or placeholder created successfully
+        """
+        try:
+            # Ensure directory exists and is writable
+            headshot_dir = headshot_path.parent
+            try:
+                headshot_dir.mkdir(parents=True, exist_ok=True)
+
+                # Check if we can write to the directory
+                test_file = headshot_dir / '.write_test'
+                try:
+                    test_file.touch()
+                    test_file.unlink()
+                except PermissionError:
+                    logger.error(f"Permission denied: Cannot write to directory {headshot_dir}")
+                    return False
+            except PermissionError as e:
+                logger.error(f"Permission denied: Cannot create directory {headshot_dir}: {e}")
+                return False
+            except Exception as e:
+                logger.error(f"Failed to create headshot directory {headshot_dir}: {e}")
+                return False
+
+            # Construct URL if not provided
+            if not headshot_url:
+                headshot_url = self.get_headshot_url(fighter_id)
+
+            # Try to download the headshot
+            if headshot_url:
+                try:
+                    response = self.session.get(
+                        headshot_url,
+                        headers=self.headers,
+                        timeout=self.request_timeout,
+                    )
+                    if response.status_code == 200:
+                        # Verify it's an image
+                        content_type = response.headers.get('content-type', '').lower()
+                        if any(
+                            img_type in content_type
+                            for img_type in ['image/png', 'image/jpeg', 'image/jpg', 'image/gif']
+                        ):
+                            with open(headshot_path, 'wb') as f:
+                                f.write(response.content)
+
+                            # Convert to RGBA for consistency
+                            try:
+                                with Image.open(headshot_path) as img:
+                                    if img.mode != "RGBA":
+                                        img = img.convert("RGBA")
+                                        img.save(headshot_path, "PNG")
+                            except Exception as e:
+                                logger.warning(
+                                    f"Could not convert headshot for {fighter_name} to RGBA: {e}"
+                                )
+
+                            logger.info(f"Downloaded headshot for {fighter_name} from {headshot_url}")
+                            return True
+                        else:
+                            logger.warning(
+                                f"Downloaded content for {fighter_name} is not an image: {content_type}"
+                            )
+                except PermissionError as e:
+                    logger.error(f"Permission denied downloading headshot for {fighter_name}: {e}")
+                    return False
+                except Exception as e:
+                    logger.error(f"Failed to download headshot for {fighter_name}: {e}")
+
+            # If no URL or download failed, create a placeholder
+            return create_placeholder_headshot(fighter_name, headshot_path)
+
+        except PermissionError as e:
+            logger.error(f"Permission denied for {fighter_name}: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Failed to download headshot for {fighter_name}: {e}")
+            # Try to create placeholder as fallback
+            try:
+                return create_placeholder_headshot(fighter_name, headshot_path)
+            except Exception:
+                return False
+
+
+# Module-level shared instance for backward-compatible function calls
+_shared_downloader: Optional[HeadshotDownloader] = None
+
 
 def download_missing_headshot(
     fighter_id: str,
     fighter_name: str,
     headshot_path: Path,
-    headshot_url: str = None
+    headshot_url: str = None,
 ) -> bool:
-    """
-    Download missing headshot for a fighter.
-
-    Args:
-        fighter_id: ESPN fighter ID
-        fighter_name: Fighter's display name
-        headshot_path: Path where headshot should be saved
-        headshot_url: Optional headshot URL (constructed from fighter_id if not provided)
-
-    Returns:
-        True if headshot was downloaded or placeholder created successfully
-    """
-    try:
-        # Ensure directory exists and is writable
-        headshot_dir = headshot_path.parent
-        try:
-            headshot_dir.mkdir(parents=True, exist_ok=True)
-
-            # Check if we can write to the directory
-            test_file = headshot_dir / '.write_test'
-            try:
-                test_file.touch()
-                test_file.unlink()
-            except PermissionError:
-                logger.error(f"Permission denied: Cannot write to directory {headshot_dir}")
-                return False
-        except PermissionError as e:
-            logger.error(f"Permission denied: Cannot create directory {headshot_dir}: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"Failed to create headshot directory {headshot_dir}: {e}")
-            return False
-
-        # Construct URL if not provided
-        if not headshot_url:
-            headshot_url = HeadshotDownloader.get_headshot_url(fighter_id)
-
-        # Try to download the headshot
-        if headshot_url:
-            try:
-                response = requests.get(headshot_url, timeout=30)
-                if response.status_code == 200:
-                    # Verify it's an image
-                    content_type = response.headers.get('content-type', '').lower()
-                    if any(
-                        img_type in content_type
-                        for img_type in ['image/png', 'image/jpeg', 'image/jpg', 'image/gif']
-                    ):
-                        with open(headshot_path, 'wb') as f:
-                            f.write(response.content)
-
-                        # Convert to RGBA for consistency
-                        try:
-                            with Image.open(headshot_path) as img:
-                                if img.mode != "RGBA":
-                                    img = img.convert("RGBA")
-                                    img.save(headshot_path, "PNG")
-                        except Exception as e:
-                            logger.warning(
-                                f"Could not convert headshot for {fighter_name} to RGBA: {e}"
-                            )
-
-                        logger.info(f"Downloaded headshot for {fighter_name} from {headshot_url}")
-                        return True
-                    else:
-                        logger.warning(
-                            f"Downloaded content for {fighter_name} is not an image: {content_type}"
-                        )
-            except PermissionError as e:
-                logger.error(f"Permission denied downloading headshot for {fighter_name}: {e}")
-                return False
-            except Exception as e:
-                logger.error(f"Failed to download headshot for {fighter_name}: {e}")
-
-        # If no URL or download failed, create a placeholder
-        return create_placeholder_headshot(fighter_name, headshot_path)
-
-    except PermissionError as e:
-        logger.error(f"Permission denied for {fighter_name}: {e}")
-        return False
-    except Exception as e:
-        logger.error(f"Failed to download headshot for {fighter_name}: {e}")
-        # Try to create placeholder as fallback
-        try:
-            return create_placeholder_headshot(fighter_name, headshot_path)
-        except Exception:
-            return False
+    """Module-level convenience wrapper using a shared HeadshotDownloader instance."""
+    global _shared_downloader
+    if _shared_downloader is None:
+        _shared_downloader = HeadshotDownloader()
+    return _shared_downloader.download_missing_headshot(
+        fighter_id, fighter_name, headshot_path, headshot_url
+    )
 
 
 def create_placeholder_headshot(fighter_name: str, headshot_path: Path) -> bool:

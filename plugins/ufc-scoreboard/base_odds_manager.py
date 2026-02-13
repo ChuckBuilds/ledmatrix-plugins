@@ -9,10 +9,13 @@ UFC/MMA odds adaptation based on work by Alex Resnick (legoguy1000) - PR #137
 
 import time
 import logging
-import requests
 import json
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List
+
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # Import the API counter function from web interface
 try:
@@ -45,6 +48,17 @@ class BaseOddsManager:
         self.update_interval = 3600  # 1 hour default
         self.request_timeout = 30  # 30 seconds default
         self.cache_ttl = 1800  # 30 minutes default
+
+        # Set up session with retry logic
+        self.session = requests.Session()
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
 
         # Load configuration if available
         if config_manager:
@@ -103,8 +117,6 @@ class BaseOddsManager:
         if comp_id is None:
             comp_id = event_id
 
-        # Use provided interval or default
-        interval = update_interval_seconds or self.update_interval
         cache_key = f"odds_espn_{sport}_{league}_{event_id}_{comp_id}"
 
         # Check cache first
@@ -113,6 +125,7 @@ class BaseOddsManager:
         if cached_data:
             if isinstance(cached_data, dict) and cached_data.get("no_odds"):
                 self.logger.debug(f"Cached no-odds marker for {cache_key}, skipping")
+                return None
             else:
                 self.logger.info(f"Using cached odds from ESPN for {cache_key}")
                 return cached_data
@@ -137,7 +150,7 @@ class BaseOddsManager:
             )
             self.logger.info(f"Requesting odds from URL: {url}")
 
-            response = requests.get(url, timeout=self.request_timeout)
+            response = self.session.get(url, timeout=self.request_timeout)
             response.raise_for_status()
             raw_data = response.json()
 
@@ -170,7 +183,7 @@ class BaseOddsManager:
                 f"Error decoding JSON response from ESPN API for {cache_key}."
             )
 
-        return self.cache_manager.get(cache_key)
+        return None
 
     def _extract_espn_data(self, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
@@ -273,10 +286,13 @@ class BaseOddsManager:
 
         return results
 
-    def clear_cache(self, sport: str = None, league: str = None, event_id: str = None):
+    def clear_cache(
+        self, sport: str = None, league: str = None, event_id: str = None, comp_id: str = None
+    ):
         """Clear odds cache for specific criteria."""
         if sport and league and event_id:
-            cache_key = f"odds_espn_{sport}_{league}_{event_id}"
+            effective_comp_id = comp_id or event_id
+            cache_key = f"odds_espn_{sport}_{league}_{event_id}_{effective_comp_id}"
             self.cache_manager.delete(cache_key)
             self.logger.info(f"Cleared cache for {cache_key}")
         else:
