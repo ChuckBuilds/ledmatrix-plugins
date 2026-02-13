@@ -4,21 +4,10 @@
   "version": "2.0.2",
   "description": "Displays scrolling stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies",
   "author": "LEDMatrix Team",
+  "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",
   "entry_point": "manager.py",
   "class_name": "StockTickerPlugin",
-  "api_version": "1.0.0",
-  "display_modes": [
-    "stocks"
-  ],
-  "update_interval": 600,
-  "dependencies": [
-    "requests",
-    "pillow",
-    "urllib3",
-    "numpy"
-  ],
-  "config_schema": "config_schema.json",
-  "requirements_file": "requirements.txt",
+  "category": "finance",
   "tags": [
     "stocks",
     "crypto",
@@ -26,8 +15,45 @@
     "ticker",
     "scrolling"
   ],
-  "website": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",
-  "license": "MIT",
+  "icon": "fas fa-chart-line",
+  "compatible_versions": [
+    ">=2.0.0"
+  ],
   "min_ledmatrix_version": "2.0.0",
-  "max_ledmatrix_version": "3.0.0"
+  "max_ledmatrix_version": "3.0.0",
+  "requires": {
+    "python": ">=3.9"
+  },
+  "config_schema": "config_schema.json",
+  "requirements_file": "requirements.txt",
+  "update_interval": 600,
+  "display_modes": [
+    "stocks"
+  ],
+  "api_requirements": [
+    {
+      "name": "Yahoo Finance API",
+      "required": true,
+      "description": "Yahoo Finance API for stock and cryptocurrency data",
+      "rate_limit": "Please use responsibly"
+    }
+  ],
+  "versions": [
+    {
+      "version": "2.0.2",
+      "ledmatrix_min": "2.0.0",
+      "released": "2026-02-12"
+    },
+    {
+      "version": "2.0.1",
+      "ledmatrix_min": "2.0.0",
+      "released": "2026-02-11"
+    }
+  ],
+  "last_updated": "2026-02-12",
+  "stars": 0,
+  "downloads": 0,
+  "verified": true,
+  "screenshot": "",
+  "license": "MIT"
 }
