@@ -288,7 +288,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "upcoming_games_to_show", 10
                 ),
                 "show_records": display_options.get("show_records", True),
-                "show_odds": display_options.get("show_odds", False),
+                "show_odds": display_options.get("show_odds", True),
                 "show_fighter_names": display_options.get("show_fighter_names", True),
                 "show_fight_class": display_options.get("show_fight_class", True),
                 "update_interval_seconds": league_config.get(
@@ -300,7 +300,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "upcoming_game_duration": league_config.get(
                     "upcoming_game_duration", 15
                 ),
-                "live_priority": league_config.get("live_priority", False),
+                "live_priority": league_config.get("live_priority", True),
                 "show_favorite_fighters_only": show_favorites_only,
                 "show_all_live": show_all_live,
                 "filtering": filtering,
@@ -444,7 +444,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         except Exception as e:
             self.logger.error(f"Error updating managers: {e}")
 
-    def display(self, display_mode: str = None, force_clear: bool = False) -> bool:
+    def display(self, display_mode: Optional[str] = None, force_clear: bool = False) -> bool:
         """Display UFC fights for a specific mode.
 
         Args:
@@ -892,7 +892,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         return float(self.game_display_duration)
 
     def _record_dynamic_progress(
-        self, current_manager, actual_mode: str = None, display_mode: str = None
+        self, current_manager, actual_mode: Optional[str] = None, display_mode: Optional[str] = None
     ) -> None:
         """Track progress through managers/games for dynamic duration."""
         if not self._dynamic_feature_enabled() or not self.modes:
@@ -968,7 +968,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                         del self._single_game_manager_start_times[manager_key]
 
     def _evaluate_dynamic_cycle_completion(
-        self, display_mode: str = None
+        self, display_mode: Optional[str] = None
     ) -> None:
         """Check if all managers for the current display mode have completed."""
         if not self._dynamic_feature_enabled():

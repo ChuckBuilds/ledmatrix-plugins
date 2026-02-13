@@ -342,11 +342,12 @@ class MMARecent(MMA, SportsRecent):
                 self.logger.error(
                     f"Failed to load headshots for fight: {game.get('id')}"
                 )
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Image Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image.paste(main_img.convert("RGB"), (0, 0))
+                self.display_manager.image.paste(error_img, (0, 0))
                 self.display_manager.update_display()
                 return
 
@@ -386,7 +387,7 @@ class MMARecent(MMA, SportsRecent):
                 draw_overlay, status_text, (status_x, status_y), self.fonts["time"]
             )
 
-            if "odds" in game and game["odds"]:
+            if game.get("odds"):
                 self._draw_dynamic_odds(
                     draw_overlay, game["odds"], self.display_width, self.display_height
                 )
@@ -443,7 +444,7 @@ class MMARecent(MMA, SportsRecent):
                     **{k: v for k, v in event.items() if k != "competitions"},
                     "competitions": [comp],
                 }
-                for event in data["events"]
+                for event in events
                 for comp in event.get("competitions", [])
             ]
             for event in flattened_events:
@@ -617,11 +618,12 @@ class MMAUpcoming(MMA, SportsUpcoming):
                 self.logger.error(
                     f"Failed to load headshots for fight: {game.get('id')}"
                 )
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Image Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image.paste(main_img.convert("RGB"), (0, 0))
+                self.display_manager.image.paste(error_img, (0, 0))
                 self.display_manager.update_display()
                 return
 
@@ -691,7 +693,7 @@ class MMAUpcoming(MMA, SportsUpcoming):
                     draw_overlay, status_text, (status_center_x, status_center_y), self.fonts["time"]
                 )
 
-            if "odds" in game and game["odds"]:
+            if game.get("odds"):
                 self._draw_dynamic_odds(
                     draw_overlay, game["odds"], self.display_width, self.display_height
                 )
@@ -742,7 +744,7 @@ class MMAUpcoming(MMA, SportsUpcoming):
                     **{k: v for k, v in event.items() if k != "competitions"},
                     "competitions": [comp],
                 }
-                for event in data["events"]
+                for event in events
                 for comp in event.get("competitions", [])
             ]
             for event in flattened_events:
@@ -907,11 +909,12 @@ class MMALive(MMA, SportsLive):
                 self.logger.error(
                     f"Failed to load headshots for live fight: {game.get('id')}"
                 )
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Image Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image.paste(main_img.convert("RGB"), (0, 0))
+                self.display_manager.image.paste(error_img, (0, 0))
                 self.display_manager.update_display()
                 return
 
@@ -961,7 +964,7 @@ class MMALive(MMA, SportsLive):
             )
 
             # Draw odds if available
-            if "odds" in game and game["odds"]:
+            if game.get("odds"):
                 self._draw_dynamic_odds(
                     draw_overlay, game["odds"], self.display_width, self.display_height
                 )
