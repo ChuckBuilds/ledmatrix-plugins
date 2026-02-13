@@ -635,6 +635,9 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
 
     def _display_internal_cycling(self, force_clear: bool) -> bool:
         """Handle display for internal mode cycling (legacy support)."""
+        if not self.modes:
+            return False
+
         if not getattr(self, "_internal_cycling_warned", False):
             self.logger.warning(
                 "Using deprecated internal mode cycling. "
@@ -759,36 +762,14 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
 
     def get_dynamic_duration_cap(self) -> Optional[float]:
         """Get dynamic duration cap for the current display context."""
-        if not self.is_enabled:
-            return None
-        if not self._current_display_league or not self._current_display_mode_type:
-            return None
-
-        league_config = self.config.get(self._current_display_league, {})
-        league_dynamic = league_config.get("dynamic_duration", {})
-        league_modes = league_dynamic.get("modes", {})
-        mode_config = league_modes.get(self._current_display_mode_type, {})
-
-        if "max_duration_seconds" in mode_config:
-            try:
-                cap = float(mode_config["max_duration_seconds"])
-                if cap > 0:
-                    return cap
-            except (TypeError, ValueError):
-                pass
-
-        if "max_duration_seconds" in league_dynamic:
-            try:
-                cap = float(league_dynamic["max_duration_seconds"])
-                if cap > 0:
-                    return cap
-            except (TypeError, ValueError):
-                pass
-
-        return None
+        return self._get_dynamic_duration_value("max_duration_seconds")
 
     def get_dynamic_duration_floor(self) -> Optional[float]:
         """Get dynamic duration minimum for the current display context."""
+        return self._get_dynamic_duration_value("min_duration_seconds")
+
+    def _get_dynamic_duration_value(self, key: str) -> Optional[float]:
+        """Look up a dynamic-duration config value (cap or floor)."""
         if not self.is_enabled:
             return None
         if not self._current_display_league or not self._current_display_mode_type:
@@ -799,21 +780,14 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         league_modes = league_dynamic.get("modes", {})
         mode_config = league_modes.get(self._current_display_mode_type, {})
 
-        if "min_duration_seconds" in mode_config:
-            try:
-                floor = float(mode_config["min_duration_seconds"])
-                if floor > 0:
-                    return floor
-            except (TypeError, ValueError):
-                pass
-
-        if "min_duration_seconds" in league_dynamic:
-            try:
-                floor = float(league_dynamic["min_duration_seconds"])
-                if floor > 0:
-                    return floor
-            except (TypeError, ValueError):
-                pass
+        for source in (mode_config, league_dynamic):
+            if key in source:
+                try:
+                    value = float(source[key])
+                    if value > 0:
+                        return value
+                except (TypeError, ValueError):
+                    pass
 
         return None
 

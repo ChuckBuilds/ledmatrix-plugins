@@ -57,9 +57,8 @@ class MMA(SportsCore):
             right_margin: Pixels from right edge for right-side record
             bottom_offset: Extra offset from the bottom
         """
-        try:
-            record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-        except IOError:
+        record_font = self.fonts.get("record") or self.fonts.get("status")
+        if not record_font:
             record_font = ImageFont.load_default()
 
         fighter1_record = game.get("fighter1_record", "")
@@ -128,11 +127,13 @@ class MMA(SportsCore):
                 with Image.open(image_path) as img:
                     if img.mode != "RGBA":
                         img = img.convert("RGBA")
-                    img.save(image_path, "PNG")
+                    img.load()  # Force pixel data into memory before closing file
+                # File handle is now closed; safe to overwrite
+                img.save(image_path, "PNG")
 
-                    self.logger.info(
-                        f"Successfully downloaded and converted headshot for {fighter_name} -> {image_path.name}"
-                    )
+                self.logger.info(
+                    f"Successfully downloaded and converted headshot for {fighter_name} -> {image_path.name}"
+                )
             except Exception as e:
                 self.logger.error(
                     f"Downloaded file for {fighter_name} is not a valid image or conversion failed: {e}"
@@ -255,6 +256,15 @@ class MMA(SportsCore):
             if fighter2_record in {"0-0", "0-0-0"}:
                 fighter2_record = ""
 
+            # Extract scores for live fights (ESPN uses competitor "score" field)
+            fighter1_score = fighter1.get("score", "0")
+            fighter2_score = fighter2.get("score", "0")
+
+            # Extract round/clock for live fights
+            period = status.get("period", 0)
+            clock = status.get("displayClock", "")
+            period_text = f"R{period}" if period else ""
+
             details = {
                 "event_id": game_event.get("id"),
                 "comp_id": competition.get("id"),
@@ -271,6 +281,11 @@ class MMA(SportsCore):
                     in ["scheduled", "pre-game", "status_scheduled"]
                 ),
                 "is_period_break": status["type"]["name"] == "STATUS_END_PERIOD",
+                "home_score": str(fighter1_score),
+                "away_score": str(fighter2_score),
+                "period": period,
+                "period_text": period_text,
+                "clock": clock,
                 "fight_class": fight_class,
                 "fighter1_name": fighter1_name,
                 "fighter1_name_short": fighter1_name_short,
@@ -640,10 +655,10 @@ class MMAUpcoming(MMA, SportsUpcoming):
             home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("fighter1_image", "y_offset")
             main_img.paste(fighter1_image, (home_x, home_y), fighter1_image)
 
-            # Fighter 2 short name (top left, near fighter 2 headshot)
+            # Fighter 2 short name (second row left, below fight class)
             fighter2_name_text = game.get("fighter2_name_short", "")
-            f2_name_x = 1 + self._get_layout_offset("status_text", "x_offset")
-            f2_name_y = 1 + self._get_layout_offset("status_text", "y_offset")
+            f2_name_x = 1 + self._get_layout_offset("fighter_names", "x_offset")
+            f2_name_y = 9 + self._get_layout_offset("fighter_names", "y_offset")
             self._draw_text_with_outline(
                 draw_overlay, fighter2_name_text, (f2_name_x, f2_name_y), self.fonts["odds"]
             )
@@ -653,13 +668,13 @@ class MMAUpcoming(MMA, SportsUpcoming):
             away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("fighter2_image", "y_offset")
             main_img.paste(fighter2_image, (away_x, away_y), fighter2_image)
 
-            # Fighter 1 short name (top right, near fighter 1 headshot)
+            # Fighter 1 short name (second row right, below fight class)
             fighter1_name_text = game.get("fighter1_name_short", "")
             fighter1_name_width = draw_overlay.textlength(
                 fighter1_name_text, font=self.fonts["odds"]
             )
             fighter1_name_x = self.display_width - fighter1_name_width - 1
-            fighter1_name_y = 1
+            fighter1_name_y = 9 + self._get_layout_offset("fighter_names", "y_offset")
             self._draw_text_with_outline(
                 draw_overlay, fighter1_name_text, (fighter1_name_x, fighter1_name_y), self.fonts["odds"]
             )
@@ -835,7 +850,7 @@ class MMAUpcoming(MMA, SportsUpcoming):
                     f"Favorite fighters: {self.favorite_fighters}"
                 )
                 self.logger.debug(
-                    f"Total upcoming fights before filtering: {len(processed_games)}"
+                    f"Total upcoming fights before filtering: {all_upcoming_games}"
                 )
                 self.last_log_time = current_time
             elif should_log:

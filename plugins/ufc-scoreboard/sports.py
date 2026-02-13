@@ -327,6 +327,7 @@ class SportsCore(ABC):
             fonts["status"] = self._load_custom_font_from_element_config(status_config, default_size=6)
             fonts["detail"] = self._load_custom_font_from_element_config(detail_config, default_size=6)
             fonts["rank"] = self._load_custom_font_from_element_config(rank_config, default_size=10)
+            fonts["record"] = self._load_custom_font_from_element_config(detail_config, default_size=6)
             self.logger.info("Successfully loaded fonts from config")
         except Exception as e:
             self.logger.error(f"Error loading fonts: {e}, using defaults")
@@ -338,6 +339,7 @@ class SportsCore(ABC):
                 fonts["status"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
                 fonts["detail"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
                 fonts["rank"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
+                fonts["record"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
             except IOError:
                 self.logger.warning("Fonts not found, using default PIL font.")
                 fonts["score"] = ImageFont.load_default()
@@ -346,6 +348,7 @@ class SportsCore(ABC):
                 fonts["status"] = ImageFont.load_default()
                 fonts["detail"] = ImageFont.load_default()
                 fonts["rank"] = ImageFont.load_default()
+                fonts["record"] = ImageFont.load_default()
         return fonts
 
     def _draw_dynamic_odds(
