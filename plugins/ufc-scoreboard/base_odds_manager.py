@@ -167,12 +167,12 @@ class BaseOddsManager:
                 self.logger.debug("No odds data available for this fight")
 
             if odds_data:
-                self.cache_manager.set(cache_key, odds_data)
+                self.cache_manager.set(cache_key, odds_data, ttl=self.cache_ttl)
                 self.logger.info(f"Saved odds data to cache for {cache_key}")
             else:
                 self.logger.debug(f"No odds data available for {cache_key}")
                 # Cache the fact that no odds are available to avoid repeated API calls
-                self.cache_manager.set(cache_key, {"no_odds": True})
+                self.cache_manager.set(cache_key, {"no_odds": True}, ttl=self.cache_ttl)
 
             return odds_data
 
@@ -289,12 +289,19 @@ class BaseOddsManager:
     def clear_cache(
         self, sport: str = None, league: str = None, event_id: str = None, comp_id: str = None
     ):
-        """Clear odds cache for specific criteria."""
+        """Clear odds cache for specific criteria.
+
+        Requires at least sport, league, and event_id to target a specific
+        cache entry.  Partial criteria are ignored to avoid accidentally
+        wiping the entire shared cache.
+        """
         if sport and league and event_id:
             effective_comp_id = comp_id or event_id
             cache_key = f"odds_espn_{sport}_{league}_{event_id}_{effective_comp_id}"
-            self.cache_manager.delete(cache_key)
+            self.cache_manager.clear_cache(cache_key)
             self.logger.info(f"Cleared cache for {cache_key}")
         else:
-            self.cache_manager.clear()
-            self.logger.info("Cleared all cache")
+            self.logger.warning(
+                "clear_cache called without full criteria (sport, league, event_id) — ignoring "
+                "to avoid wiping shared cache"
+            )

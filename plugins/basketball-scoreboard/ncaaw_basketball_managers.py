@@ -87,79 +87,58 @@ class BaseNCAAWBasketballManager(Basketball):
             self.logger.error(f"Error fetching team ID for {team_abbr}: {e}")
             return None
 
-    def _fetch_team_record(self, opp_team_id: str) -> str:
-        """Fetch a team's current overall record from the ESPN team endpoint."""
-        cache_key = f"{self.sport_key}_team_record_{opp_team_id}"
-        cached = self.cache_manager.get(cache_key, max_age=3600)
-        if cached and isinstance(cached, str):
-            return cached
-
-        try:
-            url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/teams/{opp_team_id}"
-            response = self.session.get(url, headers=self.headers, timeout=10)
-            response.raise_for_status()
-            team_data = response.json().get("team", {})
-            record_items = team_data.get("record", {}).get("items", [])
-            for item in record_items:
-                if item.get("type") == "total":
-                    record = item.get("summary", "")
-                    if record:
-                        self.cache_manager.set(cache_key, record)
-                        return record
-        except Exception as e:
-            self.logger.debug(f"Could not fetch record for team {opp_team_id}: {e}")
-        return ""
-
     def _fetch_team_schedule(self, team_id: str, season_year: int, use_cache: bool = True) -> Optional[Dict]:
-        """Fetch a team's full season schedule."""
+        """Fetch a team's full season schedule.
+
+        Raw events are cached without record enrichment so that records
+        stay fresh (they are injected on every read via the base-class
+        ``_enrich_events_with_records`` helper).
+        """
         cache_key = f"{self.sport_key}_team_{team_id}_schedule_{season_year}"
-        
+        record_summary_key = f"{self.sport_key}_team_{team_id}_record_summary"
+
         # Check cache first
         if use_cache:
             cached_data = self.cache_manager.get(cache_key)
             if cached_data:
                 if isinstance(cached_data, dict) and "events" in cached_data:
                     self.logger.debug(f"Using cached team schedule for team {team_id}")
-                    return cached_data
+                    events = cached_data["events"]
                 elif isinstance(cached_data, list):
                     self.logger.debug(f"Using cached team schedule (legacy format) for team {team_id}")
-                    return {"events": cached_data}
-        
+                    events = cached_data
+                else:
+                    events = None
+
+                if events is not None:
+                    # Enrich on every read so records stay current
+                    summary = self.cache_manager.get(record_summary_key, max_age=3600)
+                    if isinstance(summary, str):
+                        self._enrich_events_with_records(events, team_id, summary)
+                    return {"events": events}
+
         try:
             url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/teams/{team_id}/schedule"
             response = self.session.get(url, params={"season": str(season_year)}, headers=self.headers, timeout=30)
             response.raise_for_status()
             data = response.json()
-            
+
             # Extract events from response
             events = data.get("events", [])
 
-            # Enrich events with team records for upcoming games
-            # The schedule API doesn't include records on competitor objects for upcoming games,
-            # but the response includes the queried team's current record at the top level
+            # Cache raw events (without enriched records)
+            self.cache_manager.set(cache_key, {"events": events})
+
+            # Cache the team's record summary separately (1-hour TTL via max_age on read)
             team_record_summary = data.get("team", {}).get("recordSummary", "")
             if team_record_summary:
-                for event in events:
-                    competitions = event.get("competitions", [])
-                    if not competitions:
-                        continue
-                    for comp in competitions[0].get("competitors", []):
-                        if not comp.get("records") and not comp.get("record"):
-                            if str(comp.get("id")) == str(team_id):
-                                comp["record"] = [{"displayValue": team_record_summary, "type": "total"}]
-                            else:
-                                opp_id = comp.get("id")
-                                if opp_id:
-                                    opp_record = self._fetch_team_record(opp_id)
-                                    if opp_record:
-                                        comp["record"] = [{"displayValue": opp_record, "type": "total"}]
+                self.cache_manager.set(record_summary_key, team_record_summary)
 
-            result = {"events": events}
+            # Enrich the in-memory copy before returning
+            self._enrich_events_with_records(events, team_id, team_record_summary)
 
-            # Cache the result (long TTL - schedules don't change often)
-            self.cache_manager.set(cache_key, result)
             self.logger.info(f"Fetched {len(events)} events for team {team_id} season {season_year}")
-            return result
+            return {"events": events}
         except Exception as e:
             self.logger.error(f"Error fetching team schedule for team {team_id}: {e}")
             return None

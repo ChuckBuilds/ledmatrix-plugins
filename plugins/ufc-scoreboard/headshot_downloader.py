@@ -61,7 +61,7 @@ class HeadshotDownloader:
         fighter_id: str,
         fighter_name: str,
         headshot_path: Path,
-        headshot_url: str = None,
+        headshot_url: Optional[str] = None,
     ) -> bool:
         """
         Download missing headshot for a fighter.
@@ -85,12 +85,10 @@ class HeadshotDownloader:
                 test_file = headshot_dir / '.write_test'
                 try:
                     test_file.touch()
-                    test_file.unlink()
-                except PermissionError:
-                    logger.error(f"Permission denied: Cannot write to directory {headshot_dir}")
-                    return False
+                finally:
+                    test_file.unlink(missing_ok=True)
             except PermissionError as e:
-                logger.error(f"Permission denied: Cannot create directory {headshot_dir}: {e}")
+                logger.error(f"Permission denied: Cannot write to directory {headshot_dir}: {e}")
                 return False
             except Exception as e:
                 logger.error(f"Failed to create headshot directory {headshot_dir}: {e}")
@@ -164,7 +162,7 @@ def download_missing_headshot(
     fighter_id: str,
     fighter_name: str,
     headshot_path: Path,
-    headshot_url: str = None,
+    headshot_url: Optional[str] = None,
 ) -> bool:
     """Module-level convenience wrapper using a shared HeadshotDownloader instance."""
     global _shared_downloader

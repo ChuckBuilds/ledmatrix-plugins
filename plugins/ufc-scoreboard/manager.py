@@ -173,6 +173,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
 
     def _initialize_managers(self):
         """Initialize UFC manager instances."""
+        self._managers_initialized = False
         try:
             ufc_config = self._adapt_config_for_manager("ufc")
 
@@ -187,6 +188,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                     ufc_config, self.display_manager, self.cache_manager
                 )
                 self.logger.info("UFC managers initialized")
+                self._managers_initialized = True
 
         except Exception as e:
             self.logger.error(f"Error initializing managers: {e}", exc_info=True)
@@ -442,7 +444,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                 if hasattr(self, "ufc_upcoming"):
                     self.ufc_upcoming.update()
         except Exception as e:
-            self.logger.error(f"Error updating managers: {e}")
+            self.logger.error(f"Error updating managers: {e}", exc_info=True)
 
     def display(self, display_mode: Optional[str] = None, force_clear: bool = False) -> bool:
         """Display UFC fights for a specific mode.
@@ -762,11 +764,25 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
 
     def get_dynamic_duration_cap(self) -> Optional[float]:
         """Get dynamic duration cap for the current display context."""
-        return self._get_dynamic_duration_value("max_duration_seconds")
+        cap = self._get_dynamic_duration_value("max_duration_seconds")
+        floor = self._get_dynamic_duration_value("min_duration_seconds")
+        if cap is not None and floor is not None and cap < floor:
+            self.logger.warning(
+                f"max_duration_seconds ({cap}) < min_duration_seconds ({floor}), clamping to floor"
+            )
+            return floor
+        return cap
 
     def get_dynamic_duration_floor(self) -> Optional[float]:
         """Get dynamic duration minimum for the current display context."""
-        return self._get_dynamic_duration_value("min_duration_seconds")
+        floor = self._get_dynamic_duration_value("min_duration_seconds")
+        cap = self._get_dynamic_duration_value("max_duration_seconds")
+        if cap is not None and floor is not None and floor > cap:
+            self.logger.warning(
+                f"min_duration_seconds ({floor}) > max_duration_seconds ({cap}), clamping to cap"
+            )
+            return cap
+        return floor
 
     def _get_dynamic_duration_value(self, key: str) -> Optional[float]:
         """Look up a dynamic-duration config value (cap or floor)."""
