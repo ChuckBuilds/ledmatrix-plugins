@@ -169,6 +169,10 @@ class GameRenderer:
             inning_num = game.get('inning', 1)
             if game.get('is_final'):
                 inning_text = "FINAL"
+            elif inning_half == 'end':
+                inning_text = f"E{inning_num}"
+            elif inning_half == 'mid':
+                inning_text = f"M{inning_num}"
             else:
                 symbol = "▲" if inning_half == 'top' else "▼"
                 inning_text = f"{symbol}{inning_num}"
@@ -378,7 +382,14 @@ class GameRenderer:
             return self._render_error_card("Display error")
 
     def _draw_records(self, draw, game: Dict):
-        """Draw team records at bottom corners."""
+        """Draw team records at bottom corners if enabled by config."""
+        league_config = game.get('league_config', {})
+        show_records = league_config.get('show_records', self.config.get('show_records', False))
+        show_ranking = league_config.get('show_ranking', self.config.get('show_ranking', False))
+
+        if not show_records and not show_ranking:
+            return
+
         away_record = game.get('away_record', '')
         home_record = game.get('home_record', '')
         if not away_record and not home_record:

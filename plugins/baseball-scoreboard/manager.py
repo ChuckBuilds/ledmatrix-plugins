@@ -566,31 +566,33 @@ class BaseballScoreboardPlugin(BasePlugin):
                 # Determine inning half from status text
                 inning_half = 'top'
                 if 'end' in status_detail or 'end' in status_short:
-                    inning_half = 'top'
-                    inning = status.get('period', 1) + 1
+                    inning_half = 'end'
                 elif 'mid' in status_detail or 'mid' in status_short:
-                    inning_half = 'bottom'
+                    inning_half = 'mid'
                 elif 'bottom' in status_detail or 'bot' in status_detail or 'bottom' in status_short or 'bot' in status_short:
                     inning_half = 'bottom'
                 elif 'top' in status_detail or 'top' in status_short:
                     inning_half = 'top'
 
                 # Get count and bases from situation
-                count = situation.get('count', {}) if situation else {}
-                balls = count.get('balls', 0)
-                strikes = count.get('strikes', 0)
+                count = situation.get('count') if situation else None
                 outs = situation.get('outs', 0) if situation else 0
 
-                # Try alternative locations for count data
-                if balls == 0 and strikes == 0 and situation:
+                if count:
+                    balls = count.get('balls', 0)
+                    strikes = count.get('strikes', 0)
+                elif situation:
+                    # Try alternative locations for count data
                     if 'summary' in situation:
                         try:
                             balls, strikes = map(int, situation['summary'].split('-'))
                         except (ValueError, AttributeError):
-                            pass
+                            balls, strikes = 0, 0
                     else:
                         balls = situation.get('balls', 0)
                         strikes = situation.get('strikes', 0)
+                else:
+                    balls, strikes = 0, 0
 
                 bases_occupied = [
                     situation.get('onFirst', False) if situation else False,
@@ -901,6 +903,10 @@ class BaseballScoreboardPlugin(BasePlugin):
         inning_num = game.get('inning', 1)
         if game.get('is_final'):
             inning_text = "FINAL"
+        elif inning_half == 'end':
+            inning_text = f"E{inning_num}"
+        elif inning_half == 'mid':
+            inning_text = f"M{inning_num}"
         else:
             symbol = "▲" if inning_half == 'top' else "▼"
             inning_text = f"{symbol}{inning_num}"
