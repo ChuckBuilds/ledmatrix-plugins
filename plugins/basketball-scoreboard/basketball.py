@@ -32,7 +32,7 @@ class Basketball(SportsCore):
                 if item.get("type") == "total":
                     record = item.get("summary", "")
                     if record:
-                        self.cache_manager.set(cache_key, record)
+                        self.cache_manager.set(cache_key, record, ttl=3600)
                         return record
         except Exception as e:
             self.logger.debug(f"Could not fetch record for team {team_id}: {e}")

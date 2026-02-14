@@ -1,3 +1,4 @@
+import copy
 import logging
 import time
 from datetime import datetime
@@ -111,7 +112,8 @@ class BaseNCAAMBasketballManager(Basketball):
                     events = None
 
                 if events is not None:
-                    # Enrich on every read so records stay current
+                    # Deep-copy so enrichment doesn't mutate the cached object
+                    events = copy.deepcopy(events)
                     summary = self.cache_manager.get(record_summary_key, max_age=3600)
                     if isinstance(summary, str):
                         self._enrich_events_with_records(events, team_id, summary)
@@ -129,16 +131,17 @@ class BaseNCAAMBasketballManager(Basketball):
             # Cache raw events (without enriched records)
             self.cache_manager.set(cache_key, {"events": events})
 
-            # Cache the team's record summary separately (1-hour TTL via max_age on read)
+            # Cache the team's record summary separately
             team_record_summary = data.get("team", {}).get("recordSummary", "")
             if team_record_summary:
-                self.cache_manager.set(record_summary_key, team_record_summary)
+                self.cache_manager.set(record_summary_key, team_record_summary, ttl=3600)
 
-            # Enrich the in-memory copy before returning
-            self._enrich_events_with_records(events, team_id, team_record_summary)
+            # Deep-copy before enriching so the cached object stays raw
+            enriched_events = copy.deepcopy(events)
+            self._enrich_events_with_records(enriched_events, team_id, team_record_summary)
 
             self.logger.info(f"Fetched {len(events)} events for team {team_id} season {season_year}")
-            return {"events": events}
+            return {"events": enriched_events}
         except Exception as e:
             self.logger.error(f"Error fetching team schedule for team {team_id}: {e}")
             return None
