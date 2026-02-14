@@ -6,9 +6,11 @@ Returns images instead of updating display directly.
 """
 
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
+import pytz
 from PIL import Image, ImageDraw, ImageFont
 
 # Pillow compatibility: Image.Resampling.LANCZOS is available in Pillow >= 9.1
@@ -72,8 +74,14 @@ class GameRenderer:
             fonts['rank'] = ImageFont.load_default()
         return fonts
 
-    def _get_logo_path(self, league: str, team_abbrev: str) -> Path:
-        """Get the logo path for a team based on league."""
+    def _get_logo_path(self, league: str, team_abbrev: str, game: Dict = None) -> Path:
+        """Get the logo path for a team based on league config."""
+        # Use league_config logo_dir if available
+        if game and game.get('league_config'):
+            logo_dir = game['league_config'].get('logo_dir')
+            if logo_dir:
+                return Path(logo_dir) / f"{team_abbrev}.png"
+        # Fallback to defaults
         if league == 'mlb':
             return Path("assets/sports/mlb_logos") / f"{team_abbrev}.png"
         elif league == 'milb':
@@ -83,13 +91,13 @@ class GameRenderer:
         else:
             return Path("assets/sports/mlb_logos") / f"{team_abbrev}.png"
 
-    def _load_and_resize_logo(self, league: str, team_abbrev: str) -> Optional[Image.Image]:
+    def _load_and_resize_logo(self, league: str, team_abbrev: str, game: Dict = None) -> Optional[Image.Image]:
         """Load and resize a team logo, with caching."""
         cache_key = f"{league}_{team_abbrev}"
         if cache_key in self._logo_cache:
             return self._logo_cache[cache_key]
 
-        logo_path = self._get_logo_path(league, team_abbrev)
+        logo_path = self._get_logo_path(league, team_abbrev, game)
 
         if not logo_path.exists():
             self.logger.warning(f"Logo not found for {team_abbrev} at {logo_path}")
@@ -152,8 +160,8 @@ class GameRenderer:
             draw = ImageDraw.Draw(overlay)
 
             league = game.get('league', 'mlb')
-            home_logo = self._load_and_resize_logo(league, game.get('home_abbr', ''))
-            away_logo = self._load_and_resize_logo(league, game.get('away_abbr', ''))
+            home_logo = self._load_and_resize_logo(league, game.get('home_abbr', ''), game)
+            away_logo = self._load_and_resize_logo(league, game.get('away_abbr', ''), game)
 
             if not home_logo or not away_logo:
                 return self._render_error_card("Logo Error")
@@ -270,6 +278,10 @@ class GameRenderer:
                 home_w = len(home_text) * 8
             self._draw_text_with_outline(draw, home_text, (self.display_width - home_w - 2, score_y), score_font)
 
+            # Odds
+            if game.get('odds'):
+                self._draw_dynamic_odds(draw, game['odds'])
+
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
 
@@ -285,8 +297,8 @@ class GameRenderer:
             draw = ImageDraw.Draw(overlay)
 
             league = game.get('league', 'mlb')
-            home_logo = self._load_and_resize_logo(league, game.get('home_abbr', ''))
-            away_logo = self._load_and_resize_logo(league, game.get('away_abbr', ''))
+            home_logo = self._load_and_resize_logo(league, game.get('home_abbr', ''), game)
+            away_logo = self._load_and_resize_logo(league, game.get('away_abbr', ''), game)
 
             if not home_logo or not away_logo:
                 return self._render_error_card("Logo Error")
@@ -312,6 +324,10 @@ class GameRenderer:
             # Records at bottom corners
             self._draw_records(draw, game)
 
+            # Odds
+            if game.get('odds'):
+                self._draw_dynamic_odds(draw, game['odds'])
+
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
 
@@ -327,8 +343,8 @@ class GameRenderer:
             draw = ImageDraw.Draw(overlay)
 
             league = game.get('league', 'mlb')
-            home_logo = self._load_and_resize_logo(league, game.get('home_abbr', ''))
-            away_logo = self._load_and_resize_logo(league, game.get('away_abbr', ''))
+            home_logo = self._load_and_resize_logo(league, game.get('home_abbr', ''), game)
+            away_logo = self._load_and_resize_logo(league, game.get('away_abbr', ''), game)
 
             if not home_logo or not away_logo:
                 return self._render_error_card("Logo Error")
@@ -351,14 +367,12 @@ class GameRenderer:
             game_time = ''
             if start_time:
                 try:
-                    from datetime import datetime
-                    import pytz
                     dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
                     local_tz = pytz.timezone(self.config.get('timezone', 'US/Eastern'))
                     dt_local = dt.astimezone(local_tz)
                     game_date = dt_local.strftime('%b %d')
                     game_time = dt_local.strftime('%-I:%M %p')
-                except (ValueError, AttributeError, ImportError):
+                except (ValueError, AttributeError):
                     game_time = start_time[:10] if len(start_time) > 10 else start_time
 
             time_font = self.fonts['time']
@@ -373,6 +387,10 @@ class GameRenderer:
 
             # Records at bottom corners
             self._draw_records(draw, game)
+
+            # Odds
+            if game.get('odds'):
+                self._draw_dynamic_odds(draw, game['odds'])
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -406,6 +424,66 @@ class GameRenderer:
             home_bbox = draw.textbbox((0, 0), home_record, font=record_font)
             home_w = home_bbox[2] - home_bbox[0]
             self._draw_text_with_outline(draw, home_record, (self.display_width - home_w, record_y), record_font)
+
+    def _draw_dynamic_odds(self, draw, odds: Dict) -> None:
+        """Draw odds with dynamic positioning based on favored team."""
+        try:
+            if not odds:
+                return
+
+            home_team_odds = odds.get('home_team_odds', {})
+            away_team_odds = odds.get('away_team_odds', {})
+            home_spread = home_team_odds.get('spread_odds')
+            away_spread = away_team_odds.get('spread_odds')
+
+            # Get top-level spread as fallback
+            top_level_spread = odds.get('spread')
+            if top_level_spread is not None:
+                if home_spread is None or home_spread == 0.0:
+                    home_spread = top_level_spread
+                if away_spread is None:
+                    away_spread = -top_level_spread
+
+            # Determine favored team
+            home_favored = isinstance(home_spread, (int, float)) and home_spread < 0
+            away_favored = isinstance(away_spread, (int, float)) and away_spread < 0
+
+            favored_spread = None
+            favored_side = None
+
+            if home_favored:
+                favored_spread = home_spread
+                favored_side = 'home'
+            elif away_favored:
+                favored_spread = away_spread
+                favored_side = 'away'
+
+            # Show the negative spread on the appropriate side
+            font = self.fonts['detail']
+            if favored_spread is not None:
+                spread_text = str(favored_spread)
+                spread_width = draw.textlength(spread_text, font=font)
+                if favored_side == 'home':
+                    spread_x = self.display_width - spread_width
+                else:
+                    spread_x = 0
+                self._draw_text_with_outline(draw, spread_text, (spread_x, 0), font, fill=(0, 255, 0))
+
+            # Show over/under on opposite side
+            over_under = odds.get('over_under')
+            if over_under is not None and isinstance(over_under, (int, float)):
+                ou_text = f"O/U: {over_under}"
+                ou_width = draw.textlength(ou_text, font=font)
+                if favored_side == 'home':
+                    ou_x = 0
+                elif favored_side == 'away':
+                    ou_x = self.display_width - ou_width
+                else:
+                    ou_x = (self.display_width - ou_width) // 2
+                self._draw_text_with_outline(draw, ou_text, (ou_x, 0), font, fill=(0, 255, 0))
+
+        except Exception as e:
+            self.logger.error(f"Error drawing odds: {e}")
 
     def _render_error_card(self, message: str) -> Image.Image:
         """Render an error message card."""

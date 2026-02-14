@@ -54,6 +54,12 @@ try:
 except ImportError:
     ScrollDisplayManager = None
     SCROLL_AVAILABLE = False
+
+# Import odds manager
+try:
+    from odds_manager import BaseballOddsManager
+except ImportError:
+    BaseballOddsManager = None
 logger = logging.getLogger(__name__)
 
 
@@ -189,6 +195,15 @@ class BaseballScoreboardPlugin(BasePlugin):
                 self.logger.warning(f"Could not initialize scroll display manager: {e}")
         else:
             self.logger.info("Scroll display not available - scroll mode disabled")
+
+        # Initialize odds manager
+        self._odds_manager = None
+        if BaseballOddsManager:
+            try:
+                self._odds_manager = BaseballOddsManager(cache_manager, logger=self.logger)
+                self.logger.info("Baseball odds manager initialized")
+            except Exception as e:
+                self.logger.warning(f"Could not initialize odds manager: {e}")
 
         self.initialized = True
 
@@ -883,6 +898,22 @@ class BaseballScoreboardPlugin(BasePlugin):
             home_w = home_bbox[2] - home_bbox[0]
             self._draw_text_with_outline(draw, home_text, (width - home_w, record_y), record_font)
 
+    def _fetch_and_render_odds(self, draw: ImageDraw.Draw, game: Dict, width: int, height: int):
+        """Fetch and render odds for a game if enabled."""
+        if not self._odds_manager:
+            return
+
+        league_config = game.get('league_config', {})
+        league = game.get('league', 'mlb')
+        show_odds = league_config.get('show_odds', self.config.get('show_odds', False))
+        if not show_odds:
+            return
+
+        self._odds_manager.fetch_odds(game, league_config, 'baseball', league)
+        odds = game.get('odds')
+        if odds:
+            self._odds_manager.render_odds(draw, odds, width, height, self.fonts)
+
     def _display_live_game(self, game: Dict):
         """Display a live baseball game with full scorebug: bases, outs, count, inning."""
         matrix_width = self.display_manager.matrix.width
@@ -1030,6 +1061,9 @@ class BaseballScoreboardPlugin(BasePlugin):
             home_text_width = len(home_text) * 8
         self._draw_text_with_outline(draw, home_text, (matrix_width - home_text_width - 2, score_y), score_font)
 
+        # Odds
+        self._fetch_and_render_odds(draw, game, matrix_width, matrix_height)
+
         # Composite and display
         final_img = Image.alpha_composite(main_img, overlay)
         self.display_manager.image = final_img.convert('RGB').copy()
@@ -1081,6 +1115,9 @@ class BaseballScoreboardPlugin(BasePlugin):
             series_x = (matrix_width - series_width) // 2
             series_y = (matrix_height - series_height) // 2
             self._draw_text_with_outline(draw, series_summary, (series_x, series_y), series_font)
+
+        # Odds
+        self._fetch_and_render_odds(draw, game, matrix_width, matrix_height)
 
         # Composite and display
         final_img = Image.alpha_composite(main_img, overlay)
@@ -1143,6 +1180,9 @@ class BaseballScoreboardPlugin(BasePlugin):
 
         # Records at bottom corners
         self._draw_records(draw, game, matrix_width, matrix_height)
+
+        # Odds
+        self._fetch_and_render_odds(draw, game, matrix_width, matrix_height)
 
         # Composite and display
         final_img = Image.alpha_composite(main_img, overlay)
