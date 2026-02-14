@@ -60,6 +60,19 @@ try:
     from odds_manager import BaseballOddsManager
 except ImportError:
     BaseballOddsManager = None
+
+# Import logo manager for auto-download support
+try:
+    from logo_manager import BaseballLogoManager
+except ImportError:
+    BaseballLogoManager = None
+
+# Import rankings manager
+try:
+    from rankings_manager import BaseballRankingsManager
+except ImportError:
+    BaseballRankingsManager = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -205,6 +218,25 @@ class BaseballScoreboardPlugin(BasePlugin):
             except Exception as e:
                 self.logger.warning(f"Could not initialize odds manager: {e}")
 
+        # Initialize logo manager for auto-download support
+        self._logo_manager = None
+        if BaseballLogoManager:
+            try:
+                self._logo_manager = BaseballLogoManager(display_manager, self.logger)
+                self.logger.info("Baseball logo manager initialized")
+            except Exception as e:
+                self.logger.warning(f"Could not initialize logo manager: {e}")
+
+        # Initialize rankings manager
+        self._rankings_manager = None
+        self._team_rankings_cache: Dict[str, int] = {}
+        if BaseballRankingsManager:
+            try:
+                self._rankings_manager = BaseballRankingsManager(self.logger)
+                self.logger.info("Baseball rankings manager initialized")
+            except Exception as e:
+                self.logger.warning(f"Could not initialize rankings manager: {e}")
+
         self.initialized = True
 
         # Initialize data manager for background fetching
@@ -349,6 +381,10 @@ class BaseballScoreboardPlugin(BasePlugin):
                             game['league_config'] = league_config
                         new_games.extend(games)
 
+            # Fetch rankings if enabled
+            if self.show_ranking and self._rankings_manager:
+                self._fetch_all_rankings()
+
             # Update shared state under lock (protected by lock for thread safety)
             with self._games_lock:
                 self.current_games = new_games
@@ -376,6 +412,32 @@ class BaseballScoreboardPlugin(BasePlugin):
             return (live_score, favorite_score, start_time)
 
         self.current_games.sort(key=sort_key)
+
+    def _fetch_all_rankings(self):
+        """Fetch team rankings for all enabled leagues that support rankings."""
+        if not self._rankings_manager:
+            return
+
+        # ESPN league identifiers for rankings API
+        league_mappings = {
+            'mlb': ('baseball', 'mlb'),
+            'ncaa_baseball': ('baseball', 'college-baseball'),
+        }
+
+        for league_key, league_config in self.leagues.items():
+            if not league_config.get('enabled', False):
+                continue
+            if league_key not in league_mappings:
+                continue
+
+            sport, league_id = league_mappings[league_key]
+            rankings = self._rankings_manager.fetch_rankings(sport, league_id, league_key)
+            if rankings:
+                self._team_rankings_cache.update(rankings)
+
+    def _get_rankings_cache(self) -> Dict[str, int]:
+        """Get the combined team rankings cache."""
+        return self._team_rankings_cache
 
     def _fetch_league_data(self, league_key: str, league_config: Dict) -> List[Dict]:
         """Fetch game data for a specific league.
@@ -764,8 +826,8 @@ class BaseballScoreboardPlugin(BasePlugin):
         """
         return ['baseball_live']
 
-    def _load_team_logo(self, team_abbrev: str, league: str) -> Optional[Image.Image]:
-        """Load and resize team logo."""
+    def _load_team_logo(self, team_abbrev: str, league: str, game: Dict = None) -> Optional[Image.Image]:
+        """Load and resize team logo, with auto-download via logo manager if available."""
         try:
             if not team_abbrev:
                 return None
@@ -788,25 +850,46 @@ class BaseballScoreboardPlugin(BasePlugin):
                 else:
                     logo_dir = os.path.abspath(logo_dir)
 
-            # Try different case variations and extensions
+            logo_path = Path(logo_dir) / f"{team_abbrev}.png"
+
+            # Use logo manager if available (supports auto-download of missing logos)
+            if self._logo_manager:
+                team_id = ''
+                logo_url = None
+                if game:
+                    side = 'home' if game.get('home_abbr') == team_abbrev else 'away'
+                    team_id = game.get(f'{side}_id', '')
+                    logo_url = game.get(f'{side}_logo_url')
+
+                if league == 'milb':
+                    logo = self._logo_manager.load_milb_logo(team_abbrev, Path(logo_dir))
+                else:
+                    sport_key = 'college-baseball' if league == 'ncaa_baseball' else 'baseball'
+                    logo = self._logo_manager.load_logo(
+                        team_id, team_abbrev, logo_path,
+                        logo_url=logo_url, sport_key=sport_key
+                    )
+                if logo:
+                    return logo
+
+            # Fallback: inline logo loading (no auto-download)
             logo_extensions = ['.png', '.jpg', '.jpeg']
-            logo_path = None
+            found_path = None
             abbrev_variations = [team_abbrev.upper(), team_abbrev.lower(), team_abbrev]
 
             for abbrev in abbrev_variations:
                 for ext in logo_extensions:
                     potential_path = os.path.join(logo_dir, f"{abbrev}{ext}")
                     if os.path.exists(potential_path):
-                        logo_path = potential_path
+                        found_path = potential_path
                         break
-                if logo_path:
+                if found_path:
                     break
 
-            if not logo_path:
+            if not found_path:
                 return None
 
-            # Load and resize logo (matching original managers)
-            logo = Image.open(logo_path).convert('RGBA')
+            logo = Image.open(found_path).convert('RGBA')
             max_width = int(self.display_manager.matrix.width * 1.5)
             max_height = int(self.display_manager.matrix.height * 1.5)
             logo.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
@@ -847,8 +930,8 @@ class BaseballScoreboardPlugin(BasePlugin):
     def _paste_logos(self, main_img: Image.Image, game: Dict, inward_offset: int = 10):
         """Load and paste team logos onto the image. Returns (home_logo, away_logo) or (None, None)."""
         league = game.get('league', '')
-        home_logo = self._load_team_logo(game.get('home_abbr', ''), league)
-        away_logo = self._load_team_logo(game.get('away_abbr', ''), league)
+        home_logo = self._load_team_logo(game.get('home_abbr', ''), league, game)
+        away_logo = self._load_team_logo(game.get('away_abbr', ''), league, game)
 
         if not home_logo or not away_logo:
             return None, None
@@ -863,6 +946,19 @@ class BaseballScoreboardPlugin(BasePlugin):
         main_img.paste(away_logo, (away_x, away_y), away_logo)
 
         return home_logo, away_logo
+
+    def _get_team_display_text(self, abbr: str, record: str, show_records: bool, show_ranking: bool) -> str:
+        """Get display text for a team (ranking or record), matching football/basketball pattern."""
+        if show_ranking:
+            rank = self._team_rankings_cache.get(abbr, 0)
+            if rank > 0:
+                return f"#{rank}"
+            # Fall through to records if unranked
+            if not show_records:
+                return ''
+        if show_records:
+            return record
+        return ''
 
     def _draw_records(self, draw: ImageDraw.Draw, game: Dict, width: int, height: int):
         """Draw team records or rankings at bottom corners if enabled."""
@@ -879,20 +975,18 @@ class BaseballScoreboardPlugin(BasePlugin):
         record_y = height - record_height
 
         # Away team (bottom left)
-        away_text = ''
-        if show_ranking:
-            away_text = game.get('away_record', '')  # rankings would replace this if available
-        elif show_records:
-            away_text = game.get('away_record', '')
+        away_text = self._get_team_display_text(
+            game.get('away_abbr', ''), game.get('away_record', ''),
+            show_records, show_ranking
+        )
         if away_text:
             self._draw_text_with_outline(draw, away_text, (0, record_y), record_font)
 
         # Home team (bottom right)
-        home_text = ''
-        if show_ranking:
-            home_text = game.get('home_record', '')
-        elif show_records:
-            home_text = game.get('home_record', '')
+        home_text = self._get_team_display_text(
+            game.get('home_abbr', ''), game.get('home_record', ''),
+            show_records, show_ranking
+        )
         if home_text:
             home_bbox = draw.textbbox((0, 0), home_text, font=record_font)
             home_w = home_bbox[2] - home_bbox[0]
@@ -1438,8 +1532,9 @@ class BaseballScoreboardPlugin(BasePlugin):
 
         # Prepare scroll content with mixed game types
         # Note: Using 'mixed' as game_type indicator for scroll config
+        rankings = self._get_rankings_cache() if self.show_ranking else None
         success = self._scroll_manager.prepare_and_display(
-            games, 'mixed', leagues, None
+            games, 'mixed', leagues, rankings
         )
 
         if success:

@@ -50,6 +50,9 @@ class GameRenderer:
         # Use provided logo cache or create new one
         self._logo_cache = logo_cache if logo_cache is not None else {}
 
+        # Rankings cache (populated externally via set_rankings_cache)
+        self._team_rankings_cache: Dict[str, int] = {}
+
         # Load fonts
         self.fonts = self._load_fonts()
 
@@ -130,6 +133,10 @@ class GameRenderer:
         for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
             draw.text((x + dx, y + dy), text, font=font, fill=outline_color)
         draw.text((x, y), text, font=font, fill=fill)
+
+    def set_rankings_cache(self, rankings: Dict[str, int]) -> None:
+        """Set the team rankings cache for display."""
+        self._team_rankings_cache = rankings
 
     def render_game_card(self, game: Dict, game_type: str) -> Image.Image:
         """
@@ -399,8 +406,20 @@ class GameRenderer:
             self.logger.exception("Error rendering upcoming game")
             return self._render_error_card("Display error")
 
+    def _get_team_display_text(self, abbr: str, record: str, show_records: bool, show_ranking: bool) -> str:
+        """Get display text for a team (ranking or record)."""
+        if show_ranking:
+            rank = self._team_rankings_cache.get(abbr, 0)
+            if rank > 0:
+                return f"#{rank}"
+            if not show_records:
+                return ''
+        if show_records:
+            return record
+        return ''
+
     def _draw_records(self, draw, game: Dict):
-        """Draw team records at bottom corners if enabled by config."""
+        """Draw team records or rankings at bottom corners if enabled by config."""
         league_config = game.get('league_config', {})
         show_records = league_config.get('show_records', self.config.get('show_records', False))
         show_ranking = league_config.get('show_ranking', self.config.get('show_ranking', False))
@@ -408,22 +427,28 @@ class GameRenderer:
         if not show_records and not show_ranking:
             return
 
-        away_record = game.get('away_record', '')
-        home_record = game.get('home_record', '')
-        if not away_record and not home_record:
-            return
-
         record_font = self.fonts['detail']
         record_bbox = draw.textbbox((0, 0), "0-0", font=record_font)
         record_height = record_bbox[3] - record_bbox[1]
         record_y = self.display_height - record_height
 
-        if away_record:
-            self._draw_text_with_outline(draw, away_record, (0, record_y), record_font)
-        if home_record:
-            home_bbox = draw.textbbox((0, 0), home_record, font=record_font)
+        # Away team (bottom left)
+        away_text = self._get_team_display_text(
+            game.get('away_abbr', ''), game.get('away_record', ''),
+            show_records, show_ranking
+        )
+        if away_text:
+            self._draw_text_with_outline(draw, away_text, (0, record_y), record_font)
+
+        # Home team (bottom right)
+        home_text = self._get_team_display_text(
+            game.get('home_abbr', ''), game.get('home_record', ''),
+            show_records, show_ranking
+        )
+        if home_text:
+            home_bbox = draw.textbbox((0, 0), home_text, font=record_font)
             home_w = home_bbox[2] - home_bbox[0]
-            self._draw_text_with_outline(draw, home_record, (self.display_width - home_w, record_y), record_font)
+            self._draw_text_with_outline(draw, home_text, (self.display_width - home_w, record_y), record_font)
 
     def _draw_dynamic_odds(self, draw, odds: Dict) -> None:
         """Draw odds with dynamic positioning based on favored team."""

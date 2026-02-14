@@ -303,8 +303,7 @@ class ScrollDisplay:
             games: List of game dictionaries with league info
             game_type: Type hint ('live', 'recent', 'upcoming', or 'mixed' for mixed types)
             leagues: List of leagues in order (e.g., ['mlb', 'milb', 'ncaa_baseball'])
-            rankings_cache: Optional team rankings cache. Kept for API compatibility with
-                other sports plugins but not used for baseball (baseball doesn't show rankings).
+            rankings_cache: Optional team rankings cache for displaying team rankings
 
         Returns:
             True if content was prepared successfully, False otherwise
@@ -331,6 +330,10 @@ class ScrollDisplay:
 
         # Get or create cached game renderer
         renderer = self._get_game_renderer()
+
+        # Pass rankings cache to renderer if available
+        if renderer and rankings_cache:
+            renderer.set_rankings_cache(rankings_cache)
 
         # Pre-render all game cards
         content_items: List[Image.Image] = []
