@@ -27,6 +27,12 @@ import pytz
 import requests
 from PIL import Image, ImageDraw, ImageFont
 
+# Pillow compatibility: Image.Resampling.LANCZOS is available in Pillow >= 9.1
+try:
+    RESAMPLE_FILTER = Image.Resampling.LANCZOS
+except AttributeError:
+    RESAMPLE_FILTER = Image.LANCZOS
+
 from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
 
 # Import baseball base classes from LEDMatrix
@@ -423,7 +429,10 @@ class BaseballScoreboardPlugin(BasePlugin):
         self.current_games.sort(key=sort_key)
 
     def _fetch_all_rankings(self):
-        """Fetch team rankings for all enabled leagues that support rankings."""
+        """Fetch team rankings for all enabled leagues that support rankings.
+
+        Uses atomic swap to avoid concurrent read/write issues with display threads.
+        """
         if not self._rankings_manager:
             return
 
@@ -433,6 +442,7 @@ class BaseballScoreboardPlugin(BasePlugin):
             'ncaa_baseball': ('baseball', 'college-baseball'),
         }
 
+        new_cache: Dict[str, int] = {}
         for league_key, league_config in self.leagues.items():
             if not league_config.get('enabled', False):
                 continue
@@ -442,7 +452,11 @@ class BaseballScoreboardPlugin(BasePlugin):
             sport, league_id = league_mappings[league_key]
             rankings = self._rankings_manager.fetch_rankings(sport, league_id, league_key)
             if rankings:
-                self._team_rankings_cache.update(rankings)
+                new_cache.update(rankings)
+
+        # Atomic swap under lock so display threads see a consistent snapshot
+        with self._games_lock:
+            self._team_rankings_cache = new_cache
 
     def _get_rankings_cache(self) -> Dict[str, int]:
         """Get the combined team rankings cache."""
@@ -898,10 +912,11 @@ class BaseballScoreboardPlugin(BasePlugin):
             if not found_path:
                 return None
 
-            logo = Image.open(found_path).convert('RGBA')
+            with Image.open(found_path) as src:
+                logo = src.convert('RGBA')
             max_width = int(self.display_manager.matrix.width * 1.5)
             max_height = int(self.display_manager.matrix.height * 1.5)
-            logo.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            logo.thumbnail((max_width, max_height), RESAMPLE_FILTER)
 
             return logo
 

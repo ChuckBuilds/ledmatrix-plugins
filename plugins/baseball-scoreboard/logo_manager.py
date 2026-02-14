@@ -11,6 +11,12 @@ from typing import Optional
 
 from PIL import Image
 
+# Pillow compatibility: Image.Resampling.LANCZOS is available in Pillow >= 9.1
+try:
+    RESAMPLE_FILTER = Image.Resampling.LANCZOS
+except AttributeError:
+    RESAMPLE_FILTER = Image.LANCZOS
+
 try:
     from src.logo_downloader import LogoDownloader, download_missing_logo
 except ImportError:
@@ -105,19 +111,16 @@ class BaseballLogoManager:
 
             # Only try to open the logo if the file exists
             if os.path.exists(actual_logo_path):
-                logo = Image.open(actual_logo_path)
+                with Image.open(actual_logo_path) as src:
+                    logo = src.convert('RGBA')
             else:
                 self.logger.error(f"Logo file still doesn't exist at {actual_logo_path} after download attempt")
                 return None
 
-            # Ensure RGBA mode
-            if logo.mode != 'RGBA':
-                logo = logo.convert('RGBA')
-
             # Resize to fit display (130% of display dimensions to allow extending off screen)
             max_width = int(self.display_width * 1.5)
             max_height = int(self.display_height * 1.5)
-            logo.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            logo.thumbnail((max_width, max_height), RESAMPLE_FILTER)
 
             # Cache the logo
             self._logo_cache[team_abbr] = logo
@@ -149,19 +152,16 @@ class BaseballLogoManager:
             logo_path = logo_dir / f"{team_abbr}.png"
             
             if logo_path.exists():
-                logo = Image.open(logo_path)
+                with Image.open(logo_path) as src:
+                    logo = src.convert('RGBA')
             else:
                 self.logger.warning(f"MiLB logo not found for {team_abbr} at {logo_path}")
                 return None
 
-            # Ensure RGBA mode
-            if logo.mode != 'RGBA':
-                logo = logo.convert('RGBA')
-
             # Resize to fit display (130% of display dimensions)
             max_width = int(self.display_width * 1.5)
             max_height = int(self.display_height * 1.5)
-            logo.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            logo.thumbnail((max_width, max_height), RESAMPLE_FILTER)
 
             # Cache the logo
             self._logo_cache[team_abbr] = logo
