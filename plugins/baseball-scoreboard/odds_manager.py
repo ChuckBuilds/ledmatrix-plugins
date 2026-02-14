@@ -120,9 +120,9 @@ class BaseballOddsManager:
         # Get top-level spread as fallback
         top_level_spread = odds.get('spread')
 
-        # If we have a top-level spread and the individual spreads are None or 0, use the top-level
+        # If we have a top-level spread and the individual spreads are missing, use the top-level
         if top_level_spread is not None:
-            if home_spread is None or home_spread == 0.0:
+            if home_spread is None:
                 home_spread = top_level_spread
             if away_spread is None:
                 away_spread = -top_level_spread

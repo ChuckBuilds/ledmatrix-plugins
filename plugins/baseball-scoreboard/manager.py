@@ -381,6 +381,15 @@ class BaseballScoreboardPlugin(BasePlugin):
                             game['league_config'] = league_config
                         new_games.extend(games)
 
+            # Fetch odds for each game if enabled
+            if self._odds_manager:
+                for game in new_games:
+                    league_config = game.get('league_config', {})
+                    league = game.get('league', 'mlb')
+                    show_odds = league_config.get('show_odds', self.config.get('show_odds', False))
+                    if show_odds:
+                        self._odds_manager.fetch_odds(game, league_config, 'baseball', league)
+
             # Fetch rankings if enabled
             if self.show_ranking and self._rankings_manager:
                 self._fetch_all_rankings()
@@ -993,17 +1002,18 @@ class BaseballScoreboardPlugin(BasePlugin):
             self._draw_text_with_outline(draw, home_text, (width - home_w, record_y), record_font)
 
     def _fetch_and_render_odds(self, draw: ImageDraw.Draw, game: Dict, width: int, height: int):
-        """Fetch and render odds for a game if enabled."""
+        """Render pre-fetched odds for a game if enabled.
+
+        Odds data is populated during update() cycle — this method only renders.
+        """
         if not self._odds_manager:
             return
 
         league_config = game.get('league_config', {})
-        league = game.get('league', 'mlb')
         show_odds = league_config.get('show_odds', self.config.get('show_odds', False))
         if not show_odds:
             return
 
-        self._odds_manager.fetch_odds(game, league_config, 'baseball', league)
         odds = game.get('odds')
         if odds:
             self._odds_manager.render_odds(draw, odds, width, height, self.fonts)

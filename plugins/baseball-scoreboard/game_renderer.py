@@ -461,10 +461,10 @@ class GameRenderer:
             home_spread = home_team_odds.get('spread_odds')
             away_spread = away_team_odds.get('spread_odds')
 
-            # Get top-level spread as fallback
+            # Get top-level spread as fallback (only when individual spread is truly missing)
             top_level_spread = odds.get('spread')
             if top_level_spread is not None:
-                if home_spread is None or home_spread == 0.0:
+                if home_spread is None:
                     home_spread = top_level_spread
                 if away_spread is None:
                     away_spread = -top_level_spread
@@ -483,6 +483,10 @@ class GameRenderer:
                 favored_spread = away_spread
                 favored_side = 'away'
 
+            # Odds row below the status/inning text row
+            status_bbox = draw.textbbox((0, 0), "A", font=self.fonts['time'])
+            odds_y = status_bbox[3] + 2  # just below the status row
+
             # Show the negative spread on the appropriate side
             font = self.fonts['detail']
             if favored_spread is not None:
@@ -492,7 +496,7 @@ class GameRenderer:
                     spread_x = self.display_width - spread_width
                 else:
                     spread_x = 0
-                self._draw_text_with_outline(draw, spread_text, (spread_x, 0), font, fill=(0, 255, 0))
+                self._draw_text_with_outline(draw, spread_text, (spread_x, odds_y), font, fill=(0, 255, 0))
 
             # Show over/under on opposite side
             over_under = odds.get('over_under')
@@ -505,10 +509,10 @@ class GameRenderer:
                     ou_x = self.display_width - ou_width
                 else:
                     ou_x = (self.display_width - ou_width) // 2
-                self._draw_text_with_outline(draw, ou_text, (ou_x, 0), font, fill=(0, 255, 0))
+                self._draw_text_with_outline(draw, ou_text, (ou_x, odds_y), font, fill=(0, 255, 0))
 
-        except Exception as e:
-            self.logger.error(f"Error drawing odds: {e}")
+        except Exception:
+            self.logger.exception("Error drawing odds")
 
     def _render_error_card(self, message: str) -> Image.Image:
         """Render an error message card."""
