@@ -279,12 +279,11 @@ class ScrollDisplay:
         Returns:
             Game type: 'live', 'recent', or 'upcoming'
         """
-        state = game.get('status', {}).get('state', '')
-        if state == 'in':
+        if game.get('is_live'):
             return 'live'
-        elif state == 'post':
+        elif game.get('is_final'):
             return 'recent'
-        elif state == 'pre':
+        elif game.get('is_upcoming'):
             return 'upcoming'
         else:
             # Default to upcoming if state is unknown
