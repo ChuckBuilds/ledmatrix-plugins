@@ -420,7 +420,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         Load and initialize custom leagues from config.
 
-        Custom leagues are defined in config.leagues.custom_leagues as an array of objects.
+        Custom leagues are defined in config.custom_leagues as an array of objects.
         Each custom league has: name, league_code, priority, enabled, favorite_teams, etc.
 
         This method:
@@ -429,8 +429,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         3. Updates league_enabled and league_live_priority dicts
         4. Updates LEAGUE_NAMES for display purposes
         """
-        leagues_config = self.config.get('leagues', {})
-        custom_leagues = leagues_config.get('custom_leagues', [])
+        custom_leagues = self.config.get('custom_leagues', [])
 
         if not custom_leagues:
             self.logger.debug("No custom leagues configured")
