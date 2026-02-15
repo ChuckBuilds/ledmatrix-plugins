@@ -170,8 +170,8 @@ class GameRenderer:
             center_y = self.display_height // 2
 
             # Logos
-            main_img.paste(home_logo, (self.display_width - home_logo.width + 10, center_y - home_logo.height // 2), home_logo)
-            main_img.paste(away_logo, (-10, center_y - away_logo.height // 2), away_logo)
+            main_img.paste(home_logo, (self.display_width - home_logo.width, center_y - home_logo.height // 2), home_logo)
+            main_img.paste(away_logo, (0, center_y - away_logo.height // 2), away_logo)
 
             # Inning indicator (top center)
             inning_half = game.get('inning_half', 'top')
@@ -307,8 +307,8 @@ class GameRenderer:
             center_y = self.display_height // 2
 
             # Logos (tighter fit for recent)
-            main_img.paste(home_logo, (self.display_width - home_logo.width + 2, center_y - home_logo.height // 2), home_logo)
-            main_img.paste(away_logo, (-2, center_y - away_logo.height // 2), away_logo)
+            main_img.paste(home_logo, (self.display_width - home_logo.width, center_y - home_logo.height // 2), home_logo)
+            main_img.paste(away_logo, (0, center_y - away_logo.height // 2), away_logo)
 
             # "Final" (top center)
             status_text = "Final"
@@ -353,8 +353,8 @@ class GameRenderer:
             center_y = self.display_height // 2
 
             # Logos (tighter fit)
-            main_img.paste(home_logo, (self.display_width - home_logo.width + 2, center_y - home_logo.height // 2), home_logo)
-            main_img.paste(away_logo, (-2, center_y - away_logo.height // 2), away_logo)
+            main_img.paste(home_logo, (self.display_width - home_logo.width, center_y - home_logo.height // 2), home_logo)
+            main_img.paste(away_logo, (0, center_y - away_logo.height // 2), away_logo)
 
             # "Next Game" (top center)
             status_font = self.fonts['status'] if self.display_width <= 128 else self.fonts['time']
