@@ -2334,7 +2334,8 @@ class SportsLive(SportsCore):
                 # Detect and remove stale games from persisted list
                 # (new_live_games has fresh last_seen, so stale check must
                 # run against the previous self.live_games)
-                self._detect_stale_games(self.live_games)
+                with self._games_lock:
+                    self._detect_stale_games(self.live_games)
                 
                 # Log changes or periodically
                 current_time_for_log = (
