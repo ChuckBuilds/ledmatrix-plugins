@@ -1943,9 +1943,8 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             return effective_duration
 
         # No mode-level duration - use dynamic calculation
-        # Count games across all enabled leagues for this mode type
-        total_games = 0
-        game_duration = 15.0
+        # Accumulate per-league (games * duration) to handle different durations per league
+        total_duration = 0.0
 
         for league_key, league_data in self._league_registry.items():
             if not league_data.get('enabled', False):
@@ -1953,13 +1952,12 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             manager = league_data.get('managers', {}).get(mode_type)
             if manager:
                 games = getattr(manager, 'games', [])
-                total_games += len(games)
-                game_duration = self._get_game_duration(league_key, mode_type, manager)
+                if games:
+                    game_duration = self._get_game_duration(league_key, mode_type, manager)
+                    total_duration += len(games) * game_duration
 
-        if total_games == 0:
+        if total_duration == 0.0:
             return None
-
-        total_duration = total_games * game_duration
 
         # Apply dynamic cap if configured
         if self._dynamic_feature_enabled():

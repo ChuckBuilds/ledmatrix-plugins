@@ -9,7 +9,7 @@ from baseball import Baseball, BaseballLive, BaseballRecent
 from sports import SportsUpcoming
 
 # MiLB uses the MLB Stats API (ESPN does not support MiLB scoreboard)
-MLB_STATS_BASE_URL = "http://statsapi.mlb.com/api/v1"
+MLB_STATS_BASE_URL = "https://statsapi.mlb.com/api/v1"
 # Default MiLB sport IDs: AAA=11, AA=12, High-A=13, Single-A=14
 DEFAULT_MILB_SPORT_IDS = [11, 12, 13, 14]
 

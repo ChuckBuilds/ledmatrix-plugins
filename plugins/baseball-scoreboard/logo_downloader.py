@@ -61,6 +61,8 @@ class LogoDownloader:
 
         return variations
 
+_downloader = LogoDownloader()
+
 def download_missing_logo(sport_key: str, team_id: str, team_abbr: str, logo_path: Path, logo_url: str = None) -> bool:
     """
     Download missing logo for a team.
@@ -101,7 +103,7 @@ def download_missing_logo(sport_key: str, team_id: str, team_abbr: str, logo_pat
         # If we have a logo URL, try to download it
         if logo_url:
             try:
-                response = requests.get(logo_url, timeout=30)
+                response = _downloader.session.get(logo_url, headers=_downloader.headers, timeout=_downloader.request_timeout)
                 if response.status_code == 200:
                     # Verify it's an image
                     content_type = response.headers.get('content-type', '').lower()

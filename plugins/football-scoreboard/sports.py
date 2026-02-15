@@ -2068,26 +2068,22 @@ class SportsLive(SportsCore):
             return True
 
         # Check if clock is 0:00 in Q4 or OT
-        # Safely coerce clock to string to handle None or non-string values
         raw_clock = game.get("clock")
-        if raw_clock is None or not isinstance(raw_clock, str):
-            clock = "0:00"
-        else:
-            clock = raw_clock
         period = game.get("period", 0)
-        # Handle various clock formats: "0:00", ":00", "0", ":40" (stuck at :40)
-        clock_normalized = clock.replace(":", "").strip()
 
-        self.logger.debug(
-            f"[LIVE_PRIORITY_DEBUG] _is_game_really_over({game_str}): "
-            f"raw_clock={raw_clock!r}, clock='{clock}', clock_normalized='{clock_normalized}', period={period}, period_text='{period_text}'"
-        )
+        # Only check clock-based finish if we have a valid clock string
+        if isinstance(raw_clock, str) and raw_clock.strip() and period >= 4:
+            clock = raw_clock
+            clock_normalized = clock.replace(":", "").strip()
 
-        if period >= 4:
-            # In Q4 or OT, if clock is 0:00 or appears stuck (like :40), consider it over
+            self.logger.debug(
+                f"[LIVE_PRIORITY_DEBUG] _is_game_really_over({game_str}): "
+                f"raw_clock={raw_clock!r}, clock='{clock}', clock_normalized='{clock_normalized}', period={period}, period_text='{period_text}'"
+            )
+
             # Check for clock at 0:00 - various formats: "0:00", ":00", normalized "000"/"00"
             # Note: Clocks like ":40", ":50" are legitimate (under 1 minute remaining)
-            if clock_normalized == "000" or clock_normalized == "00" or clock == "0:00" or clock == ":00":
+            if clock_normalized in ("000", "00") or clock in ("0:00", ":00"):
                 self.logger.debug(
                     f"[LIVE_PRIORITY_DEBUG] _is_game_really_over({game_str}): "
                     f"returning True - clock appears to be 0:00 (clock='{clock}', normalized='{clock_normalized}', period={period})"

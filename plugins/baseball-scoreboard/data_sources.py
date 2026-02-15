@@ -75,8 +75,13 @@ class ESPNDataSource(DataSource):
             events = data.get('events', [])
 
             # Filter for live games
-            live_events = [event for event in events
-                          if event.get('competitions', [{}])[0].get('status', {}).get('type', {}).get('state') == 'in']
+            live_events = []
+            for event in events:
+                competitions = event.get('competitions', [])
+                if not competitions:
+                    continue
+                if competitions[0].get('status', {}).get('type', {}).get('state') == 'in':
+                    live_events.append(event)
 
             self.logger.debug(f"Fetched {len(live_events)} live games for {sport}/{league}")
             return live_events
@@ -162,7 +167,8 @@ class MLBAPIDataSource(DataSource):
             response.raise_for_status()
 
             data = response.json()
-            games = data.get('dates', [{}])[0].get('games', [])
+            dates = data.get('dates', [])
+            games = dates[0].get('games', []) if dates else []
 
             # Filter for live games
             live_games = [game for game in games

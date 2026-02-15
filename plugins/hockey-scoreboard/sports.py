@@ -1963,15 +1963,13 @@ class SportsLive(SportsCore):
 
         # Check if clock is 0:00 in P3 or OT (period >= 3)
         raw_clock = game.get("clock")
-        if raw_clock is None or not isinstance(raw_clock, str):
-            clock = "0:00"
-        else:
-            clock = raw_clock
         period = game.get("period", 0)
-        clock_normalized = clock.replace(":", "").strip()
 
-        if period >= 3:
-            if clock_normalized in ("000", "00", "") or clock in ("0:00", ":00"):
+        # Only check clock-based finish if we have a valid clock string
+        if isinstance(raw_clock, str) and raw_clock.strip() and period >= 3:
+            clock = raw_clock
+            clock_normalized = clock.replace(":", "").strip()
+            if clock_normalized in ("000", "00") or clock in ("0:00", ":00"):
                 self.logger.debug(
                     f"_is_game_really_over({game_str}): "
                     f"returning True - clock at 0:00 (clock='{clock}', period={period})"

@@ -165,12 +165,12 @@ class BaseOddsManager:
                 self.logger.debug("No odds data available for this game")
 
             if odds_data:
-                self.cache_manager.set(cache_key, odds_data)
+                self.cache_manager.set(cache_key, odds_data, ttl=interval)
                 self.logger.info(f"Saved odds data to cache for {cache_key}")
             else:
                 self.logger.debug(f"No odds data available for {cache_key}")
                 # Cache the fact that no odds are available to avoid repeated API calls
-                self.cache_manager.set(cache_key, {"no_odds": True})
+                self.cache_manager.set(cache_key, {"no_odds": True}, ttl=interval)
 
             return odds_data
 

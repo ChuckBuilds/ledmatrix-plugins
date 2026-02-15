@@ -614,35 +614,38 @@ class BaseballLive(Baseball, SportsLive):
             # Center horizontally within the BASE cluster width
             count_x = bases_origin_x + (base_cluster_width - count_text_width) // 2
 
-            # Ensure draw object is set and draw text
+            # Temporarily set draw object for BDF text rendering, then restore
+            original_draw = self.display_manager.draw
             self.display_manager.draw = draw_overlay
+            try:
+                # Draw Balls-Strikes Count with outline using BDF font
+                outline_color_for_bdf = (0, 0, 0)
 
-            # Draw Balls-Strikes Count with outline using BDF font
-            outline_color_for_bdf = (0, 0, 0)
+                # Draw outline
+                for dx_offset, dy_offset in [
+                    (-1, -1),
+                    (-1, 0),
+                    (-1, 1),
+                    (0, -1),
+                    (0, 1),
+                    (1, -1),
+                    (1, 0),
+                    (1, 1),
+                ]:
+                    self.display_manager._draw_bdf_text(
+                        count_text,
+                        count_x + dx_offset,
+                        count_y + dy_offset,
+                        color=outline_color_for_bdf,
+                        font=bdf_font,
+                    )
 
-            # Draw outline
-            for dx_offset, dy_offset in [
-                (-1, -1),
-                (-1, 0),
-                (-1, 1),
-                (0, -1),
-                (0, 1),
-                (1, -1),
-                (1, 0),
-                (1, 1),
-            ]:
+                # Draw main text
                 self.display_manager._draw_bdf_text(
-                    count_text,
-                    count_x + dx_offset,
-                    count_y + dy_offset,
-                    color=outline_color_for_bdf,
-                    font=bdf_font,
+                    count_text, count_x, count_y, color=text_color, font=bdf_font
                 )
-
-            # Draw main text
-            self.display_manager._draw_bdf_text(
-                count_text, count_x, count_y, color=text_color, font=bdf_font
-            )
+            finally:
+                self.display_manager.draw = original_draw
 
             # Draw Team:Score at the bottom (matching main branch format)
             score_font = self.display_manager.font  # Use PressStart2P
