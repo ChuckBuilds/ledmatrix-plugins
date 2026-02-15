@@ -9,11 +9,59 @@ from data_sources import ESPNDataSource
 
 class Basketball(SportsCore):
     """Base class for basketball sports with common functionality."""
-    
+
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager, logger: logging.Logger, sport_key: str):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
         self.data_source = ESPNDataSource(logger)
         self.sport = "basketball"
+
+    def _fetch_team_record(self, team_id: str) -> str:
+        """Fetch a team's current overall record from the ESPN team endpoint."""
+        cache_key = f"{self.sport_key}_team_record_{team_id}"
+        cached = self.cache_manager.get(cache_key, max_age=3600)
+        if cached and isinstance(cached, str):
+            return cached
+
+        try:
+            url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/teams/{team_id}"
+            response = self.session.get(url, headers=self.headers, timeout=10)
+            response.raise_for_status()
+            team_data = response.json().get("team", {})
+            record_items = team_data.get("record", {}).get("items", [])
+            for item in record_items:
+                if item.get("type") == "total":
+                    record = item.get("summary", "")
+                    if record:
+                        self.cache_manager.set(cache_key, record, ttl=3600)
+                        return record
+        except Exception as e:
+            self.logger.debug(f"Could not fetch record for team {team_id}: {e}")
+        return ""
+
+    def _enrich_events_with_records(self, events: list, team_id: str, team_record_summary: str) -> None:
+        """Inject missing team records into competitor objects.
+
+        The ESPN team-schedule API omits per-competitor records for upcoming
+        games.  This fills them in using *team_record_summary* (from the
+        schedule response metadata) for the queried team and an on-demand
+        fetch for opponents.
+        """
+        if not team_record_summary:
+            return
+        for event in events:
+            competitions = event.get("competitions", [])
+            if not competitions:
+                continue
+            for comp in competitions[0].get("competitors", []):
+                if not comp.get("records") and not comp.get("record"):
+                    if str(comp.get("id")) == str(team_id):
+                        comp["record"] = [{"displayValue": team_record_summary, "type": "total"}]
+                    else:
+                        opp_id = comp.get("id")
+                        if opp_id:
+                            opp_record = self._fetch_team_record(opp_id)
+                            if opp_record:
+                                comp["record"] = [{"displayValue": opp_record, "type": "total"}]
 
     def _extract_game_details(self, game_event: Dict) -> Optional[Dict]:
         """Extract relevant game details from ESPN Basketball API response."""

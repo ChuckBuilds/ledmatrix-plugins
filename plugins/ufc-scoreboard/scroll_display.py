@@ -157,15 +157,15 @@ class ScrollDisplayManager:
 
         if os.path.exists(self.UFC_SEPARATOR_ICON):
             try:
-                ufc_icon = Image.open(self.UFC_SEPARATOR_ICON)
-                if ufc_icon.mode != "RGBA":
-                    ufc_icon = ufc_icon.convert("RGBA")
-                aspect = ufc_icon.width / ufc_icon.height
-                new_width = int(separator_height * aspect)
-                ufc_icon = ufc_icon.resize(
-                    (new_width, separator_height), LANCZOS
-                )
-                self._separator_icons["ufc"] = ufc_icon
+                with Image.open(self.UFC_SEPARATOR_ICON) as ufc_icon:
+                    if ufc_icon.mode != "RGBA":
+                        ufc_icon = ufc_icon.convert("RGBA")
+                    aspect = ufc_icon.width / ufc_icon.height
+                    new_width = int(separator_height * aspect)
+                    ufc_icon = ufc_icon.resize(
+                        (new_width, separator_height), LANCZOS
+                    )
+                    self._separator_icons["ufc"] = ufc_icon.copy()
                 self.logger.debug(f"Loaded UFC separator icon: {new_width}x{separator_height}")
             except Exception as e:
                 self.logger.error(f"Error loading UFC separator icon: {e}")

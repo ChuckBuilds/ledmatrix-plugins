@@ -101,7 +101,7 @@ class MMA(SportsCore):
                 if not self.logo_dir.exists():
                     self.logo_dir.mkdir(parents=True, exist_ok=True)
 
-                response = self.session.get(image_url, headers=self.headers, timeout=120)
+                response = self.session.get(image_url, headers=self.headers, timeout=15)
                 response.raise_for_status()
 
                 content_type = response.headers.get("content-type", "").lower()
@@ -289,7 +289,7 @@ class MMA(SportsCore):
                 "fight_class": fight_class,
                 "fighter1_name": fighter1_name,
                 "fighter1_name_short": fighter1_name_short,
-                "fighter1_id": fighter1["id"],
+                "fighter1_id": fighter1.get("id", ""),
                 "fighter1_image_path": self.logo_dir
                 / Path(f"{fighter1.get('id')}.png"),
                 "fighter1_image_url": f"https://a.espncdn.com/combiner/i?img=/i/headshots/mma/players/full/{fighter1.get('id')}.png",
@@ -299,7 +299,7 @@ class MMA(SportsCore):
                 "fighter1_record": fighter1_record,
                 "fighter2_name": fighter2_name,
                 "fighter2_name_short": fighter2_name_short,
-                "fighter2_id": fighter2["id"],
+                "fighter2_id": fighter2.get("id", ""),
                 "fighter2_image_path": self.logo_dir
                 / Path(f"{fighter2.get('id')}.png"),
                 "fighter2_image_url": f"https://a.espncdn.com/combiner/i?img=/i/headshots/mma/players/full/{fighter2.get('id')}.png",

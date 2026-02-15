@@ -6,9 +6,8 @@ UFC/MMA adaptation based on work by Alex Resnick (legoguy1000) - PR #137
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, List
+from typing import Dict, List
 import logging
-import time
 from datetime import datetime, timedelta, timezone
 
 import requests
@@ -80,10 +79,11 @@ class ESPNDataSource(DataSource):
             data = response.json()
             events = data.get('events', [])
 
-            # Filter for live games
+            # Filter for live games (skip events with empty competitions list)
             live_events = [
                 event for event in events
-                if event.get('competitions', [{}])[0]
+                if event.get('competitions')
+                and event['competitions'][0]
                 .get('status', {}).get('type', {}).get('state') == 'in'
             ]
 

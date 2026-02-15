@@ -7,8 +7,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import requests
-
 from mma import MMA, MMALive, MMARecent, MMAUpcoming
 
 # Constants
@@ -92,7 +90,7 @@ class BaseUFCManager(MMA):
                         f"{type(cached_data)}"
                     )
                     # Clear invalid cache
-                    self.cache_manager.delete(cache_key)
+                    self.cache_manager.clear_cache(cache_key)
 
         # Synchronous fallback when background service is not available
         if not self.background_enabled:

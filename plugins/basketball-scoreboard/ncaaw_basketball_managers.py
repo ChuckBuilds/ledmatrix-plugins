@@ -1,3 +1,4 @@
+import copy
 import logging
 import time
 from datetime import datetime
@@ -88,34 +89,59 @@ class BaseNCAAWBasketballManager(Basketball):
             return None
 
     def _fetch_team_schedule(self, team_id: str, season_year: int, use_cache: bool = True) -> Optional[Dict]:
-        """Fetch a team's full season schedule."""
+        """Fetch a team's full season schedule.
+
+        Raw events are cached without record enrichment so that records
+        stay fresh (they are injected on every read via the base-class
+        ``_enrich_events_with_records`` helper).
+        """
         cache_key = f"{self.sport_key}_team_{team_id}_schedule_{season_year}"
-        
+        record_summary_key = f"{self.sport_key}_team_{team_id}_record_summary"
+
         # Check cache first
         if use_cache:
             cached_data = self.cache_manager.get(cache_key)
             if cached_data:
                 if isinstance(cached_data, dict) and "events" in cached_data:
                     self.logger.debug(f"Using cached team schedule for team {team_id}")
-                    return cached_data
+                    events = cached_data["events"]
                 elif isinstance(cached_data, list):
                     self.logger.debug(f"Using cached team schedule (legacy format) for team {team_id}")
-                    return {"events": cached_data}
-        
+                    events = cached_data
+                else:
+                    events = None
+
+                if events is not None:
+                    # Deep-copy so enrichment doesn't mutate the cached object
+                    events = copy.deepcopy(events)
+                    summary = self.cache_manager.get(record_summary_key, max_age=3600)
+                    if isinstance(summary, str):
+                        self._enrich_events_with_records(events, team_id, summary)
+                    return {"events": events}
+
         try:
             url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/teams/{team_id}/schedule"
             response = self.session.get(url, params={"season": str(season_year)}, headers=self.headers, timeout=30)
             response.raise_for_status()
             data = response.json()
-            
+
             # Extract events from response
             events = data.get("events", [])
-            result = {"events": events}
-            
-            # Cache the result (long TTL - schedules don't change often)
-            self.cache_manager.set(cache_key, result)
+
+            # Cache raw events (without enriched records)
+            self.cache_manager.set(cache_key, {"events": events})
+
+            # Cache the team's record summary separately
+            team_record_summary = data.get("team", {}).get("recordSummary", "")
+            if team_record_summary:
+                self.cache_manager.set(record_summary_key, team_record_summary, ttl=3600)
+
+            # Deep-copy before enriching so the cached object stays raw
+            enriched_events = copy.deepcopy(events)
+            self._enrich_events_with_records(enriched_events, team_id, team_record_summary)
+
             self.logger.info(f"Fetched {len(events)} events for team {team_id} season {season_year}")
-            return result
+            return {"events": enriched_events}
         except Exception as e:
             self.logger.error(f"Error fetching team schedule for team {team_id}: {e}")
             return None
