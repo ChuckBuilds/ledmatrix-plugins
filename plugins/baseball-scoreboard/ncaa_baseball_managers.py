@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, Optional
+from typing import ClassVar, Dict, Any, Optional
 from datetime import datetime
 import pytz
 from baseball import Baseball, BaseballLive, BaseballRecent
@@ -13,14 +13,15 @@ ESPN_NCAA_BASEBALL_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/spor
 class BaseNCAABaseballManager(Baseball):
     """Base class for NCAA Baseball managers with common functionality."""
 
-    # Class variables for warning tracking
-    _no_data_warning_logged = False
-    _last_warning_time = 0
-    _warning_cooldown = 60  # Only log warnings once per minute
-    _shared_data = None
-    _last_shared_update = 0
-    _processed_games_cache = {}  # Cache for processed game data
-    _processed_games_timestamp = 0
+    # Class variables shared across all NCAA Baseball manager instances (Live/Recent/Upcoming)
+    # so they can share API data and coordinate warning throttling
+    _no_data_warning_logged: ClassVar[bool] = False
+    _last_warning_time: ClassVar[float] = 0
+    _warning_cooldown: ClassVar[int] = 60  # Only log warnings once per minute
+    _shared_data: ClassVar[Optional[Dict]] = None
+    _last_shared_update: ClassVar[float] = 0
+    _processed_games_cache: ClassVar[Dict] = {}  # Cache for processed game data
+    _processed_games_timestamp: ClassVar[float] = 0
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         self.logger = logging.getLogger("NCAABaseball")
@@ -161,15 +162,16 @@ class BaseNCAABaseballManager(Baseball):
                 return None
 
     def _fetch_data(self) -> Optional[Dict]:
-        """Fetch data using shared data mechanism or direct fetch for live."""
-        if isinstance(self, NCAABaseballLiveManager):
-            return self._fetch_todays_games()
-        else:
-            return self._fetch_ncaa_baseball_api_data(use_cache=True)
+        """Fetch cached season data. Subclasses may override."""
+        return self._fetch_ncaa_baseball_api_data(use_cache=True)
 
 
 class NCAABaseballLiveManager(BaseNCAABaseballManager, BaseballLive):
     """Manager for live NCAA Baseball games."""
+
+    def _fetch_data(self) -> Optional[Dict]:
+        """Live games fetch only today's games, not entire season."""
+        return self._fetch_todays_games()
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         super().__init__(

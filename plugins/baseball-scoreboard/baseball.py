@@ -129,6 +129,9 @@ class Baseball(SportsCore):
             self._extract_game_details_common(game_event)
         )
         if details is None or home_team is None or away_team is None or status is None:
+            self.logger.debug(
+                f"Skipping malformed event (missing common fields): id={game_event.get('id', '?')}"
+            )
             return
         try:
             game_status = status["type"]["name"].lower()

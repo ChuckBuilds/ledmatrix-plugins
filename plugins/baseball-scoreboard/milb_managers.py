@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import pytz
 
@@ -23,12 +23,13 @@ class BaseMiLBManager(Baseball):
     so it works seamlessly with the SportsCore extraction pipeline.
     """
 
-    # Class variables for warning tracking
-    _no_data_warning_logged = False
-    _last_warning_time = 0
-    _warning_cooldown = 60  # Only log warnings once per minute
-    _shared_data = None
-    _last_shared_update = 0
+    # Class variables shared across all MiLB manager instances (Live/Recent/Upcoming)
+    # so they can share API data and coordinate warning throttling
+    _no_data_warning_logged: ClassVar[bool] = False
+    _last_warning_time: ClassVar[float] = 0
+    _warning_cooldown: ClassVar[int] = 60  # Only log warnings once per minute
+    _shared_data: ClassVar[Optional[Dict]] = None
+    _last_shared_update: ClassVar[float] = 0
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         self.logger = logging.getLogger("MiLB")
@@ -204,12 +205,16 @@ class BaseMiLBManager(Baseball):
         return event
 
     def _fetch_from_mlb_stats_api(
-        self, dates: List[str], sport_ids: Optional[List[int]] = None
+        self, start_date: str, end_date: str, sport_ids: Optional[List[int]] = None
     ) -> Optional[Dict]:
         """Fetch MiLB games from the MLB Stats API and convert to ESPN format.
 
+        Uses the startDate/endDate parameters to fetch the entire range in a
+        single request instead of one request per date.
+
         Args:
-            dates: List of date strings in YYYY-MM-DD format
+            start_date: Start date in YYYY-MM-DD format
+            end_date: End date in YYYY-MM-DD format
             sport_ids: MiLB sport IDs to fetch (default: self.milb_sport_ids)
 
         Returns:
@@ -221,25 +226,28 @@ class BaseMiLBManager(Baseball):
         all_events = []
         sport_id_str = ",".join(str(s) for s in sport_ids)
 
-        for date_str in dates:
-            url = f"{MLB_STATS_BASE_URL}/schedule?sportId={sport_id_str}&date={date_str}&hydrate=linescore,team"
-            try:
-                response = self.session.get(
-                    url, headers=self.headers, timeout=15
-                )
-                response.raise_for_status()
-                data = response.json()
+        url = (
+            f"{MLB_STATS_BASE_URL}/schedule"
+            f"?sportId={sport_id_str}"
+            f"&startDate={start_date}&endDate={end_date}"
+            f"&hydrate=linescore,team"
+        )
+        try:
+            response = self.session.get(
+                url, headers=self.headers, timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
 
-                for date_entry in data.get("dates", []):
-                    for game in date_entry.get("games", []):
-                        event = self._convert_stats_game_to_espn_event(game)
-                        all_events.append(event)
+            for date_entry in data.get("dates", []):
+                for game in date_entry.get("games", []):
+                    event = self._convert_stats_game_to_espn_event(game)
+                    all_events.append(event)
 
-            except Exception as e:
-                self.logger.error(
-                    f"Failed to fetch MiLB data for {date_str}: {e}"
-                )
-                continue
+        except Exception as e:
+            self.logger.error(
+                f"Failed to fetch MiLB data for {start_date} to {end_date}: {e}"
+            )
 
         if all_events:
             self.logger.info(
@@ -255,7 +263,7 @@ class BaseMiLBManager(Baseball):
         now = datetime.now(pytz.utc)
         today = now.strftime("%Y-%m-%d")
         self.logger.debug(f"Fetching today's MiLB games for {today}")
-        return self._fetch_from_mlb_stats_api([today])
+        return self._fetch_from_mlb_stats_api(today, today)
 
     def _fetch_milb_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """Fetch MiLB season schedule data using MLB Stats API.
@@ -297,12 +305,10 @@ class BaseMiLBManager(Baseball):
             return {"events": []}
 
         # Fetch recent + upcoming games (7 days back, 7 days ahead)
-        dates = [
-            (now + timedelta(days=d)).strftime("%Y-%m-%d")
-            for d in range(-7, 8)
-        ]
+        start_date = (now + timedelta(days=-7)).strftime("%Y-%m-%d")
+        end_date = (now + timedelta(days=7)).strftime("%Y-%m-%d")
 
-        data = self._fetch_from_mlb_stats_api(dates)
+        data = self._fetch_from_mlb_stats_api(start_date, end_date)
 
         # Cache the result with 4-hour TTL so it refreshes periodically
         if data and data.get("events"):
@@ -314,17 +320,16 @@ class BaseMiLBManager(Baseball):
         return data
 
     def _fetch_data(self) -> Optional[Dict]:
-        """Fetch data using appropriate method based on manager type."""
-        if isinstance(self, MiLBLiveManager):
-            # Live games should fetch only current games
-            return self._fetch_todays_games()
-        else:
-            # Recent and Upcoming managers should use cached schedule data
-            return self._fetch_milb_api_data(use_cache=True)
+        """Fetch cached schedule data. Subclasses may override."""
+        return self._fetch_milb_api_data(use_cache=True)
 
 
 class MiLBLiveManager(BaseMiLBManager, BaseballLive):
     """Manager for live MiLB games."""
+
+    def _fetch_data(self) -> Optional[Dict]:
+        """Live games fetch only today's games, not entire season."""
+        return self._fetch_todays_games()
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         super().__init__(config, display_manager, cache_manager)

@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional
 
 import pytz
 
@@ -17,12 +17,13 @@ ESPN_MLB_SCOREBOARD_URL = (
 class BaseMLBManager(Baseball):
     """Base class for MLB managers with common functionality."""
 
-    # Class variables for warning tracking
-    _no_data_warning_logged = False
-    _last_warning_time = 0
-    _warning_cooldown = 60  # Only log warnings once per minute
-    _shared_data = None
-    _last_shared_update = 0
+    # Class variables shared across all MLB manager instances (Live/Recent/Upcoming)
+    # so they can share API data and coordinate warning throttling
+    _no_data_warning_logged: ClassVar[bool] = False
+    _last_warning_time: ClassVar[float] = 0
+    _warning_cooldown: ClassVar[int] = 60  # Only log warnings once per minute
+    _shared_data: ClassVar[Optional[Dict]] = None
+    _last_shared_update: ClassVar[float] = 0
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         self.logger = logging.getLogger("MLB")
@@ -156,17 +157,16 @@ class BaseMLBManager(Baseball):
                 return None
 
     def _fetch_data(self) -> Optional[Dict]:
-        """Fetch data using shared data mechanism or direct fetch for live."""
-        if isinstance(self, MLBLiveManager):
-            # Live games should fetch only current games, not entire season
-            return self._fetch_todays_games()
-        else:
-            # Recent and Upcoming managers should use cached season data
-            return self._fetch_mlb_api_data(use_cache=True)
+        """Fetch cached season data. Subclasses may override."""
+        return self._fetch_mlb_api_data(use_cache=True)
 
 
 class MLBLiveManager(BaseMLBManager, BaseballLive):
     """Manager for live MLB games."""
+
+    def _fetch_data(self) -> Optional[Dict]:
+        """Live games fetch only today's games, not entire season."""
+        return self._fetch_todays_games()
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         super().__init__(config, display_manager, cache_manager)
