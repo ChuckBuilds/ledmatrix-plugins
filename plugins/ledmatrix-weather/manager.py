@@ -835,6 +835,51 @@ class WeatherPlugin(BasePlugin):
         except Exception as e:
             self.logger.error(f"Error displaying daily forecast: {e}")
     
+    def get_vegas_content(self):
+        """Return images for all enabled weather display modes."""
+        if not self.weather_data:
+            return None
+
+        images = []
+
+        # Save state caches so we can force re-render without side effects
+        saved_weather = self.last_weather_state
+        saved_hourly = self.last_hourly_state
+        saved_daily = self.last_daily_state
+
+        try:
+            if self.show_current:
+                self.last_weather_state = None
+                self._display_current_weather()
+                if self.display_manager.image:
+                    images.append(self.display_manager.image.copy())
+
+            if self.show_hourly and self.hourly_forecast:
+                self.last_hourly_state = None
+                self._display_hourly_forecast()
+                if self.display_manager.image:
+                    images.append(self.display_manager.image.copy())
+
+            if self.show_daily and self.daily_forecast:
+                self.last_daily_state = None
+                self._display_daily_forecast()
+                if self.display_manager.image:
+                    images.append(self.display_manager.image.copy())
+        finally:
+            self.last_weather_state = saved_weather
+            self.last_hourly_state = saved_hourly
+            self.last_daily_state = saved_daily
+
+        if images:
+            total_width = sum(img.width for img in images)
+            self.logger.info(
+                "[Weather Vegas] Returning %d image(s), %dpx total",
+                len(images), total_width
+            )
+            return images
+
+        return None
+
     def display_weather(self, force_clear: bool = False) -> None:
         """Display current weather (compatibility method for display controller)."""
         self.display('weather', force_clear)
