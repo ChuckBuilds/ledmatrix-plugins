@@ -173,7 +173,11 @@ class BaseOddsManager:
                 f"Error decoding JSON response from ESPN API for {cache_key}."
             )
 
-        return self.cache_manager.get(cache_key)
+        # Return cached odds on error, but filter out the no_odds sentinel
+        cached = self.cache_manager.get(cache_key)
+        if isinstance(cached, dict) and cached.get("no_odds"):
+            return None
+        return cached
 
     def _extract_espn_data(self, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """

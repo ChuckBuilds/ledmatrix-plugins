@@ -87,11 +87,15 @@
         "recent_game_duration": {
           "type": "number",
           "default": 15,
+          "minimum": 10,
+          "maximum": 120,
           "description": "Duration in seconds to show each recent game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
         },
         "upcoming_game_duration": {
           "type": "number",
           "default": 15,
+          "minimum": 10,
+          "maximum": 120,
           "description": "Duration in seconds to show each upcoming game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
         },
         "live_update_interval": {
@@ -358,11 +362,15 @@
         "recent_game_duration": {
           "type": "number",
           "default": 15,
+          "minimum": 10,
+          "maximum": 120,
           "description": "Duration in seconds to show each recent game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
         },
         "upcoming_game_duration": {
           "type": "number",
           "default": 15,
+          "minimum": 10,
+          "maximum": 120,
           "description": "Duration in seconds to show each upcoming game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
         },
         "live_update_interval": {
@@ -629,11 +637,15 @@
         "recent_game_duration": {
           "type": "number",
           "default": 15,
+          "minimum": 10,
+          "maximum": 120,
           "description": "Duration in seconds to show each recent game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
         },
         "upcoming_game_duration": {
           "type": "number",
           "default": 15,
+          "minimum": 10,
+          "maximum": 120,
           "description": "Duration in seconds to show each upcoming game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
         },
         "live_update_interval": {

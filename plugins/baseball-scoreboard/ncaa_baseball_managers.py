@@ -151,8 +151,8 @@ class BaseNCAABaseballManager(Baseball):
                 response.raise_for_status()
                 data = response.json()
 
-                # Cache the data
-                self.cache_manager.set(cache_key, data)
+                # Cache the data with 4-hour TTL so it refreshes periodically
+                self.cache_manager.set(cache_key, data, ttl=14400)
                 self.logger.info(f"Synchronously fetched {season_year} season schedule")
                 return data
 

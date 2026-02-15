@@ -194,7 +194,7 @@ class BaseMiLBManager(Baseball):
                         "period": current_inning or 0,
                         "displayClock": "0:00",
                     },
-                    "situation": situation if situation else None,
+                    "situation": situation or {},
                     "odds": [],
                     "series": {},
                 }
@@ -304,9 +304,9 @@ class BaseMiLBManager(Baseball):
 
         data = self._fetch_from_mlb_stats_api(dates)
 
-        # Cache the result
+        # Cache the result with 4-hour TTL so it refreshes periodically
         if data and data.get("events"):
-            self.cache_manager.set(cache_key, data)
+            self.cache_manager.set(cache_key, data, ttl=14400)
             self.logger.info(
                 f"Cached {len(data['events'])} MiLB events for {season_year}"
             )

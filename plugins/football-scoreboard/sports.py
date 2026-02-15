@@ -2331,8 +2331,10 @@ class SportsLive(SportsCore):
                     f"favorite_teams={self.favorite_teams if self.favorite_teams else '[] (showing all)'}"
                 )
                 
-                # Detect and remove stale games
-                self._detect_stale_games(new_live_games)
+                # Detect and remove stale games from persisted list
+                # (new_live_games has fresh last_seen, so stale check must
+                # run against the previous self.live_games)
+                self._detect_stale_games(self.live_games)
                 
                 # Log changes or periodically
                 current_time_for_log = (
