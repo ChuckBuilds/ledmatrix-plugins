@@ -3088,28 +3088,42 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         Get content for Vegas-style continuous scroll mode.
 
-        Returns None to let PluginAdapter auto-detect scroll_helper.cached_image.
-        Triggers scroll content generation if cache is empty to ensure Vegas
-        has content to display.
+        Triggers scroll content generation if cache is empty, then returns
+        the cached scroll image(s) for Vegas to compose into its scroll strip.
 
         Returns:
-            None - PluginAdapter will extract scroll_helper.cached_image automatically
+            List of PIL Images from scroll displays, or None if no content
         """
-        # Ensure scroll content is generated for Vegas mode
-        if hasattr(self, '_scroll_manager') and self._scroll_manager:
-            # Check if any scroll display has content
-            has_content = False
-            for scroll_display in self._scroll_manager._scroll_displays.values():
-                if hasattr(scroll_display, 'scroll_helper') and scroll_display.scroll_helper:
-                    if scroll_display.scroll_helper.cached_image is not None:
-                        has_content = True
-                        break
+        if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
+            return None
 
-            if not has_content:
-                self.logger.info("[Hockey Vegas] Triggering scroll content generation")
-                self._ensure_scroll_content_for_vegas()
+        # Check if any scroll display has content
+        has_content = False
+        for scroll_display in self._scroll_manager._scroll_displays.values():
+            if hasattr(scroll_display, 'scroll_helper') and scroll_display.scroll_helper:
+                if scroll_display.scroll_helper.cached_image is not None:
+                    has_content = True
+                    break
 
-        # Return None - PluginAdapter will auto-detect scroll_helper.cached_image
+        if not has_content:
+            self.logger.info("[Hockey Vegas] Triggering scroll content generation")
+            self._ensure_scroll_content_for_vegas()
+
+        # Collect individual game card images for Vegas (not the scroll strip)
+        images = []
+        for scroll_display in self._scroll_manager._scroll_displays.values():
+            vegas_items = getattr(scroll_display, '_vegas_content_items', None)
+            if vegas_items:
+                images.extend(vegas_items)
+
+        if images:
+            total_width = sum(img.width for img in images)
+            self.logger.info(
+                "[Hockey Vegas] Returning %d image(s), %dpx total",
+                len(images), total_width
+            )
+            return images
+
         return None
 
     def get_vegas_content_type(self) -> str:

@@ -82,6 +82,7 @@ class ScrollDisplayManager:
         self._current_fights: List[Dict] = []
         self._current_fight_type: str = ""
         self._current_leagues: List[str] = []
+        self._vegas_content_items: List[Image.Image] = []
         self._is_scrolling = False
         self._scroll_start_time: Optional[float] = None
         self._last_log_time: float = 0
@@ -293,6 +294,9 @@ class ScrollDisplayManager:
         if not content_items:
             self.logger.warning("No fight cards were rendered")
             return False
+
+        # Store individual items for Vegas mode (avoids scroll_helper padding)
+        self._vegas_content_items = list(content_items)
 
         # Create scrolling image
         try:

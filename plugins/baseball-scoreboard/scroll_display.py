@@ -110,6 +110,7 @@ class ScrollDisplay:
         self._current_games: List[Dict] = []
         self._current_game_type: str = ""
         self._current_leagues: List[str] = []
+        self._vegas_content_items: List[Image.Image] = []
         self._is_scrolling = False
         self._scroll_start_time: Optional[float] = None
         self._last_log_time: float = 0
@@ -380,6 +381,9 @@ class ScrollDisplay:
         if not content_items:
             self.logger.warning("No game cards rendered")
             return False
+
+        # Store individual items for Vegas mode (avoids scroll_helper padding)
+        self._vegas_content_items = list(content_items)
 
         # Create scrolling image using ScrollHelper
         self.scroll_helper.create_scrolling_image(
