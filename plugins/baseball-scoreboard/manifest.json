@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -16,9 +16,15 @@
     "live-scores"
   ],
   "display_modes": [
-    "baseball_live",
-    "baseball_recent",
-    "baseball_upcoming"
+    "mlb_live",
+    "mlb_recent",
+    "mlb_upcoming",
+    "milb_live",
+    "milb_recent",
+    "milb_upcoming",
+    "ncaa_baseball_live",
+    "ncaa_baseball_recent",
+    "ncaa_baseball_upcoming"
   ],
   "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
   "branch": "main",
@@ -26,7 +32,7 @@
   "versions": [
     {
       "released": "2026-02-14",
-      "version": "1.3.0",
+      "version": "2.0.0",
       "ledmatrix_min": "2.0.0"
     },
     {

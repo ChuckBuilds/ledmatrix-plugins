@@ -112,8 +112,14 @@ class BaseOddsManager:
         cached_data = self.cache_manager.get(cache_key)
 
         if cached_data:
-            self.logger.info(f"Using cached odds from ESPN for {cache_key}")
-            return cached_data
+            # Filter out the "no_odds" marker – it should not be returned
+            # as valid odds data.  Treat it as a cache miss so a fresh API
+            # call is made once the cache entry expires.
+            if isinstance(cached_data, dict) and cached_data.get("no_odds"):
+                self.logger.debug(f"Cached no-odds marker for {cache_key}, skipping")
+            else:
+                self.logger.info(f"Using cached odds from ESPN for {cache_key}")
+                return cached_data
 
         self.logger.info(f"Cache miss - fetching fresh odds from ESPN for {cache_key}")
 
@@ -274,10 +280,10 @@ class BaseOddsManager:
         if sport and league and event_id:
             # Clear specific event
             cache_key = f"odds_espn_{sport}_{league}_{event_id}"
-            self.cache_manager.delete(cache_key)
+            self.cache_manager.clear_cache(cache_key)
             self.logger.info(f"Cleared cache for {cache_key}")
         else:
             # Clear all odds cache
-            self.cache_manager.clear()
+            self.cache_manager.clear_cache()
             self.logger.info("Cleared all cache")
 

@@ -78,13 +78,7 @@ class GameRenderer:
         return fonts
 
     def _get_logo_path(self, league: str, team_abbrev: str, game: Dict = None) -> Path:
-        """Get the logo path for a team based on league config."""
-        # Use league_config logo_dir if available
-        if game and game.get('league_config'):
-            logo_dir = game['league_config'].get('logo_dir')
-            if logo_dir:
-                return Path(logo_dir) / f"{team_abbrev}.png"
-        # Fallback to defaults
+        """Get the logo path for a team based on league."""
         if league == 'mlb':
             return Path("assets/sports/mlb_logos") / f"{team_abbrev}.png"
         elif league == 'milb':
@@ -420,9 +414,11 @@ class GameRenderer:
 
     def _draw_records(self, draw, game: Dict):
         """Draw team records or rankings at bottom corners if enabled by config."""
-        league_config = game.get('league_config', {})
-        show_records = league_config.get('show_records', self.config.get('show_records', False))
-        show_ranking = league_config.get('show_ranking', self.config.get('show_ranking', False))
+        league = game.get('league', 'mlb')
+        league_config = self.config.get(league, {})
+        display_options = league_config.get('display_options', {})
+        show_records = display_options.get('show_records', self.config.get('show_records', False))
+        show_ranking = display_options.get('show_ranking', self.config.get('show_ranking', False))
 
         if not show_records and not show_ranking:
             return

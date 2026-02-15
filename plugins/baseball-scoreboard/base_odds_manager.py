@@ -132,15 +132,11 @@ class BaseOddsManager:
         try:
             # Map league names to ESPN API format
             league_mapping = {
+                "mlb": "mlb",
+                "college-baseball": "college-baseball",
                 "ncaa_fb": "college-football",
                 "nfl": "nfl",
                 "nba": "nba",
-                "wnba": "wnba",
-                "ncaam": "mens-college-basketball",
-                "ncaaw": "womens-college-basketball",
-                "mens-college-basketball": "mens-college-basketball",
-                "womens-college-basketball": "womens-college-basketball",
-                "mlb": "mlb",
                 "nhl": "nhl",
             }
 
@@ -289,9 +285,9 @@ class BaseOddsManager:
         if sport and league and event_id:
             # Clear specific event
             cache_key = f"odds_espn_{sport}_{league}_{event_id}"
-            self.cache_manager.clear_cache(cache_key)
+            self.cache_manager.delete(cache_key)
             self.logger.info(f"Cleared cache for {cache_key}")
         else:
             # Clear all odds cache
-            self.cache_manager.clear_cache()
+            self.cache_manager.clear()
             self.logger.info("Cleared all cache")

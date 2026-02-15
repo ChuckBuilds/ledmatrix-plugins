@@ -37,10 +37,12 @@ class Hockey(SportsCore):
             status = competition["status"]
             powerplay = False
             penalties = ""
+            home_stats = home_team.get("statistics", [])
+            away_stats = away_team.get("statistics", [])
             home_team_saves = next(
                 (
                     int(c["displayValue"])
-                    for c in home_team["statistics"]
+                    for c in home_stats
                     if c.get("name") == "saves"
                 ),
                 0,
@@ -48,7 +50,7 @@ class Hockey(SportsCore):
             home_team_saves_per = next(
                 (
                     float(c["displayValue"])
-                    for c in home_team["statistics"]
+                    for c in home_stats
                     if c.get("name") == "savePct"
                 ),
                 0.0,
@@ -56,7 +58,7 @@ class Hockey(SportsCore):
             away_team_saves = next(
                 (
                     int(c["displayValue"])
-                    for c in away_team["statistics"]
+                    for c in away_stats
                     if c.get("name") == "saves"
                 ),
                 0,
@@ -64,7 +66,7 @@ class Hockey(SportsCore):
             away_team_saves_per = next(
                 (
                     float(c["displayValue"])
-                    for c in away_team["statistics"]
+                    for c in away_stats
                     if c.get("name") == "savePct"
                 ),
                 0.0,

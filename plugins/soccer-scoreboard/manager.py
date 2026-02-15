@@ -405,13 +405,17 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not display_config and hasattr(self.cache_manager, 'config_manager'):
             display_config = self.cache_manager.config_manager.get_display_config()
         
+        # Get customization config from main config (shared across all leagues)
+        customization_config = self.config.get("customization", {})
+
         manager_config.update(
             {
                 "timezone": timezone_str,
                 "display": display_config,
+                "customization": customization_config,
             }
         )
-        
+
         self.logger.debug(f"Using timezone: {timezone_str} for {league_key} managers")
 
         return manager_config
@@ -619,9 +623,13 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not display_config and hasattr(self.cache_manager, 'config_manager'):
             display_config = self.cache_manager.config_manager.get_display_config()
 
+        # Get customization config from main config (shared across all leagues)
+        customization_config = self.config.get("customization", {})
+
         manager_config.update({
             "timezone": timezone_str,
             "display": display_config,
+            "customization": customization_config,
         })
 
         return manager_config
@@ -1807,6 +1815,160 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         
         # No global fallback - return None
         return None
+
+    def _extract_mode_type(self, display_mode: str) -> Optional[str]:
+        """Extract mode type (live, recent, upcoming) from display mode string.
+
+        Args:
+            display_mode: Display mode string (e.g., 'soccer_live', 'soccer_recent')
+
+        Returns:
+            Mode type string ('live', 'recent', 'upcoming') or None
+        """
+        if display_mode.endswith('_live'):
+            return 'live'
+        elif display_mode.endswith('_recent'):
+            return 'recent'
+        elif display_mode.endswith('_upcoming'):
+            return 'upcoming'
+        return None
+
+    def _get_game_duration(self, league: str, mode_type: str, manager=None) -> float:
+        """Get game duration for a league and mode type combination.
+
+        Resolves duration using the following hierarchy:
+        1. Manager's game_display_duration attribute (if manager provided)
+        2. League-specific mode duration from display_durations
+        3. Default (15 seconds)
+
+        Args:
+            league: League key (e.g., 'eng.1', 'esp.1')
+            mode_type: Mode type ('live', 'recent', or 'upcoming')
+            manager: Optional manager instance
+
+        Returns:
+            Game duration in seconds (float)
+        """
+        if manager:
+            manager_duration = getattr(manager, 'game_display_duration', None)
+            if manager_duration is not None:
+                return float(manager_duration)
+
+        leagues_config = self.config.get('leagues', {})
+        league_config = leagues_config.get(league, {})
+        display_durations = league_config.get("display_durations", {})
+        mode_duration = display_durations.get(mode_type)
+        if mode_duration is not None:
+            return float(mode_duration)
+
+        return 15.0
+
+    def _get_mode_duration(self, league: str, mode_type: str) -> Optional[float]:
+        """Get mode duration from config for a league/mode combination.
+
+        Checks per-league/per-mode settings first, then falls back to None.
+        Returns None if not configured (uses dynamic calculation).
+
+        Args:
+            league: League key (e.g., 'eng.1', 'esp.1')
+            mode_type: Mode type ('live', 'recent', or 'upcoming')
+
+        Returns:
+            Mode duration in seconds (float) or None if not configured
+        """
+        leagues_config = self.config.get('leagues', {})
+        league_config = leagues_config.get(league, {})
+        mode_durations = league_config.get("mode_durations", {})
+
+        mode_duration_key = f"{mode_type}_mode_duration"
+        if mode_duration_key in mode_durations:
+            value = mode_durations[mode_duration_key]
+            if value is not None:
+                try:
+                    return float(value)
+                except (TypeError, ValueError):
+                    pass
+
+        return None
+
+    def _get_effective_mode_duration(self, display_mode: str, mode_type: str) -> Optional[float]:
+        """Get effective mode duration for a display mode.
+
+        Checks per-mode duration settings first, then falls back to dynamic calculation.
+
+        Args:
+            display_mode: Display mode name (e.g., 'soccer_recent')
+            mode_type: Mode type ('live', 'recent', or 'upcoming')
+
+        Returns:
+            Mode duration in seconds (float) or None to use dynamic calculation
+        """
+        if not self._current_display_league:
+            return None
+
+        mode_duration = self._get_mode_duration(self._current_display_league, mode_type)
+        if mode_duration is not None:
+            return mode_duration
+
+        return None
+
+    def get_cycle_duration(self, display_mode: str = None) -> Optional[float]:
+        """Calculate the expected cycle duration for a display mode.
+
+        Supports mode-level durations and dynamic calculation:
+        - Mode-level duration: Fixed total time for mode (e.g., recent_mode_duration)
+        - Dynamic calculation: Total duration = num_games x per_game_duration
+        - Dynamic duration cap applies to both if enabled
+
+        Args:
+            display_mode: The display mode (e.g., 'soccer_live', 'soccer_recent')
+
+        Returns:
+            Total expected duration in seconds, or None if not applicable
+        """
+        if not self.is_enabled or not display_mode:
+            return None
+
+        mode_type = self._extract_mode_type(display_mode)
+        if not mode_type:
+            return None
+
+        # Check for per-mode duration first (fixed total time for mode)
+        effective_duration = self._get_effective_mode_duration(display_mode, mode_type)
+        if effective_duration is not None:
+            # Apply dynamic cap if configured
+            if self._dynamic_feature_enabled():
+                cap = self.get_dynamic_duration_cap()
+                if cap is not None:
+                    effective_duration = min(effective_duration, cap)
+            return effective_duration
+
+        # No mode-level duration - use dynamic calculation
+        # Count games across all enabled leagues for this mode type
+        total_games = 0
+        game_duration = 15.0
+
+        for league_key, league_data in self._league_registry.items():
+            if not league_data.get('enabled', False):
+                continue
+            manager = league_data.get('managers', {}).get(mode_type)
+            if manager:
+                games = getattr(manager, 'games', [])
+                total_games += len(games)
+                game_duration = self._get_game_duration(league_key, mode_type, manager)
+
+        if total_games == 0:
+            return None
+
+        total_duration = total_games * game_duration
+
+        # Apply dynamic cap if configured
+        if self._dynamic_feature_enabled():
+            cap = self.get_dynamic_duration_cap()
+            if cap is not None:
+                total_duration = min(total_duration, cap)
+
+        return total_duration
 
     def _get_manager_for_mode(self, mode_name: str):
         """Resolve manager instance for a given display mode."""

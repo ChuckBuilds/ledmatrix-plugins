@@ -316,7 +316,7 @@ class SportsCore(ABC):
         fonts = {}
         
         # Get customization config, with backward compatibility
-        customization = self.mode_config.get('customization', {})
+        customization = self.config.get('customization', {})
         
         # Load fonts from config with defaults for backward compatibility
         score_config = customization.get('score_text', {})
@@ -1436,7 +1436,21 @@ class SportsRecent(SportsCore):
             "recent_update_interval", 3600
         )  # Check for recent games every hour
         self.last_game_switch = 0
-        self.game_display_duration = 15  # Display each recent game for 15 seconds
+        self.game_display_duration = self.mode_config.get("recent_game_duration", 15)
+        self._zero_clock_timestamps: Dict[str, float] = {}  # Track games at 0:00
+
+    def _get_zero_clock_duration(self, game_id: str) -> float:
+        """Track how long a game has been at 0:00 clock."""
+        current_time = time.time()
+        if game_id not in self._zero_clock_timestamps:
+            self._zero_clock_timestamps[game_id] = current_time
+            return 0.0
+        return current_time - self._zero_clock_timestamps[game_id]
+
+    def _clear_zero_clock_tracking(self, game_id: str) -> None:
+        """Clear tracking when game clock moves away from 0:00 or game ends."""
+        if game_id in self._zero_clock_timestamps:
+            del self._zero_clock_timestamps[game_id]
 
     def _select_recent_games_for_display(
         self, processed_games: List[Dict], favorite_teams: List[str]
@@ -1540,8 +1554,38 @@ class SportsRecent(SportsCore):
             processed_games = []
             for event in events:
                 game = self._extract_game_details(event)
-                # Filter criteria: must be final AND within recent date range
-                if game and game["is_final"]:
+                if not game:
+                    continue
+
+                # Check if game appears finished even if not marked as "post" yet
+                game_id = game.get("id")
+                appears_finished = False
+                if not game.get("is_final", False):
+                    clock = game.get("clock", "")
+                    period = game.get("period", 0)
+                    period_text = game.get("period_text", "").lower()
+
+                    if "final" in period_text:
+                        appears_finished = True
+                        self._clear_zero_clock_tracking(game_id)
+                    elif period >= 3:  # Hockey: 3 periods (P3 or OT)
+                        clock_normalized = clock.replace(":", "").strip() if isinstance(clock, str) else ""
+                        if clock_normalized in ("000", "00", "") or clock in ("0:00", ":00"):
+                            zero_clock_duration = self._get_zero_clock_duration(game_id)
+                            if zero_clock_duration >= 120:
+                                appears_finished = True
+                                self.logger.debug(
+                                    f"Game {game.get('away_abbr')}@{game.get('home_abbr')} "
+                                    f"appears finished after {zero_clock_duration:.0f}s at 0:00"
+                                )
+                        else:
+                            self._clear_zero_clock_tracking(game_id)
+                else:
+                    self._clear_zero_clock_tracking(game_id)
+
+                # Filter criteria: must be final OR appear finished, AND within recent date range
+                is_eligible = game.get("is_final", False) or appears_finished
+                if is_eligible:
                     game_time = game.get("start_time_utc")
                     if game_time and game_time >= recent_cutoff:
                         processed_games.append(game)
@@ -1897,6 +1941,80 @@ class SportsLive(SportsCore):
         self.count_log_interval = 5  # Only log count data every 5 seconds
         # Initialize test_mode - defaults to False (live mode)
         self.test_mode = self.mode_config.get("test_mode", False)
+        # Track game update timestamps for stale data detection
+        self.game_update_timestamps = {}
+        self.stale_game_timeout = self.mode_config.get("stale_game_timeout", 300)  # 5 minutes default
+
+    def _is_game_really_over(self, game: Dict) -> bool:
+        """Check if a game appears to be over even if API says it's live.
+
+        Hockey: Games end in P3 or OT when clock hits 0:00 (period >= 3).
+        """
+        game_str = f"{game.get('away_abbr')}@{game.get('home_abbr')}"
+
+        # Check if period_text indicates final
+        period_text = game.get("period_text", "").lower()
+        if "final" in period_text:
+            self.logger.debug(
+                f"_is_game_really_over({game_str}): "
+                f"returning True - 'final' in period_text='{period_text}'"
+            )
+            return True
+
+        # Check if clock is 0:00 in P3 or OT (period >= 3)
+        raw_clock = game.get("clock")
+        if raw_clock is None or not isinstance(raw_clock, str):
+            clock = "0:00"
+        else:
+            clock = raw_clock
+        period = game.get("period", 0)
+        clock_normalized = clock.replace(":", "").strip()
+
+        if period >= 3:
+            if clock_normalized in ("000", "00", "") or clock in ("0:00", ":00"):
+                self.logger.debug(
+                    f"_is_game_really_over({game_str}): "
+                    f"returning True - clock at 0:00 (clock='{clock}', period={period})"
+                )
+                return True
+
+        self.logger.debug(
+            f"_is_game_really_over({game_str}): returning False"
+        )
+        return False
+
+    def _detect_stale_games(self, games: List[Dict]) -> None:
+        """Remove games that appear stale or haven't updated."""
+        current_time = time.time()
+
+        for game in games[:]:  # Copy list to iterate safely
+            game_id = game.get("id")
+            if not game_id:
+                continue
+
+            # Check if game data is stale
+            timestamps = self.game_update_timestamps.get(game_id, {})
+            last_seen = timestamps.get("last_seen", 0)
+
+            if last_seen > 0 and current_time - last_seen > self.stale_game_timeout:
+                self.logger.warning(
+                    f"Removing stale game {game.get('away_abbr')}@{game.get('home_abbr')} "
+                    f"(last seen {int(current_time - last_seen)}s ago)"
+                )
+                games.remove(game)
+                if game_id in self.game_update_timestamps:
+                    del self.game_update_timestamps[game_id]
+                continue
+
+            # Also check if game appears to be over
+            if self._is_game_really_over(game):
+                self.logger.debug(
+                    f"Removing game that appears over: {game.get('away_abbr')}@{game.get('home_abbr')} "
+                    f"(clock={game.get('clock')}, period={game.get('period')}, period_text={game.get('period_text')})"
+                )
+                games.remove(game)
+                if game_id in self.game_update_timestamps:
+                    del self.game_update_timestamps[game_id]
 
     def update(self):
         """Update live game data and handle game switching."""
@@ -1966,9 +2084,23 @@ class SportsLive(SportsCore):
                     
                     for game in data["events"]:
                         details = self._extract_game_details(game)
-                        if details and (details["is_live"] or details["is_halftime"]):
+                        if details:
+                            # Filter out final games and games that appear to be over
+                            if details.get("is_final", False):
+                                continue
+
+                            if self._is_game_really_over(details):
+                                self.logger.info(
+                                    f"Skipping game that appears final: {details.get('away_abbr')}@{details.get('home_abbr')} "
+                                    f"(clock={details.get('clock')}, period={details.get('period')}, period_text={details.get('period_text')})"
+                                )
+                                continue
+
+                            if not (details["is_live"] or details["is_halftime"]):
+                                continue
+
                             live_or_halftime_count += 1
-                            
+
                             # Filtering logic matching SportsUpcoming:
                             # - If show_all_live = True → show all games
                             # - If show_favorite_teams_only = False → show all games
@@ -2002,10 +2134,32 @@ class SportsLive(SportsCore):
                                 )
                             
                             if should_include:
+                                # Track game timestamps for stale detection
+                                game_id = details.get("id")
+                                if game_id:
+                                    current_clock = details.get("clock", "")
+                                    current_score = f"{details.get('away_score', '0')}-{details.get('home_score', '0')}"
+
+                                    if game_id not in self.game_update_timestamps:
+                                        self.game_update_timestamps[game_id] = {}
+
+                                    timestamps = self.game_update_timestamps[game_id]
+                                    timestamps["last_seen"] = time.time()
+
+                                    if timestamps.get("last_clock") != current_clock:
+                                        timestamps["last_clock"] = current_clock
+                                        timestamps["clock_changed_at"] = time.time()
+                                    if timestamps.get("last_score") != current_score:
+                                        timestamps["last_score"] = current_score
+                                        timestamps["score_changed_at"] = time.time()
+
                                 if self.show_odds:
                                     self._fetch_odds(details)
                                 new_live_games.append(details)
-                    
+
+                    # Detect and remove stale games
+                    self._detect_stale_games(new_live_games)
+
                     # Log filtering configuration
                     self.logger.info(
                         f"Live game filtering: {len(data['events'])} total events, "

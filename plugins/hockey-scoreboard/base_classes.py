@@ -349,12 +349,14 @@ class Hockey(SportsCore):
             penalties = ""
             
             # Extract shots on goal
+            home_stats = home_team.get("statistics", [])
+            away_stats = away_team.get("statistics", [])
             home_shots = next(
-                (int(c["displayValue"]) for c in home_team["statistics"] if c.get("name") == "shots"),
+                (int(c["displayValue"]) for c in home_stats if c.get("name") == "shots"),
                 0
             )
             away_shots = next(
-                (int(c["displayValue"]) for c in away_team["statistics"] if c.get("name") == "shots"),
+                (int(c["displayValue"]) for c in away_stats if c.get("name") == "shots"),
                 0
             )
             

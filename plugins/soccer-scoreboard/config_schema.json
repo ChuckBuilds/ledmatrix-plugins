@@ -164,7 +164,10 @@
                 },
                 "live_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -175,7 +178,10 @@
                 },
                 "recent_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -186,7 +192,10 @@
                 },
                 "upcoming_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 }
@@ -410,6 +419,43 @@
                   }
                 }
               }
+            },
+            "mode_durations": {
+              "type": "object",
+              "title": "Mode-Level Durations",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "properties": {
+                "recent_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "upcoming_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "live_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                }
+              }
             }
           },
           "additionalProperties": false
@@ -444,7 +490,10 @@
                 },
                 "live_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -455,7 +504,10 @@
                 },
                 "recent_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -466,7 +518,10 @@
                 },
                 "upcoming_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 }
@@ -690,6 +745,43 @@
                   }
                 }
               }
+            },
+            "mode_durations": {
+              "type": "object",
+              "title": "Mode-Level Durations",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "properties": {
+                "recent_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "upcoming_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "live_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                }
+              }
             }
           },
           "additionalProperties": false
@@ -724,7 +816,10 @@
                 },
                 "live_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -735,7 +830,10 @@
                 },
                 "recent_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -746,7 +844,10 @@
                 },
                 "upcoming_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 }
@@ -970,6 +1071,43 @@
                   }
                 }
               }
+            },
+            "mode_durations": {
+              "type": "object",
+              "title": "Mode-Level Durations",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "properties": {
+                "recent_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "upcoming_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "live_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                }
+              }
             }
           },
           "additionalProperties": false
@@ -1004,7 +1142,10 @@
                 },
                 "live_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -1015,7 +1156,10 @@
                 },
                 "recent_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -1026,7 +1170,10 @@
                 },
                 "upcoming_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 }
@@ -1250,6 +1397,43 @@
                   }
                 }
               }
+            },
+            "mode_durations": {
+              "type": "object",
+              "title": "Mode-Level Durations",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "properties": {
+                "recent_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "upcoming_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "live_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                }
+              }
             }
           },
           "additionalProperties": false
@@ -1284,7 +1468,10 @@
                 },
                 "live_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -1295,7 +1482,10 @@
                 },
                 "recent_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -1306,7 +1496,10 @@
                 },
                 "upcoming_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 }
@@ -1530,6 +1723,43 @@
                   }
                 }
               }
+            },
+            "mode_durations": {
+              "type": "object",
+              "title": "Mode-Level Durations",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "properties": {
+                "recent_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "upcoming_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "live_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                }
+              }
             }
           },
           "additionalProperties": false
@@ -1564,7 +1794,10 @@
                 },
                 "live_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -1575,7 +1808,10 @@
                 },
                 "recent_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -1586,7 +1822,10 @@
                 },
                 "upcoming_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 }
@@ -1810,6 +2049,43 @@
                   }
                 }
               }
+            },
+            "mode_durations": {
+              "type": "object",
+              "title": "Mode-Level Durations",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "properties": {
+                "recent_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "upcoming_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "live_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                }
+              }
             }
           },
           "additionalProperties": false
@@ -1844,7 +2120,10 @@
                 },
                 "live_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -1855,7 +2134,10 @@
                 },
                 "recent_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -1866,7 +2148,10 @@
                 },
                 "upcoming_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 }
@@ -2090,6 +2375,43 @@
                   }
                 }
               }
+            },
+            "mode_durations": {
+              "type": "object",
+              "title": "Mode-Level Durations",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "properties": {
+                "recent_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "upcoming_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "live_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                }
+              }
             }
           },
           "additionalProperties": false
@@ -2124,7 +2446,10 @@
                 },
                 "live_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -2135,7 +2460,10 @@
                 },
                 "recent_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 },
@@ -2146,7 +2474,10 @@
                 },
                 "upcoming_display_mode": {
                   "type": "string",
-                  "enum": ["switch", "scroll"],
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
                   "default": "switch",
                   "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                 }
@@ -2370,6 +2701,43 @@
                   }
                 }
               }
+            },
+            "mode_durations": {
+              "type": "object",
+              "title": "Mode-Level Durations",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "properties": {
+                "recent_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "upcoming_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "live_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                }
+              }
             }
           },
           "additionalProperties": false
@@ -2382,7 +2750,12 @@
       "title": "Custom Leagues",
       "description": "Add custom soccer leagues by their ESPN league code. Common codes: por.1 (Liga Portugal), mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish Süper Lig), bel.1 (Belgian Pro League)",
       "x-widget": "array-table",
-      "x-columns": ["name", "league_code", "priority", "enabled"],
+      "x-columns": [
+        "name",
+        "league_code",
+        "priority",
+        "enabled"
+      ],
       "minItems": 0,
       "maxItems": 20,
       "default": [],
@@ -2441,7 +2814,10 @@
               },
               "live_display_mode": {
                 "type": "string",
-                "enum": ["switch", "scroll"],
+                "enum": [
+                  "switch",
+                  "scroll"
+                ],
                 "default": "switch",
                 "description": "Display mode for live games"
               },
@@ -2452,7 +2828,10 @@
               },
               "recent_display_mode": {
                 "type": "string",
-                "enum": ["switch", "scroll"],
+                "enum": [
+                  "switch",
+                  "scroll"
+                ],
                 "default": "switch",
                 "description": "Display mode for recent games"
               },
@@ -2463,7 +2842,10 @@
               },
               "upcoming_display_mode": {
                 "type": "string",
-                "enum": ["switch", "scroll"],
+                "enum": [
+                  "switch",
+                  "scroll"
+                ],
                 "default": "switch",
                 "description": "Display mode for upcoming games"
               }
@@ -2629,7 +3011,10 @@
             "additionalProperties": false
           }
         },
-        "required": ["name", "league_code"],
+        "required": [
+          "name",
+          "league_code"
+        ],
         "additionalProperties": false
       }
     }
@@ -2667,7 +3052,10 @@
             "default": 10
           }
         },
-        "x-propertyOrder": ["font", "font_size"],
+        "x-propertyOrder": [
+          "font",
+          "font_size"
+        ],
         "additionalProperties": false
       },
       "period_text": {
@@ -2698,7 +3086,10 @@
             "default": 8
           }
         },
-        "x-propertyOrder": ["font", "font_size"],
+        "x-propertyOrder": [
+          "font",
+          "font_size"
+        ],
         "additionalProperties": false
       },
       "team_name": {
@@ -2729,7 +3120,10 @@
             "default": 8
           }
         },
-        "x-propertyOrder": ["font", "font_size"],
+        "x-propertyOrder": [
+          "font",
+          "font_size"
+        ],
         "additionalProperties": false
       },
       "status_text": {
@@ -2760,7 +3154,10 @@
             "default": 6
           }
         },
-        "x-propertyOrder": ["font", "font_size"],
+        "x-propertyOrder": [
+          "font",
+          "font_size"
+        ],
         "additionalProperties": false
       },
       "detail_text": {
@@ -2791,7 +3188,10 @@
             "default": 6
           }
         },
-        "x-propertyOrder": ["font", "font_size"],
+        "x-propertyOrder": [
+          "font",
+          "font_size"
+        ],
         "additionalProperties": false
       },
       "rank_text": {
@@ -2822,7 +3222,10 @@
             "default": 10
           }
         },
-        "x-propertyOrder": ["font", "font_size"],
+        "x-propertyOrder": [
+          "font",
+          "font_size"
+        ],
         "additionalProperties": false
       },
       "layout": {
@@ -2955,13 +3358,31 @@
             "additionalProperties": false
           }
         },
-        "x-propertyOrder": ["home_logo", "away_logo", "score", "status_text", "date", "time", "records"],
+        "x-propertyOrder": [
+          "home_logo",
+          "away_logo",
+          "score",
+          "status_text",
+          "date",
+          "time",
+          "records"
+        ],
         "additionalProperties": false
       }
     },
-    "x-propertyOrder": ["score_text", "period_text", "team_name", "status_text", "detail_text", "rank_text", "layout"],
+    "x-propertyOrder": [
+      "score_text",
+      "period_text",
+      "team_name",
+      "status_text",
+      "detail_text",
+      "rank_text",
+      "layout"
+    ],
     "additionalProperties": false
   },
   "additionalProperties": false,
-  "required": ["enabled"]
+  "required": [
+    "enabled"
+  ]
 }

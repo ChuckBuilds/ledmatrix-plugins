@@ -478,3 +478,182 @@ class ScrollDisplay:
     def get_current_leagues(self) -> List[str]:
         """Get the list of leagues in the current scroll."""
         return self._current_leagues.copy()
+
+    def get_scroll_info(self) -> Dict[str, Any]:
+        """Get current scroll state information."""
+        if not self.scroll_helper:
+            return {"error": "ScrollHelper not available"}
+
+        info = self.scroll_helper.get_scroll_info()
+        info.update({
+            "game_count": len(self._current_games),
+            "game_type": self._current_game_type,
+            "leagues": self._current_leagues,
+            "is_scrolling": self._is_scrolling
+        })
+        return info
+
+    def get_dynamic_duration(self) -> int:
+        """Get the calculated dynamic duration for this scroll content."""
+        if self.scroll_helper:
+            return self.scroll_helper.get_dynamic_duration()
+        return 60  # Default fallback
+
+    def clear(self) -> None:
+        """Clear scroll content and reset state."""
+        self.clear_cache()
+
+
+class ScrollDisplayManager:
+    """
+    Manages scroll display instances for different game types.
+
+    This class provides a higher-level interface for the soccer plugin
+    to manage scroll displays for live, recent, and upcoming games.
+    """
+
+    def __init__(
+        self,
+        display_manager,
+        config: Dict[str, Any],
+        custom_logger: Optional[logging.Logger] = None
+    ):
+        """
+        Initialize the ScrollDisplayManager.
+
+        Args:
+            display_manager: Display manager instance
+            config: Plugin configuration dictionary
+            custom_logger: Optional custom logger instance
+        """
+        self.display_manager = display_manager
+        self.config = config
+        self.logger = custom_logger or logger
+
+        # Determine plugin directory for asset loading
+        self._plugin_dir = str(Path(__file__).parent)
+
+        # Create scroll displays for each game type
+        self._scroll_displays: Dict[str, ScrollDisplay] = {}
+        self._current_game_type: Optional[str] = None
+
+    def get_scroll_display(self, game_type: str) -> ScrollDisplay:
+        """
+        Get or create a scroll display for a game type.
+
+        Args:
+            game_type: Type of games ('live', 'recent', 'upcoming', 'mixed')
+
+        Returns:
+            ScrollDisplay instance for the game type
+        """
+        if game_type not in self._scroll_displays:
+            display_width = self.display_manager.matrix.width
+            display_height = self.display_manager.matrix.height
+            self._scroll_displays[game_type] = ScrollDisplay(
+                self.display_manager,
+                display_width,
+                display_height,
+                self.config,
+                self._plugin_dir
+            )
+        return self._scroll_displays[game_type]
+
+    def prepare_and_display(
+        self,
+        games: List[Dict],
+        game_type: str,
+        leagues: List[str],
+        rankings_cache: Dict[str, int] = None
+    ) -> bool:
+        """
+        Prepare content and start displaying scroll.
+
+        Args:
+            games: List of game dictionaries
+            game_type: Type of games
+            leagues: List of leagues
+            rankings_cache: Optional team rankings cache
+
+        Returns:
+            True if scroll was started successfully
+        """
+        scroll_display = self.get_scroll_display(game_type)
+
+        success = scroll_display.prepare_scroll_content(
+            games, game_type, leagues, rankings_cache
+        )
+
+        if success:
+            self._current_game_type = game_type
+
+        return success
+
+    def display_frame(self, game_type: str = None) -> bool:
+        """
+        Display the next frame of the current scroll.
+
+        Args:
+            game_type: Optional game type (uses current if not specified)
+
+        Returns:
+            True if a frame was displayed
+        """
+        if game_type is None:
+            game_type = self._current_game_type
+
+        if game_type is None:
+            return False
+
+        scroll_display = self._scroll_displays.get(game_type)
+        if scroll_display is None:
+            return False
+
+        return scroll_display.display_scroll_frame()
+
+    def is_complete(self, game_type: str = None) -> bool:
+        """Check if the current scroll is complete."""
+        if game_type is None:
+            game_type = self._current_game_type
+
+        if game_type is None:
+            return True
+
+        scroll_display = self._scroll_displays.get(game_type)
+        if scroll_display is None:
+            return True
+
+        return scroll_display.is_scroll_complete()
+
+    def get_dynamic_duration(self, game_type: str = None) -> int:
+        """Get the dynamic duration for the current scroll."""
+        if game_type is None:
+            game_type = self._current_game_type
+
+        if game_type is None:
+            return 60
+
+        scroll_display = self._scroll_displays.get(game_type)
+        if scroll_display is None:
+            return 60
+
+        return scroll_display.get_dynamic_duration()
+
+    def has_cached_content(self) -> bool:
+        """
+        Check if any scroll display has cached content.
+
+        Returns:
+            True if any scroll display has a cached image ready for display
+        """
+        for scroll_display in self._scroll_displays.values():
+            if hasattr(scroll_display, 'scroll_helper') and scroll_display.scroll_helper:
+                if scroll_display.scroll_helper.cached_image is not None:
+                    return True
+        return False
+
+    def clear_all(self) -> None:
+        """Clear all scroll displays."""
+        for scroll_display in self._scroll_displays.values():
+            scroll_display.clear()
+        self._current_game_type = None
