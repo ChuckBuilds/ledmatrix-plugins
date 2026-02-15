@@ -132,7 +132,7 @@ class Baseball(SportsCore):
             self.logger.debug(
                 f"Skipping malformed event (missing common fields): id={game_event.get('id', '?')}"
             )
-            return
+            return None
         try:
             game_status = status["type"]["name"].lower()
             status_state = status["type"]["state"].lower()
@@ -249,7 +249,7 @@ class Baseball(SportsCore):
                     if "summary" in situation:
                         try:
                             count_summary = situation["summary"]
-                            balls, strikes = map(int, count_summary.split("-"))
+                            balls, strikes = map(int, count_summary.split("-", 1))
                             if is_favorite_game:
                                 self.logger.debug(
                                     f"Using summary count: {count_summary}"
@@ -451,16 +451,13 @@ class BaseballLive(Baseball, SportsLive):
             text_color = (255, 255, 255)
 
             # Draw Inning (Top Center)
-            inning_half = game["inning_half"]
-            inning_num = game["inning"]
             if game["is_final"]:
                 inning_text = "FINAL"
             else:
                 inning_half_indicator = (
                     "▲" if game["inning_half"].lower() == "top" else "▼"
                 )
-                inning_num = game["inning"]
-                inning_text = f"{inning_half_indicator}{inning_num}"
+                inning_text = f"{inning_half_indicator}{game['inning']}"
 
             inning_bbox = draw_overlay.textbbox(
                 (0, 0), inning_text, font=self.display_manager.font
@@ -605,7 +602,9 @@ class BaseballLive(Baseball, SportsLive):
 
             count_text = f"{balls}-{strikes}"
             bdf_font = self.display_manager.calendar_font
-            bdf_font.set_char_size(height=7 * 64)  # Set 7px height
+            if not hasattr(self, '_bdf_font_sized'):
+                bdf_font.set_char_size(height=7 * 64)  # Set 7px height once
+                self._bdf_font_sized = True
             count_text_width = self.display_manager.get_text_width(count_text, bdf_font)
 
             # Position below the base/out cluster

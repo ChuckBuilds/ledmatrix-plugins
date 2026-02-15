@@ -90,14 +90,14 @@ class BaseMiLBManager(Baseball):
             status_name = "STATUS_SCHEDULED"
 
         # Build inning detail text
-        current_inning = linescore.get("currentInning", 1)
+        current_inning = linescore.get("currentInning") or None
         inning_state = linescore.get("inningState", "")
-        inning_ordinal = linescore.get("currentInningOrdinal", f"{current_inning}")
+        inning_ordinal = linescore.get("currentInningOrdinal", f"{current_inning}" if current_inning else "")
 
         if abstract_state == "Final":
             detail_text = "Final"
             short_detail = "Final"
-            if current_inning and current_inning != 9:
+            if current_inning is not None and current_inning != 9:
                 detail_text = f"Final/{current_inning}"
                 short_detail = f"Final/{current_inning}"
         elif abstract_state == "Live":
@@ -248,6 +248,7 @@ class BaseMiLBManager(Baseball):
             self.logger.error(
                 f"Failed to fetch MiLB data for {start_date} to {end_date}: {e}"
             )
+            return None
 
         if all_events:
             self.logger.info(
@@ -272,6 +273,7 @@ class BaseMiLBManager(Baseball):
         """
         now = datetime.now(pytz.utc)
         season_year = now.year
+        # MiLB season runs April-September; before April, use previous year
         if now.month < 4:
             season_year = now.year - 1
         cache_key = f"{self.sport_key}_schedule_{season_year}"
@@ -327,10 +329,6 @@ class BaseMiLBManager(Baseball):
 class MiLBLiveManager(BaseMiLBManager, BaseballLive):
     """Manager for live MiLB games."""
 
-    def _fetch_data(self) -> Optional[Dict]:
-        """Live games fetch only today's games, not entire season."""
-        return self._fetch_todays_games()
-
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         super().__init__(config, display_manager, cache_manager)
         self.logger = logging.getLogger("MiLBLiveManager")
@@ -366,6 +364,10 @@ class MiLBLiveManager(BaseMiLBManager, BaseballLive):
             self.logger.info("Initialized MiLBLiveManager with test game: NOR vs DUR")
         else:
             self.logger.info("Initialized MiLBLiveManager in live mode")
+
+    def _fetch_data(self) -> Optional[Dict]:
+        """Live games fetch only today's games, not entire season."""
+        return self._fetch_todays_games()
 
 
 class MiLBRecentManager(BaseMiLBManager, BaseballRecent):

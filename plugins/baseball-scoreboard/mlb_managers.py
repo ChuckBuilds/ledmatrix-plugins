@@ -69,11 +69,11 @@ class BaseMLBManager(Baseball):
             if cached_data:
                 # Validate cached data structure
                 if isinstance(cached_data, dict) and "events" in cached_data:
-                    self.logger.info(f"Using cached schedule for {season_year}")
+                    self.logger.debug(f"Using cached schedule for {season_year}")
                     return cached_data
                 elif isinstance(cached_data, list):
                     # Handle old cache format (list of events)
-                    self.logger.info(
+                    self.logger.debug(
                         f"Using cached schedule for {season_year} (legacy format)"
                     )
                     return {"events": cached_data}
@@ -86,6 +86,14 @@ class BaseMLBManager(Baseball):
 
         # Start background fetch if service is available
         if self.background_service and self.background_enabled:
+            # Skip if a fetch is already in progress for this season
+            if season_year in self.background_fetch_requests:
+                self.logger.debug(
+                    f"Background fetch already in progress for {season_year}"
+                )
+                partial_data = self._get_weeks_data()
+                return partial_data
+
             self.logger.info(
                 f"Starting background fetch for {season_year} season schedule..."
             )
@@ -164,10 +172,6 @@ class BaseMLBManager(Baseball):
 class MLBLiveManager(BaseMLBManager, BaseballLive):
     """Manager for live MLB games."""
 
-    def _fetch_data(self) -> Optional[Dict]:
-        """Live games fetch only today's games, not entire season."""
-        return self._fetch_todays_games()
-
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         super().__init__(config, display_manager, cache_manager)
         self.logger = logging.getLogger("MLBLiveManager")
@@ -203,6 +207,10 @@ class MLBLiveManager(BaseMLBManager, BaseballLive):
             self.logger.info("Initialized MLBLiveManager with test game: BOS @ NYY")
         else:
             self.logger.info("Initialized MLBLiveManager in live mode")
+
+    def _fetch_data(self) -> Optional[Dict]:
+        """Live games fetch only today's games, not entire season."""
+        return self._fetch_todays_games()
 
 
 class MLBRecentManager(BaseMLBManager, BaseballRecent):

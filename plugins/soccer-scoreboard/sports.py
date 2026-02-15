@@ -2285,233 +2285,240 @@ class SportsLive(SportsCore):
                 self._fetch_team_rankings()
 
             # Fetch live game data
-                data = self._fetch_data()
-                new_live_games = []
-                if not data:
-                    self.logger.debug(f"No data returned from _fetch_data() for {self.sport_key}")
-                elif "events" not in data:
-                    self.logger.debug(f"Data returned but no 'events' key for {self.sport_key}: {list(data.keys()) if isinstance(data, dict) else type(data)}")
-                elif data and "events" in data:
-                    total_events = len(data["events"])
-                    self.logger.debug(f"Fetched {total_events} total events from API for {self.sport_key}")
-                    
-                    live_or_halftime_count = 0
-                    filtered_out_count = 0
-                    
-                    for game in data["events"]:
-                        details = self._extract_game_details(game)
-                        if details:
-                            # Log game status for debugging
-                            status_state = game.get("competitions", [{}])[0].get("status", {}).get("type", {}).get("state", "unknown")
-                            self.logger.debug(
-                                f"Game {details.get('away_abbr', '?')}@{details.get('home_abbr', '?')}: "
-                                f"state={status_state}, is_live={details.get('is_live')}, "
-                                f"is_halftime={details.get('is_halftime')}, is_final={details.get('is_final')}"
-                            )
+            data = self._fetch_data()
+            new_live_games = []
+            if not data:
+                self.logger.debug(f"No data returned from _fetch_data() for {self.sport_key}")
+            elif "events" not in data:
+                self.logger.debug(f"Data returned but no 'events' key for {self.sport_key}: {list(data.keys()) if isinstance(data, dict) else type(data)}")
+            elif data and "events" in data:
+                total_events = len(data["events"])
+                self.logger.debug(f"Fetched {total_events} total events from API for {self.sport_key}")
+                
+                live_or_halftime_count = 0
+                filtered_out_count = 0
+                
+                for game in data["events"]:
+                    details = self._extract_game_details(game)
+                    if details:
+                        # Log game status for debugging
+                        status_state = game.get("competitions", [{}])[0].get("status", {}).get("type", {}).get("state", "unknown")
+                        self.logger.debug(
+                            f"Game {details.get('away_abbr', '?')}@{details.get('home_abbr', '?')}: "
+                            f"state={status_state}, is_live={details.get('is_live')}, "
+                            f"is_halftime={details.get('is_halftime')}, is_final={details.get('is_final')}"
+                        )
 
-                            # Filter out final games and games that appear to be over
-                            if details.get("is_final", False):
-                                continue
+                        # Filter out final games and games that appear to be over
+                        if details.get("is_final", False):
+                            continue
 
-                            if self._is_game_really_over(details):
-                                self.logger.info(
-                                    f"Skipping game that appears final: {details.get('away_abbr')}@{details.get('home_abbr')} "
-                                    f"(clock={details.get('clock')}, period={details.get('period')}, period_text={details.get('period_text')})"
-                                )
-                                continue
-
-                            if details["is_live"] or details["is_halftime"]:
-                                live_or_halftime_count += 1
-                                
-                                # Filtering logic matching SportsUpcoming:
-                                # - If show_all_live = True → show all games
-                                # - If show_favorite_teams_only = False → show all games
-                                # - If show_favorite_teams_only = True but favorite_teams is empty → show all games (fallback)
-                                # - If show_favorite_teams_only = True and favorite_teams has teams → only show games with those teams
-                                if self.show_all_live:
-                                    # Always show all live games if show_all_live is enabled
-                                    should_include = True
-                                elif not self.show_favorite_teams_only:
-                                    # If favorite teams filtering is disabled, show all games
-                                    should_include = True
-                                elif not self.favorite_teams:
-                                    # If favorite teams filtering is enabled but no favorites are configured,
-                                    # show all games (same behavior as SportsUpcoming)
-                                    should_include = True
-                                else:
-                                    # Favorite teams filtering is enabled AND favorites are configured
-                                    # Only show games involving favorite teams
-                                    should_include = (
-                                        details["home_abbr"] in self.favorite_teams
-                                        or details["away_abbr"] in self.favorite_teams
-                                    )
-                                
-                                if not should_include:
-                                    filtered_out_count += 1
-                                    self.logger.debug(
-                                        f"Filtered out live game {details.get('away_abbr')}@{details.get('home_abbr')}: "
-                                        f"show_all_live={self.show_all_live}, "
-                                        f"show_favorite_teams_only={self.show_favorite_teams_only}, "
-                                        f"favorite_teams={self.favorite_teams}"
-                                    )
-                                
-                                if should_include:
-                                    # Track game timestamps for stale detection
-                                    game_id = details.get("id")
-                                    if game_id:
-                                        current_clock = details.get("clock", "")
-                                        current_score = f"{details.get('away_score', '0')}-{details.get('home_score', '0')}"
-
-                                        if game_id not in self.game_update_timestamps:
-                                            self.game_update_timestamps[game_id] = {}
-
-                                        timestamps = self.game_update_timestamps[game_id]
-                                        timestamps["last_seen"] = time.time()
-
-                                        if timestamps.get("last_clock") != current_clock:
-                                            timestamps["last_clock"] = current_clock
-                                            timestamps["clock_changed_at"] = time.time()
-                                        if timestamps.get("last_score") != current_score:
-                                            timestamps["last_score"] = current_score
-                                            timestamps["score_changed_at"] = time.time()
-
-                                    if self.show_odds:
-                                        self._fetch_odds(details)
-                                    new_live_games.append(details)
-
-                    # Detect and remove stale games from persisted list
-                    # (new_live_games has fresh last_seen, so stale check must
-                    # run against the previous self.live_games)
-                    with self._games_lock:
-                        self._detect_stale_games(self.live_games)
-
-                    self.logger.info(
-                        f"Live game filtering: {total_events} total events, "
-                        f"{live_or_halftime_count} live/halftime, "
-                        f"{filtered_out_count} filtered out, "
-                        f"{len(new_live_games)} included | "
-                        f"show_all_live={self.show_all_live}, "
-                        f"show_favorite_teams_only={self.show_favorite_teams_only}, "
-                        f"favorite_teams={self.favorite_teams if self.favorite_teams else '[] (showing all)'}"
-                    )
-                    # Log changes or periodically
-                    current_time_for_log = (
-                        time.time()
-                    )  # Use a consistent time for logging comparison
-                    should_log = (
-                        current_time_for_log - self.last_log_time >= self.log_interval
-                        or len(new_live_games) != len(self.live_games)
-                        or any(
-                            g1["id"] != g2.get("id")
-                            for g1, g2 in zip(self.live_games, new_live_games)
-                        )  # Check if game IDs changed
-                        or (
-                            not self.live_games and new_live_games
-                        )  # Log if games appeared
-                    )
-
-                    if should_log:
-                        if new_live_games:
-                            filter_text = (
-                                "favorite teams"
-                                if self.show_favorite_teams_only or self.show_all_live
-                                else "all teams"
-                            )
+                        if self._is_game_really_over(details):
                             self.logger.info(
-                                f"Found {len(new_live_games)} live/halftime games for {filter_text}."
+                                f"Skipping game that appears final: {details.get('away_abbr')}@{details.get('home_abbr')} "
+                                f"(clock={details.get('clock')}, period={details.get('period')}, period_text={details.get('period_text')})"
                             )
-                            for (
-                                game_info
-                            ) in new_live_games:  # Renamed game to game_info
-                                self.logger.info(
-                                    f"  - {game_info['away_abbr']}@{game_info['home_abbr']} ({game_info.get('status_text', 'N/A')})"
-                                )
-                        else:
-                            filter_text = (
-                                "favorite teams"
-                                if self.show_favorite_teams_only or self.show_all_live
-                                else "criteria"
-                            )
-                            self.logger.info(
-                                f"No live/halftime games found for {filter_text}."
-                            )
-                        self.last_log_time = current_time_for_log
+                            continue
 
-                    # Update game list and current game (protected by lock for thread safety)
-                    with self._games_lock:
-                        if new_live_games:
-                            # Check if the games themselves changed, not just scores/time
-                            new_game_ids = {g["id"] for g in new_live_games}
-                            current_game_ids = {g["id"] for g in self.live_games}
-
-                            if new_game_ids != current_game_ids:
-                                self.live_games = sorted(
-                                    new_live_games,
-                                    key=lambda g: g.get("start_time_utc")
-                                    or datetime.now(timezone.utc),
-                                )  # Sort by start time
-                                # Reset index if current game is gone or list is new
-                                if (
-                                    not self.current_game
-                                    or self.current_game["id"] not in new_game_ids
-                                ):
-                                    self.current_game_index = 0
-                                    self.current_game = (
-                                        self.live_games[0] if self.live_games else None
-                                    )
-                                    self.last_game_switch = current_time
-                                else:
-                                    # Find current game's new index if it still exists
-                                    try:
-                                        self.current_game_index = next(
-                                            i
-                                            for i, g in enumerate(self.live_games)
-                                            if g["id"] == self.current_game["id"]
-                                        )
-                                        self.current_game = self.live_games[
-                                            self.current_game_index
-                                        ]  # Update current_game with fresh data
-                                    except (
-                                        StopIteration
-                                    ):  # Should not happen if check above passed, but safety first
-                                        self.current_game_index = 0
-                                        self.current_game = self.live_games[0]
-                                        self.last_game_switch = current_time
-
+                        if details["is_live"] or details["is_halftime"]:
+                            live_or_halftime_count += 1
+                            
+                            # Filtering logic matching SportsUpcoming:
+                            # - If show_all_live = True → show all games
+                            # - If show_favorite_teams_only = False → show all games
+                            # - If show_favorite_teams_only = True but favorite_teams is empty → show all games (fallback)
+                            # - If show_favorite_teams_only = True and favorite_teams has teams → only show games with those teams
+                            if self.show_all_live:
+                                # Always show all live games if show_all_live is enabled
+                                should_include = True
+                            elif not self.show_favorite_teams_only:
+                                # If favorite teams filtering is disabled, show all games
+                                should_include = True
+                            elif not self.favorite_teams:
+                                # If favorite teams filtering is enabled but no favorites are configured,
+                                # show all games (same behavior as SportsUpcoming)
+                                should_include = True
                             else:
-                                # Just update the data for the existing games
-                                temp_game_dict = {g["id"]: g for g in new_live_games}
-                                self.live_games = [
-                                    temp_game_dict.get(g["id"], g) for g in self.live_games
-                                ]  # Update in place
-                                if self.current_game:
-                                    self.current_game = temp_game_dict.get(
-                                        self.current_game["id"], self.current_game
-                                    )
+                                # Favorite teams filtering is enabled AND favorites are configured
+                                # Only show games involving favorite teams
+                                should_include = (
+                                    details["home_abbr"] in self.favorite_teams
+                                    or details["away_abbr"] in self.favorite_teams
+                                )
+                            
+                            if not should_include:
+                                filtered_out_count += 1
+                                self.logger.debug(
+                                    f"Filtered out live game {details.get('away_abbr')}@{details.get('home_abbr')}: "
+                                    f"show_all_live={self.show_all_live}, "
+                                    f"show_favorite_teams_only={self.show_favorite_teams_only}, "
+                                    f"favorite_teams={self.favorite_teams}"
+                                )
+                            
+                            if should_include:
+                                # Track game timestamps for stale detection
+                                game_id = details.get("id")
+                                if game_id:
+                                    current_clock = details.get("clock", "")
+                                    current_score = f"{details.get('away_score', '0')}-{details.get('home_score', '0')}"
 
-                            # Display update handled by main loop based on interval
+                                    if game_id not in self.game_update_timestamps:
+                                        self.game_update_timestamps[game_id] = {}
+
+                                    timestamps = self.game_update_timestamps[game_id]
+                                    timestamps["last_seen"] = time.time()
+
+                                    if timestamps.get("last_clock") != current_clock:
+                                        timestamps["last_clock"] = current_clock
+                                        timestamps["clock_changed_at"] = time.time()
+                                    if timestamps.get("last_score") != current_score:
+                                        timestamps["last_score"] = current_score
+                                        timestamps["score_changed_at"] = time.time()
+
+                                if self.show_odds:
+                                    self._fetch_odds(details)
+                                new_live_games.append(details)
+
+                # Detect and remove stale games from persisted list
+                # (new_live_games has fresh last_seen, so stale check must
+                # run against the previous self.live_games)
+                with self._games_lock:
+                    self._detect_stale_games(self.live_games)
+
+                self.logger.info(
+                    f"Live game filtering: {total_events} total events, "
+                    f"{live_or_halftime_count} live/halftime, "
+                    f"{filtered_out_count} filtered out, "
+                    f"{len(new_live_games)} included | "
+                    f"show_all_live={self.show_all_live}, "
+                    f"show_favorite_teams_only={self.show_favorite_teams_only}, "
+                    f"favorite_teams={self.favorite_teams if self.favorite_teams else '[] (showing all)'}"
+                )
+                # Log changes or periodically
+                current_time_for_log = (
+                    time.time()
+                )  # Use a consistent time for logging comparison
+                should_log = (
+                    current_time_for_log - self.last_log_time >= self.log_interval
+                    or len(new_live_games) != len(self.live_games)
+                    or any(
+                        g1["id"] != g2.get("id")
+                        for g1, g2 in zip(self.live_games, new_live_games)
+                    )  # Check if game IDs changed
+                    or (
+                        not self.live_games and new_live_games
+                    )  # Log if games appeared
+                )
+
+                if should_log:
+                    if new_live_games:
+                        filter_text = (
+                            "favorite teams"
+                            if self.show_favorite_teams_only or self.show_all_live
+                            else "all teams"
+                        )
+                        self.logger.info(
+                            f"Found {len(new_live_games)} live/halftime games for {filter_text}."
+                        )
+                        for (
+                            game_info
+                        ) in new_live_games:  # Renamed game to game_info
+                            self.logger.info(
+                                f"  - {game_info['away_abbr']}@{game_info['home_abbr']} ({game_info.get('status_text', 'N/A')})"
+                            )
+                    else:
+                        filter_text = (
+                            "favorite teams"
+                            if self.show_favorite_teams_only or self.show_all_live
+                            else "criteria"
+                        )
+                        self.logger.info(
+                            f"No live/halftime games found for {filter_text}."
+                        )
+                    self.last_log_time = current_time_for_log
+
+                # Update game list and current game (protected by lock for thread safety)
+                with self._games_lock:
+                    if new_live_games:
+                        # Check if the games themselves changed, not just scores/time
+                        new_game_ids = {g["id"] for g in new_live_games}
+                        current_game_ids = {g["id"] for g in self.live_games}
+
+                        if new_game_ids != current_game_ids:
+                            self.live_games = sorted(
+                                new_live_games,
+                                key=lambda g: g.get("start_time_utc")
+                                or datetime.now(timezone.utc),
+                            )  # Sort by start time
+                            # Reset index if current game is gone or list is new
+                            if (
+                                not self.current_game
+                                or self.current_game["id"] not in new_game_ids
+                            ):
+                                self.current_game_index = 0
+                                self.current_game = (
+                                    self.live_games[0] if self.live_games else None
+                                )
+                                self.last_game_switch = current_time
+                            else:
+                                # Find current game's new index if it still exists
+                                try:
+                                    self.current_game_index = next(
+                                        i
+                                        for i, g in enumerate(self.live_games)
+                                        if g["id"] == self.current_game["id"]
+                                    )
+                                    self.current_game = self.live_games[
+                                        self.current_game_index
+                                    ]  # Update current_game with fresh data
+                                except (
+                                    StopIteration
+                                ):  # Should not happen if check above passed, but safety first
+                                    self.current_game_index = 0
+                                    self.current_game = self.live_games[0]
+                                    self.last_game_switch = current_time
 
                         else:
-                            # No live games found
-                            if self.live_games:  # Were there games before?
-                                self.logger.info(
-                                    "Live games previously showing have ended or are no longer live."
-                                )  # Changed log prefix
-                            self.live_games = []
-                            self.current_game = None
-                            self.current_game_index = 0
+                            # Just update the data for the existing games
+                            temp_game_dict = {g["id"]: g for g in new_live_games}
+                            self.live_games = [
+                                temp_game_dict.get(g["id"], g) for g in self.live_games
+                            ]  # Update in place
+                            if self.current_game:
+                                self.current_game = temp_game_dict.get(
+                                    self.current_game["id"], self.current_game
+                                )
 
-                else:
-                    # Error fetching data or no events
-                    if self.live_games:  # Were there games before?
-                        self.logger.warning(
-                            "Could not fetch update; keeping existing live game data for now."
-                        )  # Changed log prefix
+                        # Display update handled by main loop based on interval
+
                     else:
-                        self.logger.warning(
-                            "Could not fetch data and no existing live games."
-                        )  # Changed log prefix
-                        self.current_game = None  # Clear current game if fetch fails and no games were active
+                        # No live games found
+                        if self.live_games:  # Were there games before?
+                            self.logger.info(
+                                "Live games previously showing have ended or are no longer live."
+                            )  # Changed log prefix
+                        self.live_games = []
+                        self.current_game = None
+                        self.current_game_index = 0
+
+                    # Prune game_update_timestamps for games no longer tracked
+                    active_ids = {g["id"] for g in self.live_games}
+                    self.game_update_timestamps = {
+                        gid: ts for gid, ts in self.game_update_timestamps.items()
+                        if gid in active_ids
+                    }
+
+            else:
+                # Error fetching data or no events
+                if self.live_games:  # Were there games before?
+                    self.logger.warning(
+                        "Could not fetch update; keeping existing live game data for now."
+                    )  # Changed log prefix
+                else:
+                    self.logger.warning(
+                        "Could not fetch data and no existing live games."
+                    )  # Changed log prefix
+                    self.current_game = None  # Clear current game if fetch fails and no games were active
 
             # Handle game switching (protected by lock for thread safety)
             with self._games_lock:

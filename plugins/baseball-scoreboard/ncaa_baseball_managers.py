@@ -70,11 +70,11 @@ class BaseNCAABaseballManager(Baseball):
             if cached_data:
                 # Validate cached data structure
                 if isinstance(cached_data, dict) and "events" in cached_data:
-                    self.logger.info(f"Using cached schedule for {season_year}")
+                    self.logger.debug(f"Using cached schedule for {season_year}")
                     return cached_data
                 elif isinstance(cached_data, list):
                     # Handle old cache format (list of events)
-                    self.logger.info(
+                    self.logger.debug(
                         f"Using cached schedule for {season_year} (legacy format)"
                     )
                     return {"events": cached_data}
@@ -97,6 +97,14 @@ class BaseNCAABaseballManager(Baseball):
 
         # Start background fetch if service is available
         if self.background_service and self.background_enabled:
+            # Skip if a fetch is already in progress for this season
+            if season_year in self.background_fetch_requests:
+                self.logger.debug(
+                    f"Background fetch already in progress for {season_year}"
+                )
+                partial_data = self._get_weeks_data()
+                return partial_data
+
             self.logger.info(
                 f"Starting background fetch for {season_year} season schedule..."
             )
@@ -169,10 +177,6 @@ class BaseNCAABaseballManager(Baseball):
 class NCAABaseballLiveManager(BaseNCAABaseballManager, BaseballLive):
     """Manager for live NCAA Baseball games."""
 
-    def _fetch_data(self) -> Optional[Dict]:
-        """Live games fetch only today's games, not entire season."""
-        return self._fetch_todays_games()
-
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         super().__init__(
             config=config, display_manager=display_manager, cache_manager=cache_manager
@@ -214,6 +218,10 @@ class NCAABaseballLiveManager(BaseNCAABaseballManager, BaseballLive):
             self.logger.info(
                 "Initialized NCAABaseballLiveManager in live mode"
             )
+
+    def _fetch_data(self) -> Optional[Dict]:
+        """Live games fetch only today's games, not entire season."""
+        return self._fetch_todays_games()
 
 
 class NCAABaseballRecentManager(BaseNCAABaseballManager, BaseballRecent):

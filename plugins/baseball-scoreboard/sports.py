@@ -2455,6 +2455,13 @@ class SportsLive(SportsCore):
                         self.current_game = None
                         self.current_game_index = 0
 
+                    # Prune game_update_timestamps for games no longer tracked
+                    active_ids = {g["id"] for g in self.live_games}
+                    self.game_update_timestamps = {
+                        gid: ts for gid, ts in self.game_update_timestamps.items()
+                        if gid in active_ids
+                    }
+
             else:
                 # Error fetching data or no events
                 if self.live_games:  # Were there games before?
