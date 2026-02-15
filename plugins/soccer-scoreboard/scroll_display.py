@@ -99,17 +99,12 @@ class ScrollDisplay:
         # Initialize ScrollHelper if available
         self.scroll_helper: Optional[Any] = None
         if ScrollHelper:
-            try:
-                self.scroll_helper = ScrollHelper(
-                    display_width=display_width,
-                    display_height=display_height,
-                    scroll_speed=self._get_scroll_speed(),
-                    target_fps=self._get_target_fps()
-                )
-                self.logger.info(f"[Soccer Scroll] ScrollHelper initialized (speed={self._get_scroll_speed()}, fps={self._get_target_fps()})")
-            except Exception as e:
-                self.logger.error(f"Failed to initialize ScrollHelper: {e}")
-                self.scroll_helper = None
+            self.scroll_helper = ScrollHelper(
+                display_width,
+                display_height,
+                self.logger
+            )
+            self._configure_scroll_helper()
         else:
             self.logger.warning("ScrollHelper not available - scroll mode will be limited")
 
@@ -141,12 +136,54 @@ class ScrollDisplay:
         scroll_config = self.config.get('scroll_mode', {})
         return {
             'scroll_speed': scroll_config.get('scroll_speed', 50.0),
+            'scroll_delay': scroll_config.get('scroll_delay', 0.01),
             'target_fps': scroll_config.get('target_fps', 30),
             'gap_between_games': scroll_config.get('gap_between_games', 24),
             'show_league_separators': scroll_config.get('show_league_separators', True),
             'min_duration': scroll_config.get('min_duration', 30),
             'max_duration': scroll_config.get('max_duration', 300),
         }
+
+    def _configure_scroll_helper(self) -> None:
+        """Configure scroll helper with settings from config."""
+        if not self.scroll_helper:
+            return
+
+        scroll_settings = self._get_scroll_settings()
+
+        # Set scroll speed (pixels per second in time-based mode)
+        scroll_speed = scroll_settings.get('scroll_speed', 50.0)
+        self.scroll_helper.set_scroll_speed(scroll_speed)
+
+        # Set scroll delay
+        scroll_delay = scroll_settings.get('scroll_delay', 0.01)
+        self.scroll_helper.set_scroll_delay(scroll_delay)
+
+        # Enable dynamic duration
+        self.scroll_helper.set_dynamic_duration_settings(
+            enabled=True,
+            min_duration=scroll_settings.get('min_duration', 30),
+            max_duration=scroll_settings.get('max_duration', 300),
+            buffer=0.2
+        )
+
+        # Use frame-based scrolling for better FPS control
+        self.scroll_helper.set_frame_based_scrolling(True)
+
+        # Convert scroll_speed from pixels/second to pixels/frame
+        if scroll_delay > 0:
+            pixels_per_frame = scroll_speed * scroll_delay
+        else:
+            pixels_per_frame = scroll_speed / 100.0
+
+        pixels_per_frame = max(0.1, min(5.0, pixels_per_frame))
+        self.scroll_helper.set_scroll_speed(pixels_per_frame)
+
+        effective_pps = pixels_per_frame / scroll_delay if scroll_delay > 0 else pixels_per_frame * 100
+        self.logger.info(
+            f"[Soccer Scroll] ScrollHelper configured: {pixels_per_frame:.2f} px/frame, "
+            f"delay={scroll_delay}s (effective {effective_pps:.1f} px/s)"
+        )
 
     def _load_separator_icons(self) -> None:
         """Load league separator icons from assets directory."""
@@ -433,7 +470,7 @@ class ScrollDisplay:
         """
         if not self.scroll_helper:
             return True
-        return self.scroll_helper.is_complete()
+        return self.scroll_helper.is_scroll_complete()
 
     def get_scroll_duration(self) -> float:
         """
