@@ -93,7 +93,7 @@ class BaseMLBManager(Baseball):
                 """Callback when background fetch completes."""
                 if result.success:
                     self.logger.info(
-                        f"Background fetch completed for {season_year}: {len(result.data.get('events'))} events"
+                        f"Background fetch completed for {season_year}: {len(result.data.get('events', []))} events"
                     )
                 else:
                     self.logger.error(

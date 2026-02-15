@@ -327,7 +327,6 @@ class Baseball(SportsCore):
             return
 
         series_summary = game.get("series_summary", "")
-        font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
         bbox = draw_overlay.textbbox((0, 0), series_summary, font=self.fonts['time'])
         height = bbox[3] - bbox[1]
         shots_y = (self.display_height - height) // 2
@@ -421,11 +420,12 @@ class BaseballLive(Baseball, SportsLive):
                     f"Failed to load logos for live game: {game.get('id')}"
                 )
                 # Draw placeholder text if logos fail
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image.paste(main_img.convert("RGB"), (0, 0))
+                self.display_manager.image.paste(error_img, (0, 0))
                 self.display_manager.update_display()
                 return
 

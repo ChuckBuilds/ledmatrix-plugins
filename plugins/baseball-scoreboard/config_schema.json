@@ -417,7 +417,7 @@
             },
             "show_odds": {
               "type": "boolean",
-              "default": true,
+              "default": false,
               "description": "Show betting odds"
             },
             "show_series_summary": {
