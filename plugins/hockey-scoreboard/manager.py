@@ -2237,40 +2237,6 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             True if this league uses scroll mode for this game type
         """
         return self._get_display_mode(league, mode_type) == 'scroll'
-    
-    def _get_games_from_manager(self, manager, mode_type: str) -> List[Dict]:
-        """Get games list from a manager based on mode type."""
-        if mode_type == 'live':
-            return list(getattr(manager, 'live_games', []) or [])
-        elif mode_type == 'recent':
-            # Try games_list first (used by recent managers), then recent_games
-            games = getattr(manager, 'games_list', None)
-            if games is None:
-                games = getattr(manager, 'recent_games', [])
-            return list(games or [])
-        elif mode_type == 'upcoming':
-            # Try games_list first (used by upcoming managers), then upcoming_games
-            games = getattr(manager, 'games_list', None)
-            if games is None:
-                games = getattr(manager, 'upcoming_games', [])
-            return list(games or [])
-        return []
-    
-    def _get_rankings_cache(self) -> Dict[str, int]:
-        """Get combined team rankings cache from all managers."""
-        rankings = {}
-        
-        # Try to get rankings from each manager
-        for manager_attr in ['nhl_live', 'nhl_recent', 'nhl_upcoming', 
-                            'ncaa_mens_live', 'ncaa_mens_recent', 'ncaa_mens_upcoming',
-                            'ncaa_womens_live', 'ncaa_womens_recent', 'ncaa_womens_upcoming']:
-            manager = getattr(self, manager_attr, None)
-            if manager:
-                manager_rankings = getattr(manager, '_team_rankings_cache', {})
-                if manager_rankings:
-                    rankings.update(manager_rankings)
-        
-        return rankings
 
     def _display_scroll_mode(self, display_mode: str, league: str, mode_type: str, force_clear: bool) -> bool:
         """Handle display for scroll mode (single league).
@@ -3030,7 +2996,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             for mode_type in ['live', 'recent', 'upcoming']:
                 manager = self._get_manager_for_league_mode('nhl', mode_type)
                 if manager:
-                    games = self._get_games_from_manager(manager)
+                    games = self._get_games_from_manager(manager, mode_type)
                     for game in games:
                         game['league'] = 'nhl'
                         # Ensure game has status for type determination
@@ -3052,7 +3018,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             for mode_type in ['live', 'recent', 'upcoming']:
                 manager = self._get_manager_for_league_mode('ncaam_hockey', mode_type)
                 if manager:
-                    games = self._get_games_from_manager(manager)
+                    games = self._get_games_from_manager(manager, mode_type)
                     for game in games:
                         game['league'] = 'ncaam_hockey'
                         # Ensure game has status for type determination
@@ -3073,7 +3039,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             for mode_type in ['live', 'recent', 'upcoming']:
                 manager = self._get_manager_for_league_mode('ncaaw_hockey', mode_type)
                 if manager:
-                    games = self._get_games_from_manager(manager)
+                    games = self._get_games_from_manager(manager, mode_type)
                     for game in games:
                         game['league'] = 'ncaaw_hockey'
                         # Ensure game has status for type determination
@@ -3114,17 +3080,6 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             elif mode_type == 'upcoming':
                 return self.ncaa_womens_upcoming
         return None
-
-    def _get_games_from_manager(self, manager):
-        """Extract games list from a manager."""
-        if not manager:
-            return []
-        # Try different attribute names
-        for attr in ['live_games', 'games_list', 'recent_games', 'upcoming_games']:
-            games = getattr(manager, attr, None)
-            if games and isinstance(games, list):
-                return games
-        return []
 
     # -------------------------------------------------------------------------
     # Vegas scroll mode support

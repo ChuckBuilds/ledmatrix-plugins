@@ -697,7 +697,7 @@ class BaseballLive(Baseball, SportsLive):
             draw_bottom_outlined_text(home_score_x, score_y, home_text)
 
             # Draw gambling odds if available
-            if "odds" in game and game["odds"]:
+            if game.get("odds"):
                 self._draw_dynamic_odds(
                     draw_overlay, game["odds"], self.display_width, self.display_height
                 )

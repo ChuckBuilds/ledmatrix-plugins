@@ -108,7 +108,6 @@ class BaseMiLBManager(Baseball):
             detail_text = f"{inning_state} {inning_ordinal}"
             short_detail = f"{half} {inning_ordinal}"
         else:
-            game_date = game.get("gameDate", "")
             detail_text = detailed_state or "Scheduled"
             short_detail = detail_text
 
@@ -128,9 +127,9 @@ class BaseMiLBManager(Baseball):
             offense = linescore.get("offense", {})
             situation = {
                 "outs": linescore.get("outs", 0),
-                "onFirst": "first" in offense,
-                "onSecond": "second" in offense,
-                "onThird": "third" in offense,
+                "onFirst": bool(offense.get("first")),
+                "onSecond": bool(offense.get("second")),
+                "onThird": bool(offense.get("third")),
                 "count": {
                     "balls": linescore.get("balls", 0),
                     "strikes": linescore.get("strikes", 0),
