@@ -49,8 +49,8 @@
     </td>
     <td align="center">
       <a href="./plugins/football-scoreboard/">
-        <img width="384" height="96" src="https://github.com/user-attachments/assets/a5361ddf-5472-4724-9665-1783db4eb3d1" alt="Football Live" />
-        <br /><sub><b>Football Live</b></sub>
+        <img width="384" height="96" src="https://github.com/user-attachments/assets/a5361ddf-5472-4724-9665-1783db4eb3d1" alt="Football Scoreboard" />
+        <br /><sub><b>Football Scoreboard</b></sub>
       </a>
     </td>
   </tr>
