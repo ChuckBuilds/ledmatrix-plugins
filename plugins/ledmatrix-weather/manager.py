@@ -209,12 +209,15 @@ class WeatherPlugin(BasePlugin):
             self.logger.warning(f"Error registering fonts: {e}")
 
     def _get_layout(self) -> dict:
-        """Compute scaled layout parameters based on current display dimensions.
+        """Return cached layout parameters (computed once on first call).
 
         Icon sizes scale proportionally with display height.
         Text spacing stays fixed because fonts are fixed-size bitmaps.
         Reference baseline: 128x32 display.
         """
+        if hasattr(self, '_layout_cache'):
+            return self._layout_cache
+
         width = self.display_manager.matrix.width
         height = self.display_manager.matrix.height
         h_scale = height / 32.0
@@ -245,7 +248,7 @@ class WeatherPlugin(BasePlugin):
         forecast_icon_y = max(0, (height - forecast_icon_size) // 2)
         forecast_bottom_y = height - small_font_h
 
-        return {
+        self._layout_cache = {
             'current_icon_size': current_icon_size,
             'current_icon_x': current_icon_x,
             'current_icon_y': current_icon_y,
@@ -260,6 +263,7 @@ class WeatherPlugin(BasePlugin):
             'forecast_bottom_y': forecast_bottom_y,
             'margin': margin,
         }
+        return self._layout_cache
 
     def update(self) -> None:
         """
