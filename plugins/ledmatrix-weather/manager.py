@@ -616,7 +616,7 @@ class WeatherPlugin(BasePlugin):
 
             return img
         except Exception as e:
-            self.logger.error(f"Error rendering current weather: {e}")
+            self.logger.exception("Error rendering current weather")
             return None
 
     def _display_current_weather(self) -> None:
@@ -735,7 +735,7 @@ class WeatherPlugin(BasePlugin):
 
             return img
         except Exception as e:
-            self.logger.error(f"Error rendering hourly forecast: {e}")
+            self.logger.exception("Error rendering hourly forecast")
             return None
 
     def _display_hourly_forecast(self) -> None:
@@ -806,7 +806,7 @@ class WeatherPlugin(BasePlugin):
 
             return img
         except Exception as e:
-            self.logger.error(f"Error rendering daily forecast: {e}")
+            self.logger.exception("Error rendering daily forecast")
             return None
 
     def _display_daily_forecast(self) -> None:

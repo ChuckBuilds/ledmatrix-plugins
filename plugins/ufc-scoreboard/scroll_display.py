@@ -200,6 +200,10 @@ class ScrollDisplayManager:
             and self.scroll_helper.cached_image is not None
         )
 
+    def get_all_vegas_content_items(self) -> list:
+        """Return _vegas_content_items (flat manager, no _scroll_displays)."""
+        return list(self._vegas_content_items) if self._vegas_content_items else []
+
     def prepare_and_display(
         self,
         fights: List[Dict],

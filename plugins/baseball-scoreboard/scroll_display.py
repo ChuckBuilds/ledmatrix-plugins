@@ -661,3 +661,12 @@ class ScrollDisplayManager:
                 if scroll_display.scroll_helper.cached_image is not None:
                     return True
         return False
+
+    def get_all_vegas_content_items(self) -> list:
+        """Collect _vegas_content_items from all scroll displays."""
+        items = []
+        for sd in self._scroll_displays.values():
+            vegas_items = getattr(sd, '_vegas_content_items', None)
+            if vegas_items:
+                items.extend(vegas_items)
+        return items

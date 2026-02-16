@@ -1043,15 +1043,12 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not hasattr(self, "_scroll_manager") or not self._scroll_manager:
             return None
 
-        # UFC's ScrollDisplayManager is flat (no _scroll_displays dict)
-        vegas_items = getattr(self._scroll_manager, '_vegas_content_items', None)
+        images = self._scroll_manager.get_all_vegas_content_items()
 
-        if not vegas_items:
+        if not images:
             self.logger.info("[UFC Vegas] Triggering scroll content generation")
             self._ensure_scroll_content_for_vegas()
-            vegas_items = getattr(self._scroll_manager, '_vegas_content_items', None)
-
-        images = list(vegas_items) if vegas_items else []
+            images = self._scroll_manager.get_all_vegas_content_items()
 
         if images:
             total_width = sum(img.width for img in images)
