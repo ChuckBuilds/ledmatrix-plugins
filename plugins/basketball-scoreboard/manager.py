@@ -3260,7 +3260,13 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
             return None
 
-        if not self._scroll_manager.has_cached_content():
+        # Check if any scroll display has vegas content items
+        has_content = any(
+            getattr(sd, '_vegas_content_items', None)
+            for sd in self._scroll_manager._scroll_displays.values()
+        )
+
+        if not has_content:
             self.logger.info("[Basketball Vegas] Triggering scroll content generation")
             self._ensure_scroll_content_for_vegas()
 

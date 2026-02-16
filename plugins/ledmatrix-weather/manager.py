@@ -536,49 +536,36 @@ class WeatherPlugin(BasePlugin):
         self.display_manager.image = img
         self.display_manager.update_display()
     
-    def _display_current_weather(self) -> None:
-        """Display current weather conditions using comprehensive layout with icons."""
+    def _render_current_weather_image(self) -> Optional[Image.Image]:
+        """Render current weather conditions to an Image without display side effects."""
         try:
-            # Check if state has changed
-            current_state = self._get_weather_state()
-            if current_state == self.last_weather_state:
-                # No need to redraw, but still update display for web preview snapshot
-                self.display_manager.update_display()
-                return
-
-            # Clear the display
-            self.display_manager.clear()
-            
-            # Create a new image for drawing
-            img = Image.new('RGB', (self.display_manager.matrix.width, self.display_manager.matrix.height), (0, 0, 0))
+            width = self.display_manager.matrix.width
+            height = self.display_manager.matrix.height
+            img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
-            
+
             # Get weather info
             temp = int(self.weather_data['main']['temp'])
             condition = self.weather_data['weather'][0]['main']
             icon_code = self.weather_data['weather'][0]['icon']
             humidity = self.weather_data['main']['humidity']
-            pressure = self.weather_data['main']['pressure']
             wind_speed = self.weather_data['wind'].get('speed', 0)
-            wind_deg = self.weather_data['wind'].get('deg', 0)  # Wind direction not always provided
+            wind_deg = self.weather_data['wind'].get('deg', 0)
             uv_index = self.weather_data['main'].get('uvi', 0)
-            
-            # Get daily high/low from the first day of forecast
             temp_high = int(self.weather_data['main']['temp_max'])
             temp_low = int(self.weather_data['main']['temp_min'])
-            
+
             # --- Top Left: Weather Icon ---
             icon_size = self.ICON_SIZE['extra_large']
             icon_x = 1
-            # Center the icon vertically in the top two-thirds of the display
-            available_height = (self.display_manager.matrix.height * 2) // 3
+            available_height = (height * 2) // 3
             icon_y = (available_height - icon_size) // 2
             WeatherIcons.draw_weather_icon(img, icon_code, icon_x, icon_y, size=icon_size)
-            
+
             # --- Top Right: Condition Text ---
             condition_font = self.display_manager.small_font
             condition_text_width = draw.textlength(condition, font=condition_font)
-            condition_x = self.display_manager.matrix.width - condition_text_width - 1
+            condition_x = width - condition_text_width - 1
             condition_y = 1
             draw.text((condition_x, condition_y), condition, font=condition_font, fill=self.COLORS['text'])
 
@@ -586,59 +573,66 @@ class WeatherPlugin(BasePlugin):
             temp_text = f"{temp}°"
             temp_font = self.display_manager.small_font
             temp_text_width = draw.textlength(temp_text, font=temp_font)
-            temp_x = self.display_manager.matrix.width - temp_text_width - 1
+            temp_x = width - temp_text_width - 1
             temp_y = condition_y + 8
             draw.text((temp_x, temp_y), temp_text, font=temp_font, fill=self.COLORS['highlight'])
-            
+
             # --- Right Side: High/Low Temperature ---
             high_low_text = f"{temp_low}°/{temp_high}°"
             high_low_font = self.display_manager.small_font
             high_low_width = draw.textlength(high_low_text, font=high_low_font)
-            high_low_x = self.display_manager.matrix.width - high_low_width - 1
+            high_low_x = width - high_low_width - 1
             high_low_y = temp_y + 8
             draw.text((high_low_x, high_low_y), high_low_text, font=high_low_font, fill=self.COLORS['dim'])
-            
+
             # --- Bottom: Additional Metrics ---
-            display_width = self.display_manager.matrix.width
-            section_width = display_width // 3
-            y_pos = self.display_manager.matrix.height - 7
+            section_width = width // 3
+            y_pos = height - 7
             font = self.display_manager.extra_small_font
 
-            # --- UV Index (Section 1) ---
+            # UV Index (Section 1)
             uv_prefix = "UV:"
             uv_value_text = f"{uv_index:.0f}"
-            
             prefix_width = draw.textlength(uv_prefix, font=font)
             value_width = draw.textlength(uv_value_text, font=font)
             total_width = prefix_width + value_width
-            
             start_x = (section_width - total_width) // 2
-            
-            # Draw "UV:" prefix
             draw.text((start_x, y_pos), uv_prefix, font=font, fill=self.COLORS['dim'])
-
-            # Draw UV value with color
             uv_color = self._get_uv_color(uv_index)
             draw.text((start_x + prefix_width, y_pos), uv_value_text, font=font, fill=uv_color)
-            
-            # --- Humidity (Section 2) ---
+
+            # Humidity (Section 2)
             humidity_text = f"H:{humidity}%"
             humidity_width = draw.textlength(humidity_text, font=font)
             humidity_x = section_width + (section_width - humidity_width) // 2
             draw.text((humidity_x, y_pos), humidity_text, font=font, fill=self.COLORS['dim'])
 
-            # --- Wind (Section 3) ---
+            # Wind (Section 3)
             wind_dir = self._get_wind_direction(wind_deg)
             wind_text = f"W:{wind_speed:.0f}{wind_dir}"
             wind_width = draw.textlength(wind_text, font=font)
             wind_x = (2 * section_width) + (section_width - wind_width) // 2
             draw.text((wind_x, y_pos), wind_text, font=font, fill=self.COLORS['dim'])
-            
-            # Update the display
-            self.display_manager.image = img
-            self.display_manager.update_display()
-            self.last_weather_state = current_state
 
+            return img
+        except Exception as e:
+            self.logger.error(f"Error rendering current weather: {e}")
+            return None
+
+    def _display_current_weather(self) -> None:
+        """Display current weather conditions using comprehensive layout with icons."""
+        try:
+            current_state = self._get_weather_state()
+            if current_state == self.last_weather_state:
+                self.display_manager.update_display()
+                return
+
+            self.display_manager.clear()
+            img = self._render_current_weather_image()
+            if img:
+                self.display_manager.image = img
+                self.display_manager.update_display()
+                self.last_weather_state = current_state
         except Exception as e:
             self.logger.error(f"Error displaying current weather: {e}")
     
@@ -695,40 +689,27 @@ class WeatherPlugin(BasePlugin):
             for f in self.daily_forecast[:4]
         ]
     
-    def _display_hourly_forecast(self) -> None:
-        """Display hourly forecast with weather icons."""
+    def _render_hourly_forecast_image(self) -> Optional[Image.Image]:
+        """Render hourly forecast to an Image without display side effects."""
         try:
             if not self.hourly_forecast:
-                self.logger.warning("No hourly forecast data available, showing no data message")
-                self._display_no_data()
-                return
-            
-            # Check if state has changed
-            current_state = self._get_hourly_state()
-            if current_state == self.last_hourly_state:
-                # No need to redraw, but still update display for web preview snapshot
-                self.display_manager.update_display()
-                return
-            
-            # Clear the display
-            self.display_manager.clear()
-            
-            # Create a new image for drawing
-            img = Image.new('RGB', (self.display_manager.matrix.width, self.display_manager.matrix.height), (0, 0, 0))
+                return None
+
+            width = self.display_manager.matrix.width
+            height = self.display_manager.matrix.height
+            img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
-            
-            # Calculate layout based on matrix dimensions
+
             hours_to_show = min(4, len(self.hourly_forecast))
-            total_width = self.display_manager.matrix.width
-            section_width = total_width // hours_to_show
+            section_width = width // hours_to_show
             padding = max(2, section_width // 6)
-            
+
             for i in range(hours_to_show):
                 forecast = self.hourly_forecast[i]
                 x = i * section_width + padding
                 center_x = x + (section_width - 2 * padding) // 2
-                
-                # Draw hour at top
+
+                # Hour at top
                 hour_text = forecast['hour']
                 hour_text = hour_text.replace(":00 ", "").replace("PM", "p").replace("AM", "a")
                 hour_width = draw.textlength(hour_text, font=self.display_manager.small_font)
@@ -736,102 +717,116 @@ class WeatherPlugin(BasePlugin):
                          hour_text,
                          font=self.display_manager.small_font,
                          fill=self.COLORS['text'])
-                
-                # Draw weather icon centered vertically between top/bottom text
+
+                # Weather icon
                 icon_size = self.ICON_SIZE['large']
-                top_text_height = 8
-                bottom_text_y = self.display_manager.matrix.height - 8
-                available_height_for_icon = bottom_text_y - top_text_height
-                calculated_y = top_text_height + (available_height_for_icon - icon_size) // 2
-                icon_y = (self.display_manager.matrix.height // 2) - 16
+                icon_y = (height // 2) - 16
                 icon_x = center_x - icon_size // 2
                 WeatherIcons.draw_weather_icon(img, forecast['icon'], icon_x, icon_y, icon_size)
-                
-                # Draw temperature at bottom
+
+                # Temperature at bottom
                 temp_text = f"{forecast['temp']}°"
                 temp_width = draw.textlength(temp_text, font=self.display_manager.small_font)
-                temp_y = self.display_manager.matrix.height - 8
+                temp_y = height - 8
                 draw.text((center_x - temp_width // 2, temp_y),
                          temp_text,
                          font=self.display_manager.small_font,
                          fill=self.COLORS['text'])
-            
-            # Update the display
-            self.display_manager.image = img
-            self.display_manager.update_display()
-            self.last_hourly_state = current_state
 
+            return img
+        except Exception as e:
+            self.logger.error(f"Error rendering hourly forecast: {e}")
+            return None
+
+    def _display_hourly_forecast(self) -> None:
+        """Display hourly forecast with weather icons."""
+        try:
+            if not self.hourly_forecast:
+                self.logger.warning("No hourly forecast data available, showing no data message")
+                self._display_no_data()
+                return
+
+            current_state = self._get_hourly_state()
+            if current_state == self.last_hourly_state:
+                self.display_manager.update_display()
+                return
+
+            self.display_manager.clear()
+            img = self._render_hourly_forecast_image()
+            if img:
+                self.display_manager.image = img
+                self.display_manager.update_display()
+                self.last_hourly_state = current_state
         except Exception as e:
             self.logger.error(f"Error displaying hourly forecast: {e}")
     
-    def _display_daily_forecast(self) -> None:
-        """Display daily forecast with weather icons."""
+    def _render_daily_forecast_image(self) -> Optional[Image.Image]:
+        """Render daily forecast to an Image without display side effects."""
         try:
             if not self.daily_forecast:
-                self._display_no_data()
-                return
-            
-            # Check if state has changed
-            current_state = self._get_daily_state()
-            if current_state == self.last_daily_state:
-                # No need to redraw, but still update display for web preview snapshot
-                self.display_manager.update_display()
-                return
-            
-            # Clear the display
-            self.display_manager.clear()
-            
-            # Create a new image for drawing
-            img = Image.new('RGB', (self.display_manager.matrix.width, self.display_manager.matrix.height), (0, 0, 0))
+                return None
+
+            width = self.display_manager.matrix.width
+            height = self.display_manager.matrix.height
+            img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
-            
-            # Calculate layout based on matrix dimensions for 3 days
+
             days_to_show = min(3, len(self.daily_forecast))
             if days_to_show == 0:
-                # Handle case where there's no forecast data after filtering
                 draw.text((2, 2), "No daily forecast", font=self.display_manager.small_font, fill=self.COLORS['dim'])
             else:
-                total_width = self.display_manager.matrix.width
-                section_width = total_width // days_to_show
-                padding = max(2, section_width // 6)
-                
+                section_width = width // days_to_show
+
                 for i in range(days_to_show):
                     forecast = self.daily_forecast[i]
-                    x = i * section_width
-                    center_x = x + section_width // 2
-                    
-                    # Draw day name at top
+                    center_x = i * section_width + section_width // 2
+
+                    # Day name at top
                     day_text = forecast['date']
                     day_width = draw.textlength(day_text, font=self.display_manager.small_font)
                     draw.text((center_x - day_width // 2, 1),
                              day_text,
                              font=self.display_manager.small_font,
                              fill=self.COLORS['text'])
-                    
-                    # Draw weather icon centered vertically between top/bottom text
+
+                    # Weather icon
                     icon_size = self.ICON_SIZE['large']
-                    top_text_height = 8
-                    bottom_text_y = self.display_manager.matrix.height - 8
-                    available_height_for_icon = bottom_text_y - top_text_height
-                    calculated_y = top_text_height + (available_height_for_icon - icon_size) // 2
-                    icon_y = (self.display_manager.matrix.height // 2) - 16
+                    icon_y = (height // 2) - 16
                     icon_x = center_x - icon_size // 2
                     WeatherIcons.draw_weather_icon(img, forecast['icon'], icon_x, icon_y, icon_size)
-                    
-                    # Draw high/low temperatures at bottom
+
+                    # High/low temperatures at bottom
                     temp_text = f"{forecast['temp_low']} / {forecast['temp_high']}"
                     temp_width = draw.textlength(temp_text, font=self.display_manager.extra_small_font)
-                    temp_y = self.display_manager.matrix.height - 8
+                    temp_y = height - 8
                     draw.text((center_x - temp_width // 2, temp_y),
                              temp_text,
                              font=self.display_manager.extra_small_font,
                              fill=self.COLORS['text'])
-            
-            # Update the display
-            self.display_manager.image = img
-            self.display_manager.update_display()
-            self.last_daily_state = current_state
 
+            return img
+        except Exception as e:
+            self.logger.error(f"Error rendering daily forecast: {e}")
+            return None
+
+    def _display_daily_forecast(self) -> None:
+        """Display daily forecast with weather icons."""
+        try:
+            if not self.daily_forecast:
+                self._display_no_data()
+                return
+
+            current_state = self._get_daily_state()
+            if current_state == self.last_daily_state:
+                self.display_manager.update_display()
+                return
+
+            self.display_manager.clear()
+            img = self._render_daily_forecast_image()
+            if img:
+                self.display_manager.image = img
+                self.display_manager.update_display()
+                self.last_daily_state = current_state
         except Exception as e:
             self.logger.error(f"Error displaying daily forecast: {e}")
     
@@ -842,33 +837,20 @@ class WeatherPlugin(BasePlugin):
 
         images = []
 
-        # Save state caches so we can force re-render without side effects
-        saved_weather = self.last_weather_state
-        saved_hourly = self.last_hourly_state
-        saved_daily = self.last_daily_state
+        if self.show_current:
+            img = self._render_current_weather_image()
+            if img:
+                images.append(img)
 
-        try:
-            if self.show_current:
-                self.last_weather_state = None
-                self._display_current_weather()
-                if self.display_manager.image:
-                    images.append(self.display_manager.image.copy())
+        if self.show_hourly and self.hourly_forecast:
+            img = self._render_hourly_forecast_image()
+            if img:
+                images.append(img)
 
-            if self.show_hourly and self.hourly_forecast:
-                self.last_hourly_state = None
-                self._display_hourly_forecast()
-                if self.display_manager.image:
-                    images.append(self.display_manager.image.copy())
-
-            if self.show_daily and self.daily_forecast:
-                self.last_daily_state = None
-                self._display_daily_forecast()
-                if self.display_manager.image:
-                    images.append(self.display_manager.image.copy())
-        finally:
-            self.last_weather_state = saved_weather
-            self.last_hourly_state = saved_hourly
-            self.last_daily_state = saved_daily
+        if self.show_daily and self.daily_forecast:
+            img = self._render_daily_forecast_image()
+            if img:
+                images.append(img)
 
         if images:
             total_width = sum(img.width for img in images)

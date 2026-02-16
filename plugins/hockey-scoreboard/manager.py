@@ -3097,13 +3097,11 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
             return None
 
-        # Check if any scroll display has content
-        has_content = False
-        for scroll_display in self._scroll_manager._scroll_displays.values():
-            if hasattr(scroll_display, 'scroll_helper') and scroll_display.scroll_helper:
-                if scroll_display.scroll_helper.cached_image is not None:
-                    has_content = True
-                    break
+        # Check if any scroll display has vegas content items
+        has_content = any(
+            getattr(sd, '_vegas_content_items', None)
+            for sd in self._scroll_manager._scroll_displays.values()
+        )
 
         if not has_content:
             self.logger.info("[Hockey Vegas] Triggering scroll content generation")
