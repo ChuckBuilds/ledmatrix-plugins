@@ -78,7 +78,7 @@ curl -X POST http://your-pi-ip:5050/api/plugins/install \
 
 ## Available Plugins
 
-### :football: Sports (9)
+### Sports (9)
 
 | Plugin | Description |
 |--------|-------------|
@@ -92,14 +92,14 @@ curl -X POST http://your-pi-ip:5050/api/plugins/install \
 | [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records |
 | [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts |
 
-### :moneybag: Financial (2)
+### Financial (2)
 
 | Plugin | Description |
 |--------|-------------|
 | [Stocks Ticker](./plugins/ledmatrix-stocks/) | Real-time stock & crypto prices with charts |
 | [Stock News](./plugins/stock-news/) | Financial headlines from RSS feeds |
 
-### :clock3: Time & Calendar (3)
+### Time & Calendar (3)
 
 | Plugin | Description |
 |--------|-------------|
@@ -107,64 +107,64 @@ curl -X POST http://your-pi-ip:5050/api/plugins/install \
 | [7-Segment Clock](./plugins/7-segment-clock/) | Retro-style 7-segment clock with customizable colors |
 | [Google Calendar](./plugins/calendar/) | Upcoming events from Google Calendar |
 
-### :partly_sunny: Weather (1)
+### Weather (1)
 
 | Plugin | Description |
 |--------|-------------|
 | [Weather Display](./plugins/ledmatrix-weather/) | Current conditions, hourly & daily forecasts via OpenWeatherMap |
 
-### :musical_note: Media (2)
+### Media (2)
 
 | Plugin | Description |
 |--------|-------------|
 | [Music Player](./plugins/ledmatrix-music/) | Now playing with album art (Spotify & YouTube Music) |
 | [Static Image Display](./plugins/static-image/) | Image display with scaling and transparency |
 
-### :newspaper: Content (2)
+### Content (2)
 
 | Plugin | Description |
 |--------|-------------|
 | [News Ticker](./plugins/news/) | RSS news headlines from ESPN, NCAA, custom sources |
 | [Of The Day](./plugins/of-the-day/) | Daily quotes, Bible verses, word of the day |
 
-### :electric_plug: Integrations (1)
+### Integrations (1)
 
 | Plugin | Description |
 |--------|-------------|
 | [MQTT Notifications](./plugins/mqtt-notifications/) | HomeAssistant notifications via MQTT |
 
-### :airplane: Custom (2)
+### Custom (2)
 
 | Plugin | Description |
 |--------|-------------|
 | [Flight Tracker](./plugins/ledmatrix-flights/) | Real-time ADS-B aircraft tracking with map display |
 | [Countdown Display](./plugins/countdown/) | Customizable countdowns for birthdays, events, holidays |
 
-### :christmas_tree: Holiday (1)
+### Holiday (1)
 
 | Plugin | Description |
 |--------|-------------|
 | [Christmas Countdown](./plugins/christmas-countdown/) | Festive countdown with Christmas tree display |
 
-### :tv: Social (1)
+### Social (1)
 
 | Plugin | Description |
 |--------|-------------|
 | [YouTube Stats](./plugins/youtube-stats/) | Channel subscriber count, total views |
 
-### :pencil: Text (1)
+### Text (1)
 
 | Plugin | Description |
 |--------|-------------|
 | [Scrolling Text](./plugins/text-display/) | Custom scrolling/static text with configurable fonts and colors |
 
-### :gear: System (1)
+### System (1)
 
 | Plugin | Description |
 |--------|-------------|
 | [Web UI Info](./plugins/web-ui-info/) | Displays web UI URL for device access |
 
-### :wrench: Development (1)
+### Development (1)
 
 | Plugin | Description |
 |--------|-------------|
