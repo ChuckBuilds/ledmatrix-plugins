@@ -517,6 +517,7 @@ class ScrollDisplay:
         self._current_games = []
         self._current_game_type = ""
         self._current_leagues = []
+        self._vegas_content_items = []
         self._is_scrolling = False
         self._scroll_start_time = None
         self.logger.debug("Scroll display cleared")

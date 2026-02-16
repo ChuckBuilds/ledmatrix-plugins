@@ -2323,7 +2323,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             info = {
                 "plugin_id": self.plugin_id,
                 "name": "Football Scoreboard",
-                "version": "2.0.5",
+                "version": "2.1.1",
                 "enabled": self.is_enabled,
                 "display_size": f"{self.display_width}x{self.display_height}",
                 "nfl_enabled": self.nfl_enabled,
@@ -3387,7 +3387,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         images = self._scroll_manager.get_all_vegas_content_items()
 
-        if not images:
+        if not images or 'mixed' not in self._scroll_manager._scroll_displays:
             self.logger.info("[Football Vegas] Triggering scroll content generation")
             self._ensure_scroll_content_for_vegas()
             images = self._scroll_manager.get_all_vegas_content_items()

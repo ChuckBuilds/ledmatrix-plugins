@@ -275,6 +275,7 @@ class ScrollDisplay:
         if not games:
             self.logger.debug("No games to prepare for scrolling")
             self.scroll_helper.clear_cache()
+            self._vegas_content_items = []
             return False
 
         self._current_games = games
@@ -464,6 +465,7 @@ class ScrollDisplay:
         self._current_games = []
         self._current_game_type = ""
         self._current_leagues = []
+        self._vegas_content_items = []
         self._is_scrolling = False
 
     def has_content(self) -> bool:

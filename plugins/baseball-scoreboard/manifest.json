@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "2.0.1",
+  "version": "1.3.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -31,8 +31,8 @@
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
     {
-      "released": "2026-02-14",
-      "version": "2.0.0",
+      "released": "2026-02-15",
+      "version": "1.3.0",
       "ledmatrix_min": "2.0.0"
     },
     {

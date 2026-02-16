@@ -143,12 +143,6 @@ class WeatherPlugin(BasePlugin):
         
         # Layout constants
         self.PADDING = 1
-        self.ICON_SIZE = {
-            'extra_large': 40,
-            'large': 30,
-            'medium': 24,
-            'small': 14
-        }
         self.COLORS = {
             'text': (255, 255, 255),
             'highlight': (255, 200, 0),
@@ -213,7 +207,60 @@ class WeatherPlugin(BasePlugin):
             self.logger.info("Weather plugin fonts registered successfully")
         except Exception as e:
             self.logger.warning(f"Error registering fonts: {e}")
-    
+
+    def _get_layout(self) -> dict:
+        """Compute scaled layout parameters based on current display dimensions.
+
+        Icon sizes scale proportionally with display height.
+        Text spacing stays fixed because fonts are fixed-size bitmaps.
+        Reference baseline: 128x32 display.
+        """
+        width = self.display_manager.matrix.width
+        height = self.display_manager.matrix.height
+        h_scale = height / 32.0
+
+        # Fixed font metrics (do not change with display size)
+        small_font_h = 8
+        extra_small_font_h = 7
+
+        margin = max(1, round(1 * h_scale))
+
+        # --- Current weather mode ---
+        current_icon_size = max(14, round(40 * h_scale))
+        current_icon_x = margin
+        current_available_h = (height * 2) // 3
+        current_icon_y = (current_available_h - current_icon_size) // 2
+
+        # Text rows on right side (fixed spacing since fonts are fixed)
+        condition_y = margin
+        temp_y = condition_y + small_font_h
+        high_low_y = temp_y + small_font_h
+        bottom_bar_y = height - extra_small_font_h
+
+        # --- Forecast modes (hourly + daily) ---
+        # Scale with height but cap by narrowest column width to prevent overflow
+        min_column_width = width // 4
+        forecast_icon_size = max(14, min(round(30 * h_scale), min_column_width))
+        forecast_top_y = margin
+        forecast_icon_y = max(0, (height - forecast_icon_size) // 2)
+        forecast_bottom_y = height - small_font_h
+
+        return {
+            'current_icon_size': current_icon_size,
+            'current_icon_x': current_icon_x,
+            'current_icon_y': current_icon_y,
+            'condition_y': condition_y,
+            'temp_y': temp_y,
+            'high_low_y': high_low_y,
+            'bottom_bar_y': bottom_bar_y,
+            'right_margin': margin,
+            'forecast_icon_size': forecast_icon_size,
+            'forecast_top_y': forecast_top_y,
+            'forecast_icon_y': forecast_icon_y,
+            'forecast_bottom_y': forecast_bottom_y,
+            'margin': margin,
+        }
+
     def update(self) -> None:
         """
         Update weather data from OpenWeatherMap API.
@@ -555,39 +602,40 @@ class WeatherPlugin(BasePlugin):
             temp_high = int(self.weather_data['main']['temp_max'])
             temp_low = int(self.weather_data['main']['temp_min'])
 
+            layout = self._get_layout()
+
             # --- Top Left: Weather Icon ---
-            icon_size = self.ICON_SIZE['extra_large']
-            icon_x = 1
-            available_height = (height * 2) // 3
-            icon_y = (available_height - icon_size) // 2
+            icon_size = layout['current_icon_size']
+            icon_x = layout['current_icon_x']
+            icon_y = layout['current_icon_y']
             WeatherIcons.draw_weather_icon(img, icon_code, icon_x, icon_y, size=icon_size)
 
             # --- Top Right: Condition Text ---
             condition_font = self.display_manager.small_font
             condition_text_width = draw.textlength(condition, font=condition_font)
-            condition_x = width - condition_text_width - 1
-            condition_y = 1
+            condition_x = width - condition_text_width - layout['right_margin']
+            condition_y = layout['condition_y']
             draw.text((condition_x, condition_y), condition, font=condition_font, fill=self.COLORS['text'])
 
             # --- Right Side: Current Temperature ---
             temp_text = f"{temp}°"
             temp_font = self.display_manager.small_font
             temp_text_width = draw.textlength(temp_text, font=temp_font)
-            temp_x = width - temp_text_width - 1
-            temp_y = condition_y + 8
+            temp_x = width - temp_text_width - layout['right_margin']
+            temp_y = layout['temp_y']
             draw.text((temp_x, temp_y), temp_text, font=temp_font, fill=self.COLORS['highlight'])
 
             # --- Right Side: High/Low Temperature ---
             high_low_text = f"{temp_low}°/{temp_high}°"
             high_low_font = self.display_manager.small_font
             high_low_width = draw.textlength(high_low_text, font=high_low_font)
-            high_low_x = width - high_low_width - 1
-            high_low_y = temp_y + 8
+            high_low_x = width - high_low_width - layout['right_margin']
+            high_low_y = layout['high_low_y']
             draw.text((high_low_x, high_low_y), high_low_text, font=high_low_font, fill=self.COLORS['dim'])
 
             # --- Bottom: Additional Metrics ---
             section_width = width // 3
-            y_pos = height - 7
+            y_pos = layout['bottom_bar_y']
             font = self.display_manager.extra_small_font
 
             # UV Index (Section 1)
@@ -700,6 +748,7 @@ class WeatherPlugin(BasePlugin):
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
 
+            layout = self._get_layout()
             hours_to_show = min(4, len(self.hourly_forecast))
             section_width = width // hours_to_show
             padding = max(2, section_width // 6)
@@ -713,21 +762,21 @@ class WeatherPlugin(BasePlugin):
                 hour_text = forecast['hour']
                 hour_text = hour_text.replace(":00 ", "").replace("PM", "p").replace("AM", "a")
                 hour_width = draw.textlength(hour_text, font=self.display_manager.small_font)
-                draw.text((center_x - hour_width // 2, 1),
+                draw.text((center_x - hour_width // 2, layout['forecast_top_y']),
                          hour_text,
                          font=self.display_manager.small_font,
                          fill=self.COLORS['text'])
 
                 # Weather icon
-                icon_size = self.ICON_SIZE['large']
-                icon_y = (height // 2) - 16
+                icon_size = layout['forecast_icon_size']
+                icon_y = layout['forecast_icon_y']
                 icon_x = center_x - icon_size // 2
                 WeatherIcons.draw_weather_icon(img, forecast['icon'], icon_x, icon_y, icon_size)
 
                 # Temperature at bottom
                 temp_text = f"{forecast['temp']}°"
                 temp_width = draw.textlength(temp_text, font=self.display_manager.small_font)
-                temp_y = height - 8
+                temp_y = layout['forecast_bottom_y']
                 draw.text((center_x - temp_width // 2, temp_y),
                          temp_text,
                          font=self.display_manager.small_font,
@@ -771,6 +820,7 @@ class WeatherPlugin(BasePlugin):
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
 
+            layout = self._get_layout()
             days_to_show = min(3, len(self.daily_forecast))
             if days_to_show == 0:
                 draw.text((2, 2), "No daily forecast", font=self.display_manager.small_font, fill=self.COLORS['dim'])
@@ -784,21 +834,21 @@ class WeatherPlugin(BasePlugin):
                     # Day name at top
                     day_text = forecast['date']
                     day_width = draw.textlength(day_text, font=self.display_manager.small_font)
-                    draw.text((center_x - day_width // 2, 1),
+                    draw.text((center_x - day_width // 2, layout['forecast_top_y']),
                              day_text,
                              font=self.display_manager.small_font,
                              fill=self.COLORS['text'])
 
                     # Weather icon
-                    icon_size = self.ICON_SIZE['large']
-                    icon_y = (height // 2) - 16
+                    icon_size = layout['forecast_icon_size']
+                    icon_y = layout['forecast_icon_y']
                     icon_x = center_x - icon_size // 2
                     WeatherIcons.draw_weather_icon(img, forecast['icon'], icon_x, icon_y, icon_size)
 
                     # High/low temperatures at bottom
                     temp_text = f"{forecast['temp_low']} / {forecast['temp_high']}"
                     temp_width = draw.textlength(temp_text, font=self.display_manager.extra_small_font)
-                    temp_y = height - 8
+                    temp_y = layout['forecast_bottom_y']
                     draw.text((center_x - temp_width // 2, temp_y),
                              temp_text,
                              font=self.display_manager.extra_small_font,

@@ -56,6 +56,11 @@
   ],
   "versions": [
     {
+      "version": "1.1.1",
+      "ledmatrix_min": "2.0.0",
+      "released": "2026-02-15"
+    },
+    {
       "version": "1.1.0",
       "ledmatrix_min": "2.0.0",
       "released": "2026-02-14"
@@ -101,7 +106,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2025-11-06",
+  "last_updated": "2026-02-15",
   "stars": 0,
   "downloads": 0,
   "verified": true,

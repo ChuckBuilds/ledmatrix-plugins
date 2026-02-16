@@ -229,6 +229,7 @@ class ScrollDisplayManager:
 
         if not fights:
             self.logger.debug("No fights to prepare for scroll")
+            self._vegas_content_items = []
             return False
 
         scroll_settings = self._get_scroll_settings()
@@ -380,6 +381,7 @@ class ScrollDisplayManager:
         """Reset scroll state."""
         self._is_scrolling = False
         self._current_fights = []
+        self._vegas_content_items = []
         self._frame_count = 0
         if self.scroll_helper:
             self.scroll_helper.reset()

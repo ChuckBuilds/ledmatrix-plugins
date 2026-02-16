@@ -2914,7 +2914,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             info = {
                 "plugin_id": self.plugin_id,
                 "name": "Hockey Scoreboard",
-                "version": "1.0.0",
+                "version": "1.1.1",
                 "enabled": self.is_enabled,
                 "display_size": f"{self.display_width}x{self.display_height}",
                 "nhl_enabled": self.nhl_enabled,
