@@ -1002,7 +1002,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         for league_key in ordered_leagues:
             for mt in mode_types:
-                if self._get_display_mode(league_key, mt) != 'scroll':
+                if mode_type is not None and self._get_display_mode(league_key, mt) != 'scroll':
                     continue
 
                 manager = self._get_league_manager_for_mode(league_key, mt)

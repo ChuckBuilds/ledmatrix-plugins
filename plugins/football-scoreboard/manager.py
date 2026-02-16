@@ -677,7 +677,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             league_games = []
             for mt in mode_types:
                 # Check if scroll mode is enabled for this league/mode
-                if self._get_display_mode('nfl', mt) == 'scroll':
+                if mode_type is None or self._get_display_mode('nfl', mt) == 'scroll':
                     nfl_manager = self._get_manager_for_league_mode('nfl', mt)
                     if nfl_manager:
                         nfl_games = self._get_games_from_manager(nfl_manager, mt)
@@ -704,7 +704,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             league_games = []
             for mt in mode_types:
                 # Check if scroll mode is enabled for this league/mode
-                if self._get_display_mode('ncaa_fb', mt) == 'scroll':
+                if mode_type is None or self._get_display_mode('ncaa_fb', mt) == 'scroll':
                     ncaa_manager = self._get_manager_for_league_mode('ncaa_fb', mt)
                     if ncaa_manager:
                         ncaa_games = self._get_games_from_manager(ncaa_manager, mt)
