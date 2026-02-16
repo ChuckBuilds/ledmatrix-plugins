@@ -5,11 +5,11 @@
 [![Discord](https://img.shields.io/badge/Discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/uW36dVAtcT)
 [![GitHub Stars](https://img.shields.io/github/stars/ChuckBuilds/ledmatrix-plugins?style=flat&color=yellow)](https://github.com/ChuckBuilds/ledmatrix-plugins)
 
-> Official plugin repository for [LEDMatrix](https://github.com/ChuckBuilds/LEDMatrix) &middot; [Installation](#-quick-install) &middot; [Plugins](#-available-plugins) &middot; [Development](#-3rd-party-plugin-development) &middot; [Support](#-support--community)
+> Official plugin repository for [LEDMatrix](https://github.com/ChuckBuilds/LEDMatrix) &middot; [Installation](#quick-install) &middot; [Plugins](#available-plugins) &middot; [Development](#3rd-party-plugin-development) &middot; [Support](#support--community)
 
 ---
 
-### See it in action
+## See it in action
 
 <table>
   <tr>
@@ -180,7 +180,7 @@ LEDMatrix is open to community plugin contributions! The following plugins were 
 |--------|-------------|--------------|
 | [UFC Scoreboard](./plugins/ufc-scoreboard/) | [@LegoGuy1000](https://github.com/legoguy1000) | Original UFC/MMA implementation ([PR #137](https://github.com/ChuckBuilds/LEDMatrix/pull/137)) |
 
-Want to see your plugin here? Check out [3rd Party Plugin Development](#-3rd-party-plugin-development) below or submit a plugin via [Discord](https://discord.gg/uW36dVAtcT).
+Want to see your plugin here? Check out [3rd Party Plugin Development](#3rd-party-plugin-development) below or submit a plugin via [Discord](https://discord.gg/uW36dVAtcT).
 
 ---
 
