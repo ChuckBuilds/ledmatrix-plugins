@@ -210,13 +210,15 @@ class GameRenderer:
             overall_start_y = inning_bbox[3] + 1
             bases_origin_x = (self.display_width - base_cluster_width) // 2
 
-            # Outs column position
+            # Outs column position (only needed when count data is available)
+            has_count_data = game.get('has_count_data', True)
             out_cluster_height = 3 * out_circle_diameter + 2 * out_vertical_spacing
-            if inning_half == 'top':
-                outs_column_x = bases_origin_x - spacing_between_bases_outs - out_circle_diameter
-            else:
-                outs_column_x = bases_origin_x + base_cluster_width + spacing_between_bases_outs
-            outs_column_start_y = overall_start_y + (base_cluster_height // 2) - (out_cluster_height // 2)
+            if has_count_data:
+                if inning_half == 'top':
+                    outs_column_x = bases_origin_x - spacing_between_bases_outs - out_circle_diameter
+                else:
+                    outs_column_x = bases_origin_x + base_cluster_width + spacing_between_bases_outs
+                outs_column_start_y = overall_start_y + (base_cluster_height // 2) - (out_cluster_height // 2)
 
             # Draw bases as diamond polygons
             h_d = base_diamond_size // 2
@@ -243,25 +245,27 @@ class GameRenderer:
             poly1 = [(c1x, base_bottom_y + base_vert_spacing), (c1x + h_d, c1y), (c1x, c1y + h_d), (c1x - h_d, c1y)]
             draw.polygon(poly1, fill=base_fill if bases_occupied[0] else None, outline=base_outline)
 
-            # Outs circles
-            for i in range(3):
-                cx = outs_column_x
-                cy = outs_column_start_y + i * (out_circle_diameter + out_vertical_spacing)
-                coords = [cx, cy, cx + out_circle_diameter, cy + out_circle_diameter]
-                if i < outs:
-                    draw.ellipse(coords, fill=(255, 255, 255))
-                else:
-                    draw.ellipse(coords, outline=(100, 100, 100))
+            # Outs circles (only when count data is available)
+            if has_count_data:
+                for i in range(3):
+                    cx = outs_column_x
+                    cy = outs_column_start_y + i * (out_circle_diameter + out_vertical_spacing)
+                    coords = [cx, cy, cx + out_circle_diameter, cy + out_circle_diameter]
+                    if i < outs:
+                        draw.ellipse(coords, fill=(255, 255, 255))
+                    else:
+                        draw.ellipse(coords, outline=(100, 100, 100))
 
-            # Balls-strikes count (below bases)
-            balls = game.get('balls', 0)
-            strikes = game.get('strikes', 0)
-            count_text = f"{balls}-{strikes}"
-            count_font = self.fonts['detail']
-            count_width = draw.textlength(count_text, font=count_font)
-            count_y = overall_start_y + base_cluster_height + 2
-            count_x = bases_origin_x + (base_cluster_width - count_width) // 2
-            self._draw_text_with_outline(draw, count_text, (int(count_x), count_y), count_font)
+            # Balls-strikes count (below bases, only when count data is available)
+            if has_count_data:
+                balls = game.get('balls', 0)
+                strikes = game.get('strikes', 0)
+                count_text = f"{balls}-{strikes}"
+                count_font = self.fonts['detail']
+                count_width = draw.textlength(count_text, font=count_font)
+                count_y = overall_start_y + base_cluster_height + 2
+                count_x = bases_origin_x + (base_cluster_width - count_width) // 2
+                self._draw_text_with_outline(draw, count_text, (int(count_x), count_y), count_font)
 
             # Team:Score at bottom corners
             score_font = self.fonts['score']

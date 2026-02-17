@@ -225,8 +225,13 @@ class Baseball(SportsCore):
                 # Get count and bases from situation
                 situation = game_event["competitions"][0].get("situation", {})
 
+                # Detect whether the API provides count/outs data
+                # NCAA baseball only provides onFirst/onSecond/onThird
+                has_count_data = "outs" in situation or "count" in situation or "balls" in situation
+
                 if is_favorite_game:
                     self.logger.debug(f"Full situation data: {situation}")
+                    self.logger.debug(f"has_count_data: {has_count_data}")
 
                 # Get count from the correct location in the API response
                 count = situation.get("count", {})
@@ -289,6 +294,7 @@ class Baseball(SportsCore):
                 strikes = 0
                 outs = 0
                 bases_occupied = [False, False, False]
+                has_count_data = False
 
             details.update(
                 {
@@ -300,6 +306,7 @@ class Baseball(SportsCore):
                     "strikes": strikes,
                     "outs": outs,
                     "bases_occupied": bases_occupied,
+                    "has_count_data": has_count_data,
                     "start_time": game_event["date"],
                     "series_summary": series_summary,
                 }
@@ -434,14 +441,14 @@ class BaseballLive(Baseball, SportsLive):
 
             center_y = self.display_height // 2
 
-            # Draw logos (shifted slightly more inward than NHL perhaps)
+            # Draw logos with slight edge bleed
             home_x = (
-                self.display_width - home_logo.width + 10
+                self.display_width - home_logo.width + 2
             )
             home_y = center_y - (home_logo.height // 2)
             main_img.paste(home_logo, (home_x, home_y), home_logo)
 
-            away_x = -10
+            away_x = -2
             away_y = center_y - (away_logo.height // 2)
             main_img.paste(away_logo, (away_x, away_y), away_logo)
 
@@ -506,19 +513,22 @@ class BaseballLive(Baseball, SportsLive):
             bases_origin_x = (self.display_width - base_cluster_width) // 2
 
             # Determine relative positions for outs based on inning half
-            if inning_half == "top":  # Away batting, outs on left
-                outs_column_x = (
-                    bases_origin_x - spacing_between_bases_outs - out_cluster_width
-                )
-            else:  # Home batting, outs on right
-                outs_column_x = (
-                    bases_origin_x + base_cluster_width + spacing_between_bases_outs
-                )
+            # Only compute outs column position when count data is available
+            has_count_data = game.get("has_count_data", True)
+            if has_count_data:
+                if inning_half == "top":  # Away batting, outs on left
+                    outs_column_x = (
+                        bases_origin_x - spacing_between_bases_outs - out_cluster_width
+                    )
+                else:  # Home batting, outs on right
+                    outs_column_x = (
+                        bases_origin_x + base_cluster_width + spacing_between_bases_outs
+                    )
 
-            # Calculate vertical alignment offset for outs column (center align with bases cluster)
-            outs_column_start_y = (
-                overall_start_y + (base_cluster_height // 2) - (out_cluster_height // 2)
-            )
+                # Calculate vertical alignment offset for outs column (center align with bases cluster)
+                outs_column_start_y = (
+                    overall_start_y + (base_cluster_height // 2) - (out_cluster_height // 2)
+                )
 
             # --- Draw Bases (Diamonds) ---
             base_color_occupied = (255, 255, 255)
@@ -570,84 +580,87 @@ class BaseballLive(Baseball, SportsLive):
                 draw_overlay.polygon(poly1, outline=base_color_empty)
 
             # --- Draw Outs (Vertical Circles) ---
-            circle_color_out = (255, 255, 255)
-            circle_color_empty_outline = (100, 100, 100)
+            # Only render outs and count when data is available (ESPN NCAA doesn't provide these)
+            if has_count_data:
+                circle_color_out = (255, 255, 255)
+                circle_color_empty_outline = (100, 100, 100)
 
-            for i in range(3):
-                cx = outs_column_x
-                cy = outs_column_start_y + i * (
-                    out_circle_diameter + out_vertical_spacing
-                )
-                coords = [cx, cy, cx + out_circle_diameter, cy + out_circle_diameter]
-                if i < outs:
-                    draw_overlay.ellipse(coords, fill=circle_color_out)
-                else:
-                    draw_overlay.ellipse(coords, outline=circle_color_empty_outline)
+                for i in range(3):
+                    cx = outs_column_x
+                    cy = outs_column_start_y + i * (
+                        out_circle_diameter + out_vertical_spacing
+                    )
+                    coords = [cx, cy, cx + out_circle_diameter, cy + out_circle_diameter]
+                    if i < outs:
+                        draw_overlay.ellipse(coords, fill=circle_color_out)
+                    else:
+                        draw_overlay.ellipse(coords, outline=circle_color_empty_outline)
 
             # --- Draw Balls-Strikes Count (BDF Font) ---
-            balls = game.get("balls", 0)
-            strikes = game.get("strikes", 0)
+            if has_count_data:
+                balls = game.get("balls", 0)
+                strikes = game.get("strikes", 0)
 
-            # Add debug logging for count with cooldown
-            current_time = time.time()
-            if (
-                game["home_abbr"] in self.favorite_teams
-                or game["away_abbr"] in self.favorite_teams
-            ) and current_time - self.last_count_log_time >= self.count_log_interval:
-                self.logger.debug(f"Displaying count: {balls}-{strikes}")
-                self.logger.debug(
-                    f"Raw count data: balls={game.get('balls')}, strikes={game.get('strikes')}"
-                )
-                self.last_count_log_time = current_time
-
-            count_text = f"{balls}-{strikes}"
-            bdf_font = self.display_manager.calendar_font
-            if not hasattr(self, '_bdf_font_sized'):
-                bdf_font.set_char_size(height=7 * 64)  # Set 7px height once
-                self._bdf_font_sized = True
-            count_text_width = self.display_manager.get_text_width(count_text, bdf_font)
-
-            # Position below the base/out cluster
-            cluster_bottom_y = (
-                overall_start_y + base_cluster_height
-            )  # Find the bottom of the taller part (bases)
-            count_y = cluster_bottom_y + 2  # Start 2 pixels below cluster
-
-            # Center horizontally within the BASE cluster width
-            count_x = bases_origin_x + (base_cluster_width - count_text_width) // 2
-
-            # Temporarily set draw object for BDF text rendering, then restore
-            original_draw = self.display_manager.draw
-            self.display_manager.draw = draw_overlay
-            try:
-                # Draw Balls-Strikes Count with outline using BDF font
-                outline_color_for_bdf = (0, 0, 0)
-
-                # Draw outline
-                for dx_offset, dy_offset in [
-                    (-1, -1),
-                    (-1, 0),
-                    (-1, 1),
-                    (0, -1),
-                    (0, 1),
-                    (1, -1),
-                    (1, 0),
-                    (1, 1),
-                ]:
-                    self.display_manager._draw_bdf_text(
-                        count_text,
-                        count_x + dx_offset,
-                        count_y + dy_offset,
-                        color=outline_color_for_bdf,
-                        font=bdf_font,
+                # Add debug logging for count with cooldown
+                current_time = time.time()
+                if (
+                    game["home_abbr"] in self.favorite_teams
+                    or game["away_abbr"] in self.favorite_teams
+                ) and current_time - self.last_count_log_time >= self.count_log_interval:
+                    self.logger.debug(f"Displaying count: {balls}-{strikes}")
+                    self.logger.debug(
+                        f"Raw count data: balls={game.get('balls')}, strikes={game.get('strikes')}"
                     )
+                    self.last_count_log_time = current_time
 
-                # Draw main text
-                self.display_manager._draw_bdf_text(
-                    count_text, count_x, count_y, color=text_color, font=bdf_font
-                )
-            finally:
-                self.display_manager.draw = original_draw
+                count_text = f"{balls}-{strikes}"
+                bdf_font = self.display_manager.calendar_font
+                if not hasattr(self, '_bdf_font_sized'):
+                    bdf_font.set_char_size(height=7 * 64)  # Set 7px height once
+                    self._bdf_font_sized = True
+                count_text_width = self.display_manager.get_text_width(count_text, bdf_font)
+
+                # Position below the base/out cluster
+                cluster_bottom_y = (
+                    overall_start_y + base_cluster_height
+                )  # Find the bottom of the taller part (bases)
+                count_y = cluster_bottom_y + 2  # Start 2 pixels below cluster
+
+                # Center horizontally within the BASE cluster width
+                count_x = bases_origin_x + (base_cluster_width - count_text_width) // 2
+
+                # Temporarily set draw object for BDF text rendering, then restore
+                original_draw = self.display_manager.draw
+                self.display_manager.draw = draw_overlay
+                try:
+                    # Draw Balls-Strikes Count with outline using BDF font
+                    outline_color_for_bdf = (0, 0, 0)
+
+                    # Draw outline
+                    for dx_offset, dy_offset in [
+                        (-1, -1),
+                        (-1, 0),
+                        (-1, 1),
+                        (0, -1),
+                        (0, 1),
+                        (1, -1),
+                        (1, 0),
+                        (1, 1),
+                    ]:
+                        self.display_manager._draw_bdf_text(
+                            count_text,
+                            count_x + dx_offset,
+                            count_y + dy_offset,
+                            color=outline_color_for_bdf,
+                            font=bdf_font,
+                        )
+
+                    # Draw main text
+                    self.display_manager._draw_bdf_text(
+                        count_text, count_x, count_y, color=text_color, font=bdf_font
+                    )
+                finally:
+                    self.display_manager.draw = original_draw
 
             # Draw Team:Score at the bottom (matching main branch format)
             score_font = self.display_manager.font  # Use PressStart2P

@@ -209,6 +209,7 @@ class NCAABaseballLiveManager(BaseNCAABaseballManager, BaseballLive):
                 "away_logo_url": "",
                 "status_text": "Bot 7th",
                 "series_summary": "",
+                "has_count_data": False,
             }
             self.live_games = [self.current_game]
             self.logger.info(
