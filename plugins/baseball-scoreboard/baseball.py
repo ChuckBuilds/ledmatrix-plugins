@@ -225,9 +225,9 @@ class Baseball(SportsCore):
                 # Get count and bases from situation
                 situation = game_event["competitions"][0].get("situation", {})
 
-                # Detect whether the API provides count/outs data
-                # NCAA baseball only provides onFirst/onSecond/onThird
-                has_count_data = "outs" in situation or "count" in situation or "balls" in situation
+                # NCAA baseball API doesn't provide count/outs data (only onFirst/onSecond/onThird)
+                # Use league identifier for deterministic detection instead of key-presence heuristic
+                has_count_data = self.league != "college-baseball"
 
                 if is_favorite_game:
                     self.logger.debug(f"Full situation data: {situation}")
