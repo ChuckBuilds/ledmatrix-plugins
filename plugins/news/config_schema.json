@@ -200,6 +200,7 @@
         },
         "custom_feeds": {
           "type": "array",
+          "x-widget": "custom-feeds",
           "description": "Custom RSS feeds with optional logos. Upload logos via the file upload widget.",
           "minItems": 0,
           "maxItems": 50,
