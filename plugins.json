@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-02-20",
+  "last_updated": "2026-02-23",
   "plugins": [
     {
       "id": "hello-world",
@@ -352,10 +352,10 @@
       "plugin_path": "plugins/odds-ticker",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-16",
+      "last_updated": "2026-02-23",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.0"
+      "latest_version": "1.2.0"
     },
     {
       "id": "leaderboard",
