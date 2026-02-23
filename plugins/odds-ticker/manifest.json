@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.2.0",
+  "version": "1.1.1",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -11,7 +11,7 @@
   "plugin_path": "plugins/odds-ticker",
   "versions": [
     {
-      "version": "1.2.0",
+      "version": "1.1.1",
       "ledmatrix_min": "2.0.0",
       "released": "2026-02-23"
     },

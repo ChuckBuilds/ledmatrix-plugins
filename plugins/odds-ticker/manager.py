@@ -63,9 +63,9 @@ try:
 except ImportError:
     # Fallback - create a minimal BaseOddsManager
     class BaseOddsManager:
-        def __init__(self, cache_manager, plugin_manager):
+        def __init__(self, cache_manager, config_manager=None):
             self.cache_manager = cache_manager
-            self.plugin_manager = plugin_manager
+            self.config_manager = config_manager
             self.logger = logging.getLogger(__name__)
             self.base_url = "https://sports.core.api.espn.com/v2/sports"
             self.base_odds_config = {}
@@ -2498,6 +2498,10 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                         continue
 
                     sport = league_cfg.get('sport')
+                    # Soccer uses 'leagues' (plural list) instead of a single 'league' string,
+                    # so get('league') returns None and the guard below skips it intentionally.
+                    # Soccer scoreboards use per-league cache keys that don't map to the single
+                    # scoreboard_data_{sport}_{league}_{date} pattern used here.
                     league = league_cfg.get('league')
                     if not sport or not league:
                         continue
@@ -2523,7 +2527,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
 
             self._last_scoreboard_live_status = found_live
             if found_live:
-                logger.debug("Live game detected via independent scoreboard check")
+                logger.info("Live game detected via independent scoreboard check")
 
         return self._last_scoreboard_live_status
 
