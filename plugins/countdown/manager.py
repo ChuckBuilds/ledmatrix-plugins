@@ -71,13 +71,7 @@ class CountdownPlugin(BasePlugin):
         self.name_font_color = self._parse_color(config.get('name_font_color', [200, 200, 200]), (200, 200, 200))
 
         # Countdown entries
-        self.countdowns = config.get('countdowns', [])
-        if not isinstance(self.countdowns, list):
-            self.logger.warning(f"Countdowns is not a list: {type(self.countdowns)}, defaulting to empty")
-            self.countdowns = []
-
-        # Sort by display_order
-        self.countdowns.sort(key=lambda x: x.get('display_order', 0))
+        self.countdowns = self._normalize_countdowns(config.get('countdowns', []))
 
         # Rotation state
         self.current_countdown_index = 0
@@ -116,6 +110,66 @@ class CountdownPlugin(BasePlugin):
         else:
             self.logger.warning(f"Invalid color type: {type(color_value)}, using default")
             return default
+
+    def _normalize_countdowns(self, raw_countdowns: Any) -> List[Dict[str, Any]]:
+        """
+        Normalize countdown entries to a stable structure.
+
+        - Ensures we always have a list of dicts
+        - Auto-generates missing IDs for web-form-created rows
+        - Coerces common field types so validation is less fragile
+        - Migrates legacy `image` array format to `image_path` when possible
+        """
+        if not isinstance(raw_countdowns, list):
+            self.logger.warning(
+                f"Countdowns is not a list: {type(raw_countdowns)}, defaulting to empty"
+            )
+            return []
+
+        normalized: List[Dict[str, Any]] = []
+        for idx, item in enumerate(raw_countdowns):
+            if not isinstance(item, dict):
+                self.logger.warning(f"Skipping non-dict countdown entry at index {idx}: {item}")
+                continue
+
+            countdown = dict(item)
+
+            # Ensure stable ID for rotation/cache bookkeeping.
+            countdown_id = str(countdown.get('id', '')).strip()
+            if not countdown_id:
+                countdown_id = f"cd_{uuid.uuid4().hex[:12]}"
+            countdown['id'] = countdown_id
+
+            # Normalize common scalar fields.
+            name = countdown.get('name', '')
+            countdown['name'] = str(name).strip() if name is not None else ''
+
+            target_date = countdown.get('target_date', '')
+            countdown['target_date'] = str(target_date).strip() if target_date is not None else ''
+
+            countdown['enabled'] = bool(countdown.get('enabled', True))
+
+            try:
+                countdown['display_order'] = int(countdown.get('display_order', 0))
+            except (ValueError, TypeError):
+                countdown['display_order'] = 0
+
+            # Support legacy image array format.
+            image_path = countdown.get('image_path')
+            if not image_path:
+                legacy_images = countdown.get('image', [])
+                if (
+                    isinstance(legacy_images, list)
+                    and legacy_images
+                    and isinstance(legacy_images[0], dict)
+                ):
+                    image_path = legacy_images[0].get('path')
+            countdown['image_path'] = str(image_path).strip() if image_path else ''
+
+            normalized.append(countdown)
+
+        normalized.sort(key=lambda x: x.get('display_order', 0))
+        return normalized
 
     def _register_fonts(self):
         """Register fonts with the font manager."""
@@ -652,26 +706,17 @@ class CountdownPlugin(BasePlugin):
         if not super().validate_config():
             return False
 
-        # Validate countdowns
-        if not isinstance(self.countdowns, list):
-            self.logger.error("Countdowns must be a list")
-            return False
-
+        # Validate countdowns. IDs are auto-generated during normalization.
         for countdown in self.countdowns:
             if not isinstance(countdown, dict):
                 self.logger.error(f"Countdown entry must be a dict: {countdown}")
                 return False
 
-            # Validate required fields
-            if 'id' not in countdown:
-                self.logger.error("Countdown missing 'id' field")
-                return False
-
-            if 'name' not in countdown:
+            if not countdown.get('name'):
                 self.logger.error(f"Countdown {countdown.get('id')} missing 'name' field")
                 return False
 
-            if 'target_date' not in countdown:
+            if not countdown.get('target_date'):
                 self.logger.error(f"Countdown {countdown.get('id')} missing 'target_date' field")
                 return False
 
@@ -690,12 +735,7 @@ class CountdownPlugin(BasePlugin):
 
         # Update countdowns
         old_count = len(self.countdowns)
-        self.countdowns = self.config.get('countdowns', [])
-        if not isinstance(self.countdowns, list):
-            self.countdowns = []
-
-        # Sort by display_order
-        self.countdowns.sort(key=lambda x: x.get('display_order', 0))
+        self.countdowns = self._normalize_countdowns(self.config.get('countdowns', []))
 
         # Update font settings
         self.font_family = self.config.get('font_family', 'press_start')

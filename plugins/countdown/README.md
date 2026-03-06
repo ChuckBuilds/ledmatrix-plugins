@@ -94,11 +94,7 @@ The plugin uses a split layout for optimal readability:
   "name": "Mom's Birthday",
   "target_date": "2026-06-15",
   "enabled": true,
-  "image": [
-    {
-      "path": "assets/plugins/countdown/uploads/birthday-cake.png"
-    }
-  ]
+  "image_path": "assets/plugins/countdown/uploads/birthday-cake.png"
 }
 ```
 
@@ -108,11 +104,7 @@ The plugin uses a split layout for optimal readability:
   "name": "Hawaii Trip",
   "target_date": "2026-07-20",
   "enabled": true,
-  "image": [
-    {
-      "path": "assets/plugins/countdown/uploads/beach.jpg"
-    }
-  ]
+  "image_path": "assets/plugins/countdown/uploads/beach.jpg"
 }
 ```
 
@@ -122,11 +114,7 @@ The plugin uses a split layout for optimal readability:
   "name": "Christmas",
   "target_date": "2026-12-25",
   "enabled": true,
-  "image": [
-    {
-      "path": "assets/plugins/countdown/uploads/christmas-tree.png"
-    }
-  ]
+  "image_path": "assets/plugins/countdown/uploads/christmas-tree.png"
 }
 ```
 
@@ -223,6 +211,10 @@ For issues or questions:
 4. Open an issue on the repository
 
 ## Changelog
+
+### Version 1.0.1
+- Fixed web UI schema for countdown table editing
+- Improved config normalization (auto-generate IDs and migrate legacy image format)
 
 ### Version 1.0.0
 - Initial release
