@@ -42,7 +42,7 @@
           "target_date": {
             "type": "string",
             "title": "Target Date",
-            "format": "date",
+            "$comment": "Use strict YYYY-MM-DD validation with regex for consistent behavior across validators/UI.",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "description": "Date to count down to (YYYY-MM-DD)"
           },

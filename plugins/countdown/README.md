@@ -212,6 +212,11 @@ For issues or questions:
 
 ## Changelog
 
+### Version 1.0.2
+- Removed redundant legacy image fallback in `display()` and rely on normalized `image_path`
+- Improved cache invalidation to refresh images when countdown metadata changes (not only count changes)
+- Added strict date-schema note and manifest version history metadata
+
 ### Version 1.0.1
 - Fixed web UI schema for countdown table editing
 - Improved config normalization (auto-generate IDs and migrate legacy image format)

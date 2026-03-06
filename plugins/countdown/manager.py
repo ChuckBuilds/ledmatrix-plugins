@@ -73,6 +73,9 @@ class CountdownPlugin(BasePlugin):
         # Countdown entries
         self.countdowns = self._normalize_countdowns(config.get('countdowns', []))
 
+        # Cache signature lets us invalidate image cache when countdown metadata changes.
+        self._countdown_signature = self._build_countdown_signature(self.countdowns)
+
         # Rotation state
         self.current_countdown_index = 0
         self.last_rotation_time = time.time()
@@ -170,6 +173,20 @@ class CountdownPlugin(BasePlugin):
 
         normalized.sort(key=lambda x: x.get('display_order', 0))
         return normalized
+
+    def _build_countdown_signature(self, countdowns: List[Dict[str, Any]]) -> Tuple[Tuple[Any, ...], ...]:
+        """Build a stable signature for cache invalidation checks."""
+        return tuple(
+            (
+                countdown.get('id', ''),
+                countdown.get('name', ''),
+                countdown.get('target_date', ''),
+                countdown.get('enabled', True),
+                countdown.get('display_order', 0),
+                countdown.get('image_path', ''),
+            )
+            for countdown in countdowns
+        )
 
     def _register_fonts(self):
         """Register fonts with the font manager."""
@@ -480,14 +497,8 @@ class CountdownPlugin(BasePlugin):
             countdown_id = current_countdown.get('id')
             countdown_name = current_countdown.get('name', 'Countdown')
 
-            # Support both old array format and new simplified string format
+            # Countdown image path is normalized in _normalize_countdowns.
             countdown_image = current_countdown.get('image_path')
-            if not countdown_image:
-                # Fallback to old array format for backwards compatibility
-                countdown_image_list = current_countdown.get('image', [])
-                if countdown_image_list and isinstance(countdown_image_list, list) and len(countdown_image_list) > 0:
-                    image_info = countdown_image_list[0]
-                    countdown_image = image_info.get('path') if isinstance(image_info, dict) else None
 
             # Load and draw image on left 1/3rd
             if countdown_image:
@@ -734,8 +745,9 @@ class CountdownPlugin(BasePlugin):
         super().on_config_change(new_config)
 
         # Update countdowns
-        old_count = len(self.countdowns)
+        old_signature = self._countdown_signature
         self.countdowns = self._normalize_countdowns(self.config.get('countdowns', []))
+        self._countdown_signature = self._build_countdown_signature(self.countdowns)
 
         # Update font settings
         self.font_family = self.config.get('font_family', 'press_start')
@@ -747,8 +759,8 @@ class CountdownPlugin(BasePlugin):
         # Re-register fonts
         self._register_fonts()
 
-        # Clear image cache if countdown list changed
-        if len(self.countdowns) != old_count:
+        # Clear image cache if countdown metadata changed (not only list length).
+        if self._countdown_signature != old_signature:
             self.cached_images.clear()
             self.current_countdown_index = 0
 
