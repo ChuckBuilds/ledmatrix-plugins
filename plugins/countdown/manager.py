@@ -6,7 +6,7 @@ events, and special occasions.
 
 Features:
 - Multiple countdown entries with individual enable/disable
-- Custom image upload for each countdown
+- Path-based image selection for each countdown
 - Configurable fonts, colors, and display settings
 - Image on left 1/3rd, text on right 2/3rds layout
 - Automatic rotation through enabled countdowns
@@ -32,7 +32,7 @@ class CountdownPlugin(BasePlugin):
     """
     Countdown display plugin for LED matrix.
 
-    Supports multiple countdowns with custom images, configurable fonts,
+    Supports multiple countdowns with path-based images, configurable fonts,
     and automatic rotation through enabled entries.
 
     Configuration options:

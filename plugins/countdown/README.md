@@ -5,7 +5,7 @@ Display customizable countdowns with images on your LED matrix. Perfect for birt
 ## Features
 
 - **Multiple Countdowns**: Create and manage multiple countdown entries
-- **Custom Images**: Upload a unique image for each countdown
+- **Custom Images**: Use a unique local image path for each countdown
 - **Individual Control**: Enable/disable each countdown independently
 - **Customizable Display**: Configure fonts, colors, and sizes
 - **Smart Layout**: Image on left 1/3rd, countdown text on right 2/3rds
@@ -40,7 +40,7 @@ Display customizable countdowns with images on your LED matrix. Perfect for birt
 4. Fill in the details:
    - **Name**: Display name (e.g., "Birthday", "Vacation")
    - **Target Date**: The date you're counting down to
-   - **Image**: Upload a custom image (PNG, JPG, GIF, or BMP)
+   - **Image Path**: Enter a local path (e.g., `assets/plugins/countdown/uploads/birthday.png`)
    - **Enabled**: Toggle to show/hide this countdown
 5. Click Save
 
@@ -49,7 +49,7 @@ Display customizable countdowns with images on your LED matrix. Perfect for birt
 #### Per-Countdown Settings
 - **Name** (required): Display name, max 30 characters
 - **Target Date** (required): Date in YYYY-MM-DD format
-- **Image**: Custom image upload (optional)
+- **Image Path**: Local image path (optional)
 - **Enabled**: Toggle to enable/disable this countdown
 - **Display Order**: Controls rotation order (lower numbers first)
 
@@ -134,9 +134,9 @@ The plugin uses a split layout for optimal readability:
 - Ensure at least one countdown is enabled
 
 ### Image Not Displaying
-- Verify the image file was uploaded successfully
+- Verify the configured image path exists on disk
 - Check image format is supported (PNG, JPG, BMP, GIF)
-- Try re-uploading the image
+- Confirm the path is readable by the LEDMatrix process
 - Check LEDMatrix logs for image loading errors
 
 ### Wrong Date Calculation
@@ -167,7 +167,7 @@ The plugin uses a split layout for optimal readability:
 
 ### File Locations
 - **Plugin Directory**: `plugin-repos/countdown/`
-- **Uploaded Images**: `assets/plugins/countdown/uploads/`
+- **Common Image Location**: `assets/plugins/countdown/uploads/` (path must be set manually in config)
 - **Configuration**: Stored in LEDMatrix `config.json`
 
 ## Development
@@ -211,6 +211,10 @@ For issues or questions:
 4. Open an issue on the repository
 
 ## Changelog
+
+### Version 2.0.0
+- Breaking: countdown image configuration is now path-based only (no per-row upload widget in web UI)
+- Updated documentation to use `image_path` text input workflow
 
 ### Version 1.0.2
 - Removed redundant legacy image fallback in `display()` and rely on normalized `image_path`
