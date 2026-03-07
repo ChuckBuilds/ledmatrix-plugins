@@ -167,7 +167,7 @@ The plugin uses a split layout for optimal readability:
 
 ### File Locations
 - **Plugin Directory**: `plugin-repos/countdown/`
-- **Common Image Location**: `assets/plugins/countdown/uploads/` (path must be set manually in config)
+- **Suggested Image Directory**: `assets/plugins/countdown/uploads/` (example location only; set each countdown's `image_path` explicitly in plugin configuration)
 - **Configuration**: Stored in LEDMatrix `config.json`
 
 ## Development

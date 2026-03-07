@@ -114,78 +114,119 @@ class CountdownPlugin(BasePlugin):
             self.logger.warning(f"Invalid color type: {type(color_value)}, using default")
             return default
 
+    def _parse_bool(self, value: Any, default: bool = True) -> bool:
+        """Parse booleans safely, including common string forms."""
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return default
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in ("false", "0", "off", "no", ""):
+                return False
+            if normalized in ("true", "1", "on", "yes"):
+                return True
+            return True
+        if isinstance(value, (int, float)):
+            return value != 0
+        return bool(value)
+
+    def _generate_unique_countdown_id(self, used_ids: set, preferred_id: str = "") -> str:
+        """Return a unique countdown ID, preserving preferred_id when available."""
+        candidate = preferred_id.strip()
+        if candidate and candidate not in used_ids:
+            used_ids.add(candidate)
+            return candidate
+
+        base = candidate if candidate else "countdown"
+        suffix = 1
+        while True:
+            if candidate:
+                unique_id = f"{base}-{suffix}"
+            else:
+                unique_id = f"cd_{uuid.uuid4().hex[:12]}"
+            if unique_id not in used_ids:
+                used_ids.add(unique_id)
+                return unique_id
+            suffix += 1
+
     def _normalize_countdowns(self, raw_countdowns: Any) -> List[Dict[str, Any]]:
         """
-        Normalize countdown entries to a stable structure.
+        Normalize countdown entries for consistent runtime behavior.
 
-        - Ensures we always have a list of dicts
-        - Auto-generates missing IDs for web-form-created rows
-        - Coerces common field types so validation is less fragile
-        - Migrates legacy `image` array format to `image_path` when possible
+        - Ensures list/dict structure
+        - Generates unique IDs
+        - Parses booleans robustly (including string values)
+        - Migrates legacy image array format to image_path
         """
         if not isinstance(raw_countdowns, list):
-            self.logger.warning(
-                f"Countdowns is not a list: {type(raw_countdowns)}, defaulting to empty"
-            )
+            self.logger.warning(f"Countdowns is not a list: {type(raw_countdowns)}, defaulting to empty")
             return []
 
-        normalized: List[Dict[str, Any]] = []
-        for idx, item in enumerate(raw_countdowns):
+        normalized_countdowns: List[Dict[str, Any]] = []
+        used_ids = set()
+
+        # Include existing runtime IDs to avoid cache key collisions during hot reloads.
+        if isinstance(getattr(self, "cached_images", None), dict):
+            used_ids.update(str(k) for k in self.cached_images.keys())
+        if isinstance(getattr(self, "countdown_values", None), dict):
+            used_ids.update(str(k) for k in self.countdown_values.keys())
+
+        for index, item in enumerate(raw_countdowns):
             if not isinstance(item, dict):
-                self.logger.warning(f"Skipping non-dict countdown entry at index {idx}: {item}")
+                self.logger.warning(f"Skipping invalid countdown item at index {index}: {item}")
                 continue
 
-            countdown = dict(item)
-
-            # Ensure stable ID for rotation/cache bookkeeping.
-            countdown_id = str(countdown.get('id', '')).strip()
-            if not countdown_id:
-                countdown_id = f"cd_{uuid.uuid4().hex[:12]}"
-            countdown['id'] = countdown_id
-
-            # Normalize common scalar fields.
-            name = countdown.get('name', '')
-            countdown['name'] = str(name).strip() if name is not None else ''
-
-            target_date = countdown.get('target_date', '')
-            countdown['target_date'] = str(target_date).strip() if target_date is not None else ''
-
-            countdown['enabled'] = bool(countdown.get('enabled', True))
+            normalized = dict(item)
+            provided_id = str(normalized.get("id", "")).strip()
+            normalized["id"] = self._generate_unique_countdown_id(used_ids, provided_id)
+            normalized["enabled"] = self._parse_bool(normalized.get("enabled", True), default=True)
 
             try:
-                countdown['display_order'] = int(countdown.get('display_order', 0))
+                normalized["display_order"] = int(normalized.get("display_order", 0))
             except (ValueError, TypeError):
-                countdown['display_order'] = 0
+                normalized["display_order"] = 0
 
-            # Support legacy image array format.
-            image_path = countdown.get('image_path')
+            normalized["name"] = str(normalized.get("name", "")).strip()
+            normalized["target_date"] = str(normalized.get("target_date", "")).strip()
+
+            image_path = normalized.get("image_path")
             if not image_path:
-                legacy_images = countdown.get('image', [])
+                legacy_images = normalized.get("image", [])
                 if (
                     isinstance(legacy_images, list)
                     and legacy_images
                     and isinstance(legacy_images[0], dict)
                 ):
-                    image_path = legacy_images[0].get('path')
-            countdown['image_path'] = str(image_path).strip() if image_path else ''
+                    image_path = legacy_images[0].get("path")
+            normalized["image_path"] = str(image_path).strip() if image_path else ""
 
-            normalized.append(countdown)
+            normalized_countdowns.append(normalized)
 
-        normalized.sort(key=lambda x: x.get('display_order', 0))
-        return normalized
+        normalized_countdowns.sort(key=lambda x: x.get("display_order", 0))
+        return normalized_countdowns
 
-    def _build_countdown_signature(self, countdowns: List[Dict[str, Any]]) -> Tuple[Tuple[Any, ...], ...]:
-        """Build a stable signature for cache invalidation checks."""
-        return tuple(
+    def _build_countdown_signature(self, countdowns: Optional[List[Dict[str, Any]]] = None) -> Tuple[Any, ...]:
+        """Build a config signature used to detect cache-relevant changes."""
+        if countdowns is None:
+            countdowns = self.countdowns
+        countdown_items = tuple(
             (
-                countdown.get('id', ''),
-                countdown.get('name', ''),
-                countdown.get('target_date', ''),
-                countdown.get('enabled', True),
-                countdown.get('display_order', 0),
-                countdown.get('image_path', ''),
+                c.get("id", ""),
+                c.get("name", ""),
+                c.get("target_date", ""),
+                c.get("enabled", True),
+                c.get("display_order", 0),
+                c.get("image_path", ""),
             )
-            for countdown in countdowns
+            for c in countdowns
+        )
+        return (
+            self.fit_to_display,
+            self.preserve_aspect_ratio,
+            self.background_color,
+            self.show_expired,
+            countdown_items,
         )
 
     def _register_fonts(self):
@@ -744,10 +785,16 @@ class CountdownPlugin(BasePlugin):
         """Called when plugin configuration is updated."""
         super().on_config_change(new_config)
 
-        # Update countdowns
-        old_signature = self._countdown_signature
+        old_signature = getattr(self, "_countdown_signature", None)
+
+        # Update image-related settings that affect rendering/cache.
+        self.fit_to_display = self._parse_bool(self.config.get('fit_to_display', True), default=True)
+        self.preserve_aspect_ratio = self._parse_bool(self.config.get('preserve_aspect_ratio', True), default=True)
+        self.show_expired = self._parse_bool(self.config.get('show_expired', False), default=False)
+        self.background_color = self._parse_color(self.config.get('background_color', [0, 0, 0]), (0, 0, 0))
+
+        # Update countdowns using normalization.
         self.countdowns = self._normalize_countdowns(self.config.get('countdowns', []))
-        self._countdown_signature = self._build_countdown_signature(self.countdowns)
 
         # Update font settings
         self.font_family = self.config.get('font_family', 'press_start')
@@ -759,7 +806,8 @@ class CountdownPlugin(BasePlugin):
         # Re-register fonts
         self._register_fonts()
 
-        # Clear image cache if countdown metadata changed (not only list length).
+        # Clear image cache if countdown metadata or image-affecting settings changed.
+        self._countdown_signature = self._build_countdown_signature(self.countdowns)
         if self._countdown_signature != old_signature:
             self.cached_images.clear()
             self.current_countdown_index = 0
