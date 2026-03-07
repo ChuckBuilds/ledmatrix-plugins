@@ -950,13 +950,26 @@ class MusicPlugin(BasePlugin):
         font_artist = self.artist_font if self.artist_font else self.display_manager.bdf_5x7_font
         font_album = self.album_font if self.album_font else self.display_manager.bdf_5x7_font
 
+        # Read per-element layout overrides from customization config.
+        customization_layout = self.config.get('customization', {})
+        title_layout_config = customization_layout.get('title_text', {})
+        artist_layout_config = customization_layout.get('artist_text', {})
+        album_layout_config = customization_layout.get('album_text', {})
+
+        def _safe_y_percent(value, fallback):
+            """Normalize optional y_percent values to 0.0-1.0 range."""
+            try:
+                return max(0.0, min(1.0, float(value)))
+            except (TypeError, ValueError):
+                return fallback
+
+        title_y_percent = _safe_y_percent(title_layout_config.get('y_percent', 0.03), 0.03)
+        artist_y_percent = _safe_y_percent(artist_layout_config.get('y_percent', 0.34), 0.34)
+        album_y_percent = _safe_y_percent(album_layout_config.get('y_percent', 0.60), 0.60)
+
         # Calculate y positions as percentages of display height for scaling
         matrix_height = self.display_manager.matrix.height
-        
-        # Define positions as percentages (0.0 to 1.0) - these scale with display size
-        ARTIST_Y_PERCENT = 0.34  # 34% from top  
-        ALBUM_Y_PERCENT = 0.60   # 60% from top
-        
+
         # Calculate dynamic font heights based on display size
         # For smaller displays (32px), use smaller line heights
         # For larger displays, scale up proportionally
@@ -972,12 +985,17 @@ class MusicPlugin(BasePlugin):
             FIXED_BDF_BASELINE_SHIFT = max(6, int(matrix_height * 0.19))  # 19% of height, min 6
         
         # Calculate positions with proper scaling
-        y_pos_title_top = max(1, int(matrix_height * 0.03))  # 3% from top, min 1px
-        y_pos_artist_top = int(matrix_height * ARTIST_Y_PERCENT) + FIXED_BDF_BASELINE_SHIFT
-        y_pos_album_top = int(matrix_height * ALBUM_Y_PERCENT) + FIXED_BDF_BASELINE_SHIFT
+        y_pos_title_top = max(1, int(matrix_height * title_y_percent))
+        y_pos_artist_top = int(matrix_height * artist_y_percent) + FIXED_BDF_BASELINE_SHIFT
+        y_pos_album_top = int(matrix_height * album_y_percent) + FIXED_BDF_BASELINE_SHIFT
         
         # Debug logging for scaling calculations
-        self.logger.debug(f"MusicPlugin.display: Display scaling - matrix: {matrix_width}x{matrix_height}, album_art: {album_art_size}px, LINE_HEIGHT_BDF: {LINE_HEIGHT_BDF}, positions - title: {y_pos_title_top}, artist: {y_pos_artist_top}, album: {y_pos_album_top}")
+        self.logger.debug(
+            f"MusicPlugin.display: Display scaling - matrix: {matrix_width}x{matrix_height}, "
+            f"album_art: {album_art_size}px, LINE_HEIGHT_BDF: {LINE_HEIGHT_BDF}, "
+            f"y_percent(title/artist/album)=({title_y_percent:.2f}/{artist_y_percent:.2f}/{album_y_percent:.2f}), "
+            f"positions - title: {y_pos_title_top}, artist: {y_pos_artist_top}, album: {y_pos_album_top}"
+        )
 
         # Title scrolling with configurable settings
         title_config = self.scroll_config['title']

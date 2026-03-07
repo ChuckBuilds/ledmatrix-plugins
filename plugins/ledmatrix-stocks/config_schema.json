@@ -64,6 +64,13 @@
           "minimum": 0.0,
           "maximum": 1.0,
           "default": 0.1
+        },
+        "stock_gap": {
+          "type": "integer",
+          "description": "Pixel gap between adjacent stock/crypto entries in the scrolling canvas",
+          "minimum": 0,
+          "maximum": 128,
+          "default": 32
         }
       },
       "additionalProperties": false

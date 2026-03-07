@@ -184,7 +184,7 @@
         "title_text": {
           "type": "object",
           "title": "Track Title",
-          "description": "Font settings for the track title",
+          "description": "Font and layout settings for the track title",
           "properties": {
             "font": {
               "type": "string",
@@ -207,20 +207,29 @@
               "minimum": 4,
               "maximum": 16,
               "default": 8
+            },
+            "y_percent": {
+              "type": "number",
+              "title": "Vertical Position",
+              "description": "Vertical position as fraction of display height (0.0=top, 1.0=bottom). Adjust if elements overlap the progress bar.",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "default": 0.03,
+              "multipleOf": 0.01
             }
           },
-          "x-propertyOrder": ["font", "font_size"],
+          "x-propertyOrder": ["font", "font_size", "y_percent"],
           "additionalProperties": false
         },
         "artist_text": {
           "type": "object",
           "title": "Artist Name",
-          "description": "Font settings for the artist name",
+          "description": "Font and layout settings for the artist name",
           "properties": {
             "font": {
               "type": "string",
               "title": "Font Family",
-              "description": "Select the font to use",
+              "description": "Select the font to use (default matches the display manager 5x7 font)",
               "enum": [
                 "PressStart2P-Regular.ttf",
                 "4x6-font.ttf",
@@ -238,20 +247,29 @@
               "minimum": 4,
               "maximum": 16,
               "default": 7
+            },
+            "y_percent": {
+              "type": "number",
+              "title": "Vertical Position",
+              "description": "Vertical position as fraction of display height (0.0=top, 1.0=bottom). Adjust if elements overlap the progress bar.",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "default": 0.34,
+              "multipleOf": 0.01
             }
           },
-          "x-propertyOrder": ["font", "font_size"],
+          "x-propertyOrder": ["font", "font_size", "y_percent"],
           "additionalProperties": false
         },
         "album_text": {
           "type": "object",
           "title": "Album Name",
-          "description": "Font settings for the album name",
+          "description": "Font and layout settings for the album name",
           "properties": {
             "font": {
               "type": "string",
               "title": "Font Family",
-              "description": "Select the font to use",
+              "description": "Select the font to use (default matches the display manager 5x7 font)",
               "enum": [
                 "PressStart2P-Regular.ttf",
                 "4x6-font.ttf",
@@ -269,9 +287,18 @@
               "minimum": 4,
               "maximum": 16,
               "default": 7
+            },
+            "y_percent": {
+              "type": "number",
+              "title": "Vertical Position",
+              "description": "Vertical position as fraction of display height (0.0=top, 1.0=bottom). Adjust if elements overlap the progress bar.",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "default": 0.60,
+              "multipleOf": 0.01
             }
           },
-          "x-propertyOrder": ["font", "font_size"],
+          "x-propertyOrder": ["font", "font_size", "y_percent"],
           "additionalProperties": false
         }
       },

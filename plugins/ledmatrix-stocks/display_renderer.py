@@ -25,6 +25,7 @@ class StockDisplayRenderer:
         
         # Display configuration
         self.toggle_chart = config.get('display', {}).get('toggle_chart', True)
+        self.stock_gap = int(config.get('display', {}).get('stock_gap', 32))
         
         # Load colors from customization structure (organized by element: symbol, price, price_delta)
         # Support both new format (customization.stocks.*) and old format (top-level) for backwards compatibility
@@ -181,11 +182,11 @@ class StockDisplayRenderer:
         is_crypto = data.get('is_crypto', False)
         
         # Draw large stock/crypto logo on the left
+        logo_x = 2  # Small margin from left edge (used for logo_right even if logo is missing)
         logo = self._get_stock_logo(symbol, is_crypto)
         if logo:
             # Position logo on the left side with minimal spacing - matching old stock_manager
             # Ensure positions are integers
-            logo_x = 2  # Small margin from left edge
             logo_y = int((height - logo.height) // 2)
             image.paste(logo, (int(logo_x), int(logo_y)), logo)
         
@@ -256,14 +257,18 @@ class StockDisplayRenderer:
         # Calculate starting y position to center all text
         start_y = int((height - total_text_height) // 2)
         
-        # Calculate center x position for the column - adjust based on chart toggle
-        # Match old stock_manager exactly
+        # Position text column immediately after the logo's right edge
+        logo_right = int(logo_x + logo.width) if logo else int(logo_x)
+        logo_gap = 4  # px between logo right edge and text start
+        symbol_width_tmp = int(symbol_bbox[2] - symbol_bbox[0])
+        price_width_tmp = int(price_bbox[2] - price_bbox[0])
+        change_width_tmp = int(change_bbox[2] - change_bbox[0]) if change_text else 0
+        max_text_width = max(symbol_width_tmp, price_width_tmp, change_width_tmp, 1)
+        column_x = logo_right + logo_gap + (max_text_width // 2)
         if self.toggle_chart:
-            # When chart is enabled, center text more to the left
-            column_x = int(width / 2.85)
-        else:
-            # When chart is disabled, position text with more space from logo
-            column_x = int(width / 2.2)
+            # Clamp so text does not overlap the mini chart area
+            chart_start = width // 2
+            column_x = min(column_x, chart_start - (max_text_width // 2) - logo_gap)
         
         # Draw symbol
         symbol_width = int(symbol_bbox[2] - symbol_bbox[0])
@@ -288,7 +293,16 @@ class StockDisplayRenderer:
         # Draw mini chart on the right only if toggle_chart is enabled
         if self.toggle_chart and 'price_history' in data and len(data['price_history']) >= 2:
             self._draw_mini_chart(draw, data['price_history'], width, height, change_color)
-        
+
+        # When chart is disabled, trim the canvas to actual content width.
+        # The canvas is created at 1.5x display width for text room, but content
+        # typically only fills ~half that — the dead space becomes inter-symbol gap.
+        if not self.toggle_chart:
+            content_right = column_x + (max_text_width // 2) + 8  # 8px right margin
+            content_right = min(content_right, width)
+            if content_right < width:
+                image = image.crop((0, 0, content_right, height))
+
         return image
     
     def create_static_display(self, symbol: str, data: Dict[str, Any]) -> Image.Image:
@@ -395,37 +409,22 @@ class StockDisplayRenderer:
             display = self.create_stock_display(symbol, data)
             stock_displays.append(display)
         
-        # Calculate spacing - match old stock_manager exactly
-        # Old code: stock_gap = width // 6, element_gap = width // 8
-        stock_gap = int(width // 6)  # Reduced gap between stocks
-        element_gap = int(width // 8)  # Reduced gap between elements within a stock
-        
-        # Calculate total width - match old stock_manager calculation
-        # Old code: total_width = sum(width * 2 for _ in symbols) + stock_gap * (len(symbols) - 1) + element_gap * (len(symbols) * 2 - 1)
-        # But each display already has its own width (width * 2 or width * 1.5), so we sum display widths
-        # Ensure all values are integers
-        total_width = sum(int(display.width) for display in stock_displays)
-        total_width += int(stock_gap) * (len(stock_displays) - 1)
-        total_width += int(element_gap) * (len(stock_displays) * 2 - 1)
-        
+        stock_gap = self.stock_gap
+
+        # Total width: initial lead-in buffer + all stock canvases + inter-stock gaps
+        total_width = int(width)  # one display-width lead-in before the first stock
+        total_width += sum(int(d.width) for d in stock_displays)
+        total_width += stock_gap * max(len(stock_displays) - 1, 0)
+
         # Create scrolling image - ensure dimensions are integers
         scrolling_image = Image.new('RGB', (int(total_width), int(height)), (0, 0, 0))
-        
-        # Paste all stock displays with spacing - match old stock_manager logic
-        # Old code: current_x = width (starts with display width gap)
-        current_x = int(width)  # Add initial gap before the first stock
-        
+
+        current_x = int(width)  # start after lead-in
         for i, display in enumerate(stock_displays):
-            # Paste this stock image into the full image - ensure position is integer tuple
             scrolling_image.paste(display, (int(current_x), 0))
-            
-            # Move to next position with consistent spacing
-            # Old code: current_x += width * 2 + element_gap
-            current_x += int(display.width) + int(element_gap)
-            
-            # Add extra gap between stocks (except after the last stock)
+            current_x += int(display.width)
             if i < len(stock_displays) - 1:
-                current_x += int(stock_gap)
+                current_x += stock_gap
         
         return scrolling_image
     
