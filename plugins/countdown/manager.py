@@ -124,7 +124,7 @@ class CountdownPlugin(BasePlugin):
                 return False
             if normalized in ("true", "1", "on", "yes"):
                 return True
-            return True
+            return default
         if isinstance(value, (int, float)):
             return value != 0
         return bool(value)
@@ -162,13 +162,26 @@ class CountdownPlugin(BasePlugin):
             return []
 
         normalized_countdowns: List[Dict[str, Any]] = []
-        used_ids = set()
+        incoming_ids = {
+            str(item.get("id", "")).strip()
+            for item in raw_countdowns
+            if isinstance(item, dict)
+        }
+        incoming_ids.discard("")
 
+        used_ids = set()
         # Include existing runtime IDs to avoid cache key collisions during hot reloads.
+        # Exclude IDs present in incoming config so they are not treated as collisions.
         if isinstance(getattr(self, "cached_images", None), dict):
-            used_ids.update(str(k) for k in self.cached_images.keys())
+            used_ids.update(
+                str(k) for k in self.cached_images.keys()
+                if str(k) not in incoming_ids
+            )
         if isinstance(getattr(self, "countdown_values", None), dict):
-            used_ids.update(str(k) for k in self.countdown_values.keys())
+            used_ids.update(
+                str(k) for k in self.countdown_values.keys()
+                if str(k) not in incoming_ids
+            )
 
         for index, item in enumerate(raw_countdowns):
             if not isinstance(item, dict):
