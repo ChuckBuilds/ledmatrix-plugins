@@ -386,4 +386,4 @@ class ScrollDisplayManager:
         self._vegas_content_items = []
         self._frame_count = 0
         if self.scroll_helper:
-            self.scroll_helper.reset()
+            self.scroll_helper.reset_scroll()

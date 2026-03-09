@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -30,6 +30,11 @@
   ],
   "versions": [
     {
+      "version": "1.2.3",
+      "ledmatrix_min": "2.0.0",
+      "released": "2026-03-08"
+    },
+    {
       "version": "1.2.2",
       "ledmatrix_min": "2.0.0",
       "released": "2026-03-02"
@@ -50,7 +55,7 @@
       "released": "2026-02-17"
     }
   ],
-  "last_updated": "2026-03-02",
+  "last_updated": "2026-03-08",
   "stars": 0,
   "downloads": 0,
   "verified": true,

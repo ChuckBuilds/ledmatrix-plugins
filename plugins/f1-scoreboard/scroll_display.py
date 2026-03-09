@@ -126,7 +126,7 @@ class ScrollDisplay:
             return True
 
         if force_clear:
-            self.scroll_helper.reset()
+            self.scroll_helper.reset_scroll()
 
         self.scroll_helper.update_scroll_position()
         visible = self.scroll_helper.get_visible_portion()
@@ -145,7 +145,7 @@ class ScrollDisplay:
     def reset(self):
         """Reset scroll position to beginning."""
         if self.scroll_helper:
-            self.scroll_helper.reset()
+            self.scroll_helper.reset_scroll()
 
     def is_prepared(self) -> bool:
         """Check if content has been prepared for scrolling."""
