@@ -6,7 +6,7 @@ events, and special occasions.
 
 Features:
 - Multiple countdown entries with individual enable/disable
-- Custom image upload for each countdown
+- Path-based image selection for each countdown
 - Configurable fonts, colors, and display settings
 - Image on left 1/3rd, text on right 2/3rds layout
 - Automatic rotation through enabled countdowns
@@ -32,7 +32,7 @@ class CountdownPlugin(BasePlugin):
     """
     Countdown display plugin for LED matrix.
 
-    Supports multiple countdowns with custom images, configurable fonts,
+    Supports multiple countdowns with path-based images, configurable fonts,
     and automatic rotation through enabled entries.
 
     Configuration options:
@@ -72,6 +72,8 @@ class CountdownPlugin(BasePlugin):
 
         # Countdown entries
         self.countdowns = self._normalize_countdowns(config.get('countdowns', []))
+
+        # Cache signature lets us invalidate image cache when countdown metadata changes.
         self._countdown_signature = self._build_countdown_signature(self.countdowns)
 
         # Rotation state
@@ -549,14 +551,8 @@ class CountdownPlugin(BasePlugin):
             countdown_id = current_countdown.get('id')
             countdown_name = current_countdown.get('name', 'Countdown')
 
-            # Support both old array format and new simplified string format
+            # Countdown image path is normalized in _normalize_countdowns.
             countdown_image = current_countdown.get('image_path')
-            if not countdown_image:
-                # Fallback to old array format for backwards compatibility
-                countdown_image_list = current_countdown.get('image', [])
-                if countdown_image_list and isinstance(countdown_image_list, list) and len(countdown_image_list) > 0:
-                    image_info = countdown_image_list[0]
-                    countdown_image = image_info.get('path') if isinstance(image_info, dict) else None
 
             # Load and draw image on left 1/3rd
             if countdown_image:
@@ -775,26 +771,17 @@ class CountdownPlugin(BasePlugin):
         if not super().validate_config():
             return False
 
-        # Validate countdowns
-        if not isinstance(self.countdowns, list):
-            self.logger.error("Countdowns must be a list")
-            return False
-
+        # Validate countdowns. IDs are auto-generated during normalization.
         for countdown in self.countdowns:
             if not isinstance(countdown, dict):
                 self.logger.error(f"Countdown entry must be a dict: {countdown}")
                 return False
 
-            # Validate required fields
-            if 'id' not in countdown:
-                self.logger.error("Countdown missing 'id' field")
-                return False
-
-            if 'name' not in countdown:
+            if not countdown.get('name'):
                 self.logger.error(f"Countdown {countdown.get('id')} missing 'name' field")
                 return False
 
-            if 'target_date' not in countdown:
+            if not countdown.get('target_date'):
                 self.logger.error(f"Countdown {countdown.get('id')} missing 'target_date' field")
                 return False
 

@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, UV index, wind direction, and weather icons. Features state caching, API counter tracking, and error handling. Powered by OpenWeatherMap API with beautiful weather icons.",
@@ -23,6 +23,11 @@
     "daily_forecast"
   ],
   "versions": [
+    {
+      "version": "2.1.2",
+      "ledmatrix_min": "2.0.0",
+      "released": "2026-02-24"
+    },
     {
       "version": "2.1.1",
       "ledmatrix_min": "2.0.0",
@@ -54,7 +59,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-02-15",
+  "last_updated": "2026-02-24",
   "stars": 0,
   "downloads": 0,
   "verified": true,
