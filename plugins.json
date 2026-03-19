@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-02-26",
+  "last_updated": "2026-03-19",
   "plugins": [
     {
       "id": "hello-world",
@@ -59,10 +59,10 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.1.1",
+      "latest_version": "2.1.2",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-15",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": ""
     },
@@ -83,10 +83,10 @@
       "plugin_path": "plugins/static-image",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-11-05",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "text-display",
@@ -105,10 +105,10 @@
       "plugin_path": "plugins/text-display",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-19",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.1"
+      "latest_version": "1.0.2"
     },
     {
       "id": "of-the-day",
@@ -150,10 +150,10 @@
       "plugin_path": "plugins/ledmatrix-music",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-11-05",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.3"
+      "latest_version": "1.0.4"
     },
     {
       "id": "calendar",
@@ -172,10 +172,10 @@
       "plugin_path": "plugins/calendar",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-19",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.1"
+      "latest_version": "1.0.2"
     },
     {
       "id": "hockey-scoreboard",
@@ -196,10 +196,10 @@
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-25",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.4"
+      "latest_version": "1.2.5"
     },
     {
       "id": "football-scoreboard",
@@ -221,10 +221,10 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-25",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.3.4"
+      "latest_version": "2.3.5"
     },
     {
       "id": "ufc-scoreboard",
@@ -245,10 +245,10 @@
       "plugin_path": "plugins/ufc-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-25",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.3"
+      "latest_version": "1.2.4"
     },
     {
       "id": "basketball-scoreboard",
@@ -270,10 +270,10 @@
       "plugin_path": "plugins/basketball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-25",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.4"
+      "latest_version": "1.5.5"
     },
     {
       "id": "baseball-scoreboard",
@@ -296,10 +296,10 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-25",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.4"
+      "latest_version": "1.5.5"
     },
     {
       "id": "soccer-scoreboard",
@@ -325,10 +325,10 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-25",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.4"
+      "latest_version": "1.4.5"
     },
     {
       "id": "odds-ticker",
@@ -352,10 +352,10 @@
       "plugin_path": "plugins/odds-ticker",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-23",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.1"
+      "latest_version": "1.1.2"
     },
     {
       "id": "leaderboard",
@@ -429,10 +429,10 @@
       "plugin_path": "plugins/stock-news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-19",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "stocks",
@@ -454,10 +454,10 @@
       "plugin_path": "plugins/ledmatrix-stocks",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-12",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.0.2"
+      "latest_version": "2.0.3"
     },
     {
       "id": "ledmatrix-flights",
@@ -479,10 +479,10 @@
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-11-05",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     },
     {
       "id": "christmas-countdown",
@@ -550,10 +550,10 @@
       "plugin_path": "plugins/youtube-stats",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-01-14",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     },
     {
       "id": "7-segment-clock",
@@ -596,10 +596,10 @@
       "plugin_path": "plugins/mqtt-notifications",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-11",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     },
     {
       "id": "countdown",
@@ -619,10 +619,10 @@
       "plugin_path": "plugins/countdown",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-11",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     },
     {
       "id": "f1-scoreboard",
@@ -644,10 +644,10 @@
       "plugin_path": "plugins/f1-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-25",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.2"
+      "latest_version": "1.2.3"
     },
     {
       "id": "pga-tour-leaderboard",
@@ -689,10 +689,10 @@
       "plugin_path": "plugins/web-ui-info",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-11",
+      "last_updated": "2026-03-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     }
   ]
 }

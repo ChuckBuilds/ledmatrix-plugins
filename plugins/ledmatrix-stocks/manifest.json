@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-stocks",
   "name": "Stock & Crypto Ticker",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Displays scrolling stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies",
   "author": "LEDMatrix Team",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",

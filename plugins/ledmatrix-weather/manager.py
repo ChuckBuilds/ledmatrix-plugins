@@ -218,8 +218,8 @@ class WeatherPlugin(BasePlugin):
         if hasattr(self, '_layout_cache'):
             return self._layout_cache
 
-        width = self.display_manager.matrix.width
-        height = self.display_manager.matrix.height
+        width = self.display_manager.width
+        height = self.display_manager.height
         h_scale = height / 32.0
 
         # Fixed font metrics (do not change with display size)
@@ -563,7 +563,7 @@ class WeatherPlugin(BasePlugin):
     
     def _display_no_data(self) -> None:
         """Display a diagnostic message when no weather data is available."""
-        img = Image.new('RGB', (self.display_manager.matrix.width, self.display_manager.matrix.height), (0, 0, 0))
+        img = Image.new('RGB', (self.display_manager.width, self.display_manager.height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
 
         from PIL import ImageFont
@@ -590,8 +590,8 @@ class WeatherPlugin(BasePlugin):
     def _render_current_weather_image(self) -> Optional[Image.Image]:
         """Render current weather conditions to an Image without display side effects."""
         try:
-            width = self.display_manager.matrix.width
-            height = self.display_manager.matrix.height
+            width = self.display_manager.width
+            height = self.display_manager.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
 
@@ -747,8 +747,8 @@ class WeatherPlugin(BasePlugin):
             if not self.hourly_forecast:
                 return None
 
-            width = self.display_manager.matrix.width
-            height = self.display_manager.matrix.height
+            width = self.display_manager.width
+            height = self.display_manager.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
 
@@ -819,8 +819,8 @@ class WeatherPlugin(BasePlugin):
             if not self.daily_forecast:
                 return None
 
-            width = self.display_manager.matrix.width
-            height = self.display_manager.matrix.height
+            width = self.display_manager.width
+            height = self.display_manager.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
 

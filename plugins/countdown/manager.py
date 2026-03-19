@@ -412,8 +412,8 @@ class CountdownPlugin(BasePlugin):
 
         try:
             # Get display dimensions
-            display_width = self.display_manager.matrix.width
-            display_height = self.display_manager.matrix.height
+            display_width = self.display_manager.width
+            display_height = self.display_manager.height
 
             # Calculate layout: left 1/3 for image, right 2/3 for text
             image_width = display_width // 3
@@ -540,8 +540,8 @@ class CountdownPlugin(BasePlugin):
     def _display_no_countdowns(self) -> None:
         """Display message when no countdowns are enabled."""
         try:
-            display_width = self.display_manager.matrix.width
-            display_height = self.display_manager.matrix.height
+            display_width = self.display_manager.width
+            display_height = self.display_manager.height
 
             img = Image.new('RGB', (display_width, display_height), self.background_color)
             self.display_manager.image = img.copy()
@@ -583,8 +583,8 @@ class CountdownPlugin(BasePlugin):
     def _display_error(self) -> None:
         """Display error message when something goes wrong."""
         try:
-            display_width = self.display_manager.matrix.width
-            display_height = self.display_manager.matrix.height
+            display_width = self.display_manager.width
+            display_height = self.display_manager.height
 
             img = Image.new('RGB', (display_width, display_height), (0, 0, 0))
             self.display_manager.image = img.copy()

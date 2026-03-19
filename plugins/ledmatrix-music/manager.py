@@ -837,8 +837,8 @@ class MusicPlugin(BasePlugin):
                     self.display_manager.clear()
                 
                 text_width = self.display_manager.get_text_width("Nothing Playing", self.display_manager.regular_font)
-                x_pos = (self.display_manager.matrix.width - text_width) // 2
-                y_pos = (self.display_manager.matrix.height // 2) - 4
+                x_pos = (self.display_manager.width - text_width) // 2
+                y_pos = (self.display_manager.height // 2) - 4
                 self.display_manager.draw_text("Nothing Playing", x=x_pos, y=y_pos, font=self.display_manager.regular_font)
                 self.display_manager.update_display()
                 self.is_currently_showing_nothing_playing = True
@@ -884,10 +884,10 @@ class MusicPlugin(BasePlugin):
             pass
 
         if not perform_full_refresh_this_cycle: 
-            self.display_manager.draw.rectangle([0, 0, self.display_manager.matrix.width, self.display_manager.matrix.height], fill=(0, 0, 0))
+            self.display_manager.draw.rectangle([0, 0, self.display_manager.width, self.display_manager.height], fill=(0, 0, 0))
 
-        matrix_height = self.display_manager.matrix.height
-        matrix_width = self.display_manager.matrix.width
+        matrix_height = self.display_manager.height
+        matrix_width = self.display_manager.width
         
         # Album art should always fill the full height of the display
         album_art_size = matrix_height
@@ -951,7 +951,7 @@ class MusicPlugin(BasePlugin):
         font_album = self.album_font if self.album_font else self.display_manager.bdf_5x7_font
 
         # Calculate y positions as percentages of display height for scaling
-        matrix_height = self.display_manager.matrix.height
+        matrix_height = self.display_manager.height
         
         # Define positions as percentages (0.0 to 1.0) - these scale with display size
         ARTIST_Y_PERCENT = 0.34  # 34% from top  

@@ -429,8 +429,8 @@ class StaticImagePlugin(BasePlugin):
                 num_frames = 1
             
             # Get display dimensions
-            display_width = self.display_manager.matrix.width
-            display_height = self.display_manager.matrix.height
+            display_width = self.display_manager.width
+            display_height = self.display_manager.height
             
             if is_animated and num_frames > 1:
                 # Handle animated GIF
@@ -942,8 +942,8 @@ class StaticImagePlugin(BasePlugin):
                 self.logger.warning(f"Error getting font from font manager: {e}")
 
             img = Image.new('RGB',
-                          (self.display_manager.matrix.width,
-                           self.display_manager.matrix.height),
+                          (self.display_manager.width,
+                           self.display_manager.height),
                           (0, 0, 0))
 
             if error_font:

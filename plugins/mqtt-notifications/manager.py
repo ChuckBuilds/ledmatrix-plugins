@@ -422,8 +422,8 @@ class MQTTNotificationsPlugin(BasePlugin):
     
     def _resize_image(self, img: Image.Image) -> Image.Image:
         """Resize image to fit matrix dimensions while maintaining aspect ratio."""
-        matrix_width = self.display_manager.matrix.width if self.display_manager.matrix else 128
-        matrix_height = self.display_manager.matrix.height if self.display_manager.matrix else 32
+        matrix_width = self.display_manager.width if self.display_manager.matrix else 128
+        matrix_height = self.display_manager.height if self.display_manager.matrix else 32
         
         # Calculate scaling to fit
         scale_w = matrix_width / img.width
@@ -462,8 +462,8 @@ class MQTTNotificationsPlugin(BasePlugin):
             return None
         
         try:
-            matrix_width = self.display_manager.matrix.width if self.display_manager.matrix else 128
-            matrix_height = self.display_manager.matrix.height if self.display_manager.matrix else 32
+            matrix_width = self.display_manager.width if self.display_manager.matrix else 128
+            matrix_height = self.display_manager.height if self.display_manager.matrix else 32
             
             # Create temporary image to measure text
             temp_img = Image.new('RGB', (1, 1))
@@ -529,8 +529,8 @@ class MQTTNotificationsPlugin(BasePlugin):
             return False
         
         try:
-            matrix_width = self.display_manager.matrix.width if self.display_manager.matrix else 128
-            matrix_height = self.display_manager.matrix.height if self.display_manager.matrix else 32
+            matrix_width = self.display_manager.width if self.display_manager.matrix else 128
+            matrix_height = self.display_manager.height if self.display_manager.matrix else 32
 
             content = message.get('content', {})
             

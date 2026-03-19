@@ -171,7 +171,7 @@ class StockDisplayRenderer:
     def create_stock_display(self, symbol: str, data: Dict[str, Any]) -> Image.Image:
         """Create a display image for a single stock or crypto - matching old stock manager layout exactly."""
         # Create a wider image for scrolling - adjust width based on chart toggle
-        # Match old stock_manager: width = int(self.display_manager.matrix.width * (2 if self.toggle_chart else 1.5))
+        # Match old stock_manager: width = int(self.display_manager.width * (2 if self.toggle_chart else 1.5))
         # Ensure dimensions are integers
         width = int(self.display_width * (2 if self.toggle_chart else 1.5))
         height = int(self.display_height)

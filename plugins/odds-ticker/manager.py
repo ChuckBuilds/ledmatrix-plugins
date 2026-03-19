@@ -311,8 +311,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         logger.info(f"High FPS scrolling enabled: enable_scrolling={self.enable_scrolling}, target_fps={self.target_fps}")
         
         # Initialize ScrollHelper for scrolling functionality
-        display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') else 128
-        display_height = self.display_manager.matrix.height if hasattr(self.display_manager, 'matrix') else 32
+        display_width = self.display_manager.width if hasattr(self.display_manager, 'matrix') else 128
+        display_height = self.display_manager.height if hasattr(self.display_manager, 'matrix') else 32
         self.scroll_helper = ScrollHelper(display_width, display_height, logger=self.logger)
         
         # Configure ScrollHelper with plugin settings
@@ -1659,8 +1659,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
 
     def _create_game_display(self, game: Dict[str, Any]) -> Image.Image:
         """Create a display image for a game in the new format."""
-        width = self.display_manager.matrix.width
-        height = self.display_manager.matrix.height
+        width = self.display_manager.width
+        height = self.display_manager.height
         
         # Make logos use most of the display height, with a small margin
         logo_size = int(height * 1.2)
@@ -2194,7 +2194,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             return
 
         gap_width = 24  # Gap between games
-        height = self.display_manager.matrix.height
+        height = self.display_manager.height
         
         # Use ScrollHelper to create the scrolling image
         # ScrollHelper automatically adds display_width padding at the start
@@ -2206,7 +2206,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         
         # Add white vertical bars between games for visual separation
         # ScrollHelper places items with gaps, so we need to find where to add bars
-        display_width = self.display_manager.matrix.width
+        display_width = self.display_manager.width
         current_x = display_width  # Start after initial padding
         
         for idx, img in enumerate(game_images):
@@ -2781,8 +2781,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             # Display the visible portion (use paste like leaderboard for better performance)
             if visible_image:
                 # Ensure display_manager.image exists and is the right size
-                matrix_width = self.display_manager.matrix.width
-                matrix_height = self.display_manager.matrix.height
+                matrix_width = self.display_manager.width
+                matrix_height = self.display_manager.height
                 if not hasattr(self.display_manager, 'image') or self.display_manager.image is None:
                     self.display_manager.image = Image.new('RGB', (matrix_width, matrix_height), (0, 0, 0))
                 elif self.display_manager.image.size != (matrix_width, matrix_height):
@@ -2810,8 +2810,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
     def _display_fallback_message(self):
         """Display a fallback message when no games data is available."""
         try:
-            width = self.display_manager.matrix.width
-            height = self.display_manager.matrix.height
+            width = self.display_manager.width
+            height = self.display_manager.height
             
             logger.info(f"Displaying fallback message on {width}x{height} display")
             

@@ -193,8 +193,8 @@ class OddsRenderer:
             return self._create_no_data_image()
         
         try:
-            matrix_width = self.display_manager.matrix.width
-            matrix_height = self.display_manager.matrix.height
+            matrix_width = self.display_manager.width
+            matrix_height = self.display_manager.height
             
             # Create game images using the original method
             game_images = [self._create_game_display(game) for game in games_data]
@@ -247,8 +247,8 @@ class OddsRenderer:
     
     def _create_game_display(self, game: Dict) -> Image.Image:
         """Create a display image for a game matching the original odds_ticker_manager layout exactly."""
-        width = self.display_manager.matrix.width
-        height = self.display_manager.matrix.height
+        width = self.display_manager.width
+        height = self.display_manager.height
         
         # Make logos use most of the display height, with a small margin
         logo_size = int(height * 1.2)
@@ -524,8 +524,8 @@ class OddsRenderer:
     
     def _create_no_data_image(self) -> Image.Image:
         """Create image when no data is available."""
-        matrix_width = self.display_manager.matrix.width
-        matrix_height = self.display_manager.matrix.height
+        matrix_width = self.display_manager.width
+        matrix_height = self.display_manager.height
         
         img = Image.new('RGB', (matrix_width, matrix_height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
@@ -537,8 +537,8 @@ class OddsRenderer:
     def _display_fallback_message(self):
         """Display a fallback message when no games data is available."""
         try:
-            width = self.display_manager.matrix.width
-            height = self.display_manager.matrix.height
+            width = self.display_manager.width
+            height = self.display_manager.height
             
             logger.info(f"Displaying fallback message on {width}x{height} display")
             
@@ -588,8 +588,8 @@ class OddsRenderer:
     
     def _create_error_image(self, message: str) -> Image.Image:
         """Create error image."""
-        matrix_width = self.display_manager.matrix.width
-        matrix_height = self.display_manager.matrix.height
+        matrix_width = self.display_manager.width
+        matrix_height = self.display_manager.height
         
         img = Image.new('RGB', (matrix_width, matrix_height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
@@ -631,8 +631,8 @@ class OddsRenderer:
         
         try:
             current_time = time.time()
-            matrix_width = self.display_manager.matrix.width
-            matrix_height = self.display_manager.matrix.height
+            matrix_width = self.display_manager.width
+            matrix_height = self.display_manager.height
             
             # Check if we should be scrolling
             should_scroll = current_time - self.last_scroll_time >= self.scroll_delay

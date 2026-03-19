@@ -278,9 +278,9 @@ class CalendarPlugin(BasePlugin):
             # Try to get from display_manager.matrix first
             if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix is not None:
                 if resolved_width is None:
-                    resolved_width = self.display_manager.matrix.width
+                    resolved_width = self.display_manager.width
                 if resolved_height is None:
-                    resolved_height = self.display_manager.matrix.height
+                    resolved_height = self.display_manager.height
 
             # Try direct attributes if still missing
             if resolved_width is None:

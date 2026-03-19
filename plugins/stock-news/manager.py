@@ -320,8 +320,8 @@ class StockNewsTickerPlugin(BasePlugin):
     def _display_scrolling_stock_news(self):
         """Display scrolling stock news headlines."""
         try:
-            matrix_width = self.display_manager.matrix.width
-            matrix_height = self.display_manager.matrix.height
+            matrix_width = self.display_manager.width
+            matrix_height = self.display_manager.height
 
             # Create base image
             img = Image.new('RGB', (matrix_width, matrix_height), (0, 0, 0))
@@ -368,8 +368,8 @@ class StockNewsTickerPlugin(BasePlugin):
 
     def _display_no_news(self):
         """Display message when no news is available."""
-        img = Image.new('RGB', (self.display_manager.matrix.width,
-                               self.display_manager.matrix.height),
+        img = Image.new('RGB', (self.display_manager.width,
+                               self.display_manager.height),
                        (0, 0, 0))
         draw = ImageDraw.Draw(img)
         draw.text((5, 12), "No Stock News", fill=(150, 150, 150))
@@ -379,8 +379,8 @@ class StockNewsTickerPlugin(BasePlugin):
 
     def _display_error(self, message: str):
         """Display error message."""
-        img = Image.new('RGB', (self.display_manager.matrix.width,
-                               self.display_manager.matrix.height),
+        img = Image.new('RGB', (self.display_manager.width,
+                               self.display_manager.height),
                        (0, 0, 0))
         draw = ImageDraw.Draw(img)
         draw.text((5, 12), message, fill=(255, 0, 0))

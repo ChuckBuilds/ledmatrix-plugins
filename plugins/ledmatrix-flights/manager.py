@@ -129,8 +129,8 @@ class FlightTrackerPlugin(BasePlugin):
         self.cached_pixels_per_mile = None  # Actual scale of the cached map
         
         # Display configuration
-        self.display_width = display_manager.matrix.width
-        self.display_height = display_manager.matrix.height
+        self.display_width = display_manager.width
+        self.display_height = display_manager.height
         self.show_trails = self.config.get('show_trails', False)
         self.trail_length = self.config.get('trail_length', 10)
         

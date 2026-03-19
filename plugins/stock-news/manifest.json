@@ -1,7 +1,7 @@
 {
   "id": "stock-news",
   "name": "Stock News Ticker",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "ChuckBuilds",
   "description": "Displays scrolling stock-specific news headlines and financial updates from RSS feeds, focused on market news and company updates",
   "category": "financial",

@@ -35,8 +35,8 @@ class SportsCore(ABC):
         self.config = config
         self.cache_manager = cache_manager
         self.display_manager = display_manager
-        self.display_width = self.display_manager.matrix.width
-        self.display_height = self.display_manager.matrix.height
+        self.display_width = self.display_manager.width
+        self.display_height = self.display_manager.height
         
         self.sport_key = sport_key
         self.sport = None

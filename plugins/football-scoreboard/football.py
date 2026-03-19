@@ -167,8 +167,8 @@ class FootballLive(Football, SportsLive):
                 self.display_manager.clear()
             
             # Use display_manager.matrix dimensions directly to ensure full display coverage
-            display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_width
-            display_height = self.display_manager.matrix.height if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_height
+            display_width = self.display_manager.width if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_width
+            display_height = self.display_manager.height if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_height
             
             main_img = Image.new('RGBA', (display_width, display_height), (0, 0, 0, 255))
             overlay = Image.new('RGBA', (display_width, display_height), (0, 0, 0, 0))

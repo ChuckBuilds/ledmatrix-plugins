@@ -185,8 +185,8 @@ class YouTubeStatsPlugin(BasePlugin):
         
         try:
             # Create a new image with the matrix dimensions
-            matrix_width = self.display_manager.matrix.width
-            matrix_height = self.display_manager.matrix.height
+            matrix_width = self.display_manager.width
+            matrix_height = self.display_manager.height
             image = Image.new('RGB', (matrix_width, matrix_height))
             draw = ImageDraw.Draw(image)
             

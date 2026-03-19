@@ -1,7 +1,7 @@
 {
   "id": "text-display",
   "name": "Text Display",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "ChuckBuilds",
   "description": "Display custom scrolling or static text with configurable fonts, colors, and scroll speed. Perfect for announcements, messages, or custom displays.",
   "category": "display",

@@ -594,8 +594,8 @@ class ScrollDisplayManager:
             ScrollDisplay instance for the game type
         """
         if game_type not in self._scroll_displays:
-            display_width = self.display_manager.matrix.width
-            display_height = self.display_manager.matrix.height
+            display_width = self.display_manager.width
+            display_height = self.display_manager.height
             self._scroll_displays[game_type] = ScrollDisplay(
                 self.display_manager,
                 display_width,

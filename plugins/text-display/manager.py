@@ -98,8 +98,8 @@ class TextDisplayPlugin(BasePlugin):
         self._calculate_text_dimensions()
         
         # Initialize ScrollHelper for scrolling functionality
-        display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') else 128
-        display_height = self.display_manager.matrix.height if hasattr(self.display_manager, 'matrix') else 32
+        display_width = self.display_manager.width if hasattr(self.display_manager, 'matrix') else 128
+        display_height = self.display_manager.height if hasattr(self.display_manager, 'matrix') else 32
         self.scroll_helper = ScrollHelper(display_width, display_height, logger=self.logger)
         
         # Configure ScrollHelper with plugin settings
@@ -257,8 +257,8 @@ class TextDisplayPlugin(BasePlugin):
             return
         
         try:
-            matrix_width = self.display_manager.matrix.width
-            matrix_height = self.display_manager.matrix.height
+            matrix_width = self.display_manager.width
+            matrix_height = self.display_manager.height
             
             # Total width: initial padding + text + final padding (so text scrolls completely off) + gap
             # Structure: [display_width padding] [text] [display_width padding] [gap]
@@ -304,7 +304,7 @@ class TextDisplayPlugin(BasePlugin):
     
     def update(self) -> None:
         """Update scroll position if scrolling is enabled using ScrollHelper."""
-        if not self.scroll_enabled or self.text_width <= self.display_manager.matrix.width:
+        if not self.scroll_enabled or self.text_width <= self.display_manager.width:
             # Reset scroll position if scrolling is disabled or text fits
             if self.scroll_helper:
                 self.scroll_helper.reset_scroll()
@@ -339,8 +339,8 @@ class TextDisplayPlugin(BasePlugin):
             return
         
         try:
-            matrix_width = self.display_manager.matrix.width
-            matrix_height = self.display_manager.matrix.height
+            matrix_width = self.display_manager.width
+            matrix_height = self.display_manager.height
             
             if self.scroll_enabled and self.text_width > matrix_width:
                 # Scrolling text - use ScrollHelper

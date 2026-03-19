@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Real-time aircraft tracking with ADS-B data, map backgrounds, flight plans, and proximity alerts",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",

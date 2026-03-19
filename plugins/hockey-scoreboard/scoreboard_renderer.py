@@ -70,8 +70,8 @@ class HockeyScoreboardRenderer:
                 logo = logo.convert('RGBA')
             
             # Resize logo to fit display
-            max_width = int(self.display_manager.matrix.width * 1.5)
-            max_height = int(self.display_manager.matrix.height * 1.5)
+            max_width = int(self.display_manager.width * 1.5)
+            max_height = int(self.display_manager.height * 1.5)
             logo.thumbnail((max_width, max_height), RESAMPLE_FILTER)
             
             self._logo_cache[team_abbrev] = logo
@@ -93,8 +93,8 @@ class HockeyScoreboardRenderer:
                         show_powerplay: bool = True) -> None:
         """Render a live hockey game with proper scorebug layout matching NHL manager."""
         try:
-            matrix_width = self.display_manager.matrix.width
-            matrix_height = self.display_manager.matrix.height
+            matrix_width = self.display_manager.width
+            matrix_height = self.display_manager.height
             
             # Create main image with transparency (matching NHL manager)
             main_img = Image.new("RGBA", (matrix_width, matrix_height), (0, 0, 0, 255))
@@ -193,8 +193,8 @@ class HockeyScoreboardRenderer:
     def render_recent_game(self, game: Dict) -> None:
         """Render a recent hockey game with proper scorebug layout matching NHL manager."""
         try:
-            matrix_width = self.display_manager.matrix.width
-            matrix_height = self.display_manager.matrix.height
+            matrix_width = self.display_manager.width
+            matrix_height = self.display_manager.height
             
             # Create main image with transparency (matching NHL manager)
             main_img = Image.new("RGBA", (matrix_width, matrix_height), (0, 0, 0, 255))
@@ -268,8 +268,8 @@ class HockeyScoreboardRenderer:
     def render_upcoming_game(self, game: Dict) -> None:
         """Render an upcoming hockey game with proper scorebug layout matching NHL manager."""
         try:
-            matrix_width = self.display_manager.matrix.width
-            matrix_height = self.display_manager.matrix.height
+            matrix_width = self.display_manager.width
+            matrix_height = self.display_manager.height
             
             # Create main image with transparency (matching NHL manager)
             main_img = Image.new("RGBA", (matrix_width, matrix_height), (0, 0, 0, 255))
@@ -380,8 +380,8 @@ class HockeyScoreboardRenderer:
     
     def render_no_games(self, mode: str) -> None:
         """Render message when no games are available."""
-        matrix_width = self.display_manager.matrix.width
-        matrix_height = self.display_manager.matrix.height
+        matrix_width = self.display_manager.width
+        matrix_height = self.display_manager.height
         
         img = Image.new('RGB', (matrix_width, matrix_height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
@@ -403,8 +403,8 @@ class HockeyScoreboardRenderer:
     
     def _display_error(self, message: str):
         """Display error message."""
-        matrix_width = self.display_manager.matrix.width
-        matrix_height = self.display_manager.matrix.height
+        matrix_width = self.display_manager.width
+        matrix_height = self.display_manager.height
         
         img = Image.new('RGB', (matrix_width, matrix_height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
