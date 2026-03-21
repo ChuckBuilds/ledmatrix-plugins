@@ -211,10 +211,9 @@
             "y_percent": {
               "type": "number",
               "title": "Vertical Position",
-              "description": "Vertical position as fraction of display height (0.0=top, 1.0=bottom). Adjust if elements overlap the progress bar.",
+              "description": "Vertical position override as fraction of display height (0.0=top, 1.0=bottom). Leave empty for automatic positioning based on font size.",
               "minimum": 0.0,
               "maximum": 1.0,
-              "default": 0.03,
               "multipleOf": 0.01
             }
           },
@@ -251,10 +250,9 @@
             "y_percent": {
               "type": "number",
               "title": "Vertical Position",
-              "description": "Vertical position as fraction of display height (0.0=top, 1.0=bottom). Adjust if elements overlap the progress bar.",
+              "description": "Vertical position override as fraction of display height (0.0=top, 1.0=bottom). Leave empty for automatic positioning based on font size.",
               "minimum": 0.0,
               "maximum": 1.0,
-              "default": 0.34,
               "multipleOf": 0.01
             }
           },
@@ -291,10 +289,9 @@
             "y_percent": {
               "type": "number",
               "title": "Vertical Position",
-              "description": "Vertical position as fraction of display height (0.0=top, 1.0=bottom). Adjust if elements overlap the progress bar.",
+              "description": "Vertical position override as fraction of display height (0.0=top, 1.0=bottom). Leave empty for automatic positioning based on font size.",
               "minimum": 0.0,
               "maximum": 1.0,
-              "default": 0.60,
               "multipleOf": 0.01
             }
           },
