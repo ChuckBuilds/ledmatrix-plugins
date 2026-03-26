@@ -1145,6 +1145,42 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         return self._get_league_manager_for_mode(league_key, mode_type)
 
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply config changes at runtime without restart."""
+        if BasePlugin:
+            super().on_config_change(new_config)
+        else:
+            self.config = new_config or {}
+
+        self.is_enabled = self.config.get("enabled", True)
+
+        # Re-read league enabled states and live priority
+        leagues_config = self.config.get('leagues', {})
+        self.league_enabled = {}
+        self.league_live_priority = {}
+        for league_key in LEAGUE_KEYS:
+            league_config = leagues_config.get(league_key, {})
+            self.league_enabled[league_key] = league_config.get('enabled', False)
+            self.league_live_priority[league_key] = league_config.get("live_priority", False)
+
+        # Re-read global settings
+        self.display_duration = float(self.config.get("display_duration", 30))
+        self.game_display_duration = float(self.config.get("game_display_duration", 15))
+
+        # Reinitialize managers and modes to pick up new favorite teams, display modes, etc.
+        self._initialize_managers()
+        self._load_custom_leagues()
+        self._initialize_league_registry()
+        self._display_mode_settings = self._parse_display_mode_settings()
+        self.modes = self._get_available_modes()
+        self.current_mode_index = 0
+
+        enabled_leagues = [k for k, v in self.league_enabled.items() if v]
+        self.logger.info(
+            f"Config updated at runtime - reinitialized. Enabled leagues: "
+            f"{', '.join([LEAGUE_NAMES.get(k, k) for k in enabled_leagues]) if enabled_leagues else 'None'}"
+        )
+
     def update(self) -> None:
         """Update soccer game data using parallel manager updates."""
         if not self.is_enabled:
