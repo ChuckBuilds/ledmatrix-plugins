@@ -229,6 +229,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         # Track active update threads to prevent accumulation of stale threads
         self._active_update_threads: Dict[str, threading.Thread] = {}  # {name: thread}
+
+        # Lock to protect shared mutable state during config reload
+        self._config_lock = threading.Lock()
         
         # Enable high-FPS mode for scroll display (allows 100+ FPS scrolling)
         # This signals to the display controller to use high-FPS loop (8ms = 125 FPS)
@@ -1126,10 +1129,13 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
 
     def _get_current_manager(self):
         """Get the current manager based on the current mode."""
-        if not self.modes:
+        with self._config_lock:
+            modes = self.modes
+            mode_index = self.current_mode_index
+        if not modes:
             return None
 
-        current_mode = self.modes[self.current_mode_index]
+        current_mode = modes[mode_index % len(modes)]
 
         # Parse mode: soccer_{league_key}_{mode_type}
         # Strip "soccer_" prefix and split from right to handle league codes with underscores
@@ -1167,13 +1173,26 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.display_duration = float(self.config.get("display_duration", 30))
         self.game_display_duration = float(self.config.get("game_display_duration", 15))
 
-        # Reinitialize managers and modes to pick up new favorite teams, display modes, etc.
-        self._initialize_managers()
-        self._load_custom_leagues()
-        self._initialize_league_registry()
-        self._display_mode_settings = self._parse_display_mode_settings()
-        self.modes = self._get_available_modes()
-        self.current_mode_index = 0
+        # Acquire exclusive lock so display()/update() see consistent state
+        with self._config_lock:
+            # Drain in-flight update threads before replacing managers
+            for name, thread in list(self._active_update_threads.items()):
+                if thread.is_alive():
+                    thread.join(timeout=10.0)
+            self._active_update_threads.clear()
+
+            # Clear stale runtime caches before rebuilding
+            self._league_registry.clear()
+            self._scroll_prepared.clear()
+            self._scroll_active.clear()
+
+            # Reinitialize managers and modes
+            self._initialize_managers()
+            self._load_custom_leagues()
+            self._initialize_league_registry()
+            self._display_mode_settings = self._parse_display_mode_settings()
+            self.modes = self._get_available_modes()
+            self.current_mode_index = 0
 
         enabled_leagues = [k for k, v in self.league_enabled.items() if v]
         self.logger.info(
@@ -1186,10 +1205,15 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not self.is_enabled:
             return
 
-        # Collect all manager update tasks
+        # Snapshot registry and thread state under the config lock so we don't
+        # iterate a dict that on_config_change is rebuilding.
+        with self._config_lock:
+            registry_snapshot = dict(self._league_registry)
+
+        # Collect all manager update tasks from the snapshot
         update_tasks = []
 
-        for league_key, league_data in self._league_registry.items():
+        for league_key, league_data in registry_snapshot.items():
             if not league_data.get('enabled', False):
                 continue
 
@@ -1200,10 +1224,10 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 manager = managers.get(mode_type)
                 if manager:
                     update_tasks.append((f"{league_key}:{league_name} {mode_type.title()}", manager.update))
-        
+
         if not update_tasks:
             return
-        
+
         # Run updates in parallel with individual error handling
         def run_update_with_error_handling(name: str, update_func):
             """Run a single manager update with error handling."""
@@ -1211,33 +1235,34 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 update_func()
             except Exception as e:
                 self.logger.error(f"Error updating {name} manager: {e}", exc_info=True)
-        
+
         # Start all update threads, skipping managers with still-running threads
         threads = []
         started_threads = {}  # Track name -> thread for cleanup
-        for name, update_func in update_tasks:
-            # Check if a thread for this manager is still running
-            existing_thread = self._active_update_threads.get(name)
-            if existing_thread:
-                if existing_thread.is_alive():
-                    self.logger.debug(
-                        f"Skipping update for {name} - previous thread still running"
-                    )
-                    continue
-                else:
-                    # Thread completed, remove stale entry
-                    del self._active_update_threads[name]
+        with self._config_lock:
+            for name, update_func in update_tasks:
+                # Check if a thread for this manager is still running
+                existing_thread = self._active_update_threads.get(name)
+                if existing_thread:
+                    if existing_thread.is_alive():
+                        self.logger.debug(
+                            f"Skipping update for {name} - previous thread still running"
+                        )
+                        continue
+                    else:
+                        # Thread completed, remove stale entry
+                        del self._active_update_threads[name]
 
-            thread = threading.Thread(
-                target=run_update_with_error_handling,
-                args=(name, update_func),
-                daemon=True,
-                name=f"Update-{name}"
-            )
-            thread.start()
-            threads.append(thread)
-            self._active_update_threads[name] = thread
-            started_threads[name] = thread
+                thread = threading.Thread(
+                    target=run_update_with_error_handling,
+                    args=(name, update_func),
+                    daemon=True,
+                    name=f"Update-{name}"
+                )
+                thread.start()
+                threads.append(thread)
+                self._active_update_threads[name] = thread
+                started_threads[name] = thread
 
         # Wait for all threads to complete with a reasonable timeout
         for name, thread in started_threads.items():
@@ -1250,8 +1275,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 # The entry will be removed when the thread eventually completes
             else:
                 # Thread completed successfully, remove from tracking
-                if name in self._active_update_threads:
-                    del self._active_update_threads[name]
+                with self._config_lock:
+                    if name in self._active_update_threads:
+                        del self._active_update_threads[name]
 
     def _display_scroll_mode(self, display_mode: str, mode_type: str, force_clear: bool) -> bool:
         """Handle display for scroll mode.
@@ -1566,19 +1592,31 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             # Fall back to internal mode cycling if no display_mode provided
             current_time = time.time()
 
+            # Snapshot modes under lock to avoid racing with on_config_change
+            with self._config_lock:
+                modes = self.modes
+                mode_index = self.current_mode_index
+
+            if not modes:
+                return False
+
+            # Clamp index in case modes list shrunk during a config reload
+            mode_index = mode_index % len(modes)
+
             # Check if we should stay on live mode
             should_stay_on_live = False
             if self.has_live_content():
                 # Get current mode name
-                current_mode = self.modes[self.current_mode_index] if self.modes else None
+                current_mode = modes[mode_index]
                 # If we're on a live mode, stay there
                 if current_mode and current_mode.endswith('_live'):
                     should_stay_on_live = True
                 # If we're not on a live mode but have live content, switch to it
                 elif not (current_mode and current_mode.endswith('_live')):
                     # Find the first live mode
-                    for i, mode in enumerate(self.modes):
+                    for i, mode in enumerate(modes):
                         if mode.endswith('_live'):
+                            mode_index = i
                             self.current_mode_index = i
                             force_clear = True
                             self.last_mode_switch = current_time
@@ -1587,17 +1625,16 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
 
             # Handle mode cycling only if not staying on live
             if not should_stay_on_live and current_time - self.last_mode_switch >= self.display_duration:
-                self.current_mode_index = (self.current_mode_index + 1) % len(
-                    self.modes
-                )
+                mode_index = (mode_index + 1) % len(modes)
+                self.current_mode_index = mode_index
                 self.last_mode_switch = current_time
                 force_clear = True
 
-                current_mode = self.modes[self.current_mode_index]
+                current_mode = modes[mode_index]
                 self.logger.info(f"Switching to display mode: {current_mode}")
 
             # Get current mode and check if it uses scroll mode
-            current_mode = self.modes[self.current_mode_index] if self.modes else None
+            current_mode = modes[mode_index]
             if current_mode:
                 # Extract mode type from current_mode (e.g., "soccer_eng.1_live" -> "live")
                 # Use rsplit to handle custom league codes with underscores
@@ -1644,9 +1681,11 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         """Check if any league has live priority enabled."""
         if not self.is_enabled:
             return False
+        with self._config_lock:
+            registry = dict(self._league_registry)
         return any(
             league_data.get('enabled', False) and league_data.get('live_priority', False)
-            for _lk, league_data in self._league_registry.items()
+            for _lk, league_data in registry.items()
         )
 
     def has_live_content(self) -> bool:
@@ -1654,7 +1693,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not self.is_enabled:
             return False
 
-        for league_key, league_data in self._league_registry.items():
+        with self._config_lock:
+            registry = dict(self._league_registry)
+        for league_key, league_data in registry.items():
             if not league_data.get('enabled', False):
                 continue
 
@@ -1707,11 +1748,15 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         """Get plugin information."""
         try:
             current_manager = self._get_current_manager()
-            current_mode = self.modes[self.current_mode_index] if self.modes else "none"
+            with self._config_lock:
+                modes = self.modes
+                mode_index = self.current_mode_index
+                registry_snapshot = dict(self._league_registry)
+            current_mode = modes[mode_index % len(modes)] if modes else "none"
 
             # Build league info from registry (includes custom leagues)
             league_info = {}
-            for league_key, league_data in self._league_registry.items():
+            for league_key, league_data in registry_snapshot.items():
                 league_info[league_key] = {
                     "enabled": league_data.get("enabled", False),
                     "live_priority": league_data.get("live_priority", False),
@@ -1725,7 +1770,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "display_size": f"{self.display_width}x{self.display_height}",
                 "leagues": league_info,
                 "current_mode": current_mode,
-                "available_modes": self.modes,
+                "available_modes": modes,
                 "display_duration": self.display_duration,
                 "game_display_duration": self.game_display_duration,
                 "show_records": self.config.get("show_records", False),
@@ -2020,11 +2065,14 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
 
     def _record_dynamic_progress(self, current_manager) -> None:
         """Track progress through managers/games for dynamic duration."""
-        if not self._dynamic_feature_enabled() or not self.modes:
+        with self._config_lock:
+            modes = self.modes
+            mode_index = self.current_mode_index
+        if not self._dynamic_feature_enabled() or not modes:
             self._dynamic_cycle_complete = True
             return
 
-        current_mode = self.modes[self.current_mode_index]
+        current_mode = modes[mode_index % len(modes)]
         self._dynamic_cycle_seen_modes.add(current_mode)
 
         manager_key = self._build_manager_key(current_mode, current_manager)
@@ -2058,11 +2106,13 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             self._dynamic_cycle_complete = True
             return
 
-        if not self.modes:
+        with self._config_lock:
+            modes = self.modes
+        if not modes:
             self._dynamic_cycle_complete = True
             return
 
-        required_modes = [mode for mode in self.modes if mode]
+        required_modes = [mode for mode in modes if mode]
         if not required_modes:
             self._dynamic_cycle_complete = True
             return
