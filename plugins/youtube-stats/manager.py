@@ -179,13 +179,16 @@ class YouTubeStatsPlugin(BasePlugin):
                 self._api_key_error = "YouTube API key is invalid or expired. Update your API key in Settings > Secrets."
                 self.logger.error(self._api_key_error)
             else:
-                self.logger.error(f"Error fetching YouTube stats (HTTP {status_code}): {e}")
+                self._api_key_error = None
+                self.logger.error("Error fetching YouTube stats (HTTP %s)", status_code)
             return None
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"Error fetching YouTube stats: {e}")
+            self._api_key_error = None
+            self.logger.error("Error fetching YouTube stats: %s", type(e).__name__)
             return None
         except (KeyError, ValueError, TypeError) as e:
-            self.logger.error(f"Error parsing YouTube API response: {e}")
+            self._api_key_error = None
+            self.logger.error("Error parsing YouTube API response: %s", e)
             return None
     
     def _create_display(self, channel_stats: Dict[str, Any]) -> Optional[Image.Image]:
