@@ -316,8 +316,8 @@ class YouTubeStatsPlugin(BasePlugin):
             draw.text((x, y), message, font=font, fill=(255, 80, 80))
             self.display_manager.image = image
             self.display_manager.update_display()
-        except Exception as e:
-            self.logger.debug(f"Could not show error on display: {e}")
+        except Exception:
+            self.logger.debug("Could not show error on display", exc_info=True)
 
     def validate_config(self) -> bool:
         """Validate plugin configuration."""
