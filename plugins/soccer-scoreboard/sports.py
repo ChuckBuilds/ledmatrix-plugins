@@ -116,6 +116,7 @@ class SportsCore(ABC):
         }
         self.last_update = 0
         self.current_game = None
+        self._last_rendered_game_id: Optional[str] = None  # Skip redundant redraws
         # Thread safety lock for shared game state
         self._games_lock = threading.RLock()
         self.fonts = self._load_fonts()
@@ -1295,6 +1296,7 @@ class SportsUpcoming(SportsCore):
                         f"Found {len(team_games)} upcoming games within window for display."
                     )  # Changed log prefix
                     self.games_list = team_games
+                    self._last_rendered_game_id = None  # Force redraw with new data
                     if (
                         not self.current_game
                         or not self.games_list
@@ -1613,13 +1615,17 @@ class SportsUpcoming(SportsCore):
                         )
 
             if self.current_game:
+                # Skip redundant redraws when nothing changed
+                game_id = self.current_game.get("id")
+                if not force_clear and game_id == self._last_rendered_game_id:
+                    return True  # Already showing this game, no redraw needed
                 self._draw_scorebug_layout(self.current_game, force_clear)
-            # update_display() is called within _draw_scorebug_layout for upcoming
+                self._last_rendered_game_id = game_id
 
         except Exception as e:
             self.logger.error(
                 f"Error in display loop: {e}", exc_info=True
-            )  # Changed log prefix
+            )
             return False
 
         return True
@@ -1819,6 +1825,7 @@ class SportsRecent(SportsCore):
                         f"Found {len(team_games)} final games within window for display."
                     )  # Changed log prefix
                     self.games_list = team_games
+                    self._last_rendered_game_id = None  # Force redraw with new data
                     # Reset index if list changed or current game removed
                     if (
                         not self.current_game
@@ -2140,13 +2147,17 @@ class SportsRecent(SportsCore):
                         )
 
             if self.current_game:
+                # Skip redundant redraws when nothing changed
+                game_id = self.current_game.get("id")
+                if not force_clear and game_id == self._last_rendered_game_id:
+                    return True  # Already showing this game, no redraw needed
                 self._draw_scorebug_layout(self.current_game, force_clear)
-            # update_display() is called within _draw_scorebug_layout for recent
+                self._last_rendered_game_id = game_id
 
         except Exception as e:
             self.logger.error(
                 f"Error in display loop: {e}", exc_info=True
-            )  # Changed log prefix
+            )
             return False
 
         return True
