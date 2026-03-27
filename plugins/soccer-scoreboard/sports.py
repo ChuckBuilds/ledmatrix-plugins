@@ -1319,14 +1319,17 @@ class SportsUpcoming(SportsCore):
                             self.last_game_switch = current_time
 
                 elif self.games_list:
+                    # Same IDs but payload may have changed — update data and
+                    # force a redraw so corrected scores/times appear.
                     self.current_game = self.games_list[
                         self.current_game_index
-                    ]  # Update data
+                    ]
+                    self._last_rendered_game_id = None
 
                 if not self.games_list:
                     self.logger.info(
                         "No relevant upcoming games found to display."
-                    )  # Changed log prefix
+                    )
                     self.current_game = None
 
             if should_log and not self.games_list:
@@ -1852,14 +1855,16 @@ class SportsRecent(SportsCore):
                             self.last_game_switch = current_time
 
                 elif self.games_list:
-                    # List content is same, just update data for current game
+                    # Same IDs but payload may have changed — update data and
+                    # force a redraw so corrected scores/times appear.
                     self.current_game = self.games_list[self.current_game_index]
+                    self._last_rendered_game_id = None
 
                 if not self.games_list:
                     self.logger.info(
                         "No relevant recent games found to display."
-                    )  # Changed log prefix
-                    self.current_game = None  # Ensure display clears if no games
+                    )
+                    self.current_game = None
 
         except Exception as e:
             self.logger.error(
