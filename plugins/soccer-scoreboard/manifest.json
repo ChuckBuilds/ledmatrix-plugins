@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, and more",
   "category": "sports",
@@ -26,7 +26,7 @@
   "versions": [
     {
       "released": "2026-03-27",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "ledmatrix_min": "2.0.0"
     },
     {

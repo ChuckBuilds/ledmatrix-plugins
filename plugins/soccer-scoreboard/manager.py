@@ -233,9 +233,12 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Lock to protect shared mutable state during config reload
         self._config_lock = threading.Lock()
         
-        # Enable high-FPS mode for scroll display (allows 100+ FPS scrolling)
-        # This signals to the display controller to use high-FPS loop (8ms = 125 FPS)
-        self.enable_scrolling = self._scroll_manager is not None
+        # Enable high-FPS mode only when at least one enabled league actually
+        # uses scroll display mode.  The display controller reads this flag to
+        # decide between 125 FPS (scroll) and normal FPS (switch).  Setting it
+        # unconditionally caused switch-mode to run at 125 FPS, re-rendering
+        # full scorebug images every 8ms and producing visible flashing.
+        self.enable_scrolling = self._has_any_scroll_mode()
         if self.enable_scrolling:
             self.logger.info("High-FPS scrolling enabled for soccer scoreboard")
 
@@ -944,6 +947,15 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         return self._display_mode_settings.get(league_key, {}).get(game_type, 'switch')
 
+    def _has_any_scroll_mode(self) -> bool:
+        """Return True if any enabled league uses scroll for any mode type."""
+        if not self._scroll_manager:
+            return False
+        for mode_type in ('live', 'recent', 'upcoming'):
+            if self._should_use_scroll_mode(mode_type):
+                return True
+        return False
+
     def _should_use_scroll_mode(self, mode_type: str) -> bool:
         """
         Check if ANY enabled league should use scroll mode for this game type.
@@ -1193,6 +1205,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             self._display_mode_settings = self._parse_display_mode_settings()
             self.modes = self._get_available_modes()
             self.current_mode_index = 0
+            self.enable_scrolling = self._has_any_scroll_mode()
 
         enabled_leagues = [k for k, v in self.league_enabled.items() if v]
         self.logger.info(
