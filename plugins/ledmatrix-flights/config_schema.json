@@ -12,8 +12,8 @@
     "data_source": {
       "type": "string",
       "title": "Data Source",
-      "description": "Aircraft data source. 'skyaware' requires a local ADS-B receiver (dump1090/SkyAware). 'flightradar24' uses the FlightRadar24 feed — no hardware required.",
-      "enum": ["skyaware", "flightradar24"],
+      "description": "Aircraft data source. 'skyaware' requires a local ADS-B receiver (dump1090/SkyAware). 'flightradar24' uses the FlightRadar24 feed. 'opensky' uses the free OpenSky Network API.",
+      "enum": ["skyaware", "flightradar24", "opensky"],
       "default": "skyaware"
     },
     "fr24_enrichment": {
@@ -291,13 +291,140 @@
     },
     "display_mode": {
       "type": "string",
-      "description": "Display mode to use",
-      "enum": ["map", "overhead", "stats", "auto"],
+      "title": "Display Mode",
+      "description": "Display mode. 'area' shows multi-aircraft list with FlightWall metrics. 'flight_tracking' shows tracked flight details. 'auto' chooses based on context.",
+      "enum": ["map", "overhead", "stats", "area", "flight_tracking", "auto"],
       "default": "auto"
+    },
+    "units": {
+      "type": "string",
+      "title": "Unit System",
+      "description": "Unit system for altitude, speed, and distance display. Imperial: ft, kts, mi. Metric: m, km/h, km.",
+      "enum": ["imperial", "metric"],
+      "default": "imperial"
+    },
+    "max_aircraft": {
+      "type": "integer",
+      "title": "Max Aircraft per Page",
+      "description": "Maximum aircraft to display per page in area mode.",
+      "minimum": 1,
+      "maximum": 20,
+      "default": 5
+    },
+    "min_altitude_ft": {
+      "type": "integer",
+      "title": "Min Altitude Filter (ft)",
+      "description": "Minimum altitude in feet for area mode filtering. Set to 0 to disable.",
+      "minimum": 0,
+      "default": 0
+    },
+    "max_altitude_ft": {
+      "type": "integer",
+      "title": "Max Altitude Filter (ft)",
+      "description": "Maximum altitude in feet for area mode filtering. Set to 0 to disable.",
+      "minimum": 0,
+      "default": 0
+    },
+    "aircraft_categories": {
+      "type": "array",
+      "title": "Aircraft Category Filter",
+      "description": "ICAO aircraft categories to display (e.g. A1, A2, A3). Empty list shows all.",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "tracked_flights": {
+      "type": "array",
+      "title": "Tracked Flights",
+      "description": "Flight numbers, callsigns, or tail numbers to track specifically (max 3). E.g. [\"AA123\", \"N12345\"]",
+      "items": { "type": "string" },
+      "maxItems": 3,
+      "default": []
+    },
+    "anchor_airport": {
+      "type": "string",
+      "title": "Anchor Airport",
+      "description": "ICAO or IATA airport code to prioritize in area mode (e.g. KTPA or TPA). Arrivals/departures shown first.",
+      "default": ""
+    },
+    "route_cache_ttl": {
+      "type": "integer",
+      "title": "Route Cache TTL (seconds)",
+      "description": "How long to cache flight route enrichment data.",
+      "minimum": 60,
+      "maximum": 3600,
+      "default": 300
+    },
+    "enrichment_provider": {
+      "type": "string",
+      "title": "Enrichment Provider",
+      "description": "Route enrichment source. 'auto': free sources first, FlightAware if key present. 'opensky': free OpenSky only. 'flightaware': requires API key.",
+      "enum": ["auto", "opensky", "flightaware"],
+      "default": "auto"
+    },
+    "header_color": {
+      "type": "array",
+      "title": "Header Color",
+      "description": "RGB color for headers/callsigns in area and flight tracking modes.",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [255, 200, 0]
+    },
+    "metric_color": {
+      "type": "array",
+      "title": "Metric Color",
+      "description": "RGB color for metric values (alt, speed, etc.) in area and flight tracking modes.",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [255, 255, 255]
+    },
+    "error_color": {
+      "type": "array",
+      "title": "Error Color",
+      "description": "RGB color for error/no-data messages.",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [255, 0, 0]
+    },
+    "show_banner": {
+      "type": "boolean",
+      "title": "Show Title Banner",
+      "description": "Show a 'FLIGHTS' banner for 2 seconds at the start of each display slot.",
+      "default": false
+    },
+    "show_aircraft_icon": {
+      "type": "boolean",
+      "title": "Show Airline Logos",
+      "description": "Show 8×8 pixel art airline logos next to callsigns in area and flight tracking modes. Includes sprites for major airlines (Delta, American, United, Southwest, JetBlue, etc.) with a generic plane fallback.",
+      "default": false
+    },
+    "scroll_speed": {
+      "type": "integer",
+      "title": "Scroll Speed",
+      "description": "Scroll speed in pixels per frame for long text.",
+      "minimum": 1,
+      "maximum": 10,
+      "default": 2
+    },
+    "opensky_username": {
+      "type": "string",
+      "title": "OpenSky Username",
+      "description": "OpenSky Network username for higher rate limits (optional — works without for basic use).",
+      "x-secret": true,
+      "default": ""
+    },
+    "opensky_password": {
+      "type": "string",
+      "title": "OpenSky Password",
+      "description": "OpenSky Network password.",
+      "x-secret": true,
+      "default": ""
     },
     "flightaware_api_key": {
       "type": "string",
-      "description": "FlightAware AeroAPI key (required if flight_plan_enabled is true). Get your free API key at https://flightaware.com/aeroapi/",
+      "description": "FlightAware AeroAPI key (optional — all features work without it via free data sources). Get your API key at https://flightaware.com/aeroapi/",
       "x-secret": true,
       "default": ""
     }
