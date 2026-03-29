@@ -2064,19 +2064,22 @@ class FlightTrackerPlugin(BasePlugin):
             self.logger.debug("[Flight Tracker] Manual mode selection: chosen_mode=%s", mode)
 
         # Route to appropriate display method
-        if mode == 'map':
-            self._display_map(force_clear)
-        elif mode == 'overhead':
-            self._display_overhead(force_clear)
-        elif mode == 'stats':
-            self._display_stats(force_clear)
-        elif mode == 'area':
-            self._display_area(force_clear)
-        elif mode == 'flight_tracking':
-            self._display_flight_tracking(force_clear)
-        else:
-            self.logger.warning(f"Unknown display_mode: {mode!r}, using map")
-            self._display_map(force_clear)
+        try:
+            if mode == 'map':
+                self._display_map(force_clear)
+            elif mode == 'overhead':
+                self._display_overhead(force_clear)
+            elif mode == 'stats':
+                self._display_stats(force_clear)
+            elif mode == 'area':
+                self._display_area(force_clear)
+            elif mode == 'flight_tracking':
+                self._display_flight_tracking(force_clear)
+            else:
+                self.logger.warning(f"Unknown display_mode: {mode!r}, using map")
+                self._display_map(force_clear)
+        except Exception:
+            logger.exception("[Flight Tracker] display() error in mode %s", mode)
     
     # -------------------------------------------------------------------------
     # New display modes (delegated to renderer.py)

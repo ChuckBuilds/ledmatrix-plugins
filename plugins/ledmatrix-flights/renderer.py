@@ -1,8 +1,11 @@
 """
 Display rendering for Flight Tracker display modes.
 
-Layout is dynamic — adapts to any display size from 64×32 to 192×96+.
-Font sizes, sprite scaling, and element spacing all scale with the display.
+Two flight detail layouts (auto-selected by canvas width):
+  - ``flight_detail_wide``:      widescreen (≥ threshold), 3-zone horizontal
+  - ``flight_detail_condensed``: condensed (< threshold), 2-column
+
+Plus the area-mode card renderer for cycling through nearby aircraft.
 """
 
 import logging
@@ -12,66 +15,116 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
-from units import (
-    format_altitude,
-    format_speed,
-    format_track,
-    format_vrate,
-    format_distance,
-    null_safe,
-)
+from units import format_altitude, format_speed, format_track, format_vrate, format_distance, null_safe
 from airline_sprites import get_sprite_for_aircraft
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Font loading helpers — match sports plugin patterns
+# Font loading
 # ---------------------------------------------------------------------------
 
-_FONT_DIR_CANDIDATES = [
-    "assets/fonts",
-    "../assets/fonts",
-    "../../assets/fonts",
-]
+_FONT_DIR_CANDIDATES = ["assets/fonts", "../assets/fonts", "../../assets/fonts"]
 
 
 def _find_font(filename: str) -> Optional[str]:
-    """Search for a font file in standard LEDMatrix paths."""
     for base in _FONT_DIR_CANDIDATES:
-        path = os.path.join(base, filename)
-        if os.path.exists(path):
-            return path
+        p = os.path.join(base, filename)
+        if os.path.exists(p):
+            return p
     return None
 
 
-def _load_truetype(filename: str, size: int) -> ImageFont.FreeTypeFont:
-    """Load a TrueType font, falling back to PIL default."""
-    path = _find_font(filename)
-    if path:
-        return ImageFont.truetype(path, size)
+def _ttf(filename: str, size: int) -> ImageFont.FreeTypeFont:
+    p = _find_font(filename)
+    if p:
+        return ImageFont.truetype(p, size)
     return ImageFont.load_default()
 
+
+# ---------------------------------------------------------------------------
+# Airline logo loader
+# ---------------------------------------------------------------------------
+
+_LOGO_DIR_CANDIDATES = [
+    "assets/airline_logos",
+    "../assets/airline_logos",
+    "../../assets/airline_logos",
+]
+_logo_cache: Dict[str, Optional[Image.Image]] = {}
+
+
+def _load_airline_logo(icao: str, max_h: int) -> Optional[Image.Image]:
+    """Load and scale an airline logo PNG. Returns RGBA image or None."""
+    key = f"{icao}_{max_h}"
+    if key in _logo_cache:
+        return _logo_cache[key]
+
+    for base in _LOGO_DIR_CANDIDATES:
+        path = os.path.join(base, f"{icao.upper()}.png")
+        if os.path.exists(path):
+            try:
+                logo = Image.open(path).convert("RGBA")
+                bbox = logo.getbbox()
+                if bbox:
+                    logo = logo.crop(bbox)
+                logo.thumbnail((max_h, max_h), Image.Resampling.LANCZOS)
+                _logo_cache[key] = logo
+                return logo
+            except Exception as e:
+                logger.debug(f"[Flight Tracker] Failed to load logo {path}: {e}")
+                break
+
+    _logo_cache[key] = None
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Renderer
+# ---------------------------------------------------------------------------
 
 class FlightRenderer:
     """Renders flight display modes with dynamic layout scaling."""
 
+    # Default widescreen width threshold
+    WIDE_THRESHOLD = 256
+
     def __init__(self, display_manager: Any, fonts: Dict[str, Any], config: Dict[str, Any]):
         self.dm = display_manager
-        self._manager_fonts = fonts  # keep original fonts as fallback
-        self.units = config.get("units", "imperial")
-        self.header_color = tuple(config.get("header_color", [255, 200, 0]))
+        self._mgr_fonts = fonts
+
+        # Unit config — granular per-metric keys with legacy fallback
+        legacy = config.get("units", "imperial")
+        self.alt_unit = config.get("altitude_unit", "m" if legacy == "metric" else "ft")
+        self.spd_unit = config.get("speed_unit", "kmh" if legacy == "metric" else "kn")
+        self.trk_fmt = config.get("track_format", "deg")
+        self.vr_unit = config.get("vr_unit", "ms" if legacy == "metric" else "fpm")
+        self.units_legacy = legacy  # kept for area cards / distance
+
+        # Colors
+        self.header_color = tuple(config.get("header_color", [255, 255, 255]))
+        self.airport_color = tuple(config.get("airport_color", [0, 120, 255]))
         self.metric_color = tuple(config.get("metric_color", [255, 255, 255]))
-        self.route_color = (150, 220, 255)
-        self.dim_color = (120, 120, 120)
         self.error_color = tuple(config.get("error_color", [255, 0, 0]))
+        self.dim_color = (120, 120, 120)
+        self.route_color = (150, 220, 255)
+
         self.show_banner = config.get("show_banner", False)
         self.show_aircraft_icon = config.get("show_aircraft_icon", False)
         self.scroll_speed = config.get("scroll_speed", 2)
+
         self._banner_shown = False
         self._banner_start = 0.0
 
-        # Load display-size-appropriate fonts
-        self._load_scaled_fonts()
+        # Layout override
+        self._layout_override = config.get("layout", "") or ""
+        try:
+            self._wide_threshold = int(config.get("widescreen_threshold", self.WIDE_THRESHOLD))
+        except (TypeError, ValueError):
+            self._wide_threshold = self.WIDE_THRESHOLD
+
+        # Load fonts scaled to display
+        self._load_fonts()
 
     @property
     def width(self) -> int:
@@ -81,112 +134,68 @@ class FlightRenderer:
     def height(self) -> int:
         return self.dm.matrix.height
 
-    def _load_scaled_fonts(self) -> None:
-        """Load fonts scaled to the actual display size.
-
-        Follows the sports plugin pattern: PressStart2P for titles,
-        4x6-font for data.  Sizes increase with display height.
-        """
+    def _load_fonts(self) -> None:
+        """Load three named font tiers scaled to display height."""
         h = self.height
         if h >= 64:
-            # Large display (192×96+)
-            self.font_title = _load_truetype("PressStart2P-Regular.ttf", 12)
-            self.font_data = _load_truetype("PressStart2P-Regular.ttf", 8)
-            self.font_small = _load_truetype("4x6-font.ttf", 8)
-            self.sprite_scale = 2  # 16×16 sprites
+            self.font_large = _ttf("PressStart2P-Regular.ttf", 16)
+            self.font_medium = _ttf("PressStart2P-Regular.ttf", 10)
+            self.font_small = _ttf("PressStart2P-Regular.ttf", 8)
+            self.sprite_scale = 2
         elif h >= 48:
-            # Medium display (192×48, 128×48)
-            # PressStart2P is a true pixel font — no anti-aliasing artifacts
-            self.font_title = _load_truetype("PressStart2P-Regular.ttf", 10)
-            self.font_data = _load_truetype("PressStart2P-Regular.ttf", 8)
-            self.font_small = _load_truetype("PressStart2P-Regular.ttf", 6)
-            self.sprite_scale = 1  # 8×8 sprites (fits within title line)
-        elif h >= 32:
-            # Standard display (128×32, 64×32)
-            self.font_title = _load_truetype("PressStart2P-Regular.ttf", 8)
-            self.font_data = _load_truetype("4x6-font.ttf", 8)
-            self.font_small = _load_truetype("4x6-font.ttf", 6)
-            self.sprite_scale = 1  # 8×8 sprites
+            self.font_large = _ttf("PressStart2P-Regular.ttf", 10)
+            self.font_medium = _ttf("PressStart2P-Regular.ttf", 8)
+            self.font_small = _ttf("PressStart2P-Regular.ttf", 6)
+            self.sprite_scale = 1
         else:
-            # Tiny display
-            self.font_title = _load_truetype("4x6-font.ttf", 6)
-            self.font_data = _load_truetype("4x6-font.ttf", 6)
-            self.font_small = _load_truetype("4x6-font.ttf", 6)
+            self.font_large = _ttf("PressStart2P-Regular.ttf", 8)
+            self.font_medium = _ttf("PressStart2P-Regular.ttf", 6)
+            self.font_small = _ttf("PressStart2P-Regular.ttf", 6)
             self.sprite_scale = 1
 
-    # --- Drawing helpers ---
+    # --- Drawing primitives ---
 
-    def _draw(
-        self,
-        draw: ImageDraw.Draw,
-        text: str,
-        pos: Tuple[int, int],
-        font: Any,
-        color: Tuple[int, int, int] = (255, 255, 255),
-    ) -> int:
-        """Draw text and return its pixel width."""
-        draw.text(pos, text, font=font, fill=color)
+    def _tw(self, draw: ImageDraw.Draw, text: str, font) -> int:
         bbox = draw.textbbox((0, 0), text, font=font)
         return bbox[2] - bbox[0]
 
-    def _draw_outlined(
-        self,
-        draw: ImageDraw.Draw,
-        text: str,
-        pos: Tuple[int, int],
-        font: Any,
-        color: Tuple[int, int, int] = (255, 255, 255),
-        outline: Tuple[int, int, int] = (0, 0, 0),
-    ) -> int:
-        """Draw text with 1px black outline. Returns text width."""
-        x, y = pos
-        for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1),
-                        (0, 1), (1, -1), (1, 0), (1, 1)]:
-            draw.text((x + dx, y + dy), text, font=font, fill=outline)
-        draw.text(pos, text, font=font, fill=color)
-        bbox = draw.textbbox((0, 0), text, font=font)
-        return bbox[2] - bbox[0]
-
-    def _text_w(self, draw: ImageDraw.Draw, text: str, font: Any) -> int:
-        bbox = draw.textbbox((0, 0), text, font=font)
-        return bbox[2] - bbox[0]
-
-    def _font_h(self, font: Any) -> int:
+    def _fh(self, font) -> int:
         try:
-            if hasattr(font, "getmetrics"):
-                a, d = font.getmetrics()
-                return a + d
-            if hasattr(font, "size"):
-                return font.size
+            a, d = font.getmetrics()
+            return a + d
         except Exception:
-            pass
-        return 8
+            return 8
 
-    def _line_h(self, font: Any) -> int:
-        """Line height with padding."""
-        return self._font_h(font) + 2
+    def _lh(self, font) -> int:
+        return self._fh(font) + 2
 
-    def _draw_sprite(
-        self,
-        draw: ImageDraw.Draw,
-        x: int,
-        y: int,
-        airline_icao: str = "",
-        callsign: str = "",
-        fallback_color: Tuple[int, int, int] = (200, 200, 200),
-    ) -> int:
-        """Draw airline sprite scaled to display size. Returns width used."""
+    def _draw(self, draw, text, pos, font, color=(255, 255, 255)):
+        draw.text(pos, text, font=font, fill=color)
+
+    def _draw_outlined(self, draw, text, pos, font, color=(255, 255, 255)):
+        x, y = pos
+        for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
+            draw.text((x + dx, y + dy), text, font=font, fill=(0, 0, 0))
+        draw.text(pos, text, font=font, fill=color)
+
+    def _draw_right(self, draw, text, y, font, color, margin=2):
+        w = self._tw(draw, text, font)
+        draw.text((self.width - w - margin, y), text, font=font, fill=color)
+
+    def _draw_centered(self, draw, text, y, font, color, zone_x=0, zone_w=None):
+        zw = zone_w or self.width
+        tw = self._tw(draw, text, font)
+        draw.text((zone_x + (zw - tw) // 2, y), text, font=font, fill=color)
+
+    def _draw_sep(self, draw, y, color=(40, 40, 40)):
+        draw.line([(0, y), (self.width, y)], fill=color, width=1)
+
+    def _draw_sprite(self, draw, x, y, airline_icao="", callsign="", fallback_color=(200, 200, 200)):
         pixels = get_sprite_for_aircraft(airline_icao, "", callsign)
         if not pixels:
             return 0
-
         scale = self.sprite_scale
-        size = 8 * scale  # total sprite pixel size
-
-        # Draw scaled sprite
         pixel_set = set((p[0], p[1]) for p in pixels)
-
-        # Black outline for visibility
         for px, py, r, g, b in pixels:
             for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                 nx, ny = px + dx, py + dy
@@ -194,37 +203,29 @@ class FlightRenderer:
                     for sx in range(scale):
                         for sy in range(scale):
                             draw.point((x + nx * scale + sx, y + ny * scale + sy), fill=(0, 0, 0))
-
-        # Colored pixels
         for px, py, r, g, b in pixels:
             for sx in range(scale):
                 for sy in range(scale):
                     draw.point((x + px * scale + sx, y + py * scale + sy), fill=(r, g, b))
+        return 8 * scale + 3
 
-        return size + 3  # sprite width + gap
+    # --- Metric formatting helpers (use per-metric units) ---
 
-    def _right_text(self, draw: ImageDraw.Draw, text: str, y: int,
-                    font: Any, color: Tuple[int, int, int]) -> None:
-        """Draw right-aligned text."""
-        w = self._text_w(draw, text, font)
-        draw.text((self.width - w - 2, y), text, font=font, fill=color)
+    def _fmt_alt(self, val):
+        return format_altitude(val, unit=self.alt_unit)
 
-    def _center_text(self, draw: ImageDraw.Draw, text: str, y: int,
-                     font: Any, color: Tuple[int, int, int]) -> None:
-        """Draw horizontally centered text."""
-        w = self._text_w(draw, text, font)
-        draw.text(((self.width - w) // 2, y), text, font=font, fill=color)
+    def _fmt_spd(self, val):
+        return format_speed(val, unit=self.spd_unit)
 
-    # --- Horizontal separator line ---
+    def _fmt_trk(self, val):
+        return format_track(val, fmt=self.trk_fmt)
 
-    def _draw_sep(self, draw: ImageDraw.Draw, y: int,
-                  color: Tuple[int, int, int] = (40, 40, 40)) -> None:
-        """Draw a subtle horizontal separator."""
-        draw.line([(0, y), (self.width, y)], fill=color, width=1)
+    def _fmt_vr(self, val, arrows=True):
+        return format_vrate(val, unit=self.vr_unit, use_arrows=arrows)
 
-    # --- Title Banner ---
+    # --- Banner ---
 
-    def render_banner(self, text: str = "FLIGHTS") -> bool:
+    def render_banner(self, text="FLIGHTS"):
         if not self.show_banner:
             return False
         now = time.time()
@@ -233,285 +234,331 @@ class FlightRenderer:
             self._banner_start = now
         if now - self._banner_start > 2.0:
             return False
-
         img = Image.new("RGB", (self.width, self.height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
-        self._center_text(draw, text, (self.height - self._font_h(self.font_title)) // 2,
-                          self.font_title, self.header_color)
+        self._draw_centered(draw, text, (self.height - self._fh(self.font_large)) // 2,
+                            self.font_large, self.header_color)
         self.dm.image = img.copy()
         self.dm.update_display()
         return True
 
-    def reset_banner(self) -> None:
+    def reset_banner(self):
         self._banner_shown = False
         self._banner_start = 0.0
 
     # =====================================================================
-    # Area Mode — one aircraft per full display
+    # Flight Detail — layout auto-selection
     # =====================================================================
 
-    def _render_area_card_to_image(
-        self,
-        aircraft: Dict,
-        index: int = 0,
-        total_count: int = 1,
-        card_width: Optional[int] = None,
-    ) -> Image.Image:
-        """Render a single aircraft card. Core method used by both display and Vegas.
+    def _pick_layout(self) -> str:
+        if self._layout_override in ("flight_detail_wide", "flight_detail_condensed"):
+            return self._layout_override
+        return "flight_detail_wide" if self.width >= self._wide_threshold else "flight_detail_condensed"
 
-        Layout (192×48 example):
-        ┌──────────────────────────────────────────────┐
-        │ [sprite] SWA3708 Southwest            1/5    │  title font, outlined
-        │ ─────────────────────────────────────────     │  separator
-        │  ALB → TPA    B38M                 5.2mi     │  data font, route color
-        │  Alt:4.0K  Spd:223kt  090°  ↑1200           │  data font, metric color
-        └──────────────────────────────────────────────┘
-        """
+    def render_flight_tracking(self, tracked_flight: Any) -> None:
+        """Render a tracked flight using the appropriate layout."""
+        layout = self._pick_layout()
+        if layout == "flight_detail_wide":
+            self._render_wide(tracked_flight)
+        else:
+            self._render_condensed(tracked_flight)
+
+    # =====================================================================
+    # Layout 1: Widescreen — flight_detail_wide
+    # =====================================================================
+
+    def _render_wide(self, tf) -> None:
+        w, h = self.width, self.height
+        img = Image.new("RGB", (w, h), (0, 0, 0))
+        draw = ImageDraw.Draw(img)
+
+        if tf is None:
+            self._draw_centered(draw, "No Flight Data", h // 2 - 4, self.font_medium, self.error_color)
+            self.dm.image = img.copy()
+            self.dm.update_display()
+            return
+
+        ac = tf.aircraft_state or {}
+        _get = (lambda k, d=None: ac.get(k, d)) if isinstance(ac, dict) else (lambda k, d=None: getattr(ac, k, d))
+
+        # Zone widths (20% / 50% / 30%)
+        logo_w = w * 20 // 100
+        info_w = w * 50 // 100
+        metric_w = w - logo_w - info_w
+        info_x = logo_w
+        metric_x = logo_w + info_w
+
+        # --- LOGO ZONE ---
+        airline_icao = _get("airline_icao", "")
+        logo = _load_airline_logo(airline_icao, h - 4) if airline_icao else None
+        if logo:
+            lx = (logo_w - logo.width) // 2
+            ly = (h - logo.height) // 2
+            img.paste(logo, (max(0, lx), max(0, ly)), logo)
+        elif airline_icao:
+            # Fallback: render first 3 chars centered
+            abbr = (airline_icao[:3] or tf.identifier[:3]).upper()
+            self._draw_centered(draw, abbr, (h - self._fh(self.font_large)) // 2,
+                                self.font_large, self.header_color, zone_x=0, zone_w=logo_w)
+        else:
+            # Draw sprite as fallback
+            sx = (logo_w - 8 * self.sprite_scale) // 2
+            sy = (h - 8 * self.sprite_scale) // 2
+            self._draw_sprite(draw, max(0, sx), max(0, sy),
+                              airline_icao=airline_icao, callsign=tf.identifier)
+
+        # --- INFO ZONE ---
+        airline_name = _get("airline_name", "") or tf.identifier
+        origin = tf.origin or "---"
+        dest = tf.destination or "---"
+        atype = _get("aircraft_type", "") or "---"
+
+        # Get full airport names from static data
+        origin_full = ""
+        dest_full = ""
+        try:
+            from static_data import airports
+            ap = airports.by_iata(origin) or airports.by_icao(origin)
+            if ap:
+                origin_full = ap.get("name", "")
+            ap = airports.by_iata(dest) or airports.by_icao(dest)
+            if ap:
+                dest_full = ap.get("name", "")
+        except Exception:
+            pass
+
+        large_lh = self._lh(self.font_large)
+        small_lh = self._lh(self.font_small)
+
+        # Distribute rows: 3 large + 2 small, vertically centered
+        rows_h = large_lh * 3 + small_lh * 2
+        y = max(1, (h - rows_h) // 2)
+
+        # Row 1: Airline name
+        self._draw(draw, null_safe(airline_name), (info_x + 2, y), self.font_large, self.header_color)
+        y += large_lh
+        # Row 2: Route IATA-IATA
+        route = f"{origin}-{dest}" if origin != "---" and dest != "---" else "---"
+        self._draw(draw, route, (info_x + 2, y), self.font_large, self.header_color)
+        y += large_lh
+        # Row 3: Aircraft type
+        self._draw(draw, null_safe(atype, default="---"), (info_x + 2, y), self.font_large, self.header_color)
+        y += large_lh
+        # Row 4: Origin full name
+        if origin_full:
+            self._draw(draw, origin_full, (info_x + 2, y), self.font_small, self.airport_color)
+        y += small_lh
+        # Row 5: Dest full name
+        if dest_full:
+            self._draw(draw, dest_full, (info_x + 2, y), self.font_small, self.airport_color)
+
+        # --- METRICS ZONE ---
+        alt_v = self._fmt_alt(_get("altitude"))
+        spd_v = self._fmt_spd(_get("speed"))
+        trk_v = self._fmt_trk(_get("heading"))
+        vr_v = self._fmt_vr(_get("vertical_rate"), arrows=False)
+
+        metric_rows = [
+            f"Alt: {alt_v}",
+            f"Spd: {spd_v}",
+            f"Trk: {trk_v}",
+            f"Vr: {vr_v}",
+        ]
+        row_h = h // len(metric_rows)
+        for i, text in enumerate(metric_rows):
+            my = i * row_h + (row_h - self._fh(self.font_small)) // 2
+            # Right-align within metrics zone
+            tw = self._tw(draw, text, self.font_small)
+            mx = metric_x + metric_w - tw - 2
+            self._draw(draw, text, (max(metric_x, mx), my), self.font_small, self.metric_color)
+
+        self.dm.image = img.copy()
+        self.dm.update_display()
+
+    # =====================================================================
+    # Layout 2: Condensed — flight_detail_condensed
+    # =====================================================================
+
+    def _render_condensed(self, tf) -> None:
+        w, h = self.width, self.height
+        img = Image.new("RGB", (w, h), (0, 0, 0))
+        draw = ImageDraw.Draw(img)
+
+        if tf is None:
+            self._draw_centered(draw, "No Flight Data", h // 2 - 4, self.font_medium, self.error_color)
+            self.dm.image = img.copy()
+            self.dm.update_display()
+            return
+
+        ac = tf.aircraft_state or {}
+        _get = (lambda k, d=None: ac.get(k, d)) if isinstance(ac, dict) else (lambda k, d=None: getattr(ac, k, d))
+
+        # Column widths (40% logo / 60% text)
+        logo_w = w * 40 // 100
+        text_x = logo_w
+        text_w = w - logo_w
+
+        # --- LOGO COL ---
+        airline_icao = _get("airline_icao", "")
+        logo = _load_airline_logo(airline_icao, h - 4) if airline_icao else None
+        if logo:
+            lx = (logo_w - logo.width) // 2
+            ly = (h - logo.height) // 2
+            img.paste(logo, (max(0, lx), max(0, ly)), logo)
+        elif airline_icao:
+            abbr = (airline_icao[:3] or tf.identifier[:3]).upper()
+            self._draw_centered(draw, abbr, (h - self._fh(self.font_large)) // 2,
+                                self.font_large, self.header_color, zone_x=0, zone_w=logo_w)
+        else:
+            sx = (logo_w - 8 * self.sprite_scale) // 2
+            sy = (h - 8 * self.sprite_scale) // 2
+            self._draw_sprite(draw, max(0, sx), max(0, sy),
+                              airline_icao=airline_icao, callsign=tf.identifier)
+
+        # --- TEXT COL ---
+        origin = tf.origin or "---"
+        dest = tf.destination or "---"
+        atype = _get("aircraft_type", "") or "---"
+        callsign = tf.identifier
+
+        med_lh = self._lh(self.font_medium)
+        sm_lh = self._lh(self.font_small)
+
+        # 5 rows: 3 medium + 2 small, centered vertically
+        rows_h = med_lh * 3 + sm_lh * 2
+        y = max(0, (h - rows_h) // 2)
+
+        # Row 1: Callsign
+        self._draw(draw, callsign, (text_x + 2, y), self.font_medium, self.header_color)
+        y += med_lh
+
+        # Row 2: Route IATA-IATA
+        route = f"{origin}-{dest}" if origin != "---" and dest != "---" else "---"
+        self._draw(draw, route, (text_x + 2, y), self.font_medium, self.header_color)
+        y += med_lh
+
+        # Row 3: Aircraft type (short, max 8 chars)
+        atype_short = atype[:8] if atype != "---" else "---"
+        self._draw(draw, atype_short, (text_x + 2, y), self.font_medium, self.header_color)
+        y += med_lh
+
+        # Row 4: Alt + Spd packed
+        alt_v = self._fmt_alt(_get("altitude"))
+        spd_v = self._fmt_spd(_get("speed"))
+        self._draw(draw, f"Alt:{alt_v},Spd:{spd_v}", (text_x + 2, y), self.font_small, self.metric_color)
+        y += sm_lh
+
+        # Row 5: Trk + Vr packed
+        trk_v = self._fmt_trk(_get("heading"))
+        vr_v = self._fmt_vr(_get("vertical_rate"), arrows=False)
+        self._draw(draw, f"Trk:{trk_v},Vr:{vr_v}", (text_x + 2, y), self.font_small, self.metric_color)
+
+        self.dm.image = img.copy()
+        self.dm.update_display()
+
+    # =====================================================================
+    # Area Mode — one aircraft per full display (unchanged)
+    # =====================================================================
+
+    def _render_area_card_to_image(self, aircraft, index=0, total_count=1, card_width=None):
         w = card_width or self.width
         h = self.height
         img = Image.new("RGB", (w, h), (0, 0, 0))
         draw = ImageDraw.Draw(img)
 
         if not aircraft:
-            self._center_text(draw, "No Aircraft", h // 2 - 4, self.font_data, self.dim_color)
+            self._draw_centered(draw, "No Aircraft", h // 2 - 4, self.font_medium, self.dim_color)
             return img
 
-        # Extract data
         callsign = aircraft.get("callsign", "---")
-        alt = format_altitude(aircraft.get("altitude"), self.units)
-        spd = format_speed(aircraft.get("speed"), self.units)
-        trk = format_track(aircraft.get("heading"))
-        vr = format_vrate(aircraft.get("vertical_rate"), self.units)
-        dist = format_distance(aircraft.get("distance_miles"), self.units)
+        alt = self._fmt_alt(aircraft.get("altitude"))
+        spd = self._fmt_spd(aircraft.get("speed"))
+        trk = self._fmt_trk(aircraft.get("heading"))
+        vr = self._fmt_vr(aircraft.get("vertical_rate"))
+        dist = format_distance(aircraft.get("distance_miles"), self.units_legacy)
         origin = aircraft.get("origin", "")
         destination = aircraft.get("destination", "")
         airline = aircraft.get("airline_name", "")
         atype = aircraft.get("aircraft_type", "")
         color = tuple(aircraft.get("color", self.header_color))
 
-        # Anchor arrows
         prefix = ""
         if aircraft.get("_anchor_arrival"):
             prefix = "\u2192 "
         elif aircraft.get("_anchor_departure"):
             prefix = "\u2190 "
 
-        title_lh = self._line_h(self.font_title)
-        data_lh = self._line_h(self.font_data)
+        title_lh = self._lh(self.font_large)
+        data_lh = self._lh(self.font_medium)
 
-        # Calculate vertical layout: spread content across display
-        # Always reserve 2 data rows (dist/route + metrics)
         content_h = title_lh + 2 + data_lh * 2
         y = max(0, (h - content_h) // 2)
 
-        # === Row 1: [sprite] callsign + airline name ===
+        # Row 1: [sprite] callsign + airline
         text_x = 2
         if self.show_aircraft_icon:
-            sprite_y = y + max(0, (title_lh - 8 * self.sprite_scale) // 2)
-            sprite_w = self._draw_sprite(
-                draw, 2, sprite_y,
-                airline_icao=aircraft.get("airline_icao", ""),
-                callsign=callsign,
-                fallback_color=color,
-            )
-            text_x = 2 + sprite_w
-
-        # Callsign + airline
+            sy = y + max(0, (title_lh - 8 * self.sprite_scale) // 2)
+            sw = self._draw_sprite(draw, 2, sy, airline_icao=aircraft.get("airline_icao", ""),
+                                   callsign=callsign, fallback_color=color)
+            text_x = 2 + sw
         cs_str = f"{prefix}{callsign}"
         if airline:
             cs_str += f" {airline}"
-        self._draw_outlined(draw, cs_str, (text_x, y), self.font_title, color)
-
-        # Counter top-right
+        self._draw_outlined(draw, cs_str, (text_x, y), self.font_large, color)
         counter = f"{index + 1}/{total_count}"
-        self._right_text(draw, counter, y + (title_lh - self._font_h(self.font_small)) // 2,
-                         self.font_small, self.dim_color)
+        cw = self._tw(draw, counter, self.font_small)
+        self._draw(draw, counter, (w - cw - 2, y + (title_lh - self._fh(self.font_small)) // 2),
+                   self.font_small, self.dim_color)
         y += title_lh
-
-        # === Separator ===
         self._draw_sep(draw, y)
         y += 2
 
-        # === Row 2: Route (origin → dest) + aircraft type + distance ===
+        # Row 2: Route + distance (or just distance)
         if origin and destination:
-            route_str = f"{origin} \u2192 {destination}"
-            self._draw(draw, route_str, (2, y), self.font_data, self.route_color)
-
-            # Aircraft type in center-ish
+            self._draw(draw, f"{origin} \u2192 {destination}", (2, y), self.font_medium, self.route_color)
             if atype and atype != "Unknown":
-                type_x = max(self._text_w(draw, route_str, self.font_data) + 12, w // 3)
-                if type_x + self._text_w(draw, atype, self.font_small) < w - 40:
+                type_x = max(self._tw(draw, f"{origin} > {destination}", self.font_medium) + 12, w // 3)
+                if type_x + self._tw(draw, atype, self.font_small) < w - 40:
                     self._draw(draw, atype, (type_x, y + 1), self.font_small, self.dim_color)
+        elif atype and atype != "Unknown":
+            self._draw(draw, atype, (2, y), self.font_medium, self.dim_color)
 
-            # Distance right-aligned
-            self._right_text(draw, dist, y, self.font_data, (200, 160, 0))
-            y += data_lh
-        else:
-            # No route — show distance + type on one line
-            if atype and atype != "Unknown":
-                self._draw(draw, atype, (2, y), self.font_data, self.dim_color)
-            self._right_text(draw, dist, y, self.font_data, (200, 160, 0))
-            y += data_lh
+        dw = self._tw(draw, dist, self.font_medium)
+        self._draw(draw, dist, (w - dw - 2, y), self.font_medium, (200, 160, 0))
+        y += data_lh
 
-        # === Row 3: Metrics — compact, no labels, evenly spaced ===
+        # Row 3: Metrics — compact, evenly spaced
         if y + data_lh <= h:
             vr_color = ((0, 255, 100) if vr.startswith("\u2191") else
                         (255, 80, 80) if vr.startswith("\u2193") else self.dim_color)
-            parts = [
-                (alt, self.metric_color),
-                (spd, self.metric_color),
-                (trk, self.dim_color),
-                (vr, vr_color),
-            ]
-            # Calculate total width and distribute evenly
-            total_tw = sum(self._text_w(draw, t, self.font_data) for t, _ in parts)
+            parts = [(alt, self.metric_color), (spd, self.metric_color),
+                     (trk, self.dim_color), (vr, vr_color)]
+            total_tw = sum(self._tw(draw, t, self.font_medium) for t, _ in parts)
             gap = max(3, (w - 4 - total_tw) // max(1, len(parts) - 1))
             x = 2
             for text, c in parts:
-                tw = self._draw(draw, text, (x, y), self.font_data, c)
+                tw = self._tw(draw, text, self.font_medium)
+                self._draw(draw, text, (x, y), self.font_medium, c)
                 x += tw + gap
 
         return img
 
-    def render_area_card(self, aircraft: Dict, index: int = 0, total_count: int = 1) -> None:
-        """Render a single aircraft card to the display."""
+    def render_area_card(self, aircraft, index=0, total_count=1):
         img = self._render_area_card_to_image(aircraft, index, total_count)
         self.dm.image = img.copy()
         self.dm.update_display()
 
-    def render_area_card_image(self, aircraft: Dict, index: int = 0, total_count: int = 1) -> Image.Image:
-        """Render a single aircraft card and return the PIL Image (for Vegas scroll)."""
+    def render_area_card_image(self, aircraft, index=0, total_count=1):
         return self._render_area_card_to_image(aircraft, index, total_count)
-
-    # =====================================================================
-    # Flight Tracking Mode
-    # =====================================================================
-
-    def render_flight_tracking(self, tracked_flight: Any) -> None:
-        """Render a tracked flight detail view using the full display.
-
-        Layout (192×48 example):
-        ┌──────────────────────────────────────────────┐
-        │ [sprite] AA123  American Airlines            │  title, outlined
-        │ ─────────────────────────────────────────     │  separator
-        │  TPA → ORD          AIRBORNE       42%       │  route + status
-        │  Alt:38.6K  Spd:480kt  090°  ↑1200          │  metrics
-        └──────────────────────────────────────────────┘
-        """
-        img = Image.new("RGB", (self.width, self.height), (0, 0, 0))
-        draw = ImageDraw.Draw(img)
-
-        if tracked_flight is None:
-            self._center_text(draw, "No Flight Data", self.height // 2 - 4,
-                              self.font_data, self.error_color)
-            self.dm.image = img.copy()
-            self.dm.update_display()
-            return
-
-        ident = tracked_flight.identifier
-        status = tracked_flight.status
-        origin = tracked_flight.origin or "---"
-        dest = tracked_flight.destination or "---"
-        dep_time = tracked_flight.departure_time or ""
-        arr_time = tracked_flight.arrival_time or ""
-        progress = tracked_flight.progress_pct
-        city = tracked_flight.city_overfly or ""
-        ac_state = tracked_flight.aircraft_state
-
-        title_lh = self._line_h(self.font_title)
-        data_lh = self._line_h(self.font_data)
-
-        # Vertically center content
-        content_h = title_lh + 1 + data_lh * 2
-        y = max(1, (self.height - content_h) // 2)
-
-        # === Row 1: [sprite] Flight ID + airline name ===
-        text_x = 2
-        airline_icao = ""
-        if ac_state:
-            airline_icao = ac_state.get("airline_icao", "") if isinstance(ac_state, dict) else getattr(ac_state, "airline_icao", "")
-        airline_name = ""
-        if ac_state:
-            airline_name = ac_state.get("airline_name", "") if isinstance(ac_state, dict) else getattr(ac_state, "airline_name", "")
-
-        if self.show_aircraft_icon:
-            sprite_y = y + max(0, (title_lh - 8 * self.sprite_scale) // 2)
-            sw = self._draw_sprite(draw, 2, sprite_y, airline_icao=airline_icao, callsign=ident)
-            text_x = 2 + sw
-
-        title_str = ident
-        if airline_name:
-            title_str += f"  {airline_name}"
-        self._draw_outlined(draw, title_str, (text_x, y), self.font_title, self.header_color)
-        y += title_lh
-
-        # Separator
-        self._draw_sep(draw, y)
-        y += 2
-
-        # === Row 2: Route + status ===
-        if status == "AIRBORNE":
-            if origin != "---" and dest != "---":
-                self._draw(draw, f"{origin} \u2192 {dest}", (2, y), self.font_data, self.route_color)
-            # Status right side
-            status_text = "AIRBORNE"
-            if progress is not None:
-                status_text = f"{int(progress)}%"
-            elif city:
-                status_text = f"over {city}"
-            self._right_text(draw, status_text, y, self.font_data, (0, 255, 100))
-            y += data_lh
-
-            # === Row 3: ADS-B metrics ===
-            if ac_state and y + data_lh <= self.height:
-                _get = (lambda k: ac_state.get(k)) if isinstance(ac_state, dict) else (lambda k: getattr(ac_state, k, None))
-                alt = format_altitude(_get("altitude"), self.units)
-                spd = format_speed(_get("speed"), self.units)
-                trk = format_track(_get("heading"))
-                vr_val = format_vrate(_get("vertical_rate"), self.units)
-
-                x = 2
-                gap = 6
-                for text, c in [
-                    (f"Alt:{alt}", self.metric_color),
-                    (f"Spd:{spd}", self.metric_color),
-                    (trk, self.metric_color),
-                    (vr_val, (0, 255, 100) if vr_val.startswith("\u2191") else
-                             (255, 80, 80) if vr_val.startswith("\u2193") else self.dim_color),
-                ]:
-                    tw = self._draw(draw, text, (x, y), self.font_data, c)
-                    x += tw + gap
-
-        elif status == "SCHEDULED":
-            sched = f"SCHED  DEP {dep_time}" if dep_time else "SCHEDULED"
-            if origin != "---" and dest != "---":
-                self._draw(draw, f"{origin} \u2192 {dest}", (2, y), self.font_data, self.route_color)
-                self._right_text(draw, sched, y, self.font_data, (255, 200, 0))
-            else:
-                self._center_text(draw, sched, y, self.font_data, (255, 200, 0))
-
-        elif status == "LANDED":
-            landed = f"LANDED  ARR {arr_time}" if arr_time else "LANDED"
-            if origin != "---" and dest != "---":
-                self._draw(draw, f"{origin} \u2192 {dest}", (2, y), self.font_data, self.route_color)
-                self._right_text(draw, landed, y, self.font_data, (0, 255, 100))
-            else:
-                self._center_text(draw, landed, y, self.font_data, (0, 255, 100))
-
-        else:
-            self._center_text(draw, "UNKNOWN", y, self.font_data, self.dim_color)
-
-        self.dm.image = img.copy()
-        self.dm.update_display()
 
     # =====================================================================
     # Error / No Data
     # =====================================================================
 
-    def render_error(self, message: str = "NO DATA") -> None:
+    def render_error(self, message="NO DATA"):
         img = Image.new("RGB", (self.width, self.height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
-        self._center_text(draw, message, (self.height - self._font_h(self.font_title)) // 2,
-                          self.font_title, self.error_color)
+        self._draw_centered(draw, message, (self.height - self._fh(self.font_large)) // 2,
+                            self.font_large, self.error_color)
         self.dm.image = img.copy()
         self.dm.update_display()

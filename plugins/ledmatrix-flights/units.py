@@ -1,8 +1,8 @@
 """
 Unit conversion and formatting functions for the Flight Tracker plugin.
 
-Handles imperial/metric conversions and display-friendly formatting for
-altitude, speed, vertical rate, and distance.
+Supports granular per-metric unit selection (altitude_unit, speed_unit,
+track_format, vr_unit) as well as the legacy imperial/metric system toggle.
 """
 
 from typing import Any, Callable, Optional
@@ -20,142 +20,206 @@ def null_safe(value: Any, fmt_func: Optional[Callable] = None, default: str = "-
         return default
 
 
-# --- Unit conversions ---
+# --- Raw conversions (internal feet / knots / fpm) ---
 
 def meters_to_feet(m: float) -> float:
-    """Convert meters to feet."""
     return m * 3.28084
 
-
 def feet_to_meters(ft: float) -> float:
-    """Convert feet to meters."""
     return ft / 3.28084
 
-
 def ms_to_knots(ms: float) -> float:
-    """Convert meters/second to knots."""
     return ms * 1.94384
 
-
 def knots_to_kmh(kts: float) -> float:
-    """Convert knots to km/h."""
     return kts * 1.852
 
-
 def ms_to_fpm(ms: float) -> float:
-    """Convert meters/second to feet/minute."""
     return ms * 196.85
 
 
-# --- System-aware conversions ---
+# --- Altitude ---
 
-def convert_altitude(feet: float, system: str = "imperial") -> float:
-    """Convert altitude from feet to the target unit system."""
-    if system == "metric":
-        return feet_to_meters(feet)
-    return feet
+_ALT_CONVERTERS = {
+    "ft": lambda ft: ft,
+    "m": feet_to_meters,
+    "km": lambda ft: feet_to_meters(ft) / 1000,
+    "nmi": lambda ft: ft / 6076.12,
+}
 
-
-def convert_speed(knots: float, system: str = "imperial") -> float:
-    """Convert speed from knots to the target unit system."""
-    if system == "metric":
-        return knots_to_kmh(knots)
-    return knots
+_ALT_UNIT_LABELS = {"ft": "ft", "m": "m", "km": "km", "nmi": "nmi"}
 
 
-def convert_vrate(fpm: float, system: str = "imperial") -> float:
-    """Convert vertical rate from ft/min to the target unit system."""
-    if system == "metric":
-        return fpm / 196.85  # back to m/s
-    return fpm
+def format_altitude(feet: Optional[float], unit: str = "ft", compact: bool = True) -> str:
+    """Format altitude with configurable unit.
 
-
-def convert_distance(miles: float, system: str = "imperial") -> float:
-    """Convert distance from miles to the target unit system."""
-    if system == "metric":
-        return miles * 1.60934
-    return miles
-
-
-# --- Display formatting ---
-
-def format_altitude(feet: Optional[float], system: str = "imperial", compact: bool = True) -> str:
-    """Format altitude for display.
-
-    In compact mode, values >= 1000 are shown as e.g. ``38.6K``.
-    Below 1000, the exact integer is shown.
+    ``unit`` is one of ``ft``, ``m``, ``km``, ``nmi``.
+    Legacy: passing ``system="imperial"`` or ``system="metric"`` still works
+    via the compatibility wrapper below.
     """
     if feet is None:
         return "---"
-    val = convert_altitude(feet, system)
-    unit = "m" if system == "metric" else "ft"
+    try:
+        feet = float(feet)
+    except (TypeError, ValueError):
+        return "---"
+    conv = _ALT_CONVERTERS.get(unit, _ALT_CONVERTERS["ft"])
+    val = conv(max(0, feet))  # clamp negative altitudes to 0
+    u = _ALT_UNIT_LABELS.get(unit, unit)
     if compact and abs(val) >= 1000:
         return f"{val / 1000:.1f}K"
-    return f"{int(round(val))}{unit}"
+    return f"{int(round(val))}{u}"
 
 
-def format_speed(knots: Optional[float], system: str = "imperial") -> str:
-    """Format ground speed for display."""
+# --- Speed ---
+
+_SPD_CONVERTERS = {
+    "kn": lambda kts: kts,
+    "mph": lambda kts: kts * 1.15078,
+    "kmh": knots_to_kmh,
+    "ms": lambda kts: kts / 1.94384,
+    "mach": lambda kts: kts / 661.5,  # approximate at sea level
+}
+
+_SPD_UNIT_LABELS = {"kn": "kn", "mph": "mph", "kmh": "kmh", "ms": "m/s", "mach": "M"}
+
+
+def format_speed(knots: Optional[float], unit: str = "kn") -> str:
+    """Format ground speed with configurable unit."""
     if knots is None:
         return "---"
-    val = convert_speed(knots, system)
-    unit = "km/h" if system == "metric" else "kt"
-    return f"{int(round(val))}{unit}"
+    try:
+        knots = float(knots)
+    except (TypeError, ValueError):
+        return "---"
+    conv = _SPD_CONVERTERS.get(unit, _SPD_CONVERTERS["kn"])
+    val = conv(knots)
+    u = _SPD_UNIT_LABELS.get(unit, unit)
+    if unit == "mach":
+        return f"{val:.2f}{u}"
+    return f"{int(round(val))}{u}"
 
 
-def format_track(degrees: Optional[float]) -> str:
-    """Format track/heading for display."""
+# --- Track ---
+
+_CARDINAL_16 = [
+    "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+    "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
+]
+
+
+def format_track(degrees: Optional[float], fmt: str = "deg") -> str:
+    """Format track/heading. ``fmt`` is ``deg`` or ``cardinal``."""
     if degrees is None:
         return "---"
-    return f"{int(round(degrees)) % 360:03d}\u00b0"
+    try:
+        degrees = float(degrees)
+    except (TypeError, ValueError):
+        return "---"
+    d = int(round(degrees)) % 360
+    if fmt == "cardinal":
+        return _CARDINAL_16[round(d / 22.5) % 16]
+    return f"{d:03d}deg"
 
 
-def format_vrate(fpm: Optional[float], system: str = "imperial") -> str:
-    """Format vertical rate with directional arrow.
+# --- Vertical Rate ---
 
-    Uses a dead band of +/-50 ft/min (or ~0.25 m/s) for level flight.
+_VR_CONVERTERS = {
+    "fpm": lambda fpm: fpm,
+    "fts": lambda fpm: fpm / 60,
+    "ms": lambda fpm: fpm / 196.85,
+    "mph": lambda fpm: fpm * 60 / 5280,
+    "kmh": lambda fpm: fpm * 60 / 5280 * 1.60934,
+}
+
+_VR_UNIT_LABELS = {"fpm": "fpm", "fts": "ft/s", "ms": "m/s", "mph": "mph", "kmh": "kmh"}
+
+
+def format_vrate(fpm: Optional[float], unit: str = "fpm", use_arrows: bool = True) -> str:
+    """Format vertical rate.
+
+    When ``use_arrows`` is True (default, used by area cards), renders
+    with arrow characters (↑/↓/→).  When False (used by flight detail
+    layouts), renders with explicit +/- sign.
     """
     if fpm is None:
         return "---"
-    val = convert_vrate(fpm, system)
-    threshold = 0.25 if system == "metric" else 50
-    if val > threshold:
-        arrow = "\u2191"  # ↑
-    elif val < -threshold:
-        arrow = "\u2193"  # ↓
-    else:
-        arrow = "\u2192"  # →
-    return f"{arrow}{int(round(abs(val)))}"
+    try:
+        fpm = float(fpm)
+    except (TypeError, ValueError):
+        return "---"
+    conv = _VR_CONVERTERS.get(unit, _VR_CONVERTERS["fpm"])
+    val = conv(fpm)
+    u = _VR_UNIT_LABELS.get(unit, unit)
+    threshold = 0.25 if unit == "ms" else (0.5 if unit in ("fts", "mph", "kmh") else 50)
 
+    if use_arrows:
+        if val > threshold:
+            return f"\u2191{int(round(abs(val)))}"
+        elif val < -threshold:
+            return f"\u2193{int(round(abs(val)))}"
+        else:
+            return f"\u2192{int(round(abs(val)))}"
+    else:
+        sign = "+" if val >= 0 else "-"
+        return f"{sign}{int(round(abs(val)))}{u}"
+
+
+# --- Distance ---
 
 def format_distance(miles: Optional[float], system: str = "imperial") -> str:
     """Format distance for display."""
     if miles is None:
         return "---"
-    val = convert_distance(miles, system)
-    unit = "km" if system == "metric" else "mi"
+    if system == "metric":
+        val = miles * 1.60934
+        u = "km"
+    else:
+        val = miles
+        u = "mi"
     if val < 1:
-        return f"{val:.2f}{unit}"
+        return f"{val:.2f}{u}"
     if val < 10:
-        return f"{val:.1f}{unit}"
-    return f"{int(round(val))}{unit}"
+        return f"{val:.1f}{u}"
+    return f"{int(round(val))}{u}"
 
 
-def altitude_unit(system: str = "imperial") -> str:
-    """Return the altitude unit label for the given system."""
+# --- Legacy compatibility wrappers ---
+# These map the old system="imperial"/"metric" interface to the new per-unit API.
+
+def _alt_unit_from_system(system: str) -> str:
     return "m" if system == "metric" else "ft"
 
+def _spd_unit_from_system(system: str) -> str:
+    return "kmh" if system == "metric" else "kn"
+
+def _vr_unit_from_system(system: str) -> str:
+    return "ms" if system == "metric" else "fpm"
+
+
+def convert_altitude(feet: float, system: str = "imperial") -> float:
+    u = _alt_unit_from_system(system)
+    return _ALT_CONVERTERS.get(u, lambda x: x)(feet)
+
+def convert_speed(knots: float, system: str = "imperial") -> float:
+    u = _spd_unit_from_system(system)
+    return _SPD_CONVERTERS.get(u, lambda x: x)(knots)
+
+def convert_vrate(fpm: float, system: str = "imperial") -> float:
+    u = _vr_unit_from_system(system)
+    return _VR_CONVERTERS.get(u, lambda x: x)(fpm)
+
+def convert_distance(miles: float, system: str = "imperial") -> float:
+    return miles * 1.60934 if system == "metric" else miles
+
+def altitude_unit(system: str = "imperial") -> str:
+    return "m" if system == "metric" else "ft"
 
 def speed_unit(system: str = "imperial") -> str:
-    """Return the speed unit label for the given system."""
     return "km/h" if system == "metric" else "kt"
 
-
 def vrate_unit(system: str = "imperial") -> str:
-    """Return the vertical rate unit label for the given system."""
     return "m/s" if system == "metric" else "fpm"
 
-
 def distance_unit(system: str = "imperial") -> str:
-    """Return the distance unit label for the given system."""
     return "km" if system == "metric" else "mi"
