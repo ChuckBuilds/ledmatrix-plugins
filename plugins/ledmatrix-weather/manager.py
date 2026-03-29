@@ -1153,10 +1153,11 @@ class WeatherPlugin(BasePlugin):
                 if lat is None or lon is None:
                     self._display_no_data()
                     return
-                map_provider = self.config.get('radar_map_provider', 'carto_dark')
+                line_color = tuple(self.config.get('radar_line_color', [0, 130, 70]))
+                fill_color = tuple(self.config.get('radar_fill_color', [15, 25, 15]))
                 self._radar_fetcher = RadarFetcher(
                     lat, lon, self.radar_zoom, self.cache_manager,
-                    map_provider=map_provider,
+                    line_color=line_color, fill_color=fill_color,
                 )
 
             width = self.display_manager.matrix.width

@@ -131,12 +131,23 @@
       "description": "Radar zoom level (4=regional, 6=local, 8=very close). Higher values show more detail but less area.",
       "title": "Radar Zoom Level"
     },
-    "radar_map_provider": {
-      "type": "string",
-      "default": "carto_dark_nolabels",
-      "enum": ["carto_dark_nolabels", "carto_dark", "carto_voyager_nolabels", "carto", "osm"],
-      "description": "Map tile provider for radar background. 'carto_dark_nolabels' = black water/dark land (WeatherStar style, recommended). 'carto_dark' = dark with labels. 'carto' = color map.",
-      "title": "Radar Map Background"
+    "radar_line_color": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [0, 130, 70],
+      "description": "RGB color for state boundary lines on radar map (WeatherStar style). Default is green.",
+      "title": "Radar Map Line Color"
+    },
+    "radar_fill_color": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [15, 25, 15],
+      "description": "RGB color for land fill on radar map. Use [0,0,0] for no fill (outlines only).",
+      "title": "Radar Map Land Color"
     },
     "radar_update_interval": {
       "type": "integer",
