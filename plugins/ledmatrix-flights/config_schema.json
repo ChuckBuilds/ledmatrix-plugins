@@ -449,8 +449,8 @@
     "show_aircraft_icon": {
       "type": "boolean",
       "title": "Show Airline Logos",
-      "description": "Show 8×8 pixel art airline logos next to callsigns in area and flight tracking modes. Includes sprites for major airlines (Delta, American, United, Southwest, JetBlue, etc.) with a generic plane fallback.",
-      "default": false
+      "description": "Show airline logos in area mode (8×8 pixel sprites next to callsigns). Flight detail layouts always show logos in the logo zone when available (52 airlines included as PNG assets).",
+      "default": true
     },
     "scroll_speed": {
       "type": "integer",

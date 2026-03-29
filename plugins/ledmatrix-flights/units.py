@@ -151,7 +151,8 @@ def format_vrate(fpm: Optional[float], unit: str = "fpm", use_arrows: bool = Tru
     conv = _VR_CONVERTERS.get(unit, _VR_CONVERTERS["fpm"])
     val = conv(fpm)
     u = _VR_UNIT_LABELS.get(unit, unit)
-    threshold = 0.25 if unit == "ms" else (0.5 if unit in ("fts", "mph", "kmh") else 50)
+    # Threshold in native unit: ~50 fpm equivalent in each unit system
+    threshold = 0.25 if unit == "ms" else (0.85 if unit == "fts" else (0.6 if unit in ("mph", "kmh") else 50))
 
     if use_arrows:
         if val > threshold:

@@ -10,13 +10,13 @@ These are original geometric designs inspired by airline brand colors —
 not copies of trademarked logos.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 # Type alias: each pixel is (x, y, r, g, b)
 SpritePixel = Tuple[int, int, int, int, int]
 # Type alias: sprite definition
-SpriteData = Dict[str, any]
+SpriteData = Dict[str, Any]
 
 
 def _mono(pixels: List[Tuple[int, int]], r: int, g: int, b: int) -> List[SpritePixel]:

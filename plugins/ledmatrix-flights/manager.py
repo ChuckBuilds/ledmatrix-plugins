@@ -743,10 +743,10 @@ class FlightTrackerPlugin(BasePlugin):
         dest_info = airport.get('destination') or {}
         origin_pos = origin_info.get('position') or {}
         dest_pos = dest_info.get('position') or {}
-        if origin_pos.get('latitude') and not aircraft.get('origin_lat'):
+        if origin_pos.get('latitude') and origin_pos.get('longitude') and not aircraft.get('origin_lat'):
             aircraft['origin_lat'] = origin_pos['latitude']
             aircraft['origin_lon'] = origin_pos['longitude']
-        if dest_pos.get('latitude') and not aircraft.get('dest_lat'):
+        if dest_pos.get('latitude') and dest_pos.get('longitude') and not aircraft.get('dest_lat'):
             aircraft['dest_lat'] = dest_pos['latitude']
             aircraft['dest_lon'] = dest_pos['longitude']
 
@@ -1202,16 +1202,20 @@ class FlightTrackerPlugin(BasePlugin):
             altitude = aircraft.get('alt_baro', aircraft.get('alt_geom', 0))
             if altitude == 'ground':
                 altitude = 0
-            
+
             callsign = aircraft.get('flight', '').strip() or icao
             speed = aircraft.get('gs', 0)  # Ground speed in knots
             heading = aircraft.get('track', aircraft.get('heading', 0))
             registration = aircraft.get('r', '')  # Registration/tail number
             aircraft_type = aircraft.get('t', 'Unknown')
-            
+            on_ground = aircraft.get('alt_baro') == 'ground'
+            category = aircraft.get('category', '')  # ICAO wake turbulence category
+            # SkyAware baro_rate is ft/min, geom_rate is also ft/min
+            vertical_rate = aircraft.get('baro_rate', aircraft.get('geom_rate'))
+
             # Calculate color based on altitude
             color = self._altitude_to_color(altitude)
-            
+
             # Build aircraft dict
             aircraft_info = {
                 'icao': icao,
@@ -1222,8 +1226,11 @@ class FlightTrackerPlugin(BasePlugin):
                 'altitude': altitude,
                 'speed': speed,
                 'heading': heading,
+                'vertical_rate': vertical_rate,
                 'aircraft_type': aircraft_type,
                 'distance_miles': distance_miles,
+                'on_ground': on_ground,
+                'category': category,
                 'color': color,
                 'last_seen': current_time
             }

@@ -148,9 +148,10 @@ class FlightRenderer:
             self.font_small = _ttf("PressStart2P-Regular.ttf", 6)
             self.sprite_scale = 1
         else:
+            # Tiny display (64×32 or smaller)
             self.font_large = _ttf("PressStart2P-Regular.ttf", 8)
             self.font_medium = _ttf("PressStart2P-Regular.ttf", 6)
-            self.font_small = _ttf("PressStart2P-Regular.ttf", 6)
+            self.font_small = _ttf("4x6-font.ttf", 6)
             self.sprite_scale = 1
 
     # --- Drawing primitives ---
@@ -189,6 +190,14 @@ class FlightRenderer:
 
     def _draw_sep(self, draw, y, color=(40, 40, 40)):
         draw.line([(0, y), (self.width, y)], fill=color, width=1)
+
+    def _truncate(self, draw, text: str, font, max_w: int) -> str:
+        """Truncate text with ellipsis if it exceeds max_w pixels."""
+        if self._tw(draw, text, font) <= max_w:
+            return text
+        while len(text) > 1 and self._tw(draw, text + "..", font) > max_w:
+            text = text[:-1]
+        return text + ".."
 
     def _draw_sprite(self, draw, x, y, airline_icao="", callsign="", fallback_color=(200, 200, 200)):
         pixels = get_sprite_for_aircraft(airline_icao, "", callsign)
@@ -289,7 +298,7 @@ class FlightRenderer:
         metric_x = logo_w + info_w
 
         # --- LOGO ZONE ---
-        airline_icao = _get("airline_icao", "")
+        airline_icao = self._resolve_airline_icao(tf, _get)
         logo = _load_airline_logo(airline_icao, h - 4) if airline_icao else None
         if logo:
             lx = (logo_w - logo.width) // 2
@@ -334,23 +343,27 @@ class FlightRenderer:
         rows_h = large_lh * 3 + small_lh * 2
         y = max(1, (h - rows_h) // 2)
 
-        # Row 1: Airline name
-        self._draw(draw, null_safe(airline_name), (info_x + 2, y), self.font_large, self.header_color)
+        # Row 1: Airline name (truncated to info zone width)
+        name_text = self._truncate(draw, null_safe(airline_name), self.font_large, info_w - 4)
+        self._draw(draw, name_text, (info_x + 2, y), self.font_large, self.header_color)
         y += large_lh
         # Row 2: Route IATA-IATA
         route = f"{origin}-{dest}" if origin != "---" and dest != "---" else "---"
         self._draw(draw, route, (info_x + 2, y), self.font_large, self.header_color)
         y += large_lh
         # Row 3: Aircraft type
-        self._draw(draw, null_safe(atype, default="---"), (info_x + 2, y), self.font_large, self.header_color)
+        type_text = self._truncate(draw, null_safe(atype, default="---"), self.font_large, info_w - 4)
+        self._draw(draw, type_text, (info_x + 2, y), self.font_large, self.header_color)
         y += large_lh
         # Row 4: Origin full name
         if origin_full:
-            self._draw(draw, origin_full, (info_x + 2, y), self.font_small, self.airport_color)
+            self._draw(draw, self._truncate(draw, origin_full, self.font_small, info_w - 4),
+                       (info_x + 2, y), self.font_small, self.airport_color)
         y += small_lh
         # Row 5: Dest full name
         if dest_full:
-            self._draw(draw, dest_full, (info_x + 2, y), self.font_small, self.airport_color)
+            self._draw(draw, self._truncate(draw, dest_full, self.font_small, info_w - 4),
+                       (info_x + 2, y), self.font_small, self.airport_color)
 
         # --- METRICS ZONE ---
         alt_v = self._fmt_alt(_get("altitude"))
@@ -379,6 +392,17 @@ class FlightRenderer:
     # Layout 2: Condensed — flight_detail_condensed
     # =====================================================================
 
+    def _resolve_airline_icao(self, tf, _get) -> str:
+        """Try to determine airline ICAO from aircraft_state or callsign prefix."""
+        icao = _get("airline_icao", "") or ""
+        if icao:
+            return icao
+        # Try callsign prefix (first 3 chars) — many airline callsigns use ICAO prefix
+        ident = tf.identifier or ""
+        if len(ident) >= 3 and ident[:3].isalpha():
+            return ident[:3].upper()
+        return ""
+
     def _render_condensed(self, tf) -> None:
         w, h = self.width, self.height
         img = Image.new("RGB", (w, h), (0, 0, 0))
@@ -399,7 +423,7 @@ class FlightRenderer:
         text_w = w - logo_w
 
         # --- LOGO COL ---
-        airline_icao = _get("airline_icao", "")
+        airline_icao = self._resolve_airline_icao(tf, _get)
         logo = _load_airline_logo(airline_icao, h - 4) if airline_icao else None
         if logo:
             lx = (logo_w - logo.width) // 2
