@@ -1905,14 +1905,23 @@ class FlightTrackerPlugin(BasePlugin):
         return closest
     
     def get_vegas_content_type(self) -> str:
-        """Flight tracker is a static map block in Vegas scroll."""
+        """Return Vegas scroll content type based on display mode.
+
+        Area and stats modes produce multiple cards (one per aircraft/stat)
+        that scroll individually. Map and overhead are single static blocks.
+        """
+        mode = self.display_mode
+        if mode in ('area', 'stats'):
+            return 'multi'
         return 'static'
 
     def get_vegas_content(self) -> Optional[List[Image.Image]]:
         """Return rendered frames for Vegas scroll mode.
 
         Map and overhead modes return a single image (static block).
-        Stats mode returns one image per stat card so they scroll as individual items.
+        Area mode returns one full-screen card per aircraft for scrolling.
+        Stats mode returns one image per stat card.
+        Flight tracking returns one card per tracked flight.
         """
         try:
             w = self.display_width
@@ -1920,9 +1929,16 @@ class FlightTrackerPlugin(BasePlugin):
 
             mode = self.display_mode
             if mode == 'auto':
+                has_airborne_tracked = any(
+                    tf.status == "AIRBORNE" for tf in self.tracked_flight_data.values()
+                )
                 closest = self.get_closest_aircraft()
-                if self.proximity_enabled and closest and closest['distance_miles'] <= self.proximity_distance_miles:
+                if has_airborne_tracked:
+                    mode = 'flight_tracking'
+                elif self.proximity_enabled and closest and closest['distance_miles'] <= self.proximity_distance_miles:
                     mode = 'overhead'
+                elif self.anchor_airport and self._get_anchor_aircraft():
+                    mode = 'area'
                 elif self.aircraft_data:
                     mode = 'map'
                 else:
@@ -1940,22 +1956,48 @@ class FlightTrackerPlugin(BasePlugin):
                 return [img]
 
             if mode == 'overhead':
-                # Capture via display() — overhead is a single block
                 self._display_overhead(force_clear=False)
                 captured = self.display_manager.image
                 if captured is not None:
                     return [captured.copy()]
                 return None
 
-            # Stats mode — return one card per stat so they scroll individually
+            if mode == 'area':
+                # One full-screen card per aircraft — scrolls individually in Vegas
+                if self.anchor_airport:
+                    anchor_list = self._get_anchor_aircraft()
+                    other_list = [ac for ac in self._get_filtered_sorted_aircraft()
+                                 if ac['icao'] not in {a['icao'] for a in anchor_list}]
+                    aircraft_list = anchor_list + other_list
+                else:
+                    aircraft_list = self._get_filtered_sorted_aircraft()
+
+                aircraft_list = aircraft_list[:self.max_aircraft]
+                total = len(aircraft_list)
+                images = []
+                for i, ac in enumerate(aircraft_list):
+                    img = self._renderer.render_area_card_image(ac, index=i, total_count=total)
+                    images.append(img)
+                return images if images else None
+
+            if mode == 'flight_tracking':
+                # One card per tracked flight
+                images = []
+                for tf in self.tracked_flight_data.values():
+                    self._renderer.render_flight_tracking(tf)
+                    captured = self.display_manager.image
+                    if captured is not None:
+                        images.append(captured.copy())
+                return images if images else None
+
+            # Stats mode — one card per stat slot
             images = []
-            # Temporarily save stat state, iterate through each slot
             saved_stat = self.current_stat
             saved_time = self.last_stat_change
             num_stats = 3 + (2 if self.flight_records_enabled else 0)
             for slot in range(num_stats):
                 self.current_stat = slot
-                self.last_stat_change = time.time()  # Prevent rotation during render
+                self.last_stat_change = time.time()
                 try:
                     self._display_stats(force_clear=False)
                     captured = self.display_manager.image
@@ -1963,7 +2005,6 @@ class FlightTrackerPlugin(BasePlugin):
                         images.append(captured.copy())
                 except Exception as e:
                     logger.debug(f"[Flight Tracker] Failed to render stat slot {slot}: {e}", exc_info=True)
-            # Restore state
             self.current_stat = saved_stat
             self.last_stat_change = saved_time
             return images if images else None
@@ -1984,20 +2025,11 @@ class FlightTrackerPlugin(BasePlugin):
         aircraft_count = len(self.aircraft_data)
         closest = self.get_closest_aircraft()
 
-        # Map framework display_mode names to internal mode names
-        _FRAMEWORK_MODE_MAP = {
-            'flight_tracker': None,     # use config display_mode
-            'flight_area': 'area',
-            'flight_tracking': 'flight_tracking',
-        }
-        if display_mode and display_mode in _FRAMEWORK_MODE_MAP:
-            mapped = _FRAMEWORK_MODE_MAP[display_mode]
-            if mapped:
-                mode = mapped
-            else:
-                mode = self.display_mode  # use config setting
-        else:
-            mode = self.display_mode
+        # The framework passes display_mode='flight_tracker' (the single
+        # manifest mode name).  We always use our internal config setting
+        # to decide which view to render (map, overhead, stats, area,
+        # flight_tracking, or auto).
+        mode = self.display_mode
 
         self.logger.debug(
             "[Flight Tracker] display() called: configured_mode=%s, framework_mode=%s, resolved=%s, aircraft=%s",
@@ -2094,13 +2126,12 @@ class FlightTrackerPlugin(BasePlugin):
         return matches
 
     def _display_area(self, force_clear: bool = False) -> None:
-        """Display area mode: multi-aircraft list with FlightWall metrics."""
+        """Display area mode: one aircraft per full display, cycling through them."""
         if force_clear:
             self.display_manager.clear()
 
         # Get filtered + sorted aircraft
         if self.anchor_airport:
-            # Anchor mode: prioritize anchor matches, then fill with others
             anchor_list = self._get_anchor_aircraft()
             other_list = [ac for ac in self._get_filtered_sorted_aircraft()
                          if ac['icao'] not in {a['icao'] for a in anchor_list}]
@@ -2109,22 +2140,24 @@ class FlightTrackerPlugin(BasePlugin):
             aircraft_list = self._get_filtered_sorted_aircraft()
 
         total_count = len(aircraft_list)
+        if total_count == 0:
+            self._renderer.render_error("No Aircraft")
+            return
 
-        # Pagination: cycle through pages every 8 seconds
+        # Limit to max_aircraft
+        aircraft_list = aircraft_list[:self.max_aircraft]
+        total_display = len(aircraft_list)
+
+        # Cycle through one aircraft at a time every 5 seconds
         now = time.time()
-        max_per_page = self.max_aircraft
-        num_pages = max(1, (total_count + max_per_page - 1) // max_per_page)
-        if now - self._area_last_page_change >= 8.0:
-            self._area_page = (self._area_page + 1) % num_pages
+        if now - self._area_last_page_change >= 5.0:
+            self._area_page = (self._area_page + 1) % total_display
             self._area_last_page_change = now
 
-        start = self._area_page * max_per_page
-        page_aircraft = aircraft_list[start:start + max_per_page]
-
-        self._renderer.render_area(
-            aircraft_list=page_aircraft,
-            page=self._area_page,
-            max_per_page=max_per_page,
+        idx = self._area_page % total_display
+        self._renderer.render_area_card(
+            aircraft=aircraft_list[idx],
+            index=idx,
             total_count=total_count,
         )
 

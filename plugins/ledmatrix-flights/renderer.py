@@ -201,99 +201,167 @@ class FlightRenderer:
 
     # --- Area Mode (FR-01) ---
 
-    def render_area(
+    def render_area_card(
         self,
-        aircraft_list: List[Dict],
-        page: int = 0,
-        max_per_page: int = 5,
-        total_count: int = 0,
+        aircraft: Dict,
+        index: int = 0,
+        total_count: int = 1,
     ) -> None:
-        """Render the area mode: multi-aircraft list with FlightWall metrics.
+        """Render a single aircraft using the full display — FlightWall style.
+
+        Each aircraft gets the entire screen. The manager cycles through
+        aircraft one at a time.
 
         Args:
-            aircraft_list: Pre-sorted, pre-filtered list of aircraft dicts for this page.
-            page: Current page index (0-based).
-            max_per_page: Max aircraft per page.
-            total_count: Total aircraft count (for overflow notice).
+            aircraft: Single aircraft dict.
+            index: Current aircraft index (0-based, for counter display).
+            total_count: Total aircraft in range (for N/M counter).
         """
         img = Image.new("RGB", (self.width, self.height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
 
+        font_title = self.fonts.get("data_medium", self.fonts.get("medium"))
         font_data = self.fonts.get("data_small", self.fonts.get("small"))
-        line_h = self._line_spacing(font_data, 1.1)
+        title_h = self._line_spacing(font_title, 1.2)
+        data_h = self._line_spacing(font_data, 1.2)
 
-        if not aircraft_list:
+        if not aircraft:
             self._draw_text(draw, "No Aircraft", (2, self.height // 2 - 4), font_data, (200, 200, 200))
             self.dm.image = img.copy()
             self.dm.update_display()
             return
 
+        callsign = aircraft.get("callsign", "---")
+        alt = format_altitude(aircraft.get("altitude"), self.units)
+        spd = format_speed(aircraft.get("speed"), self.units)
+        trk = format_track(aircraft.get("heading"))
+        vr = format_vrate(aircraft.get("vertical_rate"), self.units)
+        dist = format_distance(aircraft.get("distance_miles"), self.units)
+        origin = aircraft.get("origin", "")
+        destination = aircraft.get("destination", "")
+        airline_name = aircraft.get("airline_name", "")
+        aircraft_type = aircraft.get("aircraft_type", "")
+        color = tuple(aircraft.get("color", self.header_color))
+
+        # Anchor airport arrows
+        prefix = ""
+        if aircraft.get("_anchor_arrival"):
+            prefix = "\u2192 "  # → (arrival)
+        elif aircraft.get("_anchor_departure"):
+            prefix = "\u2190 "  # ← (departure)
+
         y = 1
-        displayed = 0
+        text_x = 1
 
-        for ac in aircraft_list[:max_per_page]:
-            if y + line_h * 2 > self.height:
-                break
+        # --- Line 1: [sprite] callsign + airline name ---
+        if self.show_aircraft_icon:
+            sprite_w = self._draw_airline_sprite(
+                draw, 1, y,
+                airline_icao=aircraft.get("airline_icao", ""),
+                callsign=callsign,
+                fallback_color=color,
+            )
+            text_x = 1 + sprite_w + 2
 
-            callsign = ac.get("callsign", "---")
-            alt = format_altitude(ac.get("altitude"), self.units)
-            spd = format_speed(ac.get("speed"), self.units)
-            trk = format_track(ac.get("heading"))
-            vr = format_vrate(ac.get("vertical_rate"), self.units)
-            dist = format_distance(ac.get("distance_miles"), self.units)
+        callsign_str = f"{prefix}{callsign}"
+        if airline_name:
+            callsign_str += f" {airline_name}"
+        self._draw_text_outlined(draw, callsign_str, (text_x, y), font_title, color)
 
-            # Check if we can fit both lines, or squeeze into one
-            if y + line_h * 2 <= self.height:
-                # Two-line layout: callsign on top, metrics on bottom
-                color = tuple(ac.get("color", self.header_color))
+        # Counter on the right: "3/7"
+        counter = f"{index + 1}/{total_count}"
+        cw = self._text_width(draw, counter, font_data)
+        self._draw_text(draw, counter, (self.width - cw - 1, y), font_data, (100, 100, 100))
+        y += title_h
 
-                # Anchor airport arrows
-                prefix = ""
-                if ac.get("_anchor_arrival"):
-                    prefix = "\u2192"  # →
-                elif ac.get("_anchor_departure"):
-                    prefix = "\u2190"  # ←
+        # --- Line 2: Route (if available) or aircraft type ---
+        if origin and destination:
+            route_str = f"{origin}\u2192{destination}"
+            if aircraft_type and aircraft_type != "Unknown":
+                route_str += f"  {aircraft_type}"
+            self._draw_text(draw, route_str, (1, y), font_data, (180, 220, 255))
+            y += data_h
+        elif aircraft_type and aircraft_type != "Unknown":
+            self._draw_text(draw, aircraft_type, (1, y), font_data, (180, 180, 180))
+            y += data_h
 
-                text_x = 1
-                # Draw airline logo sprite if enabled
-                if self.show_aircraft_icon:
-                    sprite_w = self._draw_airline_sprite(
-                        draw, 1, y,
-                        airline_icao=ac.get("airline_icao", ""),
-                        airline_iata="",
-                        callsign=callsign,
-                        fallback_color=color,
-                    )
-                    text_x = 1 + sprite_w + 2  # sprite width + 2px gap
+        # --- Line 3: Metrics — Alt  Spd  Trk  Vr ---
+        metrics = f"Alt:{alt}  Spd:{spd}  Trk:{trk}  Vr:{vr}"
+        self._draw_text(draw, metrics, (1, y), font_data, self.metric_color)
+        y += data_h
 
-                self._draw_text(draw, f"{prefix}{callsign}", (text_x, y), font_data, color)
-
-                # Distance on the right of line 1
-                dist_w = self._text_width(draw, dist, font_data)
-                self._draw_text(draw, dist, (self.width - dist_w - 1, y), font_data, (180, 180, 180))
-
-                y += line_h
-
-                # Metrics line: Alt Spd Trk Vr
-                metrics = f"{alt} {spd} {trk} {vr}"
-                self._draw_text(draw, metrics, (1, y), font_data, self.metric_color)
-                y += line_h
-            else:
-                # Single-line compact: callsign + alt + spd
-                self._draw_text(draw, f"{callsign} {alt} {spd}", (1, y), font_data, self.metric_color)
-                y += line_h
-
-            displayed += 1
-
-        # Overflow notice
-        overflow = total_count - (page * max_per_page + displayed)
-        if overflow > 0 and y + line_h <= self.height:
-            overflow_text = f"+{overflow} more"
-            ow = self._text_width(draw, overflow_text, font_data)
-            self._draw_text(draw, overflow_text, ((self.width - ow) // 2, y), font_data, (120, 120, 120))
+        # --- Line 4: Distance ---
+        if y + data_h <= self.height:
+            self._draw_text(draw, f"Dist:{dist}", (1, y), font_data, (150, 150, 150))
 
         self.dm.image = img.copy()
         self.dm.update_display()
+
+    def render_area_card_image(self, aircraft: Dict, index: int = 0, total_count: int = 1) -> Image.Image:
+        """Render a single aircraft card and return the PIL Image (for Vegas scroll)."""
+        img = Image.new("RGB", (self.width, self.height), (0, 0, 0))
+        draw = ImageDraw.Draw(img)
+
+        font_title = self.fonts.get("data_medium", self.fonts.get("medium"))
+        font_data = self.fonts.get("data_small", self.fonts.get("small"))
+        title_h = self._line_spacing(font_title, 1.2)
+        data_h = self._line_spacing(font_data, 1.2)
+
+        if not aircraft:
+            self._draw_text(draw, "No Aircraft", (2, self.height // 2 - 4), font_data, (200, 200, 200))
+            return img
+
+        callsign = aircraft.get("callsign", "---")
+        alt = format_altitude(aircraft.get("altitude"), self.units)
+        spd = format_speed(aircraft.get("speed"), self.units)
+        trk = format_track(aircraft.get("heading"))
+        vr = format_vrate(aircraft.get("vertical_rate"), self.units)
+        dist = format_distance(aircraft.get("distance_miles"), self.units)
+        color = tuple(aircraft.get("color", self.header_color))
+        origin = aircraft.get("origin", "")
+        destination = aircraft.get("destination", "")
+        airline_name = aircraft.get("airline_name", "")
+
+        prefix = ""
+        if aircraft.get("_anchor_arrival"):
+            prefix = "\u2192 "
+        elif aircraft.get("_anchor_departure"):
+            prefix = "\u2190 "
+
+        y = 1
+        text_x = 1
+
+        if self.show_aircraft_icon:
+            sprite_w = self._draw_airline_sprite(
+                draw, 1, y,
+                airline_icao=aircraft.get("airline_icao", ""),
+                callsign=callsign,
+                fallback_color=color,
+            )
+            text_x = 1 + sprite_w + 2
+
+        callsign_str = f"{prefix}{callsign}"
+        if airline_name:
+            callsign_str += f" {airline_name}"
+        self._draw_text_outlined(draw, callsign_str, (text_x, y), font_title, color)
+
+        counter = f"{index + 1}/{total_count}"
+        cw = self._text_width(draw, counter, font_data)
+        self._draw_text(draw, counter, (self.width - cw - 1, y), font_data, (100, 100, 100))
+        y += title_h
+
+        if origin and destination:
+            self._draw_text(draw, f"{origin}\u2192{destination}", (1, y), font_data, (180, 220, 255))
+            y += data_h
+
+        metrics = f"Alt:{alt}  Spd:{spd}  Trk:{trk}  Vr:{vr}"
+        self._draw_text(draw, metrics, (1, y), font_data, self.metric_color)
+        y += data_h
+
+        if y + data_h <= self.height:
+            self._draw_text(draw, f"Dist:{dist}", (1, y), font_data, (150, 150, 150))
+
+        return img
 
     # --- Flight Tracking Mode (FR-02) ---
 

@@ -8,9 +8,7 @@
   "class_name": "FlightTrackerPlugin",
   "api_version": "1.0.0",
   "display_modes": [
-    "flight_tracker",
-    "flight_area",
-    "flight_tracking"
+    "flight_tracker"
   ],
   "update_interval": 5,
   "dependencies": [
