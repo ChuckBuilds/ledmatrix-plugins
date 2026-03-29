@@ -1972,23 +1972,37 @@ class FlightTrackerPlugin(BasePlugin):
             logger.warning(f"[Flight Tracker] get_vegas_content() failed: {e}")
             return None
 
-    def display(self, force_clear: bool = False) -> None:
+    def display(self, force_clear: bool = False, display_mode: str = None) -> None:
         """Display flight tracker content based on display_mode configuration.
 
         Supports modes: map, overhead, stats, area, flight_tracking, auto.
+
+        The ``display_mode`` parameter is passed by the LEDMatrix framework to
+        indicate which manifest display mode is active.  It maps framework mode
+        names (from manifest ``display_modes``) to our internal mode names.
         """
         aircraft_count = len(self.aircraft_data)
         closest = self.get_closest_aircraft()
-        self.logger.debug(
-            "[Flight Tracker] display() called: configured_mode=%s, aircraft=%s, proximity_enabled=%s, closest_distance=%s",
-            self.display_mode,
-            aircraft_count,
-            self.proximity_enabled,
-            None if not closest else f"{closest['distance_miles']:.3f}",
-        )
 
-        # Determine which mode to use
-        mode = self.display_mode
+        # Map framework display_mode names to internal mode names
+        _FRAMEWORK_MODE_MAP = {
+            'flight_tracker': None,     # use config display_mode
+            'flight_area': 'area',
+            'flight_tracking': 'flight_tracking',
+        }
+        if display_mode and display_mode in _FRAMEWORK_MODE_MAP:
+            mapped = _FRAMEWORK_MODE_MAP[display_mode]
+            if mapped:
+                mode = mapped
+            else:
+                mode = self.display_mode  # use config setting
+        else:
+            mode = self.display_mode
+
+        self.logger.debug(
+            "[Flight Tracker] display() called: configured_mode=%s, framework_mode=%s, resolved=%s, aircraft=%s",
+            self.display_mode, display_mode, mode, aircraft_count,
+        )
         if mode == 'auto':
             # Auto mode priority:
             # 1. Tracked flight airborne → flight_tracking
@@ -2029,7 +2043,7 @@ class FlightTrackerPlugin(BasePlugin):
         elif mode == 'flight_tracking':
             self._display_flight_tracking(force_clear)
         else:
-            self.logger.warning(f"Unknown display_mode: {mode}, using map")
+            self.logger.warning(f"Unknown display_mode: {mode!r}, using map")
             self._display_map(force_clear)
     
     # -------------------------------------------------------------------------
