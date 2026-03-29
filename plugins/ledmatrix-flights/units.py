@@ -217,7 +217,7 @@ def altitude_unit(system: str = "imperial") -> str:
     return "m" if system == "metric" else "ft"
 
 def speed_unit(system: str = "imperial") -> str:
-    return "km/h" if system == "metric" else "kt"
+    return "kmh" if system == "metric" else "kn"
 
 def vrate_unit(system: str = "imperial") -> str:
     return "m/s" if system == "metric" else "fpm"

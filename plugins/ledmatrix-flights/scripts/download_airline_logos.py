@@ -101,16 +101,24 @@ def download_logo(icao: str, iata: str, name: str) -> bool:
         url = url_template.format(icao=icao, iata=iata)
         try:
             resp = requests.get(url, timeout=10, allow_redirects=True)
-            if resp.status_code == 200 and len(resp.content) > 100:
-                # Basic PNG validation
-                if resp.content[:4] == b"\x89PNG":
+            if resp.status_code != 200:
+                print(f"    {source_name}: HTTP {resp.status_code} for {url}")
+            elif len(resp.content) <= 100:
+                print(f"    {source_name}: too small ({len(resp.content)} bytes)")
+            elif resp.content[:4] != b"\x89PNG":
+                print(f"    {source_name}: not a valid PNG ({len(resp.content)} bytes)")
+            else:
+                try:
                     with open(dest, "wb") as f:
                         f.write(resp.content)
-                    size_kb = len(resp.content) / 1024
-                    print(f"  {icao} ({name}): OK from {source_name} ({size_kb:.1f} KB)")
-                    return True
-        except Exception as e:
-            pass
+                except OSError as write_err:
+                    print(f"    {source_name}: write failed: {write_err}")
+                    continue
+                size_kb = len(resp.content) / 1024
+                print(f"  {icao} ({name}): OK from {source_name} ({size_kb:.1f} KB)")
+                return True
+        except requests.RequestException as e:
+            print(f"    {source_name}: request failed: {e}")
         time.sleep(0.2)  # rate limit
 
     print(f"  {icao} ({name}): FAILED — no source had a valid logo")

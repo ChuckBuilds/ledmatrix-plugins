@@ -1843,7 +1843,13 @@ class FlightTrackerPlugin(BasePlugin):
                         tf.city_overfly = city
 
             elif tf.status != "LANDED":
-                # Not found in live data — try enrichment for route info
+                # Not found in live data — clear stale live fields
+                tf.aircraft_state = None
+                tf.progress_pct = None
+                tf.city_overfly = ""
+                if tf.status == "AIRBORNE":
+                    tf.status = "UNKNOWN"
+                # Try enrichment for route info
                 try:
                     enriched = self._enrichment.lookup_tracked_flight(ident)
                     if enriched:
@@ -1912,13 +1918,25 @@ class FlightTrackerPlugin(BasePlugin):
         return closest
     
     def get_vegas_content_type(self) -> str:
-        """Return Vegas scroll content type based on display mode.
+        """Return Vegas scroll content type based on effective display mode.
 
-        Area and stats modes produce multiple cards (one per aircraft/stat)
-        that scroll individually. Map and overhead are single static blocks.
+        Area, stats, and flight_tracking modes produce multiple cards.
+        Map and overhead are single static blocks.
         """
         mode = self.display_mode
-        if mode in ('area', 'stats'):
+        if mode == 'auto':
+            # Resolve auto to the effective mode
+            has_airborne = any(tf.status == "AIRBORNE" for tf in self.tracked_flight_data.values())
+            closest = self.get_closest_aircraft()
+            if has_airborne:
+                mode = 'flight_tracking'
+            elif self.anchor_airport and self._get_anchor_aircraft():
+                mode = 'area'
+            elif self.aircraft_data:
+                mode = 'map'
+            else:
+                mode = 'stats'
+        if mode in ('area', 'stats', 'flight_tracking'):
             return 'multi'
         return 'static'
 
@@ -2020,7 +2038,7 @@ class FlightTrackerPlugin(BasePlugin):
             logger.warning(f"[Flight Tracker] get_vegas_content() failed: {e}")
             return None
 
-    def display(self, force_clear: bool = False, display_mode: str = None) -> None:
+    def display(self, display_mode: str = None, force_clear: bool = False) -> None:
         """Display flight tracker content based on display_mode configuration.
 
         Supports modes: map, overhead, stats, area, flight_tracking, auto.

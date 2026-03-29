@@ -255,10 +255,26 @@ class FR24Fetcher(AircraftFetcher):
 class FR24DetailFetcher:
     """Fetch enrichment details from FR24 clickhandler endpoint (free)."""
 
+    MAX_CACHE_SIZE = 200
+
     def __init__(self, cache_ttl: int = 43200, request_timeout: int = 8):
         self.cache: Dict[str, Dict] = {}
         self.cache_ttl = cache_ttl
         self.timeout = request_timeout
+
+    def _evict_stale(self) -> None:
+        """Remove expired entries and enforce max cache size."""
+        now = time.time()
+        # Remove expired
+        expired = [k for k, v in self.cache.items()
+                   if now - v.get('_fetched_at', 0) >= self.cache_ttl]
+        for k in expired:
+            del self.cache[k]
+        # Enforce max size by evicting oldest
+        if len(self.cache) > self.MAX_CACHE_SIZE:
+            sorted_keys = sorted(self.cache, key=lambda k: self.cache[k].get('_fetched_at', 0))
+            for k in sorted_keys[:len(self.cache) - self.MAX_CACHE_SIZE]:
+                del self.cache[k]
 
     def fetch_detail(self, fr24_id: str) -> Optional[Dict]:
         """Fetch flight detail for a given FR24 flight ID."""
@@ -272,9 +288,10 @@ class FR24DetailFetcher:
             response.raise_for_status()
             data = response.json()
             data['_fetched_at'] = time.time()
+            self._evict_stale()
             self.cache[fr24_id] = data
             return data
-        except Exception as e:
+        except (requests.RequestException, ValueError) as e:
             logger.warning(f"[Flight Tracker] FR24 detail fetch failed for {fr24_id}: {e}")
             return None
 

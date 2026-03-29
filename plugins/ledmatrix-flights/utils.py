@@ -80,13 +80,13 @@ def categorize_aircraft(callsign: str, airline_prefixes: Optional[List[str]] = N
         return "Military"
 
     # Cargo
-    cargo = ['UPS', 'FDX', 'GTI', 'ABX', 'CPZ', 'DHL', 'TNT', 'QFA', 'SIA', 'CAL', 'CARGO']
+    cargo = ['UPS', 'FDX', 'GTI', 'ABX', 'CPZ', 'DHL', 'TNT', 'CARGO']
     for prefix in cargo:
         if cs.startswith(prefix):
             return "Cargo"
 
-    # Major airlines
-    major = ['AAL', 'UAL', 'DAL', 'SWA', 'JBU', 'B6', 'WN', 'AA', 'UA', 'DL']
+    # Major airlines (includes QFA=Qantas, SIA=Singapore, CAL=China Airlines)
+    major = ['AAL', 'UAL', 'DAL', 'SWA', 'JBU', 'B6', 'WN', 'AA', 'UA', 'DL', 'QFA', 'SIA', 'CAL']
     for prefix in major:
         if cs.startswith(prefix):
             return "Airline"
@@ -150,8 +150,14 @@ def is_callsign_worth_fetching(
             return True
 
     # Cargo airlines
-    cargo = ['UPS', 'FDX', 'GTI', 'ABX', 'CPZ', 'DHL', 'TNT', 'QFA', 'SIA', 'CAL']
+    cargo = ['UPS', 'FDX', 'GTI', 'ABX', 'CPZ', 'DHL', 'TNT']
     for prefix in cargo:
+        if cs.startswith(prefix):
+            return True
+
+    # Asia-Pacific airlines (QFA=Qantas, SIA=Singapore, CAL=China Airlines)
+    apac = ['QFA', 'SIA', 'CAL']
+    for prefix in apac:
         if cs.startswith(prefix):
             return True
 

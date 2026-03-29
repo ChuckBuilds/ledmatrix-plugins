@@ -89,7 +89,7 @@ class FlightAwareEnrichment(EnrichmentProvider):
         # Check cache
         cache_key = f"fa_route_{callsign}"
         if self.cache_manager:
-            cached = self.cache_manager.get_cached_data(cache_key, max_age=self.cache_ttl)
+            cached = self.cache_manager.get(cache_key, max_age=self.cache_ttl)
             if cached:
                 return cached
 
@@ -116,7 +116,7 @@ class FlightAwareEnrichment(EnrichmentProvider):
         }
 
         if self.cache_manager:
-            self.cache_manager.save_cache(cache_key, result)
+            self.cache_manager.set(cache_key, result)
 
         return result
 

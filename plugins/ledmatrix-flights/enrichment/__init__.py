@@ -25,6 +25,8 @@ def create_enrichment_provider(config: dict, cache_manager=None) -> EnrichmentPr
         # The manager can chain them
         username = config.get("opensky_username", "")
         password = config.get("opensky_password", "")
-        return OpenSkyEnrichment(username=username, password=password, cache_manager=cache_manager)
+        route_ttl = config.get("route_cache_ttl", 300)
+        return OpenSkyEnrichment(username=username, password=password,
+                                 cache_manager=cache_manager, route_cache_ttl=route_ttl)
 
     return StubEnrichment()

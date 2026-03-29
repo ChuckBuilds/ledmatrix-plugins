@@ -33,5 +33,18 @@
   ],
   "ledmatrix_version": "2.0.0",
   "min_ledmatrix_version": "2.0.0",
-  "max_ledmatrix_version": "3.0.0"
+  "max_ledmatrix_version": "3.0.0",
+  "versions": [
+    {
+      "version": "2.0.0",
+      "ledmatrix_min": "2.0.0",
+      "released": "2026-03-29",
+      "notes": "FlightWall enhancements: area mode, flight tracking, OpenSky, airline logos, animated radar"
+    },
+    {
+      "version": "1.1.0",
+      "ledmatrix_min": "2.0.0",
+      "released": "2026-02-24"
+    }
+  ]
 }

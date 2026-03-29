@@ -20,20 +20,22 @@ from enrichment.base import EnrichmentProvider
 
 logger = logging.getLogger(__name__)
 
-# Cache entries for route lookups
-_CACHE_TTL = 300  # 5 minutes
-
 
 class OpenSkyEnrichment(EnrichmentProvider):
     """Free enrichment via OpenSky Network REST API."""
 
     BASE_URL = "https://opensky-network.org/api"
 
-    def __init__(self, username: str = "", password: str = "", cache_manager: Any = None):
+    def __init__(self, username: str = "", password: str = "",
+                 cache_manager: Any = None, route_cache_ttl: int = 300):
         self.auth = (username, password) if username and password else None
         self.cache_manager = cache_manager
-        self._route_cache: Dict[str, Dict] = {}
-        self._route_cache_ts: Dict[str, float] = {}
+        self.route_cache_ttl = route_cache_ttl
+
+        # Cached states snapshot (refreshed once per lookup cycle)
+        self._states_cache: Optional[dict] = None
+        self._states_cache_ts: float = 0.0
+        self._states_cache_ttl = 30  # seconds
 
     def _get(self, endpoint: str, params: dict) -> Optional[dict]:
         """Make a GET request to OpenSky API."""
@@ -46,23 +48,34 @@ class OpenSkyEnrichment(EnrichmentProvider):
             logger.warning(f"[Flight Tracker] OpenSky enrichment request failed ({endpoint}): {e}")
             return None
 
-    def get_flight_route(self, callsign: str) -> Optional[Dict]:
-        """Look up route by searching recent arrivals/departures for a callsign.
+    def _get_states_snapshot(self) -> Optional[dict]:
+        """Return cached /states/all snapshot, refreshing if stale."""
+        now = time.time()
+        if self._states_cache and now - self._states_cache_ts < self._states_cache_ttl:
+            return self._states_cache
+        data = self._get("/states/all", {})
+        if data:
+            self._states_cache = data
+            self._states_cache_ts = now
+        return self._states_cache
 
-        OpenSky doesn't have a direct "flight route" endpoint, so we search
-        the /flights/all endpoint which returns flights within a time interval
-        including their estDepartureAirport and estArrivalAirport.
+    def get_flight_route(self, callsign: str) -> Optional[Dict]:
+        """Look up route by searching recent flights for a callsign.
+
+        Uses cache_manager with route_cache_ttl if available.
         """
         if not callsign:
             return None
 
-        # Check cache
-        now = time.time()
-        cached = self._route_cache.get(callsign)
-        if cached and now - self._route_cache_ts.get(callsign, 0) < _CACHE_TTL:
-            return cached
+        cache_key = f"opensky_route_{callsign.upper().strip()}"
 
-        # Query flights in the last 2 hours
+        # Check shared cache
+        if self.cache_manager:
+            cached = self.cache_manager.get(cache_key, max_age=self.route_cache_ttl)
+            if cached:
+                return cached
+
+        now = time.time()
         begin = int(now) - 7200
         end = int(now)
 
@@ -70,7 +83,6 @@ class OpenSkyEnrichment(EnrichmentProvider):
         if not data:
             return None
 
-        # Search for matching callsign
         cs_upper = callsign.upper().strip()
         for flight in data:
             flight_cs = (flight.get("callsign") or "").strip().upper()
@@ -80,23 +92,31 @@ class OpenSkyEnrichment(EnrichmentProvider):
                     "destination": flight.get("estArrivalAirport", ""),
                     "source": "opensky",
                 }
-                self._route_cache[callsign] = result
-                self._route_cache_ts[callsign] = now
+                if self.cache_manager:
+                    self.cache_manager.set(cache_key, result)
                 return result
 
         return None
 
     def lookup_tracked_flight(self, identifier: str) -> Optional[TrackedFlight]:
-        """Look up a tracked flight using OpenSky state vectors and route data."""
+        """Look up a tracked flight using OpenSky state vectors and route data.
+
+        Matches by callsign, ICAO24 hex, or registration (tail number).
+        Uses a cached states snapshot to avoid duplicate API calls.
+        """
         if not identifier:
             return None
 
-        # First try to find it in current state vectors
         now = time.time()
         ident_upper = identifier.upper().strip()
 
-        # Search by callsign in state vectors
-        data = self._get("/states/all", {})
+        # If identifier looks like a hex ICAO24 (6 hex chars), query directly
+        is_hex = len(ident_upper) == 6 and all(c in "0123456789ABCDEF" for c in ident_upper)
+        if is_hex:
+            data = self._get("/states/all", {"icao24": ident_upper.lower()})
+        else:
+            data = self._get_states_snapshot()
+
         if not data or not data.get("states"):
             return TrackedFlight(identifier=identifier, status="UNKNOWN")
 
@@ -108,22 +128,19 @@ class OpenSkyEnrichment(EnrichmentProvider):
                 matched_sv = sv
                 break
 
-        # Get route data
         route = self.get_flight_route(identifier)
 
         if matched_sv:
             on_ground = bool(matched_sv[8]) if matched_sv[8] is not None else False
             status = "AIRBORNE" if not on_ground else "LANDED"
-            tf = TrackedFlight(
+            return TrackedFlight(
                 identifier=identifier,
                 status=status,
                 origin=route.get("origin", "") if route else "",
                 destination=route.get("destination", "") if route else "",
                 last_updated=now,
             )
-            return tf
 
-        # Not currently in the air
         if route:
             return TrackedFlight(
                 identifier=identifier,
@@ -141,7 +158,7 @@ class OpenSkyEnrichment(EnrichmentProvider):
             return []
 
         now = int(time.time())
-        begin = now - 7200  # last 2 hours
+        begin = now - 7200
         end = now
 
         endpoint = f"/flights/{mode}"
