@@ -133,9 +133,9 @@
     },
     "radar_map_provider": {
       "type": "string",
-      "default": "carto_dark",
-      "enum": ["carto_dark", "carto", "osm"],
-      "description": "Map tile provider for radar background. carto_dark works best for radar visibility.",
+      "default": "carto_dark_nolabels",
+      "enum": ["carto_dark_nolabels", "carto_dark", "carto_voyager_nolabels", "carto", "osm"],
+      "description": "Map tile provider for radar background. 'carto_dark_nolabels' = black water/dark land (WeatherStar style, recommended). 'carto_dark' = dark with labels. 'carto' = color map.",
       "title": "Radar Map Background"
     },
     "radar_update_interval": {

@@ -29,6 +29,10 @@ _MAP_TILE_URLS = {
     "carto_dark": "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
     "carto": "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
     "osm": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    # Dark nolabels: black water, dark gray land, no text clutter — ideal for radar
+    "carto_dark_nolabels": "https://basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png",
+    # Voyager nolabels: color map without labels
+    "carto_voyager_nolabels": "https://basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png",
 }
 
 _OSM_HEADERS = {
@@ -83,9 +87,12 @@ class RadarFetcher:
             resp = requests.get(url, headers=_OSM_HEADERS, timeout=10)
             resp.raise_for_status()
             tile = Image.open(BytesIO(resp.content)).convert("RGB")
-            # Dim the map enough for radar to stand out but still visible
-            enhancer = ImageEnhance.Brightness(tile)
-            tile = enhancer.enhance(0.55)
+            # Boost contrast for land/water distinction, then dim slightly
+            # so radar precipitation colors remain prominent
+            cont = ImageEnhance.Contrast(tile)
+            tile = cont.enhance(1.3)
+            bright = ImageEnhance.Brightness(tile)
+            tile = bright.enhance(0.6)
             return tile
         except Exception as e:
             logger.warning(f"[Weather Radar] Map tile fetch failed: {e}")

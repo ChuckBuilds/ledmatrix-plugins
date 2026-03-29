@@ -717,73 +717,66 @@ class WeatherPlugin(BasePlugin):
             draw.text((high_low_x, high_low_y), high_low_text, font=high_low_font, fill=self.COLORS['dim'])
 
             # --- Bottom: Additional Metrics ---
+            # Build list of enabled metric items, then distribute evenly across rows.
+            # Each item is (text, color). Rows fill from left to right, each item
+            # centered in its equal-width section (same pattern as original UV/H/W bar).
             font = self.display_manager.extra_small_font
             extra_small_h = 7
 
-            # Enhanced metrics: two rows on tall displays, one row on short
-            has_extra_row = height >= 48
-
-            if has_extra_row:
-                # Row 1 (upper): Feels, Dew, Vis, Pres
-                row1_y = layout['bottom_bar_y'] - extra_small_h - 1
-                row1_items = []
-                feels_like = self.weather_data['main'].get('feels_like')
-                dew_point = self.weather_data['main'].get('dew_point')
-                visibility = self.weather_data['main'].get('visibility')
-                pressure = self.weather_data['main'].get('pressure')
-
-                if self.show_feels_like and feels_like is not None:
-                    row1_items.append(f"FL:{int(feels_like)}\u00b0")
-                if self.show_dew_point and dew_point is not None:
-                    row1_items.append(f"Dew:{int(dew_point)}\u00b0")
-                if self.show_visibility and visibility is not None:
-                    vis_mi = visibility / 1609.34 if self.units == 'imperial' else visibility / 1000
-                    vis_u = "mi" if self.units == 'imperial' else "km"
-                    row1_items.append(f"Vis:{vis_mi:.0f}{vis_u}")
-                if self.show_pressure and pressure is not None:
-                    if self.units == 'imperial':
-                        pres_val = pressure * 0.02953  # hPa to inHg
-                        row1_items.append(f"P:{pres_val:.2f}\"")
-                    else:
-                        row1_items.append(f"P:{int(pressure)}hPa")
-
-                if row1_items:
-                    row1_text = "  ".join(row1_items)
-                    row1_tw = draw.textlength(row1_text, font=font)
-                    row1_x = (width - row1_tw) // 2
-                    draw.text((max(0, row1_x), row1_y), row1_text, font=font, fill=self.COLORS['dim'])
-
-            # Row 2 (bottom, always shown): UV, Humidity, Wind
-            y_pos = layout['bottom_bar_y']
-            section_width = width // 3
-
-            # UV Index (Section 1)
-            uv_prefix = "UV:"
-            uv_value_text = f"{uv_index:.0f}"
-            prefix_width = draw.textlength(uv_prefix, font=font)
-            value_width = draw.textlength(uv_value_text, font=font)
-            total_width = prefix_width + value_width
-            start_x = (section_width - total_width) // 2
-            draw.text((start_x, y_pos), uv_prefix, font=font, fill=self.COLORS['dim'])
-            uv_color = self._get_uv_color(uv_index)
-            draw.text((start_x + prefix_width, y_pos), uv_value_text, font=font, fill=uv_color)
-
-            # Humidity (Section 2)
-            humidity_text = f"H:{humidity}%"
-            humidity_width = draw.textlength(humidity_text, font=font)
-            humidity_x = section_width + (section_width - humidity_width) // 2
-            draw.text((humidity_x, y_pos), humidity_text, font=font, fill=self.COLORS['dim'])
-
-            # Wind (Section 3)
+            # Gather all enabled bottom-bar items
+            feels_like = self.weather_data['main'].get('feels_like')
+            dew_point = self.weather_data['main'].get('dew_point')
+            visibility_m = self.weather_data['main'].get('visibility')
+            pressure = self.weather_data['main'].get('pressure')
             wind_dir = self._get_wind_direction(wind_deg)
             wind_gust = self.weather_data['wind'].get('gust')
+
+            all_items = []  # list of (text, color)
+
+            # Row 1 items (always shown)
+            uv_color = self._get_uv_color(uv_index)
+            all_items.append((f"UV:{uv_index:.0f}", uv_color))
+            all_items.append((f"H:{humidity}%", self.COLORS['dim']))
             if wind_gust and wind_gust > wind_speed * 1.3:
-                wind_text = f"W:{wind_speed:.0f}g{wind_gust:.0f}{wind_dir}"
+                all_items.append((f"W:{wind_speed:.0f}g{wind_gust:.0f}{wind_dir}", self.COLORS['dim']))
             else:
-                wind_text = f"W:{wind_speed:.0f}{wind_dir}"
-            wind_width = draw.textlength(wind_text, font=font)
-            wind_x = (2 * section_width) + (section_width - wind_width) // 2
-            draw.text((wind_x, y_pos), wind_text, font=font, fill=self.COLORS['dim'])
+                all_items.append((f"W:{wind_speed:.0f}{wind_dir}", self.COLORS['dim']))
+
+            # Row 2 items (only on tall displays)
+            row2_items = []
+            if height >= 48:
+                if self.show_feels_like and feels_like is not None:
+                    row2_items.append((f"FL:{int(feels_like)}\u00b0", self.COLORS['dim']))
+                if self.show_dew_point and dew_point is not None:
+                    row2_items.append((f"Dew:{int(dew_point)}\u00b0", self.COLORS['dim']))
+                if self.show_visibility and visibility_m is not None:
+                    vis_val = visibility_m / 1609.34 if self.units == 'imperial' else visibility_m / 1000
+                    vis_u = "mi" if self.units == 'imperial' else "km"
+                    row2_items.append((f"Vis:{vis_val:.0f}{vis_u}", self.COLORS['dim']))
+                if self.show_pressure and pressure is not None:
+                    if self.units == 'imperial':
+                        pv = pressure * 0.02953
+                        row2_items.append((f"P:{pv:.2f}\"", self.COLORS['dim']))
+                    else:
+                        row2_items.append((f"P:{int(pressure)}hPa", self.COLORS['dim']))
+
+            def _draw_bar(items, y_row):
+                """Draw a row of items evenly distributed across the display width."""
+                if not items:
+                    return
+                sec_w = width // len(items)
+                for i, (text, color) in enumerate(items):
+                    tw = draw.textlength(text, font=font)
+                    x = i * sec_w + (sec_w - tw) // 2
+                    draw.text((max(0, x), y_row), text, font=font, fill=color)
+
+            if row2_items:
+                # Two rows: row2 above, row1 at bottom
+                _draw_bar(row2_items, layout['bottom_bar_y'] - extra_small_h - 1)
+                _draw_bar(all_items, layout['bottom_bar_y'])
+            else:
+                # Single row at bottom
+                _draw_bar(all_items, layout['bottom_bar_y'])
 
             return img
         except Exception as e:
