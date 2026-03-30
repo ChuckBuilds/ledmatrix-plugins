@@ -22,6 +22,7 @@ from logo_loader import MastersLogoLoader
 from masters_helpers import (
     calculate_tournament_countdown,
     filter_favorite_players,
+    get_detailed_phase,
     get_tournament_phase,
     sort_leaderboard,
 )
@@ -83,8 +84,9 @@ class MastersTournamentPlugin(BasePlugin):
 
         # Tournament phase
         self._tournament_phase = get_tournament_phase()
+        self._detailed_phase = get_detailed_phase()
 
-        # Build enabled modes
+        # Build enabled modes (phase-aware)
         self.modes = self._build_enabled_modes()
 
         # Current mode tracking
@@ -115,12 +117,98 @@ class MastersTournamentPlugin(BasePlugin):
             f"{len(self.modes)} modes, phase: {self._tournament_phase}"
         )
 
-    def _build_enabled_modes(self) -> List[str]:
-        """Build list of enabled display modes from config."""
-        modes = []
-        display_modes_config = self.config.get("display_modes", {})
+    # ── Phase-aware mode definitions ──
+    # Each phase lists modes in priority order (shown most → least)
+    # The framework rotates through these, so order = screen time priority
 
-        mode_mapping = {
+    PHASE_MODES = {
+        "off-season": [
+            "masters_fun_facts",
+            "masters_past_champions",
+            "masters_course_tour",
+            "masters_amen_corner",
+            "masters_course_overview",
+            "masters_tournament_stats",
+            "masters_countdown",
+        ],
+        "pre-tournament": [
+            "masters_countdown",
+            "masters_fun_facts",
+            "masters_course_tour",
+            "masters_course_overview",
+            "masters_amen_corner",
+            "masters_featured_holes",
+            "masters_past_champions",
+            "masters_tournament_stats",
+        ],
+        "practice": [
+            "masters_schedule",
+            "masters_course_tour",
+            "masters_fun_facts",
+            "masters_course_overview",
+            "masters_amen_corner",
+            "masters_featured_holes",
+            "masters_past_champions",
+            "masters_countdown",
+        ],
+        "tournament-morning": [
+            "masters_schedule",
+            "masters_leaderboard",
+            "masters_field_overview",
+            "masters_fun_facts",
+            "masters_course_overview",
+            "masters_amen_corner",
+        ],
+        "tournament-live": [
+            "masters_leaderboard",
+            "masters_player_card",
+            "masters_leaderboard",       # Show leaderboard twice per cycle
+            "masters_field_overview",
+            "masters_live_action",
+            "masters_leaderboard",       # And a third time - it's the star
+            "masters_featured_holes",
+            "masters_amen_corner",
+            "masters_schedule",
+            "masters_tournament_stats",
+        ],
+        "tournament-evening": [
+            "masters_leaderboard",
+            "masters_player_card",
+            "masters_past_champions",
+            "masters_tournament_stats",
+            "masters_fun_facts",
+            "masters_field_overview",
+            "masters_course_overview",
+        ],
+        "tournament-overnight": [
+            "masters_leaderboard",
+            "masters_fun_facts",
+            "masters_past_champions",
+            "masters_course_tour",
+            "masters_countdown",
+        ],
+        "post-tournament": [
+            "masters_leaderboard",
+            "masters_player_card",
+            "masters_past_champions",
+            "masters_tournament_stats",
+            "masters_fun_facts",
+        ],
+    }
+
+    def _build_enabled_modes(self) -> List[str]:
+        """Build mode list based on current tournament phase and time of day.
+
+        The framework rotates through self.modes, so this controls what
+        the user sees and in what order. Modes listed multiple times get
+        proportionally more screen time.
+        """
+        phase = get_detailed_phase()
+        phase_modes = self.PHASE_MODES.get(phase, self.PHASE_MODES["off-season"])
+
+        # Filter by user config (respect per-mode enabled/disabled)
+        display_modes_config = self.config.get("display_modes", {})
+        config_key_map = {
             "masters_leaderboard":      "leaderboard",
             "masters_player_card":      "player_cards",
             "masters_hole_by_hole":     "hole_by_hole",
@@ -137,12 +225,16 @@ class MastersTournamentPlugin(BasePlugin):
             "masters_course_overview":  "course_overview",
         }
 
-        for mode_name, config_key in mode_mapping.items():
-            mode_config = display_modes_config.get(config_key, {})
-            if mode_config.get("enabled", True):
-                modes.append(mode_name)
+        enabled = []
+        for mode in phase_modes:
+            config_key = config_key_map.get(mode)
+            if config_key:
+                mode_config = display_modes_config.get(config_key, {})
+                if mode_config.get("enabled", True):
+                    enabled.append(mode)
 
-        return modes
+        self.logger.debug(f"Phase '{phase}' -> {len(enabled)} modes: {enabled}")
+        return enabled
 
     def update(self):
         """Fetch and update all Masters Tournament data."""
@@ -153,6 +245,18 @@ class MastersTournamentPlugin(BasePlugin):
         self.logger.info("Updating Masters Tournament data...")
         self._last_update = now
         self._tournament_phase = get_tournament_phase()
+
+        # Refresh modes based on current phase/time of day
+        # This lets modes shift automatically (e.g., morning → live → evening)
+        new_modes = self._build_enabled_modes()
+        if new_modes != self.modes:
+            old_phase = self._detailed_phase
+            self._detailed_phase = get_detailed_phase()
+            self.modes = new_modes
+            self.logger.info(
+                f"Phase changed: {old_phase} -> {self._detailed_phase}, "
+                f"now showing {len(self.modes)} modes"
+            )
 
         try:
             self._update_leaderboard()

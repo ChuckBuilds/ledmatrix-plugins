@@ -284,7 +284,7 @@ def calculate_scoring_average(rounds: List[Optional[int]]) -> Optional[float]:
 
 
 def get_tournament_phase(date: Optional[datetime] = None) -> str:
-    """Determine current Masters tournament phase."""
+    """Determine current Masters tournament phase (basic)."""
     if date is None:
         date = datetime.now()
 
@@ -293,6 +293,61 @@ def get_tournament_phase(date: Optional[datetime] = None) -> str:
             return "practice"
         elif 10 <= date.day <= 13:
             return "tournament"
+
+    return "off-season"
+
+
+def get_detailed_phase(date: Optional[datetime] = None) -> str:
+    """
+    Determine detailed tournament phase including time-of-day awareness.
+
+    Returns one of:
+        "off-season"          - No Masters activity (most of the year)
+        "pre-tournament"      - Masters week is approaching (week before)
+        "practice"            - Practice rounds (Mon-Wed of Masters week)
+        "tournament-morning"  - Tournament day, before play (~6-8am ET)
+        "tournament-live"     - Tournament day, play in progress (~8am-7pm ET)
+        "tournament-evening"  - Tournament day, play finished (~7pm-midnight ET)
+        "tournament-overnight"- Tournament day, overnight (midnight-6am ET)
+        "post-tournament"     - Sunday evening / Monday after Masters
+    """
+    if date is None:
+        date = datetime.now()
+
+    month = date.month
+    day = date.day
+    hour = date.hour
+
+    # Masters is typically the second full week of April
+    # Practice: Mon-Wed, Tournament: Thu-Sun
+    # Adjust these dates each year as needed
+    if month == 4:
+        # Week before Masters (build anticipation)
+        if 1 <= day <= 6:
+            return "pre-tournament"
+
+        # Practice rounds
+        if 7 <= day <= 9:
+            return "practice"
+
+        # Tournament days (Thu=10 through Sun=13)
+        if 10 <= day <= 13:
+            if hour < 6:
+                return "tournament-overnight"
+            elif hour < 8:
+                return "tournament-morning"
+            elif hour < 19:
+                return "tournament-live"
+            else:
+                return "tournament-evening"
+
+        # Monday after
+        if day == 14:
+            return "post-tournament"
+
+    # March - countdown month
+    if month == 3 and day >= 20:
+        return "pre-tournament"
 
     return "off-season"
 
