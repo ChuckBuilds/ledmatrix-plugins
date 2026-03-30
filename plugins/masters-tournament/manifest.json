@@ -1,0 +1,38 @@
+{
+  "id": "masters-tournament",
+  "name": "Masters Tournament",
+  "version": "2.0.0",
+  "description": "Broadcast-quality Masters Tournament display with real ESPN player headshots, accurate Augusta National hole layouts, fun facts, past champions, live leaderboards, and pixel-perfect LED matrix rendering",
+  "author": "Claude",
+  "class_name": "MastersTournamentPlugin",
+  "entry_point": "manager.py",
+  "display_modes": [
+    "masters_leaderboard",
+    "masters_player_card",
+    "masters_hole_by_hole",
+    "masters_live_action",
+    "masters_course_tour",
+    "masters_amen_corner",
+    "masters_featured_holes",
+    "masters_schedule",
+    "masters_past_champions",
+    "masters_tournament_stats",
+    "masters_fun_facts",
+    "masters_countdown",
+    "masters_field_overview",
+    "masters_course_overview"
+  ],
+  "update_interval": 30,
+  "display_duration": 20,
+  "requires_api_key": false,
+  "config_schema": "config_schema.json",
+  "tags": ["sports", "golf", "tournament", "leaderboard", "masters", "augusta"],
+  "min_display_size": {
+    "width": 32,
+    "height": 16
+  },
+  "recommended_display_size": {
+    "width": 128,
+    "height": 64
+  }
+}

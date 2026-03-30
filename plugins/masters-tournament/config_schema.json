@@ -1,0 +1,365 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Masters Tournament Plugin Configuration",
+  "description": "Configuration schema for the Masters Tournament plugin - displays live tournament data, course imagery, and Masters branding year-round",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable the Masters Tournament plugin"
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 20,
+      "minimum": 5,
+      "maximum": 300,
+      "description": "Duration in seconds to display each mode before rotating"
+    },
+    "update_interval": {
+      "type": "integer",
+      "default": 30,
+      "minimum": 10,
+      "maximum": 3600,
+      "description": "How often to fetch new data in seconds (30s during tournament, 3600s off-season)"
+    },
+    "mock_data": {
+      "type": "boolean",
+      "default": false,
+      "description": "Use mock tournament data for testing (useful when Masters isn't live)"
+    },
+    "favorite_players": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "List of favorite player names (e.g., ['Scottie Scheffler', 'Rory McIlroy'])"
+    },
+    "display_modes": {
+      "type": "object",
+      "title": "Display Modes Configuration",
+      "description": "Control which display modes are enabled and their settings",
+      "properties": {
+        "leaderboard": {
+          "type": "object",
+          "title": "Leaderboard Display",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show live leaderboard"
+            },
+            "top_n": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Number of players to show on leaderboard"
+            },
+            "show_favorites_always": {
+              "type": "boolean",
+              "default": true,
+              "description": "Always include favorite players even if outside top N"
+            },
+            "duration": {
+              "type": "number",
+              "default": 25,
+              "minimum": 5,
+              "maximum": 120,
+              "description": "Display duration for leaderboard (seconds)"
+            }
+          }
+        },
+        "player_cards": {
+          "type": "object",
+          "title": "Player Card Display",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show individual player spotlight cards"
+            },
+            "show_headshots": {
+              "type": "boolean",
+              "default": true,
+              "description": "Display player headshot photos"
+            },
+            "duration_per_player": {
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Time to show each player card (seconds)"
+            }
+          }
+        },
+        "course_tour": {
+          "type": "object",
+          "title": "Course Tour Display",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show rotating hole maps with course imagery"
+            },
+            "show_animations": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable transitions and animations"
+            },
+            "duration_per_hole": {
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Time to show each hole (seconds)"
+            },
+            "featured_holes": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 18
+              },
+              "default": [12, 13, 16],
+              "description": "Featured holes to highlight (Amen Corner, par 3s)"
+            }
+          }
+        },
+        "hole_by_hole": {
+          "type": "object",
+          "title": "Hole-by-Hole Scoring",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show hole-by-hole scores for favorite players"
+            },
+            "duration": {
+              "type": "number",
+              "default": 20,
+              "minimum": 5,
+              "maximum": 120,
+              "description": "Display duration (seconds)"
+            }
+          }
+        },
+        "live_action": {
+          "type": "object",
+          "title": "Live Action Notifications",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show real-time birdie/eagle notifications"
+            },
+            "duration": {
+              "type": "number",
+              "default": 10,
+              "minimum": 3,
+              "maximum": 30,
+              "description": "Notification display duration (seconds)"
+            }
+          }
+        },
+        "amen_corner": {
+          "type": "object",
+          "title": "Amen Corner Display",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Dedicated display for holes 11-13 (Amen Corner)"
+            },
+            "duration": {
+              "type": "number",
+              "default": 20,
+              "minimum": 5,
+              "maximum": 120,
+              "description": "Display duration (seconds)"
+            }
+          }
+        },
+        "featured_holes": {
+          "type": "object",
+          "title": "Featured Holes Display",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show scoring on signature holes (12, 16)"
+            },
+            "duration": {
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 120,
+              "description": "Display duration (seconds)"
+            }
+          }
+        },
+        "schedule": {
+          "type": "object",
+          "title": "Schedule Display",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show tee times and pairings"
+            },
+            "duration": {
+              "type": "number",
+              "default": 20,
+              "minimum": 5,
+              "maximum": 120,
+              "description": "Display duration (seconds)"
+            }
+          }
+        },
+        "past_champions": {
+          "type": "object",
+          "title": "Past Champions Display",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show historical Masters winners"
+            },
+            "duration": {
+              "type": "number",
+              "default": 20,
+              "minimum": 5,
+              "maximum": 120,
+              "description": "Display duration (seconds)"
+            }
+          }
+        },
+        "tournament_stats": {
+          "type": "object",
+          "title": "Tournament Statistics",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show tournament records and statistics"
+            },
+            "duration": {
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 120,
+              "description": "Display duration (seconds)"
+            }
+          }
+        }
+      }
+    },
+    "notifications": {
+      "type": "object",
+      "title": "Notification Settings",
+      "description": "Configure when to interrupt normal display rotation",
+      "properties": {
+        "practice_round_alerts": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Alert when practice rounds start"
+            },
+            "interrupt_display": {
+              "type": "boolean",
+              "default": true,
+              "description": "Interrupt current mode to show alert"
+            },
+            "duration": {
+              "type": "number",
+              "default": 15,
+              "minimum": 3,
+              "maximum": 60,
+              "description": "Alert display duration (seconds)"
+            }
+          }
+        },
+        "favorite_player_alerts": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Alert on favorite player eagles/birdies"
+            },
+            "interrupt_display": {
+              "type": "boolean",
+              "default": true,
+              "description": "Interrupt current mode to show alert"
+            },
+            "duration": {
+              "type": "number",
+              "default": 10,
+              "minimum": 3,
+              "maximum": 60,
+              "description": "Alert display duration (seconds)"
+            }
+          }
+        },
+        "tournament_start_alert": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Alert when tournament begins"
+            },
+            "interrupt_display": {
+              "type": "boolean",
+              "default": false,
+              "description": "Interrupt current mode to show alert"
+            }
+          }
+        }
+      }
+    },
+    "branding": {
+      "type": "object",
+      "title": "Masters Branding Settings",
+      "description": "Control Masters visual branding elements",
+      "properties": {
+        "show_masters_logo": {
+          "type": "boolean",
+          "default": true,
+          "description": "Display Masters logo on screens"
+        },
+        "show_green_jacket": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show green jacket icon for leaders"
+        },
+        "show_azaleas": {
+          "type": "boolean",
+          "default": true,
+          "description": "Display azalea flower accents"
+        },
+        "color_scheme": {
+          "type": "string",
+          "enum": ["classic", "bright", "subdued"],
+          "default": "classic",
+          "description": "Masters color palette variant"
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": ["enabled"],
+  "x-propertyOrder": [
+    "enabled",
+    "display_duration",
+    "update_interval",
+    "mock_data",
+    "favorite_players",
+    "display_modes",
+    "notifications",
+    "branding"
+  ]
+}
