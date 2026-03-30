@@ -19,6 +19,11 @@
     "plugin_path": "plugins/basketball-scoreboard",
     "versions": [
         {
+            "released": "2026-03-30",
+            "version": "1.5.5",
+            "ledmatrix_min": "2.0.0"
+        },
+        {
             "released": "2026-03-02",
             "version": "1.5.4",
             "ledmatrix_min": "2.0.0"

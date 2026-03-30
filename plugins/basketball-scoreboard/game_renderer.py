@@ -465,7 +465,16 @@ class GameRenderer:
             layout_config = self.config.get('customization', {}).get('layout', {})
             element_config = layout_config.get(element, {})
             offset_value = element_config.get(axis, default)
-            return int(offset_value) if offset_value is not None else default
+            if offset_value is None:
+                return default
+            if isinstance(offset_value, (int, float)):
+                return int(offset_value)
+            # Handle string values (e.g. "2.0" from config)
+            try:
+                return int(float(offset_value))
+            except (ValueError, TypeError):
+                self.logger.warning(f"Invalid layout offset for {element}.{axis}: '{offset_value}', using default {default}")
+                return default
         except (TypeError, ValueError):
             return default
 
