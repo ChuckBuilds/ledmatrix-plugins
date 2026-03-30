@@ -285,7 +285,8 @@ class GameRenderer:
             cluster_bottom = overall_start_y + base_cluster_height
             if has_count_data:
                 cluster_bottom += 2 + 6  # count spacing + detail font height
-            score_y = max(cluster_bottom + 1, self.display_height - font_height - 2)
+            bottom_limit = self.display_height - font_height - 2
+            score_y = max(0, min(cluster_bottom + 1, bottom_limit))
             self._draw_text_with_outline(draw, score_text, (int(score_x), score_y), score_font)
 
             # Odds
