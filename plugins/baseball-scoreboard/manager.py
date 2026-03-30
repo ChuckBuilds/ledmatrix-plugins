@@ -959,28 +959,25 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not self.is_enabled:
             return
 
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+        from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 
-        # Collect all enabled managers
+        # Collect all enabled managers (use getattr to guard against partial init)
         managers_to_update = []
         if self.mlb_enabled:
-            managers_to_update.extend([
-                ("MLB Live", self.mlb_live),
-                ("MLB Recent", self.mlb_recent),
-                ("MLB Upcoming", self.mlb_upcoming),
-            ])
+            for name, attr in [("MLB Live", "mlb_live"), ("MLB Recent", "mlb_recent"), ("MLB Upcoming", "mlb_upcoming")]:
+                mgr = getattr(self, attr, None)
+                if mgr is not None:
+                    managers_to_update.append((name, mgr))
         if self.milb_enabled:
-            managers_to_update.extend([
-                ("MiLB Live", self.milb_live),
-                ("MiLB Recent", self.milb_recent),
-                ("MiLB Upcoming", self.milb_upcoming),
-            ])
+            for name, attr in [("MiLB Live", "milb_live"), ("MiLB Recent", "milb_recent"), ("MiLB Upcoming", "milb_upcoming")]:
+                mgr = getattr(self, attr, None)
+                if mgr is not None:
+                    managers_to_update.append((name, mgr))
         if self.ncaa_baseball_enabled:
-            managers_to_update.extend([
-                ("NCAA Live", self.ncaa_baseball_live),
-                ("NCAA Recent", self.ncaa_baseball_recent),
-                ("NCAA Upcoming", self.ncaa_baseball_upcoming),
-            ])
+            for name, attr in [("NCAA Live", "ncaa_baseball_live"), ("NCAA Recent", "ncaa_baseball_recent"), ("NCAA Upcoming", "ncaa_baseball_upcoming")]:
+                mgr = getattr(self, attr, None)
+                if mgr is not None:
+                    managers_to_update.append((name, mgr))
 
         if not managers_to_update:
             return
@@ -992,18 +989,23 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             except Exception as e:
                 self.logger.error(f"Error updating {name} manager: {e}")
 
+        # All managers run in parallel — they're I/O-bound (ESPN API calls)
+        # so more threads than cores is fine on Pi
+        executor = ThreadPoolExecutor(max_workers=len(managers_to_update), thread_name_prefix="baseball-update")
         try:
-            # All managers run in parallel — they're I/O-bound (ESPN API calls)
-            # so more threads than cores is fine on Pi
-            with ThreadPoolExecutor(max_workers=len(managers_to_update), thread_name_prefix="baseball-update") as executor:
-                futures = {
-                    executor.submit(_safe_update, item): item[0]
-                    for item in managers_to_update
-                }
-                for future in as_completed(futures, timeout=25):
-                    future.result()  # propagate unexpected executor errors
+            futures = {
+                executor.submit(_safe_update, item): item[0]
+                for item in managers_to_update
+            }
+            for future in as_completed(futures, timeout=25):
+                future.result()  # propagate unexpected executor errors
+        except TimeoutError:
+            still_running = [name for f, name in futures.items() if not f.done()]
+            self.logger.warning(f"Manager update timed out after 25s, still running: {still_running}")
         except Exception as e:
             self.logger.error(f"Error in parallel manager updates: {e}")
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
 
     def _get_managers_in_priority_order(self, mode_type: str) -> list:
         """
@@ -2590,7 +2592,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             info = {
                 "plugin_id": self.plugin_id,
                 "name": "Baseball Scoreboard",
-                "version": "1.3.0",
+                "version": "1.6.0",
                 "enabled": self.is_enabled,
                 "display_size": f"{self.display_width}x{self.display_height}",
                 "mlb_enabled": self.mlb_enabled,

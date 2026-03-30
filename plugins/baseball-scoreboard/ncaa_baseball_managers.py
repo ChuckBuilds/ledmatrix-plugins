@@ -1,4 +1,5 @@
 import logging
+import threading
 import time
 from typing import ClassVar, Dict, Any, Optional
 from datetime import datetime
@@ -25,6 +26,7 @@ class BaseNCAABaseballManager(Baseball):
     _processed_games_timestamp: ClassVar[float] = 0
     _shared_rankings_cache: ClassVar[Dict] = {}
     _shared_rankings_timestamp: ClassVar[float] = 0
+    _shared_rankings_lock: ClassVar[threading.Lock] = threading.Lock()
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         self.logger = logging.getLogger("NCAABaseball")
@@ -55,7 +57,7 @@ class BaseNCAABaseballManager(Baseball):
         )
 
     def _fetch_team_rankings(self) -> Dict[str, int]:
-        """Share rankings cache across all NCAA Baseball manager instances."""
+        """Share rankings cache across all NCAA Baseball manager instances (thread-safe)."""
         current_time = time.time()
         if (
             BaseNCAABaseballManager._shared_rankings_cache
@@ -65,10 +67,21 @@ class BaseNCAABaseballManager(Baseball):
             self._team_rankings_cache = BaseNCAABaseballManager._shared_rankings_cache
             return self._team_rankings_cache
 
-        result = super()._fetch_team_rankings()
-        BaseNCAABaseballManager._shared_rankings_cache = result
-        BaseNCAABaseballManager._shared_rankings_timestamp = current_time
-        return result
+        with BaseNCAABaseballManager._shared_rankings_lock:
+            # Double-check after acquiring lock
+            current_time = time.time()
+            if (
+                BaseNCAABaseballManager._shared_rankings_cache
+                and current_time - BaseNCAABaseballManager._shared_rankings_timestamp
+                < self._rankings_cache_duration
+            ):
+                self._team_rankings_cache = BaseNCAABaseballManager._shared_rankings_cache
+                return self._team_rankings_cache
+
+            result = super()._fetch_team_rankings()
+            BaseNCAABaseballManager._shared_rankings_cache = result
+            BaseNCAABaseballManager._shared_rankings_timestamp = current_time
+            return result
 
     def _fetch_ncaa_baseball_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """
