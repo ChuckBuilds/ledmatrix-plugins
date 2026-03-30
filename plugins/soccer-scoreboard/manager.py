@@ -1684,7 +1684,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             info = {
                 "plugin_id": self.plugin_id,
                 "name": "Soccer Scoreboard",
-                "version": "1.3.1",
+                "version": "1.3.2",
                 "enabled": self.is_enabled,
                 "display_size": f"{self.display_width}x{self.display_height}",
                 "leagues": league_info,
