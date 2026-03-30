@@ -67,8 +67,8 @@ def format_altitude(feet: Optional[float], unit: str = "ft", compact: bool = Tru
     val = conv(max(0, feet))  # clamp negative altitudes to 0
     u = _ALT_UNIT_LABELS.get(unit, unit)
     if compact and abs(val) >= 1000:
-        return f"{val / 1000:.1f}K"
-    return f"{int(round(val))}{u}"
+        return f"{val / 1000:.1f}K{u}"
+    return f"{round(val)}{u}"
 
 
 # --- Speed ---
@@ -97,7 +97,7 @@ def format_speed(knots: Optional[float], unit: str = "kn") -> str:
     u = _SPD_UNIT_LABELS.get(unit, unit)
     if unit == "mach":
         return f"{val:.2f}{u}"
-    return f"{int(round(val))}{u}"
+    return f"{round(val)}{u}"
 
 
 # --- Track ---
@@ -152,18 +152,19 @@ def format_vrate(fpm: Optional[float], unit: str = "fpm", use_arrows: bool = Tru
     val = conv(fpm)
     u = _VR_UNIT_LABELS.get(unit, unit)
     # Threshold in native unit: ~50 fpm equivalent in each unit system
-    threshold = 0.25 if unit == "ms" else (0.85 if unit == "fts" else (0.6 if unit in ("mph", "kmh") else 50))
+    _threshold_map = {"ms": 0.25, "fts": 0.85, "mph": 0.6, "kmh": 0.6}
+    threshold = _threshold_map.get(unit, 50)
 
     if use_arrows:
         if val > threshold:
-            return f"\u2191{int(round(abs(val)))}"
+            return f"\u2191{round(abs(val))}"
         elif val < -threshold:
-            return f"\u2193{int(round(abs(val)))}"
+            return f"\u2193{round(abs(val))}"
         else:
-            return f"\u2192{int(round(abs(val)))}"
+            return f"\u2192{round(abs(val))}"
     else:
         sign = "+" if val >= 0 else "-"
-        return f"{sign}{int(round(abs(val)))}{u}"
+        return f"{sign}{round(abs(val))}{u}"
 
 
 # --- Distance ---

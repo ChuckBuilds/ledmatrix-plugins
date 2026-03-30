@@ -174,8 +174,12 @@ def is_callsign_worth_fetching(
                       'FV-', 'DP-')):
         return True
 
-    # Skip military and private
-    if cs.startswith(('N', 'C-', 'CF-', 'AF-', 'NATO-', 'USAF-', 'USN-', 'USMC-', 'USCG-')):
+    # Skip military and private registrations
+    # Note: N-registrations with 6+ chars are treated as Commercial by
+    # categorize_aircraft(), so only exclude short N-callsigns (GA aircraft)
+    if cs.startswith('N') and len(cs) < 6:
+        return False
+    if cs.startswith(('C-', 'CF-', 'AF-', 'NATO-', 'USAF-', 'USN-', 'USMC-', 'USCG-')):
         return False
 
     return False

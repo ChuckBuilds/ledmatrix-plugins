@@ -1862,7 +1862,7 @@ class FlightTrackerPlugin(BasePlugin):
                             tf.departure_time = enriched.departure_time
                         if enriched.arrival_time:
                             tf.arrival_time = enriched.arrival_time
-                except Exception as e:
+                except (requests.RequestException, KeyError, ValueError, TypeError) as e:
                     logger.warning(f"[Flight Tracker] Enrichment lookup failed for {ident}: {e}")
 
             tf.last_updated = time.time()
@@ -2038,7 +2038,7 @@ class FlightTrackerPlugin(BasePlugin):
             logger.warning(f"[Flight Tracker] get_vegas_content() failed: {e}")
             return None
 
-    def display(self, display_mode: str = None, force_clear: bool = False) -> None:
+    def display(self, force_clear: bool = False, *, display_mode: Optional[str] = None) -> None:
         """Display flight tracker content based on display_mode configuration.
 
         Supports modes: map, overhead, stats, area, flight_tracking, auto.

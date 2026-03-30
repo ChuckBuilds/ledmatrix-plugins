@@ -3,15 +3,14 @@
 Download airline logo PNGs for the Flight Tracker plugin.
 
 Sources (tried in order):
-  1. Jxck-S/airline-logos (GitHub) — 90×90 ICAO-keyed PNGs
-  2. sexym0nk3y/airline-logos (GitHub) — 90×90 ICAO-keyed PNGs
-  3. Kiwi.com — 64×64 IATA-keyed PNGs
+  1. Jxck-S/airline-logos (GitHub) — 90x90 ICAO-keyed PNGs
+  2. sexym0nk3y/airline-logos (GitHub) — 90x90 ICAO-keyed PNGs
+  3. Kiwi.com — 64x64 IATA-keyed PNGs
 
 Output: assets/airline_logos/{ICAO}.png
 """
 
 import os
-import sys
 import time
 
 import requests

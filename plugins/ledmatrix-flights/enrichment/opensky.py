@@ -44,7 +44,7 @@ class OpenSkyEnrichment(EnrichmentProvider):
             resp = requests.get(url, params=params, auth=self.auth, timeout=15)
             resp.raise_for_status()
             return resp.json()
-        except Exception as e:
+        except requests.RequestException as e:
             logger.warning(f"[Flight Tracker] OpenSky enrichment request failed ({endpoint}): {e}")
             return None
 

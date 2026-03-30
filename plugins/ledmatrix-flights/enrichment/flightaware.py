@@ -77,7 +77,7 @@ class FlightAwareEnrichment(EnrichmentProvider):
             resp.raise_for_status()
             self._record_call()
             return resp.json()
-        except Exception as e:
+        except requests.RequestException as e:
             logger.warning(f"[Flight Tracker] FlightAware request failed ({endpoint}): {e}")
             return None
 
