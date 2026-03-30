@@ -993,8 +993,9 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 self.logger.error(f"Error updating {name} manager: {e}")
 
         try:
-            # 3 workers = one per league, Pi-friendly concurrency
-            with ThreadPoolExecutor(max_workers=3, thread_name_prefix="baseball-update") as executor:
+            # All managers run in parallel — they're I/O-bound (ESPN API calls)
+            # so more threads than cores is fine on Pi
+            with ThreadPoolExecutor(max_workers=len(managers_to_update), thread_name_prefix="baseball-update") as executor:
                 futures = {
                     executor.submit(_safe_update, item): item[0]
                     for item in managers_to_update
