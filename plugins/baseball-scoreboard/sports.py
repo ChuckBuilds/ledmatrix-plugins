@@ -85,9 +85,8 @@ class SportsCore(ABC):
 
         self.session = requests.Session()
         retry_strategy = Retry(
-            total=5,  # increased number of retries
-            backoff_factor=1,  # increased backoff factor
-            # added 429 to retry list
+            total=3,
+            backoff_factor=0.5,  # retries at 0s, 0.5s, 1s (1.5s total vs 15s before)
             status_forcelist=[429, 500, 502, 503, 504],
             allowed_methods=["GET", "HEAD", "OPTIONS"],
         )

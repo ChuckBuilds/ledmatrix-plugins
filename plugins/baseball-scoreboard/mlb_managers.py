@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional
@@ -24,6 +25,8 @@ class BaseMLBManager(Baseball):
     _warning_cooldown: ClassVar[int] = 60  # Only log warnings once per minute
     _shared_data: ClassVar[Optional[Dict]] = None
     _last_shared_update: ClassVar[float] = 0
+    _shared_rankings_cache: ClassVar[Dict] = {}
+    _shared_rankings_timestamp: ClassVar[float] = 0
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         self.logger = logging.getLogger("MLB")
@@ -49,6 +52,22 @@ class BaseMLBManager(Baseball):
             f"Display modes - Recent: {self.recent_enabled}, Upcoming: {self.upcoming_enabled}, Live: {self.live_enabled}"
         )
         self.league = "mlb"
+
+    def _fetch_team_rankings(self) -> Dict[str, int]:
+        """Share rankings cache across all MLB manager instances."""
+        current_time = time.time()
+        if (
+            BaseMLBManager._shared_rankings_cache
+            and current_time - BaseMLBManager._shared_rankings_timestamp
+            < self._rankings_cache_duration
+        ):
+            self._team_rankings_cache = BaseMLBManager._shared_rankings_cache
+            return self._team_rankings_cache
+
+        result = super()._fetch_team_rankings()
+        BaseMLBManager._shared_rankings_cache = result
+        BaseMLBManager._shared_rankings_timestamp = current_time
+        return result
 
     def _fetch_mlb_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """
