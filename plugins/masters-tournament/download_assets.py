@@ -68,7 +68,7 @@ ESPN_PLAYERS = {
     "Viktor Hovland": "10591",
     "Tony Finau": "5548",
     "Shane Lowry": "3448",
-    "Tommy Fleetwood": "5765",
+    "Tommy Fleetwood": "9035",
     "Adam Scott": "367",
     "Bubba Watson": "780",
     "Matt Fitzpatrick": "9037",

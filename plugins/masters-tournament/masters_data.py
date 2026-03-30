@@ -56,7 +56,9 @@ class MastersDataSource:
             is_masters = self._is_masters_tournament(data)
             if not is_masters:
                 self.logger.info("Masters not currently in ESPN API, using mock data")
-                return self._generate_mock_leaderboard()
+                mock = self._generate_mock_leaderboard()
+                self.cache_manager.set(cache_key, mock, ttl=3600)
+                return mock
 
             parsed = self._parse_leaderboard(data)
             self.cache_manager.set(cache_key, parsed, ttl=ttl)

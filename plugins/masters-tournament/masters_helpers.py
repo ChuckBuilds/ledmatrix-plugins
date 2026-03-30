@@ -205,7 +205,7 @@ ESPN_PLAYER_IDS = {
     "Cameron Smith":       {"id": "9131",    "country": "AUS"},
     "Bryson DeChambeau":   {"id": "9261",    "country": "USA"},
     "Shane Lowry":         {"id": "3448",    "country": "IRL"},
-    "Tommy Fleetwood":     {"id": "5765",    "country": "ENG"},
+    "Tommy Fleetwood":     {"id": "9035",    "country": "ENG"},
     "Wyndham Clark":       {"id": "4686082", "country": "USA"},
     "Max Homa":            {"id": "10140",   "country": "USA"},
     "Sahith Theegala":     {"id": "4375306", "country": "USA"},
@@ -215,7 +215,7 @@ ESPN_PLAYER_IDS = {
     "Sergio Garcia":       {"id": "421",     "country": "ESP"},
     "Bubba Watson":        {"id": "780",     "country": "USA"},
     "Patrick Reed":        {"id": "5596",    "country": "USA"},
-    "Danny Willett":       {"id": "5765",    "country": "ENG"},
+    "Danny Willett":       {"id": "3008",    "country": "ENG"},
     "Charl Schwartzel":    {"id": "3367",    "country": "RSA"},
 }
 

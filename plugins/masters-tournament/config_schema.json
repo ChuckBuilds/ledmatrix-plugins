@@ -243,13 +243,50 @@
               "type": "boolean",
               "default": true,
               "description": "Show tournament records and statistics"
-            },
-            "duration": {
-              "type": "number",
-              "default": 15,
-              "minimum": 5,
-              "maximum": 120,
-              "description": "Display duration (seconds)"
+            }
+          }
+        },
+        "fun_facts": {
+          "type": "object",
+          "title": "Fun Facts Display",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show Masters and Augusta National fun facts"
+            }
+          }
+        },
+        "countdown": {
+          "type": "object",
+          "title": "Countdown Display",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show countdown to next Masters Tournament"
+            }
+          }
+        },
+        "field_overview": {
+          "type": "object",
+          "title": "Field Overview Display",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show field breakdown (under/over/even par counts)"
+            }
+          }
+        },
+        "course_overview": {
+          "type": "object",
+          "title": "Course Overview Display",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show Augusta National front nine / back nine overview"
             }
           }
         }

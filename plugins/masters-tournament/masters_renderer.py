@@ -512,11 +512,11 @@ class MastersRenderer:
             draw.text((self.width - name_w - 3, 2), name_text,
                       fill=COLORS["masters_yellow"], font=self.font_detail)
 
-        # Hole layout image
+        # Hole layout image (clamp to min 1px for tiny displays)
         hole_img = self.logo_loader.get_hole_image(
             hole_number,
-            max_width=self.width - 8,
-            max_height=self.height - h - 14,
+            max_width=max(1, self.width - 8),
+            max_height=max(1, self.height - h - 14),
         )
         if hole_img:
             hx = (self.width - hole_img.width) // 2
@@ -696,7 +696,7 @@ class MastersRenderer:
             lines.append(current_line)
 
         # Apply scroll offset (for long facts)
-        visible_lines = (self.height - content_top - 4) // line_h
+        visible_lines = max(1, (self.height - content_top - 4) // line_h)
         if len(lines) > visible_lines:
             start_line = scroll_offset % max(1, len(lines) - visible_lines + 1)
             lines = lines[start_line : start_line + visible_lines]

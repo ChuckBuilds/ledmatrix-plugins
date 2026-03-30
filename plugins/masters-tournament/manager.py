@@ -93,8 +93,9 @@ class MastersTournamentPlugin(BasePlugin):
         self.current_mode_index = 0
         self._current_display_mode: Optional[str] = None
 
-        # Course tour state
+        # Course tour state (separate cursors so modes don't interfere)
         self._current_hole = 1
+        self._featured_hole_index = 0
 
         # Pagination state for each mode (auto-advances each display cycle)
         self._page = {
@@ -390,11 +391,13 @@ class MastersTournamentPlugin(BasePlugin):
         return result
 
     def _display_hole_by_hole(self, force_clear: bool) -> bool:
-        return self._display_leaderboard(force_clear)
+        """Display hole-by-hole course tour (same as course_tour)."""
+        return self._display_course_tour(force_clear)
 
     def _display_featured_holes(self, force_clear: bool) -> bool:
         featured = [12, 13, 15, 16]
-        hole = featured[self._current_hole % len(featured)]
+        hole = featured[self._featured_hole_index % len(featured)]
+        self._featured_hole_index += 1
         return self._show_image(self.renderer.render_hole_card(hole))
 
     def _display_schedule(self, force_clear: bool) -> bool:
@@ -406,6 +409,17 @@ class MastersTournamentPlugin(BasePlugin):
         return result
 
     def _display_live_action(self, force_clear: bool) -> bool:
+        """Show live alert if enhanced renderer available, else leaderboard."""
+        if hasattr(self.renderer, "render_live_alert") and self._leaderboard_data:
+            # Show the leader's current status as a live alert
+            leader = self._leaderboard_data[0]
+            return self._show_image(
+                self.renderer.render_live_alert(
+                    leader.get("player", ""),
+                    leader.get("current_hole", 18) or 18,
+                    "Leader",
+                )
+            )
         return self._display_leaderboard(force_clear)
 
     def _display_tournament_stats(self, force_clear: bool) -> bool:
@@ -426,7 +440,12 @@ class MastersTournamentPlugin(BasePlugin):
         return result
 
     def _display_countdown(self, force_clear: bool) -> bool:
-        target = datetime(2026, 4, 10, 12, 0, 0)
+        # Compute next Masters Thursday dynamically (approx second Thursday of April)
+        now = datetime.utcnow()
+        year = now.year
+        target = datetime(year, 4, 10, 12, 0, 0)
+        if now > target:
+            target = datetime(year + 1, 4, 10, 12, 0, 0)
         countdown = calculate_tournament_countdown(target)
         return self._show_image(
             self.renderer.render_countdown(

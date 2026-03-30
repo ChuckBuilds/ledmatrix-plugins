@@ -4,18 +4,22 @@ A high-polish Augusta National Masters Tournament display plugin for LEDMatrix w
 
 ## Features
 
-### 10 Display Modes
+### 14 Display Modes
 
-1. **Leaderboard** - Live tournament standings with scores, player positions, and thru indicators
-2. **Player Cards** - Individual player spotlights with photos and detailed statistics
-3. **Hole-by-Hole** - Hole-by-hole scoring breakdown for favorite players
-4. **Live Action** - Real-time birdie/eagle notifications and scoring updates
+1. **Leaderboard** - Live tournament standings with scores, positions, and thru indicators (paginated)
+2. **Player Cards** - Individual player spotlights with ESPN headshots, country flags, round scores, green jacket count
+3. **Hole-by-Hole** - Rotating hole cards with real Augusta National overhead maps
+4. **Live Action** - Real-time scoring alerts and leader updates
 5. **Course Tour** - Rotating hole maps showcasing all 18 holes at Augusta National
 6. **Amen Corner** - Dedicated display for the famous holes 11-13
-7. **Featured Holes** - Highlight scoring on signature holes (12, 16)
-8. **Schedule** - Daily tee times, pairings, and practice rounds
-9. **Past Champions** - Historical Masters winners with green jacket imagery
-10. **Tournament Stats** - Tournament records and statistics
+7. **Featured Holes** - Highlight signature holes (12, 13, 15, 16)
+8. **Schedule** - Daily tee times and pairings (paginated)
+9. **Past Champions** - Historical Masters winners through 2025 (paginated)
+10. **Tournament Stats** - Tournament records and statistics (paginated)
+11. **Fun Facts** - 35 real Masters and Augusta National trivia facts with scrolling text
+12. **Countdown** - Days until the next Masters Tournament
+13. **Field Overview** - Under/over/even par breakdown with leader highlight
+14. **Course Overview** - Augusta National front nine / back nine stats and signature holes
 
 ### Dynamic Scaling
 
@@ -373,6 +377,18 @@ No API key required. Rate limits apply (plugin respects with caching).
 This plugin is for personal, non-commercial use only. Masters Tournament, Augusta National, and related branding are trademarks of Augusta National, Inc.
 
 ## Version History
+
+### 2.0.0
+- 14 display modes (added fun facts, countdown, field overview, course overview)
+- Real Masters logo from masters.com
+- Real Augusta National overhead hole maps for all 18 holes
+- 23 real ESPN player headshots
+- 16 country flags for player cards
+- Phase-aware mode rotation (off-season, pre-tournament, practice, live, evening)
+- Paginated displays with page indicator dots
+- Broadcast-quality pixel-perfect rendering
+- 35 fun facts, 40 past champions through 2025, tournament records database
+- Player cards with green jacket count and round-by-round scores
 
 ### 1.0.0 (Initial Release)
 - 10 display modes
