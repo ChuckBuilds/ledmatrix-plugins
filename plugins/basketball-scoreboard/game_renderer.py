@@ -371,7 +371,11 @@ class GameRenderer:
         show_tourney_seeds = game.get("is_tournament", False) and self._get_mm_setting(game, 'show_seeds')
         if self.show_records or self.show_ranking or show_tourney_seeds:
             self._draw_records_or_rankings(draw_overlay, game)
-        
+
+        # Draw odds if available
+        if game.get('odds'):
+            self._draw_dynamic_odds(draw_overlay, game['odds'])
+
         # Composite the overlay onto main image
         main_img = Image.alpha_composite(main_img, overlay)
         return main_img.convert('RGB')
@@ -455,17 +459,27 @@ class GameRenderer:
             time_y = (self.display_height // 2) - 7 + 9
             self._draw_text_with_outline(draw, game_time, (time_x, time_y), self.fonts['time'])
     
+    def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
+        """Get layout offset for a specific element and axis from config."""
+        try:
+            layout_config = self.config.get('customization', {}).get('layout', {})
+            element_config = layout_config.get(element, {})
+            offset_value = element_config.get(axis, default)
+            return int(offset_value) if offset_value is not None else default
+        except (TypeError, ValueError):
+            return default
+
     def _draw_dynamic_odds(self, draw: ImageDraw.Draw, odds: Dict[str, Any]) -> None:
-        """Draw odds with dynamic positioning."""
+        """Draw odds with dynamic positioning and user-configurable offsets."""
         try:
             if not odds:
                 return
-            
+
             home_team_odds = odds.get("home_team_odds", {})
             away_team_odds = odds.get("away_team_odds", {})
             home_spread = home_team_odds.get("spread_odds")
             away_spread = away_team_odds.get("spread_odds")
-            
+
             # Get top-level spread as fallback
             top_level_spread = odds.get("spread")
             if top_level_spread is not None:
@@ -473,51 +487,54 @@ class GameRenderer:
                     home_spread = top_level_spread
                 if away_spread is None:
                     away_spread = -top_level_spread
-            
+
             # Determine favored team
             home_favored = home_spread is not None and isinstance(home_spread, (int, float)) and home_spread < 0
             away_favored = away_spread is not None and isinstance(away_spread, (int, float)) and away_spread < 0
-            
+
             favored_spread = None
             favored_side = None
-            
+
             if home_favored:
                 favored_spread = home_spread
                 favored_side = "home"
             elif away_favored:
                 favored_spread = away_spread
                 favored_side = "away"
-            
+
+            odds_x_offset = self._get_layout_offset('odds', 'x_offset')
+            odds_y_offset = self._get_layout_offset('odds', 'y_offset')
+
             # Show the negative spread
             if favored_spread is not None:
                 spread_text = str(favored_spread)
                 font = self.fonts["detail"]
-                
+
                 if favored_side == "home":
                     spread_width = draw.textlength(spread_text, font=font)
-                    spread_x = self.display_width - spread_width
-                    spread_y = 0
+                    spread_x = self.display_width - spread_width + odds_x_offset
+                    spread_y = 0 + odds_y_offset
                 else:
-                    spread_x = 0
-                    spread_y = 0
-                
+                    spread_x = 0 + odds_x_offset
+                    spread_y = 0 + odds_y_offset
+
                 self._draw_text_with_outline(draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0))
-            
+
             # Show over/under on opposite side
             over_under = odds.get("over_under")
             if over_under is not None and isinstance(over_under, (int, float)):
                 ou_text = f"O/U: {over_under}"
                 font = self.fonts["detail"]
                 ou_width = draw.textlength(ou_text, font=font)
-                
+
                 if favored_side == "home":
-                    ou_x = 0
+                    ou_x = 0 + odds_x_offset
                 elif favored_side == "away":
-                    ou_x = self.display_width - ou_width
+                    ou_x = self.display_width - ou_width + odds_x_offset
                 else:
-                    ou_x = (self.display_width - ou_width) // 2
-                ou_y = 0
-                
+                    ou_x = (self.display_width - ou_width) // 2 + odds_x_offset
+                ou_y = 0 + odds_y_offset
+
                 self._draw_text_with_outline(draw, ou_text, (ou_x, ou_y), font, fill=(0, 255, 0))
                 
         except Exception as e:

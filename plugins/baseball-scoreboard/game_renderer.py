@@ -527,6 +527,16 @@ class GameRenderer:
             home_w = home_bbox[2] - home_bbox[0]
             self._draw_text_with_outline(draw, home_text, (self.display_width - home_w, record_y), record_font)
 
+    def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
+        """Get layout offset for a specific element and axis from config."""
+        try:
+            layout_config = self.config.get('customization', {}).get('layout', {})
+            element_config = layout_config.get(element, {})
+            offset_value = element_config.get(axis, default)
+            return int(offset_value) if offset_value is not None else default
+        except (TypeError, ValueError):
+            return default
+
     def _draw_dynamic_odds(self, draw, odds: Dict) -> None:
         """Draw odds with dynamic positioning based on favored team."""
         try:
@@ -560,9 +570,13 @@ class GameRenderer:
                 favored_spread = away_spread
                 favored_side = 'away'
 
+            # Get user-configurable layout offsets for odds
+            odds_x_offset = self._get_layout_offset('odds', 'x_offset')
+            odds_y_offset = self._get_layout_offset('odds', 'y_offset')
+
             # Odds row below the status/inning text row
             status_bbox = draw.textbbox((0, 0), "A", font=self.fonts['detail'])
-            odds_y = status_bbox[3] + 2  # just below the status row
+            odds_y = status_bbox[3] + 2 + odds_y_offset
 
             # Show the negative spread on the appropriate side
             font = self.fonts['detail']
@@ -570,9 +584,9 @@ class GameRenderer:
                 spread_text = str(favored_spread)
                 spread_width = draw.textlength(spread_text, font=font)
                 if favored_side == 'home':
-                    spread_x = self.display_width - spread_width
+                    spread_x = self.display_width - spread_width + odds_x_offset
                 else:
-                    spread_x = 0
+                    spread_x = 0 + odds_x_offset
                 self._draw_text_with_outline(draw, spread_text, (spread_x, odds_y), font, fill=(0, 255, 0))
 
             # Show over/under on opposite side
@@ -581,11 +595,11 @@ class GameRenderer:
                 ou_text = f"O/U: {over_under}"
                 ou_width = draw.textlength(ou_text, font=font)
                 if favored_side == 'home':
-                    ou_x = 0
+                    ou_x = 0 + odds_x_offset
                 elif favored_side == 'away':
-                    ou_x = self.display_width - ou_width
+                    ou_x = self.display_width - ou_width + odds_x_offset
                 else:
-                    ou_x = (self.display_width - ou_width) // 2
+                    ou_x = (self.display_width - ou_width) // 2 + odds_x_offset
                 self._draw_text_with_outline(draw, ou_text, (ou_x, odds_y), font, fill=(0, 255, 0))
 
         except Exception:

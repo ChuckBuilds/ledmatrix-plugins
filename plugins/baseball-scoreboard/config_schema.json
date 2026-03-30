@@ -1,1234 +1,1377 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Baseball Scoreboard Plugin Configuration",
-  "description": "Configuration schema for the Baseball Scoreboard plugin - displays live, recent, and upcoming MLB, MiLB, and NCAA Baseball games",
-  "type": "object",
-  "properties": {
-    "enabled": {
-      "type": "boolean",
-      "default": true,
-      "description": "Enable or disable the baseball scoreboard plugin"
-    },
-    "display_duration": {
-      "type": "number",
-      "default": 30,
-      "minimum": 5,
-      "maximum": 300,
-      "description": "Duration in seconds for the display controller to show this plugin mode before rotating to next plugin"
-    },
-    "update_interval": {
-      "type": "integer",
-      "default": 3600,
-      "minimum": 30,
-      "maximum": 86400,
-      "description": "How often to fetch new data in seconds"
-    },
-    "game_display_duration": {
-      "type": "number",
-      "default": 15,
-      "minimum": 3,
-      "maximum": 60,
-      "description": "Duration in seconds to show each individual game before rotating to the next game within the same mode"
-    },
-    "mlb": {
-      "type": "object",
-      "title": "MLB Settings",
-      "description": "Configuration for MLB games",
-      "properties": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Baseball Scoreboard Plugin Configuration",
+    "description": "Configuration schema for the Baseball Scoreboard plugin - displays live, recent, and upcoming MLB, MiLB, and NCAA Baseball games",
+    "type": "object",
+    "properties": {
         "enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable MLB games"
+            "type": "boolean",
+            "default": true,
+            "description": "Enable or disable the baseball scoreboard plugin"
         },
-        "favorite_teams": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": [],
-          "uniqueItems": true,
-          "maxItems": 30,
-          "description": "List of favorite MLB team abbreviations (e.g., NYY, BOS, LAD). Use 2-3 letter codes."
+        "display_duration": {
+            "type": "number",
+            "default": 30,
+            "minimum": 5,
+            "maximum": 300,
+            "description": "Duration in seconds for the display controller to show this plugin mode before rotating to next plugin"
         },
-        "display_modes": {
-          "type": "object",
-          "title": "Display Modes",
-          "description": "Control which game types to show",
-          "properties": {
-            "show_live": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show live MLB games"
-            },
-            "show_recent": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show recently completed MLB games"
-            },
-            "show_upcoming": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show upcoming MLB games"
-            },
-            "live_display_mode": {
-              "type": "string",
-              "enum": ["switch", "scroll"],
-              "default": "switch",
-              "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
-            },
-            "recent_display_mode": {
-              "type": "string",
-              "enum": ["switch", "scroll"],
-              "default": "switch",
-              "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
-            },
-            "upcoming_display_mode": {
-              "type": "string",
-              "enum": ["switch", "scroll"],
-              "default": "switch",
-              "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
-            }
-          }
+        "update_interval": {
+            "type": "integer",
+            "default": 3600,
+            "minimum": 30,
+            "maximum": 86400,
+            "description": "How often to fetch new data in seconds"
         },
-        "scroll_settings": {
-          "type": "object",
-          "title": "Scroll Settings",
-          "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-          "properties": {
-            "scroll_speed": {
-              "type": "number",
-              "default": 50.0,
-              "minimum": 1.0,
-              "maximum": 200.0,
-              "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
-            },
-            "scroll_delay": {
-              "type": "number",
-              "default": 0.01,
-              "minimum": 0.001,
-              "maximum": 0.1,
-              "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
-            },
-            "gap_between_games": {
-              "type": "integer",
-              "default": 48,
-              "minimum": 8,
-              "maximum": 128,
-              "description": "Gap in pixels between game cards when scrolling"
-            },
-            "show_league_separators": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show league icons (MLB shield, NCAA logos) between different leagues"
-            },
-            "dynamic_duration": {
-              "type": "boolean",
-              "default": true,
-              "description": "Automatically calculate display duration based on content width"
-            },
-            "game_card_width": {
-              "type": "integer",
-              "default": 128,
-              "minimum": 32,
-              "maximum": 512,
-              "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
-            }
-          }
+        "game_display_duration": {
+            "type": "number",
+            "default": 15,
+            "minimum": 3,
+            "maximum": 60,
+            "description": "Duration in seconds to show each individual game before rotating to the next game within the same mode"
         },
-        "live_priority": {
-          "type": "boolean",
-          "default": false,
-          "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
-        },
-        "live_game_duration": {
-          "type": "integer",
-          "default": 30,
-          "minimum": 10,
-          "maximum": 120,
-          "description": "Duration in seconds to display each live game before rotating to the next live game"
-        },
-        "recent_game_duration": {
-          "type": "number",
-          "default": 15,
-          "minimum": 10,
-          "maximum": 120,
-          "description": "Duration in seconds to show each recent game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
-        },
-        "upcoming_game_duration": {
-          "type": "number",
-          "default": 15,
-          "minimum": 10,
-          "maximum": 120,
-          "description": "Duration in seconds to show each upcoming game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
-        },
-        "live_update_interval": {
-          "type": "integer",
-          "default": 30,
-          "minimum": 5,
-          "maximum": 300,
-          "description": "How often to update live game data (seconds)"
-        },
-        "update_interval_seconds": {
-          "type": "integer",
-          "default": 3600,
-          "minimum": 30,
-          "maximum": 86400,
-          "description": "How often to fetch new data for this league (seconds)"
-        },
-        "game_limits": {
-          "type": "object",
-          "title": "Game Limits",
-          "description": "Control how many games to show",
-          "properties": {
-            "recent_games_to_show": {
-              "type": "integer",
-              "default": 5,
-              "minimum": 1,
-              "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-            },
-            "upcoming_games_to_show": {
-              "type": "integer",
-              "default": 1,
-              "minimum": 1,
-              "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-            }
-          }
-        },
-        "display_options": {
-          "type": "object",
-          "title": "Display Options",
-          "description": "Additional information to show",
-          "properties": {
-            "show_records": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show team records (wins-losses)"
-            },
-            "show_ranking": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show team rankings (when available)"
-            },
-            "show_odds": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show betting odds"
-            },
-            "show_series_summary": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show series summary information"
-            }
-          }
-        },
-        "filtering": {
-          "type": "object",
-          "title": "Filtering Options",
-          "description": "Control which teams are shown",
-          "properties": {
-            "show_favorite_teams_only": {
-              "type": "boolean",
-              "default": true,
-              "description": "Only show games from favorite teams"
-            },
-            "show_all_live": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show all live games, not just favorites"
-            }
-          }
-        },
-        "mode_durations": {
-          "type": "object",
-          "title": "Mode Duration Overrides",
-          "description": "Override how long each mode displays before rotating",
-          "properties": {
-            "recent_mode_duration": {
-              "type": ["number", "null"],
-              "default": null,
-              "minimum": 10,
-              "maximum": 600,
-              "description": "Override display duration for recent games mode (seconds). Null uses default."
-            },
-            "upcoming_mode_duration": {
-              "type": ["number", "null"],
-              "default": null,
-              "minimum": 10,
-              "maximum": 600,
-              "description": "Override display duration for upcoming games mode (seconds). Null uses default."
-            },
-            "live_mode_duration": {
-              "type": ["number", "null"],
-              "default": null,
-              "minimum": 10,
-              "maximum": 600,
-              "description": "Override display duration for live games mode (seconds). Null uses default."
-            }
-          }
-        },
-        "dynamic_duration": {
-          "type": "object",
-          "title": "MLB Dynamic Duration Settings",
-          "description": "Configure dynamic duration settings for MLB games.",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": false,
-              "description": "Enable dynamic duration for MLB games"
-            },
-            "min_duration_seconds": {
-              "type": "number",
-              "minimum": 10,
-              "maximum": 300,
-              "default": 30,
-              "description": "Minimum total duration in seconds for this mode, even if few games are available. Ensures the mode stays visible long enough."
-            },
-            "max_duration_seconds": {
-              "type": "number",
-              "minimum": 60,
-              "maximum": 600,
-              "description": "Maximum total duration in seconds for this mode, even if many games are available."
-            },
-            "modes": {
-              "type": "object",
-              "title": "Per-Mode Settings for MLB",
-              "description": "Configure dynamic duration for specific MLB modes",
-              "properties": {
-                "live": {
-                  "type": "object",
-                  "properties": {
-                    "enabled": {
-                      "type": "boolean",
-                      "default": false,
-                      "description": "Enable dynamic duration for MLB live games"
-                    },
-                    "min_duration_seconds": {
-                      "type": "number",
-                      "minimum": 10,
-                      "maximum": 300,
-                      "description": "Minimum duration for MLB live mode"
-                    },
-                    "max_duration_seconds": {
-                      "type": "number",
-                      "minimum": 60,
-                      "maximum": 600,
-                      "description": "Max duration for MLB live games"
-                    }
-                  }
+        "mlb": {
+            "type": "object",
+            "title": "MLB Settings",
+            "description": "Configuration for MLB games",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable MLB games"
                 },
-                "recent": {
-                  "type": "object",
-                  "properties": {
-                    "enabled": {
-                      "type": "boolean",
-                      "default": false,
-                      "description": "Enable dynamic duration for MLB recent games"
+                "favorite_teams": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     },
-                    "min_duration_seconds": {
-                      "type": "number",
-                      "minimum": 10,
-                      "maximum": 300,
-                      "description": "Minimum duration for MLB recent mode"
-                    },
-                    "max_duration_seconds": {
-                      "type": "number",
-                      "minimum": 60,
-                      "maximum": 600,
-                      "description": "Max duration for MLB recent games"
-                    }
-                  }
+                    "default": [],
+                    "uniqueItems": true,
+                    "maxItems": 30,
+                    "description": "List of favorite MLB team abbreviations (e.g., NYY, BOS, LAD). Use 2-3 letter codes."
                 },
-                "upcoming": {
-                  "type": "object",
-                  "properties": {
-                    "enabled": {
-                      "type": "boolean",
-                      "default": false,
-                      "description": "Enable dynamic duration for MLB upcoming games"
-                    },
-                    "min_duration_seconds": {
-                      "type": "number",
-                      "minimum": 10,
-                      "maximum": 300,
-                      "description": "Minimum duration for MLB upcoming mode"
-                    },
-                    "max_duration_seconds": {
-                      "type": "number",
-                      "minimum": 60,
-                      "maximum": 600,
-                      "description": "Max duration for MLB upcoming games"
+                "display_modes": {
+                    "type": "object",
+                    "title": "Display Modes",
+                    "description": "Control which game types to show",
+                    "properties": {
+                        "show_live": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show live MLB games"
+                        },
+                        "show_recent": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show recently completed MLB games"
+                        },
+                        "show_upcoming": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show upcoming MLB games"
+                        },
+                        "live_display_mode": {
+                            "type": "string",
+                            "enum": [
+                                "switch",
+                                "scroll"
+                            ],
+                            "default": "switch",
+                            "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                        },
+                        "recent_display_mode": {
+                            "type": "string",
+                            "enum": [
+                                "switch",
+                                "scroll"
+                            ],
+                            "default": "switch",
+                            "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                        },
+                        "upcoming_display_mode": {
+                            "type": "string",
+                            "enum": [
+                                "switch",
+                                "scroll"
+                            ],
+                            "default": "switch",
+                            "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                        }
                     }
-                  }
+                },
+                "scroll_settings": {
+                    "type": "object",
+                    "title": "Scroll Settings",
+                    "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
+                    "properties": {
+                        "scroll_speed": {
+                            "type": "number",
+                            "default": 50.0,
+                            "minimum": 1.0,
+                            "maximum": 200.0,
+                            "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
+                        },
+                        "scroll_delay": {
+                            "type": "number",
+                            "default": 0.01,
+                            "minimum": 0.001,
+                            "maximum": 0.1,
+                            "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
+                        },
+                        "gap_between_games": {
+                            "type": "integer",
+                            "default": 48,
+                            "minimum": 8,
+                            "maximum": 128,
+                            "description": "Gap in pixels between game cards when scrolling"
+                        },
+                        "show_league_separators": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show league icons (MLB shield, NCAA logos) between different leagues"
+                        },
+                        "dynamic_duration": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Automatically calculate display duration based on content width"
+                        },
+                        "game_card_width": {
+                            "type": "integer",
+                            "default": 128,
+                            "minimum": 32,
+                            "maximum": 512,
+                            "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                        }
+                    }
+                },
+                "live_priority": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+                },
+                "live_game_duration": {
+                    "type": "integer",
+                    "default": 30,
+                    "minimum": 10,
+                    "maximum": 120,
+                    "description": "Duration in seconds to display each live game before rotating to the next live game"
+                },
+                "recent_game_duration": {
+                    "type": "number",
+                    "default": 15,
+                    "minimum": 10,
+                    "maximum": 120,
+                    "description": "Duration in seconds to show each recent game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
+                },
+                "upcoming_game_duration": {
+                    "type": "number",
+                    "default": 15,
+                    "minimum": 10,
+                    "maximum": 120,
+                    "description": "Duration in seconds to show each upcoming game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
+                },
+                "live_update_interval": {
+                    "type": "integer",
+                    "default": 30,
+                    "minimum": 5,
+                    "maximum": 300,
+                    "description": "How often to update live game data (seconds)"
+                },
+                "update_interval_seconds": {
+                    "type": "integer",
+                    "default": 3600,
+                    "minimum": 30,
+                    "maximum": 86400,
+                    "description": "How often to fetch new data for this league (seconds)"
+                },
+                "game_limits": {
+                    "type": "object",
+                    "title": "Game Limits",
+                    "description": "Control how many games to show",
+                    "properties": {
+                        "recent_games_to_show": {
+                            "type": "integer",
+                            "default": 5,
+                            "minimum": 1,
+                            "maximum": 20,
+                            "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+                        },
+                        "upcoming_games_to_show": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1,
+                            "maximum": 20,
+                            "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+                        }
+                    }
+                },
+                "display_options": {
+                    "type": "object",
+                    "title": "Display Options",
+                    "description": "Additional information to show",
+                    "properties": {
+                        "show_records": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show team records (wins-losses)"
+                        },
+                        "show_ranking": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show team rankings (when available)"
+                        },
+                        "show_odds": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show betting odds"
+                        },
+                        "show_series_summary": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show series summary information"
+                        }
+                    }
+                },
+                "filtering": {
+                    "type": "object",
+                    "title": "Filtering Options",
+                    "description": "Control which teams are shown",
+                    "properties": {
+                        "show_favorite_teams_only": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Only show games from favorite teams"
+                        },
+                        "show_all_live": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show all live games, not just favorites"
+                        }
+                    }
+                },
+                "mode_durations": {
+                    "type": "object",
+                    "title": "Mode Duration Overrides",
+                    "description": "Override how long each mode displays before rotating",
+                    "properties": {
+                        "recent_mode_duration": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "minimum": 10,
+                            "maximum": 600,
+                            "description": "Override display duration for recent games mode (seconds). Null uses default."
+                        },
+                        "upcoming_mode_duration": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "minimum": 10,
+                            "maximum": 600,
+                            "description": "Override display duration for upcoming games mode (seconds). Null uses default."
+                        },
+                        "live_mode_duration": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "minimum": 10,
+                            "maximum": 600,
+                            "description": "Override display duration for live games mode (seconds). Null uses default."
+                        }
+                    }
+                },
+                "dynamic_duration": {
+                    "type": "object",
+                    "title": "MLB Dynamic Duration Settings",
+                    "description": "Configure dynamic duration settings for MLB games.",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Enable dynamic duration for MLB games"
+                        },
+                        "min_duration_seconds": {
+                            "type": "number",
+                            "minimum": 10,
+                            "maximum": 300,
+                            "default": 30,
+                            "description": "Minimum total duration in seconds for this mode, even if few games are available. Ensures the mode stays visible long enough."
+                        },
+                        "max_duration_seconds": {
+                            "type": "number",
+                            "minimum": 60,
+                            "maximum": 600,
+                            "description": "Maximum total duration in seconds for this mode, even if many games are available."
+                        },
+                        "modes": {
+                            "type": "object",
+                            "title": "Per-Mode Settings for MLB",
+                            "description": "Configure dynamic duration for specific MLB modes",
+                            "properties": {
+                                "live": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Enable dynamic duration for MLB live games"
+                                        },
+                                        "min_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 10,
+                                            "maximum": 300,
+                                            "description": "Minimum duration for MLB live mode"
+                                        },
+                                        "max_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 60,
+                                            "maximum": 600,
+                                            "description": "Max duration for MLB live games"
+                                        }
+                                    }
+                                },
+                                "recent": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Enable dynamic duration for MLB recent games"
+                                        },
+                                        "min_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 10,
+                                            "maximum": 300,
+                                            "description": "Minimum duration for MLB recent mode"
+                                        },
+                                        "max_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 60,
+                                            "maximum": 600,
+                                            "description": "Max duration for MLB recent games"
+                                        }
+                                    }
+                                },
+                                "upcoming": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Enable dynamic duration for MLB upcoming games"
+                                        },
+                                        "min_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 10,
+                                            "maximum": 300,
+                                            "description": "Minimum duration for MLB upcoming mode"
+                                        },
+                                        "max_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 60,
+                                            "maximum": 600,
+                                            "description": "Max duration for MLB upcoming games"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-              }
             }
-          }
+        },
+        "milb": {
+            "type": "object",
+            "title": "MiLB Settings",
+            "description": "Configuration for MiLB (Minor League Baseball) games",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable MiLB games"
+                },
+                "favorite_teams": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [],
+                    "uniqueItems": true,
+                    "maxItems": 120,
+                    "description": "List of favorite MiLB team abbreviations (e.g., DUR, SWB). Use 2-4 letter codes."
+                },
+                "display_modes": {
+                    "type": "object",
+                    "title": "Display Modes",
+                    "description": "Control which game types to show",
+                    "properties": {
+                        "show_live": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show live MiLB games"
+                        },
+                        "show_recent": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show recently completed MiLB games"
+                        },
+                        "show_upcoming": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show upcoming MiLB games"
+                        },
+                        "live_display_mode": {
+                            "type": "string",
+                            "enum": [
+                                "switch",
+                                "scroll"
+                            ],
+                            "default": "switch",
+                            "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                        },
+                        "recent_display_mode": {
+                            "type": "string",
+                            "enum": [
+                                "switch",
+                                "scroll"
+                            ],
+                            "default": "switch",
+                            "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                        },
+                        "upcoming_display_mode": {
+                            "type": "string",
+                            "enum": [
+                                "switch",
+                                "scroll"
+                            ],
+                            "default": "switch",
+                            "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                        }
+                    }
+                },
+                "scroll_settings": {
+                    "type": "object",
+                    "title": "Scroll Settings",
+                    "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
+                    "properties": {
+                        "scroll_speed": {
+                            "type": "number",
+                            "default": 50.0,
+                            "minimum": 1.0,
+                            "maximum": 200.0,
+                            "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
+                        },
+                        "scroll_delay": {
+                            "type": "number",
+                            "default": 0.01,
+                            "minimum": 0.001,
+                            "maximum": 0.1,
+                            "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
+                        },
+                        "gap_between_games": {
+                            "type": "integer",
+                            "default": 48,
+                            "minimum": 8,
+                            "maximum": 128,
+                            "description": "Gap in pixels between game cards when scrolling"
+                        },
+                        "show_league_separators": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show league icons between different leagues"
+                        },
+                        "dynamic_duration": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Automatically calculate display duration based on content width"
+                        },
+                        "game_card_width": {
+                            "type": "integer",
+                            "default": 128,
+                            "minimum": 32,
+                            "maximum": 512,
+                            "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                        }
+                    }
+                },
+                "live_priority": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+                },
+                "live_game_duration": {
+                    "type": "integer",
+                    "default": 30,
+                    "minimum": 10,
+                    "maximum": 120,
+                    "description": "Duration in seconds to display each live game before rotating to the next live game"
+                },
+                "recent_game_duration": {
+                    "type": "number",
+                    "default": 15,
+                    "minimum": 10,
+                    "maximum": 120,
+                    "description": "Duration in seconds to show each recent game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
+                },
+                "upcoming_game_duration": {
+                    "type": "number",
+                    "default": 15,
+                    "minimum": 10,
+                    "maximum": 120,
+                    "description": "Duration in seconds to show each upcoming game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
+                },
+                "live_update_interval": {
+                    "type": "integer",
+                    "default": 30,
+                    "minimum": 5,
+                    "maximum": 300,
+                    "description": "How often to update live game data (seconds)"
+                },
+                "update_interval_seconds": {
+                    "type": "integer",
+                    "default": 3600,
+                    "minimum": 30,
+                    "maximum": 86400,
+                    "description": "How often to fetch new data for this league (seconds)"
+                },
+                "game_limits": {
+                    "type": "object",
+                    "title": "Game Limits",
+                    "description": "Control how many games to show",
+                    "properties": {
+                        "recent_games_to_show": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1,
+                            "maximum": 20,
+                            "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+                        },
+                        "upcoming_games_to_show": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1,
+                            "maximum": 20,
+                            "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+                        }
+                    }
+                },
+                "display_options": {
+                    "type": "object",
+                    "title": "Display Options",
+                    "description": "Additional information to show",
+                    "properties": {
+                        "show_records": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show team records (wins-losses)"
+                        },
+                        "show_ranking": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show team rankings (when available)"
+                        },
+                        "show_odds": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show betting odds"
+                        },
+                        "show_series_summary": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show series summary information"
+                        }
+                    }
+                },
+                "filtering": {
+                    "type": "object",
+                    "title": "Filtering Options",
+                    "description": "Control which teams are shown",
+                    "properties": {
+                        "show_favorite_teams_only": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Only show games from favorite teams"
+                        },
+                        "show_all_live": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show all live games, not just favorites"
+                        }
+                    }
+                },
+                "mode_durations": {
+                    "type": "object",
+                    "title": "Mode Duration Overrides",
+                    "description": "Override how long each mode displays before rotating",
+                    "properties": {
+                        "recent_mode_duration": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "minimum": 10,
+                            "maximum": 600,
+                            "description": "Override display duration for recent games mode (seconds). Null uses default."
+                        },
+                        "upcoming_mode_duration": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "minimum": 10,
+                            "maximum": 600,
+                            "description": "Override display duration for upcoming games mode (seconds). Null uses default."
+                        },
+                        "live_mode_duration": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "minimum": 10,
+                            "maximum": 600,
+                            "description": "Override display duration for live games mode (seconds). Null uses default."
+                        }
+                    }
+                },
+                "dynamic_duration": {
+                    "type": "object",
+                    "title": "MiLB Dynamic Duration Settings",
+                    "description": "Configure dynamic duration settings for MiLB games.",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Enable dynamic duration for MiLB games"
+                        },
+                        "min_duration_seconds": {
+                            "type": "number",
+                            "minimum": 10,
+                            "maximum": 300,
+                            "default": 30,
+                            "description": "Minimum total duration in seconds for this mode, even if few games are available. Ensures the mode stays visible long enough."
+                        },
+                        "max_duration_seconds": {
+                            "type": "number",
+                            "minimum": 60,
+                            "maximum": 600,
+                            "description": "Maximum total duration in seconds for this mode, even if many games are available."
+                        },
+                        "modes": {
+                            "type": "object",
+                            "title": "Per-Mode Settings for MiLB",
+                            "description": "Configure dynamic duration for specific MiLB modes",
+                            "properties": {
+                                "live": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Enable dynamic duration for MiLB live games"
+                                        },
+                                        "min_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 10,
+                                            "maximum": 300,
+                                            "description": "Minimum duration for MiLB live mode"
+                                        },
+                                        "max_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 60,
+                                            "maximum": 600,
+                                            "description": "Max duration for MiLB live games"
+                                        }
+                                    }
+                                },
+                                "recent": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Enable dynamic duration for MiLB recent games"
+                                        },
+                                        "min_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 10,
+                                            "maximum": 300,
+                                            "description": "Minimum duration for MiLB recent mode"
+                                        },
+                                        "max_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 60,
+                                            "maximum": 600,
+                                            "description": "Max duration for MiLB recent games"
+                                        }
+                                    }
+                                },
+                                "upcoming": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Enable dynamic duration for MiLB upcoming games"
+                                        },
+                                        "min_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 10,
+                                            "maximum": 300,
+                                            "description": "Minimum duration for MiLB upcoming mode"
+                                        },
+                                        "max_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 60,
+                                            "maximum": 600,
+                                            "description": "Max duration for MiLB upcoming games"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ncaa_baseball": {
+            "type": "object",
+            "title": "NCAA Baseball Settings",
+            "description": "Configuration for NCAA Baseball games",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable NCAA Baseball games"
+                },
+                "favorite_teams": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [],
+                    "uniqueItems": true,
+                    "maxItems": 300,
+                    "description": "List of favorite NCAA Baseball team abbreviations (e.g., LSU, FLA). Use 2-4 letter codes."
+                },
+                "display_modes": {
+                    "type": "object",
+                    "title": "Display Modes",
+                    "description": "Control which game types to show",
+                    "properties": {
+                        "show_live": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show live NCAA Baseball games"
+                        },
+                        "show_recent": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show recently completed NCAA Baseball games"
+                        },
+                        "show_upcoming": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show upcoming NCAA Baseball games"
+                        },
+                        "live_display_mode": {
+                            "type": "string",
+                            "enum": [
+                                "switch",
+                                "scroll"
+                            ],
+                            "default": "switch",
+                            "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                        },
+                        "recent_display_mode": {
+                            "type": "string",
+                            "enum": [
+                                "switch",
+                                "scroll"
+                            ],
+                            "default": "switch",
+                            "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                        },
+                        "upcoming_display_mode": {
+                            "type": "string",
+                            "enum": [
+                                "switch",
+                                "scroll"
+                            ],
+                            "default": "switch",
+                            "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                        }
+                    }
+                },
+                "scroll_settings": {
+                    "type": "object",
+                    "title": "Scroll Settings",
+                    "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
+                    "properties": {
+                        "scroll_speed": {
+                            "type": "number",
+                            "default": 50.0,
+                            "minimum": 1.0,
+                            "maximum": 200.0,
+                            "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
+                        },
+                        "scroll_delay": {
+                            "type": "number",
+                            "default": 0.01,
+                            "minimum": 0.001,
+                            "maximum": 0.1,
+                            "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
+                        },
+                        "gap_between_games": {
+                            "type": "integer",
+                            "default": 48,
+                            "minimum": 8,
+                            "maximum": 128,
+                            "description": "Gap in pixels between game cards when scrolling"
+                        },
+                        "show_league_separators": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show league icons between different leagues"
+                        },
+                        "dynamic_duration": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Automatically calculate display duration based on content width"
+                        },
+                        "game_card_width": {
+                            "type": "integer",
+                            "default": 128,
+                            "minimum": 32,
+                            "maximum": 512,
+                            "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                        }
+                    }
+                },
+                "live_priority": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+                },
+                "live_game_duration": {
+                    "type": "integer",
+                    "default": 30,
+                    "minimum": 10,
+                    "maximum": 120,
+                    "description": "Duration in seconds to display each live game before rotating to the next live game"
+                },
+                "recent_game_duration": {
+                    "type": "number",
+                    "default": 15,
+                    "minimum": 10,
+                    "maximum": 120,
+                    "description": "Duration in seconds to show each recent game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
+                },
+                "upcoming_game_duration": {
+                    "type": "number",
+                    "default": 15,
+                    "minimum": 10,
+                    "maximum": 120,
+                    "description": "Duration in seconds to show each upcoming game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
+                },
+                "live_update_interval": {
+                    "type": "integer",
+                    "default": 30,
+                    "minimum": 5,
+                    "maximum": 300,
+                    "description": "How often to update live game data (seconds)"
+                },
+                "update_interval_seconds": {
+                    "type": "integer",
+                    "default": 3600,
+                    "minimum": 30,
+                    "maximum": 86400,
+                    "description": "How often to fetch new data for this league (seconds)"
+                },
+                "game_limits": {
+                    "type": "object",
+                    "title": "Game Limits",
+                    "description": "Control how many games to show",
+                    "properties": {
+                        "recent_games_to_show": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1,
+                            "maximum": 20,
+                            "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+                        },
+                        "upcoming_games_to_show": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1,
+                            "maximum": 20,
+                            "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+                        }
+                    }
+                },
+                "display_options": {
+                    "type": "object",
+                    "title": "Display Options",
+                    "description": "Additional information to show",
+                    "properties": {
+                        "show_records": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show team records (wins-losses)"
+                        },
+                        "show_ranking": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show team rankings (rankings can be important in college baseball)"
+                        },
+                        "show_odds": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Show betting odds"
+                        },
+                        "show_series_summary": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show series summary information"
+                        }
+                    }
+                },
+                "filtering": {
+                    "type": "object",
+                    "title": "Filtering Options",
+                    "description": "Control which teams are shown",
+                    "properties": {
+                        "show_favorite_teams_only": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Only show games from favorite teams"
+                        },
+                        "show_all_live": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show all live games, not just favorites"
+                        }
+                    }
+                },
+                "mode_durations": {
+                    "type": "object",
+                    "title": "Mode Duration Overrides",
+                    "description": "Override how long each mode displays before rotating",
+                    "properties": {
+                        "recent_mode_duration": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "minimum": 10,
+                            "maximum": 600,
+                            "description": "Override display duration for recent games mode (seconds). Null uses default."
+                        },
+                        "upcoming_mode_duration": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "minimum": 10,
+                            "maximum": 600,
+                            "description": "Override display duration for upcoming games mode (seconds). Null uses default."
+                        },
+                        "live_mode_duration": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "minimum": 10,
+                            "maximum": 600,
+                            "description": "Override display duration for live games mode (seconds). Null uses default."
+                        }
+                    }
+                },
+                "dynamic_duration": {
+                    "type": "object",
+                    "title": "NCAA Baseball Dynamic Duration Settings",
+                    "description": "Configure dynamic duration settings for NCAA Baseball games.",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Enable dynamic duration for NCAA Baseball games"
+                        },
+                        "min_duration_seconds": {
+                            "type": "number",
+                            "minimum": 10,
+                            "maximum": 300,
+                            "default": 30,
+                            "description": "Minimum total duration in seconds for this mode, even if few games are available. Ensures the mode stays visible long enough."
+                        },
+                        "max_duration_seconds": {
+                            "type": "number",
+                            "minimum": 60,
+                            "maximum": 600,
+                            "description": "Maximum total duration in seconds for this mode, even if many games are available."
+                        },
+                        "modes": {
+                            "type": "object",
+                            "title": "Per-Mode Settings for NCAA Baseball",
+                            "description": "Configure dynamic duration for specific NCAA Baseball modes",
+                            "properties": {
+                                "live": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Enable dynamic duration for NCAA Baseball live games"
+                                        },
+                                        "min_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 10,
+                                            "maximum": 300,
+                                            "description": "Minimum duration for NCAA Baseball live mode"
+                                        },
+                                        "max_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 60,
+                                            "maximum": 600,
+                                            "description": "Max duration for NCAA Baseball live games"
+                                        }
+                                    }
+                                },
+                                "recent": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Enable dynamic duration for NCAA Baseball recent games"
+                                        },
+                                        "min_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 10,
+                                            "maximum": 300,
+                                            "description": "Minimum duration for NCAA Baseball recent mode"
+                                        },
+                                        "max_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 60,
+                                            "maximum": 600,
+                                            "description": "Max duration for NCAA Baseball recent games"
+                                        }
+                                    }
+                                },
+                                "upcoming": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Enable dynamic duration for NCAA Baseball upcoming games"
+                                        },
+                                        "min_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 10,
+                                            "maximum": 300,
+                                            "description": "Minimum duration for NCAA Baseball upcoming mode"
+                                        },
+                                        "max_duration_seconds": {
+                                            "type": "number",
+                                            "minimum": 60,
+                                            "maximum": 600,
+                                            "description": "Max duration for NCAA Baseball upcoming games"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "customization": {
+            "type": "object",
+            "title": "Display Customization",
+            "description": "Customize fonts, colors, and layout positioning for scoreboard elements",
+            "properties": {
+                "score_text": {
+                    "type": "object",
+                    "title": "Score Text",
+                    "description": "Customize the score display",
+                    "properties": {
+                        "font": {
+                            "type": "string",
+                            "default": "press_start",
+                            "description": "Font family for score text"
+                        },
+                        "font_size": {
+                            "type": "integer",
+                            "default": 10,
+                            "description": "Font size for score text"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "status_text": {
+                    "type": "object",
+                    "title": "Status Text",
+                    "description": "Customize the status/inning display",
+                    "properties": {
+                        "font": {
+                            "type": "string",
+                            "default": "press_start",
+                            "description": "Font family for status text"
+                        },
+                        "font_size": {
+                            "type": "integer",
+                            "default": 8,
+                            "description": "Font size for status text"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "detail_text": {
+                    "type": "object",
+                    "title": "Detail Text",
+                    "description": "Customize detail text (records, etc.)",
+                    "properties": {
+                        "font": {
+                            "type": "string",
+                            "default": "four_by_six",
+                            "description": "Font family for detail text"
+                        },
+                        "font_size": {
+                            "type": "integer",
+                            "default": 6,
+                            "description": "Font size for detail text"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "layout": {
+                    "type": "object",
+                    "title": "Layout Positioning",
+                    "description": "Adjust X,Y coordinate offsets for elements. Values are relative to default positions. Use negative values to move left/up, positive to move right/down.",
+                    "properties": {
+                        "home_logo": {
+                            "type": "object",
+                            "title": "Home Team Logo",
+                            "properties": {
+                                "x_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Horizontal offset from default position (default: 0)"
+                                },
+                                "y_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Vertical offset from default position (default: 0)"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "away_logo": {
+                            "type": "object",
+                            "title": "Away Team Logo",
+                            "properties": {
+                                "x_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Horizontal offset from default position (default: 0)"
+                                },
+                                "y_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Vertical offset from default position (default: 0)"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "score": {
+                            "type": "object",
+                            "title": "Game Score",
+                            "properties": {
+                                "x_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Horizontal offset from center (default: 0)"
+                                },
+                                "y_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Vertical offset from center (default: 0)"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "status": {
+                            "type": "object",
+                            "title": "Game Status/Inning",
+                            "properties": {
+                                "x_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Horizontal offset from default position (default: 0)"
+                                },
+                                "y_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Vertical offset from default position (default: 0)"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "record": {
+                            "type": "object",
+                            "title": "Team Records",
+                            "properties": {
+                                "x_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Horizontal offset from default position (default: 0)"
+                                },
+                                "y_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Vertical offset from default position (default: 0)"
+                                },
+                                "away_x_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Additional horizontal offset for away team record (default: 0)"
+                                },
+                                "home_x_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Additional horizontal offset for home team record (default: 0)"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "ranking": {
+                            "type": "object",
+                            "title": "Team Rankings",
+                            "properties": {
+                                "x_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Horizontal offset from default position (default: 0)"
+                                },
+                                "y_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Vertical offset from default position (default: 0)"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "odds": {
+                            "type": "object",
+                            "title": "Betting Odds",
+                            "properties": {
+                                "x_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Horizontal offset from default position (default: 0)"
+                                },
+                                "y_offset": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "description": "Vertical offset from default position (default: 0)"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    },
+                    "x-propertyOrder": [
+                        "home_logo",
+                        "away_logo",
+                        "score",
+                        "status",
+                        "record",
+                        "ranking",
+                        "odds"
+                    ],
+                    "additionalProperties": false
+                },
+                "period_text": {
+                    "type": "object",
+                    "title": "Period/Inning Text",
+                    "description": "Customize the period/inning display font",
+                    "properties": {
+                        "font": {
+                            "type": "string",
+                            "default": "press_start",
+                            "description": "Font family for period/inning text"
+                        },
+                        "font_size": {
+                            "type": "integer",
+                            "default": 8,
+                            "description": "Font size for period/inning text"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "team_name": {
+                    "type": "object",
+                    "title": "Team Name Text",
+                    "description": "Customize the team name/abbreviation display",
+                    "properties": {
+                        "font": {
+                            "type": "string",
+                            "default": "press_start",
+                            "description": "Font family for team name text"
+                        },
+                        "font_size": {
+                            "type": "integer",
+                            "default": 8,
+                            "description": "Font size for team name text"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "rank_text": {
+                    "type": "object",
+                    "title": "Ranking Text",
+                    "description": "Customize the ranking display font",
+                    "properties": {
+                        "font": {
+                            "type": "string",
+                            "default": "press_start",
+                            "description": "Font family for ranking text"
+                        },
+                        "font_size": {
+                            "type": "integer",
+                            "default": 10,
+                            "description": "Font size for ranking text"
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
+            "x-propertyOrder": [
+                "score_text",
+                "period_text",
+                "team_name",
+                "status_text",
+                "detail_text",
+                "rank_text",
+                "layout"
+            ],
+            "additionalProperties": false
         }
-      }
     },
-    "milb": {
-      "type": "object",
-      "title": "MiLB Settings",
-      "description": "Configuration for MiLB (Minor League Baseball) games",
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable MiLB games"
-        },
-        "favorite_teams": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": [],
-          "uniqueItems": true,
-          "maxItems": 120,
-          "description": "List of favorite MiLB team abbreviations (e.g., DUR, SWB). Use 2-4 letter codes."
-        },
-        "display_modes": {
-          "type": "object",
-          "title": "Display Modes",
-          "description": "Control which game types to show",
-          "properties": {
-            "show_live": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show live MiLB games"
-            },
-            "show_recent": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show recently completed MiLB games"
-            },
-            "show_upcoming": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show upcoming MiLB games"
-            },
-            "live_display_mode": {
-              "type": "string",
-              "enum": ["switch", "scroll"],
-              "default": "switch",
-              "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
-            },
-            "recent_display_mode": {
-              "type": "string",
-              "enum": ["switch", "scroll"],
-              "default": "switch",
-              "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
-            },
-            "upcoming_display_mode": {
-              "type": "string",
-              "enum": ["switch", "scroll"],
-              "default": "switch",
-              "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
-            }
-          }
-        },
-        "scroll_settings": {
-          "type": "object",
-          "title": "Scroll Settings",
-          "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-          "properties": {
-            "scroll_speed": {
-              "type": "number",
-              "default": 50.0,
-              "minimum": 1.0,
-              "maximum": 200.0,
-              "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
-            },
-            "scroll_delay": {
-              "type": "number",
-              "default": 0.01,
-              "minimum": 0.001,
-              "maximum": 0.1,
-              "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
-            },
-            "gap_between_games": {
-              "type": "integer",
-              "default": 48,
-              "minimum": 8,
-              "maximum": 128,
-              "description": "Gap in pixels between game cards when scrolling"
-            },
-            "show_league_separators": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show league icons between different leagues"
-            },
-            "dynamic_duration": {
-              "type": "boolean",
-              "default": true,
-              "description": "Automatically calculate display duration based on content width"
-            },
-            "game_card_width": {
-              "type": "integer",
-              "default": 128,
-              "minimum": 32,
-              "maximum": 512,
-              "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
-            }
-          }
-        },
-        "live_priority": {
-          "type": "boolean",
-          "default": false,
-          "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
-        },
-        "live_game_duration": {
-          "type": "integer",
-          "default": 30,
-          "minimum": 10,
-          "maximum": 120,
-          "description": "Duration in seconds to display each live game before rotating to the next live game"
-        },
-        "recent_game_duration": {
-          "type": "number",
-          "default": 15,
-          "minimum": 10,
-          "maximum": 120,
-          "description": "Duration in seconds to show each recent game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
-        },
-        "upcoming_game_duration": {
-          "type": "number",
-          "default": 15,
-          "minimum": 10,
-          "maximum": 120,
-          "description": "Duration in seconds to show each upcoming game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
-        },
-        "live_update_interval": {
-          "type": "integer",
-          "default": 30,
-          "minimum": 5,
-          "maximum": 300,
-          "description": "How often to update live game data (seconds)"
-        },
-        "update_interval_seconds": {
-          "type": "integer",
-          "default": 3600,
-          "minimum": 30,
-          "maximum": 86400,
-          "description": "How often to fetch new data for this league (seconds)"
-        },
-        "game_limits": {
-          "type": "object",
-          "title": "Game Limits",
-          "description": "Control how many games to show",
-          "properties": {
-            "recent_games_to_show": {
-              "type": "integer",
-              "default": 1,
-              "minimum": 1,
-              "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-            },
-            "upcoming_games_to_show": {
-              "type": "integer",
-              "default": 1,
-              "minimum": 1,
-              "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-            }
-          }
-        },
-        "display_options": {
-          "type": "object",
-          "title": "Display Options",
-          "description": "Additional information to show",
-          "properties": {
-            "show_records": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show team records (wins-losses)"
-            },
-            "show_ranking": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show team rankings (when available)"
-            },
-            "show_odds": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show betting odds"
-            },
-            "show_series_summary": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show series summary information"
-            }
-          }
-        },
-        "filtering": {
-          "type": "object",
-          "title": "Filtering Options",
-          "description": "Control which teams are shown",
-          "properties": {
-            "show_favorite_teams_only": {
-              "type": "boolean",
-              "default": true,
-              "description": "Only show games from favorite teams"
-            },
-            "show_all_live": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show all live games, not just favorites"
-            }
-          }
-        },
-        "mode_durations": {
-          "type": "object",
-          "title": "Mode Duration Overrides",
-          "description": "Override how long each mode displays before rotating",
-          "properties": {
-            "recent_mode_duration": {
-              "type": ["number", "null"],
-              "default": null,
-              "minimum": 10,
-              "maximum": 600,
-              "description": "Override display duration for recent games mode (seconds). Null uses default."
-            },
-            "upcoming_mode_duration": {
-              "type": ["number", "null"],
-              "default": null,
-              "minimum": 10,
-              "maximum": 600,
-              "description": "Override display duration for upcoming games mode (seconds). Null uses default."
-            },
-            "live_mode_duration": {
-              "type": ["number", "null"],
-              "default": null,
-              "minimum": 10,
-              "maximum": 600,
-              "description": "Override display duration for live games mode (seconds). Null uses default."
-            }
-          }
-        },
-        "dynamic_duration": {
-          "type": "object",
-          "title": "MiLB Dynamic Duration Settings",
-          "description": "Configure dynamic duration settings for MiLB games.",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": false,
-              "description": "Enable dynamic duration for MiLB games"
-            },
-            "min_duration_seconds": {
-              "type": "number",
-              "minimum": 10,
-              "maximum": 300,
-              "default": 30,
-              "description": "Minimum total duration in seconds for this mode, even if few games are available. Ensures the mode stays visible long enough."
-            },
-            "max_duration_seconds": {
-              "type": "number",
-              "minimum": 60,
-              "maximum": 600,
-              "description": "Maximum total duration in seconds for this mode, even if many games are available."
-            },
-            "modes": {
-              "type": "object",
-              "title": "Per-Mode Settings for MiLB",
-              "description": "Configure dynamic duration for specific MiLB modes",
-              "properties": {
-                "live": {
-                  "type": "object",
-                  "properties": {
-                    "enabled": {
-                      "type": "boolean",
-                      "default": false,
-                      "description": "Enable dynamic duration for MiLB live games"
-                    },
-                    "min_duration_seconds": {
-                      "type": "number",
-                      "minimum": 10,
-                      "maximum": 300,
-                      "description": "Minimum duration for MiLB live mode"
-                    },
-                    "max_duration_seconds": {
-                      "type": "number",
-                      "minimum": 60,
-                      "maximum": 600,
-                      "description": "Max duration for MiLB live games"
-                    }
-                  }
-                },
-                "recent": {
-                  "type": "object",
-                  "properties": {
-                    "enabled": {
-                      "type": "boolean",
-                      "default": false,
-                      "description": "Enable dynamic duration for MiLB recent games"
-                    },
-                    "min_duration_seconds": {
-                      "type": "number",
-                      "minimum": 10,
-                      "maximum": 300,
-                      "description": "Minimum duration for MiLB recent mode"
-                    },
-                    "max_duration_seconds": {
-                      "type": "number",
-                      "minimum": 60,
-                      "maximum": 600,
-                      "description": "Max duration for MiLB recent games"
-                    }
-                  }
-                },
-                "upcoming": {
-                  "type": "object",
-                  "properties": {
-                    "enabled": {
-                      "type": "boolean",
-                      "default": false,
-                      "description": "Enable dynamic duration for MiLB upcoming games"
-                    },
-                    "min_duration_seconds": {
-                      "type": "number",
-                      "minimum": 10,
-                      "maximum": 300,
-                      "description": "Minimum duration for MiLB upcoming mode"
-                    },
-                    "max_duration_seconds": {
-                      "type": "number",
-                      "minimum": 60,
-                      "maximum": 600,
-                      "description": "Max duration for MiLB upcoming games"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "ncaa_baseball": {
-      "type": "object",
-      "title": "NCAA Baseball Settings",
-      "description": "Configuration for NCAA Baseball games",
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable NCAA Baseball games"
-        },
-        "favorite_teams": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": [],
-          "uniqueItems": true,
-          "maxItems": 300,
-          "description": "List of favorite NCAA Baseball team abbreviations (e.g., LSU, FLA). Use 2-4 letter codes."
-        },
-        "display_modes": {
-          "type": "object",
-          "title": "Display Modes",
-          "description": "Control which game types to show",
-          "properties": {
-            "show_live": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show live NCAA Baseball games"
-            },
-            "show_recent": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show recently completed NCAA Baseball games"
-            },
-            "show_upcoming": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show upcoming NCAA Baseball games"
-            },
-            "live_display_mode": {
-              "type": "string",
-              "enum": ["switch", "scroll"],
-              "default": "switch",
-              "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
-            },
-            "recent_display_mode": {
-              "type": "string",
-              "enum": ["switch", "scroll"],
-              "default": "switch",
-              "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
-            },
-            "upcoming_display_mode": {
-              "type": "string",
-              "enum": ["switch", "scroll"],
-              "default": "switch",
-              "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
-            }
-          }
-        },
-        "scroll_settings": {
-          "type": "object",
-          "title": "Scroll Settings",
-          "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-          "properties": {
-            "scroll_speed": {
-              "type": "number",
-              "default": 50.0,
-              "minimum": 1.0,
-              "maximum": 200.0,
-              "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
-            },
-            "scroll_delay": {
-              "type": "number",
-              "default": 0.01,
-              "minimum": 0.001,
-              "maximum": 0.1,
-              "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
-            },
-            "gap_between_games": {
-              "type": "integer",
-              "default": 48,
-              "minimum": 8,
-              "maximum": 128,
-              "description": "Gap in pixels between game cards when scrolling"
-            },
-            "show_league_separators": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show league icons between different leagues"
-            },
-            "dynamic_duration": {
-              "type": "boolean",
-              "default": true,
-              "description": "Automatically calculate display duration based on content width"
-            },
-            "game_card_width": {
-              "type": "integer",
-              "default": 128,
-              "minimum": 32,
-              "maximum": 512,
-              "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
-            }
-          }
-        },
-        "live_priority": {
-          "type": "boolean",
-          "default": true,
-          "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
-        },
-        "live_game_duration": {
-          "type": "integer",
-          "default": 30,
-          "minimum": 10,
-          "maximum": 120,
-          "description": "Duration in seconds to display each live game before rotating to the next live game"
-        },
-        "recent_game_duration": {
-          "type": "number",
-          "default": 15,
-          "minimum": 10,
-          "maximum": 120,
-          "description": "Duration in seconds to show each recent game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
-        },
-        "upcoming_game_duration": {
-          "type": "number",
-          "default": 15,
-          "minimum": 10,
-          "maximum": 120,
-          "description": "Duration in seconds to show each upcoming game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
-        },
-        "live_update_interval": {
-          "type": "integer",
-          "default": 30,
-          "minimum": 5,
-          "maximum": 300,
-          "description": "How often to update live game data (seconds)"
-        },
-        "update_interval_seconds": {
-          "type": "integer",
-          "default": 3600,
-          "minimum": 30,
-          "maximum": 86400,
-          "description": "How often to fetch new data for this league (seconds)"
-        },
-        "game_limits": {
-          "type": "object",
-          "title": "Game Limits",
-          "description": "Control how many games to show",
-          "properties": {
-            "recent_games_to_show": {
-              "type": "integer",
-              "default": 1,
-              "minimum": 1,
-              "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-            },
-            "upcoming_games_to_show": {
-              "type": "integer",
-              "default": 1,
-              "minimum": 1,
-              "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-            }
-          }
-        },
-        "display_options": {
-          "type": "object",
-          "title": "Display Options",
-          "description": "Additional information to show",
-          "properties": {
-            "show_records": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show team records (wins-losses)"
-            },
-            "show_ranking": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show team rankings (rankings can be important in college baseball)"
-            },
-            "show_odds": {
-              "type": "boolean",
-              "default": true,
-              "description": "Show betting odds"
-            },
-            "show_series_summary": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show series summary information"
-            }
-          }
-        },
-        "filtering": {
-          "type": "object",
-          "title": "Filtering Options",
-          "description": "Control which teams are shown",
-          "properties": {
-            "show_favorite_teams_only": {
-              "type": "boolean",
-              "default": true,
-              "description": "Only show games from favorite teams"
-            },
-            "show_all_live": {
-              "type": "boolean",
-              "default": false,
-              "description": "Show all live games, not just favorites"
-            }
-          }
-        },
-        "mode_durations": {
-          "type": "object",
-          "title": "Mode Duration Overrides",
-          "description": "Override how long each mode displays before rotating",
-          "properties": {
-            "recent_mode_duration": {
-              "type": ["number", "null"],
-              "default": null,
-              "minimum": 10,
-              "maximum": 600,
-              "description": "Override display duration for recent games mode (seconds). Null uses default."
-            },
-            "upcoming_mode_duration": {
-              "type": ["number", "null"],
-              "default": null,
-              "minimum": 10,
-              "maximum": 600,
-              "description": "Override display duration for upcoming games mode (seconds). Null uses default."
-            },
-            "live_mode_duration": {
-              "type": ["number", "null"],
-              "default": null,
-              "minimum": 10,
-              "maximum": 600,
-              "description": "Override display duration for live games mode (seconds). Null uses default."
-            }
-          }
-        },
-        "dynamic_duration": {
-          "type": "object",
-          "title": "NCAA Baseball Dynamic Duration Settings",
-          "description": "Configure dynamic duration settings for NCAA Baseball games.",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": false,
-              "description": "Enable dynamic duration for NCAA Baseball games"
-            },
-            "min_duration_seconds": {
-              "type": "number",
-              "minimum": 10,
-              "maximum": 300,
-              "default": 30,
-              "description": "Minimum total duration in seconds for this mode, even if few games are available. Ensures the mode stays visible long enough."
-            },
-            "max_duration_seconds": {
-              "type": "number",
-              "minimum": 60,
-              "maximum": 600,
-              "description": "Maximum total duration in seconds for this mode, even if many games are available."
-            },
-            "modes": {
-              "type": "object",
-              "title": "Per-Mode Settings for NCAA Baseball",
-              "description": "Configure dynamic duration for specific NCAA Baseball modes",
-              "properties": {
-                "live": {
-                  "type": "object",
-                  "properties": {
-                    "enabled": {
-                      "type": "boolean",
-                      "default": false,
-                      "description": "Enable dynamic duration for NCAA Baseball live games"
-                    },
-                    "min_duration_seconds": {
-                      "type": "number",
-                      "minimum": 10,
-                      "maximum": 300,
-                      "description": "Minimum duration for NCAA Baseball live mode"
-                    },
-                    "max_duration_seconds": {
-                      "type": "number",
-                      "minimum": 60,
-                      "maximum": 600,
-                      "description": "Max duration for NCAA Baseball live games"
-                    }
-                  }
-                },
-                "recent": {
-                  "type": "object",
-                  "properties": {
-                    "enabled": {
-                      "type": "boolean",
-                      "default": false,
-                      "description": "Enable dynamic duration for NCAA Baseball recent games"
-                    },
-                    "min_duration_seconds": {
-                      "type": "number",
-                      "minimum": 10,
-                      "maximum": 300,
-                      "description": "Minimum duration for NCAA Baseball recent mode"
-                    },
-                    "max_duration_seconds": {
-                      "type": "number",
-                      "minimum": 60,
-                      "maximum": 600,
-                      "description": "Max duration for NCAA Baseball recent games"
-                    }
-                  }
-                },
-                "upcoming": {
-                  "type": "object",
-                  "properties": {
-                    "enabled": {
-                      "type": "boolean",
-                      "default": false,
-                      "description": "Enable dynamic duration for NCAA Baseball upcoming games"
-                    },
-                    "min_duration_seconds": {
-                      "type": "number",
-                      "minimum": 10,
-                      "maximum": 300,
-                      "description": "Minimum duration for NCAA Baseball upcoming mode"
-                    },
-                    "max_duration_seconds": {
-                      "type": "number",
-                      "minimum": 60,
-                      "maximum": 600,
-                      "description": "Max duration for NCAA Baseball upcoming games"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "customization": {
-      "type": "object",
-      "title": "Display Customization",
-      "description": "Customize fonts, colors, and layout positioning for scoreboard elements",
-      "properties": {
-        "score_text": {
-          "type": "object",
-          "title": "Score Text",
-          "description": "Customize the score display",
-          "properties": {
-            "font": {
-              "type": "string",
-              "default": "press_start",
-              "description": "Font family for score text"
-            },
-            "font_size": {
-              "type": "integer",
-              "default": 10,
-              "description": "Font size for score text"
-            }
-          },
-          "additionalProperties": false
-        },
-        "status_text": {
-          "type": "object",
-          "title": "Status Text",
-          "description": "Customize the status/inning display",
-          "properties": {
-            "font": {
-              "type": "string",
-              "default": "press_start",
-              "description": "Font family for status text"
-            },
-            "font_size": {
-              "type": "integer",
-              "default": 8,
-              "description": "Font size for status text"
-            }
-          },
-          "additionalProperties": false
-        },
-        "detail_text": {
-          "type": "object",
-          "title": "Detail Text",
-          "description": "Customize detail text (records, etc.)",
-          "properties": {
-            "font": {
-              "type": "string",
-              "default": "four_by_six",
-              "description": "Font family for detail text"
-            },
-            "font_size": {
-              "type": "integer",
-              "default": 6,
-              "description": "Font size for detail text"
-            }
-          },
-          "additionalProperties": false
-        },
-        "layout": {
-          "type": "object",
-          "title": "Layout Positioning",
-          "description": "Adjust X,Y coordinate offsets for elements. Values are relative to default positions. Use negative values to move left/up, positive to move right/down.",
-          "properties": {
-            "home_logo": {
-              "type": "object",
-              "title": "Home Team Logo",
-              "properties": {
-                "x_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Horizontal offset from default position (default: 0)"
-                },
-                "y_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Vertical offset from default position (default: 0)"
-                }
-              },
-              "additionalProperties": false
-            },
-            "away_logo": {
-              "type": "object",
-              "title": "Away Team Logo",
-              "properties": {
-                "x_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Horizontal offset from default position (default: 0)"
-                },
-                "y_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Vertical offset from default position (default: 0)"
-                }
-              },
-              "additionalProperties": false
-            },
-            "score": {
-              "type": "object",
-              "title": "Game Score",
-              "properties": {
-                "x_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Horizontal offset from center (default: 0)"
-                },
-                "y_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Vertical offset from center (default: 0)"
-                }
-              },
-              "additionalProperties": false
-            },
-            "status": {
-              "type": "object",
-              "title": "Game Status/Inning",
-              "properties": {
-                "x_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Horizontal offset from default position (default: 0)"
-                },
-                "y_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Vertical offset from default position (default: 0)"
-                }
-              },
-              "additionalProperties": false
-            },
-            "record": {
-              "type": "object",
-              "title": "Team Records",
-              "properties": {
-                "x_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Horizontal offset from default position (default: 0)"
-                },
-                "y_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Vertical offset from default position (default: 0)"
-                },
-                "away_x_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Additional horizontal offset for away team record (default: 0)"
-                },
-                "home_x_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Additional horizontal offset for home team record (default: 0)"
-                }
-              },
-              "additionalProperties": false
-            },
-            "ranking": {
-              "type": "object",
-              "title": "Team Rankings",
-              "properties": {
-                "x_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Horizontal offset from default position (default: 0)"
-                },
-                "y_offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Vertical offset from default position (default: 0)"
-                }
-              },
-              "additionalProperties": false
-            }
-          },
-          "x-propertyOrder": ["home_logo", "away_logo", "score", "status", "record", "ranking"],
-          "additionalProperties": false
-        }
-      },
-      "x-propertyOrder": ["score_text", "status_text", "detail_text", "layout"],
-      "additionalProperties": false
-    }
-  },
-  "additionalProperties": false,
-  "required": ["enabled"]
+    "additionalProperties": false,
+    "required": [
+        "enabled"
+    ]
 }

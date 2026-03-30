@@ -424,6 +424,10 @@ class SportsCore(ABC):
                     "No clear favorite - spreads: home={home_spread}, away={away_spread}"
                 )
 
+            # Get user-configurable layout offsets for odds
+            odds_x_offset = self._get_layout_offset('odds', 'x_offset')
+            odds_y_offset = self._get_layout_offset('odds', 'y_offset')
+
             # Show the negative spread on the appropriate side
             if favored_spread is not None:
                 spread_text = str(favored_spread)
@@ -432,8 +436,8 @@ class SportsCore(ABC):
                 if favored_side == "home":
                     # Home team is favored, show spread on right side
                     spread_width = draw.textlength(spread_text, font=font)
-                    spread_x = width - spread_width  # Top right
-                    spread_y = 0
+                    spread_x = width - spread_width + odds_x_offset
+                    spread_y = 0 + odds_y_offset
                     self._draw_text_with_outline(
                         draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0)
                     )
@@ -442,8 +446,8 @@ class SportsCore(ABC):
                     )
                 else:
                     # Away team is favored, show spread on left side
-                    spread_x = 0  # Top left
-                    spread_y = 0
+                    spread_x = 0 + odds_x_offset
+                    spread_y = 0 + odds_y_offset
                     self._draw_text_with_outline(
                         draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0)
                     )
@@ -460,22 +464,22 @@ class SportsCore(ABC):
 
                 if favored_side == "home":
                     # Home favored, show O/U on left side (opposite of spread)
-                    ou_x = 0  # Top left
-                    ou_y = 0
+                    ou_x = 0 + odds_x_offset
+                    ou_y = 0 + odds_y_offset
                     self.logger.debug(
                         f"Showing O/U '{ou_text}' on left side (home favored)"
                     )
                 elif favored_side == "away":
                     # Away favored, show O/U on right side (opposite of spread)
-                    ou_x = width - ou_width  # Top right
-                    ou_y = 0
+                    ou_x = width - ou_width + odds_x_offset
+                    ou_y = 0 + odds_y_offset
                     self.logger.debug(
                         f"Showing O/U '{ou_text}' on right side (away favored)"
                     )
                 else:
                     # No clear favorite, show O/U in center
-                    ou_x = (width - ou_width) // 2
-                    ou_y = 0
+                    ou_x = (width - ou_width) // 2 + odds_x_offset
+                    ou_y = 0 + odds_y_offset
                     self.logger.debug(
                         f"Showing O/U '{ou_text}' in center (no clear favorite)"
                     )
