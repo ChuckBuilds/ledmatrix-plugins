@@ -137,8 +137,8 @@ class Baseball(SportsCore):
             game_status = status["type"]["name"].lower()
             status_state = status["type"]["state"].lower()
             # Get team abbreviations (some NCAA teams lack 'abbreviation')
-            home_abbr = home_team["team"].get("abbreviation", home_team["team"].get("name", "?")[:3])
-            away_abbr = away_team["team"].get("abbreviation", away_team["team"].get("name", "?")[:3])
+            home_abbr = home_team["team"].get("abbreviation") or (home_team["team"].get("name") or "?")[:3]
+            away_abbr = away_team["team"].get("abbreviation") or (away_team["team"].get("name") or "?")[:3]
 
             # Check if this is a favorite team game
             is_favorite_game = (
