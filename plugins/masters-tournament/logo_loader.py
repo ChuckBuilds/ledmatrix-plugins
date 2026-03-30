@@ -145,8 +145,20 @@ class MastersLogoLoader:
         self._cache[cache_key] = placeholder
         return placeholder
 
+    def _crop_to_fill(self, img: Image.Image, size: int) -> Image.Image:
+        """Crop and resize image to exactly fill a square, centering on the face area."""
+        w, h = img.size
+        # Crop to square from the top-center (faces are usually top-center in headshots)
+        if w > h:
+            left = (w - h) // 2
+            img = img.crop((left, 0, left + h, h))
+        elif h > w:
+            # Keep top portion (face is at top in ESPN headshots)
+            img = img.crop((0, 0, w, w))
+        return img.resize((size, size), Image.Resampling.LANCZOS)
+
     def get_player_headshot(self, player_id: str, url: Optional[str], max_size: int = 24) -> Optional[Image.Image]:
-        """Get player headshot, downloading from ESPN if needed."""
+        """Get player headshot, crop-to-fill so it fills the display box."""
         if not player_id:
             return None
 
@@ -159,7 +171,7 @@ class MastersLogoLoader:
         if player_path.exists():
             try:
                 img = Image.open(player_path).convert("RGBA")
-                img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                img = self._crop_to_fill(img, max_size)
                 self._cache[cache_key] = img
                 return img
             except Exception as e:
@@ -176,7 +188,7 @@ class MastersLogoLoader:
                 img = Image.open(BytesIO(response.content)).convert("RGBA")
                 img.save(player_path, "PNG")
 
-                img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                img = self._crop_to_fill(img, max_size)
                 self._cache[cache_key] = img
                 return img
             except Exception as e:

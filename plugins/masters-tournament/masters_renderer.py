@@ -183,7 +183,7 @@ class MastersRenderer:
             self.show_thru = True
             self.show_country = True
             self.show_headshot = True
-            self.headshot_size = 24    # Was 20
+            self.headshot_size = 28    # Larger to fill the border box
             self.row_gap = 1           # 1px gap between rows
             self.footer_height = 6     # Page dots
 
