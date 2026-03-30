@@ -273,21 +273,20 @@ class GameRenderer:
                 count_x = bases_origin_x + (base_cluster_width - count_width) // 2
                 self._draw_text_with_outline(draw, count_text, (int(count_x), count_y), count_font)
 
-            # Team:Score at bottom corners
+            # Score (centered between logos, below bases/count cluster)
             score_font = self.fonts['score']
-            away_text = f"{game.get('away_abbr', '')}:{game.get('away_score', '0')}"
-            home_text = f"{game.get('home_abbr', '')}:{game.get('home_score', '0')}"
+            score_text = f"{game.get('away_score', '0')}-{game.get('home_score', '0')}"
+            score_width = draw.textlength(score_text, font=score_font)
+            score_x = (self.display_width - score_width) // 2
             try:
                 font_height = score_font.getbbox("A")[3] - score_font.getbbox("A")[1]
             except AttributeError:
                 font_height = 8
-            score_y = self.display_height - font_height - 2
-            self._draw_text_with_outline(draw, away_text, (2, score_y), score_font)
-            try:
-                home_w = draw.textbbox((0, 0), home_text, font=score_font)[2]
-            except AttributeError:
-                home_w = len(home_text) * 8
-            self._draw_text_with_outline(draw, home_text, (self.display_width - home_w - 2, score_y), score_font)
+            cluster_bottom = overall_start_y + base_cluster_height
+            if has_count_data:
+                cluster_bottom += 2 + 6  # count spacing + detail font height
+            score_y = max(cluster_bottom + 1, self.display_height - font_height - 2)
+            self._draw_text_with_outline(draw, score_text, (int(score_x), score_y), score_font)
 
             # Odds
             if game.get('odds'):
