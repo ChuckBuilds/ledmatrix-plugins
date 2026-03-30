@@ -1,8 +1,8 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.0.0",
-  "description": "Real-time aircraft tracking with ADS-B data, map backgrounds, flight plans, and proximity alerts",
+  "version": "1.2.0",
+  "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
   "class_name": "FlightTrackerPlugin",
@@ -33,5 +33,18 @@
   ],
   "ledmatrix_version": "2.0.0",
   "min_ledmatrix_version": "2.0.0",
-  "max_ledmatrix_version": "3.0.0"
+  "max_ledmatrix_version": "3.0.0",
+  "versions": [
+    {
+      "version": "1.2.0",
+      "ledmatrix_min": "2.0.0",
+      "released": "2026-03-29",
+      "notes": "FlightWall enhancements: area mode, flight tracking, OpenSky, airline logos, animated radar"
+    },
+    {
+      "version": "1.1.0",
+      "ledmatrix_min": "2.0.0",
+      "released": "2026-02-24"
+    }
+  ]
 }

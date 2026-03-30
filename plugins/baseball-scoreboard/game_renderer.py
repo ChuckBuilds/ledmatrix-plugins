@@ -8,7 +8,8 @@ Returns images instead of updating display directly.
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional
+import os
+from typing import Any, Dict, Optional
 
 import pytz
 from PIL import Image, ImageDraw, ImageFont
@@ -56,26 +57,85 @@ class GameRenderer:
         # Load fonts
         self.fonts = self._load_fonts()
 
-    def _load_fonts(self):
-        """Load fonts used by the renderer."""
+    def _load_fonts(self) -> Dict[str, ImageFont.FreeTypeFont]:
+        """Load fonts used by the scoreboard from config or use defaults."""
         fonts = {}
+
+        # Get customization config
+        customization = self.config.get('customization', {})
+
+        # Load fonts from config with defaults for backward compatibility
+        score_config = customization.get('score_text', {})
+        period_config = customization.get('period_text', {})
+        team_config = customization.get('team_name', {})
+        status_config = customization.get('status_text', {})
+        detail_config = customization.get('detail_text', {})
+        rank_config = customization.get('rank_text', {})
+
         try:
-            fonts['score'] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
-            fonts['time'] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 8)
-            fonts['team'] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 8)
-            fonts['status'] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-            fonts['detail'] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-            fonts['rank'] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
-            self.logger.debug("Successfully loaded fonts")
-        except IOError:
-            self.logger.warning("Fonts not found, using default PIL font.")
-            fonts['score'] = ImageFont.load_default()
-            fonts['time'] = ImageFont.load_default()
-            fonts['team'] = ImageFont.load_default()
-            fonts['status'] = ImageFont.load_default()
-            fonts['detail'] = ImageFont.load_default()
-            fonts['rank'] = ImageFont.load_default()
+            fonts["score"] = self._load_custom_font(score_config, default_size=10)
+            fonts["time"] = self._load_custom_font(period_config, default_size=8)
+            fonts["team"] = self._load_custom_font(team_config, default_size=8)
+            fonts["status"] = self._load_custom_font(status_config, default_size=6)
+            fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6-font.ttf')
+            fonts["rank"] = self._load_custom_font(rank_config, default_size=10)
+            self.logger.debug("Successfully loaded fonts from config")
+        except Exception as e:
+            self.logger.exception("Error loading fonts, using defaults")
+            # Fallback to hardcoded defaults
+            try:
+                fonts["score"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
+                fonts["time"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 8)
+                fonts["team"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 8)
+                fonts["status"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+                fonts["detail"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+                fonts["rank"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
+            except IOError:
+                self.logger.warning("Fonts not found, using default PIL font.")
+                default_font = ImageFont.load_default()
+                fonts = {k: default_font for k in ["score", "time", "team", "status", "detail", "rank"]}
+
         return fonts
+
+    def _load_custom_font(self, element_config: Dict[str, Any], default_size: int = 8, default_font: str = 'PressStart2P-Regular.ttf') -> ImageFont.FreeTypeFont:
+        """Load a custom font from an element configuration dictionary."""
+        font_name = element_config.get('font', default_font)
+        font_size = int(element_config.get('font_size', default_size))
+        font_path = os.path.join('assets', 'fonts', font_name)
+
+        try:
+            if os.path.exists(font_path):
+                if font_path.lower().endswith('.ttf') or font_path.lower().endswith('.otf'):
+                    return ImageFont.truetype(font_path, font_size)
+                elif font_path.lower().endswith('.bdf'):
+                    # BDF fonts require pre-conversion: pilfont.py font.bdf -> font.pil + font.pbm
+                    pil_font_path = font_path.rsplit('.', 1)[0] + '.pil'
+                    if os.path.exists(pil_font_path):
+                        try:
+                            return ImageFont.load(pil_font_path)
+                        except Exception as e:
+                            self.logger.warning(f"Failed to load pre-converted BDF font {pil_font_path}: {e}")
+                    else:
+                        self.logger.warning(
+                            f"BDF font {font_name} requires conversion. "
+                            f"Run: pilfont.py {font_path}"
+                        )
+                else:
+                    self.logger.warning(f"Unknown font file type: {font_name}")
+            else:
+                self.logger.warning(f"Font file not found: {font_path}")
+        except Exception as e:
+            self.logger.warning(f"Error loading font {font_name}: {e}")
+
+        # Fallback to default font
+        default_font_path = os.path.join('assets', 'fonts', 'PressStart2P-Regular.ttf')
+        try:
+            if os.path.exists(default_font_path):
+                return ImageFont.truetype(default_font_path, font_size)
+        except Exception as e:
+            self.logger.warning(f"Error loading default font {default_font_path}: {e}")
+
+        return ImageFont.load_default()
 
     def _get_logo_path(self, league: str, team_abbrev: str) -> Path:
         """Get the logo path for a team based on league."""
@@ -273,21 +333,21 @@ class GameRenderer:
                 count_x = bases_origin_x + (base_cluster_width - count_width) // 2
                 self._draw_text_with_outline(draw, count_text, (int(count_x), count_y), count_font)
 
-            # Team:Score at bottom corners
+            # Score (centered between logos, below bases/count cluster)
             score_font = self.fonts['score']
-            away_text = f"{game.get('away_abbr', '')}:{game.get('away_score', '0')}"
-            home_text = f"{game.get('home_abbr', '')}:{game.get('home_score', '0')}"
+            score_text = f"{game.get('away_score', '0')}-{game.get('home_score', '0')}"
+            score_width = draw.textlength(score_text, font=score_font)
+            score_x = (self.display_width - score_width) // 2
             try:
                 font_height = score_font.getbbox("A")[3] - score_font.getbbox("A")[1]
             except AttributeError:
                 font_height = 8
-            score_y = self.display_height - font_height - 2
-            self._draw_text_with_outline(draw, away_text, (2, score_y), score_font)
-            try:
-                home_w = draw.textbbox((0, 0), home_text, font=score_font)[2]
-            except AttributeError:
-                home_w = len(home_text) * 8
-            self._draw_text_with_outline(draw, home_text, (self.display_width - home_w - 2, score_y), score_font)
+            cluster_bottom = overall_start_y + base_cluster_height
+            if has_count_data:
+                cluster_bottom += 2 + 6  # count spacing + detail font height
+            bottom_limit = self.display_height - font_height - 2
+            score_y = max(0, min(cluster_bottom + 1, bottom_limit))
+            self._draw_text_with_outline(draw, score_text, (int(score_x), score_y), score_font)
 
             # Odds
             if game.get('odds'):
@@ -501,7 +561,7 @@ class GameRenderer:
                 favored_side = 'away'
 
             # Odds row below the status/inning text row
-            status_bbox = draw.textbbox((0, 0), "A", font=self.fonts['time'])
+            status_bbox = draw.textbbox((0, 0), "A", font=self.fonts['detail'])
             odds_y = status_bbox[3] + 2  # just below the status row
 
             # Show the negative spread on the appropriate side

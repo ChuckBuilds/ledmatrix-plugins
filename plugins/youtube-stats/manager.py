@@ -56,6 +56,7 @@ class YouTubeStatsPlugin(BasePlugin):
         self.font = None
         self.youtube_logo = None
         self.last_displayed_stats: Optional[Dict[str, Any]] = None  # Track last displayed to prevent unnecessary redraws
+        self._api_key_error: Optional[str] = None  # Set when API key is bad/expired
         
         # Initialize display components
         if self.enabled:
@@ -148,14 +149,15 @@ class YouTubeStatsPlugin(BasePlugin):
         try:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
+            self._api_key_error = None  # Clear any previous error
             data = response.json()
-            
+
             # Increment API counter for YouTube data (optional)
             try:
                 increment_api_counter('youtube', 1)
             except Exception:
                 pass  # Ignore if API counter is not available
-            
+
             if 'items' in data and data['items']:
                 channel = data['items'][0]
                 stats = {
@@ -163,7 +165,7 @@ class YouTubeStatsPlugin(BasePlugin):
                     'subscribers': int(channel['statistics']['subscriberCount']),
                     'views': int(channel['statistics']['viewCount'])
                 }
-                
+
                 # Cache the result
                 self.cache_manager.set(cache_key, stats, ttl=self.update_interval_config)
                 self.logger.info(f"Fetched stats for channel: {stats['title']}")
@@ -171,11 +173,22 @@ class YouTubeStatsPlugin(BasePlugin):
             else:
                 self.logger.warning(f"No channel data found for channel ID: {self.channel_id}")
                 return None
+        except requests.exceptions.HTTPError as e:
+            status_code = e.response.status_code if e.response is not None else None
+            if status_code in (400, 401, 403):
+                self._api_key_error = "YouTube API key is invalid or expired. Update your API key in Settings > Secrets."
+                self.logger.error(self._api_key_error)
+            else:
+                self._api_key_error = None
+                self.logger.error("Error fetching YouTube stats (HTTP %s)", status_code)
+            return None
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"Error fetching YouTube stats: {e}")
+            self._api_key_error = None
+            self.logger.error("Error fetching YouTube stats: %s", type(e).__name__)
             return None
         except (KeyError, ValueError, TypeError) as e:
-            self.logger.error(f"Error parsing YouTube API response: {e}")
+            self._api_key_error = None
+            self.logger.error("Error parsing YouTube API response: %s", e)
             return None
     
     def _create_display(self, channel_stats: Dict[str, Any]) -> Optional[Image.Image]:
@@ -281,8 +294,31 @@ class YouTubeStatsPlugin(BasePlugin):
                 self.last_displayed_stats = self.channel_stats.copy()
                 self.logger.debug(f"Displayed stats for channel: {self.channel_stats.get('title')}")
         else:
-            self.logger.warning("No channel stats available to display")
-    
+            if self._api_key_error:
+                self.logger.warning(self._api_key_error)
+                self._show_error_on_display("YT: Update API Key")
+            else:
+                self.logger.warning("No channel stats available to display")
+
+    def _show_error_on_display(self, message: str) -> None:
+        """Render a short error message on the LED matrix."""
+        try:
+            matrix_width = self.display_manager.matrix.width
+            matrix_height = self.display_manager.matrix.height
+            image = Image.new('RGB', (matrix_width, matrix_height))
+            draw = ImageDraw.Draw(image)
+            font = self.font or ImageFont.load_default()
+            bbox = draw.textbbox((0, 0), message, font=font)
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
+            x = (matrix_width - text_w) // 2
+            y = (matrix_height - text_h) // 2
+            draw.text((x, y), message, font=font, fill=(255, 80, 80))
+            self.display_manager.image = image
+            self.display_manager.update_display()
+        except Exception as e:
+            self.logger.debug(f"Could not show error on display: {e}")
+
     def validate_config(self) -> bool:
         """Validate plugin configuration."""
         if not super().validate_config():

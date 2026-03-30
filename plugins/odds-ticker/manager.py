@@ -1148,8 +1148,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                                 away_team = next(c for c in competitors if c['homeAway'] == 'away')
                                 home_id = home_team['team']['id']
                                 away_id = away_team['team']['id']
-                                home_abbr = home_team['team']['abbreviation']
-                                away_abbr = away_team['team']['abbreviation']
+                                home_abbr = home_team['team'].get('abbreviation') or (home_team['team'].get('name') or '?')[:3]
+                                away_abbr = away_team['team'].get('abbreviation') or (away_team['team'].get('name') or '?')[:3]
                                 home_name = home_team['team'].get('name', home_abbr)
                                 away_name = away_team['team'].get('name', away_abbr)
 
