@@ -955,31 +955,57 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             self.logger.debug(f"Auto-refresh failed for manager {manager}: {exc}")
 
     def update(self) -> None:
-        """Update baseball game data."""
+        """Update baseball game data using parallel manager updates."""
         if not self.is_enabled:
             return
 
+        from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
+
+        # Collect all enabled managers (use getattr to guard against partial init)
+        managers_to_update = []
+        if self.mlb_enabled:
+            for name, attr in [("MLB Live", "mlb_live"), ("MLB Recent", "mlb_recent"), ("MLB Upcoming", "mlb_upcoming")]:
+                mgr = getattr(self, attr, None)
+                if mgr is not None:
+                    managers_to_update.append((name, mgr))
+        if self.milb_enabled:
+            for name, attr in [("MiLB Live", "milb_live"), ("MiLB Recent", "milb_recent"), ("MiLB Upcoming", "milb_upcoming")]:
+                mgr = getattr(self, attr, None)
+                if mgr is not None:
+                    managers_to_update.append((name, mgr))
+        if self.ncaa_baseball_enabled:
+            for name, attr in [("NCAA Live", "ncaa_baseball_live"), ("NCAA Recent", "ncaa_baseball_recent"), ("NCAA Upcoming", "ncaa_baseball_upcoming")]:
+                mgr = getattr(self, attr, None)
+                if mgr is not None:
+                    managers_to_update.append((name, mgr))
+
+        if not managers_to_update:
+            return
+
+        def _safe_update(name_and_manager):
+            name, manager = name_and_manager
+            try:
+                manager.update()
+            except Exception as e:
+                self.logger.error(f"Error updating {name} manager: {e}")
+
+        # All managers run in parallel — they're I/O-bound (ESPN API calls)
+        # so more threads than cores is fine on Pi
+        executor = ThreadPoolExecutor(max_workers=len(managers_to_update), thread_name_prefix="baseball-update")
         try:
-            # Update MLB managers if enabled
-            if self.mlb_enabled:
-                self.mlb_live.update()
-                self.mlb_recent.update()
-                self.mlb_upcoming.update()
-
-            # Update MiLB managers if enabled
-            if self.milb_enabled:
-                self.milb_live.update()
-                self.milb_recent.update()
-                self.milb_upcoming.update()
-
-            # Update NCAA Baseball managers if enabled
-            if self.ncaa_baseball_enabled:
-                self.ncaa_baseball_live.update()
-                self.ncaa_baseball_recent.update()
-                self.ncaa_baseball_upcoming.update()
-
+            futures = {
+                executor.submit(_safe_update, item): item[0]
+                for item in managers_to_update
+            }
+            for future in as_completed(futures, timeout=25):
+                future.result()  # propagate unexpected executor errors
+        except TimeoutError:
+            still_running = [name for f, name in futures.items() if not f.done()]
+            self.logger.warning(f"Manager update timed out after 25s, still running: {still_running}")
         except Exception as e:
-            self.logger.error(f"Error updating managers: {e}")
+            self.logger.error(f"Error in parallel manager updates: {e}")
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
 
     def _get_managers_in_priority_order(self, mode_type: str) -> list:
         """
@@ -2566,7 +2592,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             info = {
                 "plugin_id": self.plugin_id,
                 "name": "Baseball Scoreboard",
-                "version": "1.3.0",
+                "version": "1.6.0",
                 "enabled": self.is_enabled,
                 "display_size": f"{self.display_width}x{self.display_height}",
                 "mlb_enabled": self.mlb_enabled,

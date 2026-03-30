@@ -80,6 +80,82 @@
       "default": true,
       "description": "Show daily forecast for the next 3-7 days",
       "title": "Show Daily Forecast"
+    },
+    "show_almanac": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show almanac display with sunrise/sunset, moon phase, and day length",
+      "title": "Show Almanac"
+    },
+    "show_radar": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show precipitation radar imagery from RainViewer (free, no API key needed)",
+      "title": "Show Radar"
+    },
+    "show_alerts": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show weather alerts/warnings when active (takes priority in display rotation)",
+      "title": "Show Weather Alerts"
+    },
+    "show_feels_like": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show feels-like temperature on current conditions (requires display height ≥48px)",
+      "title": "Show Feels Like"
+    },
+    "show_dew_point": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show dew point on current conditions (requires display height ≥48px)",
+      "title": "Show Dew Point"
+    },
+    "show_visibility": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show visibility distance on current conditions (requires display height ≥48px)",
+      "title": "Show Visibility"
+    },
+    "show_pressure": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show barometric pressure on current conditions (requires display height ≥48px)",
+      "title": "Show Pressure"
+    },
+    "radar_zoom": {
+      "type": "integer",
+      "default": 6,
+      "minimum": 4,
+      "maximum": 8,
+      "description": "Radar zoom level (4=regional, 6=local, 8=very close). Higher values show more detail but less area.",
+      "title": "Radar Zoom Level"
+    },
+    "radar_line_color": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [0, 130, 70],
+      "description": "RGB color for state boundary lines on radar map (WeatherStar style). Default is green.",
+      "title": "Radar Map Line Color"
+    },
+    "radar_fill_color": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [15, 25, 15],
+      "description": "RGB color for land fill on radar map. Use [0,0,0] for no fill (outlines only).",
+      "title": "Radar Map Land Color"
+    },
+    "radar_update_interval": {
+      "type": "integer",
+      "default": 600,
+      "minimum": 300,
+      "maximum": 1800,
+      "description": "How often to refresh radar imagery in seconds (RainViewer updates every 10 minutes)",
+      "title": "Radar Update Interval"
     }
   },
   "required": [

@@ -963,38 +963,56 @@ class MusicPlugin(BasePlugin):
             except (TypeError, ValueError):
                 return fallback
 
-        title_y_percent = _safe_y_percent(title_layout_config.get('y_percent', 0.03), 0.03)
-        artist_y_percent = _safe_y_percent(artist_layout_config.get('y_percent', 0.34), 0.34)
-        album_y_percent = _safe_y_percent(album_layout_config.get('y_percent', 0.60), 0.60)
+        # Get actual font heights for layout
+        title_height = self.display_manager.get_font_height(font_title)
+        artist_height = self.display_manager.get_font_height(font_artist)
+        album_height = self.display_manager.get_font_height(font_album)
 
-        # Calculate y positions as percentages of display height for scaling
-        matrix_height = self.display_manager.matrix.height
-
-        # Calculate dynamic font heights based on display size
-        # For smaller displays (32px), use smaller line heights
-        # For larger displays, scale up proportionally
+        # Calculate progress bar position (needed for layout validation)
         if matrix_height <= 32:
-            LINE_HEIGHT_BDF = 7  # Optimized for 32px matrix
-            FIXED_BDF_BASELINE_SHIFT = 6
+            progress_bar_height = 3
         elif matrix_height <= 64:
-            LINE_HEIGHT_BDF = 8  # Standard for 64px matrix
-            FIXED_BDF_BASELINE_SHIFT = 7
+            progress_bar_height = 4
         else:
-            # For larger displays, scale proportionally
-            LINE_HEIGHT_BDF = max(8, int(matrix_height * 0.125))  # 12.5% of height, min 8
-            FIXED_BDF_BASELINE_SHIFT = max(6, int(matrix_height * 0.19))  # 19% of height, min 6
-        
-        # Calculate positions with proper scaling
-        y_pos_title_top = max(1, int(matrix_height * title_y_percent))
-        y_pos_artist_top = int(matrix_height * artist_y_percent) + FIXED_BDF_BASELINE_SHIFT
-        y_pos_album_top = int(matrix_height * album_y_percent) + FIXED_BDF_BASELINE_SHIFT
-        
+            progress_bar_height = max(4, int(matrix_height * 0.06))
+        progress_bar_y = matrix_height - progress_bar_height - 1
+
+        # Top-down stacking with proportional gaps
+        top_padding = max(1, matrix_height // 32)
+        line_gap = max(1, matrix_height // 16)
+
+        # Auto-compute positions from font metrics
+        auto_y_title = top_padding
+        auto_y_artist = auto_y_title + title_height + line_gap
+        auto_y_album = auto_y_artist + artist_height + line_gap
+
+        # Allow explicit y_percent override from user config
+        if 'y_percent' in title_layout_config:
+            y_pos_title_top = int(matrix_height * _safe_y_percent(title_layout_config['y_percent'], 0.03))
+        else:
+            y_pos_title_top = auto_y_title
+
+        if 'y_percent' in artist_layout_config:
+            y_pos_artist_top = int(matrix_height * _safe_y_percent(artist_layout_config['y_percent'], 0.34))
+        else:
+            y_pos_artist_top = auto_y_artist
+
+        if 'y_percent' in album_layout_config:
+            y_pos_album_top = int(matrix_height * _safe_y_percent(album_layout_config['y_percent'], 0.60))
+        else:
+            y_pos_album_top = auto_y_album
+
+        # Validate album doesn't overlap progress bar
+        max_album_y = progress_bar_y - album_height - 1
+        if y_pos_album_top > max_album_y:
+            y_pos_album_top = max_album_y
+            self.logger.warning("MusicPlugin: Clamped album Y to avoid progress bar overlap")
+
         # Debug logging for scaling calculations
         self.logger.debug(
             f"MusicPlugin.display: Display scaling - matrix: {matrix_width}x{matrix_height}, "
-            f"album_art: {album_art_size}px, LINE_HEIGHT_BDF: {LINE_HEIGHT_BDF}, "
-            f"y_percent(title/artist/album)=({title_y_percent:.2f}/{artist_y_percent:.2f}/{album_y_percent:.2f}), "
-            f"positions - title: {y_pos_title_top}, artist: {y_pos_artist_top}, album: {y_pos_album_top}"
+            f"album_art: {album_art_size}px, font_heights: title={title_height}, artist={artist_height}, album={album_height}, "
+            f"positions - title: {y_pos_title_top}, artist: {y_pos_artist_top}, album: {y_pos_album_top}, progress_bar: {progress_bar_y}"
         )
 
         # Title scrolling with configurable settings
@@ -1109,9 +1127,9 @@ class MusicPlugin(BasePlugin):
             
         # Album
         available_height_for_album = matrix_height - y_pos_album_top
-        self.logger.debug(f"MusicPlugin.display: Album display check - matrix_height: {matrix_height}, y_pos_album_top: {y_pos_album_top}, available_height: {available_height_for_album}, LINE_HEIGHT_BDF: {LINE_HEIGHT_BDF}")
-        
-        if available_height_for_album >= LINE_HEIGHT_BDF: 
+        self.logger.debug(f"MusicPlugin.display: Album display check - matrix_height: {matrix_height}, y_pos_album_top: {y_pos_album_top}, available_height: {available_height_for_album}, album_height: {album_height}")
+
+        if available_height_for_album >= album_height: 
             album_width = self.display_manager.get_text_width(album, font_album)
             self.logger.debug(f"MusicPlugin.display: Album '{album}' - width: {album_width}, text_area_width: {text_area_width}")
             
@@ -1175,17 +1193,9 @@ class MusicPlugin(BasePlugin):
                 self.display_manager.draw_text(current_album_display_text, 
                                              x=text_area_x_start, y=y_pos_album_top, color=(150, 150, 150), font=font_album)
         else:
-            self.logger.debug(f"MusicPlugin.display: Album '{album}' not displayed - insufficient height (available: {available_height_for_album}, needed: {LINE_HEIGHT_BDF})")
+            self.logger.debug(f"MusicPlugin.display: Album '{album}' not displayed - insufficient height (available: {available_height_for_album}, needed: {album_height})")
 
-        # Progress Bar - scale with display size
-        if matrix_height <= 32:
-            progress_bar_height = 3  # Standard for small displays
-        elif matrix_height <= 64:
-            progress_bar_height = 4  # Slightly thicker for medium displays
-        else:
-            progress_bar_height = max(4, int(matrix_height * 0.06))  # 6% of height, min 4px for large displays
-        
-        progress_bar_y = matrix_height - progress_bar_height - 1
+        # Progress Bar (position already calculated earlier for layout validation)
         duration_ms = current_track_info_snapshot.get('duration_ms', 0)
         progress_ms = current_track_info_snapshot.get('progress_ms', 0)
 

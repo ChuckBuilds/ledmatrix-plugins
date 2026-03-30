@@ -1,4 +1,6 @@
 import logging
+import threading
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
@@ -30,6 +32,9 @@ class BaseMiLBManager(Baseball):
     _warning_cooldown: ClassVar[int] = 60  # Only log warnings once per minute
     _shared_data: ClassVar[Optional[Dict]] = None
     _last_shared_update: ClassVar[float] = 0
+    _shared_rankings_cache: ClassVar[Dict] = {}
+    _shared_rankings_timestamp: ClassVar[float] = 0
+    _shared_rankings_lock: ClassVar[threading.Lock] = threading.Lock()
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         self.logger = logging.getLogger("MiLB")
@@ -60,6 +65,33 @@ class BaseMiLBManager(Baseball):
             f"Display modes - Live: {self.live_enabled}, Recent: {self.recent_enabled}, Upcoming: {self.upcoming_enabled}"
         )
         self.league = "minor-league-baseball"
+
+    def _fetch_team_rankings(self) -> Dict[str, int]:
+        """Share rankings cache across all MiLB manager instances (thread-safe)."""
+        current_time = time.time()
+        if (
+            BaseMiLBManager._shared_rankings_cache
+            and current_time - BaseMiLBManager._shared_rankings_timestamp
+            < self._rankings_cache_duration
+        ):
+            self._team_rankings_cache = BaseMiLBManager._shared_rankings_cache
+            return self._team_rankings_cache
+
+        with BaseMiLBManager._shared_rankings_lock:
+            # Double-check after acquiring lock
+            current_time = time.time()
+            if (
+                BaseMiLBManager._shared_rankings_cache
+                and current_time - BaseMiLBManager._shared_rankings_timestamp
+                < self._rankings_cache_duration
+            ):
+                self._team_rankings_cache = BaseMiLBManager._shared_rankings_cache
+                return self._team_rankings_cache
+
+            result = super()._fetch_team_rankings()
+            BaseMiLBManager._shared_rankings_cache = result
+            BaseMiLBManager._shared_rankings_timestamp = current_time
+            return result
 
     @staticmethod
     def _convert_stats_game_to_espn_event(game: Dict) -> Dict:
