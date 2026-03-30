@@ -105,15 +105,27 @@ class GameRenderer:
 
         try:
             if os.path.exists(font_path):
-                if font_path.lower().endswith('.ttf'):
+                if font_path.lower().endswith('.ttf') or font_path.lower().endswith('.otf'):
                     return ImageFont.truetype(font_path, font_size)
                 elif font_path.lower().endswith('.bdf'):
-                    try:
-                        return ImageFont.truetype(font_path, font_size)
-                    except Exception:
-                        self.logger.warning(f"Could not load BDF font {font_name}, using default")
+                    # BDF fonts require pre-conversion: pilfont.py font.bdf -> font.pil + font.pbm
+                    pil_font_path = font_path.rsplit('.', 1)[0] + '.pil'
+                    if os.path.exists(pil_font_path):
+                        try:
+                            return ImageFont.load(pil_font_path)
+                        except Exception as e:
+                            self.logger.warning(f"Failed to load pre-converted BDF font {pil_font_path}: {e}")
+                    else:
+                        self.logger.warning(
+                            f"BDF font {font_name} requires conversion. "
+                            f"Run: pilfont.py {font_path}"
+                        )
+                else:
+                    self.logger.warning(f"Unknown font file type: {font_name}")
+            else:
+                self.logger.warning(f"Font file not found: {font_path}")
         except Exception as e:
-            self.logger.exception(f"Error loading font {font_name}")
+            self.logger.warning(f"Error loading font {font_name}: {e}")
 
         # Fallback to default font
         default_font_path = os.path.join('assets', 'fonts', 'PressStart2P-Regular.ttf')
