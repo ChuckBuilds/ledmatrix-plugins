@@ -318,7 +318,10 @@ class MastersTournamentPlugin(BasePlugin):
             return False
 
         if display_mode is None:
-            display_mode = self.modes[0] if self.modes else "masters_leaderboard"
+            display_mode = self.modes[0] if self.modes else None
+
+        if display_mode is None:
+            return False
 
         self._current_display_mode = display_mode
 

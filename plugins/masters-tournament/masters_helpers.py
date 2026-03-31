@@ -6,8 +6,13 @@ accurate hole information, and complete historical records.
 """
 
 import random
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
+
+# Augusta is in Eastern Time (UTC-5 / UTC-4 DST)
+# Use a fixed offset for April (EDT = UTC-4) to avoid requiring pytz/zoneinfo
+# at import time. Masters always falls during DST.
+_EDT = timezone(timedelta(hours=-4))
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -283,10 +288,19 @@ def calculate_scoring_average(rounds: List[Optional[int]]) -> Optional[float]:
     return sum(valid_rounds) / len(valid_rounds)
 
 
+def _to_eastern(date: Optional[datetime]) -> datetime:
+    """Normalize a datetime to Eastern (Augusta) time."""
+    if date is None:
+        return datetime.now(_EDT)
+    if date.tzinfo is None:
+        # Assume naive datetimes are already local/Eastern
+        return date
+    return date.astimezone(_EDT)
+
+
 def get_tournament_phase(date: Optional[datetime] = None) -> str:
     """Determine current Masters tournament phase (basic)."""
-    if date is None:
-        date = datetime.now()
+    date = _to_eastern(date)
 
     if date.month == 4:
         if 7 <= date.day <= 9:
@@ -311,8 +325,7 @@ def get_detailed_phase(date: Optional[datetime] = None) -> str:
         "tournament-overnight"- Tournament day, overnight (midnight-6am ET)
         "post-tournament"     - Sunday evening / Monday after Masters
     """
-    if date is None:
-        date = datetime.now()
+    date = _to_eastern(date)
 
     month = date.month
     day = date.day
