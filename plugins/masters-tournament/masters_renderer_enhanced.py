@@ -328,16 +328,32 @@ class MastersRendererEnhanced(MastersRenderer):
         return img
 
     def render_course_overview(self, page: int = 0) -> Optional[Image.Image]:
-        """Render Augusta National overview - paginated front/back nine."""
+        """Render Augusta National overview - paginated across all 18 holes."""
         img = self._draw_gradient_bg(COLORS["masters_dark"], COLORS["masters_green"])
         draw = ImageDraw.Draw(img)
 
-        if page % 2 == 0:
-            title = "FRONT NINE"
-            holes = range(1, 10)
+        font = self.font_detail
+
+        # Calculate how many holes fit on screen
+        content_top = self.header_height + 3
+        content_bottom = self.height - self.footer_height - 4
+        usable_h = content_bottom - content_top
+        line_h = self._text_height(draw, "A", font) + 3
+        max_holes = max(1, usable_h // line_h)
+
+        # Paginate across all 18 holes
+        all_holes = list(range(1, 19))
+        total_pages = max(1, (len(all_holes) + max_holes - 1) // max_holes)
+        page = page % total_pages
+
+        start = page * max_holes
+        holes = all_holes[start : start + max_holes]
+
+        # Title based on which nine we're showing
+        if holes[0] <= 9:
+            title = "FRONT NINE" if holes[-1] <= 9 else "FRONT/BACK"
         else:
             title = "BACK NINE"
-            holes = range(10, 19)
 
         self._draw_header_bar(img, draw, title, show_logo=True)
 
@@ -347,35 +363,25 @@ class MastersRendererEnhanced(MastersRenderer):
             draw.text((2, y), f"Par {par}", fill=COLORS["white"], font=self.font_body)
             return img
 
-        y = self.header_height + 3
-        font = self.font_detail
-        line_h = self._text_height(draw, "A", font) + 3
-
-        # Show each hole with spacing
+        y = content_top
         for h in holes:
             info = AUGUSTA_HOLES[h]
 
-            # Hole number in yellow
             num_text = f"{h:2d}"
             draw.text((3, y), num_text, fill=COLORS["masters_yellow"], font=font)
 
-            # Hole name
             name = info["name"]
             if self.tier == "small":
                 name = name[:10]
             draw.text((18, y), name, fill=COLORS["white"], font=font)
 
-            # Par and yardage right-aligned
             par_text = f"P{info['par']} {info['yardage']}y"
             pw = self._text_width(draw, par_text, font)
             draw.text((self.width - pw - 3, y), par_text,
                       fill=COLORS["light_gray"], font=font)
 
             y += line_h
-            if y > self.height - self.footer_height - 4:
-                break
 
-        # Page dots (2 pages: front/back)
-        self._draw_page_dots(draw, page % 2, 2)
+        self._draw_page_dots(draw, page, total_pages)
 
         return img
