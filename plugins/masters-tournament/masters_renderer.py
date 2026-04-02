@@ -851,27 +851,23 @@ class MastersRenderer:
                 right_w = self.width - right_x - 2
                 right_cx = right_x + right_w // 2
 
-                until_text = unit_text
-                utw = self._text_width(draw, until_text, self.font_detail)
-                if utw > right_w:
-                    until_text = "TO MASTERS"
-                    utw = self._text_width(draw, until_text, self.font_detail)
-
                 detail_h = self._text_height(draw, "A", self.font_detail)
                 count_h = self._text_height(draw, count_text, self.font_score)
-                block_h = detail_h + 2 + count_h + 2 + detail_h
+                # Big number on top, label underneath
+                block_h = count_h + 3 + detail_h
                 block_y = max(2, (self.height - block_h) // 2)
 
-                draw.text((right_cx - utw // 2, block_y),
-                          until_text, fill=COLORS["white"], font=self.font_detail)
                 cw = self._text_width(draw, count_text, self.font_score)
-                count_y = block_y + detail_h + 2
-                self._text_shadow(draw, (right_cx - cw // 2, count_y),
+                self._text_shadow(draw, (right_cx - cw // 2, block_y),
                                   count_text, self.font_score, COLORS["masters_yellow"])
-                if unit_text:
-                    uw = self._text_width(draw, unit_text, self.font_detail)
-                    draw.text((right_cx - uw // 2, count_y + count_h + 2),
-                              unit_text, fill=COLORS["light_gray"], font=self.font_detail)
+
+                label = unit_text
+                lw = self._text_width(draw, label, self.font_detail)
+                if lw > right_w:
+                    label = "TO MASTERS"
+                    lw = self._text_width(draw, label, self.font_detail)
+                draw.text((right_cx - lw // 2, block_y + count_h + 3),
+                          label, fill=COLORS["light_gray"], font=self.font_detail)
                 return img
 
         # Compact layout: logo centered at top (larger), countdown below
@@ -885,27 +881,26 @@ class MastersRenderer:
             self._draw_logo_with_glow(img, logo, lx, 2)
             logo_bottom = 2 + logo.height + 2
 
-        # Position text below logo
+        # Position text below logo: label once, then big countdown
         remaining = self.height - logo_bottom
         detail_h = self._text_height(draw, "A", self.font_detail)
         count_h = self._text_height(draw, count_text, self.font_score)
 
         if self.tier == "tiny":
-            until_text = "TO MASTERS"
+            label = "TO MASTERS"
         else:
-            until_text = unit_text
+            label = unit_text
 
-        # Center the text block in remaining space
-        text_block_h = detail_h + 2 + count_h
+        text_block_h = count_h + 2 + detail_h
         text_y = logo_bottom + max(0, (remaining - text_block_h) // 2)
 
-        uw = self._text_width(draw, until_text, self.font_detail)
-        draw.text(((self.width - uw) // 2, text_y),
-                  until_text, fill=COLORS["white"], font=self.font_detail)
-
         cw = self._text_width(draw, count_text, self.font_score)
-        self._text_shadow(draw, ((self.width - cw) // 2, text_y + detail_h + 2),
+        self._text_shadow(draw, ((self.width - cw) // 2, text_y),
                           count_text, self.font_score, COLORS["masters_yellow"])
+
+        lw = self._text_width(draw, label, self.font_detail)
+        draw.text(((self.width - lw) // 2, text_y + count_h + 2),
+                  label, fill=COLORS["light_gray"], font=self.font_detail)
 
         return img
 
