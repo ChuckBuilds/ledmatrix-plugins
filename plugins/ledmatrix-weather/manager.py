@@ -328,6 +328,9 @@ class WeatherPlugin(BasePlugin):
         if self.consecutive_errors >= self.max_consecutive_errors:
             if current_time - self.last_error_time < self.error_backoff_time:
                 self.logger.debug(f"In error backoff period, retrying in {self.error_backoff_time - (current_time - self.last_error_time):.0f}s")
+                # Still reprocess forecast so past hours drop off the display
+                if self.forecast_data:
+                    self._process_forecast_data(self.forecast_data)
                 return
             else:
                 # Reset error count after backoff
@@ -360,6 +363,11 @@ class WeatherPlugin(BasePlugin):
                 if self.consecutive_errors >= self.max_consecutive_errors:
                     self.logger.error(f"Weather API disabled for {self.error_backoff_time} seconds due to repeated failures")
                 self.last_error_log_time = current_time
+
+            # Re-filter existing forecast data so past hours drop off the
+            # hourly display even when API calls are failing.
+            if self.forecast_data:
+                self._process_forecast_data(self.forecast_data)
 
     def _update_radar(self) -> None:
         """Refresh radar data in the update loop so display() never blocks on HTTP."""
