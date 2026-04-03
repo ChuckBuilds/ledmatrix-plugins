@@ -352,6 +352,47 @@
             }
           },
           "additionalProperties": false
+        },
+        "ncaaw_basketball": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable NCAA Women's Basketball rankings"
+            },
+            "top_teams": {
+              "type": "integer",
+              "default": 25,
+              "minimum": 5,
+              "maximum": 350,
+              "description": "Number of top NCAA Women's Basketball teams to display"
+            },
+            "show_ranking": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show rankings/seeds instead of sequential numbering. During March Madness, automatically shows tournament seeds."
+            }
+          },
+          "additionalProperties": false
+        },
+        "ncaa_baseball": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable NCAA Baseball standings"
+            },
+            "top_teams": {
+              "type": "integer",
+              "default": 25,
+              "minimum": 5,
+              "maximum": 350,
+              "description": "Number of top NCAA Baseball teams to display"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
