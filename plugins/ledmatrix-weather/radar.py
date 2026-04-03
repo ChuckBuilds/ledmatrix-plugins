@@ -309,13 +309,16 @@ class RadarFetcher:
             self._radar_frames = new_frames
             self._frame_timestamps = new_timestamps
             self._frame_index = 0
+            self._last_fetch = time.time()
             logger.info(f"[Radar] Loaded {len(new_frames)} radar frames")
             if failed:
                 logger.warning(f"[Radar] {failed}/{len(frames_to_fetch)} tile(s) failed to load")
         else:
-            logger.error(f"[Radar] All {len(frames_to_fetch)} radar tile(s) failed to load")
-
-        self._last_fetch = time.time()
+            # Don't update _last_fetch to full interval — retry in 60s
+            # instead of waiting the full 300s. Prevents stale frames
+            # persisting when tile CDN is temporarily unreachable.
+            self._last_fetch = time.time() - 240
+            logger.error(f"[Radar] All {len(frames_to_fetch)} radar tile(s) failed to load, retrying in 60s")
 
     def needs_refresh(self, interval: int = 300) -> bool:
         """Return True when radar data is stale and should be refreshed."""
