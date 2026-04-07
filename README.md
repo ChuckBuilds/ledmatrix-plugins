@@ -347,6 +347,11 @@ GNU General Public License v3.0 — see [LICENSE](LICENSE) for details.
 
 - **Discord**: [Join the community](https://discord.gg/uW36dVAtcT)
 - **Issues**: [Report plugin issues](https://github.com/ChuckBuilds/ledmatrix-plugins/issues)
+- **Security**: see [SECURITY.md](SECURITY.md) — please don't open
+  public issues for vulnerabilities
+- **Contributing**: see [CONTRIBUTING.md](CONTRIBUTING.md) for the dev
+  setup and PR flow, or [SUBMISSION.md](SUBMISSION.md) for adding a
+  brand-new plugin
 - **LEDMatrix**: [Main repository](https://github.com/ChuckBuilds/LEDMatrix)
 
 ### Connect with ChuckBuilds
