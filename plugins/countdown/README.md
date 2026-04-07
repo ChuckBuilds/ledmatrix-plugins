@@ -18,8 +18,9 @@ Display customizable countdowns with images on your LED matrix. Perfect for birt
 ### From Plugin Store (Recommended)
 
 1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
-2. Go to **Plugin Store**
-3. Find **Countdown Display** and click **Install**
+2. Open the **Plugin Manager** tab
+3. Find **Countdown Display** in the **Plugin Store** section and click
+   **Install**
 
 ### Manual Installation
 
@@ -35,7 +36,8 @@ Display customizable countdowns with images on your LED matrix. Perfect for birt
 ### Adding a Countdown
 
 1. Open the LEDMatrix web UI
-2. Navigate to Settings > Plugins > Countdown Display
+2. Open the **Countdown Display** tab (second nav row, added once the
+   plugin is installed)
 3. Click "Add Countdown"
 4. Fill in the details:
    - **Name**: Display name (e.g., "Birthday", "Vacation")

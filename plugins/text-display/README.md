@@ -36,8 +36,11 @@ Display custom scrolling or static text messages on your LED matrix with configu
   "font_path": "assets/fonts/PressStart2P-Regular.ttf",
   "font_size": 8,
   "scroll": true,
-  "scroll_speed": 30,
+  "scroll_speed": 1,
+  "scroll_delay": 0.01,
+  "scroll_loop": true,
   "scroll_gap_width": 32,
+  "target_fps": 120,
   "text_color": [255, 0, 0],
   "background_color": [0, 0, 0],
   "display_duration": 10
@@ -46,16 +49,26 @@ Display custom scrolling or static text messages on your LED matrix with configu
 
 ### Configuration Options
 
-- `enabled`: Enable/disable the plugin
-- `text`: The message to display
-- `font_path`: Path to TTF or BDF font file
-- `font_size`: Font size in pixels (4-32)
-- `scroll`: Enable scrolling animation
-- `scroll_speed`: Scroll speed in pixels per second (1-200)
-- `scroll_gap_width`: Gap between scroll repetitions in pixels
-- `text_color`: RGB text color [R, G, B]
-- `background_color`: RGB background color [R, G, B]
-- `display_duration`: Display duration in seconds
+The full schema lives in
+[`config_schema.json`](config_schema.json) — the web UI form is generated
+from it. Key options:
+
+| Key | Default | Notes |
+|---|---|---|
+| `enabled` | `false` | Master switch |
+| `text` | `"Subscribe to ChuckBuilds"` | The message to display |
+| `font_path` | `assets/fonts/PressStart2P-Regular.ttf` | Path to TTF or BDF font file |
+| `font_size` | `8` | Font size in pixels |
+| `scroll` | `true` | Enable horizontal scrolling animation |
+| `scroll_speed` | `1` | Speed multiplier (≈ pixels per frame). Higher = faster. |
+| `scroll_delay` | `0.01` | Sleep between scroll steps in seconds. Lower = smoother but more CPU |
+| `scroll_loop` | `true` | Loop the text instead of stopping after one pass |
+| `scroll_gap_width` | `32` | Pixels of empty space between scroll loops |
+| `target_fps` | `120` | Target frames per second cap for scroll rendering |
+| `text_color` | `[255, 255, 255]` | RGB text color |
+| `background_color` | `[0, 0, 0]` | RGB background color |
+| `display_duration` | `10` | Seconds the plugin holds the screen |
+| `update_interval` | `60` | Seconds between plugin update ticks |
 
 ## Usage
 
@@ -119,9 +132,14 @@ Optimized for LED matrices:
 
 ### For Scrolling Text
 
-1. **Adjust speed for readability**: Slower speeds (20-40) are more readable
-2. **Set appropriate gap**: Use gap equal to display width for smooth loops
-3. **Test message length**: Very long messages may need speed adjustment
+1. **Adjust speed for readability**: `scroll_speed` is a multiplier, not px/s.
+   Values around `1`–`2` are typical; higher values scroll faster.
+2. **Tune smoothness with `scroll_delay`**: lower (0.005) = smoother but
+   more CPU; higher (0.05) = choppier but lighter.
+3. **Set appropriate gap**: a `scroll_gap_width` equal to your display width
+   produces clean loops.
+4. **Test message length**: very long messages benefit from a higher
+   `target_fps` cap and lower `scroll_delay`.
 
 ### For Static Text
 
@@ -152,7 +170,7 @@ Optimized for LED matrices:
 {
   "text": "Breaking News: LED matrices are awesome! Stay tuned for more...",
   "scroll": true,
-  "scroll_speed": 35
+  "scroll_speed": 1.5
 }
 ```
 
@@ -161,7 +179,7 @@ Optimized for LED matrices:
 {
   "text": "Subscribe to ChuckBuilds on YouTube!",
   "scroll": true,
-  "scroll_speed": 40,
+  "scroll_speed": 2,
   "text_color": [255, 0, 0]
 }
 ```
@@ -174,8 +192,8 @@ Optimized for LED matrices:
 - Check font_path points to valid font file
 
 **Scrolling too fast/slow:**
-- Adjust scroll_speed value
-- Try values between 20-50 for best readability
+- Adjust `scroll_speed` (multiplier, default `1`). Try values between `0.5` and `3`.
+- For finer control, also tune `scroll_delay` and `target_fps`.
 
 **Font not loading:**
 - Verify font_path is correct
@@ -190,9 +208,10 @@ Optimized for LED matrices:
 
 ## Performance Notes
 
-- Scrolling text uses pre-rendered cache for smooth animation
-- Update interval is 0.033s (~30 FPS) for smooth scrolling
-- Text cache is created once and reused for efficiency
+- Scrolling text uses a pre-rendered cache for smooth animation
+- The render loop targets `target_fps` (default 120) and sleeps
+  `scroll_delay` between steps
+- Text cache is created once at first render and reused
 - Font loading happens once at initialization
 
 ## License

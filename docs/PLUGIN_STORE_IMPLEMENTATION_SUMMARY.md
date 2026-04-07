@@ -90,7 +90,7 @@ This is the **key feature** that enables community participation:
 
 3. **Or via API:**
    ```bash
-   curl -X POST http://your-pi-ip:5050/api/plugins/install-from-url \
+   curl -X POST http://your-pi-ip:5000/api/plugins/install-from-url \
      -H "Content-Type: application/json" \
      -d '{"repo_url": "https://github.com/developer/ledmatrix-awesome-display"}'
    ```
@@ -149,12 +149,12 @@ This is the **key feature** that enables community participation:
 # 1. Develop plugin locally
 # 2. Push to GitHub
 # 3. Test on Pi via URL install
-curl -X POST http://pi:5050/api/plugins/install-from-url \
+curl -X POST http://pi:5000/api/plugins/install-from-url \
   -d '{"repo_url": "https://github.com/me/my-plugin"}'
 
 # 4. Make changes, push
 # 5. Update on Pi
-curl -X POST http://pi:5050/api/plugins/update \
+curl -X POST http://pi:5000/api/plugins/update \
   -d '{"plugin_id": "my-plugin"}'
 ```
 
@@ -261,13 +261,13 @@ python3 test/test_install_from_url.py
 python3 web_interface_v2.py
 
 # 2. Test API endpoints
-curl http://localhost:5050/api/plugins/store/list
-curl http://localhost:5050/api/plugins/store/search?q=clock
-curl http://localhost:5050/api/plugins/installed
+curl http://localhost:5000/api/plugins/store/list
+curl http://localhost:5000/api/plugins/store/search?q=clock
+curl http://localhost:5000/api/plugins/installed
 
 # 3. Test installation (with existing hello-world plugin)
 # First, push hello-world to a test GitHub repo, then:
-curl -X POST http://localhost:5050/api/plugins/install-from-url \
+curl -X POST http://localhost:5000/api/plugins/install-from-url \
   -H "Content-Type: application/json" \
   -d '{"repo_url": "https://github.com/your-test-repo/ledmatrix-hello-world"}'
 ```

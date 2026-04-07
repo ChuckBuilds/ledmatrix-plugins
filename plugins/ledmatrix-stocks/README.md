@@ -1,215 +1,111 @@
------------------------------------------------------------------------------------
-### Connect with ChuckBuilds
+# Stock & Crypto Ticker Plugin
 
-- Show support on Youtube: https://www.youtube.com/@ChuckBuilds
-- Stay in touch on Instagram: https://www.instagram.com/ChuckBuilds/
-- Want to chat or need support? Reach out on the ChuckBuilds Discord: https://discord.com/invite/uW36dVAtcT
-- Feeling Generous? Support the project:
-  - Github Sponsorship: https://github.com/sponsors/ChuckBuilds
-  - Buy Me a Coffee: https://buymeacoffee.com/chuckbuilds
-  - Ko-fi: https://ko-fi.com/chuckbuilds/ 
-
------------------------------------------------------------------------------------
-
-# Stocks Ticker Plugin
-
-A plugin for LEDMatrix that displays scrolling stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies.
+A scrolling ticker for the LEDMatrix display showing live stock and
+cryptocurrency prices, percent changes, and optional inline price charts.
+Data comes from Yahoo Finance — no API key required.
 
 ## Features
 
-- **Stock Price Tracking**: Real-time stock prices and changes
-- **Cryptocurrency Support**: Bitcoin, Ethereum, and other crypto prices
-- **Change Indicators**: Color-coded positive/negative changes
-- **Percentage Display**: Show percentage changes alongside dollar amounts
-- **Optional Charts**: Toggle chart display for visual price trends
-- **Market Data**: Volume and market cap information
-- **Configurable Display**: Adjustable scroll speed, colors, and timing
-- **Background Data Fetching**: Efficient API calls without blocking display
-
-## Configuration
-
-### Global Settings
-
-- `display_duration`: How long to show the ticker (10-300 seconds, default: 30)
-- `scroll_speed`: Scrolling speed multiplier (0.5-5, default: 1)
-- `scroll_delay`: Delay between scroll steps (0.001-0.1 seconds, default: 0.01)
-- `dynamic_duration`: Enable dynamic duration based on content width (default: true)
-- `min_duration`: Minimum display duration (10-300 seconds, default: 30)
-- `max_duration`: Maximum display duration (30-600 seconds, default: 300)
-- `toggle_chart`: Enable chart display toggle (default: false)
-- `font_size`: Font size for stock information (8-16, default: 10)
-
-### Stock Settings
-
-#### Stock Symbols
-
-```json
-{
-  "stocks": {
-    "stock_symbols": ["AAPL", "GOOGL", "MSFT", "TSLA", "AMZN", "META"]
-  }
-}
-```
-
-#### Display Options
-
-```json
-{
-  "stocks": {
-    "show_change": true,
-    "show_percentage": true,
-    "show_volume": false,
-    "show_market_cap": false,
-    "text_color": [255, 255, 255],
-    "positive_color": [0, 255, 0],
-    "negative_color": [255, 0, 0]
-  }
-}
-```
-
-### Cryptocurrency Settings
-
-#### Enable Crypto Tracking
-
-```json
-{
-  "crypto": {
-    "enabled": true,
-    "crypto_symbols": ["BTC", "ETH", "ADA", "SOL", "DOT"]
-  }
-}
-```
-
-#### Crypto Display Options
-
-```json
-{
-  "crypto": {
-    "show_change": true,
-    "show_percentage": true,
-    "text_color": [255, 215, 0],
-    "positive_color": [0, 255, 0],
-    "negative_color": [255, 0, 0]
-  }
-}
-```
-
-## Display Format
-
-The stocks ticker displays information in a scrolling format showing:
-
-- **Symbol**: Stock/crypto ticker symbol
-- **Price**: Current price (e.g., "$150.25")
-- **Change**: Dollar change with color coding (green for positive, red for negative)
-- **Percentage**: Percentage change (e.g., "+2.5%")
-- **Additional Info**: Volume and market cap (if enabled)
-
-## Stock Symbol Format
-
-Stock symbols should be in uppercase format:
-
-- **AAPL**: Apple Inc.
-- **GOOGL**: Alphabet Inc.
-- **MSFT**: Microsoft Corporation
-- **TSLA**: Tesla Inc.
-- **AMZN**: Amazon.com Inc.
-- **META**: Meta Platforms Inc.
-- **NFLX**: Netflix Inc.
-
-## Cryptocurrency Symbols
-
-Common cryptocurrency symbols:
-
-- **BTC**: Bitcoin
-- **ETH**: Ethereum
-- **ADA**: Cardano
-- **SOL**: Solana
-- **DOT**: Polkadot
-- **AVAX**: Avalanche
-- **MATIC**: Polygon
-- **LINK**: Chainlink
-
-## Background Service
-
-The plugin uses background data fetching for efficient API calls:
-
-- Requests timeout after 30 seconds (configurable)
-- Up to 5 retries for failed requests
-- Priority level 2 (medium priority)
-- Updates every minute by default (configurable)
-
-## Data Sources
-
-The plugin can fetch from:
-
-1. **Financial APIs**: Stock and crypto price data (requires API keys in practice)
-2. **Market Data Feeds**: Real-time market information
-3. **Placeholder Data**: Mock data for demonstration (current implementation)
-
-## Dependencies
-
-This plugin requires the main LEDMatrix installation and uses the cache manager for data storage.
+- Live stock and crypto prices via Yahoo Finance (no API key)
+- Color-coded gain/loss with positive/negative colors
+- Optional inline mini chart per symbol (`display.toggle_chart`)
+- Two display modes: continuous scroll, or one symbol at a time
+- Independent stock and crypto symbol lists
+- Per-element font and color customization
 
 ## Installation
 
-1. Copy this plugin directory to your `ledmatrix-plugins/plugins/` folder
-2. Ensure the plugin is enabled in your LEDMatrix configuration
-3. Configure your stock symbols and display preferences
-4. Restart LEDMatrix to load the new plugin
+1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
+2. Open the **Plugin Manager** tab
+3. Find **Stock Ticker** in the **Plugin Store** section and click
+   **Install**
+4. Open the plugin's tab in the second nav row to configure it
+
+## Configuration
+
+The full schema lives in
+[`config_schema.json`](config_schema.json) — what you see in the web UI is
+generated from it. The most-used keys, with their actual nesting:
+
+### Top level
+
+| Key | Default | Notes |
+|---|---|---|
+| `enabled` | `false` | Master switch |
+| `update_interval` | `600` | Seconds between Yahoo Finance fetches for stocks |
+
+### `display.*` — how the ticker scrolls
+
+| Key | Default | Notes |
+|---|---|---|
+| `display.display_mode` | `"scroll"` | `"scroll"` or `"switch"` |
+| `display.switch_duration` | `15` | Seconds per symbol in switch mode |
+| `display.scroll_speed` | `1.0` | Scroll speed multiplier |
+| `display.scroll_delay` | `0.02` | Per-step delay (smaller = smoother but more CPU) |
+| `display.toggle_chart` | `true` | Show an inline mini-chart per symbol |
+| `display.dynamic_duration` | `true` | Let the controller pick a duration based on content width |
+| `display.min_duration` | `30` | Floor for dynamic duration (seconds) |
+| `display.max_duration` | `300` | Ceiling for dynamic duration (seconds) |
+| `display.duration_buffer` | `0.1` | Padding factor on dynamic duration |
+| `display.stock_gap` | `32` | Pixels of empty space between symbols |
+
+### `stocks.*`
+
+| Key | Default | Notes |
+|---|---|---|
+| `stocks.enabled` | `true` | Enable the stocks list |
+| `stocks.symbols` | `["ASTS","SCHD","INTC","NVDA","T","VOO","SMCI"]` | Yahoo Finance ticker symbols |
+| `stocks.display_format` | `"{symbol}: ${price} ({change}%)"` | Placeholders: `{symbol}`, `{price}`, `{change}` |
+
+### `crypto.*`
+
+| Key | Default | Notes |
+|---|---|---|
+| `crypto.enabled` | `false` | Enable the crypto list |
+| `crypto.update_interval` | `600` | Seconds between crypto fetches |
+| `crypto.symbols` | `["BTC-USD","ETH-USD"]` | Yahoo Finance pair symbols (always end in `-USD` etc.) |
+| `crypto.display_format` | `"{symbol}: ${price} ({change}%)"` | Same placeholders as stocks |
+
+### `customization.*`
+
+Per-element font, size, and color overrides for stocks and crypto. Each
+of `symbol`, `price`, and `price_delta` has its own `font`, `font_size`,
+and color settings. Defaults use `PressStart2P-Regular.ttf` at size 8,
+with green for positive deltas and red for negative.
+
+## Symbol format
+
+The plugin uses Yahoo Finance symbols directly:
+
+- **Stocks**: plain ticker, e.g. `AAPL`, `GOOGL`, `MSFT`, `TSLA`,
+  `AMZN`, `META`, `NVDA`
+- **Crypto**: pair with the quote currency, e.g. `BTC-USD`, `ETH-USD`,
+  `SOL-USD`, `DOGE-USD`. Without the `-USD` suffix Yahoo returns no data.
+
+## Pairing with the Stock News plugin
+
+This plugin pairs naturally with the [`stock-news`](../stock-news/)
+plugin: prices on one rotation slot, related headlines on another.
 
 ## Troubleshooting
 
-- **No data showing**: Check if symbols are valid and APIs are accessible
-- **API errors**: Verify API keys and rate limits (for real implementations)
-- **Slow scrolling**: Adjust scroll speed and delay settings
-- **Network errors**: Check your internet connection and API availability
+**No data showing**
+- Confirm the symbols are valid on
+  [finance.yahoo.com](https://finance.yahoo.com) — typos return empty data.
+- Check the **Logs** tab for HTTP errors. Yahoo occasionally rate-limits;
+  raising `update_interval` usually fixes it.
 
-## Advanced Features
+**Scroll feels choppy**
+- Lower `display.scroll_delay` (default 0.02) toward 0.01 for smoother
+  motion at the cost of CPU.
+- Or switch `display.display_mode` to `"switch"` to step through one
+  symbol at a time instead of scrolling.
 
-- **Chart Toggle**: Option to display price charts alongside tickers
-- **Color Coding**: Visual indicators for price movements
-- **Volume Display**: Show trading volume information
-- **Market Cap**: Display market capitalization
-- **Dual Mode**: Separate display modes for stocks and crypto
+**Chart isn't drawing**
+- Set `display.toggle_chart` to `true`.
+- Charts need enough horizontal room next to each symbol. On a 64×32
+  panel they may be cropped — try a wider chain.
 
-## Integration Notes
+## License
 
-This plugin is designed to work alongside the stock-news plugin for comprehensive financial display:
-
-- **Stocks Plugin**: Price tickers and market data
-- **Stock News Plugin**: Financial headlines and updates
-- **Combined Use**: Show tickers while news scrolls in background
-
-## Performance Notes
-
-- The plugin is designed to be lightweight and not impact display performance
-- Price data fetching happens in background to avoid blocking
-- Configurable update intervals balance freshness vs. API load
-- Caching reduces unnecessary network requests
-
-## Chart Display (Future Feature)
-
-When chart toggle is enabled, the plugin can display:
-
-- **Price Charts**: Simple line charts showing price trends
-- **Candlestick Charts**: OHLC candlestick representations
-- **Volume Bars**: Trading volume visualization
-- **Time Periods**: Multiple timeframe options
-
-## API Integration (Future Implementation)
-
-For production use, this plugin would integrate with:
-
-- **Alpha Vantage API**: Stock and forex data
-- **CoinGecko API**: Cryptocurrency data
-- **Yahoo Finance API**: Financial market data
-- **Twelve Data API**: Real-time and historical data
-
-## Example Display
-
-```
-AAPL: $150.25 +2.50 (+1.7%)
-GOOGL: $2750.80 -15.20 (-0.5%)
-BTC: $43250.00 +1250.00 (+3.0%)
-ETH: $2850.75 -75.25 (-2.6%)
-```
+GPL-3.0, same as the LEDMatrix project.

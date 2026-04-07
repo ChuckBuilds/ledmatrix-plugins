@@ -14,9 +14,19 @@ Use this checklist when reviewing plugin submissions.
 
 ## Manifest Validation
 
-- [ ] All required fields present
+- [ ] All required fields present (`id`, `name`, `version`, `class_name`,
+      `display_modes`)
+- [ ] `class_name` matches the actual class name in the entry point
+      (case-sensitive, no spaces) — the loader does
+      `getattr(module, class_name)` and will fail with `AttributeError`
+      otherwise
+- [ ] `entry_point` either matches the real file name or is omitted
+      (defaults to `manager.py`)
+- [ ] `id` matches the directory name
 - [ ] Valid JSON syntax
 - [ ] Correct version format (semver)
+- [ ] `version` field matches the latest entry in the `versions[]` array
+- [ ] `last_updated` matches the release date of the latest version
 - [ ] Category is valid
 - [ ] Tags are descriptive
 

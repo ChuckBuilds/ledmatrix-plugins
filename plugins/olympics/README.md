@@ -35,8 +35,9 @@ Screenshot Preview:
 ### From Plugin Store (Recommended)
 
 1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
-2. Go to **Plugin Store**
-3. Find **Olympics Countdown** and click **Install**
+2. Open the **Plugin Manager** tab
+3. Find **Olympics Countdown** in the **Plugin Store** section and click
+   **Install**
 
 ### Manual Installation
 

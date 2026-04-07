@@ -66,13 +66,18 @@ Use Web Ui to configure
    Add to `config/config_secrets.json`:
    ```json
    {
-     "music": {
-       "SPOTIFY_CLIENT_ID": "your_client_id_here",
-       "SPOTIFY_CLIENT_SECRET": "your_client_secret_here",
-       "SPOTIFY_REDIRECT_URI": "http://localhost:8080/callback"
+     "ledmatrix-music": {
+       "spotify_client_id": "your_client_id_here",
+       "spotify_client_secret": "your_client_secret_here",
+       "spotify_redirect_uri": "http://localhost:8080/callback"
      }
    }
    ```
+
+   > Older configs that put these under a `"music"` key with
+   > `SPOTIFY_CLIENT_ID` (uppercase) still work — `spotify_client.py`
+   > falls back to that legacy form — but new installs should use the
+   > `"ledmatrix-music"` key with lowercase names shown above.
 
 3. **Run Authentication**:
    ```bash

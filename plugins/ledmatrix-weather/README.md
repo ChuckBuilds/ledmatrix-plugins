@@ -31,60 +31,88 @@ Daily Forecast:
 
 ## Features
 
-- **Current Weather**: Temperature, conditions, humidity, wind speed
-- **Hourly Forecast**: Next 24-48 hours of weather data
-- **Daily Forecast**: 7-day forecast with high/low temperatures
-- **Weather Icons**: Beautiful icons matching current conditions
-- **UV Index**: UV radiation levels for sun safety
-- **Automatic Updates**: Configurable update intervals
-- **Error Handling**: Robust retry logic and error recovery
+- **Current conditions**: temperature, conditions icon, humidity, wind,
+  feels-like, dew point, visibility, pressure (extra metrics need height ≥48px)
+- **Hourly forecast**: next 24 hours
+- **Daily forecast**: 3–7 day high/low
+- **Almanac**: sunrise/sunset, moon phase, day length
+- **Precipitation radar**: live RainViewer imagery — no API key required for this part
+- **Weather alerts**: when active, takes priority in the rotation
 
 ## Requirements
 
-- OpenWeatherMap API key (free tier available)
-- Internet connection for API access
-- Display size: minimum 64x32 pixels recommended
+- A **One Call API 3.0** subscription from OpenWeatherMap (free tier
+  available) — see API Key below
+- Internet connection for OpenWeatherMap and RainViewer
+- Display size: 64x32 minimum; 64x48 or larger to see the extra current-
+  conditions metrics
 
 ## Configuration
 
 ### API Key
 
-This plugin requires a **One Call API 3.0** subscription from [OpenWeatherMap](https://openweathermap.org/api) (free tier: 1,000 calls/day):
+This plugin requires the **One Call API 3.0** product from OpenWeatherMap.
+A standard OpenWeatherMap API key on its own will **not** work — One Call 3.0
+is a separate subscription you must enable on your account.
 
-1. Sign up for an account at https://openweathermap.org
-2. Navigate to API Keys section and generate a new API key
-3. **Subscribe to One Call API 3.0** — this is a separate step from getting an API key:
-   - Go to https://openweathermap.org/api
-   - Find "One Call API 3.0" and click Subscribe
-   - The free tier requires adding payment info but will not charge you
-   - A standard API key alone will **not** work; you must subscribe to One Call 3.0
-4. Add the API key to your plugin configuration
+1. Sign up at https://openweathermap.org
+2. Generate an API key under **API Keys**
+3. Go to https://openweathermap.org/api, find **One Call API 3.0**, click
+   **Subscribe**. The free tier requires entering payment info but does not
+   charge you below 1,000 calls/day.
+4. Open the **Weather** tab in the LEDMatrix web UI (or edit
+   `config/config_secrets.json`) and paste the key into `api_key`.
 
+### Configuration options
 
-### Configuration Options
+The plugin's full schema lives in
+[`config_schema.json`](config_schema.json) — what you see in the web UI is
+generated from it. The keys you'll touch most often:
 
-- `enabled`: Enable/disable the plugin
-- `api_key`: Your OpenWeatherMap API key (required)
-- `location`: City, state, and country for weather data
-- `units`: Temperature units (`imperial` for Fahrenheit, `metric` for Celsius)
-- `update_interval`: Seconds between API updates (minimum 300, recommended 1800)
-- `display_modes`: Enable/disable specific display modes
-- `display_duration`: Seconds to display each mode
+| Key | Default | Notes |
+|---|---|---|
+| `enabled` | `false` | Master switch |
+| `api_key` | _required_ | One Call 3.0 key (store in `config_secrets.json`) |
+| `location_city` | `"Dallas"` | City name |
+| `location_state` | `"Texas"` | State/province (optional, helps US disambiguation) |
+| `location_country` | `"US"` | ISO 3166-1 alpha-2 code |
+| `units` | `"imperial"` | `"imperial"` (°F) or `"metric"` (°C) |
+| `display_duration` | `30` | Seconds per mode (5–300) |
+| `update_interval` | `1800` | Seconds between OpenWeatherMap fetches (min 300) |
+| `display_format` | `"{temp}°F\n{condition}"` | Placeholders: `{temp}`, `{condition}`, `{humidity}`, `{wind}` |
+| `show_current_weather` | `true` | Toggle current conditions mode |
+| `show_hourly_forecast` | `true` | Toggle hourly mode |
+| `show_daily_forecast` | `true` | Toggle daily mode |
+| `show_almanac` | `true` | Toggle almanac mode (sun/moon) |
+| `show_radar` | `true` | Toggle precipitation radar mode |
+| `show_alerts` | `true` | Show active weather alerts (preempts rotation) |
+| `show_feels_like` / `show_dew_point` / `show_visibility` / `show_pressure` | `true` | Extra current-conditions metrics (need height ≥ 48px) |
+| `radar_zoom` | `6` | 4 (regional) to 8 (very close) |
+| `radar_line_color` | `[0, 130, 70]` | RGB for state outlines |
+| `radar_fill_color` | `[15, 25, 15]` | RGB for land fill (`[0,0,0]` = outlines only) |
+| `radar_update_interval` | `600` | RainViewer refresh seconds (300–1800) |
 
-## Display Modes
+## Display modes
 
-### weather
-Shows current conditions with temperature, condition text, and humidity.
+The plugin registers these modes in `manifest.json` and the display
+controller rotates through them in order:
 
-### hourly_forecast
-Displays next 4-24 hours of forecasted weather with temperatures.
+| Mode | Description |
+|---|---|
+| `weather` | Current conditions: temperature, icon, humidity, wind, plus optional feels-like / dew point / visibility / pressure on taller displays |
+| `hourly_forecast` | Next ~24 hours |
+| `daily_forecast` | 3–7 day high/low forecast |
+| `almanac` | Sunrise, sunset, moon phase, day length |
+| `radar` | Live precipitation radar from RainViewer |
 
-### daily_forecast
-Shows 3-7 day forecast with daily high/low temperatures.
+When an active weather alert is available and `show_alerts` is true, the
+alert takes priority over the normal rotation.
 
 ## Usage
 
-The plugin automatically rotates through enabled display modes based on the `display_duration` setting.
+The plugin auto-rotates through enabled display modes based on
+`display_duration`. Toggle individual modes on or off with the
+`show_*` keys above (or the matching toggles in the web UI).
 
 ## Troubleshooting
 
@@ -100,13 +128,18 @@ The plugin automatically rotates through enabled display modes based on the `dis
 - API has rate limits, respect the minimum update interval
 - Free tier allows 1000 calls/day
 
-## API Rate Limits
+## API rate limits
 
-OpenWeatherMap free tier provides:
-- 1,000 API calls per day
+OpenWeatherMap One Call 3.0 free tier:
+- 1,000 calls per day
 - 60 calls per minute
 
-With default settings (1800s = 30 min intervals), this plugin uses ~48 calls per day.
+With the default `update_interval` of 1800s (30 minutes), this plugin
+makes about 48 calls per day. Lower the interval if you want fresher
+data — just keep it ≥ 300s and watch your daily total.
+
+The radar mode uses RainViewer separately and has no API key, but obeys
+`radar_update_interval` (default 600s) to avoid hammering their CDN.
 
 ## License
 

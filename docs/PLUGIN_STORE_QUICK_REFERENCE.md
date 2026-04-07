@@ -4,17 +4,17 @@
 
 ### Install Plugin from Store
 ```bash
-# Web UI: Plugin Store → Search → Click Install
+# Web UI: Plugin Manager tab → Plugin Store section → Search → Click Install
 # API:
-curl -X POST http://pi:5050/api/plugins/install \
+curl -X POST http://pi:5000/api/plugins/install \
   -d '{"plugin_id": "clock-simple"}'
 ```
 
 ### Install Plugin from GitHub URL ⭐
 ```bash
-# Web UI: Plugin Store → "Install from URL" → Paste URL
+# Web UI: Plugin Manager tab → "Install from GitHub" section → Paste URL
 # API:
-curl -X POST http://pi:5050/api/plugins/install-from-url \
+curl -X POST http://pi:5000/api/plugins/install-from-url \
   -d '{"repo_url": "https://github.com/user/ledmatrix-plugin"}'
 ```
 
@@ -22,29 +22,29 @@ curl -X POST http://pi:5050/api/plugins/install-from-url \
 ```bash
 # Web UI: Use search bar and filters
 # API:
-curl "http://pi:5050/api/plugins/store/search?q=hockey&category=sports"
+curl "http://pi:5000/api/plugins/store/search?q=hockey&category=sports"
 ```
 
 ### List Installed
 ```bash
-curl "http://pi:5050/api/plugins/installed"
+curl "http://pi:5000/api/plugins/installed"
 ```
 
 ### Enable/Disable
 ```bash
-curl -X POST http://pi:5050/api/plugins/toggle \
+curl -X POST http://pi:5000/api/plugins/toggle \
   -d '{"plugin_id": "clock-simple", "enabled": true}'
 ```
 
 ### Update Plugin
 ```bash
-curl -X POST http://pi:5050/api/plugins/update \
+curl -X POST http://pi:5000/api/plugins/update \
   -d '{"plugin_id": "clock-simple"}'
 ```
 
 ### Uninstall
 ```bash
-curl -X POST http://pi:5050/api/plugins/uninstall \
+curl -X POST http://pi:5000/api/plugins/uninstall \
   -d '{"plugin_id": "clock-simple"}'
 ```
 

@@ -30,19 +30,25 @@ A plugin for LEDMatrix that displays scrolling news headlines from RSS feeds inc
 
 ### Global Settings
 
-- `display_duration`: How long to show the ticker (10-300 seconds, default: 30)
-- `display.scroll_speed`: Scrolling speed in pixels per frame (0.5-5.0, default: 1.0) - **Recommended format**
-- `display.scroll_delay`: Delay between scroll steps in seconds (0.001-0.1, default: 0.01) - **Recommended format**
-- `target_fps`: Target frames per second for scrolling (30-200, default: 100)
-- `dynamic_duration`: Enable dynamic duration based on content width (default: true)
-  - `enabled`: Enable/disable dynamic duration (default: true)
-  - `min_duration_seconds`: Minimum display duration (10-300 seconds, default: 30)
-  - `max_duration_seconds`: Maximum display duration (30-600 seconds, default: 300)
-  - `buffer_ratio`: Extra buffer applied to calculated duration (0.01-1.0, default: 0.1)
-- `rotation_enabled`: Enable headline rotation (default: true)
-- `rotation_threshold`: Cycles before rotating headlines (1-10, default: 3)
-- `headlines_per_feed`: Headlines to fetch per feed (1-10, default: 2)
-- `font_size`: Font size for headlines (8-20, default: 12)
+All scrolling/timing/font settings live under the `global.*` namespace
+in [`config_schema.json`](config_schema.json) — that file is the source
+of truth. The keys you'll touch most often:
+
+- `global.display_duration`: How long to show the ticker (10–300s, default 30)
+- `global.update_interval`: Seconds between RSS fetches (default 300)
+- `global.display.scroll_speed`: Pixels per frame (0.5–5.0, default 1.0)
+- `global.display.scroll_delay`: Sleep between scroll steps in seconds (0.001–0.1, default 0.01)
+- `global.target_fps`: Target frames per second cap (30–200, default 100)
+- `global.font_size`: Headline font size (8–20, default 12)
+- `global.font_path`: Path to TTF/BDF font (default `assets/fonts/PressStart2P-Regular.ttf`)
+- `global.dynamic_duration`: Object — `enabled` (default `true`),
+  `min_duration_seconds` (default `30`), `max_duration_seconds`
+  (default `300`), `buffer_ratio` (default `0.1`)
+- `global.rotation_enabled`: Enable headline rotation (default `true`)
+- `global.rotation_threshold`: Cycles before rotating headlines (1–10, default 3)
+- `global.headlines_per_feed`: Headlines to fetch per feed (1–10, default 2)
+- `global.background_service.*`: Background fetch tuning —
+  `enabled`, `request_timeout`, `max_retries`, `priority`
 
 ### Feed Settings
 

@@ -1,6 +1,6 @@
 # LEDMatrix Official Plugins
 
-[![Plugins](https://img.shields.io/badge/plugins-27-blue)](./plugins.json)
+[![Plugins](https://img.shields.io/badge/plugins-30-blue)](./plugins.json)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/uW36dVAtcT)
 [![GitHub Stars](https://img.shields.io/github/stars/ChuckBuilds/ledmatrix-plugins?style=flat&color=yellow)](https://github.com/ChuckBuilds/ledmatrix-plugins)
@@ -64,12 +64,13 @@
 
 **Web Interface (Recommended):**
 1. Open `http://your-pi-ip:5000`
-2. Go to **Plugin Store** tab
-3. Browse & click **Install**
+2. Open the **Plugin Manager** tab
+3. Find the plugin you want in the **Plugin Store** section and click
+   **Install**
 
 **API:**
 ```bash
-curl -X POST http://your-pi-ip:5050/api/plugins/install \
+curl -X POST http://your-pi-ip:5000/api/plugins/install \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "football-scoreboard"}'
 ```
@@ -78,7 +79,7 @@ curl -X POST http://your-pi-ip:5050/api/plugins/install \
 
 ## Available Plugins
 
-### Sports (9)
+### Sports (12)
 
 | Plugin | Description |
 |--------|-------------|
@@ -87,7 +88,10 @@ curl -X POST http://your-pi-ip:5050/api/plugins/install \
 | [Basketball Scoreboard](./plugins/basketball-scoreboard/) | NBA, NCAA & WNBA live scores and schedules |
 | [Baseball Scoreboard](./plugins/baseball-scoreboard/) | MLB, MiLB & NCAA Baseball live scores |
 | [Soccer Scoreboard](./plugins/soccer-scoreboard/) | Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS |
+| [Lacrosse Scoreboard](./plugins/lacrosse-scoreboard/) | NCAA lacrosse live scores and schedules |
+| [F1 Scoreboard](./plugins/f1-scoreboard/) | Formula 1 race results, schedules, and standings |
 | [UFC Scoreboard](./plugins/ufc-scoreboard/) | UFC/MMA live fights, fighter headshots, records, odds & results &mdash; *by [LegoGuy1000](https://github.com/legoguy1000)* |
+| [Masters Tournament](./plugins/masters-tournament/) | Live Masters golf leaderboard, hole tracking, player cards |
 | [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NCAA |
 | [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records |
 | [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts |
@@ -196,14 +200,20 @@ The **Plugin Store** in the LEDMatrix web interface automatically fetches the la
 
 ### Manual Installation
 
-Clone this repository and copy the plugin you want:
+Clone this repository and copy the plugin you want into your LEDMatrix
+installation's configured plugins directory (default `plugin-repos/`):
 
 ```bash
 git clone https://github.com/ChuckBuilds/ledmatrix-plugins.git
 cp -r ledmatrix-plugins/plugins/football-scoreboard /path/to/LEDMatrix/plugin-repos/
 ```
 
-> **Note:** See individual plugin README files for detailed setup instructions and configuration.
+The directory name on the destination must match the plugin's `id` in
+its `manifest.json`. Restart the LEDMatrix display service afterwards
+so the loader picks up the new plugin.
+
+> **Note:** See individual plugin README files for detailed setup
+> instructions and configuration.
 
 ---
 
@@ -308,7 +318,12 @@ See the [manifest schema](https://github.com/ChuckBuilds/LEDMatrix/blob/main/sch
 
 1. Review the [Plugin Development Guide](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/PLUGIN_DEVELOPMENT_GUIDE.md)
 2. Start with the [Hello World plugin](./plugins/hello-world/) as a template
-3. Test with the emulator: `python run.py --emulator`
+3. Test without hardware: run the LEDMatrix dev preview server
+   (`python3 scripts/dev_server.py` from the LEDMatrix repo, then open
+   `http://localhost:5001`) — see
+   [`docs/DEV_PREVIEW.md`](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/DEV_PREVIEW.md).
+   Or run the full display in emulator mode with
+   `EMULATOR=true python3 run.py`.
 
 ### Submitting a Plugin
 

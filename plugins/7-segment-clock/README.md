@@ -17,8 +17,9 @@ A retro-style 7-segment clock plugin for LEDMatrix that displays time using digi
 ### From Plugin Store (Recommended)
 
 1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
-2. Go to **Plugin Store**
-3. Find **7-Segment Clock** and click **Install**
+2. Open the **Plugin Manager** tab
+3. Find **7-Segment Clock** in the **Plugin Store** section and click
+   **Install**
 
 ### Manual Installation
 

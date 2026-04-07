@@ -36,29 +36,30 @@ Display upcoming events from Google Calendar with automatic updates, event rotat
 ### 1. Create Google Cloud Project
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing one
-3. Enable the Google Calendar API
-4. Create OAuth 2.0 credentials
-   * Application type: TV and Limited Input Device
+2. Create a new project or select an existing one
+3. Enable the **Google Calendar API**
 
-### 2. Download Credentials
+### 2. Create OAuth credentials and download them
 
-1. In Cloud Console, go to "Credentials"
-2. Click "Create Credentials" → "OAuth client ID"
-3. Choose "Desktop application"
+1. In Cloud Console, go to **APIs & Services → Credentials**
+2. Click **Create Credentials → OAuth client ID**
+3. Choose **Desktop application** — the plugin uses
+   `InstalledAppFlow.run_local_server()`
+   (`plugins/calendar/manager.py:346-348`), which requires this client
+   type. "TV and Limited Input Device" will not work.
 4. Download the JSON file
-5. Save as `credentials.json` in the **calendar plugin directory**
-   - Path: `plugins/calendar/credentials.json`
+5. Save it as `credentials.json` in the calendar plugin directory
+   (typically `plugin-repos/calendar/credentials.json`)
 
 ### 3. First-Time Authentication
 
 **Option A: Use Web Interface (Recommended)**
-1. Open the LEDMatrix web interface
-2. Navigate to the Plugins tab
-3. Find the "Google Calendar" plugin and click "Configure"
-4. Click the "Authenticate Google Calendar" button
-5. Follow the OAuth flow in your browser
-6. Token will be saved automatically
+1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
+2. Open the **Calendar** tab in the second nav row (added once the
+   plugin is installed)
+3. Click the **Authenticate Google Calendar** button
+4. Follow the OAuth flow in your browser
+5. The token is saved automatically into the plugin directory
 
 **Option B: Use Registration Script**
 ```bash

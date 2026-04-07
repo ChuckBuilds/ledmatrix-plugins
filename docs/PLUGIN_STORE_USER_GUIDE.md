@@ -11,16 +11,17 @@ The LEDMatrix Plugin Store allows you to easily discover, install, and manage di
 The official plugin store contains curated, verified plugins that have been reviewed by maintainers.
 
 **Via Web UI:**
-1. Open the web interface (http://your-pi-ip:5050)
-2. Navigate to "Plugin Store" tab
-3. Browse or search for plugins
-4. Click "Install" on the plugin you want
+1. Open the web interface (`http://your-pi-ip:5000`)
+2. Open the **Plugin Manager** tab
+3. Scroll to the **Plugin Store** section and browse or search
+4. Click **Install** on the plugin you want
 5. Wait for installation to complete
-6. Restart the display to activate the plugin
+6. Toggle the plugin on, then click **Restart Display Service** on the
+   **Overview** tab
 
 **Via API:**
 ```bash
-curl -X POST http://your-pi-ip:5050/api/plugins/install \
+curl -X POST http://your-pi-ip:5000/api/plugins/install \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "clock-simple", "version": "latest"}'
 ```
@@ -45,18 +46,20 @@ Install any plugin directly from a GitHub repository, even if it's not in the of
 
 **Via Web UI:**
 1. Open the web interface
-2. Navigate to "Plugin Store" tab
-3. Find the "Install from URL" section at the bottom
-4. Paste the GitHub repository URL (e.g., `https://github.com/user/ledmatrix-my-plugin`)
-5. Click "Install from URL"
+2. Open the **Plugin Manager** tab
+3. Scroll to the **Install from GitHub** section
+4. Paste the GitHub repository URL (e.g.,
+   `https://github.com/user/ledmatrix-my-plugin`)
+5. Click **Install Single Plugin** (or **Load Registry** if it's a
+   monorepo of multiple plugins)
 6. Review the warning about unverified plugins
 7. Confirm installation
 8. Wait for installation to complete
-9. Restart the display
+9. Restart the display service from the **Overview** tab
 
 **Via API:**
 ```bash
-curl -X POST http://your-pi-ip:5050/api/plugins/install-from-url \
+curl -X POST http://your-pi-ip:5000/api/plugins/install-from-url \
   -H "Content-Type: application/json" \
   -d '{"repo_url": "https://github.com/user/ledmatrix-my-plugin"}'
 ```
@@ -84,13 +87,13 @@ else:
 **Via API:**
 ```bash
 # Search by query
-curl "http://your-pi-ip:5050/api/plugins/store/search?q=hockey"
+curl "http://your-pi-ip:5000/api/plugins/store/search?q=hockey"
 
 # Filter by category
-curl "http://your-pi-ip:5050/api/plugins/store/search?category=sports"
+curl "http://your-pi-ip:5000/api/plugins/store/search?category=sports"
 
 # Filter by tags
-curl "http://your-pi-ip:5050/api/plugins/store/search?tags=nhl&tags=hockey"
+curl "http://your-pi-ip:5000/api/plugins/store/search?tags=nhl&tags=hockey"
 ```
 
 **Via Python:**
@@ -119,7 +122,7 @@ results = store.search_plugins(tags=["nhl", "hockey"])
 
 **Via API:**
 ```bash
-curl "http://your-pi-ip:5050/api/plugins/installed"
+curl "http://your-pi-ip:5000/api/plugins/installed"
 ```
 
 **Via Python:**
@@ -143,7 +146,7 @@ for plugin_id in installed:
 
 **Via API:**
 ```bash
-curl -X POST http://your-pi-ip:5050/api/plugins/toggle \
+curl -X POST http://your-pi-ip:5000/api/plugins/toggle \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "clock-simple", "enabled": true}'
 ```
@@ -158,7 +161,7 @@ curl -X POST http://your-pi-ip:5050/api/plugins/toggle \
 
 **Via API:**
 ```bash
-curl -X POST http://your-pi-ip:5050/api/plugins/update \
+curl -X POST http://your-pi-ip:5000/api/plugins/update \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "clock-simple"}'
 ```
@@ -181,7 +184,7 @@ success = store.update_plugin('clock-simple')
 
 **Via API:**
 ```bash
-curl -X POST http://your-pi-ip:5050/api/plugins/uninstall \
+curl -X POST http://your-pi-ip:5000/api/plugins/uninstall \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "clock-simple"}'
 ```
@@ -363,7 +366,7 @@ All API endpoints return JSON with this structure:
 
 ```bash
 # Install
-curl -X POST http://192.168.1.100:5050/api/plugins/install \
+curl -X POST http://192.168.1.100:5000/api/plugins/install \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "clock-simple"}'
 
@@ -386,12 +389,12 @@ sudo systemctl restart ledmatrix
 
 ```bash
 # Install your own plugin during development
-curl -X POST http://192.168.1.100:5050/api/plugins/install-from-url \
+curl -X POST http://192.168.1.100:5000/api/plugins/install-from-url \
   -H "Content-Type: application/json" \
   -d '{"repo_url": "https://github.com/myusername/ledmatrix-my-custom-plugin"}'
 
 # Enable it
-curl -X POST http://192.168.1.100:5050/api/plugins/toggle \
+curl -X POST http://192.168.1.100:5000/api/plugins/toggle \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "my-custom-plugin", "enabled": true}'
 

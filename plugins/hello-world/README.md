@@ -1,61 +1,55 @@
 # Hello World Plugin
 
-A simple test plugin for the LEDMatrix plugin system. Displays a customizable greeting message with optional time display.
+A minimal LEDMatrix plugin that displays a customizable greeting and the
+current time. It's primarily here as a working starter template you can
+copy when building your own plugin.
 
-## Purpose
+## What it does
 
-This plugin serves as:
-- **Test plugin** for validating the plugin system works correctly
-- **Example plugin** for developers creating their own plugins
-- **Simple demonstration** of the BasePlugin interface
-
-## Features
-
-- ✅ Customizable greeting message
-- ✅ Optional time display
-- ✅ Configurable text colors
-- ✅ Proper error handling
-- ✅ Configuration validation
+- Displays a configurable message
+- Optionally shows the current time underneath
+- Lets you set the colors of both lines
 
 ## Installation
 
-This plugin is included as a test plugin. To enable it:
+The Hello World plugin ships with the default Plugin Store, so the easiest
+way to install it is from the LEDMatrix web UI:
 
-1. Edit `config/config.json` and add:
+1. Open the web interface (`http://your-pi-ip:5000`)
+2. Open the **Plugin Manager** tab
+3. Find **Hello World** in the **Plugin Store** section and click **Install**
+4. Toggle it on, then click **Restart Display Service** on the **Overview**
+   tab
 
-```json
-{
-  "hello-world": {
-    "enabled": true,
-    "message": "Hello, World!",
-    "show_time": true,
-    "color": [255, 255, 255],
-    "time_color": [0, 255, 255],
-    "display_duration": 10
-  }
-}
-```
-
-2. Restart the display:
+If you'd rather install it from source for local development, copy this
+directory into your LEDMatrix installation's `plugins/` folder:
 
 ```bash
+cp -r plugins/hello-world ~/LEDMatrix/plugins/
 sudo systemctl restart ledmatrix
 ```
 
-## Configuration Options
+## Configuration
+
+Once installed, configuration lives in the plugin's tab in the web UI.
+Under the hood it's stored in `config/config.json` under the `hello-world`
+key.
 
 | Option | Type | Default | Description |
-|--------|------|---------|-------------|
+|---|---|---|---|
 | `enabled` | boolean | `true` | Enable/disable the plugin |
-| `message` | string | `"Hello, World!"` | The greeting message to display |
+| `message` | string | `"Hello, World!"` | The greeting message (1–50 chars) |
 | `show_time` | boolean | `true` | Show current time below message |
-| `color` | array | `[255, 255, 255]` | RGB color for message (white) |
-| `time_color` | array | `[0, 255, 255]` | RGB color for time (cyan) |
-| `display_duration` | number | `10` | Display time in seconds |
+| `color` | `[r, g, b]` | `[255, 255, 255]` | RGB color for the message (white) |
+| `time_color` | `[r, g, b]` | `[0, 255, 255]` | RGB color for the time (cyan) |
+| `display_duration` | number | `10` | Seconds the plugin holds the screen (1–300) |
 
-## Examples
+The full schema lives in [`config_schema.json`](config_schema.json) and is
+what the web UI's form is generated from.
 
-### Minimal Configuration
+### Examples
+
+**Minimal:**
 ```json
 {
   "hello-world": {
@@ -64,7 +58,7 @@ sudo systemctl restart ledmatrix
 }
 ```
 
-### Custom Message
+**Custom message and color:**
 ```json
 {
   "hello-world": {
@@ -76,7 +70,7 @@ sudo systemctl restart ledmatrix
 }
 ```
 
-### Message Only (No Time)
+**Message only, no time:**
 ```json
 {
   "hello-world": {
@@ -88,98 +82,70 @@ sudo systemctl restart ledmatrix
 }
 ```
 
-## Testing the Plugin
+## Verifying the plugin loaded
 
-### 1. Check Plugin Discovery
+The fastest way is the **Plugin Manager** tab — installed plugins show up
+under **Installed Plugins** and a tab for `hello-world` appears in the
+plugin row at the top.
 
-After adding the configuration, check the logs:
+From SSH you can also tail the display log:
 
 ```bash
 sudo journalctl -u ledmatrix -f | grep hello-world
 ```
 
-You should see:
+You should see something like:
+
 ```
-Discovered plugin: hello-world v1.0.0
+Discovered plugin: hello-world v1.0.2
 Loaded plugin: hello-world
 Hello World plugin initialized with message: 'Hello, World!'
 ```
 
-### 2. Test via Web API
+To run the plugin once on demand instead of waiting for it in the
+rotation, open its tab in the web UI and click **Run On-Demand**.
 
-Check if the plugin is installed:
-```bash
-curl http://localhost:5001/api/plugins/installed | jq '.plugins[] | select(.id=="hello-world")'
-```
+## Using this as a template
 
-### 3. Watch It Display
+Hello World is intentionally tiny so you can read the whole thing in one
+sitting.
 
-The plugin will appear in the normal display rotation based on your `display_duration` setting.
+- [`manager.py`](manager.py) — `HelloWorldPlugin` class implementing
+  `update()` and `display()` from `BasePlugin`
+- [`manifest.json`](manifest.json) — plugin metadata, entry point, and
+  class name (must match the class in `manager.py` exactly)
+- [`config_schema.json`](config_schema.json) — JSON Schema that drives
+  the web UI configuration form
+- [`requirements.txt`](requirements.txt) — Python dependencies the
+  plugin loader will install on first run
 
-## Development Notes
+To start a new plugin, copy this directory, rename it, update
+`manifest.json` (especially `id`, `class_name`, and `entry_point`), and
+replace the body of `update()` / `display()`.
 
-This plugin demonstrates:
+For deeper details see the LEDMatrix docs:
 
-### BasePlugin Interface
-```python
-class HelloWorldPlugin(BasePlugin):
-    def __init__(self, plugin_id, config, display_manager, cache_manager, plugin_manager):
-        super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
-        # Initialize your plugin
-    
-    def update(self):
-        # Fetch/update data
-        pass
-    
-    def display(self, force_clear=False):
-        # Render to display
-        pass
-```
-
-### Configuration Validation
-```python
-def validate_config(self):
-    # Validate configuration values
-    return True
-```
-
-### Error Handling
-```python
-try:
-    # Plugin logic
-except Exception as e:
-    self.logger.error(f"Error: {e}", exc_info=True)
-```
+- [Plugin Development Guide](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/PLUGIN_DEVELOPMENT_GUIDE.md)
+- [Plugin API Reference](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/PLUGIN_API_REFERENCE.md)
+- [Plugin Architecture Spec](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/PLUGIN_ARCHITECTURE_SPEC.md)
 
 ## Troubleshooting
 
-### Plugin Not Loading
-- Check that `manifest.json` is valid JSON
-- Verify `enabled: true` in config.json
-- Check logs for error messages
-- Ensure Python path is correct
+**Plugin doesn't appear in the rotation**
+- Make sure it's enabled in **Plugin Manager** and that you restarted the
+  display service afterward.
+- Check the **Logs** tab in the web UI (or `journalctl -u ledmatrix`) for
+  errors mentioning `hello-world`.
 
-### Display Issues
-- Verify display_manager is initialized
-- Check that colors are valid RGB arrays
-- Ensure message isn't too long for display
+**`Class HelloWorldPlugin not found in module`**
+- The `class_name` field in `manifest.json` must exactly match the class
+  defined in `manager.py`. They are case-sensitive and must not contain
+  spaces.
 
-### Configuration Errors
-- Validate JSON syntax in config.json
-- Check that all color arrays have 3 values (RGB)
-- Ensure display_duration is a positive number
+**Colors look wrong**
+- Each color value must be a 3-element array of integers from `0` to
+  `255`. The form rejects anything else.
 
 ## License
 
-GPL-3.0 License - Same as LEDMatrix project
-
-## Contributing
-
-This is a reference plugin included with LEDMatrix. Feel free to use it as a template for your own plugins!
-
-## Support
-
-For plugin system questions, see:
-- [LEDMatrix Plugin Documentation](https://github.com/ChuckBuilds/LEDMatrix)
-- [Plugin Architecture Spec](https://github.com/ChuckBuilds/LEDMatrix/blob/main/PLUGIN_ARCHITECTURE_SPEC.md)
-
+GPL-3.0, same as the LEDMatrix project.

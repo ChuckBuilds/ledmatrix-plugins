@@ -241,12 +241,35 @@ Specify team abbreviations for each league:
 
 #### Display Settings
 
-- **`prioritize_favorites`**: Show favorite team games first (default: true)
-- **`show_shots_on_goal`**: Display SOG statistics (default: false)
-- **`show_powerplay`**: Highlight power play situations (default: true)
-- **`update_interval`**: Data refresh interval in seconds (15-300, default: 60)
-- **`display_duration`**: How long to show each game in seconds (5-60, default: 15)
-- **`request_priority`**: Set the request priority from 1 to 5, where 1 is highest (default: 2)
+The full set of options lives in
+[`config_schema.json`](config_schema.json) — the schema is the source of
+truth and is what generates the web UI. The most commonly tweaked keys:
+
+- **`enabled`** (boolean, default `false`) — master switch for the plugin
+- **`defaults.display_duration`** (5–60s, default `15`) — fallback per-game
+  duration when a league doesn't override it
+- **`defaults.show_records`** (boolean, default `false`) — show team
+  records (W-L)
+- **`defaults.show_shots_on_goal`** (boolean, default `false`) — show SOG
+  during live games
+- **`defaults.show_powerplay`** (boolean, default `true`) — highlight power
+  play situations
+- **`defaults.update_interval_seconds`** (30–86400s, default `3600`) —
+  default base poll interval. Per-league `update_intervals.*` overrides
+  this.
+
+Each league (`nhl`, `ncaa_mens`, `ncaa_womens`) then has its own block with
+finer-grained controls:
+
+- `<league>.update_intervals.{base,live,recent,upcoming,odds}` — how often
+  to poll ESPN for each kind of data. Live games default to 30s; recent
+  and upcoming default to 3600s.
+- `<league>.display_durations.{base,live,recent,upcoming}` — per-mode
+  display duration overrides for that league.
+- `<league>.display_options.{show_records,show_ranking,show_odds,...}` —
+  per-league overrides of the cross-league defaults.
+- `<league>.live_priority` (boolean) — let this league's live games take
+  over the rotation when one is in progress.
 
 ## Display Mode Details
 
@@ -277,12 +300,14 @@ Shows scheduled games for the next X hours with:
 
 ### 1. Install Plugin
 
-Install from the Plugin Store in the LEDMatrix Web UI:
+Install from the Plugin Store in the LEDMatrix web UI:
 
-1. Go to Plugin Store tab
-2. Search for "Hockey Scoreboard"
-3. Click Install
-4. Configure via Plugin Configuration page
+1. Open `http://your-pi-ip:5000`
+2. Open the **Plugin Manager** tab
+3. Find **Hockey Scoreboard** in the **Plugin Store** section and click
+   **Install**
+4. The plugin appears in **Installed Plugins** above and gets its own tab
+   in the second nav row — open that tab to configure it
 
 ### 2. Configure Leagues
 
@@ -372,8 +397,8 @@ The plugin supports fine-tuning element positioning for custom display sizes. Al
 
 #### Accessing Layout Settings
 
-Layout customization is available in the web UI under the plugin configuration section:
-1. Navigate to **Plugins** → **Hockey Scoreboard** → **Configuration**
+Layout customization is available in the plugin's tab in the web UI:
+1. Open the **Hockey Scoreboard** tab (second nav row)
 2. Expand the **Customization** section
 3. Find the **Layout Positioning** subsection
 
@@ -591,9 +616,12 @@ Uses LEDMatrix's `BackgroundDataService` for:
 ### Resource Usage
 
 - **CPU**: Low (background fetching, cached data)
-- **Memory**: ~5-10MB for game data
-- **Network**: ~1-5 KB per API call per league
-- **API Calls**: 3 leagues × 12 calls/hour = 36 calls/hour (max)
+- **Memory**: ~5–10 MB for game data
+- **Network**: ~1–5 KB per API call per league
+- **API calls**: depends on how many leagues are enabled and which
+  `update_intervals` you set. With defaults (NHL only, base 60s, live 30s,
+  recent/upcoming 3600s) and no live games, expect about one ESPN call per
+  minute per enabled league.
 
 ### Optimization Tips
 
@@ -609,13 +637,13 @@ GPL-3.0 License - see main LEDMatrix repository for details.
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/ChuckBuilds/ledmatrix-plugins/issues)
-- **Documentation**: [LEDMatrix Wiki](https://github.com/ChuckBuilds/LEDMatrix/wiki)
+- **Documentation**: see the LEDMatrix
+  [`docs/`](https://github.com/ChuckBuilds/LEDMatrix/tree/main/docs) directory
 - **Community**: [Discussions](https://github.com/ChuckBuilds/LEDMatrix/discussions)
 
 ---
 
-**Version**: 1.0.0  
-**Author**: ChuckBuilds  
-**Category**: Sports  
-**Tags**: hockey, nhl, ncaa, sports, scoreboard, live-scores
+For the current version, author, category and tags see
+[`manifest.json`](manifest.json) — that's the source of truth and is
+what the Plugin Store reads.
 

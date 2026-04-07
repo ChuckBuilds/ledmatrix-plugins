@@ -25,12 +25,14 @@ A simple, customizable clock display plugin for LEDMatrix that shows the current
 
 ## Installation
 
-### From Plugin Store (Recommended)
+### From the Plugin Store (recommended)
 
-1. Open the LEDMatrix web interface
-2. Navigate to the Plugin Store tab
-3. Search for "Simple Clock" or browse the "time" category
-4. Click "Install"
+1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
+2. Open the **Plugin Manager** tab
+3. Find **Simple Clock** in the **Plugin Store** section (it's in the
+   `time` category) and click **Install**
+4. Toggle the plugin on, then click **Restart Display Service** on the
+   **Overview** tab
 
 ### Manual Installation
 
@@ -79,16 +81,18 @@ Add the following to your `config/config.json`:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `enabled` | boolean | `true` | Enable or disable the plugin |
-| `timezone` | string | Inherits from global config | Timezone for display (e.g., `"America/New_York"`). If not specified, inherits from LEDMatrix global timezone setting |
-| `time_format` | string | `"12h"` | Time format: `"12h"` or `"24h"` |
-| `show_seconds` | boolean | `false` | Show seconds in time display |
+| `enabled` | boolean | `false` | Enable or disable the plugin |
+| `display_duration` | number | `15` | Seconds to hold the screen each rotation (1–300) |
+| `update_interval` | integer | `1` | How often to redraw the clock, in seconds (1–60) |
+| `timezone` | string \| null | `null` | IANA timezone name (e.g. `"America/New_York"`). When null, inherits the global LEDMatrix timezone |
+| `time_format` | string | `"12h"` | `"12h"` or `"24h"` |
+| `center_time_with_ampm` | boolean | `false` | Center the time + AM/PM as one block (12h only) |
+| `show_seconds` | boolean | `false` | Include seconds in the time |
 | `show_date` | boolean | `true` | Show date below the time |
-| `date_format` | string | `"OLD_CLOCK"` | Date format: `"MM/DD/YYYY"`, `"DD/MM/YYYY"`, `"YYYY-MM-DD"`, or `"OLD_CLOCK"` |
-| `display_duration` | number | `15` | Display duration in seconds |
-| `position_x` | integer | `0` | X position offset for display (pixels) |
-| `position_y` | integer | `0` | Y position offset for display (pixels) |
-| `customization` | object | See below | Nested configuration for display customization |
+| `date_format` | string | `"OLD_CLOCK"` | One of `"MM/DD/YYYY"`, `"DD/MM/YYYY"`, `"YYYY-MM-DD"`, `"OLD_CLOCK"` (e.g. `Monday, January 1st`) |
+| `position_x` | integer | `0` | X offset in pixels |
+| `position_y` | integer | `0` | Y offset in pixels |
+| `customization` | object | See below | Per-element font and color overrides |
 
 ### Customization Options
 
@@ -172,20 +176,20 @@ plugins/clock-simple/
 
 ### Testing
 
-Test the plugin by running:
+The fastest way to verify a change without restarting the full display
+service is the LEDMatrix dev preview server, which renders this plugin in
+your browser without any hardware:
 
 ```bash
 cd /path/to/LEDMatrix
-python3 -c "
-from src.plugin_system.plugin_manager import PluginManager
-pm = PluginManager()
-pm.discover_plugins()
-pm.load_plugin('clock-simple')
-plugin = pm.get_plugin('clock-simple')
-plugin.update()
-plugin.display()
-"
+python3 scripts/dev_server.py --extra-dir /path/to/ledmatrix-plugins/plugins/clock-simple
+# then open http://localhost:5001
 ```
+
+You can also render a single still frame to a PNG with
+`scripts/render_plugin.py` — see
+[`docs/DEV_PREVIEW.md`](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/DEV_PREVIEW.md)
+for details.
 
 ## License
 

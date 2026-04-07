@@ -47,7 +47,8 @@ If you prefer to maintain your own repo:
 1. **Test Your Plugin**
    ```bash
    # Install via URL on your Pi
-   curl -X POST http://your-pi:5050/api/plugins/install-from-url \
+   curl -X POST http://your-pi:5000/api/plugins/install-from-url \
+     -H "Content-Type: application/json" \
      -d '{"repo_url": "https://github.com/you/ledmatrix-your-plugin"}'
    ```
 

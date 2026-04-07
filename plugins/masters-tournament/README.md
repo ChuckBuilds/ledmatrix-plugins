@@ -48,11 +48,12 @@ Authentic Augusta National visual identity:
 
 ### Via Plugin Store (Recommended)
 
-1. Open LEDMatrix Web UI
-2. Navigate to **Plugins** → **Plugin Store**
-3. Find "Masters Tournament"
-4. Click **Install**
-5. Configure and enable
+1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
+2. Open the **Plugin Manager** tab
+3. Find **Masters Tournament** in the **Plugin Store** section and click
+   **Install**
+4. Open the **Masters Tournament** tab in the second nav row to enable
+   and configure it
 
 ### Manual Installation
 

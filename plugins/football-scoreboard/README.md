@@ -264,7 +264,7 @@ The plugin supports fine-tuning element positioning for custom display sizes. Al
 #### Accessing Layout Settings
 
 Layout customization is available in the web UI under the plugin configuration section:
-1. Navigate to **Plugins** → **Football Scoreboard** → **Configuration**
+1. Open the **Football Scoreboard** tab (second nav row)
 2. Expand the **Customization** section
 3. Find the **Layout Positioning** subsection
 
@@ -331,7 +331,7 @@ The plugin supports fine-tuning element positioning for custom display sizes. Al
 #### Accessing Layout Settings
 
 Layout customization is available in the web UI under the plugin configuration section:
-1. Navigate to **Plugins** → **Football Scoreboard** → **Configuration**
+1. Open the **Football Scoreboard** tab (second nav row)
 2. Expand the **Customization** section
 3. Find the **Layout Positioning** subsection
 
@@ -431,12 +431,13 @@ This plugin reuses the proven code from the main LEDMatrix project:
 
 ## 📦 Installation
 
-### From Plugin Store (Recommended)
-1. Open LEDMatrix web interface
-2. Navigate to Plugin Store
-3. Search for "Football Scoreboard"
-4. Click Install
-5. Configure your favorite teams and preferences
+### From the Plugin Store (recommended)
+1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
+2. Open the **Plugin Manager** tab
+3. Find **Football Scoreboard** in the **Plugin Store** section and click
+   **Install**
+4. Open the **Football Scoreboard** tab in the second nav row to configure
+   your favorite teams and per-league preferences
 
 
 ## ⚙️ Configuration

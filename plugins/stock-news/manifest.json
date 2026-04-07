@@ -4,6 +4,8 @@
   "version": "1.0.2",
   "author": "ChuckBuilds",
   "description": "Displays scrolling stock-specific news headlines and financial updates from RSS feeds, focused on market news and company updates",
+  "entry_point": "manager.py",
+  "class_name": "StockNewsTickerPlugin",
   "category": "financial",
   "tags": [
     "stock",
