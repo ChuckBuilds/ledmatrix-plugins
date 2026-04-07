@@ -70,7 +70,7 @@
 
 **API:**
 ```bash
-curl -X POST http://your-pi-ip:5000/api/plugins/install \
+curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "football-scoreboard"}'
 ```
