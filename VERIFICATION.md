@@ -67,6 +67,17 @@ Use this checklist when reviewing plugin submissions.
 - [ ] Configuration options documented
 - [ ] Examples provided
 - [ ] License specified
+- [ ] **Per-plugin `LICENSE` file exists** in `plugins/<id>/`.
+      Every plugin must ship its own LICENSE (typically a short-form
+      GPL-3.0 notice — see `plugins/hello-world/LICENSE` as the
+      template). Without it, downstream users have no per-plugin
+      license declaration when they install via the Plugin Store.
+      Quick check:
+      ```bash
+      for d in plugins/*/; do
+        ls "$d"LICENSE >/dev/null 2>&1 || echo "MISSING: $d"
+      done
+      ```
 
 ## Security
 
