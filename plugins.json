@@ -6,7 +6,7 @@
       "id": "hello-world",
       "name": "Hello World",
       "description": "A simple test plugin that displays a customizable message",
-      "author": "LEDMatrix Team",
+      "author": "ChuckBuilds",
       "category": "demo",
       "tags": [
         "demo",
@@ -47,14 +47,19 @@
     {
       "id": "weather",
       "name": "Weather Display",
-      "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, UV index, wind direction, and weather icons. Features state caching, API counter tracking, and error handling. Powered by OpenWeatherMap API with beautiful weather icons.",
+      "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), precipitation radar, weather alerts, UV index, wind direction, and weather icons. Powered by OpenWeatherMap + RainViewer APIs.",
       "author": "ChuckBuilds",
       "category": "weather",
       "tags": [
         "weather",
         "forecast",
         "temperature",
-        "humidity"
+        "conditions",
+        "openweathermap",
+        "uv-index",
+        "wind",
+        "icons",
+        "caching"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
@@ -71,11 +76,12 @@
       "name": "Static Image Display",
       "description": "Display static images on your LED matrix with automatic scaling, aspect ratio preservation, and transparency support. Perfect for logos, artwork, or custom graphics.",
       "author": "ChuckBuilds",
-      "category": "media",
+      "category": "display",
       "tags": [
         "image",
         "static",
         "display",
+        "graphics",
         "logo"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
@@ -90,14 +96,15 @@
     },
     {
       "id": "text-display",
-      "name": "Scrolling Text Display",
+      "name": "Text Display",
       "description": "Display custom scrolling or static text with configurable fonts, colors, and scroll speed. Perfect for announcements, messages, or custom displays.",
       "author": "ChuckBuilds",
-      "category": "text",
+      "category": "display",
       "tags": [
         "text",
         "scroll",
         "message",
+        "display",
         "custom"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
@@ -112,15 +119,16 @@
     },
     {
       "id": "of-the-day",
-      "name": "Of The Day",
+      "name": "Of The Day Display",
       "description": "Display daily featured content like Word of the Day, Bible verses, or custom daily items. Supports multiple categories with rotating display and configurable data sources.",
       "author": "ChuckBuilds",
-      "category": "content",
+      "category": "information",
       "tags": [
         "word",
-        "verse",
         "daily",
-        "quote"
+        "education",
+        "content",
+        "rotation"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
@@ -134,16 +142,16 @@
     },
     {
       "id": "music",
-      "name": "Music Player",
-      "description": "Displays 'Now Playing' information from Spotify or YouTube Music, including album art and scrolling text",
+      "name": "Music Player - Now Playing",
+      "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
       "author": "ChuckBuilds",
       "category": "media",
       "tags": [
         "music",
         "spotify",
-        "youtube music",
-        "now playing",
-        "album art"
+        "youtube-music",
+        "now-playing",
+        "album-art"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
@@ -160,12 +168,13 @@
       "name": "Google Calendar",
       "description": "Display upcoming events from Google Calendar with date, time, and event details. Shows next 1-3 events with automatic rotation and timezone support.",
       "author": "ChuckBuilds",
-      "category": "time",
+      "category": "productivity",
       "tags": [
         "calendar",
-        "events",
         "google",
-        "schedule"
+        "events",
+        "schedule",
+        "appointments"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
@@ -199,7 +208,8 @@
       "last_updated": "2026-02-25",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.4"
+      "latest_version": "1.2.4",
+      "icon": "fas fa-hockey-puck"
     },
     {
       "id": "football-scoreboard",
@@ -248,12 +258,13 @@
       "last_updated": "2026-02-25",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.3"
+      "latest_version": "1.2.3",
+      "icon": "fas fa-fist-raised"
     },
     {
       "id": "basketball-scoreboard",
       "name": "Basketball Scoreboard",
-      "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores and schedules",
+      "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
       "author": "ChuckBuilds",
       "category": "sports",
       "tags": [
@@ -304,7 +315,7 @@
     {
       "id": "soccer-scoreboard",
       "name": "Soccer Scoreboard",
-      "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, and more",
+      "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, and more",
       "author": "ChuckBuilds",
       "category": "sports",
       "tags": [
@@ -436,17 +447,15 @@
     },
     {
       "id": "stocks",
-      "name": "Stocks Ticker",
-      "description": "Displays scrolling stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies",
-      "author": "ChuckBuilds",
-      "category": "financial",
+      "name": "Stock & Crypto Ticker",
+      "description": "Displays stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies. Supports scroll and switch display modes.",
+      "author": "LEDMatrix Team",
+      "category": "finance",
       "tags": [
         "stocks",
-        "financial",
-        "ticker",
         "crypto",
-        "market",
-        "charts",
+        "finance",
+        "ticker",
         "scrolling"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
@@ -457,12 +466,13 @@
       "last_updated": "2026-03-04",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.2.0"
+      "latest_version": "2.2.0",
+      "icon": "fas fa-chart-line"
     },
     {
       "id": "ledmatrix-flights",
       "name": "Flight Tracker",
-      "description": "Real-time aircraft tracking with ADS-B data, map backgrounds, flight plans, and proximity alerts",
+      "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
       "author": "ChuckBuilds",
       "category": "custom",
       "tags": [
@@ -471,8 +481,7 @@
         "ads-b",
         "skyaware",
         "aviation",
-        "map",
-        "tracker"
+        "map"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
@@ -487,15 +496,14 @@
     {
       "id": "christmas-countdown",
       "name": "Christmas Countdown",
-      "description": "Display a festive countdown to Christmas with a stylized Christmas tree logo and stacked text. Features split-screen layout with large tree on left and countdown text on right. Shows 'MERRY CHRISTMAS' on and after December 25th.",
+      "description": "Display a countdown to Christmas with a stylized Christmas tree logo and festive text",
       "author": "ChuckBuilds",
       "category": "holiday",
       "tags": [
         "christmas",
         "countdown",
         "holiday",
-        "seasonal",
-        "festive"
+        "seasonal"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
@@ -509,16 +517,18 @@
     },
     {
       "id": "olympics",
-      "name": "Olympics Countdown",
-      "description": "Display a countdown to the next Olympics (summer or winter) with an Olympics logo. Automatically determines the next Olympics and counts down to the opening ceremony. Once the Olympics starts, switches to countdown to the closing ceremony. Supports Olympics through 2032.",
+      "name": "Olympics",
+      "description": "Enhanced Olympics plugin with live medal counts, upcoming events, results, and countdown. Supports Vegas scroll mode and regular display mode.",
       "author": "ChuckBuilds",
       "category": "sports",
       "tags": [
         "olympics",
-        "countdown",
+        "medals",
         "sports",
-        "summer",
-        "winter"
+        "winter",
+        "events",
+        "results",
+        "vegas"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
@@ -533,7 +543,7 @@
     {
       "id": "youtube-stats",
       "name": "YouTube Stats",
-      "description": "Display YouTube channel statistics including subscriber count, total views, and channel name on your LED matrix. Features YouTube logo, auto-refresh, and efficient caching.",
+      "description": "Display YouTube channel statistics including subscriber count, total views, and channel name on your LED matrix",
       "author": "ChuckBuilds",
       "category": "social",
       "tags": [
@@ -541,9 +551,7 @@
         "social",
         "stats",
         "display",
-        "channel",
-        "subscribers",
-        "views"
+        "channel"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
@@ -622,22 +630,22 @@
       "last_updated": "2026-03-06",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.0.0"
+      "latest_version": "2.0.0",
+      "icon": "fa-clock"
     },
     {
       "id": "f1-scoreboard",
       "name": "F1 Scoreboard",
-      "description": "Comprehensive Formula 1 racing display with driver standings, constructor standings, race results, qualifying (Q1/Q2/Q3), free practice, sprint results, upcoming race countdown with circuit outline, and season calendar. Supports favorite team/driver filtering and team color accent bars.",
+      "description": "Formula 1 racing plugin showing driver/constructor standings, race results, qualifying breakdowns, practice standings, sprint results, upcoming races, and race calendar with team-colored displays and favorite driver/team support",
       "author": "ChuckBuilds",
       "category": "sports",
       "tags": [
         "f1",
         "formula1",
         "racing",
+        "motorsport",
         "sports",
-        "standings",
-        "scoreboard",
-        "motorsport"
+        "scoreboard"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
@@ -675,7 +683,7 @@
     {
       "id": "masters-tournament",
       "name": "Masters Tournament",
-      "description": "Masters Tournament display with ESPN leaderboards, Augusta National hole layouts, fun facts, past champions, course tour, countdown, and more",
+      "description": "Broadcast-quality Masters Tournament display with real ESPN player headshots, accurate Augusta National hole layouts, fun facts, past champions, live leaderboards, and pixel-perfect LED matrix rendering",
       "author": "ChuckBuilds",
       "category": "sports",
       "tags": [
@@ -739,7 +747,8 @@
       "last_updated": "2026-04-06",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.3"
+      "latest_version": "1.0.3",
+      "icon": "fas fa-baseball-ball"
     }
   ]
 }

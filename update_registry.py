@@ -96,12 +96,28 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False) 
             print(f"  {plugin_id}: {registry_version} -> {manifest_version}")
             if not dry_run:
                 plugin["latest_version"] = manifest_version
-                plugin["last_updated"] = datetime.now().strftime("%Y-%m-%d")
+                # Prefer the manifest's last_updated if present (matches the
+                # plugin's actual release date); fall back to today.
+                plugin["last_updated"] = manifest.get("last_updated") or datetime.now().strftime("%Y-%m-%d")
             updates_made = True
         elif parse_version(manifest_version) < parse_version(registry_version):
             print(f"  {plugin_id}: manifest ({manifest_version}) < registry ({registry_version}), skipping")
         else:
             print(f"  {plugin_id}: up to date ({registry_version})")
+
+        # Sync user-visible metadata fields from the manifest. The manifest
+        # is the source of truth per the module docstring, so the registry
+        # should never disagree with it on the fields the Plugin Store
+        # actually renders to users.
+        synced_fields = []
+        for field in ("name", "description", "author", "category", "tags", "icon"):
+            if field in manifest and plugin.get(field) != manifest[field]:
+                if not dry_run:
+                    plugin[field] = manifest[field]
+                synced_fields.append(field)
+                updates_made = True
+        if synced_fields:
+            print(f"    synced fields: {', '.join(synced_fields)}")
 
     if updates_made and not dry_run:
         registry["last_updated"] = datetime.now().strftime("%Y-%m-%d")

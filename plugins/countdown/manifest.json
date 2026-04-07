@@ -2,7 +2,7 @@
   "id": "countdown",
   "name": "Countdown Display",
   "version": "2.0.0",
-  "author": "Charles",
+  "author": "ChuckBuilds",
   "description": "Create and manage customizable countdowns with images. Perfect for birthdays, holidays, events, and special occasions.",
   "entry_point": "manager.py",
   "class_name": "CountdownPlugin",
