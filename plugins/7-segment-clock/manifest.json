@@ -22,6 +22,13 @@
   ],
   "update_interval": 60,
   "default_duration": 15,
-  "config_schema": "config_schema.json"
+  "config_schema": "config_schema.json",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "released": "2026-04-07",
+      "ledmatrix_min": "2.0.0"
+    }
+  ],
+  "last_updated": "2026-04-07"
 }
-

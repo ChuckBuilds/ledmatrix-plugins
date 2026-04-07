@@ -26,7 +26,14 @@
   "display_duration": 20,
   "requires_api_key": false,
   "config_schema": "config_schema.json",
-  "tags": ["sports", "golf", "tournament", "leaderboard", "masters", "augusta"],
+  "tags": [
+    "sports",
+    "golf",
+    "tournament",
+    "leaderboard",
+    "masters",
+    "augusta"
+  ],
   "min_display_size": {
     "width": 32,
     "height": 16
@@ -34,5 +41,13 @@
   "recommended_display_size": {
     "width": 128,
     "height": 64
-  }
+  },
+  "versions": [
+    {
+      "version": "2.0.0",
+      "released": "2026-04-07",
+      "ledmatrix_min": "2.0.0"
+    }
+  ],
+  "last_updated": "2026-04-07"
 }

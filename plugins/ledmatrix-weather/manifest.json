@@ -26,6 +26,12 @@
   ],
   "versions": [
     {
+      "version": "2.2.2",
+      "released": "2026-04-07",
+      "ledmatrix_min": "2.0.0",
+      "note": "Added during docs audit; intermediate 2.2.0/2.2.1 release dates were not recorded."
+    },
+    {
       "version": "2.1.2",
       "ledmatrix_min": "2.0.0",
       "released": "2026-02-24"
@@ -61,7 +67,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-02-24",
+  "last_updated": "2026-04-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

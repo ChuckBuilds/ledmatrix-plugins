@@ -17,6 +17,13 @@
     "web_ui_info"
   ],
   "update_interval": 300,
-  "default_duration": 10
+  "default_duration": 10,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "released": "2026-04-07",
+      "ledmatrix_min": "2.0.0"
+    }
+  ],
+  "last_updated": "2026-04-07"
 }
-
