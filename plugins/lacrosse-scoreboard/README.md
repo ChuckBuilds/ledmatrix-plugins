@@ -2,6 +2,18 @@
 
 Live, recent, and upcoming NCAA Men's and Women's Lacrosse games on your LEDMatrix display. Real-time scores, schedules, favorite-team filtering, live-game priority, poll-rank badges, and both switch and scroll display modes — modeled on the existing hockey scoreboard plugin.
 
+> ⚠️ **Known conflict with `hockey-scoreboard`.** This plugin's display
+> modes are named `ncaa_mens_recent` / `ncaa_mens_upcoming` /
+> `ncaa_mens_live` / `ncaa_womens_recent` / `ncaa_womens_upcoming` /
+> `ncaa_womens_live` — the **same names** the hockey scoreboard plugin
+> uses for its NCAA hockey divisions. The display controller stores
+> modes in a flat dict keyed by mode name
+> (`src/display_controller.py:295`), so if you install both plugins,
+> whichever loads second silently overrides the first one's NCAA modes.
+> Track the issue at the LEDMatrix repo. Until it's fixed in a
+> version-bumped release that renames lacrosse's modes (e.g.
+> `lax_ncaa_mens_*`), enable only one of the two plugins at a time.
+
 ## Features
 
 - **NCAA Men's Lacrosse** (Inside Lacrosse D1 Poll — top 20)

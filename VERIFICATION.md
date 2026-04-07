@@ -29,6 +29,27 @@ Use this checklist when reviewing plugin submissions.
 - [ ] `last_updated` matches the release date of the latest version
 - [ ] Category is valid
 - [ ] Tags are descriptive
+- [ ] **`display_modes` don't collide with any existing plugin's modes.**
+      The display controller stores modes in a flat dict keyed by mode
+      name (`src/display_controller.py:295`); a collision means
+      whichever plugin loads second silently overrides the first.
+      Quick check:
+      ```bash
+      python3 -c "
+      import json, os
+      modes = {}
+      for d in sorted(os.listdir('plugins')):
+          p = f'plugins/{d}/manifest.json'
+          if not os.path.isfile(p): continue
+          for mode in json.load(open(p)).get('display_modes', []):
+              modes.setdefault(mode, []).append(d)
+      for mode, pids in modes.items():
+          if len(pids) > 1: print(f'COLLISION: {mode} → {pids}')
+      "
+      ```
+      Prefix new plugins' modes with the plugin id or sport (e.g.
+      `lax_ncaa_mens_recent` rather than `ncaa_mens_recent`) to avoid
+      colliding with future plugins.
 
 ## Functionality
 
