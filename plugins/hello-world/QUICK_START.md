@@ -2,7 +2,13 @@
 
 ## 🚀 Enable the Plugin
 
-Add this to your `config/config.json`:
+The easiest way is the Plugin Store in the LEDMatrix web UI: open the
+**Plugin Manager** tab, find **Hello World** in the **Plugin Store**
+section, and click **Install**. The configuration form for the plugin
+then appears in the second nav row.
+
+If you prefer to edit the config file directly, add this to your
+`config/config.json`:
 
 ```json
 {
@@ -28,31 +34,26 @@ All plugin system tests passed:
 
 ## 📋 Verify Plugin is Working
 
-### 1. Check Plugin Discovery (Windows)
-```bash
-python test/test_plugin_system.py
-```
-
-### 2. Check on Raspberry Pi
+### 1. Check on Raspberry Pi
 ```bash
 # SSH into your Pi
-ssh pi@your-pi-ip
+ssh ledpi@your-pi-ip
 
 # Check if plugin is discovered
 sudo journalctl -u ledmatrix -n 50 | grep "hello-world"
 
-# Should see:
-# Discovered plugin: hello-world v1.0.0
+# Should see something like:
+# Discovered plugin: hello-world v1.0.2
 # Loaded plugin: hello-world
 ```
 
-### 3. Via Web API
+### 2. Via Web API
 ```bash
 # List installed plugins
-curl http://localhost:5001/api/plugins/installed
+curl http://localhost:5000/api/v3/plugins/installed
 
 # Enable the plugin
-curl -X POST http://localhost:5001/api/plugins/toggle \
+curl -X POST http://localhost:5000/api/v3/plugins/toggle \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "hello-world", "enabled": true}'
 ```
@@ -127,5 +128,7 @@ plugins/hello-world/
 
 ---
 
-**Need Help?** Check the main [README.md](README.md) or [Plugin System Documentation](../../docs/PLUGIN_PHASE_1_SUMMARY.md)
+**Need Help?** Check the main [README.md](README.md) or the
+[Plugin Development Guide](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/PLUGIN_DEVELOPMENT_GUIDE.md)
+in the LEDMatrix repo.
 

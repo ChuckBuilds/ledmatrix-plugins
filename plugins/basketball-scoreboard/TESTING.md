@@ -16,7 +16,7 @@ python3 test_plugin_syntax.py
 Expected output:
 ```
 ✓ Plugin imported successfully
-✓ Class name: BasketballPluginManager
+✓ Class name: BasketballScoreboardPlugin
 ✓ Base classes: (...)
 Plugin structure is valid!
 ```
@@ -49,7 +49,7 @@ The plugin is now **standalone** and does not depend on Basketball or Sports bas
 ## Plugin Features Tested
 
 - ✅ Plugin imports without errors
-- ✅ Multiple inheritance works correctly (BasePlugin + Basketball)
+- ✅ Inherits from BasePlugin only (no Basketball base class — see STANDALONE.md)
 - ✅ Configuration loading for all leagues (NBA, WNBA, NCAA M/W)
 - ✅ Display mode configuration (live, recent, upcoming)
 - ✅ League enable/disable functionality

@@ -8,7 +8,7 @@ The basketball plugin has been redesigned to be completely independent and not r
 
 ### Core Components
 
-1. **`manager.py`** - Main plugin class (BasketballPluginManager)
+1. **`manager.py`** - Main plugin class (BasketballScoreboardPlugin)
    - Only inherits from `BasePlugin` (plugin system requirement)
    - Contains all basketball-specific logic
    - Handles data fetching, game filtering, and display
@@ -32,7 +32,7 @@ The basketball plugin has been redesigned to be completely independent and not r
 
 ### Before (with base classes)
 ```python
-class BasketballPluginManager(BasePlugin, Basketball):
+class BasketballScoreboardPlugin(BasePlugin, Basketball):
     # Inherited from Basketball base class:
     # - Font loading
     # - Logo loading
@@ -43,7 +43,7 @@ class BasketballPluginManager(BasePlugin, Basketball):
 
 ### Now (standalone)
 ```python
-class BasketballPluginManager(BasePlugin):
+class BasketballScoreboardPlugin(BasePlugin):
     # Uses BasketballHelpers for:
     # - Font loading
     # - Logo loading  
@@ -73,7 +73,7 @@ python3 test_plugin_syntax.py
 Expected output:
 ```
 ✓ Plugin imported successfully
-✓ Class name: BasketballPluginManager
+✓ Class name: BasketballScoreboardPlugin
 ✓ Base classes: (<class 'src.plugin_system.base_plugin.BasePlugin'>,)
 Plugin structure is valid!
 ```
@@ -108,13 +108,22 @@ All functionality from the old basketball managers is preserved:
 
 ## Configuration
 
-Works exactly like the original, with per-league configuration:
+Works with per-league nested configuration. The full schema lives in
+[`config_schema.json`](config_schema.json); a minimal example:
 
 ```json
 {
-  "nba_enabled": true,
-  "nba_favorite_teams": ["LAL", "BOS"],
-  "nba_display_modes_live": true,
-  "ncaam_basketball_enabled": false
+  "nba": {
+    "enabled": true,
+    "favorite_teams": ["LAL", "BOS"],
+    "display_modes": {
+      "show_live": true,
+      "show_recent": true,
+      "show_upcoming": true
+    }
+  },
+  "ncaam": {
+    "enabled": false
+  }
 }
 ```
