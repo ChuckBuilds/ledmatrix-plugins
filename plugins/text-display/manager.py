@@ -51,7 +51,10 @@ class TextDisplayPlugin(BasePlugin):
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
         
         # Configuration
-        self.text = config.get('text', 'Hello, World!')
+        # Default kept in sync with config_schema.json — the schema is what
+        # the auto-generated web UI form populates from, so the code default
+        # must match what the form prefill shows.
+        self.text = config.get('text', 'Subscribe to ChuckBuilds')
         self.font_path = config.get('font_path', 'assets/fonts/PressStart2P-Regular.ttf')
         self.font_size = config.get('font_size', 8)
         self.scroll_enabled = config.get('scroll', True)
