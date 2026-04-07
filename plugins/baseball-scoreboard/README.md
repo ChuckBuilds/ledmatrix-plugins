@@ -43,9 +43,9 @@ A plugin for LEDMatrix that displays live, recent, and upcoming baseball games a
     "enabled": true,
     "favorite_teams": ["NYY", "BOS", "LAD"],
     "display_modes": {
-      "live": true,
-      "recent": true,
-      "upcoming": true
+      "show_live": true,
+      "show_recent": true,
+      "show_upcoming": true
     },
     "recent_games_to_show": 5,
     "upcoming_games_to_show": 10
@@ -61,9 +61,9 @@ A plugin for LEDMatrix that displays live, recent, and upcoming baseball games a
     "enabled": true,
     "favorite_teams": ["DUR", "SWB", "MEM"],
     "display_modes": {
-      "live": true,
-      "recent": true,
-      "upcoming": true
+      "show_live": true,
+      "show_recent": true,
+      "show_upcoming": true
     },
     "recent_games_to_show": 5,
     "upcoming_games_to_show": 10
@@ -79,9 +79,9 @@ A plugin for LEDMatrix that displays live, recent, and upcoming baseball games a
     "enabled": true,
     "favorite_teams": ["LSU", "FLA", "VANDY"],
     "display_modes": {
-      "live": true,
-      "recent": true,
-      "upcoming": true
+      "show_live": true,
+      "show_recent": true,
+      "show_upcoming": true
     },
     "recent_games_to_show": 5,
     "upcoming_games_to_show": 10
@@ -91,11 +91,15 @@ A plugin for LEDMatrix that displays live, recent, and upcoming baseball games a
 
 ## Display Modes
 
-The plugin supports three display modes:
+The plugin registers per-league granular modes in `manifest.json`. The
+display controller rotates through any that are enabled:
 
-1. **baseball_live**: Shows currently active games
-2. **baseball_recent**: Shows recently completed games
-3. **baseball_upcoming**: Shows scheduled upcoming games
+**MLB:** `mlb_live`, `mlb_recent`, `mlb_upcoming`
+**MiLB:** `milb_live`, `milb_recent`, `milb_upcoming`
+**NCAA Baseball:** `ncaa_baseball_live`, `ncaa_baseball_recent`, `ncaa_baseball_upcoming`
+
+Toggle individual modes per league with the `show_live` / `show_recent`
+/ `show_upcoming` flags inside each league's `display_modes` block.
 
 ## Team Abbreviations
 
@@ -126,10 +130,18 @@ This plugin requires the main LEDMatrix installation and inherits functionality 
 
 ## Installation
 
-1. Copy this plugin directory to your `ledmatrix-plugins/plugins/` folder
-2. Ensure the plugin is enabled in your LEDMatrix configuration
-3. Configure your favorite teams and display preferences
-4. Restart LEDMatrix to load the new plugin
+The easiest way is the Plugin Store in the LEDMatrix web UI:
+
+1. Open `http://your-pi-ip:5000`
+2. Open the **Plugin Manager** tab
+3. Find **Baseball Scoreboard** in the **Plugin Store** section and click
+   **Install**
+4. Open the plugin's tab in the second nav row to configure favorite
+   teams and per-league preferences
+
+Manual install: copy this directory into your LEDMatrix
+`plugins_directory` (default `plugin-repos/`) and restart the display
+service.
 
 ## Troubleshooting
 

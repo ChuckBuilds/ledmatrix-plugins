@@ -162,10 +162,18 @@ This plugin requires the main LEDMatrix installation and uses the OddsManager fo
 
 ## Installation
 
-1. Copy this plugin directory to your `ledmatrix-plugins/plugins/` folder
-2. Ensure the plugin is enabled in your LEDMatrix configuration
-3. Configure your favorite teams and display preferences
-4. Restart LEDMatrix to load the new plugin
+The easiest way is the Plugin Store in the LEDMatrix web UI:
+
+1. Open `http://your-pi-ip:5000`
+2. Open the **Plugin Manager** tab
+3. Find **Odds Ticker** in the **Plugin Store** section and click
+   **Install**
+4. Open the plugin's tab in the second nav row to configure leagues,
+   favorite teams, and display preferences
+
+Manual install: copy this directory into your LEDMatrix
+`plugins_directory` (default `plugin-repos/`) and restart the display
+service.
 
 ## Troubleshooting
 

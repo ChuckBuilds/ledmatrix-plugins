@@ -17,18 +17,17 @@ Display daily featured content like Word of the Day, Bible verses, or custom dai
 
 This plugin is fully configurable through the LEDMatrix web interface:
 
-1. Navigate to the **Plugins** tab in the web UI
-2. Find "Of The Day Display" in the installed plugins list
-3. Click **Configure** to open the plugin's configuration tab
-4. Adjust settings using the auto-generated form:
-   - Enable/disable the plugin
-   - Configure update intervals
-   - Set display rotation timings
-   - Manage categories (enable/disable, set display names)
-   - Adjust display duration
-5. Click **Save Configuration** to apply changes
+1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
+2. Open the **Plugin Manager** tab and install **Of The Day Display**
+   from the **Plugin Store** section if it isn't already
+3. Open the **Of The Day Display** tab in the second nav row
+4. Adjust settings using the auto-generated form (enable/disable
+   categories, update intervals, rotation timings, display duration)
+5. Click **Save**
 
-The web UI automatically generates a configuration form from the plugin's `config_schema.json`, including support for nested category configurations with collapsible sections.
+The web UI form is generated directly from
+[`config_schema.json`](config_schema.json), including the nested
+category configurations with collapsible sections.
 
 ### Example Configuration
 

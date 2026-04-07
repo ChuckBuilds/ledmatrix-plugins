@@ -39,9 +39,10 @@ The plugin will automatically be discovered and loaded when the LEDMatrix system
 
 To enable/disable the plugin:
 1. Open the web UI at `http://[your-device]:5000`
-2. Navigate to the Plugins tab
-3. Find "Web UI Info" in the plugin list
-4. Toggle the enable/disable checkbox
+2. Open the **Plugin Manager** tab
+3. Find **Web UI Info** in the **Installed Plugins** list and toggle it
+   on or off
+4. Restart the display service from the **Overview** tab
 
 ## Device ID
 

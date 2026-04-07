@@ -13,9 +13,13 @@
 
 # MQTT Notifications Plugin
 
-##This plugin is still under heavy development and may not work.
+> ⚠️ **Alpha**: This plugin is still under active development and may not
+> work reliably yet. Expect rough edges and configuration changes.
 
-Display text or images from HomeAssistant via MQTT. This plugin supports dynamic topic configuration with wildcard support, allowing you to send notifications from any MQTT topic that interrupt the normal display rotation to show important messages.
+Display text or images from Home Assistant (or any MQTT publisher) by
+subscribing to configurable MQTT topics. Incoming notifications interrupt
+the normal display rotation via the on-demand display system to show
+important messages.
 
 ## Features
 
@@ -28,9 +32,13 @@ Display text or images from HomeAssistant via MQTT. This plugin supports dynamic
 
 ## Installation
 
-1. The plugin will be automatically discovered by LEDMatrix
-2. Dependencies will be installed automatically from `requirements.txt`
-3. Configure the plugin in `config/config.json`
+1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
+2. Open the **Plugin Manager** tab
+3. Find **MQTT Notifications** in the **Plugin Store** section and click
+   **Install**. Dependencies (`paho-mqtt`, etc.) install automatically
+   from `requirements.txt` on first load.
+4. Open the plugin's tab in the second nav row to configure your MQTT
+   broker, credentials, and topic subscriptions.
 
 ## Configuration
 

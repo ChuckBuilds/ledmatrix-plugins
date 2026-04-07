@@ -27,17 +27,29 @@ No API key is required.
 
 ## Installation
 
-The plugin is installable from the LEDMatrix plugin store — search for **Lacrosse Scoreboard** and enable it. On first launch, team logos for any teams appearing in the current scoreboard window will be downloaded to `assets/sports/ncaa_logos/` automatically.
+The easiest way is the Plugin Store in the LEDMatrix web UI:
 
-To install manually from source:
+1. Open `http://your-pi-ip:5000`
+2. Open the **Plugin Manager** tab
+3. Find **Lacrosse Scoreboard** in the **Plugin Store** section and click
+   **Install**
+4. Open the plugin's tab in the second nav row to configure favorite
+   teams
+
+On first launch, team logos for any teams in the current scoreboard
+window will be downloaded to `assets/sports/ncaa_logos/` automatically.
+
+Manual install from source:
 
 ```bash
 cd /path/to/LEDMatrix
 python -m pip install --user pillow requests pytz   # see requirements.txt
-cp -r /path/to/ledmatrix-plugins/plugins/lacrosse-scoreboard plugins/
+cp -r /path/to/ledmatrix-plugins/plugins/lacrosse-scoreboard plugin-repos/
+sudo systemctl restart ledmatrix
 ```
 
-Then add a `lacrosse-scoreboard` entry to your LEDMatrix `config.json` (see **Configuration** below) and restart the LEDMatrix service.
+Then add a `lacrosse-scoreboard` entry to your LEDMatrix `config.json`
+(see **Configuration** below) — or just use the web UI to configure it.
 
 ## Dependencies
 

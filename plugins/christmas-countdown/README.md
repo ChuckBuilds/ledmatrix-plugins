@@ -34,14 +34,22 @@ Screenshot of Christmas Countdown:
 
 The plugin supports the following configuration options:
 
-### Basic Settings
+### Configuration options
 
-- `enabled` (boolean, default: `false`): Enable or disable the plugin
-- `display_duration` (number, default: `15`): How long to display the countdown in seconds (1-300)
-- `update_interval` (integer, default: `3600`): How often to update the countdown in seconds (60-86400). Default is 1 hour since the countdown changes daily.
+Full schema lives in [`config_schema.json`](config_schema.json):
 
-
-```
+| Key | Default | Notes |
+|---|---|---|
+| `enabled` | `false` | Master switch |
+| `display_duration` | `15` | Seconds the plugin holds the screen (1–300) |
+| `update_interval` | `3600` | Seconds between updates (60–86400). Default 1 hour since the countdown only changes daily. |
+| `high_performance_transitions` | `false` | Use a faster path for transitions on weaker Pis |
+| `transition.enabled` | `true` | Toggle transition animation between displays |
+| `transition.type` | `"redraw"` | Transition style |
+| `transition.speed` | `2` | Animation speed |
+| `text_color` | `[255, 0, 0]` | RGB color for the countdown text (default red) |
+| `tree_color` | `[0, 128, 0]` | RGB color for the programmatically-drawn tree (default green) |
+| `tree_size` | _auto_ | Override the auto-sized tree height in pixels |
 
 ## Display Behavior
 
