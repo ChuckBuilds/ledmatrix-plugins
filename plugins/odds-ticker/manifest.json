@@ -5,40 +5,50 @@
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
-  "tags": ["odds", "betting", "ticker", "sports", "nfl", "nba", "mlb", "ncaa", "scrolling"],
+  "tags": [
+    "odds",
+    "betting",
+    "ticker",
+    "sports",
+    "nfl",
+    "nba",
+    "mlb",
+    "ncaa",
+    "scrolling"
+  ],
   "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
     {
       "version": "1.1.3",
-      "ledmatrix_min": "2.0.0",
-      "released": "2026-03-29"
+      "released": "2026-03-29",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.1.2",
-      "ledmatrix_min": "2.0.0",
-      "released": "2026-03-29"
+      "released": "2026-03-29",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.1.1",
-      "ledmatrix_min": "2.0.0",
-      "released": "2026-02-23"
+      "released": "2026-02-23",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.1.0",
-      "ledmatrix_min": "2.0.0",
-      "released": "2026-02-17"
+      "released": "2026-02-17",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.0.3",
-      "ledmatrix_min": "2.0.0",
-      "released": "2026-02-12"
+      "released": "2026-02-12",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.0.2",
-      "ledmatrix_min": "2.0.0",
-      "released": "2025-10-19"
+      "released": "2025-10-19",
+      "ledmatrix_min_version": "2.0.0"
     }
   ],
   "stars": 0,
@@ -52,5 +62,9 @@
   "class_name": "OddsTickerPlugin",
   "dependencies": {
     "managers": []
-  }
+  },
+  "compatible_versions": [
+    ">=2.0.0"
+  ],
+  "entry_point": "manager.py"
 }

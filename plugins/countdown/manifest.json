@@ -24,12 +24,12 @@
     {
       "released": "2026-03-06",
       "version": "2.0.0",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-03-06",
       "version": "1.0.2",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     }
   ],
   "update_interval": 60,

@@ -20,18 +20,21 @@
   "versions": [
     {
       "version": "1.0.2",
-      "ledmatrix_min": "2.0.0",
-      "released": "2025-11-05"
+      "released": "2025-11-05",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2025-10-19",
       "version": "1.0.1",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     }
   ],
   "last_updated": "2025-11-05",
   "stars": 0,
   "downloads": 0,
   "verified": true,
-  "screenshot": ""
+  "screenshot": "",
+  "compatible_versions": [
+    ">=2.0.0"
+  ]
 }

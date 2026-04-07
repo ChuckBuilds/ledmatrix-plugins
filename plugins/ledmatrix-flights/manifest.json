@@ -1,56 +1,55 @@
 {
-    "id": "ledmatrix-flights",
-    "name": "Flight Tracker",
-    "version": "1.3.0",
-    "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
-    "author": "ChuckBuilds",
-    "entry_point": "manager.py",
-    "class_name": "FlightTrackerPlugin",
-    "api_version": "1.0.0",
-    "display_modes": [
-        "flight_tracker"
-    ],
-    "update_interval": 5,
-    "dependencies": [
-        "requests",
-        "pillow"
-    ],
-    "config_schema": "config_schema.json",
-    "requirements_file": "requirements.txt",
-    "tags": [
-        "flight",
-        "aircraft",
-        "ads-b",
-        "skyaware",
-        "aviation",
-        "map"
-    ],
-    "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-flights",
-    "website": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-flights",
-    "license": "MIT",
-    "compatible_versions": [
-        ">=2.0.0"
-    ],
-    "ledmatrix_version": "2.0.0",
-    "min_ledmatrix_version": "2.0.0",
-    "max_ledmatrix_version": "3.0.0",
-    "versions": [
-        {
-            "released": "2026-03-30",
-            "version": "1.3.0",
-            "ledmatrix_min": "2.0.0"
-        },
-        {
-            "version": "1.2.0",
-            "ledmatrix_min": "2.0.0",
-            "released": "2026-03-29",
-            "notes": "FlightWall enhancements: area mode, flight tracking, OpenSky, airline logos, animated radar"
-        },
-        {
-            "version": "1.1.0",
-            "ledmatrix_min": "2.0.0",
-            "released": "2026-02-24"
-        }
-    ],
-    "last_updated": "2026-03-30"
+  "id": "ledmatrix-flights",
+  "name": "Flight Tracker",
+  "version": "1.3.0",
+  "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
+  "author": "ChuckBuilds",
+  "entry_point": "manager.py",
+  "class_name": "FlightTrackerPlugin",
+  "api_version": "1.0.0",
+  "display_modes": [
+    "flight_tracker"
+  ],
+  "update_interval": 5,
+  "dependencies": [
+    "requests",
+    "pillow"
+  ],
+  "config_schema": "config_schema.json",
+  "requirements_file": "requirements.txt",
+  "tags": [
+    "flight",
+    "aircraft",
+    "ads-b",
+    "skyaware",
+    "aviation",
+    "map"
+  ],
+  "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-flights",
+  "website": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-flights",
+  "license": "MIT",
+  "compatible_versions": [
+    ">=2.0.0"
+  ],
+  "min_ledmatrix_version": "2.0.0",
+  "max_ledmatrix_version": "3.0.0",
+  "versions": [
+    {
+      "released": "2026-03-30",
+      "version": "1.3.0",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "version": "1.2.0",
+      "released": "2026-03-29",
+      "notes": "FlightWall enhancements: area mode, flight tracking, OpenSky, airline logos, animated radar",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "version": "1.1.0",
+      "released": "2026-02-24",
+      "ledmatrix_min_version": "2.0.0"
+    }
+  ],
+  "last_updated": "2026-03-30"
 }

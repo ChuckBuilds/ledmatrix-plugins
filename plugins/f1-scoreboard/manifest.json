@@ -31,28 +31,28 @@
   "versions": [
     {
       "version": "1.2.3",
-      "ledmatrix_min": "2.0.0",
-      "released": "2026-03-08"
+      "released": "2026-03-08",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.2.2",
-      "ledmatrix_min": "2.0.0",
-      "released": "2026-03-02"
+      "released": "2026-03-02",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.2.1",
-      "ledmatrix_min": "2.0.0",
-      "released": "2026-02-24"
+      "released": "2026-02-24",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.2.0",
-      "ledmatrix_min": "2.0.0",
-      "released": "2026-02-24"
+      "released": "2026-02-24",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.1.0",
-      "ledmatrix_min": "2.0.0",
-      "released": "2026-02-17"
+      "released": "2026-02-17",
+      "ledmatrix_min_version": "2.0.0"
     }
   ],
   "last_updated": "2026-03-08",
@@ -60,5 +60,8 @@
   "downloads": 0,
   "verified": true,
   "screenshot": "",
-  "config_schema": "config_schema.json"
+  "config_schema": "config_schema.json",
+  "compatible_versions": [
+    ">=2.0.0"
+  ]
 }
