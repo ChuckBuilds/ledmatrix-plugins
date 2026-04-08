@@ -22,10 +22,11 @@ way to install it is from the LEDMatrix web UI:
    tab
 
 If you'd rather install it from source for local development, copy this
-directory into your LEDMatrix installation's `plugins/` folder:
+directory into your LEDMatrix installation's configured plugins
+directory (default `plugin-repos/`):
 
 ```bash
-cp -r plugins/hello-world ~/LEDMatrix/plugins/
+cp -r plugins/hello-world ~/LEDMatrix/plugin-repos/
 sudo systemctl restart ledmatrix
 ```
 
@@ -96,7 +97,7 @@ sudo journalctl -u ledmatrix -f | grep hello-world
 
 You should see something like:
 
-```
+```text
 Discovered plugin: hello-world v1.0.2
 Loaded plugin: hello-world
 Hello World plugin initialized with message: 'Hello, World!'

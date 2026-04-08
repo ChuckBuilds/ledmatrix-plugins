@@ -47,7 +47,7 @@ generated from it. The most-used keys, with their actual nesting:
 | `display.min_duration` | `30` | Floor for dynamic duration (seconds) |
 | `display.max_duration` | `300` | Ceiling for dynamic duration (seconds) |
 | `display.duration_buffer` | `0.1` | Padding factor on dynamic duration |
-| `display.stock_gap` | `32` | Pixels of empty space between symbols |
+| `display.stock_gap` | `32` | Pixels of space between symbols |
 
 ### `stocks.*`
 

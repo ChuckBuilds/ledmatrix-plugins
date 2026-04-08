@@ -63,7 +63,7 @@ from it. Key options:
 | `scroll_speed` | `1` | Speed multiplier (≈ pixels per frame). Higher = faster. |
 | `scroll_delay` | `0.01` | Sleep between scroll steps in seconds. Lower = smoother but more CPU |
 | `scroll_loop` | `true` | Loop the text instead of stopping after one pass |
-| `scroll_gap_width` | `32` | Pixels of empty space between scroll loops |
+| `scroll_gap_width` | `32` | Pixels of space between scroll loops |
 | `target_fps` | `120` | Target frames per second cap for scroll rendering |
 | `text_color` | `[255, 255, 255]` | RGB text color |
 | `background_color` | `[0, 0, 0]` | RGB background color |

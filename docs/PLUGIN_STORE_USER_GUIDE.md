@@ -412,10 +412,10 @@ https://github.com/yourusername/ledmatrix-awesome-plugin
 
 # Users install with:
 1. Go to LEDMatrix web interface
-2. Click "Plugin Store" tab
-3. Scroll to "Install from URL"
+2. Click "Plugin Manager" tab
+3. Scroll to "Install from GitHub"
 4. Paste: https://github.com/yourusername/ledmatrix-awesome-plugin
-5. Click "Install from URL"
+5. Click "Install from GitHub"
 ```
 
 ## FAQ

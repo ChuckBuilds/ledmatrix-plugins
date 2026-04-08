@@ -79,7 +79,7 @@ The plugin registers granular display modes directly in `manifest.json`. The dis
 
 ### How Rotation Works
 
-The display controller rotates through all registered modes in the order they appear in `manifest.json`. Each mode can have its own `display_duration` configured in the plugin config.
+The display controller rotates through all registered modes in the order they appear in `manifest.json`. Each mode's duration is configured under `<league>.display_durations.{base,live,recent,upcoming}` (or the cross-league fallback `defaults.display_duration`).
 
 **Default Rotation Order:**
 1. `nhl_recent`
@@ -319,12 +319,12 @@ Enable the leagues you want to track:
 
 ### 3. Add Favorite Teams
 
-Add your favorite team abbreviations to the `favorite_teams` object for each league. Games involving these teams will be shown first if `prioritize_favorites` is enabled.
+Add your favorite team abbreviations to the `favorite_teams` object for each league. Games involving these teams will be shown first when `<league>.live_priority` is enabled.
 
 ### 4. Adjust Display Settings
 
-- Set `display_duration` based on how many games you expect (shorter = more games shown)
-- Adjust `update_interval` based on desired freshness (60s recommended for live games)
+- Set `<league>.display_durations.{base,live,recent,upcoming}` (or the fallback `defaults.display_duration`) based on how many games you expect (shorter = more games shown)
+- Adjust `<league>.update_intervals.{base,live,recent,upcoming,odds}` (or the fallback `defaults.update_interval_seconds`) based on desired freshness (30s live poll recommended)
 - Enable/disable display modes based on preference
 
 ### 5. Enable Plugin
@@ -341,14 +341,14 @@ Make sure `enabled: true` in the configuration and the plugin is activated in th
 - Ensure internet connection is working
 
 **Games not updating:**
-- Check `update_interval` setting
+- Check `<league>.update_intervals.*` (or `defaults.update_interval_seconds`) settings
 - Verify API is responding (check logs)
 - Try clearing cache: restart plugin or clear cache manually
 - Check background service is enabled
 
 **Favorite teams not showing:**
 - Verify team abbreviations are correct (case-sensitive)
-- Ensure `prioritize_favorites` is true
+- Ensure `<league>.live_priority` is true
 - Check that favorite teams have games in current time window
 
 **Logos not displaying:**
@@ -361,7 +361,7 @@ Make sure `enabled: true` in the configuration and the plugin is activated in th
 - Verify ESPN API includes situation data (may not be available for all leagues)
 
 **SOG not accurate:**
-- Enable `show_shots_on_goal` in config
+- Enable `defaults.show_shots_on_goal` (or the per-league override `<league>.display_options.show_shots_on_goal`) in config
 - ESPN API may have delayed SOG updates
 - Some leagues may not provide SOG data
 
@@ -500,16 +500,26 @@ This plugin uses the **ESPN public API** for all hockey data:
   "favorite_teams": {
     "nhl": ["TB", "TOR", "BOS"]
   },
+  "defaults": {
+    "update_interval_seconds": 60,
+    "display_duration": 15
+  },
   "nhl": {
     "enabled": true,
     "display_modes": {
       "live": true,
       "recent": true,
       "upcoming": false
+    },
+    "update_intervals": {
+      "base": 60,
+      "live": 30
+    },
+    "display_durations": {
+      "base": 15,
+      "live": 20
     }
-  },
-  "update_interval": 60,
-  "display_duration": 15
+  }
 }
 ```
 
@@ -532,10 +542,12 @@ This plugin uses the **ESPN public API** for all hockey data:
       "live": true,
       "recent": true,
       "upcoming": true
-    }
-  },
-  "upcoming_games_hours": 168,
-  "update_interval": 120
+    },
+    "update_intervals": {
+      "base": 120
+    },
+    "upcoming_games_hours": 168
+  }
 }
 ```
 
@@ -554,11 +566,13 @@ This plugin uses the **ESPN public API** for all hockey data:
     "ncaa_mens": ["MICH"],
     "ncaa_womens": ["WISC"]
   },
-  "prioritize_favorites": true,
-  "show_shots_on_goal": true,
-  "show_powerplay": true,
+  "defaults": {
+    "show_shots_on_goal": true,
+    "show_powerplay": true
+  },
   "nhl": {
     "enabled": true,
+    "live_priority": true,
     "display_modes": {
       "live": true,
       "recent": true,

@@ -31,7 +31,9 @@ Display static images on your LED matrix with automatic scaling, aspect ratio pr
 ```json
 {
   "enabled": true,
-  "images": ["assets/static_images/my_logo.png"],
+  "images": [
+    { "id": "logo", "path": "assets/static_images/my_logo.png" }
+  ],
   "fit_to_display": true,
   "preserve_aspect_ratio": true,
   "background_color": [0, 0, 0],
@@ -45,12 +47,12 @@ Display static images on your LED matrix with automatic scaling, aspect ratio pr
 {
   "enabled": true,
   "images": [
-    "assets/static_images/logo_a.png",
-    "assets/static_images/logo_b.png",
-    "assets/static_images/logo_c.png"
+    { "id": "logo_a", "path": "assets/static_images/logo_a.png" },
+    { "id": "logo_b", "path": "assets/static_images/logo_b.png" },
+    { "id": "logo_c", "path": "assets/static_images/logo_c.png" }
   ],
   "image_config": {
-    "mode": "single",
+    "mode": "multiple",
     "rotation_mode": "sequential"
   },
   "rotation_settings": {
@@ -85,9 +87,6 @@ from it. Key options:
 | `preserve_aspect_ratio` | `true` | Don't stretch when scaling |
 | `background_color` | `[0, 0, 0]` | RGB fill behind transparent pixels |
 | `display_duration` | `10` | Seconds the plugin holds the screen each rotation |
-
-> **Legacy:** the plugin still accepts a single `image_path` string for
-> backward compatibility, but new configs should use the `images` array.
 
 ## Usage
 
@@ -135,21 +134,8 @@ plugin.reload_image()
 ### Multiple Images
 
 Put all the images you want to cycle through into the `images` array (see
-the multi-image example above). For older configs, you can still create
-multiple plugin instances with different IDs:
-
-```json
-{
-  "static-image-1": {
-    "enabled": true,
-    "image_path": "assets/static_images/image1.png"
-  },
-  "static-image-2": {
-    "enabled": true,
-    "image_path": "assets/static_images/image2.png"
-  }
-}
-```
+the multi-image example above) and set `image_config.mode` to
+`"multiple"`.
 
 ## Troubleshooting
 
@@ -178,7 +164,9 @@ multiple plugin instances with different IDs:
 ```json
 {
   "enabled": true,
-  "image_path": "assets/static_images/company_logo.png",
+  "images": [
+    { "id": "company_logo", "path": "assets/static_images/company_logo.png" }
+  ],
   "fit_to_display": true,
   "preserve_aspect_ratio": true,
   "background_color": [0, 0, 0]
@@ -189,7 +177,9 @@ multiple plugin instances with different IDs:
 ```json
 {
   "enabled": true,
-  "image_path": "assets/static_images/pixel_art.png",
+  "images": [
+    { "id": "pixel_art", "path": "assets/static_images/pixel_art.png" }
+  ],
   "fit_to_display": false,
   "preserve_aspect_ratio": true,
   "background_color": [0, 0, 50]
@@ -200,7 +190,9 @@ multiple plugin instances with different IDs:
 ```json
 {
   "enabled": true,
-  "image_path": "assets/static_images/photo.jpg",
+  "images": [
+    { "id": "photo", "path": "assets/static_images/photo.jpg" }
+  ],
   "fit_to_display": true,
   "preserve_aspect_ratio": false,
   "background_color": [0, 0, 0]

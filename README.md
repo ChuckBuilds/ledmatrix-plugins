@@ -209,7 +209,7 @@ cp -r ledmatrix-plugins/plugins/football-scoreboard /path/to/LEDMatrix/plugin-re
 ```
 
 The directory name on the destination must match the plugin's `id` in
-its `manifest.json`. Restart the LEDMatrix display service afterwards
+its `manifest.json`. Restart the LEDMatrix display service afterward
 so the loader picks up the new plugin.
 
 > **Note:** See individual plugin README files for detailed setup

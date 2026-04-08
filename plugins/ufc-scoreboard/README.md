@@ -50,7 +50,7 @@ from it. The most-used keys:
 | `game_display_duration` | `15` | Seconds per individual fight in switch mode |
 | `ufc.enabled` | `true` | Toggle UFC content |
 | `ufc.favorite_fighters` | `[]` | Array of fighter names to prioritize (e.g. `["Jon Jones", "Islam Makhachev"]`) |
-| `ufc.favorite_weight_classes` | `[]` | Weight classes to prioritize (e.g. `["Heavyweight", "Lightweight"]`) |
+| `ufc.favorite_weight_classes` | `[]` | Weight class abbreviations to prioritize (e.g. `["HW", "LW"]`; see `config_schema.json` for the full list: `LW`, `HW`, `WW`, `MW`, `FW`, `BW`, `FLW`, `LHW`, `WSW`, `WFW`, `WBW`, `WFLW`) |
 | `ufc.display_modes.show_live` | `true` | Toggle live mode |
 | `ufc.display_modes.show_recent` | `true` | Toggle recent mode |
 | `ufc.display_modes.show_upcoming` | `true` | Toggle upcoming mode |
