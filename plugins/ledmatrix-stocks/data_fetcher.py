@@ -17,14 +17,6 @@ from urllib3.util.retry import Retry
 # Import common utilities
 from src.common import APIHelper
 
-# Import API counter function from web interface
-try:
-    from web_interface_v2 import increment_api_counter
-except ImportError:
-    def increment_api_counter(_kind: str, _count: int = 1):
-        pass
-
-
 class StockDataFetcher:
     """Handles fetching stock and cryptocurrency data from Yahoo Finance API."""
     
@@ -167,8 +159,6 @@ class StockDataFetcher:
     def _fetch_direct(self, api_symbol: str, display_symbol: str, is_crypto: bool) -> Optional[Dict[str, Any]]:
         """Fetch data directly from Yahoo Finance API."""
         try:
-            # Increment API counter
-            increment_api_counter('stocks', 1)
             
             # Build URL
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{api_symbol}"

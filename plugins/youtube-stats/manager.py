@@ -16,15 +16,6 @@ import requests
 
 from src.plugin_system.base_plugin import BasePlugin
 
-# Import the API counter function from web interface (optional)
-try:
-    from web_interface_v2 import increment_api_counter
-except ImportError:
-    # Fallback if web interface is not available
-    def increment_api_counter(kind: str, count: int = 1):
-        pass
-
-
 class YouTubeStatsPlugin(BasePlugin):
     """
     YouTube Stats plugin for LEDMatrix.
@@ -151,12 +142,6 @@ class YouTubeStatsPlugin(BasePlugin):
             response.raise_for_status()
             self._api_key_error = None  # Clear any previous error
             data = response.json()
-
-            # Increment API counter for YouTube data (optional)
-            try:
-                increment_api_counter('youtube', 1)
-            except Exception:
-                pass  # Ignore if API counter is not available
 
             if 'items' in data and data['items']:
                 channel = data['items'][0]

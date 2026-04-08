@@ -22,14 +22,6 @@ import queue
 from spotify_client import SpotifyClient
 from ytm_client import YTMClient
 
-# Import the API counter function from web interface
-try:
-    from web_interface_v2 import increment_api_counter
-except ImportError:
-    # Fallback if web interface is not available
-    def increment_api_counter(kind: str, count: int = 1):  # pylint: disable=unused-argument
-        pass
-
 # Import base plugin class
 from src.plugin_system.base_plugin import BasePlugin
 
@@ -472,10 +464,7 @@ class MusicPlugin(BasePlugin):
         try:
             response = requests.get(url, timeout=5)
             response.raise_for_status()
-            
-            # Increment API counter for music data
-            increment_api_counter('music', 1)
-            
+
             img_data = BytesIO(response.content)
             img = Image.open(img_data)
             

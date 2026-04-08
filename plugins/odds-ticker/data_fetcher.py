@@ -17,14 +17,6 @@ import logging
 import requests
 from typing import Dict, Any, List, Optional
 
-# Import the API counter function from web interface
-try:
-    from web_interface_v2 import increment_api_counter
-except ImportError:
-    # Fallback if web interface is not available
-    def increment_api_counter(kind: str, count: int = 1):
-        pass
-
 logger = logging.getLogger(__name__)
 
 
@@ -217,10 +209,6 @@ class OddsDataFetcher:
             response.raise_for_status()
             data = response.json()
             
-            # Increment API counter
-            if hasattr(self, 'increment_api_counter'):
-                self.increment_api_counter('sports', 1)
-            
             games = []
             events = data.get('events', [])
             
@@ -288,10 +276,7 @@ class OddsDataFetcher:
             response = requests.get(url, timeout=self.request_timeout)
             response.raise_for_status()
             data = response.json()
-            
-            # Increment API counter for sports data
-            increment_api_counter('sports', 1)
-            
+
             # Different path for college sports records
             if league == 'college-football':
                 record_items = data.get('team', {}).get('record', {}).get('items', [])
@@ -323,10 +308,7 @@ class OddsDataFetcher:
             response = requests.get(rankings_url, timeout=self.request_timeout)
             response.raise_for_status()
             data = response.json()
-            
-            # Increment API counter for sports data
-            increment_api_counter('sports', 1)
-            
+
             rankings = {}
             polls = data.get('polls', [])
             

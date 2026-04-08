@@ -577,10 +577,11 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
 
     def _extract_mode_type(self, display_mode: str) -> Optional[str]:
         """Extract mode type (live, recent, upcoming) from display mode string.
-        
+
         Args:
-            display_mode: Display mode string (e.g., 'ncaa_mens_live', 'ncaa_womens_recent')
-            
+            display_mode: Display mode string (e.g., 'lax_ncaa_mens_live',
+                'lax_ncaa_womens_recent')
+
         Returns:
             Mode type string ('live', 'recent', 'upcoming') or None
         """
@@ -851,11 +852,11 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                     mode_enabled = display_modes_config.get("upcoming", display_modes_config.get("show_upcoming", True))
                 
                 if mode_enabled:
-                    modes.append(f"{league_id}_{mode_type}")
+                    modes.append(f"lax_{league_id}_{mode_type}")
 
         # Default to NCAA Men's Lacrosse if no leagues enabled
         if not modes:
-            modes = ["ncaa_mens_recent", "ncaa_mens_upcoming", "ncaa_mens_live"]
+            modes = ["lax_ncaa_mens_recent", "lax_ncaa_mens_upcoming", "lax_ncaa_mens_live"]
 
         return modes
 
@@ -866,10 +867,12 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         current_mode = self.modes[self.current_mode_index]
 
-        if current_mode.startswith("ncaa_mens_"):
+        # Display modes look like "lax_ncaa_mens_recent" / "lax_ncaa_womens_live".
+        # Strip the "lax_" prefix, then take the last segment for the mode type.
+        if current_mode.startswith("lax_ncaa_mens_"):
             if not self.ncaa_mens_enabled:
                 return None
-            mode_type = current_mode.split("_", 2)[2]  # "live", "recent", "upcoming"
+            mode_type = current_mode.rsplit("_", 1)[1]  # "live", "recent", "upcoming"
             if mode_type == "live":
                 return self.ncaa_mens_live
             elif mode_type == "recent":
@@ -877,10 +880,10 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
             elif mode_type == "upcoming":
                 return self.ncaa_mens_upcoming
 
-        elif current_mode.startswith("ncaa_womens_"):
+        elif current_mode.startswith("lax_ncaa_womens_"):
             if not self.ncaa_womens_enabled:
                 return None
-            mode_type = current_mode.split("_", 2)[2]  # "live", "recent", "upcoming"
+            mode_type = current_mode.rsplit("_", 1)[1]  # "live", "recent", "upcoming"
             if mode_type == "live":
                 return self.ncaa_womens_live
             elif mode_type == "recent":
@@ -997,36 +1000,40 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                     # No content from any league
                     return False
                 
-                # Parse granular mode name: {league}_{mode_type}
-                # e.g., "ncaa_mens_recent" -> league="ncaa_mens", mode_type="recent"
-                # e.g., "ncaa_mens_recent" -> league="ncaa_mens", mode_type="recent"
-                # 
+                # Parse granular mode name: lax_{league}_{mode_type}
+                # e.g., "lax_ncaa_mens_recent" -> league="ncaa_mens", mode_type="recent"
+                # e.g., "lax_ncaa_womens_live" -> league="ncaa_womens", mode_type="live"
+                #
                 # Scalable approach: Check league registry first, then extract mode type
                 # This works for any league naming convention (underscores, dots, etc.)
                 mode_type_str = None
                 league = None
-                
+
                 # Known mode type suffixes (standardized across all sports plugins)
                 mode_suffixes = ['_live', '_recent', '_upcoming']
-                
+
+                # Strip the "lax_" plugin prefix before matching against the
+                # league registry, which is keyed by bare league id.
+                match_mode = display_mode[len("lax_"):] if display_mode.startswith("lax_") else display_mode
+
                 # Try to match against league registry first (most reliable)
-                # Check each league ID in registry to see if display_mode starts with it
+                # Check each league ID in registry to see if match_mode starts with it
                 for league_id in self._league_registry.keys():
                     for mode_suffix in mode_suffixes:
                         expected_mode = f"{league_id}{mode_suffix}"
-                        if display_mode == expected_mode:
+                        if match_mode == expected_mode:
                             league = league_id
                             mode_type_str = mode_suffix[1:]  # Remove leading underscore
                             break
                     if league:
                         break
-                
+
                 # Fallback: If no registry match, parse from the end (for backward compatibility)
                 if not league:
                     for mode_suffix in mode_suffixes:
-                        if display_mode.endswith(mode_suffix):
+                        if match_mode.endswith(mode_suffix):
                             mode_type_str = mode_suffix[1:]  # Remove leading underscore
-                            league = display_mode[:-len(mode_suffix)]  # Everything before the suffix
+                            league = match_mode[:-len(mode_suffix)]  # Everything before the suffix
                             # Validate it's a known league
                             if league in self._league_registry:
                                 break
@@ -1034,11 +1041,11 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                                 # Not a known league, try next suffix
                                 league = None
                                 mode_type_str = None
-                
+
                 if not mode_type_str or not league:
                     self.logger.warning(
                         f"Invalid granular display_mode format: {display_mode} "
-                        f"(expected format: {{league}}_{{mode_type}}, e.g., 'ncaa_mens_recent' or 'ncaa_womens_recent'). "
+                        f"(expected format: lax_{{league}}_{{mode_type}}, e.g., 'lax_ncaa_mens_recent' or 'lax_ncaa_womens_recent'). "
                         f"Valid leagues: {list(self._league_registry.keys())}"
                     )
                     return False
@@ -1520,12 +1527,12 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         league = None
         mode_type = None
         if current_mode:
-            if current_mode.startswith('ncaa_mens_'):
+            if current_mode.startswith('lax_ncaa_mens_'):
                 league = 'ncaa_mens'
-                mode_type = current_mode.split('_', 2)[2]
-            elif current_mode.startswith('ncaa_womens_'):
+                mode_type = current_mode.rsplit('_', 1)[1]
+            elif current_mode.startswith('lax_ncaa_womens_'):
                 league = 'ncaa_womens'
-                mode_type = current_mode.split('_', 2)[2]
+                mode_type = current_mode.rsplit('_', 1)[1]
         
         # Log for debugging
         self.logger.debug(f"_record_dynamic_progress: current_mode={current_mode}, display_mode={display_mode}, manager={current_manager.__class__.__name__}, manager_key={manager_key}, _last_display_mode={self._last_display_mode}")
@@ -2054,10 +2061,10 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                             or game.get("away_abbr") in favorite_teams
                             for game in live_games
                         ):
-                            live_modes.append("ncaa_mens_live")
+                            live_modes.append("lax_ncaa_mens_live")
                     else:
                         # No favorite teams configured, include if any live games exist
-                        live_modes.append("ncaa_mens_live")
+                        live_modes.append("lax_ncaa_mens_live")
         
         # Check NCAA Women's live content
         if (
@@ -2083,10 +2090,10 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                             or game.get("away_abbr") in favorite_teams
                             for game in live_games
                         ):
-                            live_modes.append("ncaa_womens_live")
+                            live_modes.append("lax_ncaa_womens_live")
                     else:
                         # No favorite teams configured, include if any live games exist
-                        live_modes.append("ncaa_womens_live")
+                        live_modes.append("lax_ncaa_womens_live")
         
         return live_modes
 
@@ -2599,18 +2606,19 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not mode_type:
             return None
         
-        # Parse granular mode name if applicable (e.g., "ncaa_mens_recent", "ncaa_womens_upcoming")
+        # Parse granular mode name if applicable
+        # (e.g., "lax_ncaa_mens_recent", "lax_ncaa_womens_upcoming")
         league = None
         if "_" in display_mode and not display_mode.startswith("lacrosse_"):
             # Granular mode: extract league
-            # Handle ncaa_mens and ncaa_womens with multiple underscores
-            if display_mode.startswith("ncaa_mens_"):
+            if display_mode.startswith("lax_ncaa_mens_"):
                 league = "ncaa_mens"
-            elif display_mode.startswith("ncaa_womens_"):
+            elif display_mode.startswith("lax_ncaa_womens_"):
                 league = "ncaa_womens"
             else:
-                # Try standard split
-                parts = display_mode.split("_", 1)
+                # Try standard split after stripping the lax_ prefix
+                bare = display_mode[len("lax_"):] if display_mode.startswith("lax_") else display_mode
+                parts = bare.split("_", 1)
                 if len(parts) == 2:
                     potential_league, potential_mode_type = parts
                     if potential_league in self._league_registry and potential_mode_type == mode_type:
@@ -2624,9 +2632,9 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                 league = self._current_display_league
             else:
                 # Try to parse from display_mode
-                if display_mode.startswith("ncaa_mens_"):
+                if display_mode.startswith("lax_ncaa_mens_"):
                     league = "ncaa_mens"
-                elif display_mode.startswith("ncaa_womens_"):
+                elif display_mode.startswith("lax_ncaa_womens_"):
                     league = "ncaa_womens"
         
         if league:

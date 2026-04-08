@@ -43,11 +43,6 @@ except ImportError:
                 draw.ellipse([x, y, x + size, y + size], outline=(255, 255, 255), width=2)
 
 # Import API counter function
-try:
-    from web_interface_v2 import increment_api_counter
-except ImportError:
-    def increment_api_counter(kind: str, count: int = 1):
-        pass
 
 class WeatherPlugin(BasePlugin):
     """
@@ -466,8 +461,6 @@ class WeatherPlugin(BasePlugin):
             raise
         geo_data = response.json()
         
-        # Increment API counter for geocoding call
-        increment_api_counter('weather', 1)
         
         if not geo_data:
             self._last_error_hint = f"Unknown: {city}, {state}"
@@ -503,8 +496,6 @@ class WeatherPlugin(BasePlugin):
             raise
         one_call_data = response.json()
         
-        # Increment API counter for weather data call
-        increment_api_counter('weather', 1)
         
         # Store current weather data (including previously-unused fields)
         current = one_call_data['current']

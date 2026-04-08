@@ -11,15 +11,6 @@ from datetime import datetime, timezone
 import requests
 from typing import Dict, Any, List, Optional
 
-# Try to import API counter from web interface
-try:
-    from web_interface_v2 import increment_api_counter
-except ImportError:
-    # Fallback if web interface is not available
-    def increment_api_counter(kind: str, count: int = 1):
-        pass
-
-
 class DataFetcher:
     """Handles fetching standings and rankings data from ESPN API."""
     
@@ -84,7 +75,6 @@ class DataFetcher:
             response.raise_for_status()
             data = response.json()
             
-            increment_api_counter('sports', 1)
             
             rankings_data = data.get('rankings', [])
             if not rankings_data:
@@ -175,7 +165,6 @@ class DataFetcher:
             response.raise_for_status()
             data = response.json()
             
-            increment_api_counter('sports', 1)
             
             rankings_data = data.get('rankings', [])
             if not rankings_data:
@@ -254,8 +243,6 @@ class DataFetcher:
             response = requests.get(scoreboard_url, timeout=self.request_timeout)
             response.raise_for_status()
             data = response.json()
-
-            increment_api_counter('sports', 1)
 
             # Extract unique teams with seeds from all tournament events
             seen_teams = {}  # team_id -> team dict
@@ -340,8 +327,6 @@ class DataFetcher:
             response = requests.get(rankings_url, timeout=self.request_timeout)
             response.raise_for_status()
             data = response.json()
-
-            increment_api_counter('sports', 1)
 
             rankings_data = data.get('rankings', [])
             if not rankings_data:
@@ -442,7 +427,6 @@ class DataFetcher:
             response.raise_for_status()
             data = response.json()
             
-            increment_api_counter('sports', 1)
             
             standings = []
             combined_from_multiple_sources = False
@@ -528,7 +512,6 @@ class DataFetcher:
             response.raise_for_status()
             data = response.json()
             
-            increment_api_counter('sports', 1)
             
             standings = []
             sports = data.get('sports', [])
@@ -662,7 +645,6 @@ class DataFetcher:
             response.raise_for_status()
             data = response.json()
             
-            increment_api_counter('sports', 1)
             
             team_data = data.get('team', {})
             stats = team_data.get('stats', [])
