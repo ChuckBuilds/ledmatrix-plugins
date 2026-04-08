@@ -64,11 +64,12 @@ service process with full file-system and network access. There is
 no sandboxing. The same warning the LEDMatrix `SECURITY.md` makes
 applies to every plugin here:
 
-- **Plugins can read and write any file the LEDMatrix process can
-  reach**, including `config_secrets.json`.
-- **Plugins can make arbitrary network requests.**
-- **Plugins are loaded into the same Python process as the display
-  loop**, so a crash in a plugin can affect the whole display.
+- **Any plugin can read and write any file the LEDMatrix process
+  can reach**, including `config_secrets.json`.
+- **Arbitrary outbound network requests are possible from any
+  loaded plugin.**
+- **Because plugins run in the same Python process as the display
+  loop**, a crash in one plugin can take down the whole display.
 
 The official plugins in this repo go through a manual review (see
 [VERIFICATION.md](VERIFICATION.md)) before being added to the

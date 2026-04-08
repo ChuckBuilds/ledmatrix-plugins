@@ -18,7 +18,7 @@ documentation fixes all help.
 
 ## Repository layout
 
-```
+```text
 ledmatrix-plugins/
 ├── plugins/
 │   └── <plugin-id>/
