@@ -156,18 +156,24 @@ class FlightRenderer:
         return self.dm.matrix.height
 
     def _load_fonts(self) -> None:
-        """Load three named font tiers scaled to display height (overridable via config.fonts)."""
+        """Load three named font tiers scaled to display size (overridable via config.fonts).
+
+        Tier picks consider BOTH height and width — the widescreen layout at 64px
+        height on a 128-wide panel can't afford a 16pt font_large, because the
+        info zone is only 50% of the width (64px, ~4 chars at 16pt).
+        """
         h = self.height
-        if h >= 64:
+        w = self.width
+        if h >= 64 and w >= 192:
             large_sz, medium_sz, small_sz = 16, 10, 8
             small_face = "PressStart2P-Regular.ttf"
             self.sprite_scale = 2
         elif h >= 48:
             large_sz, medium_sz, small_sz = 10, 8, 6
             small_face = "4x6-font.ttf"
-            self.sprite_scale = 1
+            self.sprite_scale = 1 if w < 192 else 2
         else:
-            # Tiny display (64x32 or smaller): keep medium and small visually distinct
+            # Tiny display (64x32 or similar)
             large_sz, medium_sz, small_sz = 8, 8, 6
             small_face = "4x6-font.ttf"
             self.sprite_scale = 1
@@ -395,11 +401,12 @@ class FlightRenderer:
         # Build priority-ordered info rows; drop lowest priority if they don't fit.
         route = f"{origin}-{dest}" if origin != "---" and dest != "---" else "---"
         name_text = self._truncate(draw, null_safe(airline_name), self.font_large, info_w - 4)
+        route_text = self._truncate(draw, route, self.font_large, info_w - 4)
         type_text = self._truncate(draw, null_safe(atype, default="---"), self.font_large, info_w - 4)
 
         info_candidates = [
             ("name", self.font_large, name_text, self.header_color),
-            ("route", self.font_large, route, self.header_color),
+            ("route", self.font_large, route_text, self.header_color),
             ("atype", self.font_large, type_text, self.header_color),
         ]
         if origin_full:
