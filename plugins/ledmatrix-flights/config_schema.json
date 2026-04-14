@@ -327,6 +327,38 @@
       "maximum": 1280,
       "default": 256
     },
+    "fonts": {
+      "type": "object",
+      "title": "Font Size Overrides",
+      "description": "Optional overrides for the three font tiers. Leave values at 0 to use the auto-sized defaults based on display height.",
+      "properties": {
+        "large_size": {
+          "type": "integer",
+          "title": "Large Font Size (px)",
+          "description": "Override size for the large font tier. 0 = auto.",
+          "minimum": 0,
+          "maximum": 32,
+          "default": 0
+        },
+        "medium_size": {
+          "type": "integer",
+          "title": "Medium Font Size (px)",
+          "description": "Override size for the medium font tier. 0 = auto.",
+          "minimum": 0,
+          "maximum": 32,
+          "default": 0
+        },
+        "small_size": {
+          "type": "integer",
+          "title": "Small Font Size (px)",
+          "description": "Override size for the small font tier. 0 = auto.",
+          "minimum": 0,
+          "maximum": 32,
+          "default": 0
+        }
+      },
+      "additionalProperties": false
+    },
     "airport_color": {
       "type": "array",
       "title": "Airport Name Color",
@@ -698,6 +730,7 @@
     "vr_unit",
     "layout",
     "widescreen_threshold",
+    "fonts",
     "header_color",
     "airport_color",
     "metric_color",

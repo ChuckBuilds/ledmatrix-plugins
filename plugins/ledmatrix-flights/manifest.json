@@ -35,6 +35,12 @@
   "max_ledmatrix_version": "3.0.0",
   "versions": [
     {
+      "released": "2026-04-14",
+      "version": "1.4.0",
+      "notes": "Scale flight detail/area/stats layouts across 32/48/64+ px heights via adaptive row dropping; add optional fonts.* size overrides",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "released": "2026-03-30",
       "version": "1.3.0",
       "ledmatrix_min_version": "2.0.0"
@@ -51,5 +57,5 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-03-30"
+  "last_updated": "2026-04-14"
 }

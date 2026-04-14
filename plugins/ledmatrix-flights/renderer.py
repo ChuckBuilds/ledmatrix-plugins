@@ -132,6 +132,18 @@ class FlightRenderer:
         except (TypeError, ValueError):
             self._wide_threshold = self.WIDE_THRESHOLD
 
+        # Optional font size overrides (0 = auto)
+        fonts_cfg = config.get("fonts") or {}
+        def _opt_int(v):
+            try:
+                n = int(v)
+                return n if n > 0 else None
+            except (TypeError, ValueError):
+                return None
+        self._font_override_large = _opt_int(fonts_cfg.get("large_size"))
+        self._font_override_medium = _opt_int(fonts_cfg.get("medium_size"))
+        self._font_override_small = _opt_int(fonts_cfg.get("small_size"))
+
         # Load fonts scaled to display
         self._load_fonts()
 
@@ -144,24 +156,59 @@ class FlightRenderer:
         return self.dm.matrix.height
 
     def _load_fonts(self) -> None:
-        """Load three named font tiers scaled to display height."""
+        """Load three named font tiers scaled to display height (overridable via config.fonts)."""
         h = self.height
         if h >= 64:
-            self.font_large = _ttf("PressStart2P-Regular.ttf", 16)
-            self.font_medium = _ttf("PressStart2P-Regular.ttf", 10)
-            self.font_small = _ttf("PressStart2P-Regular.ttf", 8)
+            large_sz, medium_sz, small_sz = 16, 10, 8
+            small_face = "PressStart2P-Regular.ttf"
             self.sprite_scale = 2
         elif h >= 48:
-            self.font_large = _ttf("PressStart2P-Regular.ttf", 10)
-            self.font_medium = _ttf("PressStart2P-Regular.ttf", 8)
-            self.font_small = _ttf("4x6-font.ttf", 6)
+            large_sz, medium_sz, small_sz = 10, 8, 6
+            small_face = "4x6-font.ttf"
             self.sprite_scale = 1
         else:
-            # Tiny display (64×32 or smaller)
-            self.font_large = _ttf("PressStart2P-Regular.ttf", 8)
-            self.font_medium = _ttf("PressStart2P-Regular.ttf", 6)
-            self.font_small = _ttf("4x6-font.ttf", 6)
+            # Tiny display (64x32 or smaller): keep medium and small visually distinct
+            large_sz, medium_sz, small_sz = 8, 8, 6
+            small_face = "4x6-font.ttf"
             self.sprite_scale = 1
+
+        if self._font_override_large is not None:
+            large_sz = self._font_override_large
+        if self._font_override_medium is not None:
+            medium_sz = self._font_override_medium
+        if self._font_override_small is not None:
+            small_sz = self._font_override_small
+
+        self.font_large = _ttf("PressStart2P-Regular.ttf", large_sz)
+        self.font_medium = _ttf("PressStart2P-Regular.ttf", medium_sz)
+        # Small tier: 4x6 below 8px, PressStart2P at 8+
+        if small_sz >= 8:
+            self.font_small = _ttf("PressStart2P-Regular.ttf", small_sz)
+        else:
+            self.font_small = _ttf(small_face, small_sz)
+
+    # --- Row fitting helper ---
+
+    def _row_plan(self, rows, avail_h, gap=0):
+        """Given an ordered list of (key, font) tuples, return the prefix whose
+        summed line heights (+ gap between rows) fits in avail_h. Rows are assumed
+        to be ordered by priority (highest first). Always returns at least the
+        first row so the layout is never blank.
+
+        Returns: (selected_rows, total_height)
+        """
+        if not rows:
+            return [], 0
+        selected = []
+        total = 0
+        for i, (_, font) in enumerate(rows):
+            lh = self._lh(font)
+            candidate_total = total + lh + (gap if selected else 0)
+            if candidate_total > avail_h and selected:
+                break
+            selected.append(rows[i])
+            total = candidate_total
+        return selected, total
 
     # --- Drawing primitives ---
 
@@ -345,34 +392,35 @@ class FlightRenderer:
         except Exception:
             pass
 
-        large_lh = self._lh(self.font_large)
-        small_lh = self._lh(self.font_small)
-
-        # Distribute rows: 3 large + 2 small, vertically centered
-        rows_h = large_lh * 3 + small_lh * 2
-        y = max(1, (h - rows_h) // 2)
-
-        # Row 1: Airline name (truncated to info zone width)
-        name_text = self._truncate(draw, null_safe(airline_name), self.font_large, info_w - 4)
-        self._draw(draw, name_text, (info_x + 2, y), self.font_large, self.header_color)
-        y += large_lh
-        # Row 2: Route IATA-IATA
+        # Build priority-ordered info rows; drop lowest priority if they don't fit.
         route = f"{origin}-{dest}" if origin != "---" and dest != "---" else "---"
-        self._draw(draw, route, (info_x + 2, y), self.font_large, self.header_color)
-        y += large_lh
-        # Row 3: Aircraft type
+        name_text = self._truncate(draw, null_safe(airline_name), self.font_large, info_w - 4)
         type_text = self._truncate(draw, null_safe(atype, default="---"), self.font_large, info_w - 4)
-        self._draw(draw, type_text, (info_x + 2, y), self.font_large, self.header_color)
-        y += large_lh
-        # Row 4: Origin full name
+
+        info_candidates = [
+            ("name", self.font_large, name_text, self.header_color),
+            ("route", self.font_large, route, self.header_color),
+            ("atype", self.font_large, type_text, self.header_color),
+        ]
         if origin_full:
-            self._draw(draw, self._truncate(draw, origin_full, self.font_small, info_w - 4),
-                       (info_x + 2, y), self.font_small, self.airport_color)
-        y += small_lh
-        # Row 5: Dest full name
+            info_candidates.append(("origin_full", self.font_small,
+                                    self._truncate(draw, origin_full, self.font_small, info_w - 4),
+                                    self.airport_color))
         if dest_full:
-            self._draw(draw, self._truncate(draw, dest_full, self.font_small, info_w - 4),
-                       (info_x + 2, y), self.font_small, self.airport_color)
+            info_candidates.append(("dest_full", self.font_small,
+                                    self._truncate(draw, dest_full, self.font_small, info_w - 4),
+                                    self.airport_color))
+
+        plan_input = [(key, font) for (key, font, _text, _color) in info_candidates]
+        selected, rows_h = self._row_plan(plan_input, h - 2)
+        selected_keys = {k for (k, _f) in selected}
+
+        y = max(1, (h - rows_h) // 2)
+        for key, font, text, color in info_candidates:
+            if key not in selected_keys:
+                continue
+            self._draw(draw, text, (info_x + 2, y), font, color)
+            y += self._lh(font)
 
         # --- METRICS ZONE ---
         alt_v = self._fmt_alt(_get("altitude"))
@@ -380,16 +428,19 @@ class FlightRenderer:
         trk_v = self._fmt_trk(_get("heading"))
         vr_v = self._fmt_vr(_get("vertical_rate"), arrows=False)
 
-        metric_rows = [
+        all_metrics = [
             f"Alt: {alt_v}",
             f"Spd: {spd_v}",
             f"Trk: {trk_v}",
             f"Vr: {vr_v}",
         ]
+        # Fit as many metric rows as the height allows (min 1)
+        metric_lh = self._lh(self.font_small)
+        max_metric_rows = max(1, min(len(all_metrics), h // max(1, metric_lh)))
+        metric_rows = all_metrics[:max_metric_rows]
         row_h = h // len(metric_rows)
         for i, text in enumerate(metric_rows):
             my = i * row_h + (row_h - self._fh(self.font_small)) // 2
-            # Right-align within metrics zone
             tw = self._tw(draw, text, self.font_small)
             mx = metric_x + metric_w - tw - 2
             self._draw(draw, text, (max(metric_x, mx), my), self.font_small, self.metric_color)
@@ -454,37 +505,31 @@ class FlightRenderer:
         atype = _get("aircraft_type", "") or "---"
         callsign = tf.identifier
 
-        med_lh = self._lh(self.font_medium)
-        sm_lh = self._lh(self.font_small)
-
-        # 5 rows: 3 medium + 2 small, centered vertically
-        rows_h = med_lh * 3 + sm_lh * 2
-        y = max(0, (h - rows_h) // 2)
-
-        # Row 1: Callsign
-        self._draw(draw, callsign, (text_x + 2, y), self.font_medium, self.header_color)
-        y += med_lh
-
-        # Row 2: Route IATA-IATA
+        # Priority-ordered rows; drop lowest priority if they don't fit.
         route = f"{origin}-{dest}" if origin != "---" and dest != "---" else "---"
-        self._draw(draw, route, (text_x + 2, y), self.font_medium, self.header_color)
-        y += med_lh
-
-        # Row 3: Aircraft type (short, max 8 chars)
         atype_short = atype[:8] if atype != "---" else "---"
-        self._draw(draw, atype_short, (text_x + 2, y), self.font_medium, self.header_color)
-        y += med_lh
-
-        # Row 4: Alt + Spd packed
         alt_v = self._fmt_alt(_get("altitude"))
         spd_v = self._fmt_spd(_get("speed"))
-        self._draw(draw, f"Alt:{alt_v},Spd:{spd_v}", (text_x + 2, y), self.font_small, self.metric_color)
-        y += sm_lh
-
-        # Row 5: Trk + Vr packed
         trk_v = self._fmt_trk(_get("heading"))
         vr_v = self._fmt_vr(_get("vertical_rate"), arrows=False)
-        self._draw(draw, f"Trk:{trk_v},Vr:{vr_v}", (text_x + 2, y), self.font_small, self.metric_color)
+
+        candidates = [
+            ("callsign", self.font_medium, callsign, self.header_color),
+            ("route", self.font_medium, route, self.header_color),
+            ("alt_spd", self.font_small, f"Alt:{alt_v},Spd:{spd_v}", self.metric_color),
+            ("atype", self.font_medium, atype_short, self.header_color),
+            ("trk_vr", self.font_small, f"Trk:{trk_v},Vr:{vr_v}", self.metric_color),
+        ]
+        plan_input = [(k, f) for (k, f, _t, _c) in candidates]
+        selected, rows_h = self._row_plan(plan_input, h)
+        selected_keys = {k for (k, _f) in selected}
+
+        y = max(0, (h - rows_h) // 2)
+        for key, font, text, color in candidates:
+            if key not in selected_keys:
+                continue
+            self._draw(draw, text, (text_x + 2, y), font, color)
+            y += self._lh(font)
 
         self.dm.image = img.copy()
         self.dm.update_display()
@@ -527,32 +572,43 @@ class FlightRenderer:
 
         rx = logo_w + 1  # right zone text start
 
-        # --- Row 1: Callsign (altitude-colored) + counter ---
+        # Adaptive top rows: callsign (P1), route/atype (P2), distance (P3). Bottom
+        # metrics row is always drawn bottom-anchored and must not collide.
+        top_candidates = [
+            ("callsign", self.font_medium),
+            ("route", self.font_medium),
+            ("dist", self.font_medium),
+        ]
+        bottom_reserved = self._fh(self.font_small) + 3  # bottom row + margin
+        top_avail = h - 2 - bottom_reserved
+        selected, _ = self._row_plan(top_candidates, top_avail, gap=0)
+        selected_keys = {k for (k, _f) in selected}
+
         y = 2
-        self._draw(draw, callsign, (rx, y), self.font_medium, color)
-        counter = f"{index + 1}/{total_count}"
-        cw = self._tw(draw, counter, self.font_small)
-        self._draw(draw, counter, (w - cw - 2, y + 1), self.font_small, (80, 80, 80))
+        if "callsign" in selected_keys:
+            self._draw(draw, callsign, (rx, y), self.font_medium, color)
+            counter = f"{index + 1}/{total_count}"
+            cw = self._tw(draw, counter, self.font_small)
+            self._draw(draw, counter, (w - cw - 2, y + 1), self.font_small, (80, 80, 80))
+            y += self._lh(self.font_medium)
 
-        # --- Row 2: Route (blue) or aircraft type ---
-        y = 2 + self._lh(self.font_medium) + 1
-        if origin and destination:
-            route = f"{origin} > {destination}"
-            self._draw(draw, route, (rx, y), self.font_medium, self.route_color)
-            # Aircraft type after route if room
-            if atype and atype != "Unknown":
-                rw_used = self._tw(draw, route, self.font_medium) + 8
-                if rx + rw_used + self._tw(draw, atype, self.font_small) < w - 2:
-                    self._draw(draw, atype, (rx + rw_used, y + 2), self.font_small, (100, 100, 100))
-        elif atype and atype != "Unknown":
-            self._draw(draw, atype, (rx, y), self.font_medium, (100, 100, 100))
+        if "route" in selected_keys:
+            if origin and destination:
+                route = f"{origin} > {destination}"
+                self._draw(draw, route, (rx, y), self.font_medium, self.route_color)
+                if atype and atype != "Unknown":
+                    rw_used = self._tw(draw, route, self.font_medium) + 8
+                    if rx + rw_used + self._tw(draw, atype, self.font_small) < w - 2:
+                        self._draw(draw, atype, (rx + rw_used, y + 2), self.font_small, (100, 100, 100))
+            elif atype and atype != "Unknown":
+                self._draw(draw, atype, (rx, y), self.font_medium, (100, 100, 100))
+            y += self._lh(self.font_medium)
 
-        # --- Row 3: Distance (amber, with label) ---
-        y = 2 + (self._lh(self.font_medium) + 1) * 2
-        self._draw(draw, "DST", (rx, y), self.font_small, (255, 255, 255))
-        self._draw(draw, dist, (rx + self._tw(draw, "DST ", self.font_small), y), self.font_medium, (220, 170, 0))
+        if "dist" in selected_keys:
+            self._draw(draw, "DST", (rx, y), self.font_small, (255, 255, 255))
+            self._draw(draw, dist, (rx + self._tw(draw, "DST ", self.font_small), y), self.font_medium, (220, 170, 0))
 
-        # --- Row 4: Labeled metrics in small font (clip to available width) ---
+        # --- Bottom row: Labeled metrics in small font (clip to available width) ---
         y = h - self._fh(self.font_small) - 2
         label_color = (255, 255, 255)
         value_color = (180, 180, 180)
@@ -614,30 +670,42 @@ class FlightRenderer:
 
         rx = logo_w + 1
 
-        # --- Row 1: Title badge + callsign ---
+        # Adaptive top rows: title+callsign (P1), hero stat (P1), route/atype (P3).
+        # Bottom metrics row is always drawn bottom-anchored.
+        top_candidates = [
+            ("title", self.font_medium),
+            ("hero", self.font_medium),
+            ("route", self.font_medium),
+        ]
+        bottom_reserved = self._fh(self.font_small) + 3
+        top_avail = h - 2 - bottom_reserved
+        selected, _ = self._row_plan(top_candidates, top_avail, gap=0)
+        selected_keys = {k for (k, _f) in selected}
+
         y = 2
-        self._draw(draw, title, (rx, y), self.font_medium, title_color)
-        cs_x = rx + self._tw(draw, title, self.font_medium) + 6
-        self._draw(draw, callsign, (cs_x, y), self.font_medium, color)
+        if "title" in selected_keys:
+            self._draw(draw, title, (rx, y), self.font_medium, title_color)
+            cs_x = rx + self._tw(draw, title, self.font_medium) + 6
+            self._draw(draw, callsign, (cs_x, y), self.font_medium, color)
+            y += self._lh(self.font_medium)
 
-        # --- Row 2: Hero stat (large, colored) ---
-        y = 2 + self._lh(self.font_medium) + 2
-        self._draw(draw, stat_label, (rx, y), self.font_small, (255, 255, 255))
-        lbl_w = self._tw(draw, stat_label + " ", self.font_small)
-        self._draw(draw, stat_value, (rx + lbl_w, y), self.font_medium, title_color)
+        if "hero" in selected_keys:
+            self._draw(draw, stat_label, (rx, y), self.font_small, (255, 255, 255))
+            lbl_w = self._tw(draw, stat_label + " ", self.font_small)
+            self._draw(draw, stat_value, (rx + lbl_w, y), self.font_medium, title_color)
+            y += self._lh(self.font_medium)
 
-        # --- Row 3: Route or aircraft type ---
-        y = 2 + (self._lh(self.font_medium) + 2) * 2
-        if origin and destination and origin != "Unknown" and destination != "Unknown":
-            self._draw(draw, f"{origin} > {destination}", (rx, y), self.font_medium, self.route_color)
-            if aircraft_type and aircraft_type != "Unknown":
-                rt_w = self._tw(draw, f"{origin} > {destination}", self.font_medium) + 8
-                if rx + rt_w + self._tw(draw, aircraft_type, self.font_small) < w - 2:
-                    self._draw(draw, aircraft_type, (rx + rt_w, y + 2), self.font_small, (130, 130, 130))
-        elif aircraft_type and aircraft_type != "Unknown":
-            self._draw(draw, aircraft_type, (rx, y), self.font_medium, (130, 130, 130))
+        if "route" in selected_keys:
+            if origin and destination and origin != "Unknown" and destination != "Unknown":
+                self._draw(draw, f"{origin} > {destination}", (rx, y), self.font_medium, self.route_color)
+                if aircraft_type and aircraft_type != "Unknown":
+                    rt_w = self._tw(draw, f"{origin} > {destination}", self.font_medium) + 8
+                    if rx + rt_w + self._tw(draw, aircraft_type, self.font_small) < w - 2:
+                        self._draw(draw, aircraft_type, (rx + rt_w, y + 2), self.font_small, (130, 130, 130))
+            elif aircraft_type and aircraft_type != "Unknown":
+                self._draw(draw, aircraft_type, (rx, y), self.font_medium, (130, 130, 130))
 
-        # --- Row 4: Complementary metrics (exclude the hero stat to avoid duplication) ---
+        # --- Bottom row: Complementary metrics (exclude the hero stat) ---
         y = h - self._fh(self.font_small) - 2
         label_color = (255, 255, 255)
         value_color = (180, 180, 180)
