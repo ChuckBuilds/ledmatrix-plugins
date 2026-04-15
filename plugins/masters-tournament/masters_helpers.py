@@ -455,7 +455,7 @@ def get_detailed_phase(
 
         if date > end_e:
             # Use calendar-day comparison in EDT so post_tournament_display_days
-            # means N full calendar days, not N×24 hours from the padded end
+            # means N full calendar days, not N x 24 hours from the padded end
             # timestamp (which includes up to +23:59:59 beyond the final play day).
             days_past = (date.date() - end_e.date()).days
             if days_past <= post_tournament_display_days:

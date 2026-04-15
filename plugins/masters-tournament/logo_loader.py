@@ -10,6 +10,7 @@ Handles loading, caching, and resizing of all Masters Tournament assets:
 - Country flags for player cards
 """
 
+import hashlib
 import logging
 import os
 from io import BytesIO
@@ -157,14 +158,20 @@ class MastersLogoLoader:
             img = img.crop((0, 0, w, w))
         return img.resize((size, size), Image.Resampling.LANCZOS)
 
+    @staticmethod
+    def _url_key(url: str) -> str:
+        """Return a short stable identifier for a URL (no query params logged)."""
+        return hashlib.sha256(url.encode()).hexdigest()[:12]
+
     def get_player_headshot(self, player_id: str, url: Optional[str], max_size: int = 24) -> Optional[Image.Image]:
         """Get player headshot, crop-to-fill so it fills the display box."""
         # Use player_id as the cache/disk key when available; fall back to a
-        # URL-derived key so callers with a valid URL but no id still get images.
+        # stable hash of the URL so callers with a valid URL but no id still get images.
         if not player_id and not url:
             return None
 
-        cache_key = f"player_{player_id or url}_{max_size}"
+        stable_key = player_id if player_id else self._url_key(url)
+        cache_key = f"player_{stable_key}_{max_size}"
         if cache_key in self._cache:
             return self._cache[cache_key]
 
@@ -195,7 +202,7 @@ class MastersLogoLoader:
                 self._cache[cache_key] = img
                 return img
             except Exception as e:
-                logger.warning(f"Failed to download headshot for {player_id or url}: {e}")
+                logger.warning(f"Failed to download headshot for {stable_key}: {e}")
 
         return None
 
