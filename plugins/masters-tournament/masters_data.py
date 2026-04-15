@@ -277,9 +277,14 @@ class MastersDataSource:
         start = _masters_thursday(year)
         if now > start + timedelta(days=4):
             start = _masters_thursday(year + 1)
-        # Cover all four calendar days (Thu-Sun) through end-of-day, matching
-        # the normalization applied to ESPN's parsed endDate.
-        end = start + timedelta(days=3, hours=23, minutes=59, seconds=59)
+        # _masters_thursday returns noon UTC (08:00 EDT). Normalise to midnight
+        # EDT (04:00 UTC) before computing the end so that +3 days +23:59:59
+        # lands on Sunday 23:59:59 EDT (April 12) rather than Monday morning
+        # UTC (April 13). This keeps end_e.date() == Sunday in EDT, matching
+        # the ESPN-parsed endDate path and making post-tournament day counting
+        # come out correctly.
+        thu_midnight_edt = start.replace(hour=4, minute=0, second=0)
+        end = thu_midnight_edt + timedelta(days=3, hours=23, minutes=59, seconds=59)
         return {
             "name": "Masters Tournament",
             "start_date": start,

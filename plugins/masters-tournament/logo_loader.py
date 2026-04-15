@@ -159,16 +159,18 @@ class MastersLogoLoader:
 
     def get_player_headshot(self, player_id: str, url: Optional[str], max_size: int = 24) -> Optional[Image.Image]:
         """Get player headshot, crop-to-fill so it fills the display box."""
-        if not player_id:
+        # Use player_id as the cache/disk key when available; fall back to a
+        # URL-derived key so callers with a valid URL but no id still get images.
+        if not player_id and not url:
             return None
 
-        cache_key = f"player_{player_id}_{max_size}"
+        cache_key = f"player_{player_id or url}_{max_size}"
         if cache_key in self._cache:
             return self._cache[cache_key]
 
-        # Check disk cache
-        player_path = self.players_dir / f"{player_id}.png"
-        if player_path.exists():
+        # Check disk cache (only when we have a stable player_id filename)
+        player_path = self.players_dir / f"{player_id}.png" if player_id else None
+        if player_path and player_path.exists():
             try:
                 img = Image.open(player_path).convert("RGBA")
                 img = self._crop_to_fill(img, max_size)
@@ -186,13 +188,14 @@ class MastersLogoLoader:
                 response.raise_for_status()
 
                 img = Image.open(BytesIO(response.content)).convert("RGBA")
-                img.save(player_path, "PNG")
+                if player_path:
+                    img.save(player_path, "PNG")
 
                 img = self._crop_to_fill(img, max_size)
                 self._cache[cache_key] = img
                 return img
             except Exception as e:
-                logger.debug(f"Failed to download headshot for {player_id}: {e}")
+                logger.warning(f"Failed to download headshot for {player_id or url}: {e}")
 
         return None
 

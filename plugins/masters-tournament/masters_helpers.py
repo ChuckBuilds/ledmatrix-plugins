@@ -453,8 +453,13 @@ def get_detailed_phase(
                 return "tournament-live"
             return "tournament-evening"
 
-        if date > end_e and (date - end_e) <= timedelta(days=post_tournament_display_days):
-            return "post-tournament"
+        if date > end_e:
+            # Use calendar-day comparison in EDT so post_tournament_display_days
+            # means N full calendar days, not N×24 hours from the padded end
+            # timestamp (which includes up to +23:59:59 beyond the final play day).
+            days_past = (date.date() - end_e.date()).days
+            if days_past <= post_tournament_display_days:
+                return "post-tournament"
 
         delta = start_e - date
         if timedelta(0) < delta <= timedelta(days=3):
