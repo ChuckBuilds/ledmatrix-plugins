@@ -18,7 +18,8 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 import requests
-from PIL import Image, ImageDraw, ImageFont
+import requests.exceptions
+from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
 from masters_helpers import ESPN_HEADSHOT_URL, ESPN_PLAYER_IDS, get_espn_headshot_url
 
@@ -201,7 +202,7 @@ class MastersLogoLoader:
                 img = self._crop_to_fill(img, max_size)
                 self._cache[cache_key] = img
                 return img
-            except Exception as e:
+            except (requests.exceptions.RequestException, UnidentifiedImageError, OSError) as e:
                 logger.warning(f"Failed to download headshot for {stable_key}: {e}")
 
         return None
