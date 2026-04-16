@@ -171,6 +171,8 @@ class MastersTournamentPlugin(BasePlugin):
 
     PHASE_MODES = {
         "off-season": [
+            "masters_countdown",
+            "masters_countdown",       # Repeated for extra screen time
             "masters_fun_facts",
             "masters_past_champions",
             "masters_course_tour",
