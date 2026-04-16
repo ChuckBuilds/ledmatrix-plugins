@@ -283,7 +283,7 @@ class MastersDataSource:
         # UTC (April 13). This keeps end_e.date() == Sunday in EDT, matching
         # the ESPN-parsed endDate path and making post-tournament day counting
         # come out correctly.
-        thu_midnight_edt = start.replace(hour=4, minute=0, second=0)
+        thu_midnight_edt = start.replace(hour=4, minute=0, second=0, microsecond=0)
         end = thu_midnight_edt + timedelta(days=3, hours=23, minutes=59, seconds=59)
         return {
             "name": "Masters Tournament",
