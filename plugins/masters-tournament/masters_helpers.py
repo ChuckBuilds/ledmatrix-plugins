@@ -341,6 +341,31 @@ def calculate_scoring_average(rounds: List[Optional[int]]) -> Optional[float]:
     return sum(valid_rounds) / len(valid_rounds)
 
 
+def _masters_thursday(year: int) -> datetime:
+    """Return the Masters Tournament start date (Thursday) for the given year.
+
+    The Masters always starts on the Thursday that falls between April 6 and
+    April 12 inclusive — the first full Mon-Sun week of April that contains
+    that Thursday.  Verified against historical data:
+
+        2022 (Apr 1 = Fri) -> Apr  7
+        2023 (Apr 1 = Sat) -> Apr  6
+        2024 (Apr 1 = Mon) -> Apr 11
+        2025 (Apr 1 = Tue) -> Apr 10
+        2026 (Apr 1 = Wed) -> Apr  9
+        2027 (Apr 1 = Thu) -> Apr  8
+        2028 (Apr 1 = Sat) -> Apr  6
+
+    Returns a timezone-aware datetime at 12:00 UTC (approx. 8 am ET tee-off).
+    """
+    for day in range(6, 13):  # April 6 .. April 12 inclusive
+        d = datetime(year, 4, day, 12, 0, 0, tzinfo=timezone.utc)
+        if d.weekday() == 3:  # Thursday = 3
+            return d
+    # Unreachable — there is always exactly one Thursday in any 7-day span.
+    raise RuntimeError(f"No Thursday found between April 6-12 for year {year}")
+
+
 def _to_eastern(date: Optional[datetime]) -> datetime:
     """Normalize a datetime to Eastern (Augusta) time."""
     if date is None:
@@ -373,12 +398,19 @@ def get_tournament_phase(
             return "practice"
         return "off-season"
 
-    if date.month == 4:
-        if 7 <= date.day <= 9:
-            return "practice"
-        elif 10 <= date.day <= 13:
-            return "tournament"
+    # Fallback: compute the correct Thursday dynamically.
+    thu = _masters_thursday(date.year)
+    thu_e = _to_eastern(thu)
+    thu_date = thu_e.date()
+    start_date_d = thu_date
+    end_date_d   = thu_date + timedelta(days=3)
+    practice_start = thu_date - timedelta(days=3)
+    date_d = date.date()
 
+    if start_date_d <= date_d <= end_date_d:
+        return "tournament"
+    if practice_start <= date_d < start_date_d:
+        return "practice"
     return "off-season"
 
 
@@ -386,6 +418,7 @@ def get_detailed_phase(
     date: Optional[datetime] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
+    post_tournament_display_days: int = 1,
 ) -> str:
     """
     Determine detailed tournament phase including time-of-day awareness.
@@ -398,7 +431,8 @@ def get_detailed_phase(
         "tournament-live"     - Tournament day, play in progress (~8am-7pm ET)
         "tournament-evening"  - Tournament day, play finished (~7pm-midnight ET)
         "tournament-overnight"- Tournament day, overnight (midnight-6am ET)
-        "post-tournament"     - Sunday evening / Monday after Masters
+        "post-tournament"     - Sunday evening through N days after Masters
+                                (controlled by post_tournament_display_days)
     """
     date = _to_eastern(date)
 
@@ -419,7 +453,7 @@ def get_detailed_phase(
                 return "tournament-live"
             return "tournament-evening"
 
-        if date > end_e and (date - end_e) <= timedelta(days=1):
+        if date > end_e and (date - end_e) <= timedelta(days=post_tournament_display_days):
             return "post-tournament"
 
         delta = start_e - date
@@ -429,39 +463,43 @@ def get_detailed_phase(
             return "pre-tournament"
         return "off-season"
 
-    month = date.month
-    day = date.day
+    # Fallback: compute the correct tournament window dynamically using the
+    # April 6-12 Thursday rule so this stays accurate in future years.
+    # Use calendar-day comparisons so early-morning hours on tournament days
+    # (e.g. 6 am Thursday) are not misclassified as "practice".
     hour = date.hour
+    thu = _masters_thursday(date.year)
+    thu_e = _to_eastern(thu)
+    thu_date = thu_e.date()
+    sun_date = thu_date + timedelta(days=3)      # Sunday = last day
+    mon_date = thu_date - timedelta(days=3)      # Monday = first practice day
+    date_date = date.date()
 
-    # Masters is typically the second full week of April
-    # Practice: Mon-Wed, Tournament: Thu-Sun
-    # Adjust these dates each year as needed
-    if month == 4:
-        # Week before Masters (build anticipation)
-        if 1 <= day <= 6:
-            return "pre-tournament"
+    # Tournament days: Thursday through Sunday (calendar day)
+    if thu_date <= date_date <= sun_date:
+        if hour < 6:
+            return "tournament-overnight"
+        if hour < 8:
+            return "tournament-morning"
+        if hour < 19:
+            return "tournament-live"
+        return "tournament-evening"
 
-        # Practice rounds
-        if 7 <= day <= 9:
-            return "practice"
+    # Post-tournament: N days after Sunday
+    if timedelta(0) < (date_date - sun_date) <= timedelta(days=post_tournament_display_days):
+        return "post-tournament"
 
-        # Tournament days (Thu=10 through Sun=13)
-        if 10 <= day <= 13:
-            if hour < 6:
-                return "tournament-overnight"
-            elif hour < 8:
-                return "tournament-morning"
-            elif hour < 19:
-                return "tournament-live"
-            else:
-                return "tournament-evening"
+    # Practice rounds: Mon-Wed of Masters week
+    if mon_date <= date_date < thu_date:
+        return "practice"
 
-        # Monday after
-        if day == 14:
-            return "post-tournament"
+    # Pre-tournament: up to 2 weeks before (build anticipation).
+    # Compare date objects to avoid mixing aware/naive datetimes.
+    if timedelta(0) < (thu_date - date_date) <= timedelta(days=14):
+        return "pre-tournament"
 
-    # March - countdown month
-    if month == 3 and day >= 20:
+    # Late March counts as pre-tournament too
+    if date.month == 3 and date.day >= 20:
         return "pre-tournament"
 
     return "off-season"

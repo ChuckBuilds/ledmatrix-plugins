@@ -267,16 +267,17 @@ class MastersDataSource:
         return f"{display_hour}:{minute:02d} {suffix}"
 
     def _computed_fallback_meta(self) -> Dict:
-        """Compute a best-guess Masters window: second Thursday of April.
+        """Compute a best-guess Masters window using the correct Thursday rule.
 
         Used only when ESPN doesn't currently return the Masters (off-season).
         """
+        from masters_helpers import _masters_thursday
         now = datetime.now(timezone.utc)
         year = now.year
-        start = self._second_thursday_of_april(year)
+        start = _masters_thursday(year)
         if now > start + timedelta(days=4):
-            start = self._second_thursday_of_april(year + 1)
-        # Cover all four calendar days (Thu–Sun) through end-of-day, matching
+            start = _masters_thursday(year + 1)
+        # Cover all four calendar days (Thu-Sun) through end-of-day, matching
         # the normalization applied to ESPN's parsed endDate.
         end = start + timedelta(days=3, hours=23, minutes=59, seconds=59)
         return {
@@ -290,12 +291,15 @@ class MastersDataSource:
 
     @staticmethod
     def _second_thursday_of_april(year: int) -> datetime:
-        """Second Thursday of April at 12:00 UTC (≈ 8am ET tee-off)."""
-        d = datetime(year, 4, 1, 12, 0, 0, tzinfo=timezone.utc)
-        # weekday(): Mon=0 … Thu=3
-        days_to_first_thursday = (3 - d.weekday()) % 7
-        first_thursday = d + timedelta(days=days_to_first_thursday)
-        return first_thursday + timedelta(days=7)
+        """Backwards-compatible alias — delegates to the correct algorithm.
+
+        The original 'second Thursday of April' rule gave wrong dates for
+        2022 (Apr 13, actual Apr 7) and 2023 (Apr 13, actual Apr 6).
+        The correct rule is the Thursday between April 6-12 inclusive.
+        This method is kept so any external callers are not broken.
+        """
+        from masters_helpers import _masters_thursday
+        return _masters_thursday(year)
 
     # ── Schedule / tee times ─────────────────────────────────────
 

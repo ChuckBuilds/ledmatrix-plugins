@@ -13,14 +13,14 @@ Features:
 - Timezone-aware formatting
 - Text wrapping for long event titles
 
-API Version: 1.0.0
+API Version: 1.0.1
 """
 
 import os
 import logging
 import time
 import pickle
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 from PIL import Image, ImageDraw, ImageFont
 
@@ -423,12 +423,21 @@ class CalendarPlugin(BasePlugin):
             # Fetch events from all configured calendars
             all_events = []
             
+            # Compute time_min once so all calendars use the same boundary
+            if self.timezone and pytz:
+                local_now = datetime.now(self.timezone)
+                start_of_today = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
+                time_min = start_of_today.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+            else:
+                time_min = datetime.utcnow().replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                ).isoformat() + 'Z'
+
             for calendar_id in self.calendars:
                 try:
-                    now = datetime.utcnow().isoformat() + 'Z'
                     events_result = self.service.events().list(
                         calendarId=calendar_id,
-                        timeMin=now,
+                        timeMin=time_min,
                         maxResults=self.max_events * 2,  # Fetch extra to account for filtering
                         singleEvents=True,
                         orderBy='startTime'

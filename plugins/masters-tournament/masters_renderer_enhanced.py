@@ -226,7 +226,8 @@ class MastersRendererEnhanced(MastersRenderer):
 
     def render_hole_card(self, hole_number: int,
                          card_width: Optional[int] = None,
-                         card_height: Optional[int] = None) -> Optional[Image.Image]:
+                         card_height: Optional[int] = None,
+                         show_divider: bool = True) -> Optional[Image.Image]:
         """Enhanced hole card with two layout modes, chosen by vertical resolution:
 
         * **ch >= 48** → existing "big" layout: a single text column on the
@@ -259,15 +260,16 @@ class MastersRendererEnhanced(MastersRenderer):
 
         if ch >= self._HOLE_COMPACT_HEIGHT:
             return self._render_hole_card_with_image(
-                img, draw, hole_number, hole_info, cw, ch,
+                img, draw, hole_number, hole_info, cw, ch, show_divider=show_divider,
             )
 
         return self._render_hole_card_compact(
-            img, draw, hole_number, hole_info, cw, ch,
+            img, draw, hole_number, hole_info, cw, ch, show_divider=show_divider,
         )
 
     def _render_hole_card_with_image(self, img, draw, hole_number: int,
-                                     hole_info: Dict, cw: int, ch: int) -> Image.Image:
+                                     hole_info: Dict, cw: int, ch: int,
+                                     show_divider: bool = True) -> Image.Image:
         """Large-canvas layout: single text column on the left + hole image on the right.
 
         Text column contents (stacked top to bottom):
@@ -284,9 +286,10 @@ class MastersRendererEnhanced(MastersRenderer):
 
         show_image = left_w < cw
 
-        # Left panel background strip
-        draw.rectangle([(0, 0), (left_w - 1, ch - 1)], fill=COLORS["masters_dark"])
-        if show_image:
+        # Left panel background strip (suppressed when show_divider=False for a unified green look)
+        if show_divider:
+            draw.rectangle([(0, 0), (left_w - 1, ch - 1)], fill=COLORS["masters_dark"])
+        if show_image and show_divider:
             draw.line([(left_w - 1, 0), (left_w - 1, ch)], fill=COLORS["masters_yellow"])
 
         line_h = self._text_height(draw, "A", self.font_detail) + 1
@@ -387,7 +390,8 @@ class MastersRendererEnhanced(MastersRenderer):
     def _render_hole_card_compact(self, img, draw, hole_number: int,
                                   hole_info: Dict,
                                   cw: Optional[int] = None,
-                                  ch: Optional[int] = None) -> Image.Image:
+                                  ch: Optional[int] = None,
+                                  show_divider: bool = True) -> Image.Image:
         """Compact hole card for vertical resolutions below 48px.
 
         All text stacked on the left, course image on the right.
@@ -455,9 +459,10 @@ class MastersRendererEnhanced(MastersRenderer):
                       fill=COLORS["masters_yellow"], font=text_font)
 
         if show_image:
-            # Divider between text and image
-            draw.line([(text_w, 0), (text_w, ch - 1)],
-                      fill=COLORS["masters_yellow"])
+            # Divider between text and image (suppressed when show_divider=False)
+            if show_divider:
+                draw.line([(text_w, 0), (text_w, ch - 1)],
+                          fill=COLORS["masters_yellow"])
 
             # Course image on the right
             hole_img = self.logo_loader.get_hole_image(

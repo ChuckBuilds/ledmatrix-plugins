@@ -9,7 +9,7 @@ fun facts, past champions, and Augusta National branding year-round.
 import logging
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from PIL import Image
@@ -22,6 +22,7 @@ from masters_renderer_enhanced import MastersRendererEnhanced
 from logo_loader import MastersLogoLoader
 from masters_helpers import (
     AUGUSTA_HOLES,
+    _masters_thursday,
     calculate_tournament_countdown,
     filter_favorite_players,
     get_detailed_phase,
@@ -93,10 +94,18 @@ class MastersTournamentPlugin(BasePlugin):
         self._last_update = 0
         self._update_interval = config.get("update_interval", 30)
 
+        # How many days after the final round to keep showing tournament data
+        # before the countdown takes over. Default: 1 day.
+        self._post_tournament_display_days = config.get("post_tournament_display_days", 1)
+
         # Tournament phase — date-driven from live meta when available
         meta_start, meta_end = self._meta_dates()
         self._tournament_phase = get_tournament_phase(start_date=meta_start, end_date=meta_end)
-        self._detailed_phase = get_detailed_phase(start_date=meta_start, end_date=meta_end)
+        self._detailed_phase = get_detailed_phase(
+            start_date=meta_start,
+            end_date=meta_end,
+            post_tournament_display_days=self._post_tournament_display_days,
+        )
 
         # Build enabled modes (phase-aware)
         self.modes = self._build_enabled_modes()
@@ -252,7 +261,11 @@ class MastersTournamentPlugin(BasePlugin):
         proportionally more screen time.
         """
         meta_start, meta_end = self._meta_dates()
-        phase = get_detailed_phase(start_date=meta_start, end_date=meta_end)
+        phase = get_detailed_phase(
+            start_date=meta_start,
+            end_date=meta_end,
+            post_tournament_display_days=self._post_tournament_display_days,
+        )
         phase_modes = self.PHASE_MODES.get(phase, self.PHASE_MODES["off-season"])
 
         # Filter by user config (respect per-mode enabled/disabled)
@@ -311,7 +324,9 @@ class MastersTournamentPlugin(BasePlugin):
         if new_modes != self.modes:
             old_phase = self._detailed_phase
             self._detailed_phase = get_detailed_phase(
-                start_date=meta_start, end_date=meta_end
+                start_date=meta_start,
+                end_date=meta_end,
+                post_tournament_display_days=self._post_tournament_display_days,
             )
             self.modes = new_modes
             self.logger.info(
@@ -509,7 +524,12 @@ class MastersTournamentPlugin(BasePlugin):
             self._last_hole_advance["course_tour"] = now
         elif last == 0:
             self._last_hole_advance["course_tour"] = now
-        return self._show_image(self.renderer.render_hole_card(self._current_hole))
+        show_divider = self.config.get("display_modes", {}).get(
+            "course_tour", {}
+        ).get("show_divider", True)
+        return self._show_image(
+            self.renderer.render_hole_card(self._current_hole, show_divider=show_divider)
+        )
 
     def _display_amen_corner(self, force_clear: bool) -> bool:
         return self._show_image(self.renderer.render_amen_corner())
@@ -532,7 +552,10 @@ class MastersTournamentPlugin(BasePlugin):
         elif last == 0:
             self._last_hole_advance["featured"] = now
         hole = featured[self._featured_hole_index % len(featured)]
-        return self._show_image(self.renderer.render_hole_card(hole))
+        show_divider = self.config.get("display_modes", {}).get(
+            "course_tour", {}
+        ).get("show_divider", True)
+        return self._show_image(self.renderer.render_hole_card(hole, show_divider=show_divider))
 
     def _display_schedule(self, force_clear: bool) -> bool:
         page = self._advance_page("schedule")
@@ -608,8 +631,11 @@ class MastersTournamentPlugin(BasePlugin):
             target = meta["start_date"]
         else:
             # Hard fallback — should be unreachable, but keep the screen alive.
-            now = datetime.utcnow()
-            target = datetime(now.year, 4, 10, 12, 0, 0)
+            now = datetime.now(timezone.utc)
+            year = now.year
+            target = _masters_thursday(year)
+            if target <= now:
+                target = _masters_thursday(year + 1)
         countdown = calculate_tournament_countdown(target)
         return self._show_image(
             self.renderer.render_countdown(
@@ -648,9 +674,12 @@ class MastersTournamentPlugin(BasePlugin):
             if card:
                 cards.append(card)
 
+        show_divider = self.config.get("display_modes", {}).get(
+            "course_tour", {}
+        ).get("show_divider", True)
         for hole in range(1, 19):
             card = self.renderer.render_hole_card(
-                hole, card_width=cw, card_height=ch,
+                hole, card_width=cw, card_height=ch, show_divider=show_divider,
             )
             if card:
                 cards.append(card)
@@ -700,6 +729,7 @@ class MastersTournamentPlugin(BasePlugin):
         self._page_interval = new_config.get("page_display_duration", 15)
         self._player_card_interval = new_config.get("player_card_duration", 8)
         self._scroll_card_width = new_config.get("scroll_card_width", 128)
+        self._post_tournament_display_days = new_config.get("post_tournament_display_days", 1)
         self._last_hole_advance.clear()
         self._last_page_advance.clear()
         self.modes = self._build_enabled_modes()

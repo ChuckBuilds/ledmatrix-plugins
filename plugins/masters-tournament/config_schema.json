@@ -51,6 +51,13 @@
       "maximum": 256,
       "description": "Width in pixels of each card when rendered in Vegas scroll mode (the horizontally-scrolling ticker). Set lower to pack more cards into a long panel; set higher for more detail per card. Card height always matches the display height."
     },
+    "post_tournament_display_days": {
+      "type": "integer",
+      "default": 1,
+      "minimum": 0,
+      "maximum": 14,
+      "description": "Number of days after the final round to continue showing tournament results (leaderboard, player cards, etc.) before switching to countdown mode. Set to 0 to switch immediately after the tournament ends, or higher to extend the post-tournament display window."
+    },
     "mock_data": {
       "type": "boolean",
       "default": false,
@@ -142,6 +149,11 @@
               "minimum": 5,
               "maximum": 60,
               "description": "Time to show each hole (seconds)"
+            },
+            "show_divider": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show the vertical divider line between the hole info and map columns. Set to false for a cleaner single-cell look."
             },
             "featured_holes": {
               "type": "array",
@@ -421,6 +433,7 @@
     "enabled",
     "display_duration",
     "update_interval",
+    "post_tournament_display_days",
     "mock_data",
     "favorite_players",
     "display_modes",
