@@ -144,8 +144,9 @@ class MastersTournamentPlugin(BasePlugin):
         self._last_player_card_advance = 0.0
         self._player_card_interval = config.get("player_card_duration", 8)
 
-        # Live alert detection — track score changes between updates
+        # Live alert detection — track score and hole state between updates
         self._previous_scores: Dict[str, int] = {}  # player_name -> score
+        self._previous_thru: Dict[str, int] = {}  # player_name -> thru (holes completed)
         self._alert_queue: List[Dict] = []  # pending birdie/eagle alerts
         self._alert_index = 0
         self._last_alert_advance = 0.0
@@ -374,32 +375,49 @@ class MastersTournamentPlugin(BasePlugin):
     def _detect_score_changes(self, leaderboard: List[Dict]) -> None:
         """Compare current scores against previous update to detect birdies/eagles.
 
-        Only generates alerts for score improvements (birdie or better).
-        Uses the player's current_hole and Augusta's hole pars to determine
-        whether the score change was a birdie, eagle, or albatross.
+        Only generates alerts when exactly one hole was completed since the last
+        poll (previous_thru + 1 == current_thru). When multiple holes elapsed
+        between polls the aggregate delta can't be attributed to a single hole,
+        so we skip the alert and just update stored state.
         """
         new_scores: Dict[str, int] = {}
+        new_thru: Dict[str, int] = {}
         new_alerts: List[Dict] = []
 
         for player in leaderboard:
             name = player.get("player", "")
             score = player.get("score", 0)
             hole = player.get("current_hole") or 0
+            thru = player.get("thru", 0)
+            if isinstance(thru, str):
+                try:
+                    thru = int(thru) if thru.strip() not in ("", "F", "-") else 0
+                except ValueError:
+                    thru = 0
             new_scores[name] = score
+            new_thru[name] = thru
 
             if not self._previous_scores or name not in self._previous_scores:
                 continue
 
             prev_score = self._previous_scores[name]
+            prev_thru = self._previous_thru.get(name, 0)
+
             change = score - prev_score  # negative = improvement
             if change >= 0:
                 continue
 
-            # Use hole par to get an accurate description
+            # Only classify when exactly one hole was completed since last poll
+            if thru != prev_thru + 1:
+                self.logger.debug(
+                    f"Skipping alert for {name}: thru jumped {prev_thru}->{thru} "
+                    f"(score {prev_score}->{score})"
+                )
+                continue
+
             hole_par = AUGUSTA_HOLES.get(hole, {}).get("par", 4)
             desc = get_score_description(change, hole_par)
 
-            # Only alert on birdie or better
             if desc in ("Birdie", "Eagle", "Albatross"):
                 new_alerts.append({
                     "player": name,
@@ -409,6 +427,7 @@ class MastersTournamentPlugin(BasePlugin):
                 self.logger.info(f"Live alert: {name} {desc} on hole {hole}")
 
         self._previous_scores = new_scores
+        self._previous_thru = new_thru
 
         if new_alerts:
             self._alert_queue = new_alerts
