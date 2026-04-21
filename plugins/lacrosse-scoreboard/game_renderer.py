@@ -95,7 +95,7 @@ class GameRenderer:
             fonts["time"] = self._load_custom_font(period_config, default_size=8)
             fonts["team"] = self._load_custom_font(team_config, default_size=8)
             fonts["status"] = self._load_custom_font(status_config, default_size=6)
-            fonts["detail"] = self._load_custom_font(detail_config, default_size=6)
+            fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6-font.ttf')
             fonts["rank"] = self._load_custom_font(rank_config, default_size=10)
             self.logger.debug("Successfully loaded fonts from config")
         except Exception:
@@ -115,9 +115,9 @@ class GameRenderer:
 
         return fonts
 
-    def _load_custom_font(self, element_config: Dict[str, Any], default_size: int = 8) -> ImageFont.FreeTypeFont:
+    def _load_custom_font(self, element_config: Dict[str, Any], default_size: int = 8, default_font: str = 'PressStart2P-Regular.ttf') -> ImageFont.FreeTypeFont:
         """Load a custom font from an element configuration dictionary."""
-        font_name = element_config.get('font', 'PressStart2P-Regular.ttf')
+        font_name = element_config.get('font', default_font)
         font_size = int(element_config.get('font_size', default_size))
         font_path = os.path.join('assets', 'fonts', font_name)
 
@@ -397,13 +397,6 @@ class GameRenderer:
             score_x = (self.display_width - score_width) // 2
             score_y = (self.display_height // 2) - 3
             self._draw_text_with_outline(draw_overlay, score_text, (score_x, score_y), self.fonts['score'])
-        elif game_type == "upcoming":
-            # Draw "VS" for upcoming games
-            vs_text = "VS"
-            vs_width = draw_overlay.textlength(vs_text, font=self.fonts['score'])
-            vs_x = (self.display_width - vs_width) // 2
-            vs_y = (self.display_height // 2) - 3
-            self._draw_text_with_outline(draw_overlay, vs_text, (vs_x, vs_y), self.fonts['score'])
 
         # Draw period/status based on game type
         if game_type == "live":
@@ -487,34 +480,31 @@ class GameRenderer:
         self._draw_text_with_outline(draw, status_text, (status_x, status_y), self.fonts['time'])
 
     def _draw_upcoming_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
-        """Draw status elements for an upcoming game."""
-        # Get game time from status
-        status = game.get('status', {})
-        game_time = status.get('short_detail', '')
+        """Draw status elements for an upcoming game.
+
+        Matches the direct display path: "Next Game" label at top, then stacked
+        date and time centered on the card — no "VS" text.
+        """
+        game_date = game.get("game_date", "")
+        game_time = game.get("game_time", "")
+
+        # "Next Game" label at top — smaller font on narrow displays
+        status_font = self.fonts['status'] if self.display_width <= 128 else self.fonts['time']
+        label = "Next Game"
+        label_w = draw.textlength(label, font=status_font)
+        self._draw_text_with_outline(draw, label, ((self.display_width - label_w) // 2, 1), status_font)
+
+        # Stacked date / time centered vertically
+        center_y = self.display_height // 2
+        date_y = center_y - 7
+
+        if game_date:
+            date_w = draw.textlength(game_date, font=self.fonts['time'])
+            self._draw_text_with_outline(draw, game_date, ((self.display_width - date_w) // 2, date_y), self.fonts['time'])
 
         if game_time:
-            time_width = draw.textlength(game_time, font=self.fonts['time'])
-            time_x = (self.display_width - time_width) // 2
-            time_y = 1
-            self._draw_text_with_outline(draw, game_time, (time_x, time_y), self.fonts['time'])
-        else:
-            # Fallback: try to parse start_time
-            start_time = game.get("start_time", "")
-            if start_time:
-                try:
-                    from datetime import datetime, timezone
-
-                    dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
-                    local_dt = dt.astimezone(timezone.utc)  # Use UTC for now
-
-                    game_date = local_dt.strftime("%b %d")
-
-                    date_width = draw.textlength(game_date, font=self.fonts['time'])
-                    date_x = (self.display_width - date_width) // 2
-                    date_y = 1
-                    self._draw_text_with_outline(draw, game_date, (date_x, date_y), self.fonts['time'])
-                except (ValueError, TypeError) as e:
-                    self.logger.debug(f"Failed to parse start_time '{start_time}': {e}")
+            time_w = draw.textlength(game_time, font=self.fonts['time'])
+            self._draw_text_with_outline(draw, game_time, ((self.display_width - time_w) // 2, date_y + 9), self.fonts['time'])
 
     def _draw_dynamic_odds(
         self,
@@ -599,7 +589,7 @@ class GameRenderer:
 
         record_bbox = draw.textbbox((0, 0), "0-0", font=record_font)
         record_height = record_bbox[3] - record_bbox[1]
-        record_y = self.display_height - record_height - 4
+        record_y = self.display_height - record_height
 
         # Away team info
         if away_abbr:
