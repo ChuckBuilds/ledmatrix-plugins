@@ -110,7 +110,7 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Global settings - read from defaults section with fallback
         defaults = config.get("defaults", {})
         self.display_duration = float(defaults.get("display_duration", config.get("display_duration", 30)))
-        self.game_display_duration = float(defaults.get("display_duration", config.get("game_display_duration", 15)))
+        self.game_display_duration = float(defaults.get("game_display_duration", config.get("game_display_duration", 15)))
 
         # Additional settings - read from defaults section with fallback
         self.show_records = defaults.get("show_records", config.get("show_records", False))
@@ -127,31 +127,7 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
             except Exception as e:
                 self.logger.warning(f"Could not initialize background service: {e}")
         
-        # Initialize scroll display manager if available
-        self._scroll_manager: Optional[ScrollDisplayManager] = None
-        if SCROLL_AVAILABLE and ScrollDisplayManager:
-            try:
-                self._scroll_manager = ScrollDisplayManager(
-                    self.display_manager,
-                    self.config,
-                    self.logger
-                )
-                self.logger.info("Scroll display manager initialized")
-            except Exception as e:
-                self.logger.warning(f"Could not initialize scroll display manager: {e}")
-                self._scroll_manager = None
-        else:
-            self.logger.debug("Scroll mode not available - ScrollDisplayManager not imported")
-        
-        # Track current scroll state
-        self._scroll_active: Dict[str, bool] = {}  # {game_type: is_active}
-        self._scroll_prepared: Dict[str, bool] = {}  # {game_type: is_prepared}
-        
-        # Enable high-FPS mode for scroll display (allows 100+ FPS scrolling)
-        # This signals to the display controller to use high-FPS loop (8ms = 125 FPS)
-        self.enable_scrolling = self._scroll_manager is not None
-        if self.enable_scrolling:
-            self.logger.info("High-FPS scrolling enabled for lacrosse scoreboard")
+        # Scroll display manager initialized later after all config is parsed
 
         # League registry: maps league IDs to their configuration and managers
         # This structure makes it easy to add more leagues in the future

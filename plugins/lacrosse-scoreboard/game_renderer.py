@@ -70,6 +70,7 @@ class GameRenderer:
         defaults = config.get('defaults', {})
         self.show_records = defaults.get('show_records', config.get('show_records', False))
         self.show_ranking = defaults.get('show_ranking', config.get('show_ranking', False))
+        self.show_odds = defaults.get('show_odds', config.get('show_odds', False))
 
         # Rankings cache (populated externally)
         self._team_rankings_cache: Dict[str, int] = {}
@@ -412,6 +413,10 @@ class GameRenderer:
         elif game_type == "upcoming":
             self._draw_upcoming_game_status(draw_overlay, game)
 
+        # Draw odds if enabled and available
+        if self.show_odds and game.get('odds'):
+            self._draw_dynamic_odds(draw_overlay, game['odds'], self.display_width, self.display_height)
+
         # Draw records or rankings if enabled
         if self.show_records or self.show_ranking:
             self._draw_records_or_rankings(draw_overlay, game)
@@ -438,9 +443,16 @@ class GameRenderer:
         state = status.get('state', '')
 
         if state == 'in':
-            period_clock_text = f"P{period} {clock}".strip()
+            if period == 0:
+                period_clock_text = f"Start {clock}".strip()
+            elif 1 <= period <= 4:
+                period_clock_text = f"Q{period} {clock}".strip()
+            elif period > 4:
+                period_clock_text = f"OT{period - 4} {clock}".strip()
+            else:
+                period_clock_text = clock
         elif state == 'post':
-            period_clock_text = "Final"
+            period_clock_text = "Final/OT" if period > 4 else "Final"
         else:
             period_clock_text = status.get('short_detail', '')
 
@@ -464,13 +476,11 @@ class GameRenderer:
             shots_x = (self.display_width - shots_width) // 2
             self._draw_text_with_outline(draw, shots_text, (shots_x, shots_y), shots_font)
 
-    def _draw_recent_game_status(self, draw: ImageDraw.Draw, _game: Dict) -> None:
-        """Draw status elements for a recently completed game.
-
-        Note: _game parameter reserved for future enhancements (e.g., OT indicator).
-        """
-        # Final status (Top center)
-        status_text = "Final"
+    def _draw_recent_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
+        """Draw status elements for a recently completed game."""
+        # Show "Final/OT" when the game ended in overtime (period > 4)
+        period = game.get('status', {}).get('period', 0)
+        status_text = "Final/OT" if period > 4 else "Final"
         status_width = draw.textlength(status_text, font=self.fonts['time'])
         status_x = (self.display_width - status_width) // 2
         status_y = 1
@@ -505,6 +515,69 @@ class GameRenderer:
                     self._draw_text_with_outline(draw, game_date, (date_x, date_y), self.fonts['time'])
                 except (ValueError, TypeError) as e:
                     self.logger.debug(f"Failed to parse start_time '{start_time}': {e}")
+
+    def _draw_dynamic_odds(
+        self,
+        draw: ImageDraw.Draw,
+        odds: Dict[str, Any],
+        width: int,
+        height: int,
+    ) -> None:
+        """Draw odds with dynamic positioning — spread on favored team's side, O/U on opposite."""
+        try:
+            if not odds or isinstance(odds, dict) and any(
+                isinstance(v, type) and hasattr(v, "__call__") for v in odds.values()
+            ):
+                return
+
+            home_team_odds = odds.get("home_team_odds", {})
+            away_team_odds = odds.get("away_team_odds", {})
+            home_spread = home_team_odds.get("spread_odds")
+            away_spread = away_team_odds.get("spread_odds")
+
+            top_level_spread = odds.get("spread")
+            if top_level_spread is not None:
+                if home_spread is None or home_spread == 0.0:
+                    home_spread = top_level_spread
+                if away_spread is None:
+                    away_spread = -top_level_spread
+
+            home_favored = isinstance(home_spread, (int, float)) and home_spread < 0
+            away_favored = isinstance(away_spread, (int, float)) and away_spread < 0
+
+            favored_spread = None
+            favored_side = None
+            if home_favored:
+                favored_spread = home_spread
+                favored_side = "home"
+            elif away_favored:
+                favored_spread = away_spread
+                favored_side = "away"
+
+            font = self.fonts["detail"]
+
+            if favored_spread is not None:
+                spread_text = str(favored_spread)
+                if favored_side == "home":
+                    spread_x = width - int(draw.textlength(spread_text, font=font))
+                else:
+                    spread_x = 0
+                self._draw_text_with_outline(draw, spread_text, (spread_x, 0), font, fill=(0, 255, 0))
+
+            over_under = odds.get("over_under")
+            if over_under is not None and isinstance(over_under, (int, float)):
+                ou_text = f"O/U: {over_under}"
+                ou_width = int(draw.textlength(ou_text, font=font))
+                if favored_side == "home":
+                    ou_x = 0
+                elif favored_side == "away":
+                    ou_x = width - ou_width
+                else:
+                    ou_x = (width - ou_width) // 2
+                self._draw_text_with_outline(draw, ou_text, (ou_x, 0), font, fill=(0, 255, 0))
+
+        except Exception as e:
+            self.logger.debug(f"Error drawing odds: {e}")
 
     def _draw_records_or_rankings(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw team records or rankings."""
