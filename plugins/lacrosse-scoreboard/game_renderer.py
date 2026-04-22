@@ -515,9 +515,7 @@ class GameRenderer:
     ) -> None:
         """Draw odds with dynamic positioning — spread on favored team's side, O/U on opposite."""
         try:
-            if not odds or isinstance(odds, dict) and any(
-                isinstance(v, type) and hasattr(v, "__call__") for v in odds.values()
-            ):
+            if not odds or any(callable(v) for v in odds.values()):
                 return
 
             home_team_odds = odds.get("home_team_odds", {})
@@ -567,7 +565,7 @@ class GameRenderer:
                 self._draw_text_with_outline(draw, ou_text, (ou_x, 0), font, fill=(0, 255, 0))
 
         except Exception as e:
-            self.logger.debug(f"Error drawing odds: {e}")
+            self.logger.warning(f"Error drawing odds: {e} | odds={repr(odds)[:120]}")
 
     def _draw_records_or_rankings(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw team records or rankings."""

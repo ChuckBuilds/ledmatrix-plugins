@@ -5,9 +5,19 @@ This plugin provides NCAA Men's and NCAA Women's lacrosse scoreboard functionali
 the proven, working manager classes adapted from the lacrosse scoreboard plugin.
 """
 
+import json
 import logging
 import time
+from pathlib import Path
 from typing import Dict, Any, Optional, Set, List, Tuple
+
+# Read version once at import time so get_info() never drifts from manifest.json
+try:
+    _MANIFEST_VERSION = json.loads(
+        (Path(__file__).parent / "manifest.json").read_text()
+    ).get("version", "unknown")
+except Exception:
+    _MANIFEST_VERSION = "unknown"
 
 try:
     from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
@@ -2725,7 +2735,7 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
             info = {
                 "plugin_id": self.plugin_id,
                 "name": "Lacrosse Scoreboard",
-                "version": "1.0.1",
+                "version": _MANIFEST_VERSION,
                 "enabled": self.is_enabled,
                 "display_size": f"{self.display_width}x{self.display_height}",
                 "ncaa_mens_enabled": self.ncaa_mens_enabled,
