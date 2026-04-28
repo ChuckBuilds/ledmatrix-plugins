@@ -293,11 +293,15 @@ class RadarFetcher:
             self._last_fetch = time.time()
             return
 
-        frames_to_fetch = path_data[-12:]
+        frames_to_fetch = path_data[-6:]
         new_frames = []
         new_timestamps = []
         failed = 0
+        budget_start = time.time()
         for path, ts in frames_to_fetch:
+            if time.time() - budget_start > 20:
+                logger.warning("[Radar] Stopping tile fetch early: 20s budget exceeded")
+                break
             tile = self._fetch_radar_tile(path)
             if tile:
                 new_frames.append(tile)

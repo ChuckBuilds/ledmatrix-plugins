@@ -580,8 +580,13 @@ class WeatherPlugin(BasePlugin):
                 'icon': icon_code
             })
 
-        # Process daily forecast
-        daily_list = forecast_data.get('daily', [])[1:4]  # Skip today (index 0) and get next 3 days
+        # Process daily forecast — filter to future days from today so stale cached
+        # data doesn't show past days (mirrors the hourly filter above).
+        today = datetime.now().date()
+        daily_list = [
+            day for day in forecast_data.get('daily', [])
+            if datetime.fromtimestamp(day.get('dt', 0)).date() > today
+        ][:3]
         self.daily_forecast = []
         
         for day_data in daily_list:
