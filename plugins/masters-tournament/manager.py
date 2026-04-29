@@ -685,11 +685,51 @@ class MastersTournamentPlugin(BasePlugin):
         this gives you a smoothly-scrolling ticker of ~128-wide blocks
         instead of one full-panel card at a time. Matches the pattern used
         by the other sports scoreboard plugins.
+
+        Content is phase-aware:
+          off-season / pre-tournament  → countdown card only
+          practice / tournament / post → leaderboard + holes + fun facts
         """
-        cards = []
+        meta_start, meta_end = self._meta_dates()
+        phase = get_detailed_phase(
+            start_date=meta_start,
+            end_date=meta_end,
+            post_tournament_display_days=self._post_tournament_display_days,
+        )
+
         cw = self._scroll_card_width
         ch = self.display_height
 
+        # Off-season and pre-tournament: countdown card only.
+        if phase in ("off-season", "pre-tournament"):
+            countdown_enabled = self.config.get("display_modes", {}).get(
+                "countdown", {}
+            ).get("enabled", True)
+            if not countdown_enabled:
+                return None
+            meta = self._tournament_meta or {}
+            target = meta.get("start_date")
+            # If the cached start_date is already in the past (stale meta from a
+            # prior year), treat it as missing so we fall back to the computed date.
+            if target is not None:
+                t_aware = target if target.tzinfo else target.replace(tzinfo=timezone.utc)
+                if t_aware <= datetime.now(timezone.utc):
+                    target = None
+            if target is None:
+                target = self.data_source._computed_fallback_meta().get("start_date")
+            if not target:
+                return None
+            countdown = calculate_tournament_countdown(target)
+            card = self.renderer.render_countdown(
+                countdown["days"], countdown["hours"], countdown["minutes"],
+                card_width=cw, card_height=ch,
+            )
+            if not card:
+                return None
+            return [card]
+
+        # Practice / tournament / post-tournament: leaderboard + holes + fun facts.
+        cards = []
         for player in self._leaderboard_data[:10]:
             card = self.renderer.render_player_card(
                 player, card_width=cw, card_height=ch,
@@ -707,8 +747,6 @@ class MastersTournamentPlugin(BasePlugin):
             if card:
                 cards.append(card)
 
-        # Fun facts — respect user's enabled setting.
-        # Use single-line wide cards so horizontal scroll reveals the full text.
         fun_facts_enabled = self.config.get("display_modes", {}).get(
             "fun_facts", {}
         ).get("enabled", True)

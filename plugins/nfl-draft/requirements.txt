@@ -1,0 +1,8 @@
+# NFL Draft Plugin Dependencies
+# Most dependencies are already provided by LEDMatrix core
+
+# No additional dependencies required beyond LEDMatrix core
+# The following are provided by LEDMatrix core:
+# - Pillow (PIL) - Image processing
+# - requests - HTTP requests
+# - numpy - Array operations for ScrollHelper

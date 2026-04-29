@@ -209,6 +209,14 @@ class MastersDataSource:
                 # of that calendar day so phase checks treat all of Sunday's
                 # play as in-tournament rather than post-tournament.
                 end_date = end_date + timedelta(hours=23, minutes=59, seconds=59)
+            if start_date is not None and end_date is not None:
+                # Cap end_date to Sunday of tournament week. ESPN keeps the
+                # event active for days after the final round (results/stats
+                # pages), which causes the plugin to think the tournament is
+                # still running. The Masters always ends on Sunday = start + 3d.
+                max_end = start_date + timedelta(days=3, hours=23, minutes=59, seconds=59)
+                if end_date > max_end:
+                    end_date = max_end
 
             status_obj = {}
             competitions = event.get("competitions", [])

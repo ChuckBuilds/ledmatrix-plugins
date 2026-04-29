@@ -1,7 +1,7 @@
 {
   "id": "masters-tournament",
   "name": "Masters Tournament",
-  "version": "2.4.3",
+  "version": "2.5.0",
   "description": "Broadcast-quality Masters Tournament display with real ESPN player headshots, accurate Augusta National hole layouts, fun facts, past champions, live leaderboards, and pixel-perfect LED matrix rendering",
   "author": "ChuckBuilds",
   "class_name": "MastersTournamentPlugin",
@@ -43,6 +43,26 @@
     "height": 64
   },
   "versions": [
+    {
+      "version": "2.5.0",
+      "released": "2026-04-21",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "version": "2.4.6",
+      "released": "2026-04-21",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "version": "2.4.5",
+      "released": "2026-04-19",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "version": "2.4.4",
+      "released": "2026-04-19",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "2.4.3",
       "released": "2026-04-16",
@@ -124,7 +144,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-04-16",
+  "last_updated": "2026-04-21",
   "compatible_versions": [
     ">=2.0.0"
   ]

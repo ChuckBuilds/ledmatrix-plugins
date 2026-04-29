@@ -1,0 +1,88 @@
+{
+  "id": "nfl-draft",
+  "name": "NFL Draft",
+  "version": "1.3.9",
+  "author": "ChuckBuilds",
+  "description": "Displays projected NFL draft picks from ESPN with live draft tracking support during the annual NFL Draft event. Includes simulate_live mode to replay a completed draft using real ESPN core API data. Shows team logos, player names, positions, and pick numbers in a scrolling display.",
+  "entry_point": "manager.py",
+  "class_name": "NFLDraftPlugin",
+  "category": "sports",
+  "tags": [
+    "nfl",
+    "draft",
+    "football",
+    "sports",
+    "espn"
+  ],
+  "display_modes": [
+    "nfl_draft"
+  ],
+  "update_interval": 300,
+  "default_duration": 60,
+  "compatible_versions": [
+    ">=2.0.0"
+  ],
+  "icon": "fas fa-football-ball",
+  "versions": [
+    {
+      "version": "1.3.9",
+      "released": "2026-04-26",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "version": "1.3.8",
+      "released": "2026-04-26",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "version": "1.3.7",
+      "released": "2026-04-26",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "version": "1.3.6",
+      "released": "2026-04-26",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "version": "1.3.5",
+      "released": "2026-04-26",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "version": "1.3.4",
+      "released": "2026-04-23",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "version": "1.3.3",
+      "released": "2026-04-23",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "version": "1.3.2",
+      "released": "2026-04-22",
+      "ledmatrix_min": "2.0.0"
+    }
+  ],
+  "requires": {
+    "python": ">=3.9",
+    "display_size": {
+      "min_width": 64,
+      "min_height": 32
+    }
+  },
+  "api_requirements": [
+    {
+      "name": "ESPN API",
+      "required": true,
+      "description": "ESPN public API for draft data (no API key required)",
+      "url": "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/"
+    }
+  ],
+  "assets": {
+    "uses_core_assets": true,
+    "nfl_logos": "assets/sports/nfl_logos/"
+  },
+  "license": "MIT"
+}

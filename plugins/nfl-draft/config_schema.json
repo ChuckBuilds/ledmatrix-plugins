@@ -1,0 +1,252 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "NFL Draft Plugin Configuration",
+  "description": "Configuration for the NFL Draft plugin",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "description": "Enable or disable the plugin",
+      "default": true
+    },
+    "display_duration": {
+      "type": "number",
+      "description": "How long to display before rotating (in seconds). Uses dynamic duration when scrolling.",
+      "default": 60,
+      "minimum": 10,
+      "maximum": 300
+    },
+    "font": {
+      "type": "string",
+      "description": "Font file name for player names (from assets/fonts/)",
+      "default": "PressStart2P-Regular.ttf",
+      "enum": [
+        "4x6-font.ttf",
+        "5by7.regular.ttf",
+        "PressStart2P-Regular.ttf"
+      ]
+    },
+    "player_name_font_size": {
+      "type": "integer",
+      "description": "Font size for player names",
+      "default": 12,
+      "minimum": 6,
+      "maximum": 16
+    },
+    "detail_font_size": {
+      "type": "integer",
+      "description": "Font size for position and pick number",
+      "default": 8,
+      "minimum": 4,
+      "maximum": 12
+    },
+    "player_name_color": {
+      "type": "object",
+      "description": "RGB color for player names",
+      "properties": {
+        "r": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 255
+        },
+        "g": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 255
+        },
+        "b": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 255
+        }
+      },
+      "default": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      }
+    },
+    "pick_number_color": {
+      "type": "object",
+      "description": "RGB color for pick numbers (default white per requirements)",
+      "properties": {
+        "r": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 255
+        },
+        "g": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 255
+        },
+        "b": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 255
+        }
+      },
+      "default": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      }
+    },
+    "scroll_speed": {
+      "type": "number",
+      "description": "Scroll speed in pixels per second",
+      "default": 30,
+      "minimum": 10,
+      "maximum": 100
+    },
+    "live_refresh_interval": {
+      "type": "integer",
+      "description": "Refresh interval in seconds during live draft (default 10 minutes = 600)",
+      "default": 600,
+      "minimum": 60,
+      "maximum": 1800
+    },
+    "projection_refresh_interval": {
+      "type": "integer",
+      "description": "Refresh interval in seconds for projected picks (default 24 hours = 86400)",
+      "default": 86400,
+      "minimum": 3600,
+      "maximum": 172800
+    },
+    "draft_year": {
+      "type": "integer",
+      "description": "Draft year to display (0 = auto-detect current/upcoming draft)",
+      "default": 0
+    },
+    "show_position": {
+      "type": "boolean",
+      "description": "Show player position after name",
+      "default": true
+    },
+    "show_college": {
+      "type": "boolean",
+      "description": "Show player college/school",
+      "default": true
+    },
+    "logo_size": {
+      "type": "integer",
+      "description": "Size of team logo in pixels (height). Use 0 for auto-sizing based on display height.",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 64
+    },
+    "item_gap": {
+      "type": "integer",
+      "description": "Gap in pixels between draft pick items",
+      "default": 32,
+      "minimum": 16,
+      "maximum": 64
+    },
+    "transition": {
+      "type": "object",
+      "description": "Transition settings",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "redraw",
+            "fade",
+            "slide",
+            "wipe"
+          ],
+          "default": "redraw"
+        },
+        "speed": {
+          "type": "integer",
+          "description": "Transition speed (1-10)",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 10
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "dynamic_duration": {
+      "type": "object",
+      "description": "Dynamic duration settings for scroll completion",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "min_duration": {
+          "type": "number",
+          "description": "Minimum display duration in seconds",
+          "default": 30
+        },
+        "max_duration": {
+          "type": "number",
+          "description": "Maximum display duration in seconds",
+          "default": 300
+        }
+      }
+    },
+    "live_priority": {
+      "type": "boolean",
+      "description": "Enable live priority takeover during live draft",
+      "default": false
+    },
+    "vegas_mode": {
+      "type": "string",
+      "description": "Override how this plugin appears in Vegas scroll mode. 'scroll' = individual picks scroll through the stream (default), 'fixed' = entire display scrolls by as one block, 'static' = scroll pauses while plugin displays for its duration.",
+      "enum": ["scroll", "fixed", "static"],
+      "default": "scroll"
+    },
+    "simulate_live": {
+      "type": "boolean",
+      "description": "When true, fetches real picks from a completed draft (simulate_year) via the ESPN core API and displays them as if the draft were live. Useful for testing or off-season display of actual results.",
+      "default": false
+    },
+    "simulate_year": {
+      "type": "integer",
+      "description": "The draft year to use when simulate_live is enabled. Must be a year with a completed NFL Draft (e.g. 2025).",
+      "default": 2025,
+      "minimum": 2000,
+      "maximum": 2099
+    },
+    "favorite_teams": {
+      "type": "array",
+      "description": "Up to 3 NFL team abbreviations (e.g. ['KC', 'SF', 'DAL']). During live mode their 3 most recent picks appear at the front of the scroll. Post-draft, all picks for each team are shown in round order before the per-round sections.",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 3,
+      "default": []
+    },
+    "post_draft_show": {
+      "type": "string",
+      "description": "What to display during the post-draft window. 'favorites' = only picks for your favorite teams, 'rounds' = per-round results for all teams, 'both' = favorite team picks followed by per-round results.",
+      "enum": ["favorites", "rounds", "both"],
+      "default": "both"
+    },
+    "display_rounds": {
+      "type": "integer",
+      "description": "Number of rounds to display during the post-draft window (1 = first round only, 7 = all rounds). Only applies when post_draft_show is 'rounds' or 'both'.",
+      "default": 3,
+      "minimum": 1,
+      "maximum": 7
+    },
+    "post_draft_days": {
+      "type": "integer",
+      "description": "Number of days after the draft ends to keep showing results. After this window the plugin goes silent until the following February.",
+      "default": 7,
+      "minimum": 1,
+      "maximum": 30
+    }
+  },
+  "additionalProperties": false
+}

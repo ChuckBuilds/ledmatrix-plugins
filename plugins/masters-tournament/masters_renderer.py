@@ -340,6 +340,16 @@ class MastersRenderer:
             self.font_header = _load_font("small")
             self.font_score = _load_font("small")
 
+        # Countdown gets its own font — largest that fits both height and width.
+        # "xl" is 10px PressStart2P; on narrow panels (tier != "large") that
+        # overflows long strings like "364d 12h", so gate it on tier too.
+        if self.height >= 20 and self.tier == "large":
+            self.font_countdown = _load_font("xl")      # 10px PressStart2P
+        elif self.height >= 14 and self.tier != "tiny":
+            self.font_countdown = _load_font("medium")  # 8px PressStart2P
+        else:
+            self.font_countdown = _load_font("small")   # 6px 4x6-font
+
     # ═══════════════════════════════════════════════════════════
     # DRAWING HELPERS
     # ═══════════════════════════════════════════════════════════
@@ -1432,8 +1442,13 @@ class MastersRenderer:
         if logo:
             img.paste(logo, (lx, ly), logo if logo.mode == "RGBA" else None)
 
-    def render_countdown(self, days: int, hours: int, minutes: int) -> Optional[Image.Image]:
-        img = self._draw_gradient_bg(COLORS["masters_dark"], COLORS["masters_green"])
+    def render_countdown(self, days: int, hours: int, minutes: int,
+                         card_width: Optional[int] = None,
+                         card_height: Optional[int] = None) -> Optional[Image.Image]:
+        w = card_width if card_width is not None else self.width
+        h = card_height if card_height is not None else self.height
+        img = self._draw_gradient_bg(COLORS["masters_dark"], COLORS["masters_green"],
+                                     width=w, height=h)
         draw = ImageDraw.Draw(img)
 
         # Countdown text — show days + hours for context, hours:minutes when
@@ -1455,26 +1470,26 @@ class MastersRenderer:
         min_right_width = 40
         if self.tier == "large":
             logo = self.logo_loader.get_masters_logo(
-                max_width=int(self.width * 0.45),
-                max_height=self.height - 4,
+                max_width=int(w * 0.45),
+                max_height=h - 4,
             )
-            if logo and (self.width - logo.width - 12) >= min_right_width:
+            if logo and (w - logo.width - 12) >= min_right_width:
                 lx = 3
-                ly = (self.height - logo.height) // 2
+                ly = (h - logo.height) // 2
                 self._draw_logo_with_glow(img, logo, lx, ly)
                 right_x = lx + logo.width + 6
-                right_w = self.width - right_x - 2
+                right_w = w - right_x - 2
                 right_cx = right_x + right_w // 2
 
                 detail_h = self._text_height(draw, "A", self.font_detail)
-                count_h = self._text_height(draw, count_text, self.font_score)
+                count_h = self._text_height(draw, count_text, self.font_countdown)
                 # Big number on top, label underneath
                 block_h = count_h + 3 + detail_h
-                block_y = max(2, (self.height - block_h) // 2)
+                block_y = max(2, (h - block_h) // 2)
 
-                cw = self._text_width(draw, count_text, self.font_score)
-                self._text_shadow(draw, (right_cx - cw // 2, block_y),
-                                  count_text, self.font_score, COLORS["masters_yellow"])
+                tw = self._text_width(draw, count_text, self.font_countdown)
+                self._text_shadow(draw, (right_cx - tw // 2, block_y),
+                                  count_text, self.font_countdown, COLORS["masters_yellow"])
 
                 label = unit_text
                 lw = self._text_width(draw, label, self.font_detail)
@@ -1487,19 +1502,19 @@ class MastersRenderer:
 
         # Compact layout: logo centered at top (larger), countdown below
         logo = self.logo_loader.get_masters_logo(
-            max_width=min(self.width - 6, 56),
-            max_height=min(int(self.height * 0.45), 28),
+            max_width=min(w - 6, 56),
+            max_height=min(int(h * 0.45), 28),
         )
         logo_bottom = 3
         if logo:
-            lx = (self.width - logo.width) // 2
+            lx = (w - logo.width) // 2
             self._draw_logo_with_glow(img, logo, lx, 2)
             logo_bottom = 2 + logo.height + 2
 
         # Position text below logo: label once, then big countdown
-        remaining = self.height - logo_bottom
+        remaining = h - logo_bottom
         detail_h = self._text_height(draw, "A", self.font_detail)
-        count_h = self._text_height(draw, count_text, self.font_score)
+        count_h = self._text_height(draw, count_text, self.font_countdown)
 
         if self.tier == "tiny":
             label = "TO MASTERS"
@@ -1509,12 +1524,12 @@ class MastersRenderer:
         text_block_h = count_h + 2 + detail_h
         text_y = logo_bottom + max(0, (remaining - text_block_h) // 2)
 
-        cw = self._text_width(draw, count_text, self.font_score)
-        self._text_shadow(draw, ((self.width - cw) // 2, text_y),
-                          count_text, self.font_score, COLORS["masters_yellow"])
+        tw = self._text_width(draw, count_text, self.font_countdown)
+        self._text_shadow(draw, ((w - tw) // 2, text_y),
+                          count_text, self.font_countdown, COLORS["masters_yellow"])
 
         lw = self._text_width(draw, label, self.font_detail)
-        draw.text(((self.width - lw) // 2, text_y + count_h + 2),
+        draw.text(((w - lw) // 2, text_y + count_h + 2),
                   label, fill=COLORS["light_gray"], font=self.font_detail)
 
         return img
