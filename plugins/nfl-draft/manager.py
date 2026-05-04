@@ -197,11 +197,21 @@ class NFLDraftPlugin(BasePlugin):
     def _get_current_draft_year(self) -> int:
         """Determine the current/upcoming draft year."""
         now = datetime.now()
-        # If before May, show current year's draft
-        # If May or later, show next year's draft
-        if now.month < 5:
-            return now.year
-        return now.year + 1
+        year = now.year
+        # Stay on the current year's draft until its post-draft window has closed.
+        # Using a hard month cutoff (< 5) would flip to next year on May 1 — before
+        # the window expires — causing _is_post_draft_window() to compute dates for
+        # the wrong year. Instead, compute the actual window end and advance only
+        # after it has passed.
+        post_draft_days = self.config.get("post_draft_days", 7)
+        last_april = datetime(year, 4, 30)
+        days_back = (last_april.weekday() - 5) % 7
+        draft_end = (last_april - timedelta(days=days_back)).replace(
+            hour=23, minute=59, second=59, microsecond=999999
+        )
+        if now > draft_end + timedelta(days=post_draft_days):
+            return year + 1
+        return year
 
     def _fetch_draft_data(self) -> Dict[str, Any]:
         """
@@ -730,8 +740,26 @@ class NFLDraftPlugin(BasePlugin):
         """True if the draft just completed and we are within the post_draft_days window."""
         if self.draft_status != "complete":
             return False
-        window_end = self._get_draft_end_date() + timedelta(days=self.post_draft_days)
-        return datetime.now() <= window_end
+        # Anchor the window to the most recently *completed* draft, not simply
+        # now.year. Using now.year naively fails in Jan-Apr of the following year:
+        # the current year's draft hasn't happened yet, so last_april would point
+        # to a future date and window_end would be months away — keeping the plugin
+        # active all winter. Instead, compute this year's draft_end first; if now
+        # is still before it, the most recent completed draft was last year.
+        now = datetime.now()
+        probe = datetime(now.year, 4, 30)
+        probe_days_back = (probe.weekday() - 5) % 7
+        this_year_draft_end = (probe - timedelta(days=probe_days_back)).replace(
+            hour=23, minute=59, second=59, microsecond=999999
+        )
+        completed_year = now.year if now > this_year_draft_end else now.year - 1
+        last_april = datetime(completed_year, 4, 30)
+        days_back = (last_april.weekday() - 5) % 7
+        draft_end = (last_april - timedelta(days=days_back)).replace(
+            hour=23, minute=59, second=59, microsecond=999999
+        )
+        window_end = draft_end + timedelta(days=self.post_draft_days)
+        return now <= window_end
 
     def _is_off_season(self) -> bool:
         """True during the NFL off-season (May through January).
