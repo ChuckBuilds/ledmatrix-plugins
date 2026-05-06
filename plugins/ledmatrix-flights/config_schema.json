@@ -11,25 +11,25 @@
     },
     "data_source": {
       "type": "string",
-      "title": "Data Source",
-      "description": "Aircraft data source. 'skyaware' requires a local ADS-B receiver (dump1090/SkyAware). 'flightradar24' uses the FlightRadar24 feed. 'opensky' uses the free OpenSky Network API.",
+      "title": "Aircraft Data Source",
+      "description": "Where to get live aircraft position data. Choose one setup path: (1) Local receiver — 'skyaware': requires a PiAware/dump1090 ADS-B receiver on your network, most accurate data. (2) Free cloud — 'adsbfi': free global ADS-B feed from adsb.fi, no account or hardware needed. 'adsblol': same idea via adsb.lol. Both free cloud options work worldwide with no sign-up.",
       "enum": [
         "skyaware",
-        "flightradar24",
-        "opensky"
+        "adsbfi",
+        "adsblol"
       ],
       "default": "skyaware"
     },
     "fr24_enrichment": {
       "type": "boolean",
-      "title": "FR24 Route Enrichment",
-      "description": "When using SkyAware, also fetch origin/destination/aircraft type from FlightRadar24 in the background. Replaces the need for a FlightAware API key for route data.",
+      "title": "Free Route Data (FR24 Enrichment)",
+      "description": "Fetch origin/destination and aircraft type for free in the background using FlightRadar24 data. Works with all data sources. This is the recommended free alternative to a paid FlightAware API key — leave enabled unless you have a specific reason to turn it off.",
       "default": true
     },
     "fr24_enrichment_interval": {
       "type": "integer",
-      "title": "FR24 Enrichment Interval (seconds)",
-      "description": "How often (in seconds) to refresh FR24 enrichment data when using SkyAware as the primary data source.",
+      "title": "Route Data Refresh Interval (seconds)",
+      "description": "How often to refresh free FR24 route data in the background. Applies when fr24_enrichment is enabled.",
       "minimum": 30,
       "maximum": 600,
       "default": 60
@@ -55,7 +55,8 @@
     },
     "skyaware_url": {
       "type": "string",
-      "description": "URL to SkyAware aircraft.json endpoint (only used when data_source is 'skyaware')",
+      "title": "SkyAware / dump1090 URL",
+      "description": "URL to your local ADS-B receiver's aircraft.json endpoint. Only used when data_source is 'skyaware'. Change this to match your receiver's IP address.",
       "default": "http://192.168.86.30/skyaware/data/aircraft.json",
       "pattern": "^(https?://.*)?$"
     },
@@ -433,14 +434,13 @@
     },
     "enrichment_provider": {
       "type": "string",
-      "title": "Enrichment Provider",
-      "description": "Route enrichment source. 'auto': free sources first, FlightAware if key present. 'opensky': free OpenSky only. 'flightaware': requires API key.",
+      "title": "Route Enrichment Provider",
+      "description": "Fallback source for origin/destination data not covered by FR24 enrichment. 'adsbnet': free route lookups via adsb.lol — good coverage for major airlines, no account needed (recommended). 'flightaware': paid FlightAware AeroAPI — highest coverage but requires a paid subscription configured in the FlightAware section below.",
       "enum": [
-        "auto",
-        "opensky",
+        "adsbnet",
         "flightaware"
       ],
-      "default": "auto"
+      "default": "adsbnet"
     },
     "header_color": {
       "type": "array",
@@ -515,32 +515,32 @@
     },
     "opensky_username": {
       "type": "string",
-      "title": "OpenSky Username",
-      "description": "OpenSky Network username for higher rate limits (optional \u2014 works without for basic use).",
+      "title": "OpenSky Username (Advanced)",
+      "description": "OpenSky Network username. Only needed if you have manually set enrichment_provider to 'opensky' via direct config edit. Leave blank for the standard free setup.",
       "x-secret": true,
       "default": ""
     },
     "opensky_password": {
       "type": "string",
-      "title": "OpenSky Password",
-      "description": "OpenSky Network password.",
+      "title": "OpenSky Password (Advanced)",
+      "description": "OpenSky Network password. Only needed alongside opensky_username above.",
       "x-secret": true,
       "default": ""
     },
     "flightaware": {
       "type": "object",
       "title": "FlightAware AeroAPI (Paid - Optional)",
-      "description": "FlightAware AeroAPI provides detailed flight plan data (origin, destination, aircraft type). Requires a paid API subscription. Most users can skip this section \u2014 FR24 enrichment provides similar data for free.",
+      "description": "OPTIONAL PAID SERVICE \u2014 skip this section entirely unless you have a FlightAware AeroAPI subscription. Enabling this will make API calls that are billed at $0.005 each. Free route data via FR24 enrichment (above) works well for most users without any cost.",
       "properties": {
         "api_key": {
           "type": "string",
-          "description": "FlightAware AeroAPI key (optional \u2014 all features work without it via free data sources). Get your API key at https://flightaware.com/aeroapi/",
+          "description": "Your FlightAware AeroAPI key. Leave blank if you are not using FlightAware \u2014 the plugin works fully without this.",
           "x-secret": true,
           "default": ""
         },
         "enabled": {
           "type": "boolean",
-          "description": "Enable flight plan fetching from FlightAware API. Note: FR24 enrichment (fr24_enrichment) also provides origin/destination data for free without this setting.",
+          "description": "Enable paid FlightAware API calls. Must be true AND api_key must be set for FlightAware to be used. Disabled by default \u2014 do not enable unless you have a paid subscription.",
           "default": false
         },
         "max_api_calls_per_hour": {
@@ -630,8 +630,8 @@
     },
     "flightaware_api_key": {
       "type": "string",
-      "title": "FlightAware API Key (deprecated - use FlightAware section)",
-      "description": "Deprecated: moved to FlightAware section. Kept for backward compatibility.",
+      "title": "FlightAware API Key (deprecated)",
+      "description": "Deprecated — use the FlightAware section above instead. Kept only for backward compatibility with older configs.",
       "default": "",
       "x-secret": true
     },
@@ -702,21 +702,19 @@
   "x-propertyOrder": [
     "enabled",
     "data_source",
+    "skyaware_url",
+    "center_latitude",
+    "center_longitude",
+    "map_radius_miles",
+    "fr24_enrichment",
+    "fr24_enrichment_interval",
+    "enrichment_provider",
+    "route_cache_ttl",
     "display_mode",
     "display_duration",
     "update_interval",
     "live_priority",
-    "center_latitude",
-    "center_longitude",
-    "map_radius_miles",
     "zoom_factor",
-    "skyaware_url",
-    "fr24_enrichment",
-    "fr24_enrichment_interval",
-    "opensky_username",
-    "opensky_password",
-    "enrichment_provider",
-    "route_cache_ttl",
     "max_aircraft",
     "min_altitude_ft",
     "max_altitude_ft",
@@ -746,6 +744,8 @@
     "use_offline_database",
     "offline_database_auto_update",
     "offline_database_update_interval_days",
+    "opensky_username",
+    "opensky_password",
     "flightaware"
   ]
 }

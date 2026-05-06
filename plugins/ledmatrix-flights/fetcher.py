@@ -451,6 +451,113 @@ class OpenSkyFetcher(AircraftFetcher):
         return result
 
 
+# ---------------------------------------------------------------------------
+# adsb.fi / adsb.lol (free cloud ADS-B, ADSBexchange v2 format)
+# ---------------------------------------------------------------------------
+
+_ADSBNET_PROVIDERS = {
+    "adsbfi": ("https://opendata.adsb.fi/api", 250),
+    "adsblol": ("https://api.adsb.lol", 100),
+}
+
+
+class AdsbNetFetcher(AircraftFetcher):
+    """Fetch aircraft from adsb.fi or adsb.lol (free, no auth required).
+
+    Both services implement the ADSBexchange v2 response format.
+    Useful for users without a local ADS-B receiver.
+    """
+
+    def __init__(self, provider: str = "adsbfi", request_timeout: int = 10):
+        base_url, max_nm = _ADSBNET_PROVIDERS.get(provider, _ADSBNET_PROVIDERS["adsbfi"])
+        self.base_url = base_url
+        self.max_nm = max_nm
+        self.provider = provider
+        self.timeout = request_timeout
+
+    def fetch(self, center_lat, center_lon, radius_miles, altitude_colors):
+        # Convert statute miles → nautical miles, cap at provider limit
+        radius_nm = int(round(radius_miles * 0.868976))
+        if radius_nm > self.max_nm:
+            logger.warning(
+                f"[Flight Tracker] {self.provider}: radius {radius_nm}nm exceeds "
+                f"{self.max_nm}nm limit — capping"
+            )
+            radius_nm = self.max_nm
+
+        url = f"{self.base_url}/v2/lat/{center_lat}/lon/{center_lon}/dist/{radius_nm}"
+        try:
+            response = requests.get(url, timeout=self.timeout)
+            response.raise_for_status()
+            data = response.json()
+        except Exception:
+            logger.exception(f"[Flight Tracker] {self.provider} fetch failed")
+            return None
+
+        aircraft_list = data.get("ac", [])
+        if not aircraft_list:
+            logger.info(f"[Flight Tracker] {self.provider}: no aircraft in range ({radius_miles}mi)")
+            return {}
+
+        current_time = time.time()
+        result: Dict[str, Dict] = {}
+
+        for ac in aircraft_list:
+            icao = (ac.get("hex") or "").upper().strip()
+            if not icao:
+                continue
+
+            lat = ac.get("lat")
+            lon = ac.get("lon")
+            if lat is None or lon is None:
+                continue
+
+            distance_miles = haversine_miles(lat, lon, center_lat, center_lon)
+            if distance_miles > radius_miles:
+                continue
+
+            alt_baro = ac.get("alt_baro")
+            alt_geom = ac.get("alt_geom")
+            if alt_baro == "ground":
+                altitude = 0
+            elif isinstance(alt_baro, (int, float)):
+                altitude = alt_baro
+            elif isinstance(alt_geom, (int, float)):
+                altitude = alt_geom
+            else:
+                altitude = 0
+
+            callsign = (ac.get("flight") or "").strip() or icao
+            speed = ac.get("gs", 0) or 0
+            heading = ac.get("track", ac.get("true_heading", 0)) or 0
+            registration = (ac.get("r") or "").strip()
+            aircraft_type = (ac.get("t") or "").strip() or "Unknown"
+            vertical_rate = ac.get("baro_rate", ac.get("geom_rate"))
+
+            color = altitude_to_color(altitude, altitude_colors)
+
+            result[icao] = {
+                "icao": icao,
+                "callsign": callsign,
+                "registration": registration,
+                "lat": lat,
+                "lon": lon,
+                "altitude": altitude,
+                "speed": speed,
+                "heading": heading,
+                "aircraft_type": aircraft_type,
+                "distance_miles": distance_miles,
+                "color": color,
+                "last_seen": current_time,
+                "vertical_rate": vertical_rate,
+            }
+
+        logger.info(
+            f"[Flight Tracker] {self.provider}: {len(result)} aircraft in range ({radius_miles}mi)"
+        )
+        return result
+
+
 def create_fetcher(config: Dict[str, Any], cache_manager: Any) -> AircraftFetcher:
     """Factory: create the appropriate fetcher based on config['data_source']."""
     source = config.get('data_source', 'skyaware')
@@ -461,6 +568,8 @@ def create_fetcher(config: Dict[str, Any], cache_manager: Any) -> AircraftFetche
         username = config.get('opensky_username', '')
         password = config.get('opensky_password', '')
         return OpenSkyFetcher(username=username, password=password)
+    elif source in ('adsbfi', 'adsblol'):
+        return AdsbNetFetcher(provider=source)
     else:
         url = config.get('skyaware_url', 'http://192.168.86.30/skyaware/data/aircraft.json')
         return SkyAwareFetcher(url, cache_manager)

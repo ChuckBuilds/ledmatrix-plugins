@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-05-04",
+  "last_updated": "2026-05-06",
   "plugins": [
     {
       "id": "hello-world",
@@ -472,7 +472,7 @@
     {
       "id": "ledmatrix-flights",
       "name": "Flight Tracker",
-      "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
+      "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
       "author": "ChuckBuilds",
       "category": "custom",
       "tags": [
@@ -488,10 +488,10 @@
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-04-14",
+      "last_updated": "2026-05-06",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.0"
+      "latest_version": "1.5.0"
     },
     {
       "id": "christmas-countdown",
