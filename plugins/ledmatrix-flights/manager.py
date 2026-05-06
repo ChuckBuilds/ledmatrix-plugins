@@ -842,11 +842,18 @@ class FlightTrackerPlugin(BasePlugin):
 
         The fetcher returns pre-normalized dicts (icao, callsign, aircraft_type, …)
         rather than raw SkyAware JSON, so this bypasses _process_aircraft_data.
+
+        Fetches with a wider stats radius so all_aircraft_data covers more than the
+        map display area, matching the SkyAware behaviour where stats are computed
+        from the full receiver range rather than just the map radius subset.
         """
+        # Fetch a wider area for stats (3× map radius, capped at 100 miles so we
+        # don't hammer the public API with enormous bounding boxes).
+        stats_radius = min(self.map_radius_miles * 3, 100)
         result = self._fetcher.fetch(
             self.center_lat,
             self.center_lon,
-            self.map_radius_miles,
+            stats_radius,
             self.altitude_colors,
         )
         if result is None:
@@ -874,10 +881,16 @@ class FlightTrackerPlugin(BasePlugin):
                         if field in existing and field not in new_info:
                             new_info[field] = existing[field]
 
+            # all_aircraft_data = full stats pool (everything in stats_radius)
+            # aircraft_data = map/area display (only within map_radius_miles)
             self.all_aircraft_data[icao] = new_info
-            self.aircraft_data[icao] = new_info
+            if new_info['distance_miles'] <= self.map_radius_miles:
+                self.aircraft_data[icao] = new_info
+            elif icao in self.aircraft_data:
+                del self.aircraft_data[icao]
+                self.aircraft_trails.pop(icao, None)
 
-            if self.show_trails:
+            if self.show_trails and new_info['distance_miles'] <= self.map_radius_miles:
                 if icao not in self.aircraft_trails:
                     self.aircraft_trails[icao] = []
                 self.aircraft_trails[icao].append((new_info['lat'], new_info['lon'], current_time))
@@ -928,6 +941,13 @@ class FlightTrackerPlugin(BasePlugin):
                     ac['airline_name'] = fr24_info['airline_name']
                 if not ac.get('fr24_id') and fr24_info.get('fr24_id'):
                     ac['fr24_id'] = fr24_info['fr24_id']
+
+                # Queue for FR24 detail fetch (airline full name, airport coords, timing)
+                fr24_id = ac.get('fr24_id')
+                if fr24_id and fr24_id not in self.pending_fr24_details:
+                    if self._is_callsign_worth_fetching(ac.get('callsign', '')):
+                        self.pending_fr24_details[fr24_id] = icao
+
                 matched += 1
 
         self.logger.info(f"[Flight Tracker] FR24 enrichment matched {matched}/{len(self.aircraft_data)} tracked aircraft")
@@ -1972,7 +1992,7 @@ class FlightTrackerPlugin(BasePlugin):
                 self.logger.info("[Flight Tracker] Fetching aircraft data from FlightRadar24")
                 self._update_from_fr24()
                 self.logger.info(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
-            elif self.data_source in ('adsbfi', 'adsblol'):
+            elif self.data_source in ('adsbfi', 'adsblol', 'opensky'):
                 self.logger.info(f"[Flight Tracker] Fetching aircraft data from {self.data_source}")
                 self._update_from_fetcher()
                 self.logger.info(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")

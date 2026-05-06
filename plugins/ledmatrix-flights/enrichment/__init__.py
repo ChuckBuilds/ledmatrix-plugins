@@ -1,6 +1,10 @@
 """Enrichment providers for the Flight Tracker plugin."""
 
+import logging
+
 from enrichment.base import EnrichmentProvider
+
+logger = logging.getLogger(__name__)
 from enrichment.opensky import OpenSkyEnrichment
 from enrichment.flightaware import FlightAwareEnrichment
 from enrichment.adsbnet import AdsbNetEnrichment
@@ -19,8 +23,12 @@ def create_enrichment_provider(config: dict, cache_manager=None) -> EnrichmentPr
     provider = config.get("enrichment_provider", "adsbnet")
     fa_key = config.get("flightaware_api_key", "")
 
-    if provider == "flightaware" and fa_key:
-        return FlightAwareEnrichment(config, cache_manager)
+    if provider == "flightaware":
+        if fa_key:
+            return FlightAwareEnrichment(config, cache_manager)
+        # Key not configured — fall back to free adsbnet rather than silently no-op
+        logger.warning("[Flight Tracker] enrichment_provider=flightaware but no API key — falling back to adsbnet")
+        provider = "adsbnet"
 
     if provider in ("adsbnet", "auto"):
         route_ttl = config.get("route_cache_ttl", 300)
