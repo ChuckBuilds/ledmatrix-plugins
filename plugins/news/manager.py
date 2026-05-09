@@ -50,13 +50,16 @@ class NewsTickerPlugin(BasePlugin):
 
     # Default RSS feeds
     DEFAULT_FEEDS = {
-        'MLB': 'http://espn.com/espn/rss/mlb/news',
-        'NFL': 'http://espn.go.com/espn/rss/nfl/news',
+        'MLB': 'https://www.espn.com/espn/rss/mlb/news',
+        'NFL': 'https://www.espn.com/espn/rss/nfl/news',
         'NCAA FB': 'https://www.espn.com/espn/rss/ncf/news',
         'NHL': 'https://www.espn.com/espn/rss/nhl/news',
         'NBA': 'https://www.espn.com/espn/rss/nba/news',
         'TOP SPORTS': 'https://www.espn.com/espn/rss/news',
-        'BIG10': 'https://www.espn.com/blog/feed?blog=bigten',
+        # Big-Ten-specific via Google News search. ESPN no longer publishes
+        # a Big-Ten-only RSS feed (btn.com/feed/ returns HTML, bigten.org/rss
+        # 404s, and the prior espn.com/blog/feed?blog=bigten was deprecated).
+        'BIG10': 'https://news.google.com/rss/search?q=big+ten+football&hl=en-US&gl=US&ceid=US:en',
         'NCAA': 'https://www.espn.com/espn/rss/ncaa/news',
         'Other': 'https://www.coveringthecorner.com/rss/current.xml'
     }
