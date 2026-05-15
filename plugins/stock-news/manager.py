@@ -24,6 +24,7 @@ import re
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 from pathlib import Path
+from PIL import Image, ImageDraw, ImageFont
 
 from src.plugin_system.base_plugin import BasePlugin
 

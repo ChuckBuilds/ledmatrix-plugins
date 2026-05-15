@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-05-09",
+  "last_updated": "2026-05-15",
   "plugins": [
     {
       "id": "hello-world",
@@ -440,10 +440,10 @@
       "plugin_path": "plugins/stock-news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-10-19",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "stocks",
