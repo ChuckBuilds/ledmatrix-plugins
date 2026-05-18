@@ -4,7 +4,6 @@ Save updated content to a JSON file in the of_the_day directory.
 Validates the JSON structure before saving.
 """
 
-import os
 import json
 import sys
 from pathlib import Path

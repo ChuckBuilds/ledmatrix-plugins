@@ -10,8 +10,7 @@ Extends MastersRenderer with additional visual polish:
 """
 
 import logging
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from PIL import Image, ImageDraw
 
@@ -19,14 +18,12 @@ from masters_helpers import (
     AUGUSTA_HOLES,
     AUGUSTA_PAR,
     MULTIPLE_WINNERS,
-    PAST_CHAMPIONS,
     ascii_safe,
     format_player_name,
     format_score_to_par,
     get_hole_info,
-    get_score_description,
 )
-from masters_renderer import COLORS, MastersRenderer, _load_bdf_font, _load_font_sized
+from masters_renderer import COLORS, MastersRenderer, _load_bdf_font
 
 logger = logging.getLogger(__name__)
 

@@ -12,12 +12,11 @@ Downloads REAL assets:
 import math
 import os
 import random
-import sys
 from io import BytesIO
 from pathlib import Path
 
 import requests
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 # Asset directories
 PLUGIN_DIR = Path(__file__).parent
@@ -392,7 +391,7 @@ def create_golf_icons():
             draw.ellipse([dx - 1, dy - 1, dx + 1, dy + 1], fill=(230, 230, 230))
 
     ball_img.save(ICONS_DIR / "golf_ball.png")
-    print(f"  [created] golf_ball.png")
+    print("  [created] golf_ball.png")
 
     # Masters Flag (yellow flag, not red - Masters uses yellow)
     flag_img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
@@ -406,7 +405,7 @@ def create_golf_icons():
     draw.ellipse([pole_x - 5, size - 6, pole_x + 5, size - 2], fill=(40, 40, 40))
 
     flag_img.save(ICONS_DIR / "golf_flag.png")
-    print(f"  [created] golf_flag.png")
+    print("  [created] golf_flag.png")
 
     # Golf Tee
     tee_img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
@@ -419,7 +418,7 @@ def create_golf_icons():
     draw.ellipse([cx - 5, 2, cx + 5, 12], fill=(255, 255, 255), outline=(200, 200, 200))
 
     tee_img.save(ICONS_DIR / "golf_tee.png")
-    print(f"  [created] golf_tee.png")
+    print("  [created] golf_tee.png")
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -842,7 +841,7 @@ def create_background_textures():
         s = random.randint(-8, 8)
         draw2.point((x, y), fill=(max(0, 34 + s), max(0, 120 + s), max(0, 34 + s)))
     img2.save(BACKGROUNDS_DIR / "augusta_green_texture.png")
-    print(f"  [created] augusta_green_texture.png")
+    print("  [created] augusta_green_texture.png")
 
 
 # ═══════════════════════════════════════════════════════════════

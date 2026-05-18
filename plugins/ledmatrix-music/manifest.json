@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -67,6 +67,11 @@
   ],
   "versions": [
     {
+      "released": "2026-05-15",
+      "version": "1.0.6",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "version": "1.0.5",
       "released": "2026-03-21",
       "ledmatrix_min_version": "2.0.0"
@@ -87,7 +92,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-03-21",
+  "last_updated": "2026-05-15",
   "stars": 0,
   "downloads": 0,
   "verified": true,

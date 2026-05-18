@@ -5,13 +5,10 @@ This base class provides core odds fetching functionality that can be inherited
 by plugins that need odds data.
 """
 
-import time
 import logging
 import requests
 import json
-from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List
-import pytz
 
 class BaseOddsManager:
     """

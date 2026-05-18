@@ -1022,7 +1022,6 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
 
     def _fetch_league_games(self, league_config: Dict[str, Any], now: datetime, canonical_league_key: str) -> List[Dict[str, Any]]:
         """Fetch upcoming games for a specific league using day-by-day approach."""
-        games = []
         yesterday = now - timedelta(days=1)
         future_window = now + timedelta(days=self.future_fetch_days)
         num_days = (future_window - yesterday).days + 1

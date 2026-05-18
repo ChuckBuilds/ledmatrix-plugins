@@ -5,7 +5,6 @@ Handles loading and drawing weather icons from PNG files in assets/weather/.
 Maps OpenWeatherMap icon codes to appropriate icon files.
 """
 
-import os
 import math
 import logging
 from pathlib import Path

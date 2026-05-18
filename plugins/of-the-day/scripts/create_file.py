@@ -4,7 +4,6 @@ Create a new JSON file with template structure (365 empty entries).
 Automatically adds category to config.
 """
 
-import os
 import json
 import sys
 from pathlib import Path

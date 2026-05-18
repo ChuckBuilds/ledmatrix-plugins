@@ -9,7 +9,6 @@ Usage:
     python scripts/download_flags.py
 """
 
-import os
 import sys
 import time
 from io import BytesIO

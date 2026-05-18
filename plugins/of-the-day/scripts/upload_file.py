@@ -4,7 +4,6 @@ Upload a JSON file to the of_the_day directory.
 Validates the file format and automatically adds category to config.
 """
 
-import os
 import json
 import sys
 from pathlib import Path

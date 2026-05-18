@@ -2,8 +2,7 @@
 
 import logging
 import threading
-import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 

@@ -24,7 +24,6 @@ from PIL import Image, ImageDraw, ImageFont
 
 from masters_helpers import (
     AUGUSTA_HOLES,
-    AUGUSTA_PAR,
     MULTIPLE_WINNERS,
     PAST_CHAMPIONS,
     TOURNAMENT_RECORDS,
@@ -34,8 +33,6 @@ from masters_helpers import (
     get_fun_fact_by_index,
     get_hole_info,
     get_random_fun_fact,
-    get_recent_champions,
-    get_score_description,
 )
 
 logger = logging.getLogger(__name__)

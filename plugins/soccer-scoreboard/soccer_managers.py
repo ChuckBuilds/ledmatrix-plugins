@@ -6,13 +6,10 @@ Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Champions League, an
 """
 
 import logging
-import os
-import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 import pytz
-import requests
 
 from sports import SportsCore, SportsLive, SportsRecent, SportsUpcoming
 

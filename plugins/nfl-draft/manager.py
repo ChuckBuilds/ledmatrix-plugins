@@ -23,12 +23,11 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 from urllib.request import urlopen, Request
-from urllib.error import URLError
 import json
 
 from PIL import Image, ImageDraw, ImageFont
 
-from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
+from src.plugin_system.base_plugin import BasePlugin
 from src.common.scroll_helper import ScrollHelper
 from src.common.logo_helper import LogoHelper
 from src.common.api_helper import APIHelper

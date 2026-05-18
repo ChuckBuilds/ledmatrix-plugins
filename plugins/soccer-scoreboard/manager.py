@@ -51,9 +51,6 @@ except ImportError:
 
 # Import the manager classes
 from soccer_managers import (
-    SoccerLiveManager,
-    SoccerRecentManager,
-    SoccerUpcomingManager,
     create_premier_league_managers,
     create_la_liga_managers,
     create_bundesliga_managers,

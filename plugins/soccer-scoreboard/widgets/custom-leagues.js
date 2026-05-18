@@ -214,7 +214,7 @@
         removeButton.type = 'button';
         removeButton.className = 'text-red-600 hover:text-red-800 px-2 py-1';
         removeButton.addEventListener('click', function() {
-            removeCustomLeagueRow(this);
+            window.removeCustomLeagueRow(this);
         });
         const removeIcon = document.createElement('i');
         removeIcon.className = 'fas fa-trash';
@@ -307,7 +307,10 @@
         COMMON_LEAGUE_CODES.forEach(league => {
             const item = document.createElement('div');
             item.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm';
-            item.innerHTML = `<strong>${escapeHtml(league.code)}</strong> - ${escapeHtml(league.name)}`;
+            const codeEl = document.createElement('strong');
+            codeEl.textContent = league.code;
+            item.appendChild(codeEl);
+            item.appendChild(document.createTextNode(' - ' + league.name));
             item.addEventListener('click', function() {
                 codeInput.value = league.code;
                 if (nameInput && !nameInput.value) {

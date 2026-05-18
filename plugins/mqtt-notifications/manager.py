@@ -462,7 +462,7 @@ class MQTTNotificationsPlugin(BasePlugin):
             return None
         
         try:
-            matrix_width = self.display_manager.matrix.width if self.display_manager.matrix else 128
+            self.display_manager.matrix.width if self.display_manager.matrix else 128
             matrix_height = self.display_manager.matrix.height if self.display_manager.matrix else 32
             
             # Create temporary image to measure text

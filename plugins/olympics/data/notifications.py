@@ -7,12 +7,11 @@ Sends notifications to external services when:
 - A live final begins
 """
 
-import json
 import logging
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from queue import Queue, Empty as QueueEmpty
 
 
@@ -26,7 +25,7 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
 
-from .data_models import MedalCount, OlympicEvent, EventResult
+from .data_models import OlympicEvent, EventResult
 
 logger = logging.getLogger(__name__)
 

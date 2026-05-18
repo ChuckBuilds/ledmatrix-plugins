@@ -7,7 +7,6 @@ Handles league definitions, API endpoints, logo paths, and filtering options.
 
 import logging
 from typing import Dict, Any, List, Optional
-from pathlib import Path
 
 
 class LeagueConfig:

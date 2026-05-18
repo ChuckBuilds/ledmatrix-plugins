@@ -7,7 +7,7 @@ Supports both Vegas scroll mode and regular display mode.
 
 import logging
 from datetime import date, datetime
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional
 from pathlib import Path
 from PIL import Image, ImageDraw
 

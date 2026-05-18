@@ -8,7 +8,7 @@ the Olympics plugin for medals, events, and results.
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 
 def _utcnow() -> datetime:

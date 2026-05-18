@@ -7,13 +7,12 @@ Enriches player data with real ESPN headshot URLs and country codes.
 """
 
 import logging
-import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import requests
 
-from masters_helpers import ESPN_HEADSHOT_URL, ESPN_PLAYER_IDS, get_espn_headshot_url, get_player_country
+from masters_helpers import ESPN_PLAYER_IDS, get_espn_headshot_url, get_player_country
 
 logger = logging.getLogger(__name__)
 

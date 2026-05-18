@@ -208,7 +208,7 @@ class OddsRenderer:
             content_width = sum(img.width for img in game_images) + gap_width * (len(game_images))
             total_width = display_width + content_width + display_width  # Add display width at both start and end
             
-            logger.debug(f"Image creation details:")
+            logger.debug("Image creation details:")
             logger.debug(f"  Display width: {display_width}px")
             logger.debug(f"  Content width: {content_width}px")
             logger.debug(f"  Total image width: {total_width}px")
@@ -272,7 +272,6 @@ class OddsRenderer:
                 logo_name = self.BROADCAST_LOGO_MAP.get(broadcast_name, '')
                 if logo_name:
                     try:
-                        from pathlib import Path
                         broadcast_logo = Image.open(f"assets/broadcast_logos/{logo_name}.png")
                     except Exception:
                         broadcast_logo = None
@@ -704,10 +703,10 @@ class OddsRenderer:
                         # Only log this warning once per display session to avoid spam
                         if not self._insufficient_time_warning_logged:
                             logger.warning(f"Not enough time to complete content display - remaining: {remaining_time:.1f}s, needed: {time_to_complete:.1f}s")
-                            logger.debug(f"Resetting scroll position for clean transition")
+                            logger.debug("Resetting scroll position for clean transition")
                             self._insufficient_time_warning_logged = True
                         else:
-                            logger.debug(f"Resetting scroll position for clean transition (insufficient time warning already logged)")
+                            logger.debug("Resetting scroll position for clean transition (insufficient time warning already logged)")
                         self.scroll_position = 0
             
             # Create the visible part of the image by pasting from the ticker_image

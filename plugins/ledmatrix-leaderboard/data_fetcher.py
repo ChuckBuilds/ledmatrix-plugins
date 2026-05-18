@@ -465,7 +465,7 @@ class DataFetcher:
             
             if len(standings) == 0:
                 self.logger.error(f"0 teams found in standings data for {league_key} after extraction")
-                self.logger.error(f"This indicates a problem with the API response structure or extraction logic")
+                self.logger.error("This indicates a problem with the API response structure or extraction logic")
                 return []
             
             # ESPN API already returns data sorted by the 'sort' parameter (winpercent:desc,gamesbehind:asc)

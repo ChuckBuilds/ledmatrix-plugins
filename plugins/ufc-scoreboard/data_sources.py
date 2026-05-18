@@ -8,7 +8,7 @@ UFC/MMA adaptation based on work by Alex Resnick (legoguy1000) - PR #137
 from abc import ABC, abstractmethod
 from typing import Dict, List
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -35,17 +35,14 @@ class DataSource(ABC):
     @abstractmethod
     def fetch_live_games(self, sport: str, league: str) -> List[Dict]:
         """Fetch live games for a sport/league."""
-        pass
 
     @abstractmethod
     def fetch_schedule(self, sport: str, league: str, date_range: tuple) -> List[Dict]:
         """Fetch schedule for a sport/league within date range."""
-        pass
 
     @abstractmethod
     def fetch_standings(self, sport: str, league: str) -> Dict:
         """Fetch standings for a sport/league."""
-        pass
 
     def get_headers(self) -> Dict[str, str]:
         """Get headers for API requests."""

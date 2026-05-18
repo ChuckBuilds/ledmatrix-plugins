@@ -1,7 +1,7 @@
 {
   "id": "text-display",
   "name": "Text Display",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "ChuckBuilds",
   "description": "Display custom scrolling or static text with configurable fonts, colors, and scroll speed. Perfect for announcements, messages, or custom displays.",
   "category": "display",
@@ -19,6 +19,11 @@
   "class_name": "TextDisplayPlugin",
   "versions": [
     {
+      "released": "2026-05-15",
+      "version": "1.0.3",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "released": "2026-04-07",
       "version": "1.0.2",
       "ledmatrix_min_version": "2.0.0"
@@ -29,7 +34,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-04-07",
+  "last_updated": "2026-05-15",
   "stars": 0,
   "downloads": 0,
   "verified": true,

@@ -4,7 +4,6 @@ Delete a JSON file from the of_the_day directory.
 Also removes the category from plugin configuration.
 """
 
-import os
 import json
 import sys
 from pathlib import Path

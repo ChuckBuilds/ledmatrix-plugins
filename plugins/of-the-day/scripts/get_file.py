@@ -3,7 +3,6 @@
 Get the contents of a JSON file from the of_the_day directory.
 """
 
-import os
 import json
 import sys
 from pathlib import Path

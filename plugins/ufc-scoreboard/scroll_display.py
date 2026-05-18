@@ -11,7 +11,6 @@ UFC/MMA adaptation based on work by Alex Resnick (legoguy1000) - PR #137
 import logging
 import time
 import os
-from pathlib import Path
 from typing import Dict, Any, List, Optional
 from PIL import Image
 

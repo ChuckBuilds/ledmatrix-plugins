@@ -13,7 +13,7 @@ import socket
 import subprocess
 import time
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from PIL import Image, ImageDraw, ImageFont
 
 from src.plugin_system.base_plugin import BasePlugin
@@ -271,14 +271,14 @@ class WebUIInfoPlugin(BasePlugin):
             # Calculate text positions (centered)
             y_start = 5
             line_height = 8
-            total_height = len(lines) * line_height
+            len(lines) * line_height
             
             # Draw each line
             for i, line in enumerate(lines):
                 # Get text size for centering
                 bbox = draw.textbbox((0, 0), line, font=font_small)
                 text_width = bbox[2] - bbox[0]
-                text_height = bbox[3] - bbox[1]
+                bbox[3] - bbox[1]
                 
                 # Center horizontally
                 x = (width - text_width) // 2
@@ -301,7 +301,7 @@ class WebUIInfoPlugin(BasePlugin):
             try:
                 self.display_manager.clear()
                 self.display_manager.update_display()
-            except:
+            except Exception:
                 pass
     
     def get_display_duration(self) -> float:

@@ -801,7 +801,6 @@ class StaticImagePlugin(BasePlugin):
         
         Static images don't change, so this method is a no-op.
         """
-        pass
     
     def display(self, force_clear: bool = False) -> None:
         """
@@ -957,7 +956,7 @@ class StaticImagePlugin(BasePlugin):
 
                 try:
                     font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)
-                except:
+                except Exception:
                     font = ImageFont.load_default()
 
                 draw.text((5, 12), "Image", font=font, fill=(200, 0, 0))
@@ -968,7 +967,6 @@ class StaticImagePlugin(BasePlugin):
             self.display_manager.update_display()
         except Exception as e:
             self.logger.error(f"Error displaying error message: {e}")
-            pass
     
     def set_image_path(self, image_path: str) -> bool:
         """

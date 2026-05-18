@@ -6,7 +6,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import pytz
 import requests
@@ -1312,7 +1312,7 @@ class SportsUpcoming(SportsCore):
             if self.show_records or self.show_ranking:
                 try:
                     record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug(f"Loaded 6px record font successfully")
+                    self.logger.debug("Loaded 6px record font successfully")
                 except IOError:
                     record_font = ImageFont.load_default()
                     self.logger.warning(
@@ -1642,7 +1642,7 @@ class SportsRecent(SportsCore):
                             self._clear_zero_clock_tracking(game_id)
                             self.logger.debug(
                                 f"Game {game.get('away_abbr')}@{game.get('home_abbr')} "
-                                f"appears finished (period_text contains 'final')"
+                                "appears finished (period_text contains 'final')"
                             )
                         elif clock_normalized in ["000", "00", ""] or clock == "0:00" or clock == ":00":
                             # Clock at 0:00 but no explicit final - use grace period
@@ -1875,7 +1875,7 @@ class SportsRecent(SportsCore):
             if self.show_records or self.show_ranking:
                 try:
                     record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug(f"Loaded 6px record font successfully")
+                    self.logger.debug("Loaded 6px record font successfully")
                 except IOError:
                     record_font = ImageFont.load_default()
                     self.logger.warning(

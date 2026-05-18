@@ -6,7 +6,7 @@ Data covers Winter Olympics medal totals through 2022 Beijing.
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 # Historical all-time Winter Olympics medal counts (through Beijing 2022)
 # Source: Olympics.com

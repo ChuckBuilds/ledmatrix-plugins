@@ -14,9 +14,8 @@ Features:
 
 import logging
 import time
-import os
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from PIL import Image
 
 try:

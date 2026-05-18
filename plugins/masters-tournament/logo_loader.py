@@ -21,7 +21,6 @@ import requests
 import requests.exceptions
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
-from masters_helpers import ESPN_HEADSHOT_URL, ESPN_PLAYER_IDS, get_espn_headshot_url
 
 logger = logging.getLogger(__name__)
 

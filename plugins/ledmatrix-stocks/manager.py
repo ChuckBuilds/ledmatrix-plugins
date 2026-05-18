@@ -179,7 +179,6 @@ class StockTickerPlugin(BasePlugin):
             self.current_stock_index = (self.current_stock_index + 1) % len(symbols)
             self.last_stock_switch = current_time
             self._switch_stocks_shown += 1
-            force_clear = True
 
         # Mark cycle as started after first display
         if not self._switch_cycle_started:

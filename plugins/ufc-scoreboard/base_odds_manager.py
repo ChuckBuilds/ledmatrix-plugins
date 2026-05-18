@@ -7,10 +7,8 @@ homeAthleteOdds/awayAthleteOdds and separate event_id/comp_id support.
 UFC/MMA odds adaptation based on work by Alex Resnick (legoguy1000) - PR #137
 """
 
-import time
 import logging
 import json
-from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List
 
 import requests

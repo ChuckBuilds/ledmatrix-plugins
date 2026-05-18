@@ -21,7 +21,6 @@ import time
 from datetime import date
 from typing import Dict, Any, List, Optional
 from PIL import Image, ImageDraw, ImageFont
-from pathlib import Path
 
 from src.plugin_system.base_plugin import BasePlugin
 
@@ -529,12 +528,12 @@ class OfTheDayPlugin(BasePlugin):
         # Load fonts - match old manager
         try:
             title_font = ImageFont.truetype('assets/fonts/PressStart2P-Regular.ttf', 8)
-        except:
+        except Exception:
             title_font = self.display_manager.small_font if hasattr(self.display_manager, 'small_font') else ImageFont.load_default()
         
         try:
             body_font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 6)
-        except:
+        except Exception:
             body_font = self.display_manager.extra_small_font if hasattr(self.display_manager, 'extra_small_font') else ImageFont.load_default()
         
         # Get font heights
@@ -652,7 +651,7 @@ class OfTheDayPlugin(BasePlugin):
         
         try:
             font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)
-        except:
+        except Exception:
             font = ImageFont.load_default()
         
         draw.text((5, 12), "No Data", font=font, fill=(200, 200, 200))
@@ -669,7 +668,7 @@ class OfTheDayPlugin(BasePlugin):
         
         try:
             font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)
-        except:
+        except Exception:
             font = ImageFont.load_default()
         
         draw.text((5, 12), "Error", font=font, fill=(255, 0, 0))

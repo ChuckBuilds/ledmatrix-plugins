@@ -73,7 +73,7 @@ for file_path in data_dir.glob('*.json'):
             'entry_count': entry_count,
             'enabled': enabled
         })
-    except Exception as e:
+    except Exception:
         # Skip files that can't be read
         continue
 

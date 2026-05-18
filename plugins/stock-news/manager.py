@@ -21,10 +21,9 @@ import requests
 import xml.etree.ElementTree as ET
 import html
 import re
-from datetime import datetime, timezone
-from typing import Dict, Any, Optional, List
-from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont
+from datetime import datetime
+from typing import Dict, Any, List
+from PIL import Image, ImageDraw
 
 from src.plugin_system.base_plugin import BasePlugin
 

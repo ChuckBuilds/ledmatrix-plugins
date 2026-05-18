@@ -21,14 +21,13 @@ import hashlib
 import logging
 import threading
 import time
-from datetime import date, datetime
 from typing import Dict, Any, Optional, List
 from PIL import Image
 
 from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
 
 # Local imports
-from data import OlympicsDataFetcher, OlympicsData, MedalCount
+from data import OlympicsDataFetcher, OlympicsData
 from renderers import MedalCardRenderer, EventCardRenderer, CountdownRenderer
 
 logger = logging.getLogger(__name__)

@@ -374,7 +374,7 @@ class WeatherPlugin(BasePlugin):
                 width = self.display_manager.matrix.width
                 height = self.display_manager.matrix.height
                 self._radar_fetcher.refresh_data(width, height)
-        except Exception as e:
+        except Exception:
             self.logger.exception("Error refreshing radar data")
 
     def _ensure_radar_fetcher(self) -> None:
@@ -768,7 +768,6 @@ class WeatherPlugin(BasePlugin):
             # Each item is (text, color). Rows fill from left to right, each item
             # centered in its equal-width section (same pattern as original UV/H/W bar).
             font = self.display_manager.extra_small_font
-            extra_small_h = 7
 
             # Gather all enabled bottom-bar items
             feels_like = self.weather_data['main'].get('feels_like')
@@ -814,7 +813,7 @@ class WeatherPlugin(BasePlugin):
                     draw.text((max(0, x), layout['bottom_bar_y']), text, font=font, fill=color)
 
             return img
-        except Exception as e:
+        except Exception:
             self.logger.exception("Error rendering current weather")
             return None
 
@@ -934,7 +933,7 @@ class WeatherPlugin(BasePlugin):
                          fill=self.COLORS['text'])
 
             return img
-        except Exception as e:
+        except Exception:
             self.logger.exception("Error rendering hourly forecast")
             return None
 
@@ -1006,7 +1005,7 @@ class WeatherPlugin(BasePlugin):
                              fill=self.COLORS['text'])
 
             return img
-        except Exception as e:
+        except Exception:
             self.logger.exception("Error rendering daily forecast")
             return None
 
@@ -1140,7 +1139,7 @@ class WeatherPlugin(BasePlugin):
 
             # Text area starts after the icon
             text_x = icon_size + 8
-            text_w = width - text_x - 2
+            width - text_x - 2
 
             # Row 1: Phase name (prominent)
             draw.text((text_x, 2), phase_name, font=font, fill=(200, 200, 255))
@@ -1170,7 +1169,7 @@ class WeatherPlugin(BasePlugin):
 
             self.display_manager.image = img
             self.display_manager.update_display()
-        except Exception as e:
+        except Exception:
             self.logger.exception("Error displaying almanac")
 
     # --- Radar Display Mode ---
@@ -1196,7 +1195,7 @@ class WeatherPlugin(BasePlugin):
                 self.display_manager.update_display()
             else:
                 self._display_no_data()
-        except Exception as e:
+        except Exception:
             self.logger.exception("Error displaying radar")
             self._display_no_data()
 
@@ -1241,7 +1240,7 @@ class WeatherPlugin(BasePlugin):
 
             self.display_manager.image = img
             self.display_manager.update_display()
-        except Exception as e:
+        except Exception:
             self.logger.exception("Error displaying alerts")
 
     def has_live_content(self) -> bool:

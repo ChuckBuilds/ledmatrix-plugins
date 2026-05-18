@@ -17,7 +17,7 @@ API Version: 1.0.0
 
 import time
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
 from PIL import Image
 

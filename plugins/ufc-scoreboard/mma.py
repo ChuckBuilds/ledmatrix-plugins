@@ -38,7 +38,6 @@ class MMA(SportsCore):
 
     def _custom_scorebug_layout(self, game: dict, draw: ImageDraw.ImageDraw):
         """No-op hook for subclasses to add custom scorebug elements."""
-        pass
 
     def _draw_fighter_records(
         self,
