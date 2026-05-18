@@ -11,7 +11,7 @@ Plus the area-mode card renderer for cycling through nearby aircraft.
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -487,7 +487,7 @@ class FlightRenderer:
         # Column widths (40% logo / 60% text)
         logo_w = w * 40 // 100
         text_x = logo_w
-        text_w = w - logo_w
+        w - logo_w
 
         # --- LOGO COL ---
         airline_icao = self._resolve_airline_icao(tf, _get)

@@ -1,11 +1,9 @@
 import logging
-import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import pytz
-import requests
 
 from basketball import Basketball, BasketballLive
 from sports import SportsRecent, SportsUpcoming

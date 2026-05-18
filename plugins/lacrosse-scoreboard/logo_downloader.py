@@ -2,10 +2,9 @@
 Simplified LogoDownloader for plugin use
 """
 
-import os
 import logging
 import requests
-from typing import Dict, Any, List, Optional, Tuple
+from typing import List, Optional
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from requests.adapters import HTTPAdapter

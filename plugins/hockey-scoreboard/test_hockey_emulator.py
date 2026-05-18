@@ -11,7 +11,6 @@ import sys
 import time
 import logging
 import json
-from pathlib import Path
 
 # Set emulator mode BEFORE any imports
 os.environ["EMULATOR"] = "true"
@@ -208,7 +207,7 @@ def run_emulator_test(duration=60):
             plugin_height = getattr(plugin, 'display_height', None) or getattr(display_manager, 'height', 32)
             print(f"   Display size: {plugin_width}x{plugin_height}")
         except Exception:
-            print(f"   Display size: 128x32 (default)")
+            print("   Display size: 128x32 (default)")
         print(f"   NHL enabled: {plugin.nhl_enabled}")
         print(f"   NCAA Men's enabled: {plugin.ncaa_mens_enabled}")
         print(f"   NCAA Women's enabled: {plugin.ncaa_womens_enabled}")

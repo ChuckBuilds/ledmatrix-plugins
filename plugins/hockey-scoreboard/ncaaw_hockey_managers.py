@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pytz
-import requests
 
 from hockey import Hockey, HockeyLive
 from sports import SportsRecent, SportsUpcoming

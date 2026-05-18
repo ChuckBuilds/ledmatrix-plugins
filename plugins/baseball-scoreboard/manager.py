@@ -31,7 +31,6 @@ import logging
 import time
 from typing import Dict, Any, Set, Optional, Tuple, List
 
-from PIL import ImageFont
 
 try:
     from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode

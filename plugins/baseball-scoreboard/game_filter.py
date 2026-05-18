@@ -8,7 +8,7 @@ Replicates logic from SportsLive, SportsRecent, and SportsUpcoming classes.
 import logging
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 
 class BaseballGameFilter:

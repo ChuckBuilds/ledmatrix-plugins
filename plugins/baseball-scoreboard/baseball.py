@@ -9,7 +9,7 @@ import logging
 import time
 from typing import Any, Dict, Optional
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 from data_sources import ESPNDataSource
 from sports import SportsCore, SportsLive, SportsRecent
@@ -455,7 +455,6 @@ class BaseballLive(Baseball, SportsLive):
             # --- Live Game Specific Elements ---
 
             # Define default text color
-            text_color = (255, 255, 255)
 
             # Draw Inning (Top Center)
             if game["is_final"]:

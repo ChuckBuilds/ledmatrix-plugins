@@ -10,13 +10,12 @@ import time
 import requests
 import tkinter as tk
 from tkinter import ttk, messagebox
-from PIL import Image, ImageDraw, ImageTk, ImageFont
+from PIL import Image, ImageDraw, ImageTk
 from pathlib import Path
 import threading
 import logging
 from typing import Dict, List, Optional, Tuple, Any
 import tempfile
-import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -387,7 +386,7 @@ class FlightTrackerDevViewer:
                     if any(blocked_word in content_text for blocked_word in ['blocked', 'overusing', 'rate limit', 'access denied']):
                         logger.warning(f"Blocked content detected from {url}")
                         continue
-                except:
+                except Exception:
                     pass  # If we can't decode, assume it's binary image data
                 
                 # Save to cache

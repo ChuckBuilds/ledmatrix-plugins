@@ -1,9 +1,7 @@
 from typing import Dict, Any, Optional
-from datetime import datetime, timezone
 import logging
 import re
 from PIL import Image, ImageDraw, ImageFont
-import time
 from sports import SportsCore, SportsLive
 from data_sources import ESPNDataSource
 

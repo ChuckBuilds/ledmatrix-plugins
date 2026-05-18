@@ -1,14 +1,7 @@
-import os
-import time
 import logging
-import requests
-import json
 from typing import Dict, Any, Optional
-from PIL import Image, ImageDraw, ImageFont
-from datetime import datetime, timezone
+from datetime import datetime
 import pytz
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 from sports import SportsRecent, SportsUpcoming
 from hockey import Hockey, HockeyLive
 from pathlib import Path

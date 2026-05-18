@@ -80,7 +80,7 @@ class GameRenderer:
             fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6-font.ttf')
             fonts["rank"] = self._load_custom_font(rank_config, default_size=10)
             self.logger.debug("Successfully loaded fonts from config")
-        except Exception as e:
+        except Exception:
             self.logger.exception("Error loading fonts, using defaults")
             # Fallback to hardcoded defaults
             try:

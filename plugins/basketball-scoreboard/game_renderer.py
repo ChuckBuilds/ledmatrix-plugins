@@ -124,7 +124,7 @@ class GameRenderer:
             fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6-font.ttf')
             fonts["rank"] = self._load_custom_font(rank_config, default_size=10)
             self.logger.debug("Successfully loaded fonts from config")
-        except Exception as e:
+        except Exception:
             self.logger.exception("Error loading fonts, using defaults")
             # Fallback to hardcoded defaults
             try:
@@ -156,7 +156,7 @@ class GameRenderer:
                         return ImageFont.truetype(font_path, font_size)
                     except Exception:
                         self.logger.warning(f"Could not load BDF font {font_name}, using default")
-        except Exception as e:
+        except Exception:
             self.logger.exception(f"Error loading font {font_name}")
         
         # Fallback to default font
@@ -262,7 +262,7 @@ class GameRenderer:
                     self.logger.debug(f"Logo not found at {logo_path} or {logo_file}")
                     return None
 
-        except Exception as e:
+        except Exception:
             self.logger.exception(f"Error loading logo for {team_abbrev} (league: {league})")
             return None
     
@@ -546,7 +546,7 @@ class GameRenderer:
 
                 self._draw_text_with_outline(draw, ou_text, (ou_x, ou_y), font, fill=(0, 255, 0))
                 
-        except Exception as e:
+        except Exception:
             self.logger.exception("Error drawing odds")
     
     def _draw_records_or_rankings(self, draw: ImageDraw.Draw, game: Dict) -> None:

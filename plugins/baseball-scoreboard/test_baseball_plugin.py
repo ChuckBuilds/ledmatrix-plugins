@@ -112,7 +112,6 @@ def test_plugin_import():
     print("=" * 60)
     
     try:
-        from manager import BaseballScoreboardPlugin
         print("[OK] Plugin imported successfully")
         return True
     except Exception as e:

@@ -5,7 +5,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import pytz
 import requests
@@ -253,7 +253,7 @@ class SportsCore(ABC):
                     self.logger.warning(
                         f"BDF font '{font_name}' not supported; convert to PILfont format "
                         f"using 'python -m PIL.pilfont {font_path}' then use the .pil file. "
-                        f"Falling back to default font."
+                        "Falling back to default font."
                     )
                     # Fall through to default
                 else:
@@ -1256,7 +1256,7 @@ class SportsUpcoming(SportsCore):
             if self.show_records or self.show_ranking:
                 try:
                     record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug(f"Loaded 6px record font successfully")
+                    self.logger.debug("Loaded 6px record font successfully")
                 except IOError:
                     record_font = ImageFont.load_default()
                     self.logger.warning(
@@ -1754,7 +1754,7 @@ class SportsRecent(SportsCore):
             if self.show_records or self.show_ranking:
                 try:
                     record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug(f"Loaded 6px record font successfully")
+                    self.logger.debug("Loaded 6px record font successfully")
                 except IOError:
                     record_font = ImageFont.load_default()
                     self.logger.warning(

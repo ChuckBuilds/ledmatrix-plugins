@@ -6,7 +6,6 @@ This script simulates various score formats that might come from the ESPN API
 to verify the fix handles stringified dicts correctly.
 """
 
-import json
 import sys
 import os
 
@@ -157,7 +156,7 @@ def test_score_extraction_with_mock_api_data():
                     print(f"         Got Home={home_score}, Away={away_score}")
                     all_passed = False
             else:
-                print(f"  ✗ FAIL: Could not extract game details")
+                print("  ✗ FAIL: Could not extract game details")
                 all_passed = False
         
         print("\n" + "=" * 60)

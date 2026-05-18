@@ -7,11 +7,10 @@ to verify that scroll mode works correctly.
 """
 
 import sys
-import os
 import time
 import logging
 from pathlib import Path
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 # Add paths
 plugin_dir = Path(__file__).parent
@@ -113,7 +112,7 @@ def test_game_renderer():
             config={},  # Minimal config
             custom_logger=logger
         )
-        print(f"[OK] GameRenderer initialized")
+        print("[OK] GameRenderer initialized")
         print(f"   Display dimensions: {renderer.display_width}x{renderer.display_height}")
         
         # Test creating a sample game card
@@ -131,7 +130,7 @@ def test_game_renderer():
         image = renderer.render_game_card(game_data, game_type="recent")
         
         if image:
-            print(f"[OK] Successfully rendered game card")
+            print("[OK] Successfully rendered game card")
             print(f"   Image size: {image.width}x{image.height}")
         else:
             print("[WARN] GameRenderer returned None for test game")
@@ -152,7 +151,7 @@ def test_scroll_display():
     print("=" * 60)
     
     try:
-        from scroll_display import ScrollDisplayManager, ScrollDisplay
+        from scroll_display import ScrollDisplayManager
         print("[OK] ScrollDisplayManager imported successfully")
         
         # Create mock display manager
@@ -192,7 +191,7 @@ def test_scroll_display():
         
         # Get the scroll display for 'recent' game type
         scroll_display = scroll_manager.get_scroll_display("recent")
-        print(f"[OK] Got scroll display for 'recent' game type")
+        print("[OK] Got scroll display for 'recent' game type")
         
         # Test preparing scroll content using the scroll display directly
         success = scroll_display.prepare_scroll_content(
@@ -215,7 +214,7 @@ def test_scroll_display():
         frame_count = 0
         
         while time.time() - start_time < 2:
-            result = scroll_display.display_scroll_frame()
+            scroll_display.display_scroll_frame()
             frame_count += 1
             time.sleep(0.01)  # ~100 FPS target
         
@@ -240,7 +239,7 @@ def test_display_mode_parsing():
     
     try:
         from manager import FootballScoreboardPlugin
-        from unittest.mock import Mock, patch
+        from unittest.mock import Mock
         
         # Create mock dependencies
         mock_display = create_real_display_manager()
@@ -268,7 +267,7 @@ def test_display_mode_parsing():
         
         # Check display mode settings
         settings = plugin._display_mode_settings
-        print(f"[OK] Display mode settings parsed:")
+        print("[OK] Display mode settings parsed:")
         for league, modes in settings.items():
             print(f"   {league}:")
             for game_type, display_mode in modes.items():

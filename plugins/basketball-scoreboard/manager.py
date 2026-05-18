@@ -10,7 +10,6 @@ import time
 import threading
 from typing import Dict, Any, Set, Optional, List, Tuple
 
-from PIL import ImageFont
 
 try:
     from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode

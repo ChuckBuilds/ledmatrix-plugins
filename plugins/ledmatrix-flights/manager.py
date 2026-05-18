@@ -9,9 +9,8 @@ import json
 import logging
 import math
 import time
-import hashlib
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -29,8 +28,8 @@ from aircraft_database import AircraftDatabase
 
 # Import extracted utility modules
 from utils import haversine_miles, altitude_to_color, categorize_aircraft, is_callsign_worth_fetching
-from units import null_safe, format_distance
-from fetcher import create_fetcher, FR24DetailFetcher, _AIRLINE_ICAO_NAMES as AIRLINE_ICAO_NAMES_TABLE
+from units import format_distance
+from fetcher import create_fetcher, FR24DetailFetcher
 from enrichment import create_enrichment_provider
 from renderer import FlightRenderer
 from data_model import TrackedFlight
@@ -584,7 +583,6 @@ class FlightTrackerPlugin(BasePlugin):
                           f"(${current_cost:.2f}/${self.monthly_budget:.2f})")
         
         # Smart budget management - reduce daily budget as month progresses
-        days_in_month = 30
         current_day = datetime.now().day
         if current_day > 15:  # After mid-month, be more conservative
             self.daily_api_budget = min(self.daily_api_budget, 40)  # Reduce to 40 calls/day
@@ -1692,7 +1690,7 @@ class FlightTrackerPlugin(BasePlugin):
                     try:
                         error_text = response.content.decode('utf-8', errors='ignore')[:200]
                         self.logger.debug(f"[Flight Tracker] Error content: {error_text}")
-                    except:
+                    except Exception:
                         pass
                     continue  # Try next URL
                 
@@ -1877,7 +1875,7 @@ class FlightTrackerPlugin(BasePlugin):
         
         # Calculate what we WANT to show (effective_radius * 2 miles wide)
         desired_miles_wide = effective_radius * 2
-        desired_pixels_per_mile = self.display_width / desired_miles_wide
+        self.display_width / desired_miles_wide
         
         # Calculate how many pixels we need to crop from the composite to get the desired geographic area
         # maintaining the display aspect ratio to avoid stretching
@@ -2172,7 +2170,7 @@ class FlightTrackerPlugin(BasePlugin):
         if mode == 'auto':
             # Resolve auto to the effective mode
             has_airborne = any(tf.status == "AIRBORNE" for tf in self.tracked_flight_data.values())
-            closest = self.get_closest_aircraft()
+            self.get_closest_aircraft()
             if has_airborne:
                 mode = 'flight_tracking'
             elif self.anchor_airport and self._get_anchor_aircraft():

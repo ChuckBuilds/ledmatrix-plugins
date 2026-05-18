@@ -319,12 +319,10 @@ class SportsCore(ABC):
     @abstractmethod
     def _extract_game_details(self, game_event: dict) -> dict:
         """Extract game details - to be implemented by subclasses."""
-        pass
     
     @abstractmethod
     def _fetch_data(self) -> Optional[Dict]:
         """Fetch data - to be implemented by subclasses."""
-        pass
 
 
 class Hockey(SportsCore):
@@ -451,10 +449,10 @@ class HockeyLive(Hockey):
             draw_overlay = ImageDraw.Draw(overlay)
             
             home_logo = self._load_and_resize_logo(
-                game["home_id"], game["home_abbr"], game["home_logo_path"], game.get("home_logo_url")
+                game["home_abbr"], game["home_logo_path"]
             )
             away_logo = self._load_and_resize_logo(
-                game["away_id"], game["away_abbr"], game["away_logo_path"], game.get("away_logo_url")
+                game["away_abbr"], game["away_logo_path"]
             )
 
             if not home_logo or not away_logo:

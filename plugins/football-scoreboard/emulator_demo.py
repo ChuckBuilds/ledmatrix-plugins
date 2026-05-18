@@ -7,11 +7,10 @@ to demonstrate that it works with the pygame emulator.
 """
 
 import sys
-import os
 import time
 import logging
 from pathlib import Path
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 # Add the plugin directory to Python path
 plugin_dir = Path(__file__).parent

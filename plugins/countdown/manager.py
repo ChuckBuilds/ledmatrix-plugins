@@ -20,7 +20,7 @@ import time
 import uuid
 from typing import Dict, Any, Tuple, Optional, List
 from datetime import datetime, date
-from PIL import Image, ImageDraw
+from PIL import Image
 from pathlib import Path
 
 from src.plugin_system.base_plugin import BasePlugin

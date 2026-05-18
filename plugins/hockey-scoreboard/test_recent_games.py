@@ -4,7 +4,6 @@ Test script to verify recent games filtering is working correctly
 """
 
 import sys
-import os
 sys.path.append('/home/chuck/Github/LEDMatrix/src')
 
 from data_fetcher import HockeyDataFetcher

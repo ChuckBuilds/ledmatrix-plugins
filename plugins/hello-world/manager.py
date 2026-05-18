@@ -224,7 +224,7 @@ class HelloWorldPlugin(BasePlugin):
                     font=self.bdf_font
                 )
                 self.display_manager.update_display()
-            except:
+            except Exception:
                 pass  # If we can't even show error, just log it
     
     def validate_config(self):

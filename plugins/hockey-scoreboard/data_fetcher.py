@@ -54,10 +54,10 @@ class HockeyDataFetcher:
     
     def _get_season_date_range(self, league_key: str) -> str:
         """Get the date range for the current season."""
-        from datetime import datetime, timedelta
+        from datetime import datetime
         
         now = datetime.now()
-        current_year = now.year
+        now.year
         
         # For 2025, we want the 2025-26 season (October 2025 to end of season 2026)
         if league_key == 'nhl':

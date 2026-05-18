@@ -7,7 +7,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Callable, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import pytz
 import requests
@@ -1664,7 +1664,7 @@ class SportsUpcoming(SportsCore):
             if self.show_records or self.show_ranking or show_seeds:
                 try:
                     record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug(f"Loaded 6px record font successfully")
+                    self.logger.debug("Loaded 6px record font successfully")
                 except IOError:
                     record_font = ImageFont.load_default()
                     self.logger.warning(
@@ -1672,8 +1672,8 @@ class SportsUpcoming(SportsCore):
                     )
 
                 # Get team abbreviations
-                away_abbr = game.get("away_abbr", "")
-                home_abbr = game.get("home_abbr", "")
+                game.get("away_abbr", "")
+                game.get("home_abbr", "")
 
                 record_bbox = draw_overlay.textbbox((0, 0), "0-0", font=record_font)
                 record_height = record_bbox[3] - record_bbox[1]
@@ -2243,7 +2243,7 @@ class SportsRecent(SportsCore):
             if self.show_records or self.show_ranking or show_seeds:
                 try:
                     record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug(f"Loaded 6px record font successfully")
+                    self.logger.debug("Loaded 6px record font successfully")
                 except IOError:
                     record_font = ImageFont.load_default()
                     self.logger.warning(
@@ -2251,8 +2251,8 @@ class SportsRecent(SportsCore):
                     )
 
                 # Get team abbreviations
-                away_abbr = game.get("away_abbr", "")
-                home_abbr = game.get("home_abbr", "")
+                game.get("away_abbr", "")
+                game.get("home_abbr", "")
 
                 record_bbox = draw_overlay.textbbox((0, 0), "0-0", font=record_font)
                 record_height = record_bbox[3] - record_bbox[1]

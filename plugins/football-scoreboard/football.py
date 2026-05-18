@@ -1,8 +1,6 @@
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timezone, timedelta
+from typing import Dict, Any, Optional
 import logging
 from PIL import Image, ImageDraw, ImageFont
-import time
 from sports import SportsCore, SportsLive
 from data_sources import ESPNDataSource
 
@@ -316,7 +314,7 @@ class FootballLive(Football, SportsLive):
             if self.show_records or self.show_ranking:
                 try:
                     record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug(f"Loaded 6px record font successfully")
+                    self.logger.debug("Loaded 6px record font successfully")
                 except IOError:
                     record_font = ImageFont.load_default()
                     self.logger.warning(f"Failed to load 6px font, using default font (size: {record_font.size})")

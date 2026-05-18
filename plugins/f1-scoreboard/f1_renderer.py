@@ -8,18 +8,16 @@ Supports 64x32, 128x32, 96x48, 192x48, and any other matrix configuration.
 
 import logging
 import math
-import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import pytz
 from PIL import Image, ImageDraw, ImageFont
 
 from logo_downloader import F1LogoLoader
-from team_colors import (F1_RED, PODIUM_COLORS, get_team_color,
-                          normalize_constructor_id)
+from team_colors import (F1_RED, PODIUM_COLORS, get_team_color)
 
 logger = logging.getLogger(__name__)
 

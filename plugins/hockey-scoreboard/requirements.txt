@@ -1,16 +1,16 @@
 # Hockey Scoreboard Plugin Dependencies
 
 # Image processing
-Pillow>=9.0.0
+Pillow>=12.2.0
 
 # HTTP requests for ESPN API
-requests>=2.28.0
+requests>=2.33.0
 
 # Timezone handling
 pytz>=2022.1
 
 # URL parsing and retry logic
-urllib3>=1.26.0
+urllib3>=2.7.0
 
 # Required LEDMatrix base classes
 # These are imported from the main LEDMatrix installation:

@@ -4,7 +4,6 @@ Debug script to check what TB Lightning games are in the data
 """
 
 import sys
-import os
 sys.path.append('/home/chuck/Github/LEDMatrix/src')
 
 from data_fetcher import HockeyDataFetcher

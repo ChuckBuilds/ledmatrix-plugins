@@ -8,7 +8,6 @@ demonstrating reduced API calls.
 import sys
 from pathlib import Path
 import logging
-import json
 from unittest.mock import MagicMock
 
 # Add parent directory to path
@@ -130,13 +129,13 @@ def test_aircraft_lookup_without_api():
         
         # Check if we used offline database
         if flight_plan.get('source') == 'offline_db':
-            print(f"  ✓ Used offline database (NO API CALL)")
+            print("  ✓ Used offline database (NO API CALL)")
             print(f"    Aircraft Type: {flight_plan.get('aircraft_type', 'Unknown')}")
             print(f"    Registration: {flight_plan.get('registration', 'Unknown')}")
             print(f"    Operator: {flight_plan.get('operator', 'Unknown')}")
             db_lookups_successful += 1
         else:
-            print(f"  ⚠️  Offline lookup failed, would have made API call")
+            print("  ⚠️  Offline lookup failed, would have made API call")
             api_calls_made += 1
     
     print(f"\nResults:")

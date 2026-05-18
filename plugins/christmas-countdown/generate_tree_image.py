@@ -95,7 +95,6 @@ if __name__ == "__main__":
     tree_img = create_christmas_tree(32)
     
     # Save to assets directory
-    import os
     from pathlib import Path
     
     script_dir = Path(__file__).parent

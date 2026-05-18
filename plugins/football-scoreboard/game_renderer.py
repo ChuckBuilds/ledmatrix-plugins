@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, Union
 from PIL import Image, ImageDraw, ImageFont
 try:
-    import freetype
     FREETYPE_AVAILABLE = True
 except ImportError:
     FREETYPE_AVAILABLE = False
@@ -145,7 +144,7 @@ class GameRenderer:
                             font = ImageFont.load(pil_font_path)
                             self.logger.debug(f"Loaded BDF font from pre-converted PIL file: {pil_font_path}")
                             return font
-                        except Exception as e:
+                        except Exception:
                             # Pre-converted file exists but failed to load - will fall through to fallback
                             pass
                     
@@ -273,7 +272,7 @@ class GameRenderer:
         if FREETYPE_AVAILABLE and hasattr(font, 'set_char_size'):
             # This is a freetype.Face (BDF font) - ImageDraw.text() won't work
             # Fall back to default font for rendering
-            self.logger.warning(f"BDF font detected but ImageDraw.text() doesn't support freetype.Face - using default font for rendering")
+            self.logger.warning("BDF font detected but ImageDraw.text() doesn't support freetype.Face - using default font for rendering")
             font = ImageFont.load_default()
         
         x, y = position

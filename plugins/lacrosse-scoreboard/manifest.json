@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -51,6 +51,11 @@
   ],
   "versions": [
     {
+      "released": "2026-05-15",
+      "version": "1.2.2",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "version": "1.2.1",
       "released": "2026-04-14",
       "ledmatrix_min_version": "2.0.0"
@@ -76,7 +81,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-04-14",
+  "last_updated": "2026-05-15",
   "stars": 0,
   "downloads": 0,
   "verified": true,

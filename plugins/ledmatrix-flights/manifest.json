@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -34,6 +34,11 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "released": "2026-05-15",
+      "version": "1.5.3",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-05-06",
       "version": "1.5.2",
@@ -75,5 +80,5 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-05-06"
+  "last_updated": "2026-05-15"
 }

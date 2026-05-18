@@ -20,7 +20,7 @@ import os
 import logging
 import time
 import pickle
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, Any, List, Optional
 from PIL import Image, ImageDraw, ImageFont
 
@@ -28,7 +28,6 @@ from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
 
 # Google Calendar imports
 try:
-    from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
     from google.auth.transport.requests import Request
     from googleapiclient.discovery import build

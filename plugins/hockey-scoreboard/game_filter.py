@@ -52,7 +52,7 @@ class HockeyGameFilter:
                     from datetime import datetime
                     dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
                     time_score = -dt.timestamp()  # Negative for reverse order
-                except:
+                except Exception:
                     time_score = start_time  # Fallback to string
             else:
                 # For live and upcoming, use normal order

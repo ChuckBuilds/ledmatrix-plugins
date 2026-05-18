@@ -2,10 +2,9 @@
 Simplified LogoDownloader for plugin use
 """
 
-import os
 import logging
 import requests
-from typing import List, Optional
+from typing import List
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from requests.adapters import HTTPAdapter
@@ -90,11 +89,11 @@ def download_missing_logo(sport_key: str, team_id: str, team_abbr: str, logo_pat
                 test_file.unlink()
             except PermissionError:
                 logger.error(f"Permission denied: Cannot write to directory {logo_dir}")
-                logger.error(f"Please run: sudo ./scripts/fix_perms/fix_assets_permissions.sh")
+                logger.error("Please run: sudo ./scripts/fix_perms/fix_assets_permissions.sh")
                 return False
         except PermissionError as e:
             logger.error(f"Permission denied: Cannot create directory {logo_dir}: {e}")
-            logger.error(f"Please run: sudo ./scripts/fix_perms/fix_assets_permissions.sh")
+            logger.error("Please run: sudo ./scripts/fix_perms/fix_assets_permissions.sh")
             return False
         except Exception as e:
             logger.error(f"Failed to create logo directory {logo_dir}: {e}")
@@ -114,7 +113,7 @@ def download_missing_logo(sport_key: str, team_id: str, team_abbr: str, logo_pat
                         return True
             except PermissionError as e:
                 logger.error(f"Permission denied downloading logo for {team_abbr}: {e}")
-                logger.error(f"Please run: sudo ./scripts/fix_perms/fix_assets_permissions.sh")
+                logger.error("Please run: sudo ./scripts/fix_perms/fix_assets_permissions.sh")
                 return False
             except Exception as e:
                 logger.error(f"Failed to download logo for {team_abbr}: {e}")
@@ -124,7 +123,7 @@ def download_missing_logo(sport_key: str, team_id: str, team_abbr: str, logo_pat
 
     except PermissionError as e:
         logger.error(f"Permission denied for {team_abbr}: {e}")
-        logger.error(f"Please run: sudo ./scripts/fix_perms/fix_assets_permissions.sh")
+        logger.error("Please run: sudo ./scripts/fix_perms/fix_assets_permissions.sh")
         return False
     except Exception as e:
         logger.error(f"Failed to download logo for {team_abbr}: {e}")
@@ -171,7 +170,7 @@ def create_placeholder_logo(team_abbr: str, logo_path: Path) -> bool:
 
     except PermissionError as e:
         logger.error(f"Permission denied creating placeholder logo for {team_abbr}: {e}")
-        logger.error(f"Please run: sudo ./scripts/fix_perms/fix_assets_permissions.sh")
+        logger.error("Please run: sudo ./scripts/fix_perms/fix_assets_permissions.sh")
         return False
     except Exception as e:
         logger.error(f"Failed to create placeholder logo for {team_abbr}: {e}")

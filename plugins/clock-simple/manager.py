@@ -8,7 +8,6 @@ API Version: 1.0.0
 """
 
 import time
-import logging
 from datetime import datetime
 from typing import Dict, Any, Tuple
 from src.plugin_system.base_plugin import BasePlugin
@@ -456,7 +455,7 @@ class SimpleClock(BasePlugin):
                     color=(255, 0, 0)
                 )
                 self.display_manager.update_display()
-            except:
+            except Exception:
                 pass  # If display fails, don't crash
 
     def _update_seconds_only(self, current_time_str: str, time_y: int, width: int) -> None:

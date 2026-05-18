@@ -5,12 +5,11 @@ Displays a retro-style 7-segment clock with configurable time formats
 and customizable colors.
 """
 
-import os
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 from datetime import datetime
 import pytz
-from PIL import Image, ImageDraw
+from PIL import Image
 
 from src.plugin_system.base_plugin import BasePlugin
 

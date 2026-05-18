@@ -5,8 +5,8 @@ Dataclasses representing aircraft state, tracked flights, and flight records.
 These provide type-safe alternatives to the raw dicts used internally.
 """
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, Optional, Tuple
 
 
 @dataclass

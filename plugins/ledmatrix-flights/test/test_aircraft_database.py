@@ -74,7 +74,7 @@ def test_icao24_lookup(db: AircraftDatabase):
         result = db.lookup_by_icao24(icao24)
         
         if result:
-            print(f"  ✓ Found!")
+            print("  ✓ Found!")
             print(f"    Registration: {result.get('registration', 'Unknown')}")
             print(f"    Manufacturer: {result.get('manufacturer', 'Unknown')}")
             print(f"    Model: {result.get('model', 'Unknown')}")
@@ -82,7 +82,7 @@ def test_icao24_lookup(db: AircraftDatabase):
             print(f"    Operator: {result.get('operator', 'Unknown')}")
             print(f"    Source: {result.get('source', 'Unknown')}")
         else:
-            print(f"  ✗ Not found in database")
+            print("  ✗ Not found in database")
 
 
 def test_registration_lookup(db: AircraftDatabase):
@@ -103,7 +103,7 @@ def test_registration_lookup(db: AircraftDatabase):
         result = db.lookup_by_registration(registration)
         
         if result:
-            print(f"  ✓ Found!")
+            print("  ✓ Found!")
             print(f"    ICAO24: {result.get('icao24', 'Unknown')}")
             print(f"    Manufacturer: {result.get('manufacturer', 'Unknown')}")
             print(f"    Model: {result.get('model', 'Unknown')}")
@@ -112,7 +112,7 @@ def test_registration_lookup(db: AircraftDatabase):
             print(f"    Owner: {result.get('owner_name', 'Unknown')}")
             print(f"    Source: {result.get('source', 'Unknown')}")
         else:
-            print(f"  ✗ Not found in database")
+            print("  ✗ Not found in database")
 
 
 def test_performance(db: AircraftDatabase):

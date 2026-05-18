@@ -669,11 +669,11 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         # Extract nested configurations (new structure) with fallback to flat structure (old)
         display_modes = league_config.get("display_modes", {})
-        teams_config = league_config.get("teams", {})
-        filtering_config = league_config.get("filtering", {})
-        update_intervals = league_config.get("update_intervals", {})
-        display_durations = league_config.get("display_durations", {})
-        display_options = league_config.get("display_options", {})
+        league_config.get("teams", {})
+        league_config.get("filtering", {})
+        league_config.get("update_intervals", {})
+        league_config.get("display_durations", {})
+        league_config.get("display_options", {})
 
         def resolve_mode_flag(*keys: str, default: bool = True) -> bool:
             for key in keys:
@@ -1192,21 +1192,6 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                     rankings.update(manager_rankings)
         
         return rankings
-
-    def _get_manager_for_league_mode(self, league: str, mode_type: str):
-        """Get manager instance for a league and mode type combination.
-        
-        This is a convenience method that calls _get_league_manager_for_mode()
-        for consistency with football-scoreboard naming.
-        
-        Args:
-            league: 'ncaa_mens' or 'ncaa_womens'
-            mode_type: 'live', 'recent', or 'upcoming'
-            
-        Returns:
-            Manager instance or None if not available/enabled
-        """
-        return self._get_league_manager_for_mode(league, mode_type)
 
     def _get_games_from_manager(self, manager, mode_type: str) -> List[Dict]:
         """Get games list from a manager based on mode type.

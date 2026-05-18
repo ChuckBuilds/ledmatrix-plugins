@@ -8,7 +8,6 @@ Supports ESPN API (MLB, NCAA Baseball) and MLB Stats API (MiLB).
 import json
 import logging
 import os
-import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -575,7 +574,7 @@ class BaseballDataManager:
         This replicates the logic from Baseball._extract_game_details()
         """
         try:
-            from src.base_classes.sports import SportsCore
+            pass
 
             # Create a minimal sports core instance for game extraction
             # We'll use the common extraction method
@@ -604,7 +603,7 @@ class BaseballDataManager:
                 away_abbr = away_team["team"]["name"][:3]
 
             # Check if this is a favorite team game
-            is_favorite_game = (home_abbr in favorite_teams or away_abbr in favorite_teams)
+            (home_abbr in favorite_teams or away_abbr in favorite_teams)
 
             game_status = status.get("type", {}).get("name", "").lower()
             status_state = status.get("type", {}).get("state", "").lower()

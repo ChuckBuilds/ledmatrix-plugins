@@ -10,13 +10,11 @@ This script tests the football scoreboard plugin functionality by:
 """
 
 import sys
-import os
 import json
 import time
 import logging
 from pathlib import Path
-from unittest.mock import Mock, MagicMock
-from typing import Dict, Any
+from unittest.mock import Mock
 
 # Add the plugin directory to Python path
 plugin_dir = Path(__file__).parent

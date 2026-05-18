@@ -566,7 +566,7 @@ class ChristmasCountdownPlugin(BasePlugin):
                     color=(255, 0, 0)
                 )
                 self.display_manager.update_display()
-            except:
+            except Exception:
                 pass  # If display fails, don't crash
     
     def validate_config(self) -> bool:

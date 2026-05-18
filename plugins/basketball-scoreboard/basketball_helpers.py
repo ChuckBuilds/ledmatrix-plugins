@@ -7,10 +7,9 @@ logo loading, text drawing, and game data extraction.
 Extracted from Basketball and Sports base classes for plugin independence.
 """
 
-import os
 import logging
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 from PIL import Image, ImageDraw, ImageFont
 
 

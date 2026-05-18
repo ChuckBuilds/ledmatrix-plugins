@@ -2,10 +2,9 @@
 Simplified LogoDownloader for plugin use
 """
 
-import os
 import logging
 import requests
-from typing import Dict, Any, List, Optional, Tuple
+from typing import List
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from requests.adapters import HTTPAdapter
@@ -108,7 +107,7 @@ def create_placeholder_logo(team_abbr: str, logo_path: Path) -> None:
         # Try to load a font
         try:
             font = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 12)
-        except:
+        except Exception:
             font = ImageFont.load_default()
         
         # Draw team abbreviation

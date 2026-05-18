@@ -354,7 +354,7 @@ class HockeyScoreboardRenderer:
                     time_y = date_y + 9  # Place time below date (matching SportsUpcoming)
                     self._draw_text_with_outline(draw_overlay, game_time, (time_x, time_y), self.fonts['time'])
                     
-                except Exception as e:
+                except Exception:
                     # Fallback to raw time if parsing fails
                     time_text = start_time[:16]  # Truncate to reasonable length
                     time_width = draw_overlay.textlength(time_text, font=self.fonts['time'])

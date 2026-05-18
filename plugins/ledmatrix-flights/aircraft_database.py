@@ -15,8 +15,8 @@ import csv
 import requests
 import zipfile
 from pathlib import Path
-from typing import Dict, Optional, List
-from datetime import datetime, timedelta
+from typing import Dict, Optional
+from datetime import datetime
 import io
 
 logger = logging.getLogger(__name__)
@@ -121,7 +121,7 @@ class AircraftDatabase:
             if count == 0:
                 logger.info("[Aircraft DB] Database is empty, needs update")
                 return True
-        except:
+        except Exception:
             return True
         
         # Check last update time
@@ -263,7 +263,7 @@ class AircraftDatabase:
                         
                         registration = row[0].strip()
                         serial_number = row[1].strip() if len(row) > 1 else ''
-                        mfr_model_code = row[2].strip() if len(row) > 2 else ''
+                        row[2].strip() if len(row) > 2 else ''
                         owner_name = row[6].strip() if len(row) > 6 else ''
                         
                         # Skip invalid entries
@@ -292,7 +292,7 @@ class AircraftDatabase:
                         if aircraft_count % 10000 == 0:
                             logger.info(f"[Aircraft DB] Processed {aircraft_count} aircraft...")
                     
-                    except Exception as e:
+                    except Exception:
                         # Skip malformed rows
                         continue
                 
@@ -381,7 +381,7 @@ class AircraftDatabase:
                     if aircraft_count % 10000 == 0:
                         logger.info(f"[Aircraft DB] Processed {aircraft_count} aircraft...")
                 
-                except Exception as e:
+                except Exception:
                     # Skip malformed rows
                     continue
             

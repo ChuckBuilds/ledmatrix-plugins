@@ -1,10 +1,6 @@
-import os
-import time
 import logging
-import requests
-import json
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
+from typing import Dict, Any, Optional
+from datetime import datetime
 import pytz
 from sports import SportsRecent, SportsUpcoming
 from football import Football, FootballLive
@@ -96,21 +92,6 @@ class BaseNCAAFBManager(Football):  # Renamed class
         self.logger.info(
             f"Starting background fetch for {season_year} season schedule..."
         )
-
-        def fetch_callback(result):
-            """Callback when background fetch completes."""
-            if result.success:
-                self.logger.info(
-                    f"Background fetch completed for {season_year}: {len(result.data.get('events'))} events"
-                )
-            else:
-                self.logger.error(
-                    f"Background fetch failed for {season_year}: {result.error}"
-                )
-
-            # Clean up request tracking
-            if season_year in self.background_fetch_requests:
-                del self.background_fetch_requests[season_year]
 
         # Get background service configuration
         background_config = self.mode_config.get("background_service", {})

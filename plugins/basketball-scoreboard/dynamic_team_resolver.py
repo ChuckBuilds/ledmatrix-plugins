@@ -5,8 +5,7 @@ Simplified DynamicTeamResolver for plugin use
 import logging
 import time
 import requests
-from typing import Dict, List, Set, Optional, Any
-from datetime import datetime, timezone
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 

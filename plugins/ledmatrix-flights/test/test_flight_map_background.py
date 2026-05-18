@@ -13,7 +13,6 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from flight_manager import FlightMapManager
-from display_manager import DisplayManager
 from cache_manager import CacheManager
 
 class MockMatrix:
@@ -155,7 +154,7 @@ def test_different_locations():
             map_bg.save(output_file)
             print(f"  ✓ Saved to: {output_file}")
         else:
-            print(f"  ✗ Failed to generate map background")
+            print("  ✗ Failed to generate map background")
 
 if __name__ == "__main__":
     print("Flight Map Background Test")

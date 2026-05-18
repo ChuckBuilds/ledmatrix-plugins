@@ -15,8 +15,7 @@ Features:
 import logging
 import time
 import os
-from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from PIL import Image
 
 try:
@@ -248,7 +247,7 @@ class ScrollDisplay:
                 for key in league_keys:
                     self._separator_icons[key] = resized_icon
                 self.logger.debug(f"Loaded {display_name} separator icon: {new_width}x{separator_height}")
-        except Exception as e:
+        except Exception:
             self.logger.exception(f"Error loading {display_name} separator icon")
 
     def _load_separator_icons(self) -> None:
@@ -408,7 +407,7 @@ class ScrollDisplay:
                 content_items.append(padded_img)
                 game_count += 1
                 league_counts[game_league] = league_counts.get(game_league, 0) + 1
-            except Exception as e:
+            except Exception:
                 self.logger.exception("Error rendering game card")
                 continue
         
@@ -475,7 +474,7 @@ class ScrollDisplay:
             self._log_scroll_progress()
             
             return True
-        except Exception as e:
+        except Exception:
             self.logger.exception("Error displaying scroll frame")
             return False
     

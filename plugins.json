@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-05-18",
   "plugins": [
     {
       "id": "hello-world",
@@ -18,10 +18,10 @@
       "plugin_path": "plugins/hello-world",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-11",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "clock-simple",
@@ -39,10 +39,10 @@
       "plugin_path": "plugins/clock-simple",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-11-14",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.4"
+      "latest_version": "1.0.5"
     },
     {
       "id": "weather",
@@ -181,10 +181,10 @@
       "plugin_path": "plugins/calendar",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-04-24",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.1"
+      "latest_version": "1.1.2"
     },
     {
       "id": "hockey-scoreboard",
@@ -205,10 +205,10 @@
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-25",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.4",
+      "latest_version": "1.2.5",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -231,10 +231,10 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-25",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.3.4"
+      "latest_version": "2.3.5"
     },
     {
       "id": "ufc-scoreboard",
@@ -281,10 +281,10 @@
       "plugin_path": "plugins/basketball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-03-30",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.5"
+      "latest_version": "1.5.6"
     },
     {
       "id": "baseball-scoreboard",
@@ -307,10 +307,10 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-03-30",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.6.0"
+      "latest_version": "1.6.1"
     },
     {
       "id": "soccer-scoreboard",
@@ -488,10 +488,10 @@
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-06",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.2"
+      "latest_version": "1.5.3"
     },
     {
       "id": "christmas-countdown",
@@ -510,10 +510,10 @@
       "plugin_path": "plugins/christmas-countdown",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2025-12-04",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     },
     {
       "id": "olympics",
@@ -581,10 +581,10 @@
       "plugin_path": "plugins/7-segment-clock",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-02-11",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     },
     {
       "id": "mqtt-notifications",
@@ -627,10 +627,10 @@
       "plugin_path": "plugins/countdown",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-03-06",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.0.0",
+      "latest_version": "2.0.1",
       "icon": "fa-clock"
     },
     {
@@ -652,10 +652,10 @@
       "plugin_path": "plugins/f1-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-03-08",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.3"
+      "latest_version": "1.2.4"
     },
     {
       "id": "pga-tour-leaderboard",
@@ -744,10 +744,10 @@
       "plugin_path": "plugins/lacrosse-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-04-14",
+      "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.1",
+      "latest_version": "1.2.2",
       "icon": "fas fa-baseball-ball"
     },
     {
