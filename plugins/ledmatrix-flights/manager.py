@@ -1692,7 +1692,7 @@ class FlightTrackerPlugin(BasePlugin):
                     try:
                         error_text = response.content.decode('utf-8', errors='ignore')[:200]
                         self.logger.debug(f"[Flight Tracker] Error content: {error_text}")
-                    except Exception:
+                    except:
                         pass
                     continue  # Try next URL
                 

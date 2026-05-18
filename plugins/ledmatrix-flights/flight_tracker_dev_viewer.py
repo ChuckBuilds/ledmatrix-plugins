@@ -387,7 +387,7 @@ class FlightTrackerDevViewer:
                     if any(blocked_word in content_text for blocked_word in ['blocked', 'overusing', 'rate limit', 'access denied']):
                         logger.warning(f"Blocked content detected from {url}")
                         continue
-                except Exception:
+                except:
                     pass  # If we can't decode, assume it's binary image data
                 
                 # Save to cache
