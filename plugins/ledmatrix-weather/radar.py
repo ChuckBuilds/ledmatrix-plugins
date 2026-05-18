@@ -59,8 +59,6 @@ def _latlon_to_pixel(lat: float, lon: float, center_lat: float, center_lon: floa
     Uses Web Mercator projection at the given zoom level.
     """
     n = 2 ** zoom
-    # Pixels per degree at this zoom
-    _TILE_SIZE * n / 360.0
 
     # Center pixel
     cx = (center_lon + 180) / 360 * _TILE_SIZE * n

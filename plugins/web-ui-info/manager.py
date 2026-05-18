@@ -271,14 +271,12 @@ class WebUIInfoPlugin(BasePlugin):
             # Calculate text positions (centered)
             y_start = 5
             line_height = 8
-            len(lines) * line_height
-            
+
             # Draw each line
             for i, line in enumerate(lines):
                 # Get text size for centering
                 bbox = draw.textbbox((0, 0), line, font=font_small)
                 text_width = bbox[2] - bbox[0]
-                bbox[3] - bbox[1]
                 
                 # Center horizontally
                 x = (width - text_width) // 2

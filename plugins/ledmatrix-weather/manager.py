@@ -1139,7 +1139,6 @@ class WeatherPlugin(BasePlugin):
 
             # Text area starts after the icon
             text_x = icon_size + 8
-            width - text_x - 2
 
             # Row 1: Phase name (prominent)
             draw.text((text_x, 2), phase_name, font=font, fill=(200, 200, 255))
