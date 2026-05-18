@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, Union
 from PIL import Image, ImageDraw, ImageFont
 try:
+    import freetype  # noqa: F401
     FREETYPE_AVAILABLE = True
 except ImportError:
     FREETYPE_AVAILABLE = False

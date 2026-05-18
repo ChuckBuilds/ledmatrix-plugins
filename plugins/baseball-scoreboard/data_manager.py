@@ -574,8 +574,6 @@ class BaseballDataManager:
         This replicates the logic from Baseball._extract_game_details()
         """
         try:
-            pass
-
             # Create a minimal sports core instance for game extraction
             # We'll use the common extraction method
             competition = game_event.get("competitions", [{}])[0]

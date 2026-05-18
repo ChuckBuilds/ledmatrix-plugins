@@ -128,7 +128,8 @@ def download_missing_logo(sport_key: str, team_id: str, team_abbr: str, logo_pat
         # Try to create placeholder as fallback
         try:
             return create_placeholder_logo(team_abbr, logo_path)
-        except Exception:
+        except Exception as e:
+            logger.error("Placeholder creation also failed for %s: %s", team_abbr, e)
             return False
 
 def create_placeholder_logo(team_abbr: str, logo_path: Path) -> bool:

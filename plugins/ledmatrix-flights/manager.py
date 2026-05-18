@@ -1875,8 +1875,7 @@ class FlightTrackerPlugin(BasePlugin):
         
         # Calculate what we WANT to show (effective_radius * 2 miles wide)
         desired_miles_wide = effective_radius * 2
-        self.display_width / desired_miles_wide
-        
+
         # Calculate how many pixels we need to crop from the composite to get the desired geographic area
         # maintaining the display aspect ratio to avoid stretching
         crop_width_needed = int(desired_miles_wide * pixels_per_mile_at_zoom)
@@ -2170,7 +2169,6 @@ class FlightTrackerPlugin(BasePlugin):
         if mode == 'auto':
             # Resolve auto to the effective mode
             has_airborne = any(tf.status == "AIRBORNE" for tf in self.tracked_flight_data.values())
-            self.get_closest_aircraft()
             if has_airborne:
                 mode = 'flight_tracking'
             elif self.anchor_airport and self._get_anchor_aircraft():

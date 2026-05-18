@@ -718,11 +718,6 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         # Extract nested configurations (new structure) with fallback to flat structure (old)
         display_modes = league_config.get("display_modes", {})
-        league_config.get("teams", {})
-        league_config.get("filtering", {})
-        league_config.get("update_intervals", {})
-        league_config.get("display_durations", {})
-        league_config.get("display_options", {})
 
         def resolve_mode_flag(*keys: str, default: bool = True) -> bool:
             for key in keys:

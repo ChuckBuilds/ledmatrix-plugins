@@ -455,8 +455,8 @@ class SimpleClock(BasePlugin):
                     color=(255, 0, 0)
                 )
                 self.display_manager.update_display()
-            except Exception:
-                pass  # If display fails, don't crash
+            except Exception as e:
+                self.logger.exception("Fallback display failed: %s", e)
 
     def _update_seconds_only(self, current_time_str: str, time_y: int, width: int) -> None:
         """

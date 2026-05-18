@@ -263,7 +263,6 @@ class AircraftDatabase:
                         
                         registration = row[0].strip()
                         serial_number = row[1].strip() if len(row) > 1 else ''
-                        row[2].strip() if len(row) > 2 else ''
                         owner_name = row[6].strip() if len(row) > 6 else ''
                         
                         # Skip invalid entries

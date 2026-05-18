@@ -57,8 +57,7 @@ class HockeyDataFetcher:
         from datetime import datetime
         
         now = datetime.now()
-        now.year
-        
+
         # For 2025, we want the 2025-26 season (October 2025 to end of season 2026)
         if league_key == 'nhl':
             # NHL 2025-26 season: October 2025 to June 2026
