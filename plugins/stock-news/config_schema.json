@@ -136,6 +136,13 @@
           "default": true,
           "description": "Randomise headline order on fetch and after each full rotation cycle"
         },
+        "max_headline_length": {
+          "type": "integer",
+          "default": 120,
+          "minimum": 40,
+          "maximum": 300,
+          "description": "Maximum headline length in characters before truncating with '...'. Default 120 shows most headlines in full."
+        },
         "max_headlines_per_symbol": {
           "oneOf": [
             {

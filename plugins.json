@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-05-19",
+  "last_updated": "2026-05-20",
   "plugins": [
     {
       "id": "hello-world",
@@ -360,10 +360,10 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-18",
+      "last_updated": "2026-05-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.6.2"
+      "latest_version": "1.6.3"
     },
     {
       "id": "odds-ticker",
@@ -464,10 +464,10 @@
       "plugin_path": "plugins/stock-news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-19",
+      "last_updated": "2026-05-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.3.3"
+      "latest_version": "2.3.4"
     },
     {
       "id": "stocks",

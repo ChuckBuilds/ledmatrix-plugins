@@ -127,6 +127,7 @@ class StockNewsTickerPlugin(BasePlugin):
         # Headlines
         self.max_headlines_per_symbol = gc.get('max_headlines_per_symbol', 1)  # int or dict
         self.headlines_per_rotation = gc.get('headlines_per_rotation', 2)
+        self.max_headline_length = gc.get('max_headline_length', 120)
 
         # Rotation / shuffle
         self.rotation_enabled = gc.get('rotation_enabled', True)
@@ -192,14 +193,13 @@ class StockNewsTickerPlugin(BasePlugin):
         return {}
 
     def _configure_scroll_settings(self) -> None:
-        """Apply scroll speed / FPS to ScrollHelper (supports legacy keys)."""
+        """Apply scroll speed / FPS to ScrollHelper using frame-based scrolling."""
         if 'scroll_pixels_per_second' in self.global_config:
             pps = float(self.global_config['scroll_pixels_per_second'])
         elif self.scroll_delay and self.scroll_delay > 0:
             pps = self.scroll_speed / self.scroll_delay
         else:
             pps = 25.0
-        self.scroll_helper.set_scroll_speed(pps)
 
         if 'scroll_target_fps' in self.global_config:
             fps = float(self.global_config['scroll_target_fps'])
@@ -207,8 +207,26 @@ class StockNewsTickerPlugin(BasePlugin):
             fps = 1.0 / self.scroll_delay
         else:
             fps = 100.0
+
+        # Convert to per-frame advancement for smooth, consistent scrolling.
+        # Frame-based mode advances exactly pixels_per_frame each frame regardless
+        # of wall-clock jitter, preventing multi-pixel jumps on slow frames.
+        pixels_per_frame = pps / fps if fps > 0 else pps / 100.0
+        pixels_per_frame = max(0.1, min(5.0, pixels_per_frame))
+
+        if hasattr(self.scroll_helper, 'set_frame_based_scrolling'):
+            self.scroll_helper.set_frame_based_scrolling(True)
+        if hasattr(self.scroll_helper, 'set_scroll_delay'):
+            self.scroll_helper.set_scroll_delay(1.0 / fps)
+        self.scroll_helper.set_scroll_speed(pixels_per_frame)
+
         if hasattr(self.scroll_helper, 'set_target_fps'):
             self.scroll_helper.set_target_fps(fps)
+
+        self.logger.info(
+            "[Stock News] Scroll: %.2f px/frame at %.0f FPS (%.1f px/s)",
+            pixels_per_frame, fps, pixels_per_frame * fps,
+        )
 
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=self.dynamic_duration,
@@ -551,8 +569,9 @@ class StockNewsTickerPlugin(BasePlugin):
             return ""
         headline = re.sub(r'\s+', ' ', headline.strip())
         headline = re.sub(r'^\s*-\s*', '', headline)
-        if len(headline) > 80:
-            headline = headline[:77] + "..."
+        limit = getattr(self, 'max_headline_length', 120)
+        if len(headline) > limit:
+            headline = headline[:limit - 3] + "..."
         return headline
 
     def _format_age(self, pub_ts: float) -> str:

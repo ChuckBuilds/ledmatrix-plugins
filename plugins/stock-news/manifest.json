@@ -1,7 +1,7 @@
 {
   "id": "stock-news",
   "name": "Stock News Ticker",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "author": "ChuckBuilds",
   "description": "Live stock headlines via Yahoo Finance search API with RSS fallback, company logos, configurable display styles (logo+ticker, ticker only, logo only), Vegas scroll integration, and per-day/hour request budgeting",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
   "branch": "main",
   "plugin_path": "plugins/stock-news",
   "versions": [
+    {
+      "released": "2026-05-20",
+      "version": "2.3.4",
+      "notes": "Frame-based scrolling for smooth 1-pixel-per-frame movement; configurable max_headline_length (default 120) to reduce premature '...' truncation",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-05-19",
       "version": "2.3.3",
@@ -93,7 +99,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-05-19",
+  "last_updated": "2026-05-20",
   "stars": 0,
   "downloads": 0,
   "verified": true,

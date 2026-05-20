@@ -993,7 +993,7 @@ class SportsCore(ABC):
             
             # Check cache first (short TTL for live data)
             cache_key = f"{self.sport_key}_scoreboard_current"
-            cached_data = self.cache_manager.get(cache_key, max_age=300)  # 5 minute cache
+            cached_data = self.cache_manager.get(cache_key, max_age=30)   # 30s cache for live data
             if cached_data:
                 if isinstance(cached_data, dict) and "events" in cached_data:
                     self.logger.debug(f"Using cached current scoreboard for {self.sport}/{self.league}")

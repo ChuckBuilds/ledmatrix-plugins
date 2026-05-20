@@ -44,7 +44,7 @@ A plugin for LEDMatrix that displays live, recent, and upcoming soccer games acr
   "leagues": {
     "eng.1": {
       "enabled": true,
-      "favorite_teams": ["Manchester United", "Liverpool", "Arsenal"],
+      "favorite_teams": ["MUN", "LIV", "ARS"],
       "display_modes": {
         "live": true,
         "recent": true,
@@ -64,7 +64,7 @@ A plugin for LEDMatrix that displays live, recent, and upcoming soccer games acr
   "leagues": {
     "esp.1": {
       "enabled": true,
-      "favorite_teams": ["Real Madrid", "Barcelona", "Atletico Madrid"],
+      "favorite_teams": ["RM", "BAR", "ATM"],
       "display_modes": {
         "live": true,
         "recent": true,
@@ -84,7 +84,7 @@ A plugin for LEDMatrix that displays live, recent, and upcoming soccer games acr
   "leagues": {
     "ger.1": {
       "enabled": true,
-      "favorite_teams": ["Bayern Munich", "Borussia Dortmund", "RB Leipzig"],
+      "favorite_teams": ["BAY", "BVB", "RBL"],
       "display_modes": {
         "live": true,
         "recent": true,
@@ -104,7 +104,7 @@ A plugin for LEDMatrix that displays live, recent, and upcoming soccer games acr
   "leagues": {
     "ita.1": {
       "enabled": true,
-      "favorite_teams": ["Juventus", "Inter Milan", "AC Milan"],
+      "favorite_teams": ["JUV", "INT", "MIL"],
       "display_modes": {
         "live": true,
         "recent": true,
@@ -124,7 +124,7 @@ A plugin for LEDMatrix that displays live, recent, and upcoming soccer games acr
   "leagues": {
     "fra.1": {
       "enabled": true,
-      "favorite_teams": ["PSG", "Marseille", "Lyon"],
+      "favorite_teams": ["PSG", "OM", "OL"],
       "display_modes": {
         "live": true,
         "recent": true,
@@ -144,7 +144,7 @@ A plugin for LEDMatrix that displays live, recent, and upcoming soccer games acr
   "leagues": {
     "usa.1": {
       "enabled": true,
-      "favorite_teams": ["LA Galaxy", "Seattle Sounders", "Atlanta United"],
+      "favorite_teams": ["LA", "SEA", "ATL"],
       "display_modes": {
         "live": true,
         "recent": true,
@@ -178,26 +178,18 @@ The plugin supports the following soccer leagues:
 - **uefa.champions**: UEFA Champions League
 - **uefa.europa**: UEFA Europa League
 
-## Team Names
+## Team Names & Abbreviations
 
-You can use either full team names or common abbreviations:
+The `favorite_teams` config field requires the **ESPN API abbreviation** for each team (e.g. `"LIV"`, `"MCI"`). Full team names are not supported.
 
-- Manchester United, Man United, Man Utd
-- Liverpool, LFC
-- Arsenal, AFC
-- Real Madrid, RM
-- Barcelona, Barca, FCB
-- Bayern Munich, Bayern, FCB
-- Borussia Dortmund, BVB
-- Juventus, Juve
-- Inter Milan, Inter
-- AC Milan, Milan
-- PSG, Paris Saint-Germain
-- Marseille, OM
-- Lyon, OL
-- LA Galaxy, LA
-- Seattle Sounders, Seattle
-- Atlanta United, ATL UTD
+See **[TEAMS.md](TEAMS.md)** for a complete list of abbreviations for all supported leagues.
+
+Example:
+```json
+"favorite_teams": ["LIV", "MCI", "ARS"]
+```
+
+> **Tip:** If you're unsure of an abbreviation, enable debug logging — the plugin logs `home_abbr` and `away_abbr` for every game it processes.
 
 ## Background Service
 
