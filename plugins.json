@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-05-20",
+  "last_updated": "2026-05-21",
   "plugins": [
     {
       "id": "hello-world",
@@ -467,7 +467,7 @@
       "last_updated": "2026-05-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.3.4"
+      "latest_version": "2.4.0"
     },
     {
       "id": "stocks",

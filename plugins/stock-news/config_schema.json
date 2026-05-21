@@ -144,21 +144,11 @@
           "description": "Maximum headline length in characters before truncating with '...'. Default 120 shows most headlines in full."
         },
         "max_headlines_per_symbol": {
-          "oneOf": [
-            {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 5,
-              "description": "Apply the same limit to every symbol"
-            },
-            {
-              "type": "object",
-              "description": "Per-symbol overrides, e.g. {\"AAPL\": 2, \"default\": 1}",
-              "additionalProperties": {"type": "integer", "minimum": 1, "maximum": 5}
-            }
-          ],
+          "type": "integer",
           "default": 1,
-          "description": "Max headlines per symbol. Use int for all symbols, or object for per-symbol control."
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Max headlines shown per stock symbol (1–5)."
         },
         "headlines_per_rotation": {
           "type": "integer",
@@ -259,40 +249,44 @@
           "description": "Stock symbols — headlines fetched from Yahoo Finance. Fetches are spread across update_interval_seconds."
         },
         "custom_feeds": {
-          "type": "object",
-          "x-widget": "key-value",
-          "patternProperties": {
-            ".*": {"type": "string", "format": "uri"}
+          "type": "array",
+          "x-widget": "array-table",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Display label for this feed"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "RSS feed URL"
+              }
+            },
+            "required": ["name", "url"],
+            "additionalProperties": false
           },
-          "additionalProperties": false,
-          "description": "Extra RSS feeds keyed by display name (any financial news RSS URL)"
+          "default": [],
+          "description": "Extra RSS feeds to include alongside stock symbols"
         },
         "text_color": {
-          "type": "array",
+          "type": "string",
           "x-widget": "color-picker",
-          "items": {"type": "integer", "minimum": 0, "maximum": 255},
-          "minItems": 3,
-          "maxItems": 3,
-          "default": [0, 255, 0],
-          "description": "RGB color for headline text"
+          "default": "#00ff00",
+          "description": "Color for headline text"
         },
         "symbol_color": {
-          "type": "array",
+          "type": "string",
           "x-widget": "color-picker",
-          "items": {"type": "integer", "minimum": 0, "maximum": 255},
-          "minItems": 3,
-          "maxItems": 3,
-          "default": [255, 255, 0],
-          "description": "RGB color for stock symbol labels (e.g. 'AAPL:')"
+          "default": "#ffff00",
+          "description": "Color for stock symbol labels (e.g. 'AAPL:')"
         },
         "publisher_color": {
-          "type": "array",
+          "type": "string",
           "x-widget": "color-picker",
-          "items": {"type": "integer", "minimum": 0, "maximum": 255},
-          "minItems": 3,
-          "maxItems": 3,
-          "default": [110, 110, 110],
-          "description": "RGB color for publisher and age suffix (e.g. '• Reuters • 2h ago')"
+          "default": "#6e6e6e",
+          "description": "Color for publisher and age suffix (e.g. '• Reuters • 2h ago')"
         }
       },
       "additionalProperties": false

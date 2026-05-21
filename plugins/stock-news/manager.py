@@ -91,7 +91,7 @@ class StockNewsTickerPlugin(BasePlugin):
         self._register_fonts()
 
         stock_symbols = self.feeds_config.get('stock_symbols', [])
-        custom_feeds = self.feeds_config.get('custom_feeds', {})
+        custom_feeds = self._get_custom_feeds()
         self.logger.info(
             "[Stock News] Initialized — symbols=%s, custom=%s, style=%s, font=%dpx, item_gap=%dpx",
             stock_symbols, list(custom_feeds.keys()), self.display_style,
@@ -102,6 +102,30 @@ class StockNewsTickerPlugin(BasePlugin):
     # -------------------------------------------------------------------------
     # Config helpers
     # -------------------------------------------------------------------------
+
+    def _get_custom_feeds(self) -> Dict[str, str]:
+        """Return custom_feeds as {name: url}. Accepts new list format or legacy dict format."""
+        raw = self.feeds_config.get('custom_feeds', [])
+        if isinstance(raw, list):
+            return {item['name']: item['url'] for item in raw
+                    if isinstance(item, dict) and 'name' in item and 'url' in item}
+        return raw if isinstance(raw, dict) else {}
+
+    @staticmethod
+    def _parse_color(value: Any, default: List[int]) -> Tuple[int, int, int]:
+        """Accept '#rrggbb' hex string (new) or [R, G, B] list (legacy) and return an (R, G, B) tuple."""
+        if isinstance(value, str):
+            v = value.lstrip('#')
+            if len(v) == 3:
+                v = v[0] * 2 + v[1] * 2 + v[2] * 2
+            if len(v) == 6:
+                try:
+                    return (int(v[0:2], 16), int(v[2:4], 16), int(v[4:6], 16))
+                except ValueError:
+                    pass
+        if isinstance(value, (list, tuple)) and len(value) == 3:
+            return tuple(value)  # type: ignore[return-value]
+        return tuple(default)  # type: ignore[return-value]
 
     def _apply_config(self) -> None:
         """Read all config keys into instance vars. Called from __init__ and on_config_change."""
@@ -154,9 +178,9 @@ class StockNewsTickerPlugin(BasePlugin):
         self.sync_with_stocks_plugin = gc.get('sync_with_stocks_plugin', False)
 
         # Colours
-        self.text_color: Tuple = tuple(fc.get('text_color', [0, 255, 0]))
-        self.symbol_color: Tuple = tuple(fc.get('symbol_color', [255, 255, 0]))
-        self.publisher_color: Tuple = tuple(fc.get('publisher_color', [110, 110, 110]))
+        self.text_color: Tuple = self._parse_color(fc.get('text_color'), [0, 255, 0])
+        self.symbol_color: Tuple = self._parse_color(fc.get('symbol_color'), [255, 255, 0])
+        self.publisher_color: Tuple = self._parse_color(fc.get('publisher_color'), [110, 110, 110])
 
         # Rate limiting
         self.update_interval = gc.get('update_interval_seconds', 900)
@@ -272,7 +296,7 @@ class StockNewsTickerPlugin(BasePlugin):
         synced_symbols = self._get_stocks_plugin_symbols()
         # Merge: configured first, then any extras from stocks plugin (deduped, order preserved)
         stock_symbols = list(dict.fromkeys(configured_symbols + synced_symbols))
-        custom_feeds = self.feeds_config.get('custom_feeds', {})
+        custom_feeds = self._get_custom_feeds()
         fetched = False
 
         # Per-symbol interval: spread all symbols evenly within update_interval
@@ -332,7 +356,7 @@ class StockNewsTickerPlugin(BasePlugin):
         """Rebuild all_news_items from per-symbol cached data."""
         configured = self.feeds_config.get('stock_symbols', [])
         stock_symbols = list(dict.fromkeys(configured + self._get_stocks_plugin_symbols()))
-        custom_feeds = self.feeds_config.get('custom_feeds', {})
+        custom_feeds = self._get_custom_feeds()
 
         all_items: list = []
         for sym in stock_symbols:
@@ -525,7 +549,7 @@ class StockNewsTickerPlugin(BasePlugin):
     def _check_budget_adequacy(self) -> None:
         """Warn at startup if symbol count may exhaust the hourly request budget."""
         stock_symbols = self.feeds_config.get('stock_symbols', [])
-        custom_feeds = self.feeds_config.get('custom_feeds', {})
+        custom_feeds = self._get_custom_feeds()
         n = max(len(stock_symbols), 1)
         per_sym = max(60.0, self.update_interval / n)
         sym_per_hour = 3600.0 / per_sym
@@ -860,7 +884,7 @@ class StockNewsTickerPlugin(BasePlugin):
         super().on_config_change(new_config)
 
         old_symbols = set(self.feeds_config.get('stock_symbols', []))
-        old_custom = set(self.feeds_config.get('custom_feeds', {}).keys())
+        old_custom = set(self._get_custom_feeds().keys())
         old_font_size = self.font_size
         old_font_path = self.global_config.get('font_path', '')
 
@@ -877,7 +901,7 @@ class StockNewsTickerPlugin(BasePlugin):
             self.logger.info("[Stock News] Fonts reloaded at %dpx", self.font_size)
 
         new_symbols = set(self.feeds_config.get('stock_symbols', []))
-        new_custom = set(self.feeds_config.get('custom_feeds', {}).keys())
+        new_custom = set(self._get_custom_feeds().keys())
         if new_symbols != old_symbols or new_custom != old_custom:
             # Drop stale per-symbol data for removed feeds
             for removed in (old_symbols - new_symbols):
@@ -907,7 +931,7 @@ class StockNewsTickerPlugin(BasePlugin):
         info.update({
             'total_news_items': len(self.all_news_items),
             'stock_symbols': stock_symbols,
-            'custom_feeds': list(self.feeds_config.get('custom_feeds', {}).keys()),
+            'custom_feeds': list(self._get_custom_feeds().keys()),
             'last_update': self.last_update,
             'data_stale': self._is_data_stale(),
             'is_market_hours': self._is_market_hours(),
