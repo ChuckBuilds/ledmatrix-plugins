@@ -235,13 +235,20 @@ class StockNewsTickerPlugin(BasePlugin):
         # Convert to per-frame advancement for smooth, consistent scrolling.
         # Frame-based mode advances exactly pixels_per_frame each frame regardless
         # of wall-clock jitter, preventing multi-pixel jumps on slow frames.
+        _MIN_PPF = 0.1  # minimum pixels-per-frame the scroll helper accepts
         pixels_per_frame = pps / fps if fps > 0 else pps / 100.0
-        pixels_per_frame = max(0.1, min(5.0, pixels_per_frame))
+        if pixels_per_frame < _MIN_PPF:
+            # Lower effective FPS to preserve requested px/s rather than bumping px/frame
+            effective_fps = min(fps, max(1.0, int(pps / _MIN_PPF)))
+            pixels_per_frame = pps / effective_fps
+        else:
+            effective_fps = fps
+        pixels_per_frame = min(5.0, pixels_per_frame)  # retain upper clamp
 
         if hasattr(self.scroll_helper, 'set_frame_based_scrolling'):
             self.scroll_helper.set_frame_based_scrolling(True)
         if hasattr(self.scroll_helper, 'set_scroll_delay'):
-            self.scroll_helper.set_scroll_delay(1.0 / fps)
+            self.scroll_helper.set_scroll_delay(1.0 / effective_fps)
         self.scroll_helper.set_scroll_speed(pixels_per_frame)
 
         if hasattr(self.scroll_helper, 'set_target_fps'):
@@ -884,7 +891,7 @@ class StockNewsTickerPlugin(BasePlugin):
         super().on_config_change(new_config)
 
         old_symbols = set(self.feeds_config.get('stock_symbols', []))
-        old_custom = set(self._get_custom_feeds().keys())
+        old_custom_map = self._get_custom_feeds().copy()
         old_font_size = self.font_size
         old_font_path = self.global_config.get('font_path', '')
 
@@ -901,8 +908,18 @@ class StockNewsTickerPlugin(BasePlugin):
             self.logger.info("[Stock News] Fonts reloaded at %dpx", self.font_size)
 
         new_symbols = set(self.feeds_config.get('stock_symbols', []))
-        new_custom = set(self._get_custom_feeds().keys())
-        if new_symbols != old_symbols or new_custom != old_custom:
+        new_custom_map = self._get_custom_feeds()
+        old_custom_keys = set(old_custom_map.keys())
+        new_custom_keys = set(new_custom_map.keys())
+
+        # Clear state for any feed whose URL changed (same name, different URL)
+        for name in new_custom_keys & old_custom_keys:
+            if new_custom_map[name] != old_custom_map.get(name):
+                self._symbol_data.pop(f"_feed_{name}", None)
+                self._feed_last_fetch.pop(name, None)
+                self.logger.info("[Stock News] Feed URL changed for '%s' — will refetch", name)
+
+        if new_symbols != old_symbols or new_custom_keys != old_custom_keys:
             # Drop stale per-symbol data for removed feeds
             for removed in (old_symbols - new_symbols):
                 self._symbol_data.pop(removed, None)

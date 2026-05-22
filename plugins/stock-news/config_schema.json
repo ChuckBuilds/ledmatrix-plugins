@@ -256,6 +256,7 @@
             "properties": {
               "name": {
                 "type": "string",
+                "minLength": 1,
                 "description": "Display label for this feed"
               },
               "url": {
