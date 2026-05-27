@@ -482,7 +482,6 @@ class WeatherPlugin(BasePlugin):
 
         om_data = response.json()
         current = om_data['current']
-        daily_raw = om_data['daily']
 
         wmo_code = current.get('weather_code', 0)
         is_day = bool(current.get('is_day', 1))
@@ -570,7 +569,8 @@ class WeatherPlugin(BasePlugin):
         for i, t in enumerate(times):
             try:
                 ts = int(datetime.fromisoformat(t).replace(tzinfo=tz).timestamp())
-            except Exception:
+            except (ValueError, OverflowError, OSError) as exc:
+                self.logger.debug("Skipping hourly entry with unparseable time %r: %s", t, exc)
                 continue
             code = codes[i] if i < len(codes) else 0
             is_day = bool(is_days[i]) if i < len(is_days) else True
@@ -616,7 +616,8 @@ class WeatherPlugin(BasePlugin):
                 dt = datetime.fromisoformat(t).replace(tzinfo=tz)
                 ts = int(dt.timestamp())
                 d = dt.date()
-            except Exception:
+            except (ValueError, OverflowError, OSError) as exc:
+                self.logger.debug("Skipping daily entry with unparseable time %r: %s", t, exc)
                 continue
             code = daily['weather_code'][i] if i < len(daily.get('weather_code', [])) else 0
 
