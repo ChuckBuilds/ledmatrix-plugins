@@ -22,6 +22,11 @@
       "minimum": 300,
       "description": "How often to fetch new weather data in seconds (minimum 300 = 5 minutes)"
     },
+    "api_key": {
+      "type": "string",
+      "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs.",
+      "title": "API Key (deprecated)"
+    },
     "location_city": {
       "type": "string",
       "default": "Dallas",

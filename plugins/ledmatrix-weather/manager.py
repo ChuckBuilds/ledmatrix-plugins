@@ -276,6 +276,8 @@ class WeatherPlugin(BasePlugin):
         self.show_current = new_config.get('show_current_weather', self.show_current)
         self.show_hourly = new_config.get('show_hourly_forecast', self.show_hourly)
         self.show_daily = new_config.get('show_daily_forecast', self.show_daily)
+        self.show_almanac = new_config.get('show_almanac', self.show_almanac)
+        self.show_radar = new_config.get('show_radar', self.show_radar)
 
         # Rebuild mode list and reset index so IndexError can't occur
         self.modes = []
@@ -285,6 +287,10 @@ class WeatherPlugin(BasePlugin):
             self.modes.append('hourly_forecast')
         if self.show_daily:
             self.modes.append('daily_forecast')
+        if self.show_almanac:
+            self.modes.append('almanac')
+        if self.show_radar:
+            self.modes.append('radar')
         if not self.modes:
             self.modes = ['weather']
         self.current_mode_index = 0
@@ -423,7 +429,8 @@ class WeatherPlugin(BasePlugin):
                 return
 
         # Step A: Geocoding via Open-Meteo geocoding API
-        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=5&language=en&format=json"
+        from urllib.parse import quote_plus
+        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={quote_plus(city)}&count=5&language=en&format=json"
         try:
             response = requests.get(geo_url, timeout=10)
             response.raise_for_status()
@@ -548,15 +555,21 @@ class WeatherPlugin(BasePlugin):
 
     def _map_om_hourly(self, om_data: Dict) -> List[Dict]:
         """Convert Open-Meteo hourly arrays to OWM-compatible hourly list."""
+        import zoneinfo
         hourly = om_data.get('hourly', {})
         times = hourly.get('time', [])
         temps = hourly.get('temperature_2m', [])
         codes = hourly.get('weather_code', [])
         is_days = hourly.get('is_day', [])
+        tz_name = om_data.get('timezone', 'UTC')
+        try:
+            tz = zoneinfo.ZoneInfo(tz_name)
+        except Exception:
+            tz = zoneinfo.ZoneInfo('UTC')
         result = []
         for i, t in enumerate(times):
             try:
-                ts = int(datetime.fromisoformat(t).timestamp())
+                ts = int(datetime.fromisoformat(t).replace(tzinfo=tz).timestamp())
             except Exception:
                 continue
             code = codes[i] if i < len(codes) else 0
@@ -593,14 +606,14 @@ class WeatherPlugin(BasePlugin):
             if not s:
                 return None
             try:
-                return int(datetime.fromisoformat(s).timestamp())
+                return int(datetime.fromisoformat(s).replace(tzinfo=tz).timestamp())
             except Exception:
                 return None
 
         result = []
         for i, t in enumerate(times):
             try:
-                dt = datetime.fromisoformat(t)
+                dt = datetime.fromisoformat(t).replace(tzinfo=tz)
                 ts = int(dt.timestamp())
                 d = dt.date()
             except Exception:
