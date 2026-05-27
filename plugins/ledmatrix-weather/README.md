@@ -36,32 +36,18 @@ Daily Forecast:
 - **Hourly forecast**: next 24 hours
 - **Daily forecast**: 3–7 day high/low
 - **Almanac**: sunrise/sunset, moon phase, day length
-- **Precipitation radar**: live RainViewer imagery — no API key required for this part
-- **Weather alerts**: when active, takes priority in the rotation
+- **Precipitation radar**: live RainViewer imagery
+- **Weather alerts**: when active (US only), takes priority in the rotation
 
 ## Requirements
 
-- A **One Call API 3.0** subscription from OpenWeatherMap (free tier
-  available) — see API Key below
-- Internet connection for OpenWeatherMap and RainViewer
+- Internet connection
+- No API key required — weather data comes from [Open-Meteo](https://open-meteo.com/),
+  a free and open-source weather API
 - Display size: 64x32 minimum; 64x48 or larger to see the extra current-
   conditions metrics
 
 ## Configuration
-
-### API Key
-
-This plugin requires the **One Call API 3.0** product from OpenWeatherMap.
-A standard OpenWeatherMap API key on its own will **not** work — One Call 3.0
-is a separate subscription you must enable on your account.
-
-1. Sign up at https://openweathermap.org
-2. Generate an API key under **API Keys**
-3. Go to https://openweathermap.org/api, find **One Call API 3.0**, click
-   **Subscribe**. The free tier requires entering payment info but does not
-   charge you below 1,000 calls/day.
-4. Open the **Weather** tab in the LEDMatrix web UI (or edit
-   `config/config_secrets.json`) and paste the key into `api_key`.
 
 ### Configuration options
 
@@ -72,20 +58,19 @@ generated from it. The keys you'll touch most often:
 | Key | Default | Notes |
 |---|---|---|
 | `enabled` | `false` | Master switch |
-| `api_key` | _required_ | One Call 3.0 key (store in `config_secrets.json`) |
 | `location_city` | `"Dallas"` | City name |
 | `location_state` | `"Texas"` | State/province (optional, helps US disambiguation) |
 | `location_country` | `"US"` | ISO 3166-1 alpha-2 code |
 | `units` | `"imperial"` | `"imperial"` (°F) or `"metric"` (°C) |
 | `display_duration` | `30` | Seconds per mode (5–300) |
-| `update_interval` | `1800` | Seconds between OpenWeatherMap fetches (min 300) |
+| `update_interval` | `1800` | Seconds between weather fetches (min 300) |
 | `display_format` | `"{temp}°F\n{condition}"` | Placeholders: `{temp}`, `{condition}`, `{humidity}`, `{wind}` |
 | `show_current_weather` | `true` | Toggle current conditions mode |
 | `show_hourly_forecast` | `true` | Toggle hourly mode |
 | `show_daily_forecast` | `true` | Toggle daily mode |
 | `show_almanac` | `true` | Toggle almanac mode (sun/moon) |
 | `show_radar` | `true` | Toggle precipitation radar mode |
-| `show_alerts` | `true` | Show active weather alerts (preempts rotation) |
+| `show_alerts` | `true` | Show active weather alerts (preempts rotation, US only) |
 | `show_feels_like` / `show_dew_point` / `show_visibility` / `show_pressure` | `true` | Extra current-conditions metrics (need height ≥ 48px) |
 | `radar_zoom` | `6` | 4 (regional) to 8 (very close) |
 | `radar_line_color` | `[0, 130, 70]` | RGB for state outlines |
@@ -106,7 +91,9 @@ controller rotates through them in order:
 | `radar` | Live precipitation radar from RainViewer |
 
 When an active weather alert is available and `show_alerts` is true, the
-alert takes priority over the normal rotation.
+alert takes priority over the normal rotation. Alerts are sourced from the
+[NWS API](https://www.weather.gov/documentation/services-web-api) and are
+only available for US locations.
 
 ## Usage
 
@@ -114,34 +101,30 @@ The plugin auto-rotates through enabled display modes based on
 `display_duration`. Toggle individual modes on or off with the
 `show_*` keys above (or the matching toggles in the web UI).
 
+## Data sources
+
+| Data | Source | Key required |
+|---|---|---|
+| Current conditions, forecast, almanac | [Open-Meteo](https://open-meteo.com/) | None |
+| Weather alerts | [NWS API](https://www.weather.gov/documentation/services-web-api) (US only) | None |
+| Precipitation radar | [RainViewer](https://www.rainviewer.com/api.html) | None |
+
 ## Troubleshooting
 
 **No weather data displayed / "No Data" on screen:**
-- **Most common cause**: Your API key is not subscribed to One Call API 3.0
-  - Check logs for "401 Unauthorized" errors
-  - Subscribe at https://openweathermap.org/api -> One Call API 3.0 -> Subscribe
-- Verify your API key is correct
 - Verify internet connection
-- Ensure location is spelled correctly (city name must match OpenWeatherMap's geocoding)
+- Ensure location is spelled correctly (`location_city` must be a city
+  name that Open-Meteo's geocoding can resolve)
+- Check plugin logs for specific error messages
 
 **Slow updates:**
-- API has rate limits, respect the minimum update interval
-- Free tier allows 1000 calls/day
+- Lower `update_interval` for fresher data (minimum 300 s); the default
+  1800 s (30 min) is recommended since weather rarely changes faster
 
-## API rate limits
-
-OpenWeatherMap One Call 3.0 free tier:
-- 1,000 calls per day
-- 60 calls per minute
-
-With the default `update_interval` of 1800s (30 minutes), this plugin
-makes about 48 calls per day. Lower the interval if you want fresher
-data — just keep it ≥ 300s and watch your daily total.
-
-The radar mode uses RainViewer separately and has no API key, but obeys
-`radar_update_interval` (default 600s) to avoid hammering their CDN.
+**Radar not showing:**
+- Radar uses RainViewer and updates on a separate `radar_update_interval`
+  (default 600 s); allow a minute for the first tiles to load
 
 ## License
 
 GPL-3.0 License - see main LEDMatrix repository for details.
-

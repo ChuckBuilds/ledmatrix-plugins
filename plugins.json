@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-05-26",
+  "last_updated": "2026-05-27",
   "plugins": [
     {
       "id": "hello-world",
@@ -47,7 +47,7 @@
     {
       "id": "weather",
       "name": "Weather Display",
-      "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), precipitation radar, weather alerts, UV index, wind direction, and weather icons. Powered by OpenWeatherMap + RainViewer APIs.",
+      "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), precipitation radar, weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
       "author": "ChuckBuilds",
       "category": "weather",
       "tags": [
@@ -55,7 +55,7 @@
         "forecast",
         "temperature",
         "conditions",
-        "openweathermap",
+        "open-meteo",
         "uv-index",
         "wind",
         "icons",
@@ -64,10 +64,10 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.2.4",
+      "latest_version": "2.3.0",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-05-27",
       "verified": true,
       "screenshot": ""
     },
