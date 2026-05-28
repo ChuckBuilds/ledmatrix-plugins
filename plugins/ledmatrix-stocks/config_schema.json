@@ -99,13 +99,13 @@
         },
         "symbols": {
           "type": "array",
-          "description": "List of stock symbols to track",
+          "description": "List of stock symbols to track. More symbols increase fetch time at each update_interval (~0.1s per symbol plus a 1s pause every 15 symbols).",
           "items": {
             "type": "string",
             "pattern": "^\\^?[A-Z]{1,5}$"
           },
           "default": ["ASTS", "SCHD", "INTC", "NVDA", "T", "VOO", "SMCI"],
-          "maxItems": 20
+          "maxItems": 50
         },
         "display_format": {
           "type": "string",
@@ -134,13 +134,13 @@
         },
         "symbols": {
           "type": "array",
-          "description": "List of cryptocurrency symbols to track",
+          "description": "List of cryptocurrency symbols to track. Each symbol adds to the total fetch time per update_interval.",
           "items": {
             "type": "string",
             "pattern": "^[A-Z]{2,10}(-USD)?$"
           },
           "default": ["BTC-USD", "ETH-USD"],
-          "maxItems": 10
+          "maxItems": 15
         },
         "display_format": {
           "type": "string",

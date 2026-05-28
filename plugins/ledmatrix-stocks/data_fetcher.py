@@ -7,6 +7,7 @@ for stock and cryptocurrency data from Yahoo Finance.
 
 import re
 import json
+import time
 from typing import Dict, Any, Optional
 from datetime import datetime
 
@@ -80,13 +81,22 @@ class StockDataFetcher:
         except ImportError:
             self.logger.warning("Background service not available")
     
+    _CHUNK_SIZE = 15  # symbols per burst; longer pause inserted between chunks
+
     def fetch_all_data(self) -> Dict[str, Any]:
         """Fetch data for all configured stocks and cryptocurrencies."""
         all_data = {}
-        
-        
+
+        total_symbols = len(self.stock_symbols) + len(self.crypto_symbols)
+        if total_symbols > 40 and self.config_manager.update_interval < 300:
+            self.logger.warning(
+                "Fetching %d symbols with update_interval=%ds — consider increasing "
+                "update_interval to 300s or more to avoid rate limiting.",
+                total_symbols, self.config_manager.update_interval
+            )
+
         # Fetch stock data
-        for symbol in self.stock_symbols:
+        for i, symbol in enumerate(self.stock_symbols):
             try:
                 data = self.fetch_stock_data(symbol, is_crypto=False)
                 if data:
@@ -96,9 +106,13 @@ class StockDataFetcher:
                     self.logger.warning("No data returned for stock %s", symbol)
             except Exception as e:
                 self.logger.error("Error fetching stock data for %s: %s", symbol, e)
-        
+            finally:
+                time.sleep(self.rate_limit_delay)
+            if (i + 1) % self._CHUNK_SIZE == 0:
+                time.sleep(1.0)
+
         # Fetch crypto data
-        for symbol in self.crypto_symbols:
+        for i, symbol in enumerate(self.crypto_symbols):
             try:
                 # Add -USD suffix for Yahoo Finance API if not already present
                 api_symbol = symbol if symbol.endswith('-USD') else f"{symbol}-USD"
@@ -110,7 +124,11 @@ class StockDataFetcher:
                     self.logger.warning("No data returned for crypto %s", symbol)
             except Exception as e:
                 self.logger.error("Error fetching crypto data for %s: %s", symbol, e)
-        
+            finally:
+                time.sleep(self.rate_limit_delay)
+            if (i + 1) % self._CHUNK_SIZE == 0:
+                time.sleep(1.0)
+
         return all_data
     
     def fetch_stock_data(self, symbol: str, is_crypto: bool = False) -> Optional[Dict[str, Any]]:
