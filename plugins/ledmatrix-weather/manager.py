@@ -2,7 +2,7 @@
 Weather Plugin for LEDMatrix
 
 Comprehensive weather display with current conditions, hourly forecast, and daily forecast.
-Uses OpenWeatherMap API to provide accurate weather information with beautiful icons.
+Uses Open-Meteo API (free, no API key required) with RainViewer for precipitation radar.
 
 Features:
 - Current weather conditions with temperature, humidity, wind speed
@@ -11,8 +11,6 @@ Features:
 - Weather icons matching conditions
 - UV index display
 - Automatic error handling and retry logic
-
-API Version: 1.0.0
 """
 
 import requests
@@ -47,14 +45,10 @@ except ImportError:
 class WeatherPlugin(BasePlugin):
     """
     Weather plugin that displays current conditions and forecasts.
-    
-    Supports three display modes:
-    - weather: Current conditions
-    - hourly_forecast: Hourly forecast for next 48 hours
-    - daily_forecast: Daily forecast for next 7 days
-    
+
+    Supports display modes: weather, hourly_forecast, daily_forecast, almanac, radar.
+
     Configuration options:
-        api_key (str): OpenWeatherMap API key
         location (dict): City, state, country for weather data
         units (str): 'imperial' (F) or 'metric' (C)
         update_interval (int): Seconds between API updates
@@ -65,9 +59,6 @@ class WeatherPlugin(BasePlugin):
                  display_manager, cache_manager, plugin_manager):
         """Initialize the weather plugin."""
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
-        
-        # Weather configuration
-        self.api_key = config.get('api_key', 'YOUR_OPENWEATHERMAP_API_KEY')
         
         # Location - read from flat format (location_city, location_state, location_country)
         # These are the fields defined in config_schema.json for the web interface
@@ -276,7 +267,6 @@ class WeatherPlugin(BasePlugin):
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
         """Handle live configuration updates."""
         self.config = new_config
-        self.api_key = new_config.get('api_key', self.api_key)
         self.location = {
             'city': new_config.get('location_city', self.location.get('city', 'Dallas')),
             'state': new_config.get('location_state', self.location.get('state', 'Texas')),
@@ -286,6 +276,8 @@ class WeatherPlugin(BasePlugin):
         self.show_current = new_config.get('show_current_weather', self.show_current)
         self.show_hourly = new_config.get('show_hourly_forecast', self.show_hourly)
         self.show_daily = new_config.get('show_daily_forecast', self.show_daily)
+        self.show_almanac = new_config.get('show_almanac', self.show_almanac)
+        self.show_radar = new_config.get('show_radar', self.show_radar)
 
         # Rebuild mode list and reset index so IndexError can't occur
         self.modes = []
@@ -295,6 +287,10 @@ class WeatherPlugin(BasePlugin):
             self.modes.append('hourly_forecast')
         if self.show_daily:
             self.modes.append('daily_forecast')
+        if self.show_almanac:
+            self.modes.append('almanac')
+        if self.show_radar:
+            self.modes.append('radar')
         if not self.modes:
             self.modes = ['weather']
         self.current_mode_index = 0
@@ -305,12 +301,12 @@ class WeatherPlugin(BasePlugin):
 
     def update(self) -> None:
         """
-        Update weather data from OpenWeatherMap API.
+        Update weather data from Open-Meteo API.
 
         Fetches current conditions and forecast data, respecting
         update intervals and error backoff periods.
         """
-        # Refresh radar tiles unconditionally (uses RainViewer, not OpenWeatherMap)
+        # Refresh radar tiles unconditionally (uses RainViewer, separate from weather data)
         self._update_radar()
 
         current_time = time.time()
@@ -331,11 +327,6 @@ class WeatherPlugin(BasePlugin):
                 # Reset error count after backoff
                 self.consecutive_errors = 0
                 self.error_backoff_time = 60
-
-        # Validate API key
-        if not self.api_key or self.api_key == "YOUR_OPENWEATHERMAP_API_KEY":
-            self.logger.warning("No valid OpenWeatherMap API key configured")
-            return
 
         # Try to fetch weather data
         try:
@@ -405,8 +396,7 @@ class WeatherPlugin(BasePlugin):
         )
 
     def _fetch_weather(self) -> None:
-        """Fetch weather data from OpenWeatherMap API."""
-        # Check cache first - use update_interval as max_age to respect configured refresh rate
+        """Fetch weather data from Open-Meteo API (free, no API key required)."""
         city = self.location.get('city', 'Dallas')
         state = self.location.get('state', 'Texas')
         country = self.location.get('country', 'US')
@@ -423,7 +413,7 @@ class WeatherPlugin(BasePlugin):
                         'sunrise': fc.get('sunrise'),
                         'sunset': fc.get('sunset'),
                     }
-                if 'moon' not in self.weather_data and 'daily' in self.forecast_data:
+                if 'moon' not in self.weather_data and self.forecast_data.get('daily'):
                     d0 = self.forecast_data['daily'][0]
                     self.weather_data['moon'] = {
                         'phase': d0.get('moon_phase'),
@@ -437,114 +427,247 @@ class WeatherPlugin(BasePlugin):
                 self._process_forecast_data(self.forecast_data)
                 self.logger.info("Using cached weather data")
                 return
-        
-        # Get coordinates using geocoding API
-        geo_url = f"https://api.openweathermap.org/geo/1.0/direct?q={city},{state},{country}&limit=1&appid={self.api_key}"
 
+        # Step A: Geocoding via Open-Meteo geocoding API
+        from urllib.parse import quote_plus
+        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={quote_plus(city)}&count=5&language=en&format=json"
         try:
             response = requests.get(geo_url, timeout=10)
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             status = e.response.status_code if e.response is not None else None
-            if status == 401:
-                self._last_error_hint = "Invalid API key"
-                self.logger.error(
-                    "Geocoding API returned 401 Unauthorized. "
-                    "Verify your API key is correct at https://openweathermap.org/api"
-                )
-            elif status == 429:
-                self._last_error_hint = "Rate limit exceeded"
-                self.logger.error("Geocoding API rate limit exceeded (429). Increase update_interval.")
-            else:
-                self._last_error_hint = f"Geo API error {status}"
-                self.logger.error(f"Geocoding API HTTP error {status}: {e}")
+            self._last_error_hint = f"Geo API error {status}"
+            self.logger.error(f"Open-Meteo geocoding HTTP error {status}: {e}")
             raise
-        geo_data = response.json()
-        
-        
-        if not geo_data:
-            self._last_error_hint = f"Unknown: {city}, {state}"
-            self.logger.error(f"Could not find coordinates for {city}, {state}, {country}")
-            self.last_update = time.time()  # Prevent immediate retry
-            return
-        
-        lat = geo_data[0]['lat']
-        lon = geo_data[0]['lon']
-        
-        # Get weather data using One Call API
-        one_call_url = f"https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lon}&exclude=minutely&appid={self.api_key}&units={self.units}"
 
+        results = response.json().get('results', [])
+        if not results:
+            self._last_error_hint = f"Unknown: {city}"
+            self.logger.error(f"Could not find coordinates for {city}, {state}, {country}")
+            self.last_update = time.time()
+            return
+
+        # Pick the best result by matching country code
+        country_upper = country.upper() if country else ''
+        lat, lon = results[0]['latitude'], results[0]['longitude']
+        for r in results:
+            if r.get('country_code', '').upper() == country_upper:
+                lat, lon = r['latitude'], r['longitude']
+                break
+
+        # Step B: Fetch forecast from Open-Meteo
+        temp_unit = "fahrenheit" if self.units == "imperial" else "celsius"
+        wind_unit = "mph" if self.units == "imperial" else "kmh"
+        forecast_url = (
+            f"https://api.open-meteo.com/v1/forecast"
+            f"?latitude={lat}&longitude={lon}"
+            f"&current=temperature_2m,relative_humidity_2m,apparent_temperature,"
+            f"dew_point_2m,surface_pressure,cloud_cover,visibility,"
+            f"wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,weather_code,is_day"
+            f"&hourly=temperature_2m,weather_code,is_day"
+            f"&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset,uv_index_max"
+            f"&temperature_unit={temp_unit}"
+            f"&wind_speed_unit={wind_unit}"
+            f"&timezone=auto"
+            f"&forecast_days=7"
+        )
         try:
-            response = requests.get(one_call_url, timeout=10)
+            response = requests.get(forecast_url, timeout=10)
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             status = e.response.status_code if e.response is not None else None
-            if status == 401:
-                self._last_error_hint = "Subscribe to One Call 3.0"
-                self.logger.error(
-                    "One Call API 3.0 returned 401 Unauthorized. "
-                    "Your API key is NOT subscribed to One Call API 3.0. "
-                    "Subscribe (free tier available) at https://openweathermap.org/api "
-                    "-> One Call API 3.0 -> Subscribe."
-                )
-            elif status == 429:
-                self._last_error_hint = "Rate limit exceeded"
-                self.logger.error("One Call API rate limit exceeded (429). Increase update_interval.")
-            else:
-                self._last_error_hint = f"Weather API error {status}"
-                self.logger.error(f"One Call API HTTP error {status}: {e}")
+            self._last_error_hint = f"Weather API error {status}"
+            self.logger.error(f"Open-Meteo forecast HTTP error {status}: {e}")
             raise
-        one_call_data = response.json()
-        
-        
-        # Store current weather data (including previously-unused fields)
-        current = one_call_data['current']
-        daily_today = one_call_data['daily'][0]
+
+        om_data = response.json()
+        current = om_data['current']
+
+        wmo_code = current.get('weather_code', 0)
+        is_day = bool(current.get('is_day', 1))
+        icon_code = WeatherIcons.wmo_to_icon_code(wmo_code, is_day)
+        condition = WeatherIcons.wmo_to_condition(wmo_code)
+
+        daily_list = self._map_om_daily(om_data)
+        daily_today = daily_list[0] if daily_list else {}
+
+        tz_offset = om_data.get('utc_offset_seconds', 0)
+
         self.weather_data = {
             'main': {
-                'temp': current['temp'],
-                'temp_max': daily_today['temp']['max'],
-                'temp_min': daily_today['temp']['min'],
-                'humidity': current['humidity'],
-                'pressure': current['pressure'],
-                'uvi': current.get('uvi', 0),
-                'feels_like': current.get('feels_like'),
-                'dew_point': current.get('dew_point'),
-                'visibility': current.get('visibility'),  # meters
-                'clouds': current.get('clouds'),
+                'temp': current.get('temperature_2m'),
+                'temp_max': daily_today.get('temp', {}).get('max'),
+                'temp_min': daily_today.get('temp', {}).get('min'),
+                'humidity': current.get('relative_humidity_2m'),
+                'pressure': current.get('surface_pressure'),
+                'uvi': current.get('uv_index', 0),
+                'feels_like': current.get('apparent_temperature'),
+                'dew_point': current.get('dew_point_2m'),
+                'visibility': current.get('visibility'),
+                'clouds': current.get('cloud_cover'),
             },
-            'weather': current['weather'],
+            'weather': [{'main': condition, 'icon': icon_code, 'description': condition.lower()}],
             'wind': {
-                'speed': current['wind_speed'],
-                'deg': current.get('wind_deg', 0),
-                'gust': current.get('wind_gust'),
+                'speed': current.get('wind_speed_10m', 0),
+                'deg': current.get('wind_direction_10m', 0),
+                'gust': current.get('wind_gusts_10m'),
             },
             'sun': {
-                'sunrise': current.get('sunrise'),
-                'sunset': current.get('sunset'),
+                'sunrise': daily_today.get('sunrise'),
+                'sunset': daily_today.get('sunset'),
             },
             'moon': {
                 'phase': daily_today.get('moon_phase'),
                 'moonrise': daily_today.get('moonrise'),
                 'moonset': daily_today.get('moonset'),
             },
-            'alerts': one_call_data.get('alerts', []),
-            'timezone_offset': one_call_data.get('timezone_offset', 0),
+            'alerts': [],
+            'timezone_offset': tz_offset,
         }
-        
-        # Store forecast data
-        self.forecast_data = one_call_data
-        
-        # Process forecast data
+
+        self.forecast_data = {
+            'lat': lat,
+            'lon': lon,
+            'timezone_offset': tz_offset,
+            'current': {
+                'sunrise': daily_today.get('sunrise'),
+                'sunset': daily_today.get('sunset'),
+            },
+            'daily': daily_list,
+            'hourly': self._map_om_hourly(om_data),
+            'alerts': [],
+        }
+
+        # Step C: NWS alerts (US-only, silent skip for non-US / failures)
+        alerts = self._fetch_nws_alerts(lat, lon)
+        self.weather_data['alerts'] = alerts
+        self.forecast_data['alerts'] = alerts
+
         self._process_forecast_data(self.forecast_data)
-        
-        # Cache the data
+
         self.cache_manager.set(cache_key, {
             'current': self.weather_data,
-            'forecast': self.forecast_data
+            'forecast': self.forecast_data,
         })
-        
+
         self.logger.info(f"Weather data updated for {city}: {self.weather_data['main']['temp']}°")
+
+    def _map_om_hourly(self, om_data: Dict) -> List[Dict]:
+        """Convert Open-Meteo hourly arrays to OWM-compatible hourly list."""
+        import zoneinfo
+        hourly = om_data.get('hourly', {})
+        times = hourly.get('time', [])
+        temps = hourly.get('temperature_2m', [])
+        codes = hourly.get('weather_code', [])
+        is_days = hourly.get('is_day', [])
+        tz_name = om_data.get('timezone', 'UTC')
+        try:
+            tz = zoneinfo.ZoneInfo(tz_name)
+        except Exception:
+            tz = zoneinfo.ZoneInfo('UTC')
+        result = []
+        for i, t in enumerate(times):
+            try:
+                ts = int(datetime.fromisoformat(t).replace(tzinfo=tz).timestamp())
+            except (ValueError, OverflowError, OSError) as exc:
+                self.logger.debug("Skipping hourly entry with unparseable time %r: %s", t, exc)
+                continue
+            code = codes[i] if i < len(codes) else 0
+            is_day = bool(is_days[i]) if i < len(is_days) else True
+            result.append({
+                'dt': ts,
+                'temp': temps[i] if i < len(temps) else 0,
+                'weather': [{'main': WeatherIcons.wmo_to_condition(code),
+                              'icon': WeatherIcons.wmo_to_icon_code(code, is_day)}],
+            })
+        return result
+
+    def _map_om_daily(self, om_data: Dict) -> List[Dict]:
+        """Convert Open-Meteo daily arrays to OWM-compatible daily list.
+
+        Moon phase / moonrise / moonset are computed via astral since
+        Open-Meteo does not provide those variables.
+        """
+        from astral import moon as astral_moon, Observer
+        import zoneinfo
+
+        daily = om_data.get('daily', {})
+        times = daily.get('time', [])
+        lat = om_data.get('latitude', 0)
+        lon = om_data.get('longitude', 0)
+        tz_name = om_data.get('timezone', 'UTC')
+        try:
+            tz = zoneinfo.ZoneInfo(tz_name)
+        except Exception:
+            tz = zoneinfo.ZoneInfo('UTC')
+        observer = Observer(latitude=lat, longitude=lon)
+
+        def parse_ts(s):
+            if not s:
+                return None
+            try:
+                return int(datetime.fromisoformat(s).replace(tzinfo=tz).timestamp())
+            except Exception:
+                return None
+
+        result = []
+        for i, t in enumerate(times):
+            try:
+                dt = datetime.fromisoformat(t).replace(tzinfo=tz)
+                ts = int(dt.timestamp())
+                d = dt.date()
+            except (ValueError, OverflowError, OSError) as exc:
+                self.logger.debug("Skipping daily entry with unparseable time %r: %s", t, exc)
+                continue
+            code = daily['weather_code'][i] if i < len(daily.get('weather_code', [])) else 0
+
+            # Moon phase: astral returns 0-28; normalize to 0-1 to match OWM convention
+            moon_phase = astral_moon.phase(d) / 28.0
+            try:
+                moonrise_dt = astral_moon.moonrise(observer, d, tzinfo=tz)
+                moonrise_ts = int(moonrise_dt.timestamp()) if moonrise_dt else None
+            except Exception:
+                moonrise_ts = None
+            try:
+                moonset_dt = astral_moon.moonset(observer, d, tzinfo=tz)
+                moonset_ts = int(moonset_dt.timestamp()) if moonset_dt else None
+            except Exception:
+                moonset_ts = None
+
+            result.append({
+                'dt': ts,
+                'temp': {
+                    'max': daily['temperature_2m_max'][i] if i < len(daily.get('temperature_2m_max', [])) else 0,
+                    'min': daily['temperature_2m_min'][i] if i < len(daily.get('temperature_2m_min', [])) else 0,
+                },
+                'weather': [{'main': WeatherIcons.wmo_to_condition(code),
+                              'icon': WeatherIcons.wmo_to_icon_code(code, True)}],
+                'sunrise': parse_ts(daily['sunrise'][i] if i < len(daily.get('sunrise', [])) else None),
+                'sunset': parse_ts(daily['sunset'][i] if i < len(daily.get('sunset', [])) else None),
+                'moonrise': moonrise_ts,
+                'moonset': moonset_ts,
+                'moon_phase': moon_phase,
+            })
+        return result
+
+    def _fetch_nws_alerts(self, lat: float, lon: float) -> List[Dict]:
+        """Fetch active weather alerts from NWS API (US-only, free, no API key)."""
+        try:
+            url = f"https://api.weather.gov/alerts/active?point={lat:.4f},{lon:.4f}"
+            headers = {'User-Agent': 'LEDMatrix-Weather/2.3.0 (github.com/ChuckBuilds/ledmatrix-plugins)'}
+            response = requests.get(url, headers=headers, timeout=8)
+            if response.status_code == 200:
+                return [
+                    {
+                        'event': f.get('properties', {}).get('event', ''),
+                        'sender_name': f.get('properties', {}).get('senderName', ''),
+                        'description': f.get('properties', {}).get('description', ''),
+                    }
+                    for f in response.json().get('features', [])
+                ]
+        except Exception:
+            pass
+        return []
     
     def _process_forecast_data(self, forecast_data: Dict) -> None:
         """Process forecast data into hourly and daily lists."""
@@ -699,10 +822,7 @@ class WeatherPlugin(BasePlugin):
         except Exception:
             font = ImageFont.load_default()
 
-        if not self.api_key or self.api_key == "YOUR_OPENWEATHERMAP_API_KEY":
-            draw.text((2, 8), "Weather:", font=font, fill=(200, 200, 200))
-            draw.text((2, 18), "No API Key", font=font, fill=(255, 100, 100))
-        elif self._last_error_hint:
+        if self._last_error_hint:
             draw.text((2, 4), "Weather Err", font=font, fill=(200, 200, 200))
             hint = self._last_error_hint[:22]
             draw.text((2, 14), hint, font=font, fill=(255, 100, 100))
@@ -1299,7 +1419,6 @@ class WeatherPlugin(BasePlugin):
         info.update({
             'location': self.location,
             'units': self.units,
-            'api_key_configured': bool(self.api_key),
             'last_update': self.last_update,
             'current_temp': self.weather_data.get('main', {}).get('temp') if self.weather_data else None,
             'current_humidity': self.weather_data.get('main', {}).get('humidity') if self.weather_data else None,

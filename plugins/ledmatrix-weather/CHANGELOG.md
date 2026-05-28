@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.3.0] - 2026-05-27
+
+### Changed
+- **Migrated weather data source from OpenWeatherMap to Open-Meteo**: No API key
+  required. Open-Meteo is a free, open-source weather API that covers all
+  previously displayed fields: temperature, humidity, wind, UV index, dew point,
+  visibility, pressure, feels-like, hourly/daily forecasts, sunrise/sunset, moon
+  phase, moonrise/moonset.
+- **Weather alerts now use NWS API** (US locations only, free, no key). Alerts
+  are silently skipped for non-US locations.
+- Removed `api_key` from plugin configuration. Existing installs with an
+  `api_key` in `config.json` or `config_secrets.json` can safely leave or remove it.
+
 ## [2.1.0] - 2026-02-13
 
 ### Fixed

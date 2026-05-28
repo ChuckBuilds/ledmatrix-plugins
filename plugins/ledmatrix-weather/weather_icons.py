@@ -2,7 +2,7 @@
 Weather Icons Module for Weather Plugin
 
 Handles loading and drawing weather icons from PNG files in assets/weather/.
-Maps OpenWeatherMap icon codes to appropriate icon files.
+Maps OWM-style icon codes (e.g. '01d', '10n') and WMO weather codes to icon files.
 """
 
 import math
@@ -62,6 +62,48 @@ class WeatherIcons:
         "moon-last-quarter": "moon-last-quarter.png",
         "moon-waning-crescent": "moon-waning-crescent.png",
     }
+
+    # WMO weather interpretation codes → OWM-style icon keys
+    # https://open-meteo.com/en/docs#weathervariables
+    _WMO_DAY_MAP = {
+        0: "01d", 1: "02d", 2: "03d", 3: "04d",
+        45: "50d", 48: "50d",
+        51: "09d", 53: "09d", 55: "09d", 56: "09d", 57: "09d",
+        61: "10d", 63: "10d", 65: "10d", 66: "13d", 67: "13d",
+        71: "13d", 73: "13d", 75: "13d", 77: "13d",
+        80: "10d", 81: "10d", 82: "10d", 85: "13d", 86: "13d",
+        95: "11d", 96: "11d", 99: "11d",
+    }
+    _WMO_NIGHT_MAP = {
+        0: "01n", 1: "02n", 2: "03n", 3: "04n",
+        45: "50n", 48: "50n",
+        51: "09n", 53: "09n", 55: "09n", 56: "09n", 57: "09n",
+        61: "10n", 63: "10n", 65: "10n", 66: "13n", 67: "13n",
+        71: "13n", 73: "13n", 75: "13n", 77: "13n",
+        80: "10n", 81: "10n", 82: "10n", 85: "13n", 86: "13n",
+        95: "11n", 96: "11n", 99: "11n",
+    }
+    _WMO_CONDITION_MAP = {
+        0: "Clear", 1: "Clear", 2: "Partly Cloudy", 3: "Overcast",
+        45: "Fog", 48: "Fog",
+        51: "Drizzle", 53: "Drizzle", 55: "Drizzle", 56: "Drizzle", 57: "Drizzle",
+        61: "Rain", 63: "Rain", 65: "Rain", 66: "Rain", 67: "Rain",
+        71: "Snow", 73: "Snow", 75: "Snow", 77: "Snow",
+        80: "Showers", 81: "Showers", 82: "Showers",
+        85: "Snow Showers", 86: "Snow Showers",
+        95: "Thunderstorm", 96: "Thunderstorm", 99: "Thunderstorm",
+    }
+
+    @classmethod
+    def wmo_to_icon_code(cls, wmo_code: int, is_day: bool = True) -> str:
+        """Convert a WMO weather code to an OWM-style icon code."""
+        mapping = cls._WMO_DAY_MAP if is_day else cls._WMO_NIGHT_MAP
+        return mapping.get(wmo_code, "01d" if is_day else "01n")
+
+    @classmethod
+    def wmo_to_condition(cls, wmo_code: int) -> str:
+        """Convert a WMO weather code to a human-readable condition string."""
+        return cls._WMO_CONDITION_MAP.get(wmo_code, "Unknown")
 
     @classmethod
     def _resolve_icon_path(cls, filename: str) -> Union[Path, None]:
