@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tide Display Configuration",
+  "description": "Configuration for the Tide Display plugin. Requires a NOAA station ID for your nearest coastal station.",
+  "type": "object",
+  "x-propertyOrder": [
+    "enabled",
+    "station_id",
+    "station_name",
+    "units",
+    "display_duration",
+    "show_moon_phase",
+    "tide_color",
+    "highlight_color"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable or disable the Tide Display plugin"
+    },
+    "station_id": {
+      "type": "string",
+      "title": "NOAA Station ID",
+      "description": "7-digit NOAA tide station ID. Find yours at tidesandcurrents.noaa.gov/stations.html",
+      "pattern": "^[0-9]{7}$",
+      "examples": ["9447130", "8724580", "8443970"],
+      "x-placeholder": "e.g. 9447130 (Seattle)"
+    },
+    "station_name": {
+      "type": "string",
+      "title": "Station Name (optional)",
+      "description": "Display name override — leave blank to use the station ID",
+      "default": "",
+      "maxLength": 20,
+      "x-placeholder": "e.g. Seattle"
+    },
+    "units": {
+      "type": "string",
+      "title": "Units",
+      "enum": ["imperial", "metric"],
+      "enumNames": ["Imperial (feet)", "Metric (meters)"],
+      "default": "imperial",
+      "description": "Imperial = feet, Metric = meters"
+    },
+    "display_duration": {
+      "type": "number",
+      "title": "Seconds per Mode",
+      "default": 12,
+      "minimum": 5,
+      "maximum": 60,
+      "description": "How many seconds to show each display mode before rotating to the next"
+    },
+    "show_moon_phase": {
+      "type": "boolean",
+      "title": "Show Moon Phase",
+      "default": true,
+      "description": "Show moon phase icon and name on the stats screen"
+    },
+    "tide_color": {
+      "type": "array",
+      "title": "Water Color",
+      "x-widget": "color-picker",
+      "items": {"type": "integer", "minimum": 0, "maximum": 255},
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [0, 100, 200],
+      "description": "RGB color for tide water fill [R, G, B]"
+    },
+    "highlight_color": {
+      "type": "array",
+      "title": "Highlight / Wave Color",
+      "x-widget": "color-picker",
+      "items": {"type": "integer", "minimum": 0, "maximum": 255},
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [0, 220, 255],
+      "description": "RGB color for wave crests and chart line [R, G, B]"
+    }
+  },
+  "required": ["enabled"]
+}
