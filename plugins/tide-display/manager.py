@@ -29,14 +29,17 @@ _KNOWN_NEW_MOON = datetime(2000, 1, 6, 18, 14)
 _LUNAR_PERIOD   = 29.53058867
 
 # ── Colour palette ─────────────────────────────────────────────────────────────
-C_BG          = (  0,   0,   0)
-C_SKY         = (  0,   2,  12)  # very dark sky (above water)
-C_WATER_DEEP  = (  0,  45, 130)
-C_WATER_MID   = (  0,  80, 175)
+C_BG          = (  0,   0,   5)
+C_SKY         = (  0,   2,  12)
+C_SKY_HORIZON = (  0,  20,  65)  # indigo at horizon — sky and water share this anchor
+C_WATER_TOP   = (  0,  30,  90)  # water at surface — matches horizon so no hard edge
+C_WATER_DEEP  = (  0,  40, 120)
+C_WATER_MID   = (  0,  65, 160)
 C_WATER_LIGHT = (  0, 120, 210)
-C_WAVE1       = (  0, 215, 255)  # primary wave crest
-C_WAVE2       = (  0, 145, 205)  # secondary wave
-C_CHART_FILL  = (  0,  55, 140)
+C_WAVE1       = (  0, 140, 220)  # main wave body — rich blue-cyan (not jarring full cyan)
+C_WAVE_CREST  = (160, 240, 255)  # sparkle dots at wave peaks only
+C_WAVE2       = (  0,  90, 175)  # secondary wave (subtle)
+C_CHART_FILL  = (  0,  45, 130)
 C_CHART_LINE  = (  0, 215, 255)
 C_CHART_GLOW1 = (  0, 110, 185)
 C_CHART_GLOW2 = (  0,  65, 135)
@@ -285,41 +288,60 @@ class TidePlugin(BasePlugin):
     # ── Drawing helpers ─────────────────────────────────────────────────────────
 
     def _full_wave(self, canvas, draw, dw, dh, fill_ratio, amp):
-        """Full-display animated water gradient with two-layer wave surface."""
-        fill_px = max(3, int(dh * fill_ratio))
-        surf_y  = dh - fill_px  # approximate top of water body
+        """
+        Full-display animated water gradient with a single clean wave surface.
 
-        # Sky gradient (very dark, subtle blue at horizon)
-        for py in range(surf_y):
-            t = py / max(surf_y, 1)  # 0=top, 1=horizon
-            draw.line([(0,py),(dw-1,py)], fill=_lerp(C_BG, C_SKY, t*0.6))
+        Sky (C_BG → C_SKY_HORIZON) and water (C_WATER_TOP → C_WATER_DEEP) share
+        the same colour at the horizon so there is no luminance jump.
+        Wave amplitude is capped at 2 px so it never clips into text above it.
+        """
+        effective = min(fill_ratio, 0.45)
+        fill_px   = max(4, int(dh * effective))
+        surf_y    = dh - fill_px
 
-        # Water gradient fill
-        for py in range(surf_y + amp + 1, dh):
-            t = (dh - py) / max(fill_px, 1)  # 1=surface, 0=bottom
-            color = _lerp(C_WATER_DEEP, C_WATER_LIGHT, t * 0.75)
+        # Sky: near-black at zenith → indigo at horizon (ease-out)
+        for py in range(surf_y + 1):
+            t = py / max(surf_y, 1)
+            draw.line([(0,py),(dw-1,py)], fill=_lerp(C_BG, C_SKY_HORIZON, t*t))
+
+        # Water: indigo at surface → rich mid-blue → deep navy
+        for py in range(surf_y, dh):
+            t = (py - surf_y) / max(fill_px, 1)
+            if t < 0.5:
+                color = _lerp(C_WATER_TOP, C_WATER_MID, t * 2)
+            else:
+                color = _lerp(C_WATER_MID, C_WATER_DEEP, (t - 0.5) * 2)
             draw.line([(0,py),(dw-1,py)], fill=color)
 
-        # Layer 2 — subtle secondary wave (higher frequency)
+        # One thin wave — amplitude fixed at 2px
+        AMP = 2
         for px in range(dw):
-            wy = surf_y + int((amp-1)*math.sin((px+self.wave_phase*1.8+20)*0.42))
+            wy = surf_y + int(AMP * math.sin((px + self.wave_phase) * 0.28))
             wy = max(0, min(dh-1, wy))
-            draw.point((px, wy), fill=C_WAVE2)
+            for dy in range(3):
+                if wy + dy < dh:
+                    blend = 1.0 - dy * 0.35
+                    draw.point((px, wy+dy), fill=_lerp(C_WATER_TOP, C_WAVE1, blend * 0.85))
 
-        # Layer 1 — main wave (2-3px tall)
+        # Bright crest line
         for px in range(dw):
-            wy = surf_y + int(amp*math.sin((px+self.wave_phase)*0.30))
-            wy = max(0, min(dh-1, wy))
-            draw.line([(px,wy),(px,min(dh-1,wy+2))], fill=C_WAVE1)
-
-        # Foam dots at wave crests
-        spacing = max(6, dw // 18)
-        for px in range(0, dw, spacing):
-            wy = surf_y + int(amp*math.sin((px+self.wave_phase)*0.30)) - 1
+            wy = surf_y + int(AMP * math.sin((px + self.wave_phase) * 0.28)) - 1
             if 0 <= wy < dh:
-                draw.point((px, wy), fill=(255,255,255))
+                draw.point((px, wy), fill=C_WAVE1)
 
-        return surf_y  # returns approx horizon y
+        # Sparkle highlights at wave peaks
+        spacing = max(7, dw // 14)
+        for px in range(0, dw, spacing):
+            wy = surf_y + int(AMP * math.sin((px + self.wave_phase) * 0.28)) - 1
+            if 0 <= wy < dh:
+                draw.point((px, wy), fill=C_WAVE_CREST)
+            px2 = px + spacing // 2
+            if px2 < dw:
+                wy2 = surf_y + int(AMP * math.sin((px2 + self.wave_phase) * 0.28)) - 1
+                if 0 <= wy2 < dh:
+                    draw.point((px2, wy2), fill=_lerp(C_WAVE1, C_WAVE_CREST, 0.55))
+
+        return surf_y
 
     def _dir_arrow(self, draw, cx, cy, direction, sz=4):
         c = C_RISING if direction=='RISING' else C_FALLING if direction=='FALLING' else C_SLACK
@@ -378,66 +400,65 @@ class TidePlugin(BasePlugin):
     def _mode_current(self, canvas, draw, dw, dh, L):
         fill_ratio = self._fill_ratio()
         direction  = self._direction()
-        amp        = L['wave_amp']
         lv         = self._current_level()
 
-        # Full-display animated wave background
-        surf_y = self._full_wave(canvas, draw, dw, dh, fill_ratio, amp)
-        sky_h  = surf_y  # usable sky pixels
+        # Full-display animated wave background (amp param unused — internal fixed at 2)
+        surf_y = self._full_wave(canvas, draw, dw, dh, fill_ratio, L['wave_amp'])
+        sky_h  = surf_y
 
-        dir_c  = (C_RISING if direction=='RISING'
-                  else C_FALLING if direction=='FALLING' else C_SLACK)
-        # Direction text + arrow (top-left of sky)
-        self._txt(3, L['row1'], direction, dir_c)
-        arr_x = 3 + len(direction)*4 + 4
-        if arr_x < dw//2 - 4:
-            self._dir_arrow(draw, arr_x, L['row1']+3, direction, sz=3)
+        # Choose font based on available sky
+        use_pixel = sky_h >= 20 and dw >= 128
+        # Compute row positions dynamically — nothing must exceed sky_h
+        PAD = 2
+        r1  = PAD
+        r2  = r1 + (10 if use_pixel else 8)
+        r3  = r2 + 8 if (r2 + 8) < sky_h - 7 else None
+        r4  = r3 + 7 if r3 and (r3 + 7) < sky_h - 7 else None
 
-        # Current height (left, prominent)
+        dir_c = (C_RISING if direction=='RISING'
+                 else C_FALLING if direction=='FALLING' else C_SLACK)
+
+        # LEFT: direction + height
+        self._txt(3, r1, direction, dir_c)  # extra_small_font
+        # Inline arrow to the right of the direction label
+        arr_x = 3 + len(direction) * 4 + 3
+        if arr_x < dw // 2 - 6:
+            self._dir_arrow(draw, arr_x, r1 + 3, direction, sz=3)
         if lv is not None:
-            self._txt(3, L['row2'], self._fmth(lv), C_TEXT)
+            self._txt(3, r2, self._fmth(lv), C_TEXT)
 
-        # Subtle separator line between left and right halves
-        mid = dw // 2 - 2
+        # Divider
+        mid = dw // 2 - 1
         if sky_h > 12:
-            draw.line([(mid, 2), (mid, sky_h-2)], fill=C_BAR_OUT)
+            draw.line([(mid, PAD), (mid, sky_h - PAD)], fill=C_BAR_OUT)
 
-        # Right half: next two tides
-        rx = dw//2 + 3
+        # RIGHT: next two tides
+        rx    = dw // 2 + 3
         nexts = self._next_tides(2)
 
         if nexts:
-            t0       = nexts[0]
-            is_high0 = t0.get('type','?') == 'H'
-            tc0      = C_HIGH if is_high0 else C_LOW
-            sym0     = 'HI' if is_high0 else 'LO'
-            self._txt(rx, L['row1'], sym0, tc0)
-            self._txt(rx + 14, L['row1'], self._fmtt(t0['dt']), C_TEXT)
-            self._txt(rx + 14, L['row2'], self._fmth(t0['height']), tc0)
+            t0  = nexts[0]
+            tc0 = C_HIGH if t0.get('type','?') == 'H' else C_LOW
+            sym = 'HI' if t0.get('type','?') == 'H' else 'LO'
+            self._txt(rx, r1, sym, tc0)
+            self._txt(rx + 14, r1, self._fmtt(t0['dt']), C_TEXT)
+            self._txt(rx + 14, r2, self._fmth(t0['height']), tc0)
 
-        if len(nexts) >= 2:
-            t1       = nexts[1]
-            is_high1 = t1.get('type','?') == 'H'
-            tc1      = C_HIGH if is_high1 else C_LOW
-            sym1     = 'HI' if is_high1 else 'LO'
-            r3 = L['row3']
-            r4 = L['row4']
-            if r3 < sky_h:
-                self._txt(rx, r3, sym1, tc1)
-                self._txt(rx+14, r3, self._fmtt(t1['dt']), C_TEXT)
-            if r4 < sky_h:
-                self._txt(rx+14, r4, self._fmth(t1['height']), tc1)
+        if len(nexts) >= 2 and r3 is not None:
+            t1  = nexts[1]
+            tc1 = C_HIGH if t1.get('type','?') == 'H' else C_LOW
+            sym2 = 'HI' if t1.get('type','?') == 'H' else 'LO'
+            self._txt(rx, r3, sym2, tc1)
+            self._txt(rx + 14, r3, self._fmtt(t1['dt']), C_TEXT)
+            if r4 is not None:
+                self._txt(rx + 14, r4, self._fmth(t1['height']), tc1)
 
-        # Station name at bottom of sky (very dim)
-        name = self._name()
-        if name and sky_h > 26:
-            self._txt(3, sky_h - 8, name, C_DIM)
-
-        # % label near wave surface (bottom-right of sky)
-        pct = int(fill_ratio * 100)
-        pct_x = dw - len(f"{pct}%")*4 - 3
-        if sky_h > 14:
-            self._txt(pct_x, sky_h - 8, f"{pct}%", C_LABEL)
+        # Station + % at bottom of sky, clear of wave
+        last = (r4 or r3 or r2) + 8
+        if last + 5 < sky_h:
+            self._txt(3, last + 2, self._name(), C_DIM)
+            pct = int(fill_ratio * 100)
+            self._txt(dw - len(f"{pct}%") * 4 - 3, last + 2, f"{pct}%", C_LABEL)
 
     # ── Mode 2: Schedule ────────────────────────────────────────────────────────
 
@@ -618,55 +639,46 @@ class TidePlugin(BasePlugin):
         if not L['small']:
             self._txt(txt_x, L['row4'], f"H {hi_h:.1f}  L {lo_h:.1f}", C_LABEL)
 
-        # Right side: vertical tide gauge bar (if large enough display)
+        # Right side: vertical tide gauge bar (wider, gradient fill)
         if L['large'] or L['medium']:
-            gauge_x  = dw - 10
-            gauge_w  = 5
-            gauge_y  = 2
-            gauge_h  = dh - 14
-
-            # Gauge background
-            draw.rectangle([gauge_x, gauge_y, gauge_x+gauge_w-1, gauge_y+gauge_h],
-                           fill=C_COL_BG, outline=C_BAR_OUT)
-
-            # Gauge fill (proportional to fill_ratio)
+            gw      = 8
+            gx      = dw - gw - 4
+            gy      = 3
+            gh      = dh - 16
             fr      = self._fill_ratio()
-            fill_h  = max(1, int(gauge_h * fr))
-            fill_y0 = gauge_y + gauge_h - fill_h
-            fill_c  = _lerp(C_WATER_MID, C_WATER_LIGHT, fr)
-            draw.rectangle([gauge_x+1, fill_y0, gauge_x+gauge_w-2, gauge_y+gauge_h-1],
-                           fill=fill_c)
+            fh      = max(1, int(gh * fr))
+            fy0     = gy + gh - fh
 
-            # Tiny wave on gauge surface
-            for px in range(gauge_w-2):
-                wy = fill_y0 + int(1*math.sin((px+self.wave_phase)*0.8))
-                wy = max(gauge_y+1, min(gauge_y+gauge_h-1, wy))
-                draw.point((gauge_x+1+px, wy), fill=C_WAVE1)
+            draw.rectangle([gx, gy, gx+gw-1, gy+gh], fill=(0,8,25), outline=C_BAR_OUT)
+            # Gradient fill: water mid at bottom → wave base at top of fill
+            for py in range(fy0, gy+gh):
+                t2 = (gy+gh - py) / max(fh, 1)
+                draw.line([(gx+1, py),(gx+gw-2, py)], fill=_lerp(C_WATER_MID, C_WAVE1, t2*0.6))
+            # Micro wave on fill surface
+            for px in range(gw-2):
+                wy = fy0 + int(math.sin((px+self.wave_phase)*0.8))
+                wy = max(gy+1, min(gy+gh-1, wy))
+                draw.point((gx+1+px, wy), fill=C_WAVE_CREST)
+            # Tick marks
+            for pct2 in (0.25, 0.5, 0.75):
+                ty2 = gy + gh - int(gh*pct2)
+                draw.line([(gx-2, ty2),(gx, ty2)], fill=C_LABEL)
+            # % label centred under gauge
+            pct_g = int(fr*100)
+            draw.text((gx+(gw-len(f"{pct_g}%")*4)//2, gy+gh+3), f"{pct_g}%", fill=C_LABEL)
 
-            # Tick marks at 25/50/75%
-            for pct in (0.25, 0.5, 0.75):
-                ty = gauge_y + gauge_h - int(gauge_h*pct)
-                draw.line([(gauge_x-1, ty),(gauge_x, ty)], fill=C_LABEL)
-
-            # % label under gauge
-            pct = int(fr*100)
-            draw.text((gauge_x-1, gauge_y+gauge_h+2), f"{pct}%", fill=C_LABEL)
-
-        # Cycle progress bar (bottom)
+        # Cycle progress bar — gradient fill, 3px thick
         if cycle_pct is not None:
-            bar_y  = dh - 4
+            bar_y  = dh - 5
             bar_x0 = txt_x
-            bar_x1 = dw - (16 if (L['large'] or L['medium']) else 3)
+            bar_x1 = dw - (gw + 10 if (L['large'] or L['medium']) else 3)
             blen   = bar_x1 - bar_x0
-            flen   = int(blen * cycle_pct/100)
-            draw.rectangle([bar_x0, bar_y, bar_x1, bar_y+2], fill=C_COL_BG)
-            if flen > 0:
-                draw.rectangle([bar_x0, bar_y, bar_x0+flen, bar_y+2],
-                               fill=_lerp(C_LOW, C_HIGH, cycle_pct/100))
-            # Percentage under the filled portion
-            pct_x = min(bar_x0+flen+2, bar_x1-20)
-            draw.text((max(bar_x0, pct_x), bar_y-8),
-                      f"{cycle_pct}%", fill=C_LABEL)
+            flen   = int(blen * cycle_pct / 100)
+            draw.rectangle([bar_x0, bar_y, bar_x1, bar_y+3], fill=(0,8,25))
+            for px in range(flen):
+                t2 = px / max(flen, 1)
+                draw.line([(bar_x0+px, bar_y),(bar_x0+px, bar_y+3)], fill=_lerp(C_LOW, C_HIGH, t2))
+            draw.text((bar_x1+2, bar_y-1), f"{cycle_pct}%", fill=C_LABEL)
 
     # ── Config change ────────────────────────────────────────────────────────────
 
