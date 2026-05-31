@@ -287,6 +287,17 @@ class TidePlugin(BasePlugin):
 
     # ── Drawing helpers ─────────────────────────────────────────────────────────
 
+    def _draw_stars(self, draw, dw: int, sky_h: int) -> None:
+        """Scatter faint star-like pixels in the sky area for atmosphere."""
+        import random
+        rng = random.Random(42)  # fixed seed = stable starfield
+        n   = max(0, (dw * sky_h) // 120)
+        for _ in range(n):
+            sx = rng.randint(0, dw-1)
+            sy = rng.randint(0, sky_h-2)
+            b  = rng.randint(18, 50)
+            draw.point((sx, sy), fill=(b, b+8, b+22))
+
     def _full_wave(self, canvas, draw, dw, dh, fill_ratio, amp):
         """
         Full-display animated water gradient with a single clean wave surface.
@@ -299,10 +310,14 @@ class TidePlugin(BasePlugin):
         fill_px   = max(4, int(dh * effective))
         surf_y    = dh - fill_px
 
-        # Sky: near-black at zenith → indigo at horizon (ease-out)
+        # Sky: deep teal-black at zenith → indigo at horizon (ease-out)
+        sky_top = (2, 4, 18)
         for py in range(surf_y + 1):
             t = py / max(surf_y, 1)
-            draw.line([(0,py),(dw-1,py)], fill=_lerp(C_BG, C_SKY_HORIZON, t*t))
+            draw.line([(0,py),(dw-1,py)], fill=_lerp(sky_top, C_SKY_HORIZON, t*t))
+
+        # Starfield for atmosphere
+        self._draw_stars(draw, dw, surf_y)
 
         # Water: indigo at surface → rich mid-blue → deep navy
         for py in range(surf_y, dh):
@@ -313,33 +328,40 @@ class TidePlugin(BasePlugin):
                 color = _lerp(C_WATER_MID, C_WATER_DEEP, (t - 0.5) * 2)
             draw.line([(0,py),(dw-1,py)], fill=color)
 
-        # One thin wave — amplitude fixed at 2px
+        # Subtle water shimmer — faint lighter-blue ripple in water body
+        shimmer_c = _lerp(C_WATER_MID, (0, 100, 200), 0.25)
+        for px in range(0, dw, 2):
+            ry = surf_y + 4 + int((dh-surf_y-4) * 0.25
+                                  * abs(math.sin((px*0.12 + self.wave_phase*0.3)*0.15)))
+            if surf_y < ry < dh:
+                draw.point((px, ry), fill=shimmer_c)
+
+        # Wave body: 3px thick with brightness fade top→bottom
         AMP = 2
         for px in range(dw):
-            wy = surf_y + int(AMP * math.sin((px + self.wave_phase) * 0.28))
-            wy = max(0, min(dh-1, wy))
+            base_wy = surf_y + int(AMP * math.sin((px + self.wave_phase) * 0.28))
             for dy in range(3):
-                if wy + dy < dh:
-                    blend = 1.0 - dy * 0.35
-                    draw.point((px, wy+dy), fill=_lerp(C_WATER_TOP, C_WAVE1, blend * 0.85))
+                wy = base_wy + dy
+                if 0 <= wy < dh:
+                    blend = 1.0 - dy * 0.38
+                    draw.point((px, wy), fill=_lerp(C_WATER_TOP, C_WAVE1, blend * 0.9))
 
-        # Bright crest line
+        # Crest line — brightness modulated along the wave for organic feel
         for px in range(dw):
             wy = surf_y + int(AMP * math.sin((px + self.wave_phase) * 0.28)) - 1
             if 0 <= wy < dh:
-                draw.point((px, wy), fill=C_WAVE1)
+                bt = (math.sin((px + self.wave_phase * 1.3) * 0.11) + 1) * 0.5
+                draw.point((px, wy), fill=_lerp(C_WAVE1, C_WAVE_CREST, bt * 0.7))
 
-        # Sparkle highlights at wave peaks
-        spacing = max(7, dw // 14)
-        for px in range(0, dw, spacing):
-            wy = surf_y + int(AMP * math.sin((px + self.wave_phase) * 0.28)) - 1
-            if 0 <= wy < dh:
-                draw.point((px, wy), fill=C_WAVE_CREST)
-            px2 = px + spacing // 2
-            if px2 < dw:
-                wy2 = surf_y + int(AMP * math.sin((px2 + self.wave_phase) * 0.28)) - 1
-                if 0 <= wy2 < dh:
-                    draw.point((px2, wy2), fill=_lerp(C_WAVE1, C_WAVE_CREST, 0.55))
+        # Organic sparkles: only at true local crests (not regular spacing)
+        for px in range(0, dw):
+            wy_p = surf_y + int(AMP * math.sin(((px-2) + self.wave_phase) * 0.28))
+            wy_c = surf_y + int(AMP * math.sin(((px  ) + self.wave_phase) * 0.28))
+            wy_n = surf_y + int(AMP * math.sin(((px+2) + self.wave_phase) * 0.28))
+            if wy_c <= wy_p and wy_c <= wy_n:  # local minimum y = crest
+                wy = wy_c - 1
+                if 0 <= wy < dh:
+                    draw.point((px, wy), fill=C_WAVE_CREST)
 
         return surf_y
 
