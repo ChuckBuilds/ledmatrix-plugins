@@ -298,9 +298,17 @@ class TidePlugin(BasePlugin):
             b  = rng.randint(18, 50)
             draw.point((sx, sy), fill=(b, b+8, b+22))
 
+    def _wave_y(self, px: int) -> float:
+        """Composite multi-frequency wave giving a natural, non-mechanical surface."""
+        p = self.wave_phase
+        y1 = math.sin((px + p)         * 0.28) * 1.3   # primary swell
+        y2 = math.sin((px + p * 1.35)  * 0.47) * 0.7   # secondary chop
+        y3 = math.sin((px + p * 0.72)  * 0.71) * 0.35  # fine ripple
+        return y1 + y2 + y3  # max ≈ ±2.35px, stays within 3px amplitude
+
     def _full_wave(self, canvas, draw, dw, dh, fill_ratio, amp):
         """
-        Full-display animated water gradient with a single clean wave surface.
+        Full-display animated water gradient with composite-sine wave surface.
 
         Sky (C_BG → C_SKY_HORIZON) and water (C_WATER_TOP → C_WATER_DEEP) share
         the same colour at the horizon so there is no luminance jump.
@@ -328,37 +336,35 @@ class TidePlugin(BasePlugin):
                 color = _lerp(C_WATER_MID, C_WATER_DEEP, (t - 0.5) * 2)
             draw.line([(0,py),(dw-1,py)], fill=color)
 
-        # Subtle water shimmer — faint lighter-blue ripple in water body
-        shimmer_c = _lerp(C_WATER_MID, (0, 100, 200), 0.25)
-        for px in range(0, dw, 2):
-            ry = surf_y + 4 + int((dh-surf_y-4) * 0.25
-                                  * abs(math.sin((px*0.12 + self.wave_phase*0.3)*0.15)))
-            if surf_y < ry < dh:
-                draw.point((px, ry), fill=shimmer_c)
+        # Horizon glow: 1px bright line at surface — elegant sky/water boundary
+        horizon_c = _lerp(_lerp(C_SKY_HORIZON, C_WATER_TOP, 0.5), (80, 140, 220), 0.35)
+        draw.line([(0, surf_y), (dw-1, surf_y)], fill=horizon_c)
 
-        # Wave body: 3px thick with brightness fade top→bottom
-        AMP = 2
+        # Pre-compute composite wave positions for the full width
+        wave_ys = [surf_y + int(self._wave_y(px)) for px in range(dw)]
+
+        # Wave body: 3px thick, brightness fades with depth
         for px in range(dw):
-            base_wy = surf_y + int(AMP * math.sin((px + self.wave_phase) * 0.28))
+            base_wy = wave_ys[px]
             for dy in range(3):
                 wy = base_wy + dy
                 if 0 <= wy < dh:
-                    blend = 1.0 - dy * 0.38
-                    draw.point((px, wy), fill=_lerp(C_WATER_TOP, C_WAVE1, blend * 0.9))
+                    blend = 1.0 - dy * 0.40
+                    draw.point((px, wy), fill=_lerp(C_WATER_TOP, C_WAVE1, blend * 0.88))
 
-        # Crest line — brightness modulated along the wave for organic feel
+        # Crest line with modulated brightness for organic feel
         for px in range(dw):
-            wy = surf_y + int(AMP * math.sin((px + self.wave_phase) * 0.28)) - 1
+            wy = wave_ys[px] - 1
             if 0 <= wy < dh:
                 bt = (math.sin((px + self.wave_phase * 1.3) * 0.11) + 1) * 0.5
-                draw.point((px, wy), fill=_lerp(C_WAVE1, C_WAVE_CREST, bt * 0.7))
+                draw.point((px, wy), fill=_lerp(C_WAVE1, C_WAVE_CREST, bt * 0.72))
 
-        # Organic sparkles: only at true local crests (not regular spacing)
+        # Organic sparkles at true local crests of the composite wave
         for px in range(0, dw):
-            wy_p = surf_y + int(AMP * math.sin(((px-2) + self.wave_phase) * 0.28))
-            wy_c = surf_y + int(AMP * math.sin(((px  ) + self.wave_phase) * 0.28))
-            wy_n = surf_y + int(AMP * math.sin(((px+2) + self.wave_phase) * 0.28))
-            if wy_c <= wy_p and wy_c <= wy_n:  # local minimum y = crest
+            wy_p = wave_ys[max(0, px-2)]
+            wy_c = wave_ys[px]
+            wy_n = wave_ys[min(dw-1, px+2)]
+            if wy_c <= wy_p and wy_c <= wy_n:
                 wy = wy_c - 1
                 if 0 <= wy < dh:
                     draw.point((px, wy), fill=C_WAVE_CREST)
