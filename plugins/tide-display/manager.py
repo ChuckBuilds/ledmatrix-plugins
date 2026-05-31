@@ -1,14 +1,16 @@
 """
 Tide Display Plugin for LEDMatrix
 
-Coastal tide information with four rotating display modes:
-  1. current  — Animated wave-level bar + current height + next tide info
-  2. schedule — Today's high/low tide schedule in columns
-  3. chart    — 24-hour filled tide curve with current-time marker
-  4. stats    — Moon phase, tidal range, spring/neap indicator
+Four auto-rotating display modes, each designed to look great across
+32×64, 48×128, 48×192 and larger RGB matrix configurations:
 
-Data source: NOAA Tides & Currents API (free, no API key required).
-Configure your nearest station at: tidesandcurrents.noaa.gov/stations.html
+  1. current  — Two-layer animated gradient wave bar + direction + height + next tides
+  2. schedule — Today's H/L schedule with column highlights and mini tide bars
+  3. chart    — 24-hour filled tide curve with glow line, grid, and current-time marker
+  4. stats    — Moon phase icon, spring/neap indicator, tidal range, cycle progress
+
+Data source: NOAA Tides & Currents API (free, no API key, US stations).
+Find your station at: tidesandcurrents.noaa.gov/stations.html
 """
 
 import math
@@ -26,23 +28,96 @@ logger = logging.getLogger(__name__)
 
 NOAA_BASE = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
 
-# Moon phase reference (known new moon)
-_KNOWN_NEW_MOON = datetime(2000, 1, 6, 18, 14)
-_LUNAR_PERIOD_DAYS = 29.53058867
+_KNOWN_NEW_MOON  = datetime(2000, 1, 6, 18, 14)
+_LUNAR_PERIOD    = 29.53058867  # days
 
+# ── Colour palette ────────────────────────────────────────────────────────────
+C_BG           = (0,   0,   0)
+C_WATER_DEEP   = (0,  50, 140)   # solid fill bottom
+C_WATER_MID    = (0,  90, 180)   # fill mid-section
+C_WATER_LIGHT  = (0, 130, 210)   # fill near surface
+C_WAVE1        = (0, 210, 255)   # primary wave crest
+C_WAVE2        = (0, 140, 200)   # secondary wave crest
+C_CHART_FILL   = (0,  40, 110)   # 24h chart polygon
+C_CHART_LINE   = (0, 210, 255)   # chart top line
+C_CHART_GLOW1  = (0, 100, 180)   # inner glow band
+C_CHART_GLOW2  = (0,  60, 130)   # outer glow band
+C_GRID         = (15,  25,  50)  # subtle chart grid
+C_NOW_LINE     = (255, 220,  40) # current-time marker
+C_HIGH         = (255, 200,  50) # HIGH tide accent
+C_LOW          = ( 80, 190, 255) # LOW  tide accent
+C_RISING       = ( 50, 230, 100) # rising direction
+C_FALLING      = (255,  80,  80) # falling direction
+C_SLACK        = (255, 210,  60) # slack / unknown
+C_TEXT         = (200, 225, 255) # primary data text
+C_LABEL        = (100, 130, 180) # secondary label text
+C_DIM          = ( 50,  60,  80) # past / inactive
+C_MOON         = (240, 235, 200) # moon glow
+C_BAR_OUTLINE  = ( 30,  50,  90) # wave-bar border
+C_COL_BG       = (  0,  15,  40) # schedule column bg
+
+
+def _lerp_color(c1: Tuple, c2: Tuple, t: float) -> Tuple[int, int, int]:
+    return tuple(int(a + (b - a) * t) for a, b in zip(c1, c2))
+
+
+def _safe_iso(s: str) -> Optional[datetime]:
+    try:
+        return datetime.fromisoformat(s)
+    except (ValueError, TypeError):
+        return None
+
+
+# ── Layout helper ──────────────────────────────────────────────────────────────
+
+def _layout(dw: int, dh: int) -> Dict:
+    """Return all scaled sizing constants for the current display dimensions."""
+    # bar width: ≈13 % of width, clamped for sensible extremes
+    bar_w    = max(8, min(32, int(dw * 0.13)))
+    bar_x    = 2
+    bar_h    = dh - 4
+    bar_ybot = dh - 2
+
+    # text area starts just after the bar
+    txt_x    = bar_x + bar_w + 4
+
+    # chart margins
+    c_ml, c_mr, c_mt, c_axis = 3, 3, 1, max(7, int(dh * 0.16))
+    c_x  = c_ml
+    c_y  = c_mt
+    c_w  = dw - c_ml - c_mr
+    c_h  = dh - c_axis - c_mt - 1
+
+    # wave amplitude: 2 px on tiny displays, up to 4 on large
+    wave_amp = max(1, min(4, dh // 12))
+
+    # vertical text positions
+    row1 = 1
+    row2 = max(9,  int(dh * 0.28))
+    row3 = max(18, int(dh * 0.55))
+    row4 = max(27, int(dh * 0.78))
+
+    return dict(
+        bar_w=bar_w, bar_x=bar_x, bar_h=bar_h, bar_ybot=bar_ybot,
+        txt_x=txt_x,
+        c_x=c_x, c_y=c_y, c_w=c_w, c_h=c_h, c_axis=c_axis,
+        wave_amp=wave_amp,
+        row1=row1, row2=row2, row3=row3, row4=row4,
+        small=(dw <= 64),
+        medium=(64 < dw <= 128),
+        large=(dw > 128),
+    )
+
+
+# ── Plugin ─────────────────────────────────────────────────────────────────────
 
 class TidePlugin(BasePlugin):
     """
-    Tide display plugin showing animated tide conditions and predictions.
+    Tide display with four rotating visual modes.
 
-    Configuration options:
-        station_id (str): 7-digit NOAA station ID (required)
-        station_name (str): Display name (optional override)
-        units (str): 'imperial' (feet) or 'metric' (meters)
-        display_duration (float): Seconds per display mode (default: 12)
-        show_moon_phase (bool): Show moon icon on stats screen (default: true)
-        tide_color (list): RGB water fill color (default: [0, 100, 200])
-        highlight_color (list): RGB wave/chart line color (default: [0, 220, 255])
+    Required config: station_id (7-digit NOAA station ID).
+    Optional: station_name, units (imperial/metric), display_duration,
+              show_moon_phase, tide_color, highlight_color.
     """
 
     MODES = ['current', 'schedule', 'chart', 'stats']
@@ -51,563 +126,498 @@ class TidePlugin(BasePlugin):
                  display_manager, cache_manager, plugin_manager):
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
 
-        def _rgb(key: str, default: Tuple) -> Tuple[int, int, int]:
+        def _rgb(key, default):
             raw = config.get(key, list(default))
             try:
-                return tuple(int(c) for c in raw)
+                return tuple(max(0, min(255, int(c))) for c in raw)
             except (TypeError, ValueError):
                 return default
 
-        # Config
-        self.station_id: str = str(config.get('station_id', '')).strip()
-        self.station_name: str = str(config.get('station_name', '') or '').strip()
-        self.units: str = config.get('units', 'imperial')
-        self.mode_duration: float = float(config.get('display_duration', 12))
-        self.show_moon: bool = bool(config.get('show_moon_phase', True))
-        self.tide_color: Tuple = _rgb('tide_color', (0, 100, 200))
-        self.highlight_color: Tuple = _rgb('highlight_color', (0, 220, 255))
+        self.station_id   = str(config.get('station_id', '')).strip()
+        self.station_name = str(config.get('station_name', '') or '').strip()
+        self.units        = config.get('units', 'imperial')
+        self.mode_dur     = float(config.get('display_duration', 12))
+        self.show_moon    = bool(config.get('show_moon_phase', True))
+        # User-overridable colours (fall back to palette defaults)
+        self.tide_color   = _rgb('tide_color',      C_WATER_MID)
+        self.hi_color     = _rgb('highlight_color', C_WAVE1)
 
-        # Display state
-        self.mode_idx: int = 0
-        self.mode_start: float = time.time()
-        self.wave_offset: int = 0
+        self.mode_idx   = 0
+        self.mode_start = time.time()
+        self.wave_phase = 0.0      # incremented each frame
 
-        # Data
-        self.hilo: List[Dict] = []       # [{dt, height, type}]
-        self.hourly: List[float] = []    # 24 floats (hour 0–23)
-        self.live_level: Optional[float] = None
+        self.hilo:  List[Dict]   = []
+        self.hourly: List[float] = []
+        self.live:  Optional[float] = None
 
-        self.logger.info(
-            "TidePlugin init: station=%s units=%s", self.station_id or '(none)', self.units
-        )
+        self.logger.info("TidePlugin init station=%s units=%s",
+                         self.station_id or '(none)', self.units)
 
-    # ─── BasePlugin interface ────────────────────────────────────────────────
+    # ── BasePlugin ─────────────────────────────────────────────────────────────
 
     def update(self) -> None:
         if not self.station_id:
             return
+        today    = date.today().strftime('%Y%m%d')
+        u_param  = 'english' if self.units == 'imperial' else 'metric'
 
-        today_str = date.today().strftime('%Y%m%d')
-        unit_param = 'english' if self.units == 'imperial' else 'metric'
+        key_hilo    = f"{self.plugin_id}:hilo:{self.station_id}:{today}"
+        key_hourly  = f"{self.plugin_id}:hourly:{self.station_id}:{today}"
+        key_live    = f"{self.plugin_id}:live:{self.station_id}"
 
-        # High/low predictions — valid for the whole day, cache 24 h
-        hilo_key = f"{self.plugin_id}:hilo:{self.station_id}:{today_str}"
-        hilo_cached = self.cache_manager.get(hilo_key, max_age=86400)
-        if not hilo_cached:
-            hilo_cached = self._fetch_hilo(unit_param)
-            if hilo_cached:
-                self.cache_manager.set(hilo_key, hilo_cached)
-        self.hilo = hilo_cached or []
+        cached = self.cache_manager.get(key_hilo, max_age=86400)
+        if not cached:
+            cached = self._fetch_hilo(u_param)
+            if cached:
+                self.cache_manager.set(key_hilo, cached)
+        self.hilo = cached or []
 
-        # Hourly heights for chart — cache 6 h
-        hourly_key = f"{self.plugin_id}:hourly:{self.station_id}:{today_str}"
-        hourly_cached = self.cache_manager.get(hourly_key, max_age=21600)
-        if not hourly_cached:
-            hourly_cached = self._fetch_hourly(unit_param)
-            if hourly_cached:
-                self.cache_manager.set(hourly_key, hourly_cached)
-        self.hourly = hourly_cached or []
+        ch = self.cache_manager.get(key_hourly, max_age=21600)
+        if not ch:
+            ch = self._fetch_hourly(u_param)
+            if ch:
+                self.cache_manager.set(key_hourly, ch)
+        self.hourly = ch or []
 
-        # Live water level — cache 6 min (NOAA updates every 6 min)
-        live_key = f"{self.plugin_id}:live:{self.station_id}"
-        live_cached = self.cache_manager.get(live_key, max_age=360)
-        if live_cached is None:
-            live_cached = self._fetch_live(unit_param)
-            if live_cached is not None:
-                self.cache_manager.set(live_key, live_cached)
-        self.live_level = live_cached
+        lv = self.cache_manager.get(key_live, max_age=360)
+        if lv is None:
+            lv = self._fetch_live(u_param)
+            if lv is not None:
+                self.cache_manager.set(key_live, lv)
+        self.live = lv
 
     def display(self, force_clear: bool = False) -> None:
         dw = self.display_manager.matrix.width
         dh = self.display_manager.matrix.height
-        canvas = Image.new('RGB', (dw, dh), (0, 0, 0))
-        draw = ImageDraw.Draw(canvas)
+        canvas = Image.new('RGB', (dw, dh), C_BG)
+        draw   = ImageDraw.Draw(canvas)
+        L      = _layout(dw, dh)
 
         if not self.station_id:
-            self._screen_no_station(draw, dw, dh)
+            self._no_station(draw, dw, dh, L)
         elif not self.hilo:
-            self._screen_loading(draw, dw, dh)
+            self._loading(draw, dw, dh, L)
         else:
-            mode = self.MODES[self.mode_idx]
-            if mode == 'current':
-                self._screen_current(draw, dw, dh)
-            elif mode == 'schedule':
-                self._screen_schedule(draw, dw, dh)
-            elif mode == 'chart':
-                self._screen_chart(draw, dw, dh)
-            else:
-                self._screen_stats(draw, dw, dh)
+            m = self.MODES[self.mode_idx]
+            if   m == 'current':  self._mode_current(canvas, draw, dw, dh, L)
+            elif m == 'schedule': self._mode_schedule(draw, dw, dh, L)
+            elif m == 'chart':    self._mode_chart(canvas, draw, dw, dh, L)
+            else:                 self._mode_stats(draw, dw, dh, L)
 
         self.display_manager.image = canvas
-        self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
+        self.display_manager.draw  = ImageDraw.Draw(self.display_manager.image)
         self.display_manager.update_display()
-        self.wave_offset = (self.wave_offset + 1) % 360
+        self.wave_phase = (self.wave_phase + 1.5) % 360
 
-    def supports_dynamic_duration(self) -> bool:
-        return True
+    def supports_dynamic_duration(self) -> bool: return True
+    def get_display_duration(self) -> float:      return self.mode_dur
+    def reset_cycle_state(self) -> None:          self.mode_start = time.time()
 
     def is_cycle_complete(self) -> bool:
-        if time.time() - self.mode_start >= self.mode_duration:
-            self.mode_idx = (self.mode_idx + 1) % len(self.MODES)
+        if time.time() - self.mode_start >= self.mode_dur:
+            self.mode_idx   = (self.mode_idx + 1) % len(self.MODES)
             self.mode_start = time.time()
             return True
         return False
 
-    def reset_cycle_state(self) -> None:
-        self.mode_start = time.time()
+    # ── NOAA fetchers ──────────────────────────────────────────────────────────
 
-    def get_display_duration(self) -> float:
-        return self.mode_duration
+    def _base_params(self, u: str) -> Dict:
+        return {'format': 'json', 'units': u, 'time_zone': 'lst_ldt',
+                'datum': 'MLLW', 'station': self.station_id}
 
-    # ─── NOAA API fetchers ───────────────────────────────────────────────────
-
-    def _noaa_params(self, unit_param: str) -> Dict:
-        return {
-            'format': 'json',
-            'units': unit_param,
-            'time_zone': 'lst_ldt',
-            'datum': 'MLLW',
-            'station': self.station_id,
-        }
-
-    def _fetch_hilo(self, unit_param: str) -> Optional[List[Dict]]:
-        """Fetch today's high/low tide predictions."""
+    def _fetch_hilo(self, u: str) -> Optional[List[Dict]]:
         try:
-            params = self._noaa_params(unit_param)
-            params.update({'product': 'predictions', 'date': 'today', 'interval': 'hilo'})
-            resp = requests.get(NOAA_BASE, params=params, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
-            if 'error' in data:
-                self.logger.warning("NOAA hilo error: %s", data['error'].get('message'))
-                return None
-            result = []
-            for p in data.get('predictions', []):
+            p = {**self._base_params(u), 'product': 'predictions',
+                 'date': 'today', 'interval': 'hilo'}
+            r = requests.get(NOAA_BASE, params=p, timeout=10); r.raise_for_status()
+            d = r.json()
+            if 'error' in d:
+                self.logger.warning("NOAA hilo: %s", d['error'].get('message')); return None
+            out = []
+            for p2 in d.get('predictions', []):
                 try:
-                    dt = datetime.strptime(p['t'], '%Y-%m-%d %H:%M')
-                    result.append({
-                        'dt': dt.isoformat(),
-                        'height': float(p['v']),
-                        'type': p.get('type', '?'),
-                    })
+                    out.append({'dt': datetime.strptime(p2['t'], '%Y-%m-%d %H:%M').isoformat(),
+                                'height': float(p2['v']), 'type': p2.get('type', '?')})
                 except (ValueError, KeyError):
-                    continue
-            self.logger.debug("Fetched %d hilo predictions", len(result))
-            return result or None
+                    pass
+            return out or None
         except Exception as e:
-            self.logger.error("Failed to fetch hilo: %s", e)
-            return None
+            self.logger.error("hilo fetch: %s", e); return None
 
-    def _fetch_hourly(self, unit_param: str) -> Optional[List[float]]:
-        """Fetch hourly tide heights (24 values) for today's tide curve."""
+    def _fetch_hourly(self, u: str) -> Optional[List[float]]:
         try:
-            today = date.today()
-            params = self._noaa_params(unit_param)
-            params.update({
-                'product': 'predictions',
-                'interval': 'h',
-                'begin_date': today.strftime('%Y%m%d'),
-                'end_date': today.strftime('%Y%m%d'),
-            })
-            resp = requests.get(NOAA_BASE, params=params, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
-            if 'error' in data:
-                self.logger.warning("NOAA hourly error: %s", data['error'].get('message'))
+            today = date.today().strftime('%Y%m%d')
+            p = {**self._base_params(u), 'product': 'predictions', 'interval': 'h',
+                 'begin_date': today, 'end_date': today}
+            r = requests.get(NOAA_BASE, params=p, timeout=10); r.raise_for_status()
+            d = r.json()
+            if 'error' in d:
                 return None
-            preds = data.get('predictions', [])
             heights = []
-            for p in preds:
-                try:
-                    heights.append(float(p['v']))
-                except (ValueError, KeyError):
-                    heights.append(0.0)
+            for item in d.get('predictions', []):
+                try:    heights.append(float(item['v']))
+                except: heights.append(0.0)
             heights = heights[:24]
             while len(heights) < 24:
                 heights.append(heights[-1] if heights else 0.0)
-            self.logger.debug("Fetched %d hourly heights", len(heights))
             return heights
         except Exception as e:
-            self.logger.error("Failed to fetch hourly: %s", e)
-            return None
+            self.logger.error("hourly fetch: %s", e); return None
 
-    def _fetch_live(self, unit_param: str) -> Optional[float]:
-        """Fetch current observed water level (not all stations support this)."""
+    def _fetch_live(self, u: str) -> Optional[float]:
         try:
-            params = self._noaa_params(unit_param)
-            params.update({'product': 'water_level', 'date': 'latest'})
-            resp = requests.get(NOAA_BASE, params=params, timeout=8)
-            resp.raise_for_status()
-            data = resp.json()
-            if 'error' in data:
-                return None  # Station may not have live observations — silent fallback
-            readings = data.get('data', [])
-            if readings:
-                return float(readings[-1]['v'])
-            return None
-        except Exception:
-            return None  # Live level is optional — don't log errors
+            p = {**self._base_params(u), 'product': 'water_level', 'date': 'latest'}
+            r = requests.get(NOAA_BASE, params=p, timeout=8); r.raise_for_status()
+            d = r.json()
+            if 'error' in d: return None
+            data = d.get('data', [])
+            return float(data[-1]['v']) if data else None
+        except:
+            return None  # live level is optional — silent fallback
 
-    # ─── Derived data helpers ────────────────────────────────────────────────
+    # ── Derived helpers ────────────────────────────────────────────────────────
 
     def _current_level(self) -> Optional[float]:
-        """Return live observed level, or interpolate from hourly predictions."""
-        if self.live_level is not None:
-            return self.live_level
+        if self.live is not None:
+            return self.live
         if not self.hourly:
             return None
-        hour = datetime.now().hour
-        minute = datetime.now().minute
-        # Linear interpolation between current and next hour
-        h0 = self.hourly[min(hour, len(self.hourly) - 1)]
-        h1 = self.hourly[min(hour + 1, len(self.hourly) - 1)]
-        return h0 + (h1 - h0) * (minute / 60.0)
+        now    = datetime.now()
+        h, m   = now.hour, now.minute
+        h0     = self.hourly[min(h, len(self.hourly) - 1)]
+        h1     = self.hourly[min(h + 1, len(self.hourly) - 1)]
+        return h0 + (h1 - h0) * (m / 60.0)
 
     def _fill_ratio(self) -> float:
-        """Current tide as fraction 0–1 between today's lowest and highest."""
-        if not self.hilo:
-            return 0.5
+        if not self.hilo: return 0.5
         heights = [e['height'] for e in self.hilo]
-        lo, hi = min(heights), max(heights)
-        if hi <= lo:
-            return 0.5
-        level = self._current_level()
-        if level is None:
-            return 0.5
-        return max(0.0, min(1.0, (level - lo) / (hi - lo)))
+        lo, hi  = min(heights), max(heights)
+        if hi <= lo: return 0.5
+        lv = self._current_level()
+        if lv is None: return 0.5
+        return max(0.0, min(1.0, (lv - lo) / (hi - lo)))
 
-    def _tide_direction(self) -> str:
-        """Determine rising / falling / slack from hourly data."""
-        if len(self.hourly) < 2:
-            return 'SLACK'
-        now = datetime.now()
-        hour = now.hour
-        minute = now.minute
-        frac = minute / 60.0
-        idx = min(hour, len(self.hourly) - 2)
-        current = self.hourly[idx] + (self.hourly[idx + 1] - self.hourly[idx]) * frac
-        next_val = self.hourly[min(idx + 1, len(self.hourly) - 1)]
-        diff = next_val - current
-        if diff > 0.05:
-            return 'RISING'
-        if diff < -0.05:
-            return 'FALLING'
+    def _direction(self) -> str:
+        if len(self.hourly) < 2: return 'SLACK'
+        now   = datetime.now()
+        idx   = min(now.hour, len(self.hourly) - 2)
+        frac  = now.minute / 60.0
+        cur   = self.hourly[idx] + (self.hourly[idx + 1] - self.hourly[idx]) * frac
+        nxt   = self.hourly[min(idx + 1, len(self.hourly) - 1)]
+        diff  = nxt - cur
+        if diff >  0.05: return 'RISING'
+        if diff < -0.05: return 'FALLING'
         return 'SLACK'
 
-    def _next_tides(self, count: int = 2) -> List[Dict]:
-        """Return the next N upcoming high/low tides."""
-        now = datetime.now()
-        upcoming = []
-        for entry in self.hilo:
-            try:
-                dt = datetime.fromisoformat(entry['dt'])
-                if dt > now:
-                    upcoming.append(entry)
-                    if len(upcoming) >= count:
-                        break
-            except ValueError:
-                continue
-        return upcoming
+    def _next_tides(self, n: int = 2) -> List[Dict]:
+        now, out = datetime.now(), []
+        for e in self.hilo:
+            dt = _safe_iso(e['dt'])
+            if dt and dt > now:
+                out.append(e)
+                if len(out) >= n: break
+        return out
 
     def _moon_phase(self) -> float:
-        """Return current moon phase as 0.0 (new) → 0.5 (full) → 1.0 (new)."""
-        delta_sec = (datetime.now() - _KNOWN_NEW_MOON).total_seconds()
-        return (delta_sec / (_LUNAR_PERIOD_DAYS * 86400)) % 1.0
+        return ((datetime.now() - _KNOWN_NEW_MOON).total_seconds()
+                / (_LUNAR_PERIOD * 86400)) % 1.0
 
-    def _moon_phase_name(self, phase: float) -> str:
-        names = [
-            (0.0625, 'New Moon'),
-            (0.1875, 'Waxing Crescent'),
-            (0.3125, 'First Quarter'),
-            (0.4375, 'Waxing Gibbous'),
-            (0.5625, 'Full Moon'),
-            (0.6875, 'Waning Gibbous'),
-            (0.8125, 'Last Quarter'),
-            (0.9375, 'Waning Crescent'),
-            (1.0001, 'New Moon'),
-        ]
-        for threshold, name in names:
-            if phase < threshold:
-                return name
+    def _moon_name(self, phase: float) -> str:
+        names = [(0.063,'New Moon'),(0.188,'Waxing Crescent'),(0.313,'First Quarter'),
+                 (0.438,'Waxing Gibbous'),(0.563,'Full Moon'),(0.688,'Waning Gibbous'),
+                 (0.813,'Last Quarter'),(0.938,'Waning Crescent'),(1.001,'New Moon')]
+        for t, n in names:
+            if phase < t: return n
         return 'New Moon'
 
-    def _unit_label(self) -> str:
-        return 'ft' if self.units == 'imperial' else 'm'
+    def _unit(self) -> str: return 'ft' if self.units == 'imperial' else 'm'
 
-    def _fmt_height(self, h: float) -> str:
-        return f"{h:.1f}{self._unit_label()}"
+    def _fmth(self, h: float) -> str:
+        return f"{h:.1f}{self._unit()}"
 
-    def _fmt_time(self, dt_iso: str) -> str:
+    def _fmtt(self, iso: str) -> str:
         try:
-            dt = datetime.fromisoformat(dt_iso)
-            hour = dt.hour % 12 or 12
-            return f"{hour}:{dt.minute:02d}{'am' if dt.hour < 12 else 'pm'}"
+            dt   = datetime.fromisoformat(iso)
+            hr   = dt.hour % 12 or 12
+            ampm = 'a' if dt.hour < 12 else 'p'
+            return f"{hr}:{dt.minute:02d}{ampm}"
         except ValueError:
-            return '?:??'
+            return '--'
 
-    # ─── Drawing primitives ──────────────────────────────────────────────────
+    def _name_or_id(self) -> str:
+        return (self.station_name or self.station_id)[:14]
 
-    def _draw_wave_bar(self, draw: ImageDraw.Draw, x: int, y_bottom: int,
-                       bar_w: int, bar_h: int, fill_ratio: float) -> None:
-        """Animated tide-level bar with sine-wave surface."""
-        fill_px = max(2, int(bar_h * fill_ratio))
-        fill_top = y_bottom - fill_px
+    # ── Drawing primitives ─────────────────────────────────────────────────────
 
-        # Solid water fill
-        draw.rectangle([x, fill_top + 2, x + bar_w - 1, y_bottom], fill=self.tide_color)
+    def _wave_bar(self, canvas: Image.Image, draw: ImageDraw.Draw,
+                  x: int, ybot: int, bw: int, bh: int,
+                  fill_ratio: float, amp: int) -> None:
+        """
+        Animated gradient tide-level bar with two-layer wave surface.
+        Gradient transitions from deep blue at bottom to lighter blue near surface.
+        """
+        fill_px  = max(2, int(bh * fill_ratio))
+        fill_top = ybot - fill_px
 
-        # Wavy animated surface (2-px amplitude sine)
-        for px in range(bar_w):
-            wy = fill_top + int(2 * math.sin((px + self.wave_offset) * 0.45))
-            wy = max(0, min(y_bottom - 1, wy))
-            draw.line([(x + px, wy), (x + px, min(y_bottom, wy + 2))],
-                      fill=self.highlight_color)
+        # Border (draw outline before fill so fill covers inner edge)
+        draw.rectangle([x - 1, ybot - bh - 1, x + bw, ybot + 1],
+                       outline=C_BAR_OUTLINE)
 
-    def _draw_arrow(self, draw: ImageDraw.Draw, cx: int, cy: int,
-                    direction: str, size: int = 5) -> None:
-        """Draw a direction arrow (up / down / right for slack)."""
-        c = (0, 255, 100) if direction == 'RISING' else \
-            (255, 80, 80) if direction == 'FALLING' else (255, 220, 0)
+        # Gradient fill: three bands
+        band1 = fill_px * 2 // 3
+        band2 = fill_px - band1
+        if band1 > 0:
+            draw.rectangle([x, fill_top + band2, x + bw - 1, ybot],
+                           fill=C_WATER_DEEP)
+        if band2 > 0:
+            draw.rectangle([x, fill_top, x + bw - 1,
+                            fill_top + band2 + 1], fill=C_WATER_MID)
+
+        # Thin bright band near surface
+        surf_band = max(1, fill_px // 4)
+        if fill_px > surf_band:
+            draw.rectangle([x, fill_top, x + bw - 1,
+                            fill_top + surf_band], fill=C_WATER_LIGHT)
+
+        # Tick marks on right edge at 25 / 50 / 75 %
+        for pct in (0.25, 0.5, 0.75):
+            ty = ybot - int(bh * pct)
+            draw.line([(x + bw - 2, ty), (x + bw, ty)], fill=C_LABEL)
+
+        # Layer 2 (subtle, higher frequency)
+        for px in range(bw):
+            wy = fill_top - 1 + int((amp - 1) *
+                 math.sin((px + self.wave_phase * 1.8 + 25) * 0.55))
+            wy = max(0, min(ybot, wy))
+            draw.point((x + px, wy), fill=C_WAVE2)
+
+        # Layer 1 (main wave, 2-3 px thick for visibility)
+        for px in range(bw):
+            wy = fill_top + int(amp * math.sin((px + self.wave_phase) * 0.42))
+            wy = max(0, min(ybot, wy))
+            draw.line([(x + px, wy), (x + px, min(ybot, wy + 2))], fill=C_WAVE1)
+
+        # Foam dot highlight every ~6px at the crest
+        for px in range(0, bw, max(3, bw // 5)):
+            wy = fill_top + int(amp * math.sin((px + self.wave_phase) * 0.42))
+            wy = max(0, min(ybot - 1, wy - 1))
+            draw.point((x + px, wy), fill=(255, 255, 255))
+
+    def _direction_arrow(self, draw: ImageDraw.Draw,
+                         cx: int, cy: int, direction: str, sz: int = 4) -> None:
+        c = C_RISING if direction == 'RISING' else \
+            C_FALLING if direction == 'FALLING' else C_SLACK
         if direction == 'RISING':
-            pts = [(cx, cy - size), (cx - size // 2, cy), (cx + size // 2, cy)]
+            draw.polygon([(cx, cy - sz), (cx - sz, cy + sz // 2),
+                          (cx + sz, cy + sz // 2)], fill=c)
         elif direction == 'FALLING':
-            pts = [(cx, cy + size), (cx - size // 2, cy), (cx + size // 2, cy)]
-        else:  # SLACK — horizontal double-headed dash
-            draw.line([(cx - size, cy), (cx + size, cy)], fill=c, width=2)
+            draw.polygon([(cx, cy + sz), (cx - sz, cy - sz // 2),
+                          (cx + sz, cy - sz // 2)], fill=c)
+        else:
+            # Bidirectional horizontal dash
+            draw.line([(cx - sz, cy), (cx + sz, cy)], fill=c, width=2)
+            draw.point((cx - sz - 1, cy), fill=c)
+            draw.point((cx + sz + 1, cy), fill=c)
+
+    def _moon_icon(self, draw: ImageDraw.Draw,
+                   cx: int, cy: int, r: int, phase: float) -> None:
+        """Draw a scaled moon phase icon. r is the radius in pixels."""
+        bbox = [cx - r, cy - r, cx + r, cy + r]
+        is_new  = phase < 0.04 or phase > 0.96
+        is_full = 0.47 < phase < 0.53
+
+        if is_new:
+            draw.ellipse(bbox, outline=C_LABEL, width=1)
             return
-        draw.polygon(pts, fill=c)
-
-    def _draw_moon_icon(self, draw: ImageDraw.Draw, cx: int, cy: int,
-                        radius: int, phase: float) -> None:
-        """Draw a small moon phase icon at (cx, cy)."""
-        # Full circle outline
-        bbox = [cx - radius, cy - radius, cx + radius, cy + radius]
-        draw.ellipse(bbox, outline=(200, 200, 200), width=1)
-
-        if phase < 0.03 or phase > 0.97:
-            return  # New moon — just the outline
-
-        if 0.48 < phase < 0.52:
-            # Full moon — filled
-            draw.ellipse(bbox, fill=(240, 240, 200), outline=(200, 200, 200))
+        if is_full:
+            draw.ellipse(bbox, fill=C_MOON, outline=C_MOON)
             return
 
-        # Crescent / gibbous using two overlapping ellipses
-        # Lit side: phase < 0.5 = waxing (right lit), > 0.5 = waning (left lit)
-        draw.ellipse(bbox, fill=(240, 240, 200), outline=(200, 200, 200))
+        # Draw lit side, then dark overlay
+        draw.ellipse(bbox, fill=C_MOON, outline=C_MOON)
 
-        # Dark overlay: an ellipse whose horizontal radius varies with phase
-        if phase < 0.5:
-            # Waxing: dark covers left, shrinks as phase → 0.5
-            dark_w = int(radius * 2 * abs(0.5 - phase) * 2)
-        else:
-            # Waning: dark covers right, grows as phase → 1.0
-            dark_w = int(radius * 2 * abs(phase - 0.5) * 2)
+        # Dark overlay: an ellipse narrowed by phase
+        # phase < 0.5 → waxing (left in darkness, shrinks)
+        # phase > 0.5 → waning (right goes dark, grows)
+        frac = abs(phase - 0.5) * 2   # 0 = full, 1 = new
+        dark_w = int(r * 2 * frac)
+        dark_w = max(0, min(r * 2, dark_w))
 
-        dark_w = max(0, min(radius * 2, dark_w))
-        if phase < 0.5:
-            dark_x = cx - radius
-        else:
-            dark_x = cx + radius - dark_w
+        if phase < 0.5:  # waxing — dark overlay on left
+            dx = cx - r
+        else:            # waning — dark overlay on right
+            dx = cx + r - dark_w
 
-        dark_bbox = [dark_x, cy - radius, dark_x + dark_w, cy + radius]
-        draw.ellipse(dark_bbox, fill=(0, 0, 0))
+        if dark_w > 0:
+            dbbox = [dx, cy - r, dx + dark_w, cy + r]
+            draw.ellipse(dbbox, fill=C_BG)
 
-        # Redraw circle outline on top
-        draw.ellipse(bbox, outline=(200, 200, 200), width=1)
+        # Redraw outline
+        draw.ellipse(bbox, outline=_lerp_color(C_BG, C_MOON, 0.4), width=1)
 
-    def _get_font(self):
+    def _txt(self, x: int, y: int, text: str,
+             color: Tuple = C_TEXT, small: bool = True) -> None:
+        """Draw text via display_manager (respects font system)."""
+        font = (self.display_manager.extra_small_font
+                if small else self.display_manager.small_font)
         try:
-            return self.display_manager.extra_small_font
-        except AttributeError:
-            return None
+            self.display_manager.draw_text(
+                text, x=x, y=y, font=font, color=color, centered=False)
+        except Exception:
+            pass  # font not available — skip silently
 
-    def _get_small_font(self):
-        try:
-            return self.display_manager.small_font
-        except AttributeError:
-            return None
-
-    def _text(self, draw: ImageDraw.Draw, x: int, y: int, text: str,
-              color: Tuple = (255, 255, 255), small: bool = True) -> None:
-        font = self._get_font() if small else self._get_small_font()
-        if font:
-            self.display_manager.draw_text(text, x=x, y=y, font=font,
-                                           color=color, centered=False)
-        else:
-            draw.text((x, y), text, fill=color)
-
-    def _text_c(self, draw: ImageDraw.Draw, cx: int, y: int, text: str,
-                color: Tuple = (255, 255, 255), small: bool = True) -> None:
+    def _txt_c(self, cx: int, y: int, text: str,
+               color: Tuple = C_TEXT, small: bool = True) -> None:
         """Draw text centered on cx."""
-        font = self._get_font() if small else self._get_small_font()
-        if font:
-            self.display_manager.draw_text(text, x=cx, y=y, font=font,
-                                           color=color, centered=True)
-        else:
-            w = len(text) * 6
-            draw.text((cx - w // 2, y), text, fill=color)
+        font = (self.display_manager.extra_small_font
+                if small else self.display_manager.small_font)
+        try:
+            self.display_manager.draw_text(
+                text, x=cx, y=y, font=font, color=color, centered=True)
+        except Exception:
+            pass
 
-    # ─── Display screens ─────────────────────────────────────────────────────
+    # ── Placeholder screens ────────────────────────────────────────────────────
 
-    def _screen_no_station(self, draw: ImageDraw.Draw, dw: int, dh: int) -> None:
-        self._text_c(draw, dw // 2, dh // 2 - 8, 'TIDE DISPLAY', (0, 180, 255))
-        self._text_c(draw, dw // 2, dh // 2 + 2, 'Set station ID', (180, 180, 180))
+    def _no_station(self, draw, dw, dh, L):
+        draw.rectangle([0, 0, dw - 1, dh - 1], outline=C_BAR_OUTLINE)
+        self._txt_c(dw // 2, L['row1'], 'TIDE', C_WAVE1)
+        self._txt_c(dw // 2, L['row2'], 'Set station ID', C_LABEL)
+        if not L['small']:
+            self._txt_c(dw // 2, L['row3'], 'in plugin config', C_DIM)
 
-    def _screen_loading(self, draw: ImageDraw.Draw, dw: int, dh: int) -> None:
-        self._text_c(draw, dw // 2, dh // 2 - 4, 'Loading tides...', (100, 180, 255))
+    def _loading(self, draw, dw, dh, L):
+        # Animated dots
+        n_dots = int(self.wave_phase / 30) % 4
+        self._txt_c(dw // 2, dh // 2 - 4, 'Loading' + '.' * n_dots, C_WAVE1)
 
-    def _screen_current(self, draw: ImageDraw.Draw, dw: int, dh: int) -> None:
-        """Mode 1: Animated wave bar + direction + current height + next two tides."""
-        bar_w = min(28, dw // 6)
-        bar_x = 3
-        bar_h = dh - 4
-        bar_y_bottom = dh - 2
+    # ── Mode 1: Current ────────────────────────────────────────────────────────
 
-        # Background bar outline
-        draw.rectangle([bar_x - 1, bar_y_bottom - bar_h - 1,
-                        bar_x + bar_w, bar_y_bottom + 1],
-                       outline=(40, 60, 80))
+    def _mode_current(self, canvas, draw, dw, dh, L):
+        bx   = L['bar_x']
+        bw   = L['bar_w']
+        bh   = L['bar_h']
+        ybot = L['bar_ybot']
+        tx   = L['txt_x']
+        amp  = L['wave_amp']
 
-        # Animated water fill
-        self._draw_wave_bar(draw, bar_x, bar_y_bottom, bar_w, bar_h,
-                            self._fill_ratio())
+        # Animated gradient wave bar
+        self._wave_bar(canvas, draw, bx, ybot, bw, bh, self._fill_ratio(), amp)
 
-        # Tide direction label + arrow
-        direction = self._tide_direction()
-        dir_color = (0, 255, 100) if direction == 'RISING' else \
-                    (255, 80, 80) if direction == 'FALLING' else (255, 220, 0)
-        text_x = bar_x + bar_w + 5
-        self._text(draw, text_x, 2, direction, dir_color)
+        direction = self._direction()
+        dir_color = (C_RISING if direction == 'RISING'
+                     else C_FALLING if direction == 'FALLING' else C_SLACK)
 
-        # Arrow next to label
-        arrow_x = text_x + len(direction) * 4 + 6
-        self._draw_arrow(draw, arrow_x, 5, direction, size=4)
+        # Direction label + arrow
+        dir_short = direction if L['large'] else direction[:4]
+        self._txt(tx, L['row1'], dir_short, dir_color)
+        arr_x = tx + len(dir_short) * 4 + 4
+        if arr_x < dw - 6:
+            self._direction_arrow(draw, arr_x, L['row1'] + 3, direction, sz=3)
 
         # Current height
-        level = self._current_level()
-        if level is not None:
-            self._text(draw, text_x, 12, self._fmt_height(level), (200, 230, 255))
+        lv = self._current_level()
+        if lv is not None:
+            self._txt(tx, L['row2'], self._fmth(lv), C_TEXT)
+
+        # Decorative separator
+        sep_y = L['row2'] + 9
+        if sep_y < dh - 12:
+            draw.line([(tx, sep_y), (dw - 3, sep_y)], fill=C_BAR_OUTLINE)
 
         # Next two tides
-        nexts = self._next_tides(2)
-        label_y = 22
+        nexts  = self._next_tides(2)
+        row    = sep_y + 2
         for tide in nexts:
-            tide_type = tide.get('type', '?')
-            color = (255, 200, 0) if tide_type == 'H' else (100, 200, 255)
-            label = f"{'HI' if tide_type == 'H' else 'LO'} {self._fmt_time(tide['dt'])}"
-            self._text(draw, text_x, label_y, label, color)
-            label_y += 10
-            if label_y + 8 > dh:
+            if row + 8 > dh:
                 break
-            self._text(draw, text_x + 4, label_y, self._fmt_height(tide['height']),
-                       (180, 180, 180))
-            label_y += 12
+            is_high = tide.get('type', '?') == 'H'
+            tc = C_HIGH if is_high else C_LOW
+            sym = '▲' if is_high else '▼'
+            label = f"{sym} {self._fmtt(tide['dt'])}  {self._fmth(tide['height'])}"
+            self._txt(tx, row, label, tc)
+            row += 10
 
-        # Station name at bottom
-        name = self.station_name or self.station_id
-        if name:
-            self._text(draw, text_x, dh - 8, name[:14], (60, 80, 100))
+        # Station name (bottom-right, very dim)
+        name = self._name_or_id()
+        if name and row + 1 < dh:
+            self._txt(tx, dh - 8, name, C_DIM)
 
-    def _screen_schedule(self, draw: ImageDraw.Draw, dw: int, dh: int) -> None:
-        """Mode 2: Today's tide schedule in up-to-4 columns."""
+    # ── Mode 2: Schedule ───────────────────────────────────────────────────────
+
+    def _mode_schedule(self, draw, dw, dh, L):
         if not self.hilo:
-            self._screen_loading(draw, dw, dh)
-            return
+            self._loading(draw, dw, dh, L); return
 
-        now = datetime.now()
-        tides = self.hilo[:4]  # At most 4 tides per day
-        n = len(tides)
-        if n == 0:
-            return
+        now    = datetime.now()
+        tides  = self.hilo[:4]
+        n      = len(tides)
+        if n == 0: return
 
-        col_w = dw // n
-        level = self._current_level()
+        col_w  = dw // n
         heights = [e['height'] for e in self.hilo]
-        lo_h = min(heights) if heights else 0
-        hi_h = max(heights) if heights else 1
+        lo_h, hi_h = min(heights), max(heights)
+        h_range = max(hi_h - lo_h, 0.01)
+
+        # Find first upcoming tide index
+        next_idx = next(
+            (i for i, t in enumerate(tides) if _safe_iso(t['dt'])
+             and _safe_iso(t['dt']) > now), None)
 
         for i, tide in enumerate(tides):
-            cx = i * col_w + col_w // 2
-            tide_type = tide.get('type', '?')
-            is_high = tide_type == 'H'
-            try:
-                dt = datetime.fromisoformat(tide['dt'])
-                is_past = dt < now
-            except ValueError:
-                is_past = False
+            cx      = i * col_w + col_w // 2
+            is_high = tide.get('type', '?') == 'H'
+            dt      = _safe_iso(tide['dt'])
+            is_past = dt is not None and dt < now
 
-            # Color: past tides dimmed
-            base_c = (255, 200, 0) if is_high else (100, 200, 255)
-            if is_past:
-                base_c = tuple(c // 3 for c in base_c)
+            tc  = C_HIGH if is_high else C_LOW
+            dim = is_past
 
-            # Highlight current/active column with subtle background
-            if not is_past:
-                try:
-                    next_dt = datetime.fromisoformat(tides[i + 1]['dt']) \
-                              if i + 1 < n else None
-                except (ValueError, IndexError):
-                    next_dt = None
-                try:
-                    this_dt = datetime.fromisoformat(tide['dt'])
-                except ValueError:
-                    this_dt = None
-                if this_dt and now < this_dt:
-                    # Next upcoming tide — light glow background
-                    if i == next(
-                        (j for j, t in enumerate(tides)
-                         if not (datetime.fromisoformat(t['dt']) < now
-                                 if _safe_isoparse(t['dt']) else True)),
-                        None
-                    ):
-                        draw.rectangle([i * col_w + 1, 0,
-                                        i * col_w + col_w - 2, dh - 1],
-                                       fill=(0, 20, 40))
+            # Column background for next upcoming tide
+            if i == next_idx:
+                draw.rectangle([i * col_w + 1, 0,
+                                i * col_w + col_w - 2, dh - 4],
+                                fill=C_COL_BG)
 
-            # Type label (HIGH / LOW)
-            type_label = 'HIGH' if is_high else 'LOW'
-            self._text_c(draw, cx, 1, type_label, base_c)
+            # Type badge
+            type_label = ('HIGH' if is_high else 'LOW') if not L['small'] else ('H' if is_high else 'L')
+            self._txt_c(cx, L['row1'], type_label, tc if not dim else C_DIM)
 
             # Time
-            time_str = self._fmt_time(tide['dt'])
-            self._text_c(draw, cx, 11, time_str, (200, 200, 200) if not is_past else (60, 60, 60))
+            t_str = self._fmtt(tide['dt'])
+            self._txt_c(cx, L['row2'], t_str, C_TEXT if not dim else C_DIM)
 
             # Height
-            h_str = self._fmt_height(tide['height'])
-            self._text_c(draw, cx, 21, h_str, (180, 220, 255) if not is_past else (60, 60, 60))
+            h_str = self._fmth(tide['height'])
+            self._txt_c(cx, L['row3'], h_str,
+                        _lerp_color(C_LOW, C_HIGH,
+                                    (tide['height'] - lo_h) / h_range)
+                        if not dim else C_DIM)
 
-            # Mini bar at bottom showing relative height
-            bar_h_px = int((tide['height'] - lo_h) / max(hi_h - lo_h, 0.01) * 8)
-            bar_x1 = i * col_w + 4
-            bar_x2 = i * col_w + col_w - 5
-            draw.rectangle([bar_x1, dh - 1 - bar_h_px, bar_x2, dh - 1],
-                            fill=base_c)
+            # Mini proportional bar at very bottom of column
+            bar_h_px = max(1, int((tide['height'] - lo_h) / h_range * 4))
+            bx1, bx2 = i * col_w + 3, i * col_w + col_w - 4
+            draw.rectangle([bx1, dh - 1 - bar_h_px, bx2, dh - 1],
+                           fill=tc if not dim else C_DIM)
 
-        # Dividers between columns
+        # Column dividers
         for i in range(1, n):
-            draw.line([(i * col_w, 0), (i * col_w, dh - 1)], fill=(30, 30, 50))
+            draw.line([(i * col_w, 1), (i * col_w, dh - 5)], fill=C_BAR_OUTLINE)
 
-    def _screen_chart(self, draw: ImageDraw.Draw, dw: int, dh: int) -> None:
-        """Mode 3: 24-hour filled tide curve with current-time marker."""
+    # ── Mode 3: Chart ──────────────────────────────────────────────────────────
+
+    def _mode_chart(self, canvas, draw, dw, dh, L):
         if not self.hourly:
-            self._screen_loading(draw, dw, dh)
-            return
+            self._loading(draw, dw, dh, L); return
 
-        axis_h = 8    # pixels for time axis at bottom
-        margin_l = 4
-        margin_r = 4
-        margin_t = 2
-
-        cx = margin_l
-        cy = margin_t
-        cw = dw - margin_l - margin_r
-        ch = dh - axis_h - margin_t - 1
+        cx, cy = L['c_x'], L['c_y']
+        cw, ch = L['c_w'], L['c_h']
+        axis_y = cy + ch + 1
 
         heights = self.hourly[:24]
-        lo = min(heights)
-        hi = max(heights)
-        h_range = hi - lo or 1
+        lo = min(heights);  hi = max(heights)
+        h_range = hi - lo or 1.0
 
         def _py(h: float) -> int:
             return cy + ch - int((h - lo) / h_range * ch)
@@ -615,161 +625,171 @@ class TidePlugin(BasePlugin):
         def _px(hour: int) -> int:
             return cx + int(hour * cw / max(len(heights) - 1, 1))
 
-        # Build chart points
+        # Subtle horizontal grid lines
+        for pct in (0.25, 0.5, 0.75):
+            gy = cy + ch - int(pct * ch)
+            draw.line([(cx, gy), (cx + cw, gy)], fill=C_GRID)
+
         pts = [(_px(i), _py(h)) for i, h in enumerate(heights)]
 
-        # Filled polygon (area under curve)
+        # Filled polygon (water body)
         base_y = cy + ch
-        poly = pts + [(_px(len(pts) - 1), base_y), (_px(0), base_y)]
+        poly   = pts + [(_px(len(pts) - 1), base_y), (_px(0), base_y)]
         if len(poly) >= 3:
-            draw.polygon(poly, fill=(0, 50, 130))
+            draw.polygon(poly, fill=C_CHART_FILL)
 
-        # Bright line on top of curve
-        for i in range(len(pts) - 1):
-            draw.line([pts[i], pts[i + 1]], fill=self.highlight_color, width=1)
+        # Glow layers on top of curve (outer → inner → bright)
+        for dy, gc in [(2, C_CHART_GLOW2), (1, C_CHART_GLOW1), (0, C_CHART_LINE)]:
+            for i in range(len(pts) - 1):
+                x1, y1 = pts[i]
+                x2, y2 = pts[i + 1]
+                draw.line([(x1, y1 + dy), (x2, y2 + dy)], fill=gc, width=1)
+                if dy > 0:
+                    draw.line([(x1, y1 - dy), (x2, y2 - dy)], fill=gc, width=1)
 
-        # High/low labels at peaks and troughs from hilo predictions
+        # H / L labels at peaks and troughs
         for tide in self.hilo:
             try:
-                dt = datetime.fromisoformat(tide['dt'])
-                frac_hour = dt.hour + dt.minute / 60.0
-                tx = cx + int(frac_hour * cw / 23)
-                ty = _py(tide['height'])
-                is_high = tide.get('type', '?') == 'H'
-                label_color = (255, 220, 0) if is_high else (100, 220, 255)
-                sym = 'H' if is_high else 'L'
-                lx = max(margin_l, min(dw - 6, tx - 2))
-                ly = (ty - 9) if is_high else (ty + 1)
-                ly = max(cy, min(cy + ch - 8, ly))
-                draw.text((lx, ly), sym, fill=label_color)
-                # Small tick at peak/trough
+                dt       = datetime.fromisoformat(tide['dt'])
+                frac_hr  = dt.hour + dt.minute / 60.0
+                tx       = cx + int(frac_hr * cw / 23)
+                ty       = _py(tide['height'])
+                is_high  = tide.get('type', '?') == 'H'
+                lc       = C_HIGH if is_high else C_LOW
+                sym      = 'H' if is_high else 'L'
+                lx = max(cx, min(cx + cw - 5, tx - 2))
+                ly = max(cy, min(cy + ch - 8, (ty - 9) if is_high else (ty + 2)))
+                draw.text((lx, ly), sym, fill=lc)
+                # Tick at peak/trough
                 draw.line([(tx, ty - 1), (tx, ty + 1)], fill=(255, 255, 255))
             except (ValueError, KeyError):
                 continue
 
-        # Current time vertical marker (yellow)
+        # Current-time marker (bright gold vertical line + circle)
         now_frac = datetime.now().hour + datetime.now().minute / 60.0
-        now_x = cx + int(now_frac * cw / 23)
-        draw.line([(now_x, cy), (now_x, cy + ch)], fill=(255, 230, 0), width=1)
+        now_x    = cx + int(now_frac * cw / 23)
+        draw.line([(now_x, cy), (now_x, cy + ch)], fill=C_NOW_LINE, width=1)
+        # Small circle at the intersection with the curve
+        cur_hour_idx = min(int(now_frac), len(heights) - 1)
+        cur_py       = _py(heights[cur_hour_idx])
+        r = max(1, dh // 20)
+        draw.ellipse([now_x - r, cur_py - r, now_x + r, cur_py + r],
+                     outline=C_NOW_LINE, width=1)
+        # Fill with dim gold
+        if r > 1:
+            draw.ellipse([now_x - r + 1, cur_py - r + 1,
+                          now_x + r - 1, cur_py + r - 1],
+                         fill=_lerp_color(C_BG, C_NOW_LINE, 0.45))
 
-        # Time axis labels at 0h, 6h, 12h, 18h, (24h)
-        axis_y = dh - axis_h + 1
-        for label_hour, label_text in [(0, '12a'), (6, '6a'), (12, '12p'), (18, '6p')]:
-            lx = cx + int(label_hour * cw / 23)
-            draw.text((max(0, lx - 5), axis_y), label_text, fill=(100, 120, 150))
+        # Time axis labels
+        ax_y = axis_y + 1
+        ax_labels = [(0, '12a'), (6, '6a'), (12, '12p'), (18, '6p')]
+        if L['small']:
+            ax_labels = [(0, '0'), (12, '12')]
+        for lh, lt in ax_labels:
+            lx = cx + int(lh * cw / 23)
+            draw.text((max(0, lx - 4), ax_y), lt, fill=C_LABEL)
 
-        # Thin separator line above axis
-        draw.line([(cx, cy + ch + 1), (cx + cw, cy + ch + 1)], fill=(30, 40, 60))
+        # Separator above axis
+        draw.line([(cx, cy + ch + 1), (cx + cw, cy + ch + 1)], fill=C_BAR_OUTLINE)
 
-    def _screen_stats(self, draw: ImageDraw.Draw, dw: int, dh: int) -> None:
-        """Mode 4: Tidal stats — range, moon phase, spring/neap, station."""
+    # ── Mode 4: Stats ──────────────────────────────────────────────────────────
+
+    def _mode_stats(self, draw, dw, dh, L):
         if not self.hilo:
-            self._screen_loading(draw, dw, dh)
-            return
+            self._loading(draw, dw, dh, L); return
 
-        heights = [e['height'] for e in self.hilo]
-        lo_h = min(heights)
-        hi_h = max(heights)
-        tidal_range = hi_h - lo_h
-        unit = self._unit_label()
+        heights      = [e['height'] for e in self.hilo]
+        lo_h, hi_h   = min(heights), max(heights)
+        tidal_range  = hi_h - lo_h
+        phase        = self._moon_phase()
+        phase_name   = self._moon_name(phase)
+        is_spring    = phase < 0.1 or phase > 0.9 or 0.42 < phase < 0.58
+        spring_label = 'SPRING' if is_spring else 'NEAP'
+        spring_color = (255, 150, 50) if is_spring else C_LOW
 
-        phase = self._moon_phase()
-        phase_name = self._moon_phase_name(phase)
-
-        # Spring vs neap (spring = within 3 days of full/new moon)
-        is_spring = phase < 0.1 or phase > 0.9 or 0.4 < phase < 0.6
-        tide_type_label = 'SPRING' if is_spring else 'NEAP'
-        tide_type_color = (255, 150, 50) if is_spring else (100, 200, 255)
-
-        # Current tidal cycle progress
-        now = datetime.now()
-        past = [e for e in self.hilo
-                if _safe_isoparse(e['dt']) and _safe_isoparse(e['dt']) <= now]
-        future = [e for e in self.hilo
-                  if _safe_isoparse(e['dt']) and _safe_isoparse(e['dt']) > now]
+        # Cycle progress
+        now  = datetime.now()
+        past = [e for e in self.hilo if _safe_iso(e['dt']) and _safe_iso(e['dt']) <= now]
+        fut  = [e for e in self.hilo if _safe_iso(e['dt']) and _safe_iso(e['dt']) > now]
         cycle_pct = None
-        if past and future:
+        if past and fut:
             try:
-                prev_dt = datetime.fromisoformat(past[-1]['dt'])
-                next_dt = datetime.fromisoformat(future[0]['dt'])
-                total_sec = (next_dt - prev_dt).total_seconds()
-                elapsed_sec = (now - prev_dt).total_seconds()
-                if total_sec > 0:
-                    cycle_pct = int(elapsed_sec / total_sec * 100)
-            except (ValueError, KeyError):
-                pass
+                p_dt = datetime.fromisoformat(past[-1]['dt'])
+                n_dt = datetime.fromisoformat(fut[0]['dt'])
+                tot  = (n_dt - p_dt).total_seconds()
+                ela  = (now - p_dt).total_seconds()
+                if tot > 0: cycle_pct = max(0, min(100, int(ela / tot * 100)))
+            except (ValueError, KeyError): pass
 
-        # Layout: moon icon left, stats right
-        moon_r = 7
-        moon_cx = moon_r + 4
-        moon_cy = dh // 2
+        # Moon icon left side
+        moon_r  = max(4, min(10, dh // 5))
+        moon_cx = moon_r + 3
+        moon_cy = dh // 2 - (4 if L['small'] else 6)
 
         if self.show_moon:
-            self._draw_moon_icon(draw, moon_cx, moon_cy, moon_r, phase)
-            text_x = moon_cx + moon_r + 6
+            self._moon_icon(draw, moon_cx, moon_cy, moon_r, phase)
+            txt_x = moon_cx + moon_r + 5
         else:
-            text_x = 4
+            txt_x = 4
 
-        # Moon phase name
-        short_name = phase_name.replace(' Moon', '').replace(' Quarter', ' Qtr')
-        self._text(draw, text_x, 2, short_name, (200, 200, 150))
+        # Moon phase name (short on small displays)
+        short_name = (phase_name.replace(' Moon', '').replace(' Quarter', ' Qtr')
+                      if not L['small'] else phase_name[:6])
+        self._txt(txt_x, L['row1'], short_name, C_MOON)
 
-        # Spring / neap
-        self._text(draw, text_x, 11, tide_type_label, tide_type_color)
+        # Spring / Neap badge
+        self._txt(txt_x, L['row2'], spring_label, spring_color)
 
-        # Range
-        self._text(draw, text_x, 20,
-                   f"Range {tidal_range:.1f}{unit}", (150, 200, 255))
+        # Tidal range
+        self._txt(txt_x, L['row3'],
+                  f"Range {tidal_range:.1f}{self._unit()}", C_LOW)
 
-        # Today's high and low
-        hi_str = f"H:{hi_h:.1f} L:{lo_h:.1f}{unit}"
-        self._text(draw, text_x, 29, hi_str, (180, 180, 200))
+        # Today's extremes
+        if not L['small']:
+            self._txt(txt_x, L['row4'],
+                      f"H {hi_h:.1f}  L {lo_h:.1f}{self._unit()}", C_LABEL)
 
-        # Cycle progress bar at bottom
+        # Cycle progress bar (bottom)
         if cycle_pct is not None:
-            bar_y = dh - 4
-            bar_x0 = text_x
-            bar_x1 = dw - 4
-            bar_len = bar_x1 - bar_x0
-            fill_len = int(bar_len * cycle_pct / 100)
-            draw.rectangle([bar_x0, bar_y, bar_x1, bar_y + 2], fill=(30, 40, 60))
-            draw.rectangle([bar_x0, bar_y, bar_x0 + fill_len, bar_y + 2],
-                           fill=(0, 150, 255))
-            self._text(draw, bar_x0, bar_y - 9, f"Cycle {cycle_pct}%",
-                       (80, 100, 130))
+            bar_y  = dh - 4
+            bar_x0 = txt_x
+            bar_x1 = dw - 3
+            blen   = bar_x1 - bar_x0
+            flen   = int(blen * cycle_pct / 100)
 
-    # ─── on_config_change ─────────────────────────────────────────────────────
+            # Background track
+            draw.rectangle([bar_x0, bar_y, bar_x1, bar_y + 2], fill=C_COL_BG)
+
+            # Gradient progress fill: low-tide blue → high-tide gold
+            t = cycle_pct / 100.0
+            prog_color = _lerp_color(C_LOW, C_HIGH, t)
+            if flen > 0:
+                draw.rectangle([bar_x0, bar_y,
+                                bar_x0 + flen, bar_y + 2], fill=prog_color)
+
+            # Percentage label above bar
+            pct_x = max(txt_x, min(dw - 26, bar_x0 + flen - 8))
+            draw.text((pct_x, bar_y - 8), f"{cycle_pct}%", fill=C_LABEL)
+
+    # ── Config change ──────────────────────────────────────────────────────────
 
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
         super().on_config_change(new_config)
 
         def _rgb(key, default):
             raw = self.config.get(key, list(default))
-            try:
-                return tuple(int(c) for c in raw)
-            except (TypeError, ValueError):
-                return default
+            try:   return tuple(max(0, min(255, int(c))) for c in raw)
+            except: return default
 
-        self.station_id = str(self.config.get('station_id', '')).strip()
+        self.station_id   = str(self.config.get('station_id', '')).strip()
         self.station_name = str(self.config.get('station_name', '') or '').strip()
-        self.units = self.config.get('units', 'imperial')
-        self.mode_duration = float(self.config.get('display_duration', 12))
-        self.show_moon = bool(self.config.get('show_moon_phase', True))
-        self.tide_color = _rgb('tide_color', (0, 100, 200))
-        self.highlight_color = _rgb('highlight_color', (0, 220, 255))
+        self.units        = self.config.get('units', 'imperial')
+        self.mode_dur     = float(self.config.get('display_duration', 12))
+        self.show_moon    = bool(self.config.get('show_moon_phase', True))
+        self.tide_color   = _rgb('tide_color',      C_WATER_MID)
+        self.hi_color     = _rgb('highlight_color', C_WAVE1)
 
-        # Clear cached data so new station is fetched immediately
-        self.hilo = []
-        self.hourly = []
-        self.live_level = None
+        self.hilo = []; self.hourly = []; self.live = None
         self.update()
         self.logger.info("TidePlugin config updated: station=%s", self.station_id)
-
-
-# ─── Utility ─────────────────────────────────────────────────────────────────
-
-def _safe_isoparse(s: str) -> Optional[datetime]:
-    try:
-        return datetime.fromisoformat(s)
-    except (ValueError, TypeError):
-        return None
