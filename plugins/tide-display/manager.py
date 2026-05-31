@@ -336,38 +336,32 @@ class TidePlugin(BasePlugin):
                 color = _lerp(C_WATER_MID, C_WATER_DEEP, (t - 0.5) * 2)
             draw.line([(0,py),(dw-1,py)], fill=color)
 
-        # Horizon glow: 1px bright line at surface — elegant sky/water boundary
+        # Horizon glow: 1px bright line at the water surface
         horizon_c = _lerp(_lerp(C_SKY_HORIZON, C_WATER_TOP, 0.5), (80, 140, 220), 0.35)
         draw.line([(0, surf_y), (dw-1, surf_y)], fill=horizon_c)
 
-        # Pre-compute composite wave positions for the full width
+        # Pre-compute composite wave (all offsets ≤ 0 — wave only above surf_y)
         wave_ys = [surf_y + int(self._wave_y(px)) for px in range(dw)]
 
-        # Wave body: 3px thick, brightness fades with depth
+        # Wave as a thin bright foam line — no fill-to-surface rectangle
+        # This avoids the blocky crest look; the flat water body handles depth.
         for px in range(dw):
-            base_wy = wave_ys[px]
-            for dy in range(3):
-                wy = base_wy + dy
-                if 0 <= wy < dh:
-                    blend = 1.0 - dy * 0.40
-                    draw.point((px, wy), fill=_lerp(C_WATER_TOP, C_WAVE1, blend * 0.88))
-
-        # Crest line with modulated brightness for organic feel
-        for px in range(dw):
-            wy = wave_ys[px] - 1
-            if 0 <= wy < dh:
+            wy = wave_ys[px]
+            if 0 <= wy < surf_y:
                 bt = (math.sin((px + self.wave_phase * 1.3) * 0.11) + 1) * 0.5
                 draw.point((px, wy), fill=_lerp(C_WAVE1, C_WAVE_CREST, bt * 0.72))
+                if wy + 1 < dh:
+                    draw.point((px, wy+1), fill=_lerp(C_WATER_TOP, C_WAVE1, 0.7))
 
-        # Organic sparkles at true local crests of the composite wave
+        # Sparkle dots at true local crests only
         for px in range(0, dw):
             wy_p = wave_ys[max(0, px-2)]
             wy_c = wave_ys[px]
             wy_n = wave_ys[min(dw-1, px+2)]
-            if wy_c <= wy_p and wy_c <= wy_n:
+            if wy_c <= wy_p and wy_c <= wy_n and wy_c < surf_y:
                 wy = wy_c - 1
                 if 0 <= wy < dh:
-                    draw.point((px, wy), fill=C_WAVE_CREST)
+                    draw.point((px, wy), fill=(220, 252, 255))
 
         return surf_y
 
