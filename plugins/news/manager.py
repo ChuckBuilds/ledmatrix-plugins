@@ -724,10 +724,6 @@ class NewsTickerPlugin(BasePlugin):
         headline = re.sub(r'^\s*-\s*', '', headline)  # Remove leading dashes
         headline = re.sub(r'\s+', ' ', headline)  # Normalize whitespace
 
-        # Limit length for display
-        if len(headline) > 100:
-            headline = headline[:97] + "..."
-
         return headline
 
     def display(self, display_mode: str = None, force_clear: bool = False) -> None:
