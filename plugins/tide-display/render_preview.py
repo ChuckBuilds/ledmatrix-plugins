@@ -41,8 +41,10 @@ def _lerp(c1, c2, t):
     return tuple(int(a + (b - a) * t) for a, b in zip(c1, c2))
 
 def _safe_iso(s):
-    try:    return datetime.fromisoformat(s)
-    except Exception: return None
+    try:
+        return datetime.fromisoformat(s)
+    except (TypeError, ValueError):
+        return None
 
 def _layout(dw, dh):
     bar_w  = max(8, min(32, int(dw * 0.13)))
@@ -179,7 +181,8 @@ def _fmtt(iso):
         dt = datetime.fromisoformat(iso)
         hr = dt.hour % 12 or 12
         return f"{hr}:{dt.minute:02d}{'a' if dt.hour<12 else 'p'}"
-    except Exception: return '--'
+    except (TypeError, ValueError):
+        return '--'
 
 # ── Mode renderers ─────────────────────────────────────────────────────────────
 

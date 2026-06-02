@@ -209,7 +209,11 @@ class BaseSoccerManager(SportsCore):
             status_state = status["type"]["state"]
             
             status_name = status["type"]["name"]
-            if status_state == "in":
+            if status_state == "halftime" or status_name == "STATUS_HALFTIME":
+                # Check halftime first: ESPN can set state="in" AND name="STATUS_HALFTIME"
+                # simultaneously, so this guard must precede the generic "in" branch.
+                period_text = "ETH" if period >= 3 else "HALF"
+            elif status_state == "in":
                 if period == 0:
                     period_text = "Start"
                 elif period == 1:
@@ -224,9 +228,6 @@ class BaseSoccerManager(SportsCore):
                     period_text = "PEN"  # Penalty shootout
                 else:
                     period_text = f"P{period}"
-            elif status_state == "halftime" or status_name == "STATUS_HALFTIME":
-                # Extra Time halftime is when period transitions from 3 to 4
-                period_text = "ETH" if period >= 3 else "HALF"
             elif status_state == "post":
                 if status_name in ("STATUS_FINAL_PEN", "STATUS_AFTER_PENALTIES"):
                     period_text = "F/Pen"

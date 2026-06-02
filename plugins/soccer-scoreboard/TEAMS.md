@@ -214,14 +214,15 @@ Same as Champions League — use the club's domestic abbreviation from the table
 
 ## FIFA World Cup 2026 (fifa.world)
 
-48 national teams qualify for the 2026 World Cup. ESPN uses the standard 2–3 character country codes.
+> **⚠️ Verify abbreviations via debug logs.** ESPN's internal abbreviations for national teams are not always the same as FIFA country codes. Enable debug logging and check the `home_abbr`/`away_abbr` values logged for each game to confirm the exact codes the ESPN feed uses before setting `favorite_teams`.
+
+The table below lists high-confidence ESPN abbreviations based on prior international tournament data. Entries marked with `*` should be treated as approximate until confirmed from the live feed.
 
 | Country | Abbreviation |
 |---------|-------------|
 | Argentina | ARG |
 | Australia | AUS |
 | Belgium | BEL |
-| Bolivia | BOL |
 | Brazil | BRA |
 | Cameroon | CMR |
 | Canada | CAN |
@@ -230,7 +231,6 @@ Same as Champions League — use the club's domestic abbreviation from the table
 | Costa Rica | CRC |
 | Croatia | CRO |
 | Czech Republic | CZE |
-| DR Congo | CGO |
 | Ecuador | ECU |
 | Egypt | EGY |
 | England | ENG |
@@ -238,11 +238,9 @@ Same as Champions League — use the club's domestic abbreviation from the table
 | Germany | GER |
 | Ghana | GHA |
 | Hungary | HUN |
-| Indonesia | IDN |
 | Iran | IRN |
 | Japan | JPN |
-| Kenya | KEN |
-| Mali | MLI |
+| Mali | MLI * |
 | Mexico | MEX |
 | Morocco | MAR |
 | Netherlands | NED |
@@ -250,24 +248,19 @@ Same as Champions League — use the club's domestic abbreviation from the table
 | Nigeria | NGA |
 | Panama | PAN |
 | Paraguay | PAR |
-| Peru | PER |
 | Portugal | POR |
-| Qatar | QAT |
 | Saudi Arabia | KSA |
 | Senegal | SEN |
 | Serbia | SRB |
 | Slovakia | SVK |
-| South Africa | RSA |
 | South Korea | KOR |
 | Spain | ESP |
 | Switzerland | SUI |
 | Tunisia | TUN |
-| Ukraine | UKR |
 | United States | USA |
 | Uruguay | URU |
-| Venezuela | VEN |
 
-> **Note:** ESPN abbreviations for national teams may differ slightly from FIFA codes. If you don't see your country's games, enable debug logging and check `home_abbr`/`away_abbr` in the logs to confirm the exact code ESPN uses.
+To find your team's abbreviation: enable the plugin, set `debug` log level, then look for lines like `Extracted: USA@MEX` in the logs — those are the exact codes ESPN returns.
 
 ---
 

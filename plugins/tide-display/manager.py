@@ -65,8 +65,10 @@ def _lerp(c1, c2, t):
     return tuple(int(a + (b - a) * max(0.0, min(1.0, t))) for a, b in zip(c1, c2))
 
 def _safe_iso(s):
-    try:    return datetime.fromisoformat(s)
-    except Exception: return None
+    try:
+        return datetime.fromisoformat(s)
+    except (TypeError, ValueError):
+        return None
 
 
 # ── Layout helper ──────────────────────────────────────────────────────────────
@@ -100,8 +102,10 @@ class TidePlugin(BasePlugin):
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
 
         def _rgb(k, d):
-            try:   return tuple(max(0, min(255, int(c))) for c in config.get(k, list(d)))
-            except Exception: return d
+            try:
+                return tuple(max(0, min(255, int(c))) for c in config.get(k, list(d)))
+            except (TypeError, ValueError):
+                return d
 
         self.station_id   = str(config.get('station_id', '')).strip()
         self.station_name = str(config.get('station_name', '') or '').strip()
@@ -192,11 +196,15 @@ class TidePlugin(BasePlugin):
             if 'error' in d: return None
             out = []
             for x in d.get('predictions', []):
-                try: out.append({'dt':datetime.strptime(x['t'],'%Y-%m-%d %H:%M').isoformat(),
-                                 'height':float(x['v']),'type':x.get('type','?')})
-                except Exception as _e: self.logger.debug("hilo entry skip: %s", _e)
+                try:
+                    out.append({'dt': datetime.strptime(x['t'], '%Y-%m-%d %H:%M').isoformat(),
+                                'height': float(x['v']), 'type': x.get('type', '?')})
+                except (KeyError, TypeError, ValueError) as _e:
+                    self.logger.debug("hilo entry skip: %s", _e)
             return out or None
-        except Exception as e: self.logger.error("hilo: %s", e); return None
+        except (requests.exceptions.RequestException, OSError, ValueError) as e:
+            self.logger.error("hilo: %s", e, exc_info=True)
+            return None
 
     def _fetch_hourly(self, u):
         try:
@@ -207,12 +215,16 @@ class TidePlugin(BasePlugin):
             if 'error' in d: return None
             h  = []
             for x in d.get('predictions',[]):
-                try: h.append(float(x['v']))
-                except Exception: h.append(0.0)
+                try:
+                    h.append(float(x['v']))
+                except (KeyError, TypeError, ValueError):
+                    h.append(0.0)
             h = h[:24]
             while len(h) < 24: h.append(h[-1] if h else 0.0)
             return h
-        except Exception as e: self.logger.error("hourly: %s", e); return None
+        except (requests.exceptions.RequestException, OSError, ValueError) as e:
+            self.logger.error("hourly: %s", e, exc_info=True)
+            return None
 
     def _fetch_live(self, u):
         try:
@@ -220,9 +232,10 @@ class TidePlugin(BasePlugin):
             r = requests.get(NOAA_BASE, params=p, timeout=8); r.raise_for_status()
             d = r.json()
             if 'error' in d: return None
-            data = d.get('data',[])
+            data = d.get('data', [])
             return float(data[-1]['v']) if data else None
-        except Exception: return None
+        except (requests.exceptions.RequestException, OSError, KeyError, TypeError, ValueError):
+            return None
 
     # ── Derived ─────────────────────────────────────────────────────────────────
 

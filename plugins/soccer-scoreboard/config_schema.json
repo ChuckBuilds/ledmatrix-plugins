@@ -3155,17 +3155,17 @@
             "enabled": {
               "type": "boolean",
               "default": false,
-              "description": "Enable Premier League games"
+              "description": "Enable FIFA World Cup games"
             },
             "favorite_teams": {
               "type": "array",
               "items": {
                 "type": "string",
-                "description": "Premier League team name or abbreviation"
+                "description": "National team abbreviation (e.g. USA, BRA, ARG, ENG)"
               },
               "uniqueItems": true,
               "maxItems": 20,
-              "description": "List of favorite Premier League teams to prioritize"
+              "description": "List of favorite national team abbreviations to prioritize (e.g. USA, BRA, ARG)"
             },
             "display_modes": {
               "type": "object",
@@ -3175,7 +3175,7 @@
                 "live": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show live Premier League games"
+                  "description": "Show live FIFA World Cup games"
                 },
                 "live_display_mode": {
                   "type": "string",
@@ -3189,7 +3189,7 @@
                 "recent": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show recently completed Premier League games"
+                  "description": "Show recently completed FIFA World Cup games"
                 },
                 "recent_display_mode": {
                   "type": "string",
@@ -3203,7 +3203,7 @@
                 "upcoming": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show upcoming Premier League games"
+                  "description": "Show upcoming FIFA World Cup games"
                 },
                 "upcoming_display_mode": {
                   "type": "string",
@@ -3364,13 +3364,13 @@
             },
             "dynamic_duration": {
               "type": "object",
-              "title": "Premier League Dynamic Duration Settings",
-              "description": "Configure dynamic duration settings for Premier League games.",
+              "title": "FIFA World Cup Dynamic Duration Settings",
+              "description": "Configure dynamic duration settings for FIFA World Cup games.",
               "properties": {
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for Premier League games"
+                  "description": "Enable dynamic duration for FIFA World Cup games"
                 },
                 "min_duration_seconds": {
                   "type": "number",
@@ -3383,12 +3383,12 @@
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for Premier League games"
+                  "description": "Max duration for FIFA World Cup games"
                 },
                 "modes": {
                   "type": "object",
-                  "title": "Per-Mode Settings for Premier League",
-                  "description": "Configure dynamic duration for specific Premier League modes",
+                  "title": "Per-Mode Settings for FIFA World Cup",
+                  "description": "Configure dynamic duration for specific FIFA World Cup modes",
                   "properties": {
                     "live": {
                       "type": "object",
@@ -3396,13 +3396,13 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Premier League live games"
+                          "description": "Enable dynamic duration for FIFA World Cup live games"
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Premier League live games"
+                          "description": "Max duration for FIFA World Cup live games"
                         }
                       }
                     },
@@ -3412,13 +3412,13 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Premier League recent games"
+                          "description": "Enable dynamic duration for FIFA World Cup recent games"
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Premier League recent games"
+                          "description": "Max duration for FIFA World Cup recent games"
                         }
                       }
                     },
@@ -3428,13 +3428,13 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Premier League upcoming games"
+                          "description": "Enable dynamic duration for FIFA World Cup upcoming games"
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Premier League upcoming games"
+                          "description": "Max duration for FIFA World Cup upcoming games"
                         }
                       }
                     }
