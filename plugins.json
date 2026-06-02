@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-05-31",
+  "last_updated": "2026-06-02",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -579,7 +579,7 @@
     {
       "id": "soccer-scoreboard",
       "name": "Soccer Scoreboard",
-      "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, and more",
+      "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
       "author": "ChuckBuilds",
       "category": "sports",
       "tags": [
@@ -591,6 +591,8 @@
         "serie-a",
         "ligue-1",
         "mls",
+        "world-cup",
+        "fifa",
         "sports",
         "scoreboard",
         "live-scores"
@@ -600,10 +602,10 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-20",
+      "last_updated": "2026-06-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.6.3"
+      "latest_version": "1.7.1"
     },
     {
       "id": "static-image",

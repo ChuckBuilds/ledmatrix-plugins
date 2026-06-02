@@ -60,6 +60,7 @@ from soccer_managers import (
     create_champions_league_managers,
     create_europa_league_managers,
     create_liga_portugal_managers,
+    create_world_cup_managers,
     create_custom_league_managers,
 )
 
@@ -67,7 +68,7 @@ logger = logging.getLogger(__name__)
 
 # Predefined league keys and display names (priority 1-8)
 # Custom leagues will be added dynamically with user-defined priorities
-PREDEFINED_LEAGUE_KEYS = ['eng.1', 'esp.1', 'ger.1', 'ita.1', 'fra.1', 'usa.1', 'por.1', 'uefa.champions', 'uefa.europa']
+PREDEFINED_LEAGUE_KEYS = ['eng.1', 'esp.1', 'ger.1', 'ita.1', 'fra.1', 'usa.1', 'por.1', 'uefa.champions', 'uefa.europa', 'fifa.world']
 PREDEFINED_LEAGUE_NAMES = {
     'eng.1': 'Premier League',
     'esp.1': 'La Liga',
@@ -77,7 +78,8 @@ PREDEFINED_LEAGUE_NAMES = {
     'usa.1': 'MLS',
     'por.1': 'Liga Portugal',
     'uefa.champions': 'Champions League',
-    'uefa.europa': 'Europa League'
+    'uefa.europa': 'Europa League',
+    'fifa.world': 'FIFA World Cup',
 }
 
 # Default priorities for predefined leagues (lower = higher priority, shows first)
@@ -91,6 +93,7 @@ PREDEFINED_LEAGUE_PRIORITIES = {
     'por.1': 7,
     'uefa.champions': 8,
     'uefa.europa': 9,
+    'fifa.world': 10,
 }
 
 # League key -> (live_attr, recent_attr, upcoming_attr) for predefined leagues
@@ -104,6 +107,7 @@ PREDEFINED_LEAGUE_ATTR_MAP = {
     'por.1': ('por1_live', 'por1_recent', 'por1_upcoming'),
     'uefa.champions': ('champions_live', 'champions_recent', 'champions_upcoming'),
     'uefa.europa': ('europa_live', 'europa_recent', 'europa_upcoming'),
+    'fifa.world': ('world_cup_live', 'world_cup_recent', 'world_cup_upcoming'),
 }
 
 # Legacy aliases for backwards compatibility. LEAGUE_NAMES is a mutable copy that
@@ -341,7 +345,11 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                     self.europa_live, self.europa_recent, self.europa_upcoming = create_europa_league_managers(
                         league_config, self.display_manager, self.cache_manager
                     )
-                
+                elif league_key == 'fifa.world':
+                    self.world_cup_live, self.world_cup_recent, self.world_cup_upcoming = create_world_cup_managers(
+                        league_config, self.display_manager, self.cache_manager
+                    )
+
                 self.logger.info(f"{LEAGUE_NAMES[league_key]} managers initialized")
 
         except Exception as e:

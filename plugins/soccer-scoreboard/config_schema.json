@@ -465,7 +465,9 @@
               }
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "title": "Premier League",
+          "description": "Settings for the Premier League (England)"
         },
         "esp.1": {
           "type": "object",
@@ -798,7 +800,9 @@
               }
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "title": "La Liga",
+          "description": "Settings for La Liga (Spain)"
         },
         "ger.1": {
           "type": "object",
@@ -1131,7 +1135,9 @@
               }
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "title": "Bundesliga",
+          "description": "Settings for the Bundesliga (Germany)"
         },
         "ita.1": {
           "type": "object",
@@ -1464,7 +1470,9 @@
               }
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "title": "Serie A",
+          "description": "Settings for Serie A (Italy)"
         },
         "fra.1": {
           "type": "object",
@@ -1797,7 +1805,9 @@
               }
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "title": "Ligue 1",
+          "description": "Settings for Ligue 1 (France)"
         },
         "usa.1": {
           "type": "object",
@@ -2130,7 +2140,9 @@
               }
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "title": "MLS",
+          "description": "Settings for Major League Soccer (USA)"
         },
         "uefa.champions": {
           "type": "object",
@@ -2463,7 +2475,9 @@
               }
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "title": "Champions League",
+          "description": "Settings for the UEFA Champions League"
         },
         "uefa.europa": {
           "type": "object",
@@ -2796,7 +2810,9 @@
               }
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "title": "Europa League",
+          "description": "Settings for the UEFA Europa League"
         },
         "por.1": {
           "type": "object",
@@ -3129,7 +3145,344 @@
               }
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "title": "Liga Portugal",
+          "description": "Settings for Liga Portugal (Portugal)"
+        },
+        "fifa.world": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable Premier League games"
+            },
+            "favorite_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Premier League team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "description": "List of favorite Premier League teams to prioritize"
+            },
+            "display_modes": {
+              "type": "object",
+              "title": "Display Modes",
+              "description": "Control which game types to show and how they are displayed",
+              "properties": {
+                "live": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show live Premier League games"
+                },
+                "live_display_mode": {
+                  "type": "string",
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
+                  "default": "switch",
+                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                },
+                "recent": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show recently completed Premier League games"
+                },
+                "recent_display_mode": {
+                  "type": "string",
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
+                  "default": "switch",
+                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                },
+                "upcoming": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show upcoming Premier League games"
+                },
+                "upcoming_display_mode": {
+                  "type": "string",
+                  "enum": [
+                    "switch",
+                    "scroll"
+                  ],
+                  "default": "switch",
+                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                }
+              },
+              "additionalProperties": false
+            },
+            "scroll_settings": {
+              "type": "object",
+              "title": "Scroll Settings",
+              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
+              "properties": {
+                "scroll_speed": {
+                  "type": "number",
+                  "default": 1.0,
+                  "minimum": 0.01,
+                  "maximum": 200.0,
+                  "description": "Scroll speed in pixels per second"
+                },
+                "scroll_delay": {
+                  "type": "number",
+                  "default": 0.01,
+                  "minimum": 0.001,
+                  "maximum": 0.1,
+                  "description": "Delay between scroll frames in seconds (lower = smoother)"
+                },
+                "gap_between_games": {
+                  "type": "integer",
+                  "default": 48,
+                  "minimum": 8,
+                  "maximum": 128,
+                  "description": "Gap in pixels between game cards when scrolling"
+                },
+                "show_league_separators": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show league icons between different leagues"
+                },
+                "dynamic_duration": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Automatically calculate display duration based on content width"
+                },
+                "game_card_width": {
+                  "type": "integer",
+                  "default": 128,
+                  "minimum": 32,
+                  "maximum": 512,
+                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                }
+              }
+            },
+            "live_priority": {
+              "type": "boolean",
+              "default": true,
+              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+            },
+            "live_game_duration": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 10,
+              "maximum": 120,
+              "description": "Duration in seconds to display each live game before rotating to the next live game"
+            },
+            "recent_game_duration": {
+              "type": "integer",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Duration in seconds to display each recent game before rotating to the next game"
+            },
+            "upcoming_game_duration": {
+              "type": "integer",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Duration in seconds to display each upcoming game before rotating to the next game"
+            },
+            "live_update_interval": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 5,
+              "maximum": 300,
+              "description": "How often to update live game data (seconds)"
+            },
+            "update_interval_seconds": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 30,
+              "maximum": 86400,
+              "description": "How often to fetch new data (seconds)"
+            },
+            "game_limits": {
+              "type": "object",
+              "title": "Game Limits",
+              "description": "Control how many games to show",
+              "properties": {
+                "recent_games_to_show": {
+                  "type": "integer",
+                  "default": 1,
+                  "minimum": 1,
+                  "maximum": 20,
+                  "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+                },
+                "upcoming_games_to_show": {
+                  "type": "integer",
+                  "default": 1,
+                  "minimum": 1,
+                  "maximum": 20,
+                  "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+                }
+              }
+            },
+            "display_options": {
+              "type": "object",
+              "title": "Display Options",
+              "description": "Additional information to show",
+              "properties": {
+                "show_records": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Show team records (wins-losses)"
+                },
+                "show_ranking": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Show team rankings (when available)"
+                },
+                "show_odds": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show betting odds"
+                }
+              }
+            },
+            "filtering": {
+              "type": "object",
+              "title": "Filtering Options",
+              "description": "Control which teams are shown",
+              "properties": {
+                "show_favorite_teams_only": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Only show games from favorite teams"
+                },
+                "show_all_live": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Show all live games, not just favorites"
+                }
+              }
+            },
+            "dynamic_duration": {
+              "type": "object",
+              "title": "Premier League Dynamic Duration Settings",
+              "description": "Configure dynamic duration settings for Premier League games.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Enable dynamic duration for Premier League games"
+                },
+                "min_duration_seconds": {
+                  "type": "number",
+                  "minimum": 10,
+                  "maximum": 300,
+                  "default": 30,
+                  "description": "Minimum total duration in seconds for this mode, even if few games are available"
+                },
+                "max_duration_seconds": {
+                  "type": "number",
+                  "minimum": 60,
+                  "maximum": 600,
+                  "description": "Max duration for Premier League games"
+                },
+                "modes": {
+                  "type": "object",
+                  "title": "Per-Mode Settings for Premier League",
+                  "description": "Configure dynamic duration for specific Premier League modes",
+                  "properties": {
+                    "live": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "default": false,
+                          "description": "Enable dynamic duration for Premier League live games"
+                        },
+                        "max_duration_seconds": {
+                          "type": "number",
+                          "minimum": 60,
+                          "maximum": 600,
+                          "description": "Max duration for Premier League live games"
+                        }
+                      }
+                    },
+                    "recent": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "default": false,
+                          "description": "Enable dynamic duration for Premier League recent games"
+                        },
+                        "max_duration_seconds": {
+                          "type": "number",
+                          "minimum": 60,
+                          "maximum": 600,
+                          "description": "Max duration for Premier League recent games"
+                        }
+                      }
+                    },
+                    "upcoming": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "default": false,
+                          "description": "Enable dynamic duration for Premier League upcoming games"
+                        },
+                        "max_duration_seconds": {
+                          "type": "number",
+                          "minimum": 60,
+                          "maximum": 600,
+                          "description": "Max duration for Premier League upcoming games"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "mode_durations": {
+              "type": "object",
+              "title": "Mode-Level Durations",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "properties": {
+                "recent_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "upcoming_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                },
+                "live_mode_duration": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "default": null,
+                  "minimum": 10,
+                  "maximum": 600,
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                }
+              }
+            }
+          },
+          "additionalProperties": false,
+          "title": "FIFA World Cup",
+          "description": "Settings for the FIFA World Cup (fifa.world)"
         }
       },
       "additionalProperties": false

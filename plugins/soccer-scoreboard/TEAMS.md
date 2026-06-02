@@ -212,6 +212,65 @@ Same as Champions League — use the club's domestic abbreviation from the table
 
 ---
 
+## FIFA World Cup 2026 (fifa.world)
+
+48 national teams qualify for the 2026 World Cup. ESPN uses the standard 2–3 character country codes.
+
+| Country | Abbreviation |
+|---------|-------------|
+| Argentina | ARG |
+| Australia | AUS |
+| Belgium | BEL |
+| Bolivia | BOL |
+| Brazil | BRA |
+| Cameroon | CMR |
+| Canada | CAN |
+| Chile | CHI |
+| Colombia | COL |
+| Costa Rica | CRC |
+| Croatia | CRO |
+| Czech Republic | CZE |
+| DR Congo | CGO |
+| Ecuador | ECU |
+| Egypt | EGY |
+| England | ENG |
+| France | FRA |
+| Germany | GER |
+| Ghana | GHA |
+| Hungary | HUN |
+| Indonesia | IDN |
+| Iran | IRN |
+| Japan | JPN |
+| Kenya | KEN |
+| Mali | MLI |
+| Mexico | MEX |
+| Morocco | MAR |
+| Netherlands | NED |
+| New Zealand | NZL |
+| Nigeria | NGA |
+| Panama | PAN |
+| Paraguay | PAR |
+| Peru | PER |
+| Portugal | POR |
+| Qatar | QAT |
+| Saudi Arabia | KSA |
+| Senegal | SEN |
+| Serbia | SRB |
+| Slovakia | SVK |
+| South Africa | RSA |
+| South Korea | KOR |
+| Spain | ESP |
+| Switzerland | SUI |
+| Tunisia | TUN |
+| Ukraine | UKR |
+| United States | USA |
+| Uruguay | URU |
+| Venezuela | VEN |
+
+> **Note:** ESPN abbreviations for national teams may differ slightly from FIFA codes. If you don't see your country's games, enable debug logging and check `home_abbr`/`away_abbr` in the logs to confirm the exact code ESPN uses.
+
+---
+
 ## Tips
 
 - **Abbreviations are case-sensitive** — use uppercase as shown (e.g. `"LIV"` not `"liv"`)

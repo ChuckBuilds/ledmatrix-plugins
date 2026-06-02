@@ -26,7 +26,8 @@ LEAGUE_NAMES = {
     'usa.1': 'MLS',
     'por.1': 'Liga Portugal',
     'uefa.champions': 'Champions League',
-    'uefa.europa': 'Europa League'
+    'uefa.europa': 'Europa League',
+    'fifa.world': 'FIFA World Cup',
 }
 
 
@@ -207,6 +208,7 @@ class BaseSoccerManager(SportsCore):
             period_text = ""
             status_state = status["type"]["state"]
             
+            status_name = status["type"]["name"]
             if status_state == "in":
                 if period == 0:
                     period_text = "Start"
@@ -214,12 +216,24 @@ class BaseSoccerManager(SportsCore):
                     period_text = "1H"
                 elif period == 2:
                     period_text = "2H"
+                elif period == 3:
+                    period_text = "ET1"  # Extra Time 1st half
+                elif period == 4:
+                    period_text = "ET2"  # Extra Time 2nd half
+                elif period >= 5:
+                    period_text = "PEN"  # Penalty shootout
                 else:
-                    period_text = f"{period}H"
-            elif status_state == "halftime" or status["type"]["name"] == "STATUS_HALFTIME":
-                period_text = "HALF"
+                    period_text = f"P{period}"
+            elif status_state == "halftime" or status_name == "STATUS_HALFTIME":
+                # Extra Time halftime is when period transitions from 3 to 4
+                period_text = "ETH" if period >= 3 else "HALF"
             elif status_state == "post":
-                period_text = "Final"
+                if status_name in ("STATUS_FINAL_PEN", "STATUS_AFTER_PENALTIES"):
+                    period_text = "F/Pen"
+                elif status_name in ("STATUS_FINAL_AET", "STATUS_AFTER_EXTRA_TIME") or period > 2:
+                    period_text = "F/ET"
+                else:
+                    period_text = "Final"
             elif status_state == "pre":
                 period_text = details.get("game_time", "")
 
@@ -400,6 +414,15 @@ def create_europa_league_managers(config, display_manager, cache_manager):
         SoccerLiveManager(config, display_manager, cache_manager, 'uefa.europa'),
         SoccerRecentManager(config, display_manager, cache_manager, 'uefa.europa'),
         SoccerUpcomingManager(config, display_manager, cache_manager, 'uefa.europa'),
+    )
+
+
+def create_world_cup_managers(config, display_manager, cache_manager):
+    """Create FIFA World Cup (fifa.world) managers."""
+    return (
+        SoccerLiveManager(config, display_manager, cache_manager, 'fifa.world'),
+        SoccerRecentManager(config, display_manager, cache_manager, 'fifa.world'),
+        SoccerUpcomingManager(config, display_manager, cache_manager, 'fifa.world'),
     )
 
 

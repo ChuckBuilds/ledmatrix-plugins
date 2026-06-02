@@ -13,9 +13,7 @@
 
 # Soccer Scoreboard Plugin
 
-### This version is still under development. It should be mostly functional but the custom league upload module is not working. 
-
-A plugin for LEDMatrix that displays live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, and more.
+A plugin for LEDMatrix that displays live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, and FIFA World Cup.
 
 ## Features
 
@@ -175,8 +173,27 @@ The plugin supports the following soccer leagues:
 - **ita.1**: Serie A (Italy)
 - **fra.1**: Ligue 1 (France)
 - **usa.1**: MLS (USA)
+- **por.1**: Liga Portugal (Portugal)
 - **uefa.champions**: UEFA Champions League
 - **uefa.europa**: UEFA Europa League
+- **fifa.world**: FIFA World Cup
+
+Additional leagues can be added via the **Custom Leagues** setting using any ESPN soccer league code (e.g. `mex.1`, `arg.1`, `bra.1`, `ned.1`).
+
+## FIFA World Cup
+
+Enable the **FIFA World Cup** league from the plugin settings to track World Cup 2026 (June 11 – July 19, USA/Canada/Mexico).
+
+**To follow all games:** Enable `fifa.world` and leave `Show Favorite Teams Only` off.
+
+**To follow just your country:** Enable `fifa.world`, set `Favorite Teams` to your country's ESPN abbreviation (e.g. `USA`, `ENG`, `BRA`), and enable `Show Favorite Teams Only`.
+
+During knockout rounds, the status area shows:
+- **ET1** / **ET2** — Extra Time first / second half
+- **ETH** — Halftime of Extra Time
+- **PEN** — Penalty Shootout in progress
+- **F/ET** — Final, decided in Extra Time
+- **F/Pen** — Final, decided on Penalties
 
 ## Team Names & Abbreviations
 
