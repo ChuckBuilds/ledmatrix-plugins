@@ -23,7 +23,8 @@
       "type": "string",
       "title": "NOAA Station ID",
       "description": "7-digit NOAA tide station ID. Find yours at tidesandcurrents.noaa.gov/stations.html",
-      "pattern": "^[0-9]{7}$",
+      "pattern": "^([0-9]{7})?$",
+      "default": "",
       "examples": ["9447130", "8724580", "8443970"],
       "x-placeholder": "e.g. 9447130 (Seattle)"
     },

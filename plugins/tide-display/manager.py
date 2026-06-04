@@ -426,9 +426,10 @@ class TidePlugin(BasePlugin):
     # ── Placeholder screens ─────────────────────────────────────────────────────
 
     def _no_station(self, draw, dw, dh, L):
-        draw.rectangle([0,0,dw-1,dh-1], outline=C_BAR_OUT)
-        self._txtc(dw//2, L['row1'], 'TIDE DISPLAY', C_WAVE1)
-        self._txtc(dw//2, L['row2'], 'Set station ID', C_LABEL)
+        draw.rectangle([0, 0, dw-1, dh-1], outline=C_BAR_OUT)
+        self._txtc(dw//2, dh//2 - 8, 'TIDE', C_WAVE1, small=False)
+        self._txtc(dw//2, dh//2 + 4, 'Set Station ID', C_LABEL)
+        self._txtc(dw//2, dh//2 + 12, 'in Settings', C_LABEL)
 
     def _loading(self, draw, dw, dh, L):
         n = int(self.wave_phase/30)%4

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-06-02",
+  "last_updated": "2026-06-04",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -725,7 +725,7 @@
       "last_updated": "2026-05-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0",
+      "latest_version": "1.0.1",
       "icon": "fa-water"
     },
     {

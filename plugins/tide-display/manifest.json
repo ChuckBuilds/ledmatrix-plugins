@@ -1,7 +1,7 @@
 {
   "id": "tide-display",
   "name": "Tide Display",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "ChuckBuilds",
   "description": "Coastal tide display with animated wave level, tide schedule, 24-hour chart, and tidal statistics. Powered by the free NOAA Tides & Currents API (US stations, no API key required).",
   "entry_point": "manager.py",
@@ -11,6 +11,11 @@
   "display_modes": ["current", "schedule", "chart", "stats"],
   "compatible_versions": [">=2.0.0"],
   "versions": [
+    {
+      "released": "2026-06-04",
+      "version": "1.0.1",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-05-31",
       "version": "1.0.0",
