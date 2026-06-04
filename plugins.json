@@ -824,6 +824,31 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.0.2"
+    },
+    {
+      "id": "ledmatrix-dresden-departures",
+      "name": "Dresden Departures Board",
+      "description": "Dresden VVO departure board with tram times, date, clock, and weather. Shows upcoming tram/bus departures from a configurable DVB/VVO stop alongside a clock, date, and weather info.",
+      "author": "ryug0",
+      "category": "transit",
+      "tags": [
+        "dresden",
+        "tram",
+        "vvo",
+        "dvb",
+        "transit",
+        "departures",
+        "germany"
+      ],
+      "repo": "https://github.com/ryug0/ledmatrix-dresden-departures",
+      "branch": "main",
+      "plugin_path": "",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-06-02",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.0.0"
     }
   ]
 }
