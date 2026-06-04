@@ -22,7 +22,7 @@
     "station_id": {
       "type": "string",
       "title": "NOAA Station ID",
-      "description": "7-digit NOAA tide station ID. Find yours at tidesandcurrents.noaa.gov/stations.html",
+      "description": "Optional 7-digit NOAA tide station ID. Leave blank to show a setup prompt. Find yours at tidesandcurrents.noaa.gov/stations.html",
       "pattern": "^([0-9]{7})?$",
       "default": "",
       "examples": ["9447130", "8724580", "8443970"],
