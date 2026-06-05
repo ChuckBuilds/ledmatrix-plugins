@@ -167,7 +167,7 @@ class GameRenderer:
 
                 # Crop transparent padding so scaling operates on actual content.
                 # Then constrain to the logo slot width and 75% of display height —
-                # this prevents wide 1200×630 source images (common in MiLB/ESPN)
+                # this prevents wide 1200x630 source images (common in MiLB/ESPN)
                 # from producing full-height logos that overwhelm the center text.
                 bbox = logo.getbbox()
                 if bbox:
