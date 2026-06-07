@@ -43,7 +43,7 @@ C_CHART_FILL  = (  0,  45, 130)
 C_CHART_LINE  = (  0, 215, 255)
 C_CHART_GLOW1 = (  0, 110, 185)
 C_CHART_GLOW2 = (  0,  65, 135)
-C_GRID        = ( 14,  24,  52)
+C_GRID        = ( 30,  48,  96)
 C_NOW_LINE    = (255, 220,  40)
 C_HIGH        = (255, 195,  45)
 C_LOW         = ( 75, 190, 255)
@@ -51,14 +51,15 @@ C_RISING      = ( 45, 230,  95)
 C_FALLING     = (255,  75,  75)
 C_SLACK       = (255, 210,  60)
 C_TEXT        = (205, 225, 255)
-C_LABEL       = ( 95, 125, 180)
-C_DIM         = ( 45,  55,  80)
+C_LABEL       = (120, 150, 200)
+C_DIM         = ( 75,  90, 120)
 C_MOON        = (245, 238, 200)
-C_BAR_OUT     = ( 25,  45,  90)
-C_COL_BG      = (  0,  14,  40)
-# Schedule column tints
-C_HIGH_TINT   = ( 30,  20,   5)  # warm amber hint
-C_LOW_TINT    = (  0,  10,  30)  # cool blue hint
+C_BAR_OUT     = ( 45,  72, 130)
+# Schedule column backgrounds — tinted toward their label colour (12% / 22%)
+C_COL_HIGH      = ( 31,  23,  10)  # dark amber  (C_HIGH at 12%)
+C_COL_LOW       = (  9,  23,  36)  # dark blue   (C_LOW  at 12%)
+C_COL_HIGH_NEXT = ( 56,  43,  15)  # amber       (C_HIGH at 22%)
+C_COL_LOW_NEXT  = ( 16,  42,  61)  # blue        (C_LOW  at 22%)
 
 
 def _lerp(c1, c2, t):
@@ -75,7 +76,7 @@ def _safe_iso(s):
 
 def _layout(dw: int, dh: int) -> Dict:
     c_ml, c_mr, c_mt = 3, 3, 1
-    c_axis = max(7, int(dh * 0.16))
+    c_axis = max(9, int(dh * 0.20))  # needs 9px min: 1px line + 2px gap + 6px font
     row1 = 1
     row2 = max(9,  int(dh * 0.28))
     row3 = max(18, int(dh * 0.55))
@@ -153,8 +154,11 @@ class TidePlugin(BasePlugin):
         dw = self.display_manager.matrix.width
         dh = self.display_manager.matrix.height
         canvas = Image.new('RGB', (dw, dh), C_BG)
-        draw   = ImageDraw.Draw(canvas)
-        L      = _layout(dw, dh)
+        # Assign before rendering so _txt() → draw_text() writes to this canvas.
+        self.display_manager.image = canvas
+        self.display_manager.draw  = ImageDraw.Draw(self.display_manager.image)
+        draw = self.display_manager.draw
+        L    = _layout(dw, dh)
 
         if not self.station_id:
             self._no_station(draw, dw, dh, L)
@@ -167,8 +171,6 @@ class TidePlugin(BasePlugin):
             elif m == 'chart':    self._mode_chart(canvas, draw, dw, dh, L)
             else:                 self._mode_stats(draw, dw, dh, L)
 
-        self.display_manager.image = canvas
-        self.display_manager.draw  = ImageDraw.Draw(self.display_manager.image)
         self.display_manager.update_display()
         self.wave_phase = (self.wave_phase + 1.5) % 360
 
@@ -318,10 +320,10 @@ class TidePlugin(BasePlugin):
     def _wave_y(self, px: int) -> float:
         """Composite multi-frequency wave giving a natural, non-mechanical surface."""
         p = self.wave_phase
-        y1 = math.sin((px + p)         * 0.28) * 1.3   # primary swell
-        y2 = math.sin((px + p * 1.35)  * 0.47) * 0.7   # secondary chop
-        y3 = math.sin((px + p * 0.72)  * 0.71) * 0.35  # fine ripple
-        return y1 + y2 + y3  # max ≈ ±2.35px, stays within 3px amplitude
+        y1 = math.sin((px + p)         * 0.28) * 0.85  # primary swell
+        y2 = math.sin((px + p * 1.35)  * 0.47) * 0.45  # secondary chop
+        y3 = math.sin((px + p * 0.72)  * 0.71) * 0.2   # fine ripple
+        return y1 + y2 + y3  # max ≈ ±1.5px
 
     def _full_wave(self, canvas, draw, dw, dh, fill_ratio, amp):
         """
@@ -331,7 +333,7 @@ class TidePlugin(BasePlugin):
         the same colour at the horizon so there is no luminance jump.
         Wave amplitude is capped at 2 px so it never clips into text above it.
         """
-        effective = min(fill_ratio, 0.45)
+        effective = min(fill_ratio, 0.18)  # cap at 18% — thin water strip, sky for text
         fill_px   = max(4, int(dh * effective))
         surf_y    = dh - fill_px
 
@@ -344,13 +346,13 @@ class TidePlugin(BasePlugin):
         # Starfield for atmosphere
         self._draw_stars(draw, dw, surf_y)
 
-        # Water: indigo at surface → rich mid-blue → deep navy
+        # Water: indigo at surface → user tide_color → deep navy
         for py in range(surf_y, dh):
             t = (py - surf_y) / max(fill_px, 1)
             if t < 0.5:
-                color = _lerp(C_WATER_TOP, C_WATER_MID, t * 2)
+                color = _lerp(C_WATER_TOP, self.tide_color, t * 2)
             else:
-                color = _lerp(C_WATER_MID, C_WATER_DEEP, (t - 0.5) * 2)
+                color = _lerp(self.tide_color, C_WATER_DEEP, (t - 0.5) * 2)
             draw.line([(0,py),(dw-1,py)], fill=color)
 
         # Horizon glow: 1px bright line at the water surface
@@ -366,9 +368,9 @@ class TidePlugin(BasePlugin):
             wy = wave_ys[px]
             if 0 <= wy < surf_y:
                 bt = (math.sin((px + self.wave_phase * 1.3) * 0.11) + 1) * 0.5
-                draw.point((px, wy), fill=_lerp(C_WAVE1, C_WAVE_CREST, bt * 0.72))
+                draw.point((px, wy), fill=_lerp(self.hi_color, C_WAVE_CREST, bt * 0.72))
                 if wy + 1 < dh:
-                    draw.point((px, wy+1), fill=_lerp(C_WATER_TOP, C_WAVE1, 0.7))
+                    draw.point((px, wy+1), fill=_lerp(C_WATER_TOP, self.hi_color, 0.7))
 
         # Sparkle dots at true local crests only
         for px in range(0, dw):
@@ -423,6 +425,11 @@ class TidePlugin(BasePlugin):
         try: self.display_manager.draw_text(text, x=cx, y=y, font=font, color=color, centered=True)
         except Exception as _e: self.logger.debug("draw_text: %s", _e)
 
+    def _txt_s(self, x, y, text, color=C_TEXT, small=True):
+        """Draw text with a 1-pixel drop shadow for readability over animated backgrounds."""
+        self._txt(x + 1, y + 1, text, (0, 0, 8), small)
+        self._txt(x, y, text, color, small)
+
     # ── Placeholder screens ─────────────────────────────────────────────────────
 
     def _no_station(self, draw, dw, dh, L):
@@ -457,27 +464,26 @@ class TidePlugin(BasePlugin):
         PAD = 2
         r1  = PAD
         r2  = r1 + (10 if use_pixel else 8)
-        r3  = r2 + 8 if (r2 + 8) < sky_h - 7 else None
-        r4  = r3 + 7 if r3 and (r3 + 7) < sky_h - 7 else None
+        r3  = r2 + 8 if (r2 + 8) < sky_h - 4 else None
+        r4  = r3 + 7 if r3 and (r3 + 7) < sky_h - 4 else None
 
         dir_c = (C_RISING if direction=='RISING'
                  else C_FALLING if direction=='FALLING' else C_SLACK)
 
         # LEFT: direction + height
-        self._txt(3, r1, direction, dir_c)  # extra_small_font
-        # Inline arrow to the right of the direction label
+        self._txt_s(3, r1, direction, dir_c)
         arr_x = 3 + len(direction) * 4 + 3
         if arr_x < dw // 2 - 6:
             self._dir_arrow(draw, arr_x, r1 + 3, direction, sz=3)
         if lv is not None:
-            self._txt(3, r2, self._fmth(lv), C_TEXT)
+            self._txt_s(3, r2, self._fmth(lv), C_TEXT)
 
         # Divider
         mid = dw // 2 - 1
         if sky_h > 12:
             draw.line([(mid, PAD), (mid, sky_h - PAD)], fill=C_BAR_OUT)
 
-        # RIGHT: next two tides
+        # RIGHT: next two tides — combine type+time on one line for compactness
         rx    = dw // 2 + 3
         nexts = self._next_tides(2)
 
@@ -485,25 +491,27 @@ class TidePlugin(BasePlugin):
             t0  = nexts[0]
             tc0 = C_HIGH if t0.get('type','?') == 'H' else C_LOW
             sym = 'HI' if t0.get('type','?') == 'H' else 'LO'
-            self._txt(rx, r1, sym, tc0)
-            self._txt(rx + 14, r1, self._fmtt(t0['dt']), C_TEXT)
-            self._txt(rx + 14, r2, self._fmth(t0['height']), tc0)
+            self._txt_s(rx, r1, f"{sym} {self._fmtt(t0['dt'])}", C_TEXT)
+            self._txt_s(rx, r2, self._fmth(t0['height']), tc0)
 
         if len(nexts) >= 2 and r3 is not None:
             t1  = nexts[1]
             tc1 = C_HIGH if t1.get('type','?') == 'H' else C_LOW
             sym2 = 'HI' if t1.get('type','?') == 'H' else 'LO'
-            self._txt(rx, r3, sym2, tc1)
-            self._txt(rx + 14, r3, self._fmtt(t1['dt']), C_TEXT)
+            self._txt_s(rx, r3, f"{sym2} {self._fmtt(t1['dt'])}", C_TEXT)
             if r4 is not None:
-                self._txt(rx + 14, r4, self._fmth(t1['height']), tc1)
+                self._txt_s(rx, r4, self._fmth(t1['height']), tc1)
 
-        # Station + % at bottom of sky, clear of wave
+        # Station name + fill % at bottom of sky — only show if name is configured
         last = (r4 or r3 or r2) + 8
         if last + 5 < sky_h:
-            self._txt(3, last + 2, self._name(), C_DIM)
+            name = self.station_name.strip()  # skip raw station IDs (no name set)
+            if name:
+                self._txt_s(3, last + 2, name[:16], C_LABEL)
             pct = int(fill_ratio * 100)
-            self._txt(dw - len(f"{pct}%") * 4 - 3, last + 2, f"{pct}%", C_LABEL)
+            pct_str = f"{pct}%"
+            pct_w = len(pct_str) * 4 + 2
+            self._txt_s(dw - pct_w - 2, last + 2, pct_str, C_LABEL)
 
     # ── Mode 2: Schedule ────────────────────────────────────────────────────────
 
@@ -529,12 +537,16 @@ class TidePlugin(BasePlugin):
             is_past = dt is not None and dt < now
             tc      = C_HIGH if is_high else C_LOW
 
-            # Column background: warm tint for HIGH, cool for LOW
-            bg = _lerp(C_COL_BG, C_HIGH_TINT if is_high else C_LOW_TINT, 0.5)
+            # Column background — next tide is noticeably brighter
             if i == next_idx:
-                bg = _lerp(bg, tc, 0.08)  # subtle glow for next upcoming
+                bg = C_COL_HIGH_NEXT if is_high else C_COL_LOW_NEXT
+            else:
+                bg = C_COL_HIGH if is_high else C_COL_LOW
 
             draw.rectangle([i*col_w+1, 0, i*col_w+col_w-2, dh-3], fill=bg)
+            # Top accent line on the upcoming column
+            if i == next_idx:
+                draw.line([(i*col_w+1, 0), (i*col_w+col_w-2, 0)], fill=tc)
 
             # Type label
             label = ('HIGH' if is_high else 'LOW') if not L['small'] else ('H' if is_high else 'L')
@@ -549,15 +561,18 @@ class TidePlugin(BasePlugin):
             self._txtc(cx, L['row3'], self._fmth(tide['height']),
                        ht_color if not is_past else C_DIM)
 
-            # Mini proportional bar at bottom
-            bar_h_px = max(1, int((tide['height']-lo_h)/h_range * 5))
+            # Proportional bar at bottom — leave gap below row3 text height (~8px)
+            bar_max  = max(3, dh - L['row3'] - 10)
+            bar_h_px = max(2, int((tide['height']-lo_h)/h_range * bar_max))
             bx1, bx2 = i*col_w+3, i*col_w+col_w-4
-            draw.rectangle([bx1, dh-2-bar_h_px, bx2, dh-1],
-                           fill=tc if not is_past else C_DIM)
+            bar_color = tc if not is_past else _lerp(C_DIM, tc, 0.3)
+            draw.rectangle([bx1, dh-2-bar_h_px, bx2, dh-1], fill=bar_color)
+            if i == next_idx:  # highlight border on the next upcoming bar
+                draw.rectangle([bx1, dh-2-bar_h_px, bx2, dh-1], outline=C_TEXT)
 
-        # Column dividers
+        # Column dividers — brighter for visible separation
         for i in range(1, n):
-            draw.line([(i*col_w, 1),(i*col_w, dh-4)], fill=C_BAR_OUT)
+            draw.line([(i*col_w, 0),(i*col_w, dh-1)], fill=C_BAR_OUT)
 
     # ── Mode 3: Chart ────────────────────────────────────────────────────────────
 
@@ -592,30 +607,14 @@ class TidePlugin(BasePlugin):
         if len(poly) >= 3:
             draw.polygon(poly, fill=C_CHART_FILL)
 
-        # Glow: three passes (outer → inner → bright)
-        for dy, gc in [(2, C_CHART_GLOW2),(1, C_CHART_GLOW1),(0, C_CHART_LINE)]:
+        # Glow: three passes (outer → inner → bright; top colour uses user hi_color)
+        for dy, gc in [(2, C_CHART_GLOW2),(1, C_CHART_GLOW1),(0, self.hi_color)]:
             for i in range(len(pts)-1):
                 x1,y1 = pts[i]; x2,y2 = pts[i+1]
                 draw.line([(x1,y1+dy),(x2,y2+dy)], fill=gc, width=1)
                 if dy: draw.line([(x1,y1-dy),(x2,y2-dy)], fill=gc, width=1)
 
-        # H / L labels at peaks/troughs
-        for tide in self.hilo:
-            try:
-                dt      = datetime.fromisoformat(tide['dt'])
-                frac    = dt.hour + dt.minute/60.0
-                tx      = cx + int(frac*cw/23)
-                ty      = _py(tide['height'])
-                is_high = tide.get('type','?') == 'H'
-                lc      = C_HIGH if is_high else C_LOW
-                sym     = 'H' if is_high else 'L'
-                lx = max(cx, min(cx+cw-5, tx-2))
-                ly = max(cy, min(cy+ch-8, (ty-9) if is_high else (ty+2)))
-                draw.text((lx,ly), sym, fill=lc)
-                draw.line([(tx,ty-1),(tx,ty+1)], fill=(255,255,255))
-            except Exception as _e: self.logger.debug("chart label: %s", _e)
-
-        # Current-time marker
+        # Current-time marker (draw first so H/L labels paint over it)
         now_frac = datetime.now().hour + datetime.now().minute/60.0
         now_x    = cx + int(now_frac*cw/23)
         draw.line([(now_x,cy),(now_x,cy+ch)], fill=C_NOW_LINE, width=1)
@@ -626,13 +625,33 @@ class TidePlugin(BasePlugin):
             draw.ellipse([now_x-r+1,cur_py-r+1,now_x+r-1,cur_py+r-1],
                          fill=_lerp(C_BG, C_NOW_LINE, 0.4))
 
-        # Time axis
-        ax_y   = cy + ch + 2
+        # H / L labels at peaks/troughs — offset away from current-time circle
+        for tide in self.hilo:
+            try:
+                dt      = datetime.fromisoformat(tide['dt'])
+                frac    = dt.hour + dt.minute/60.0
+                tx      = cx + int(frac*cw/23)
+                ty      = _py(tide['height'])
+                is_high = tide.get('type','?') == 'H'
+                lc      = C_HIGH if is_high else C_LOW
+                sym     = 'H' if is_high else 'L'
+                # If label would overlap with the current-time circle, nudge it
+                nudge = (r + 3) if abs(tx - now_x) <= r + 3 else 0
+                lx = max(cx, min(cx+cw-5, tx - 2 + nudge))
+                ly = max(cy, min(cy+ch-8, (ty-9) if is_high else (ty+2)))
+                self._txt(lx, ly, sym, lc)
+                draw.line([(tx,ty-1),(tx,ty+1)], fill=(255,255,255))
+            except Exception as _e: self.logger.debug("chart label: %s", _e)
+
+        # Time axis — center each label at its tick mark, clamp both edges
+        ax_y   = min(dh - 7, cy + ch + 2)  # guarantee 7px room to bottom of display
         labels = [(0,'12a'),(6,'6a'),(12,'12p'),(18,'6p')]
         if L['small']: labels = [(0,'0'),(12,'12')]
         for lh, lt in labels:
-            lx = cx + int(lh*cw/23)
-            draw.text((max(0,lx-4), ax_y), lt, fill=C_LABEL)
+            lx   = cx + int(lh * cw / 23)
+            tw   = len(lt) * 4              # ~4px per char at extra-small font
+            label_x = max(0, min(dw - tw - 1, lx - tw // 2))
+            self._txt(label_x, ax_y, lt, C_LABEL)
 
         draw.line([(cx,cy+ch+1),(cx+cw,cy+ch+1)], fill=C_BAR_OUT)
 
@@ -665,7 +684,11 @@ class TidePlugin(BasePlugin):
                 if tot > 0: cycle_pct = max(0, min(100, int(ela/tot*100)))
             except Exception as _e: self.logger.debug("cycle_pct: %s", _e)
 
-        # Left side: moon + text
+        # Gauge bar width scales with display height
+        gw = max(5, min(10, dh // 6)) if (L['large'] or L['medium']) else 0
+        gx = dw - gw - 3 if gw else dw
+
+        # Left side: moon icon + text
         moon_r  = max(4, min(10, dh//5))
         moon_cx = moon_r + 3
         moon_cy = dh//2 - (5 if L['small'] else 8)
@@ -676,29 +699,40 @@ class TidePlugin(BasePlugin):
         else:
             txt_x = 4
 
-        short = phase_name.replace(' Moon','').replace(' Quarter',' Qtr')
-        if L['small']: short = short[:6]
-        self._txt(txt_x, L['row1'], short, C_MOON)
-        self._txt(txt_x, L['row2'], spring_lbl, spring_c)
-        self._txt(txt_x, L['row3'], f"Rng {tidal_range:.1f}{self._unit()}", C_LOW)
-        if not L['small']:
-            self._txt(txt_x, L['row4'], f"H {hi_h:.1f}  L {lo_h:.1f}", C_LABEL)
+        # When moon is hidden, skip moon phase name and use that row for tide type
+        if self.show_moon:
+            short = phase_name.replace(' Moon','').replace(' Quarter',' Qtr')
+            if L['small']: short = short[:6]
+            self._txt(txt_x, L['row1'], short, C_MOON)
+            self._txt(txt_x, L['row2'], spring_lbl, spring_c)
+            self._txt(txt_x, L['row3'], f"Rng {tidal_range:.1f}{self._unit()}", C_LOW)
+            if not L['small']:
+                self._txt(txt_x, L['row4'], f"H {hi_h:.1f}  L {lo_h:.1f}", C_TEXT)
+        else:
+            # Moon hidden: shift tide stats up to row1, use freed row for current level
+            self._txt(txt_x, L['row1'], spring_lbl, spring_c)
+            self._txt(txt_x, L['row2'], f"Rng {tidal_range:.1f}{self._unit()}", C_LOW)
+            if not L['small']:
+                self._txt(txt_x, L['row3'], f"H {hi_h:.1f}  L {lo_h:.1f}", C_TEXT)
+                lv = self._current_level()
+                if lv is not None and L['row4'] < dh - 8:
+                    dir_c = (C_RISING if self._direction()=='RISING'
+                             else C_FALLING if self._direction()=='FALLING' else C_SLACK)
+                    self._txt(txt_x, L['row4'], f"Now {self._fmth(lv)}", dir_c)
 
-        # Right side: vertical tide gauge bar (wider, gradient fill)
-        if L['large'] or L['medium']:
-            gw      = 8
-            gx      = dw - gw - 4
+        # Right side: vertical tide gauge bar (scaled to display height)
+        if gw:
             gy      = 3
-            gh      = dh - 16
+            gh      = dh - max(14, dh // 3)
             fr      = self._fill_ratio()
             fh      = max(1, int(gh * fr))
             fy0     = gy + gh - fh
 
             draw.rectangle([gx, gy, gx+gw-1, gy+gh], fill=(0,8,25), outline=C_BAR_OUT)
-            # Gradient fill: water mid at bottom → wave base at top of fill
             for py in range(fy0, gy+gh):
                 t2 = (gy+gh - py) / max(fh, 1)
-                draw.line([(gx+1, py),(gx+gw-2, py)], fill=_lerp(C_WATER_MID, C_WAVE1, t2*0.6))
+                draw.line([(gx+1, py),(gx+gw-2, py)],
+                           fill=_lerp(self.tide_color, self.hi_color, t2*0.6))
             # Micro wave on fill surface
             for px in range(gw-2):
                 wy = fy0 + int(math.sin((px+self.wave_phase)*0.8))
@@ -708,22 +742,30 @@ class TidePlugin(BasePlugin):
             for pct2 in (0.25, 0.5, 0.75):
                 ty2 = gy + gh - int(gh*pct2)
                 draw.line([(gx-2, ty2),(gx, ty2)], fill=C_LABEL)
-            # % label centred under gauge
+            # % label right-aligned under gauge — always inside display bounds
             pct_g = int(fr*100)
-            draw.text((gx+(gw-len(f"{pct_g}%")*4)//2, gy+gh+3), f"{pct_g}%", fill=C_LABEL)
+            pct_str_g = f"{pct_g}%"
+            g_lx = min(gx, dw - len(pct_str_g)*4 - 1)
+            self._txt(g_lx, gy+gh+2, pct_str_g, C_LABEL)
 
-        # Cycle progress bar — gradient fill, 3px thick
+        # Cycle progress bar — gradient fill, height-scaled thickness
         if cycle_pct is not None:
-            bar_y  = dh - 5
+            bar_h  = max(2, dh // 16)
+            bar_y  = dh - bar_h - 1
             bar_x0 = txt_x
-            bar_x1 = dw - (gw + 10 if (L['large'] or L['medium']) else 3)
-            blen   = bar_x1 - bar_x0
+            bar_x1 = gx - 6 if gw else dw - 3
+            blen   = max(1, bar_x1 - bar_x0)
             flen   = int(blen * cycle_pct / 100)
-            draw.rectangle([bar_x0, bar_y, bar_x1, bar_y+3], fill=(0,8,25))
+            draw.rectangle([bar_x0, bar_y, bar_x1, bar_y+bar_h], fill=(0,8,25))
             for px in range(flen):
                 t2 = px / max(flen, 1)
-                draw.line([(bar_x0+px, bar_y),(bar_x0+px, bar_y+3)], fill=_lerp(C_LOW, C_HIGH, t2))
-            draw.text((bar_x1+2, bar_y-1), f"{cycle_pct}%", fill=C_LABEL)
+                draw.line([(bar_x0+px, bar_y),(bar_x0+px, bar_y+bar_h)],
+                           fill=_lerp(C_LOW, C_HIGH, t2))
+            # Cycle % label — above the bar so it can't clip past display bottom
+            pct_str = f"{cycle_pct}%"
+            pct_w   = len(pct_str) * 4 + 1
+            lx      = max(bar_x0, min(dw - pct_w - 1, bar_x0 + flen - pct_w // 2))
+            self._txt(lx, max(1, bar_y - 7), pct_str, C_LABEL)
 
     # ── Config change ────────────────────────────────────────────────────────────
 

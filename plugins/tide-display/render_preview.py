@@ -12,29 +12,35 @@ from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
 # ── Palette (must match manager.py) ──────────────────────────────────────────
-C_BG           = (0,   0,   0)
-C_WATER_DEEP   = (0,  50, 140)
-C_WATER_MID    = (0,  90, 180)
-C_WATER_LIGHT  = (0, 130, 210)
-C_WAVE1        = (0, 210, 255)
-C_WAVE2        = (0, 140, 200)
-C_CHART_FILL   = (0,  40, 110)
-C_CHART_LINE   = (0, 210, 255)
-C_CHART_GLOW1  = (0, 100, 180)
-C_CHART_GLOW2  = (0,  60, 130)
-C_GRID         = (15,  25,  50)
-C_NOW_LINE     = (255, 220,  40)
-C_HIGH         = (255, 200,  50)
-C_LOW          = ( 80, 190, 255)
-C_RISING       = ( 50, 230, 100)
-C_FALLING      = (255,  80,  80)
-C_SLACK        = (255, 210,  60)
-C_TEXT         = (200, 225, 255)
-C_LABEL        = (100, 130, 180)
-C_DIM          = ( 50,  60,  80)
-C_MOON         = (240, 235, 200)
-C_BAR_OUTLINE  = ( 30,  50,  90)
-C_COL_BG       = (  0,  15,  40)
+C_BG          = (  0,   0,   5)
+C_SKY_HORIZON = (  0,  20,  65)
+C_WATER_TOP   = (  0,  30,  90)
+C_WATER_MID   = (  0,  65, 160)
+C_WATER_DEEP  = (  0,  40, 120)
+C_WAVE1       = (  0, 140, 220)
+C_WAVE_CREST  = (160, 240, 255)
+C_CHART_FILL  = (  0,  45, 130)
+C_CHART_LINE  = (  0, 215, 255)
+C_CHART_GLOW1 = (  0, 110, 185)
+C_CHART_GLOW2 = (  0,  65, 135)
+C_GRID        = ( 30,  48,  96)
+C_NOW_LINE    = (255, 220,  40)
+C_HIGH        = (255, 195,  45)
+C_LOW         = ( 75, 190, 255)
+C_RISING      = ( 45, 230,  95)
+C_FALLING     = (255,  75,  75)
+C_SLACK       = (255, 210,  60)
+C_TEXT        = (205, 225, 255)
+C_LABEL       = (120, 150, 200)
+C_DIM         = ( 75,  90, 120)
+C_MOON        = (245, 238, 200)
+C_BAR_OUT     = ( 45,  72, 130)
+C_COL_HIGH      = ( 31,  23,  10)
+C_COL_LOW       = (  9,  23,  36)
+C_COL_HIGH_NEXT = ( 56,  43,  15)
+C_COL_LOW_NEXT  = ( 16,  42,  61)
+# aliases for backward compat with render helpers
+C_BAR_OUTLINE = C_BAR_OUT
 
 
 def _lerp(c1, c2, t):
@@ -47,26 +53,23 @@ def _safe_iso(s):
         return None
 
 def _layout(dw, dh):
-    bar_w  = max(8, min(32, int(dw * 0.13)))
-    bar_x  = 2
-    bar_h  = dh - 4
-    bar_ybot = dh - 2
-    txt_x  = bar_x + bar_w + 4
     c_ml, c_mr, c_mt = 3, 3, 1
-    c_axis = max(7, int(dh * 0.16))
-    c_x, c_y = c_ml, c_mt
-    c_w = dw - c_ml - c_mr
-    c_h = dh - c_axis - c_mt - 1
-    wave_amp = max(1, min(4, dh // 12))
+    c_axis = max(9, int(dh * 0.20))  # 9px min: 1px line + 2px gap + 6px font
     row1 = 1
     row2 = max(9,  int(dh * 0.28))
     row3 = max(18, int(dh * 0.55))
     row4 = max(27, int(dh * 0.78))
-    return dict(bar_w=bar_w, bar_x=bar_x, bar_h=bar_h, bar_ybot=bar_ybot,
-                txt_x=txt_x, c_x=c_x, c_y=c_y, c_w=c_w, c_h=c_h,
-                c_axis=c_axis, wave_amp=wave_amp,
-                row1=row1, row2=row2, row3=row3, row4=row4,
-                small=(dw<=64), medium=(64<dw<=128), large=(dw>128))
+    wave_amp = max(2, min(5, dh // 10))
+    return dict(
+        c_x=c_ml, c_y=c_mt,
+        c_w=dw - c_ml - c_mr,
+        c_h=dh - c_axis - c_mt - 1,
+        c_axis=c_axis,
+        wave_amp=wave_amp,
+        row1=row1, row2=row2, row3=row3, row4=row4,
+        half=dw // 2,
+        small=(dw <= 64), medium=(64 < dw <= 128), large=(dw > 128),
+    )
 
 # ── Fake tide data (Seattle-ish semi-diurnal) ─────────────────────────────────
 _BASE = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -123,34 +126,75 @@ def _txt_c(draw, cx, y, text, color=C_TEXT, font=None):
 
 # ── Drawing helpers (same logic as manager.py) ─────────────────────────────────
 
-def draw_wave_bar(canvas, draw, x, ybot, bw, bh, fill_ratio, amp, wave_phase):
-    fill_px  = max(2, int(bh * fill_ratio))
-    fill_top = ybot - fill_px
-    draw.rectangle([x - 1, ybot - bh - 1, x + bw, ybot + 1], outline=C_BAR_OUTLINE)
-    band1 = fill_px * 2 // 3
-    band2 = fill_px - band1
-    if band1 > 0:
-        draw.rectangle([x, fill_top + band2, x + bw - 1, ybot], fill=C_WATER_DEEP)
-    if band2 > 0:
-        draw.rectangle([x, fill_top, x + bw - 1, fill_top + band2 + 1], fill=C_WATER_MID)
-    surf_band = max(1, fill_px // 4)
-    if fill_px > surf_band:
-        draw.rectangle([x, fill_top, x + bw - 1, fill_top + surf_band], fill=C_WATER_LIGHT)
-    for pct in (0.25, 0.5, 0.75):
-        ty = ybot - int(bh * pct)
-        draw.line([(x + bw - 2, ty), (x + bw, ty)], fill=C_LABEL)
-    for px in range(bw):
-        wy = fill_top - 1 + int((amp - 1) * math.sin((px + wave_phase * 1.8 + 25) * 0.55))
-        wy = max(0, min(ybot, wy))
-        draw.point((x + px, wy), fill=C_WAVE2)
-    for px in range(bw):
-        wy = fill_top + int(amp * math.sin((px + wave_phase) * 0.42))
-        wy = max(0, min(ybot, wy))
-        draw.line([(x + px, wy), (x + px, min(ybot, wy + 2))], fill=C_WAVE1)
-    for px in range(0, bw, max(3, bw // 5)):
-        wy = fill_top + int(amp * math.sin((px + wave_phase) * 0.42))
-        wy = max(0, min(ybot - 1, wy - 1))
-        draw.point((x + px, wy), fill=(255, 255, 255))
+WAVE_PHASE = 24.0  # fixed phase for preview
+
+def _wave_y(px, wave_phase=WAVE_PHASE):
+    p = wave_phase
+    y1 = math.sin((px + p)         * 0.28) * 0.85
+    y2 = math.sin((px + p * 1.35)  * 0.47) * 0.45
+    y3 = math.sin((px + p * 0.72)  * 0.71) * 0.2
+    return y1 + y2 + y3
+
+def _draw_stars(draw, dw, sky_h):
+    n = max(0, (dw * sky_h) // 120)
+    h = 2654435761
+    for i in range(n):
+        h = (h ^ (i * 2246822519 + 1)) & 0xFFFFFFFF
+        sx = h % dw
+        sy = (h >> 16) % max(1, sky_h - 2)
+        b  = 18 + (h >> 8) % 34
+        draw.point((sx, sy), fill=(b, b + 8, b + 22))
+
+def full_wave(canvas, draw, dw, dh, fill_ratio, wave_phase=WAVE_PHASE):
+    """Full-display animated water: mirrors manager.py _full_wave()."""
+    effective = min(fill_ratio, 0.18)
+    fill_px   = max(4, int(dh * effective))
+    surf_y    = dh - fill_px
+
+    sky_top = (2, 4, 18)
+    for py in range(surf_y + 1):
+        t = py / max(surf_y, 1)
+        draw.line([(0,py),(dw-1,py)], fill=_lerp(sky_top, C_SKY_HORIZON, t*t))
+
+    _draw_stars(draw, dw, surf_y)
+
+    for py in range(surf_y, dh):
+        t = (py - surf_y) / max(fill_px, 1)
+        if t < 0.5:
+            color = _lerp(C_WATER_TOP, C_WATER_MID, t * 2)
+        else:
+            color = _lerp(C_WATER_MID, C_WATER_DEEP, (t - 0.5) * 2)
+        draw.line([(0,py),(dw-1,py)], fill=color)
+
+    horizon_c = _lerp(_lerp(C_SKY_HORIZON, C_WATER_TOP, 0.5), (80, 140, 220), 0.35)
+    draw.line([(0, surf_y), (dw-1, surf_y)], fill=horizon_c)
+
+    wave_ys = [surf_y + int(_wave_y(px, wave_phase)) for px in range(dw)]
+
+    for px in range(dw):
+        wy = wave_ys[px]
+        if 0 <= wy < surf_y:
+            bt = (math.sin((px + wave_phase * 1.3) * 0.11) + 1) * 0.5
+            draw.point((px, wy), fill=_lerp(C_WAVE1, C_WAVE_CREST, bt * 0.72))
+            if wy + 1 < dh:
+                draw.point((px, wy+1), fill=_lerp(C_WATER_TOP, C_WAVE1, 0.7))
+
+    for px in range(0, dw):
+        wy_p = wave_ys[max(0, px-2)]
+        wy_c = wave_ys[px]
+        wy_n = wave_ys[min(dw-1, px+2)]
+        if wy_c <= wy_p and wy_c <= wy_n and wy_c < surf_y:
+            wy = wy_c - 1
+            if 0 <= wy < dh:
+                draw.point((px, wy), fill=(220, 252, 255))
+
+    return surf_y
+
+def _txt_s(draw, x, y, text, color=C_TEXT, font=None):
+    """Draw text with a 1px drop shadow."""
+    fnt = font or FONT_TINY
+    draw.text((x + 1, y + 1), text, fill=(0, 0, 8), font=fnt)
+    draw.text((x, y), text, fill=color, font=fnt)
 
 def draw_arrow(draw, cx, cy, direction, sz=4):
     c = C_RISING if direction=='RISING' else C_FALLING if direction=='FALLING' else C_SLACK
@@ -190,45 +234,58 @@ def render_current(dw, dh, hilo, hourly, phase=24.0):
     canvas = Image.new('RGB', (dw, dh), C_BG)
     draw   = ImageDraw.Draw(canvas)
     L      = _layout(dw, dh)
-    wave_p = phase
 
-    heights     = [e['height'] for e in hilo]
-    lo_h, hi_h  = min(heights), max(heights)
-    # current level ~ 60% up the range (mid-rising)
-    cur_level   = lo_h + (hi_h - lo_h) * 0.42
-    fill_ratio  = (cur_level - lo_h) / max(hi_h - lo_h, 0.01)
-    direction   = 'RISING'
+    heights    = [e['height'] for e in hilo]
+    lo_h, hi_h = min(heights), max(heights)
+    cur_level  = lo_h + (hi_h - lo_h) * 0.42
+    fill_ratio = (cur_level - lo_h) / max(hi_h - lo_h, 0.01)
+    direction  = 'RISING'
 
-    draw_wave_bar(canvas, draw, L['bar_x'], L['bar_ybot'],
-                  L['bar_w'], L['bar_h'], fill_ratio, L['wave_amp'], wave_p)
+    surf_y = full_wave(canvas, draw, dw, dh, fill_ratio, phase)
+    sky_h  = surf_y
+
+    PAD = 2
+    r1  = PAD
+    r2  = r1 + 8
+    r3  = r2 + 8 if (r2 + 8) < sky_h - 4 else None
+    r4  = r3 + 7 if r3 and (r3 + 7) < sky_h - 4 else None
 
     dir_c = C_RISING
-    _txt(draw, L['txt_x'], L['row1'], direction, dir_c, FONT_TINY)
-    arr_x = L['txt_x'] + len(direction) * 4 + 4
-    if arr_x < dw - 6:
-        draw_arrow(draw, arr_x, L['row1'] + 3, direction, sz=3)
+    _txt_s(draw, 3, r1, direction, dir_c)
+    arr_x = 3 + len(direction) * 4 + 3
+    if arr_x < dw // 2 - 6:
+        draw_arrow(draw, arr_x, r1 + 3, direction, sz=3)
+    _txt_s(draw, 3, r2, _fmth(cur_level), C_TEXT)
 
-    _txt(draw, L['txt_x'], L['row2'], _fmth(cur_level), C_TEXT, FONT_TINY)
+    mid = dw // 2 - 1
+    if sky_h > 12:
+        draw.line([(mid, PAD), (mid, sky_h - PAD)], fill=C_BAR_OUT)
 
-    sep_y = L['row2'] + 9
-    if sep_y < dh - 12:
-        draw.line([(L['txt_x'], sep_y), (dw-3, sep_y)], fill=C_BAR_OUTLINE)
-
+    rx    = dw // 2 + 3
     now   = datetime.now()
     nexts = [e for e in hilo if _safe_iso(e['dt']) and _safe_iso(e['dt']) > now][:2]
-    row   = sep_y + 2
-    for tide in nexts:
-        if row + 8 > dh: break
-        is_high = tide.get('type','?') == 'H'
-        tc  = C_HIGH if is_high else C_LOW
-        sym = '▲' if is_high else '▼'
-        _txt(draw, L['txt_x'], row,
-             f"{sym} {_fmtt(tide['dt'])}  {_fmth(tide['height'])}", tc, FONT_TINY)
-        row += 10
 
-    name = 'Seattle'
-    if row + 1 < dh:
-        _txt(draw, L['txt_x'], dh - 8, name, C_DIM, FONT_TINY)
+    if nexts:
+        t0  = nexts[0]
+        sym = 'HI' if t0.get('type','?') == 'H' else 'LO'
+        _txt_s(draw, rx, r1, f"{sym} {_fmtt(t0['dt'])}", C_TEXT)
+        tc0 = C_HIGH if t0.get('type','?') == 'H' else C_LOW
+        _txt_s(draw, rx, r2, _fmth(t0['height']), tc0)
+
+    if len(nexts) >= 2 and r3 is not None:
+        t1   = nexts[1]
+        sym2 = 'HI' if t1.get('type','?') == 'H' else 'LO'
+        tc1  = C_HIGH if t1.get('type','?') == 'H' else C_LOW
+        _txt_s(draw, rx, r3, f"{sym2} {_fmtt(t1['dt'])}", C_TEXT)
+        if r4 is not None:
+            _txt_s(draw, rx, r4, _fmth(t1['height']), tc1)
+
+    last = (r4 or r3 or r2) + 8
+    if last + 5 < sky_h:
+        _txt_s(draw, 3, last + 2, 'Seattle', C_LABEL)
+        pct_str = f"{int(fill_ratio * 100)}%"
+        pct_w   = len(pct_str) * 4 + 2
+        _txt_s(draw, dw - pct_w - 2, last + 2, pct_str, C_LABEL)
 
     return canvas
 
@@ -258,7 +315,12 @@ def render_schedule(dw, dh, hilo):
         tc      = C_HIGH if is_high else C_LOW
 
         if i == next_idx:
-            draw.rectangle([i*col_w+1, 0, i*col_w+col_w-2, dh-4], fill=C_COL_BG)
+            bg = C_COL_HIGH_NEXT if is_high else C_COL_LOW_NEXT
+        else:
+            bg = C_COL_HIGH if is_high else C_COL_LOW
+        draw.rectangle([i*col_w+1, 0, i*col_w+col_w-2, dh-3], fill=bg)
+        if i == next_idx:
+            draw.line([(i*col_w+1, 0), (i*col_w+col_w-2, 0)], fill=tc)
 
         type_label = ('HIGH' if is_high else 'LOW') if not L['small'] else ('H' if is_high else 'L')
         _txt_c(draw, cx, L['row1'], type_label, tc if not is_past else C_DIM, FONT_TINY)
@@ -267,13 +329,16 @@ def render_schedule(dw, dh, hilo):
                _lerp(C_LOW, C_HIGH, (tide['height']-lo_h)/h_range) if not is_past else C_DIM,
                FONT_TINY)
 
-        bar_h_px = max(1, int((tide['height']-lo_h)/h_range * 4))
+        bar_max  = max(3, dh - L['row3'] - 10)
+        bar_h_px = max(2, int((tide['height']-lo_h)/h_range * bar_max))
         bx1, bx2 = i*col_w+3, i*col_w+col_w-4
-        draw.rectangle([bx1, dh-1-bar_h_px, bx2, dh-1],
-                       fill=tc if not is_past else C_DIM)
+        bar_color = tc if not is_past else _lerp(C_DIM, tc, 0.3)
+        draw.rectangle([bx1, dh-2-bar_h_px, bx2, dh-1], fill=bar_color)
+        if i == next_idx:
+            draw.rectangle([bx1, dh-2-bar_h_px, bx2, dh-1], outline=C_TEXT)
 
     for i in range(1, n):
-        draw.line([(i*col_w, 1), (i*col_w, dh-5)], fill=C_BAR_OUTLINE)
+        draw.line([(i*col_w, 0), (i*col_w, dh-1)], fill=C_BAR_OUT)
 
     return canvas
 
@@ -339,12 +404,14 @@ def render_chart(dw, dh, hilo, hourly):
         draw.ellipse([now_x-r+1, cur_py-r+1, now_x+r-1, cur_py+r-1],
                      fill=_lerp(C_BG, C_NOW_LINE, 0.45))
 
-    ax_y = cy + ch + 2
+    ax_y = min(dh - 7, cy + ch + 2)  # guarantee 7px room to bottom
     ax_labels = [(0,'12a'),(6,'6a'),(12,'12p'),(18,'6p')]
     if L['small']: ax_labels = [(0,'0'),(12,'12')]
     for lh, lt in ax_labels:
-        lx = cx + int(lh * cw / 23)
-        draw.text((max(0, lx-4), ax_y), lt, fill=C_LABEL, font=FONT_TINY)
+        lx   = cx + int(lh * cw / 23)
+        tw   = len(lt) * 4
+        label_x = max(0, min(dw - tw - 1, lx - tw // 2))
+        draw.text((label_x, ax_y), lt, fill=C_LABEL, font=FONT_TINY)
 
     draw.line([(cx, cy+ch+1),(cx+cw, cy+ch+1)], fill=C_BAR_OUTLINE)
     return canvas
@@ -381,17 +448,23 @@ def render_stats(dw, dh, hilo):
     if not L['small']:
         _txt(draw, txt_x, L['row4'], f"H {hi_h:.1f}  L {lo_h:.1f}ft", C_LABEL, FONT_TINY)
 
-    bar_y  = dh - 4
+    bar_h  = max(2, dh // 16)
+    bar_y  = dh - bar_h - 1
     bar_x0 = txt_x
     bar_x1 = dw - 3
-    blen   = bar_x1 - bar_x0
+    blen   = max(1, bar_x1 - bar_x0)
     flen   = int(blen * cycle_pct / 100)
-    draw.rectangle([bar_x0, bar_y, bar_x1, bar_y+2], fill=C_COL_BG)
+    draw.rectangle([bar_x0, bar_y, bar_x1, bar_y+bar_h], fill=(0, 8, 25))
     if flen > 0:
-        draw.rectangle([bar_x0, bar_y, bar_x0+flen, bar_y+2],
-                       fill=_lerp(C_LOW, C_HIGH, cycle_pct/100))
-    pct_x = max(txt_x, min(dw-26, bar_x0+flen-8))
-    draw.text((pct_x, bar_y-8), f"{cycle_pct}%", fill=C_LABEL, font=FONT_TINY)
+        for px in range(flen):
+            t2 = px / max(flen, 1)
+            draw.line([(bar_x0+px, bar_y),(bar_x0+px, bar_y+bar_h)],
+                      fill=_lerp(C_LOW, C_HIGH, t2))
+    # % label above the bar so it can't clip past the display bottom
+    pct_str = f"{cycle_pct}%"
+    pct_w   = len(pct_str) * 4 + 1
+    pct_x   = max(bar_x0, min(dw - pct_w - 1, bar_x0 + flen - pct_w // 2))
+    draw.text((pct_x, max(1, bar_y - 7)), pct_str, fill=C_LABEL, font=FONT_TINY)
 
     return canvas
 

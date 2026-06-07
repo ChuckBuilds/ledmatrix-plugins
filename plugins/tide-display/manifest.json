@@ -1,7 +1,7 @@
 {
   "id": "tide-display",
   "name": "Tide Display",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "author": "ChuckBuilds",
   "description": "Coastal tide display with animated wave level, tide schedule, 24-hour chart, and tidal statistics. Powered by the free NOAA Tides & Currents API (US stations, no API key required).",
   "entry_point": "manager.py",
@@ -11,6 +11,18 @@
   "display_modes": ["current", "schedule", "chart", "stats"],
   "compatible_versions": [">=2.0.0"],
   "versions": [
+    {
+      "released": "2026-06-07",
+      "version": "1.0.4",
+      "notes": "Readability overhaul: reduce water fill cap to 18% (thin strip, maximum sky for text), wave amplitude reduced ~35%, 1px drop shadow on current-mode text labels, chart axis labels properly centered and clamped to display edges, stats cycle-% label moved above bar to prevent bottom clip.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-06-05",
+      "version": "1.0.2",
+      "notes": "Fix text invisible on hardware: assign display_manager.image before rendering so draw_text() targets the correct canvas. Replace bare PIL draw.text() calls with display-font helpers. Brighten dim colours (C_DIM, C_GRID, C_LABEL, C_BAR_OUT). Use configured tide_color/highlight_color in water and chart rendering. Increase schedule bar height.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-06-04",
       "version": "1.0.1",
@@ -28,7 +40,7 @@
   "license": "MIT",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/tide-display",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-06-04",
+  "last_updated": "2026-06-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,
