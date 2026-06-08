@@ -73,8 +73,8 @@ class OnAirPlugin(BasePlugin):
 
         # Display
         self.default_label      = config.get('default_label', 'ON AIR')
-        self.default_text_color = _rgb(config.get('text_color',       [255, 20, 20]), (255, 20, 20))
-        self.default_bg_color   = _rgb(config.get('background_color', [0,   0,   0]), (0, 0, 0))
+        self.default_text_color = _rgb(config.get('text_color',       [255, 255, 255]), (255, 255, 255))
+        self.default_bg_color   = _rgb(config.get('background_color', [200,  10,  10]), (200, 10, 10))
         self.font_path          = config.get('font_path', '')
         self.font_size          = int(config.get('font_size', 0))  # 0 = auto
         self._configured_font   = self._load_configured_font()
@@ -218,8 +218,8 @@ class OnAirPlugin(BasePlugin):
         self.device_name      = new_config.get('device_name', 'LED Matrix — On Air')
         self._derive_topics()
         self.default_label      = new_config.get('default_label', 'ON AIR')
-        self.default_text_color = _rgb(new_config.get('text_color',       [255, 20, 20]), (255, 20, 20))
-        self.default_bg_color   = _rgb(new_config.get('background_color', [0,   0,   0]), (0, 0, 0))
+        self.default_text_color = _rgb(new_config.get('text_color',       [255, 255, 255]), (255, 255, 255))
+        self.default_bg_color   = _rgb(new_config.get('background_color', [200,  10,  10]), (200, 10, 10))
         self.font_path          = new_config.get('font_path', '')
         self.font_size          = int(new_config.get('font_size', 0))
         self._configured_font   = self._load_configured_font()
