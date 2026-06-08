@@ -618,7 +618,10 @@ class TidePlugin(BasePlugin):
         now_frac = datetime.now().hour + datetime.now().minute/60.0
         now_x    = cx + int(now_frac*cw/23)
         draw.line([(now_x,cy),(now_x,cy+ch)], fill=C_NOW_LINE, width=1)
-        cur_py = _py(heights[min(int(now_frac), len(heights)-1)])
+        floor_idx = min(int(now_frac), len(heights) - 1)
+        ceil_idx  = min(floor_idx + 1, len(heights) - 1)
+        interp_h  = heights[floor_idx] + (heights[ceil_idx] - heights[floor_idx]) * (now_frac - int(now_frac))
+        cur_py    = _py(interp_h)
         r = max(1, dh//20)
         draw.ellipse([now_x-r,cur_py-r,now_x+r,cur_py+r], outline=C_NOW_LINE, width=1)
         if r > 1:

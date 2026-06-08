@@ -258,9 +258,17 @@ class OnAirPlugin(BasePlugin):
 
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
         super().on_config_change(new_config)
+        # Compare against current self.* values BEFORE overwriting them so that
+        # credential, topic, and discovery changes also trigger a reconnect.
         broker_changed = (
-            new_config.get('mqtt_host', 'localhost') != self.mqtt_host or
-            int(new_config.get('mqtt_port', 1883))   != self.mqtt_port
+            new_config.get('mqtt_host', 'localhost')        != self.mqtt_host        or
+            int(new_config.get('mqtt_port', 1883))          != self.mqtt_port        or
+            new_config.get('mqtt_username', '')             != self.mqtt_username     or
+            new_config.get('mqtt_password', '')             != self.mqtt_password     or
+            new_config.get('command_topic', 'ledmatrix/on-air/set')   != self.command_topic   or
+            new_config.get('state_topic',   'ledmatrix/on-air/state') != self.state_topic     or
+            new_config.get('discovery_prefix', 'homeassistant')       != self.discovery_prefix or
+            bool(new_config.get('ha_discovery', True))     != self.ha_discovery
         )
         self.mqtt_host        = new_config.get('mqtt_host', 'localhost')
         self.mqtt_port        = int(new_config.get('mqtt_port', 1883))
@@ -371,8 +379,8 @@ class OnAirPlugin(BasePlugin):
                       f"{prefix}/binary_sensor/{uid}_connected/config"]:
             try:
                 self.mqtt_client.publish(topic, "", retain=True)
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.debug("Discovery removal failed for %s: %s", topic, e)
 
     def _publish_availability(self, online: bool) -> None:
         if not self.mqtt_client:

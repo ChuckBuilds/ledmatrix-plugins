@@ -26,7 +26,7 @@ A retro broadcast tally light for your LED matrix. Publish a single MQTT message
 
 ## How It Works
 
-```
+```text
 Home Assistant  ──MQTT──►  ledmatrix/on-air/set   ──►  LED matrix lights up
 LED matrix      ──MQTT──►  ledmatrix/on-air/state  ──►  Home Assistant tracks state
 ```
@@ -393,7 +393,7 @@ Now one dropdown controls the whole thing from your dashboard or from any automa
 
 ## Testing Without Home Assistant
 
-You can test everything with just `mosquitto_clients`:
+You can test everything with just `mosquitto-clients`:
 
 ```bash
 # Install if needed
