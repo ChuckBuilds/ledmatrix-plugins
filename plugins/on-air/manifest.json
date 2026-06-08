@@ -1,7 +1,7 @@
 {
   "id": "on-air",
   "name": "On Air Light",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "ChuckBuilds",
   "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live — stays on until you turn it off.",
   "entry_point": "manager.py",
@@ -13,6 +13,12 @@
   "versions": [
     {
       "released": "2026-06-07",
+      "version": "1.2.0",
+      "notes": "Fully customisable display: text, font path, font size, text color, background color. Removed animation/glow/tally-dot. Font loaded via PIL ImageFont.truetype with auto fallback to built-in display fonts. Per-MQTT-message color and bg override via JSON payload.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-06-08",
       "version": "1.1.0",
       "notes": "Add HA MQTT Auto-Discovery: plugin publishes device + switch/sensor/binary_sensor configs on connect so HA creates the device automatically. Adds LWT for accurate offline detection. New config fields: ha_discovery, discovery_prefix, device_name.",
       "ledmatrix_min": "2.0.0"

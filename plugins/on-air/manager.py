@@ -1,11 +1,13 @@
 """
 On Air Light Plugin for LEDMatrix
 
-Displays a retro broadcast "ON AIR" tally light, activated remotely via MQTT
-or Home Assistant. The display latches on until explicitly turned off, making
-it a persistent do-not-disturb signal during calls or recordings.
+Displays a customisable ON AIR sign, activated remotely via MQTT or
+Home Assistant. The display latches on until explicitly turned off.
 
-MQTT topics (all derived from command_topic base):
+Visual: solid background colour + centred text. Font, size, text colour,
+and background colour are all configurable. No animation.
+
+MQTT topics (derived from command_topic base):
   command_topic      — subscribe: ON/OFF or JSON {"state":"on","label":"..."}
   state_topic        — publish:   ON or OFF  (HA switch state)
   <base>/label       — publish:   current label text  (HA sensor)
@@ -18,13 +20,14 @@ HA MQTT Auto-Discovery (enabled by default):
 """
 
 import json
-import math
+import os
 import threading
 import time
 import uuid
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 try:
     import paho.mqtt.client as mqtt
@@ -33,11 +36,18 @@ except ImportError:
 
 from src.plugin_system.base_plugin import BasePlugin
 
-_PLUGIN_VERSION = "1.1.0"
+_PLUGIN_VERSION = "1.2.0"
+
+
+def _rgb(value, default) -> Tuple[int, int, int]:
+    try:
+        return tuple(max(0, min(255, int(c))) for c in value)
+    except (TypeError, ValueError):
+        return default
 
 
 class OnAirPlugin(BasePlugin):
-    """Retro ON AIR tally light driven by MQTT with HA auto-discovery."""
+    """ON AIR sign driven by MQTT with HA auto-discovery."""
 
     def __init__(self, plugin_id: str, config: Dict[str, Any],
                  display_manager, cache_manager, plugin_manager):
@@ -56,91 +66,121 @@ class OnAirPlugin(BasePlugin):
         self.state_topic    = config.get('state_topic',   'ledmatrix/on-air/state')
 
         # HA auto-discovery
-        self.ha_discovery      = bool(config.get('ha_discovery', True))
-        self.discovery_prefix  = config.get('discovery_prefix', 'homeassistant')
-        self.device_name       = config.get('device_name', 'LED Matrix — On Air')
-
-        # Derived topics (availability + label live alongside command/state)
+        self.ha_discovery     = bool(config.get('ha_discovery', True))
+        self.discovery_prefix = config.get('discovery_prefix', 'homeassistant')
+        self.device_name      = config.get('device_name', 'LED Matrix — On Air')
         self._derive_topics()
 
-        # Display defaults (may be overridden per message)
-        self.default_label = config.get('default_label', 'ON AIR')
-        raw_color          = config.get('default_color', [255, 20, 20])
-        self.default_color: Tuple[int, int, int] = tuple(int(c) for c in raw_color)
-        self.pulse_enabled = bool(config.get('pulse_enabled', True))
-        self.pulse_speed   = float(config.get('pulse_speed', 1.2))  # Hz
+        # Display
+        self.default_label      = config.get('default_label', 'ON AIR')
+        self.default_text_color = _rgb(config.get('text_color',       [255, 20, 20]), (255, 20, 20))
+        self.default_bg_color   = _rgb(config.get('background_color', [0,   0,   0]), (0, 0, 0))
+        self.font_path          = config.get('font_path', '')
+        self.font_size          = int(config.get('font_size', 0))  # 0 = auto
+        self._configured_font   = self._load_configured_font()
 
-        # Runtime state (protected by lock — MQTT callback runs in another thread)
-        self.state_lock   = threading.Lock()
-        self.on_air       = False
-        self.label        = self.default_label
-        self.active_color = self.default_color
+        # Runtime state
+        self.state_lock        = threading.Lock()
+        self.on_air            = False
+        self.label             = self.default_label
+        self.active_text_color = self.default_text_color
+        self.active_bg_color   = self.default_bg_color
 
-        # MQTT internals — same pattern as mqtt-notifications
+        # MQTT internals
         self.mqtt_client: Optional[mqtt.Client] = None
         self.mqtt_thread: Optional[threading.Thread] = None
         self.mqtt_connected  = False
-        self.mqtt_connecting = False   # True while waiting for CONNACK
+        self.mqtt_connecting = False
         self.mqtt_reconnect_delay     = 1.0
         self.mqtt_max_reconnect_delay = 60.0
         self.mqtt_stop_event = threading.Event()
 
-        self.logger.info("On Air plugin ready — command: %s  available: %s",
-                         self.command_topic, self.availability_topic)
+        self.logger.info("On Air plugin ready — command: %s", self.command_topic)
 
-    # ── Topic helpers ───────────────────────────────────────────────────────────
+    # ── Font helpers ────────────────────────────────────────────────────────────
 
-    def _derive_topics(self) -> None:
-        """Derive availability and label topics from the command topic."""
-        base = self.command_topic
-        if base.endswith('/set'):
-            base = base[:-4]
-        self.topic_base        = base
-        self.availability_topic = f"{base}/available"
-        self.label_topic        = f"{base}/label"
+    def _load_configured_font(self) -> Optional[ImageFont.FreeTypeFont]:
+        """Load font from font_path at font_size; returns None to use built-ins."""
+        path = (self.font_path or '').strip()
+        size = self.font_size or 8
+        if not path:
+            return None
+        # Resolve path: absolute → cwd-relative → project-root-relative
+        candidates = [path]
+        if not os.path.isabs(path):
+            candidates.append(os.path.join(os.getcwd(), path))
+            plugin_dir   = Path(__file__).parent
+            project_root = plugin_dir.parent.parent
+            candidates.append(str(project_root / path))
+        for candidate in candidates:
+            if os.path.exists(candidate):
+                try:
+                    font = ImageFont.truetype(candidate, size)
+                    self.logger.info("Loaded font: %s @ %dpx", candidate, size)
+                    return font
+                except Exception as e:
+                    self.logger.warning("Could not load font %s: %s", candidate, e)
+        self.logger.warning("Font not found: %s — using built-in", path)
+        return None
 
-    def _discovery_uid(self) -> str:
-        return f"ledmatrix_on_air_{self.plugin_id}"
-
-    def _discovery_device(self) -> Dict[str, Any]:
-        return {
-            "identifiers":  [self._discovery_uid()],
-            "name":         self.device_name,
-            "model":        "On Air Light",
-            "manufacturer": "LEDMatrix",
-            "sw_version":   _PLUGIN_VERSION,
-        }
+    def _active_font(self, dw: int, dh: int):
+        """Return the font to use for rendering."""
+        if self._configured_font is not None:
+            return self._configured_font
+        # Auto-select built-in based on display dimensions
+        return (self.display_manager.small_font if dw > 64
+                else self.display_manager.extra_small_font)
 
     # ── BasePlugin interface ────────────────────────────────────────────────────
 
     def update(self) -> None:
-        pass  # entirely event-driven; no polling needed
+        pass  # event-driven only
 
-    def display(self, force_clear: bool = False) -> None:
+    def display(self, force_clear: bool = False) -> bool:
+        with self.state_lock:
+            active     = self.on_air
+            label      = self.label
+            text_color = self.active_text_color
+            bg_color   = self.active_bg_color
+
+        if not active:
+            return False  # skip this rotation slot entirely
+
         dw = self.display_manager.matrix.width
         dh = self.display_manager.matrix.height
 
-        canvas = Image.new('RGB', (dw, dh), (0, 0, 0))
+        canvas = Image.new('RGB', (dw, dh), bg_color)
+        draw   = ImageDraw.Draw(canvas)
+
+        self._draw_centered_text(draw, dw, dh, label, text_color)
+
         self.display_manager.image = canvas
-        self.display_manager.draw  = ImageDraw.Draw(canvas)
+        self.display_manager.draw  = draw
+        self.display_manager.update_display()
+        return True
 
-        with self.state_lock:
-            active = self.on_air
-            label  = self.label
-            color  = self.active_color
-
-        if active:
-            self._render_on_air(canvas, dw, dh, label, color)
-            self.display_manager.update_display()
-        else:
-            # Not active — don't render, signal rotation to skip this slot
-            return False
+    def _draw_centered_text(self, draw: ImageDraw.ImageDraw,
+                            dw: int, dh: int,
+                            text: str, color: Tuple[int, int, int]) -> None:
+        """Draw text centred both horizontally and vertically."""
+        font = self._active_font(dw, dh)
+        try:
+            bbox = draw.textbbox((0, 0), text, font=font)
+            tw   = bbox[2] - bbox[0]
+            th   = bbox[3] - bbox[1]
+            x    = max(0, (dw - tw) // 2)
+            y    = max(0, (dh - th) // 2)
+            draw.text((x, y), text, fill=color, font=font)
+        except Exception as e:
+            self.logger.debug("draw text fallback: %s", e)
+            self.display_manager.draw_text(
+                text, x=dw // 2, y=max(0, dh // 2 - 4),
+                color=color,
+                font=self.display_manager.small_font,
+                centered=True)
 
     def get_display_duration(self) -> float:
-        # When off, cycle past the (dark) standby screen in 1s so rotation resumes quickly
-        with self.state_lock:
-            active = self.on_air
-        return float(self.config.get('display_duration', 5)) if active else 1.0
+        return float(self.config.get('display_duration', 5))
 
     def on_enable(self) -> None:
         super().on_enable()
@@ -177,11 +217,12 @@ class OnAirPlugin(BasePlugin):
         self.discovery_prefix = new_config.get('discovery_prefix', 'homeassistant')
         self.device_name      = new_config.get('device_name', 'LED Matrix — On Air')
         self._derive_topics()
-        self.default_label    = new_config.get('default_label', 'ON AIR')
-        raw_color             = new_config.get('default_color', [255, 20, 20])
-        self.default_color    = tuple(int(c) for c in raw_color)
-        self.pulse_enabled    = bool(new_config.get('pulse_enabled', True))
-        self.pulse_speed      = float(new_config.get('pulse_speed', 1.2))
+        self.default_label      = new_config.get('default_label', 'ON AIR')
+        self.default_text_color = _rgb(new_config.get('text_color',       [255, 20, 20]), (255, 20, 20))
+        self.default_bg_color   = _rgb(new_config.get('background_color', [0,   0,   0]), (0, 0, 0))
+        self.font_path          = new_config.get('font_path', '')
+        self.font_size          = int(new_config.get('font_size', 0))
+        self._configured_font   = self._load_configured_font()
         if broker_changed:
             self._graceful_shutdown()
             self.on_enable()
@@ -199,160 +240,79 @@ class OnAirPlugin(BasePlugin):
             })
         return info
 
-    # ── Rendering ───────────────────────────────────────────────────────────────
+    # ── Topic helpers ───────────────────────────────────────────────────────────
 
-    def _pulse(self) -> float:
-        """Sinusoidal 0→1 pulse at self.pulse_speed Hz."""
-        if not self.pulse_enabled:
-            return 1.0
-        return 0.5 + 0.5 * math.sin(time.time() * math.pi * 2 * self.pulse_speed)
+    def _derive_topics(self) -> None:
+        base = self.command_topic
+        if base.endswith('/set'):
+            base = base[:-4]
+        self.topic_base         = base
+        self.availability_topic = f"{base}/available"
+        self.label_topic        = f"{base}/label"
 
-    def _render_on_air(self, canvas: Image.Image, dw: int, dh: int,
-                       label: str, color: Tuple[int, int, int]) -> None:
-        draw    = ImageDraw.Draw(canvas)
-        pulse   = self._pulse()
-        r, g, b = color
+    def _discovery_uid(self) -> str:
+        return f"ledmatrix_on_air_{self.plugin_id}"
 
-        # ── Background: dark tinted glow ──────────────────────────────────────
-        bg_r = int(r * (0.08 + 0.07 * pulse))
-        bg_g = int(g * (0.08 + 0.07 * pulse))
-        bg_b = int(b * (0.08 + 0.07 * pulse))
-        draw.rectangle([0, 0, dw - 1, dh - 1], fill=(bg_r, bg_g, bg_b))
-
-        # ── Border strips (top + bottom rows of dots) ─────────────────────────
-        dot_r = int(r * (0.55 + 0.45 * pulse))
-        dot_g = int(g * (0.55 + 0.45 * pulse))
-        dot_b = int(b * (0.55 + 0.45 * pulse))
-        dot_color   = (dot_r, dot_g, dot_b)
-        dot_spacing = 4
-        border_rows = max(1, dh // 16)
-        for row_offset in range(border_rows):
-            for x in range(0, dw, dot_spacing):
-                draw.point((x, row_offset),           fill=dot_color)
-                draw.point((x, dh - 1 - row_offset),  fill=dot_color)
-
-        # ── Tally indicator dot (left of text zone) ───────────────────────────
-        dot_r2      = int(r * (0.7 + 0.3 * pulse))
-        tally_color = (dot_r2, int(g * 0.1), int(b * 0.1))
-        tally_r     = max(2, dh // 10)
-        tally_cx    = tally_r + 3
-        tally_cy    = dh // 2
-        draw.ellipse(
-            [tally_cx - tally_r, tally_cy - tally_r,
-             tally_cx + tally_r, tally_cy + tally_r],
-            fill=tally_color,
-        )
-        if tally_r > 2:
-            core_r = max(1, tally_r - 1)
-            core_b = int(255 * pulse)
-            draw.ellipse(
-                [tally_cx - core_r, tally_cy - core_r,
-                 tally_cx + core_r, tally_cy + core_r],
-                fill=(255, core_b // 8, core_b // 8),
-            )
-
-        # ── Text ──────────────────────────────────────────────────────────────
-        text_x    = dw // 2
-        text_color = (255, 255, 255)
-        small      = dw <= 64
-        sub        = label if (label.upper() != 'ON AIR' and not small) else None
-
-        if sub and dh >= 24:
-            self.display_manager.draw_text(
-                'ON AIR', x=text_x, y=dh // 2 - 10,
-                color=text_color, font=self.display_manager.small_font, centered=True)
-            self.display_manager.draw_text(
-                sub[:16], x=text_x, y=dh // 2 + 2,
-                color=(220, 220, 220), font=self.display_manager.extra_small_font, centered=True)
-        else:
-            font = (self.display_manager.extra_small_font if small
-                    else self.display_manager.small_font)
-            self.display_manager.draw_text(
-                label[:16], x=text_x, y=dh // 2 - 4,
-                color=text_color, font=font, centered=True)
-
-    def _render_standby(self, canvas: Image.Image, dw: int, dh: int) -> None:
-        """Near-black screen — cycles past quickly when Off."""
-        draw = ImageDraw.Draw(canvas)
-        draw.rectangle([0, 0, dw - 1, dh - 1], fill=(4, 0, 0))
-        draw.point((2, 2), fill=(30, 0, 0))
+    def _discovery_device(self) -> Dict[str, Any]:
+        return {
+            "identifiers":  [self._discovery_uid()],
+            "name":         self.device_name,
+            "model":        "On Air Light",
+            "manufacturer": "LEDMatrix",
+            "sw_version":   _PLUGIN_VERSION,
+        }
 
     # ── HA MQTT Auto-Discovery ──────────────────────────────────────────────────
 
     def _publish_discovery(self) -> None:
-        """Publish HA MQTT discovery payloads — creates device + 3 entities in HA."""
-        if not self.ha_discovery or not self.mqtt_client:
-            return
-
-        prefix  = self.discovery_prefix
-        uid     = self._discovery_uid()
-        device  = self._discovery_device()
-        avail   = [{"topic": self.availability_topic,
-                    "payload_available": "online",
-                    "payload_not_available": "offline"}]
-
-        # ── Switch (on/off control) ───────────────────────────────────────────
-        self.mqtt_client.publish(
-            f"{prefix}/switch/{uid}/config",
-            json.dumps({
-                "name":            "On Air",
-                "unique_id":       f"{uid}_switch",
-                "command_topic":   self.command_topic,
-                "state_topic":     self.state_topic,
-                "payload_on":      "ON",
-                "payload_off":     "OFF",
-                "state_on":        "ON",
-                "state_off":       "OFF",
-                "icon":            "mdi:broadcast",
-                "availability":    avail,
-                "device":          device,
-            }),
-            retain=True,
-        )
-
-        # ── Sensor — current label ────────────────────────────────────────────
-        self.mqtt_client.publish(
-            f"{prefix}/sensor/{uid}_label/config",
-            json.dumps({
-                "name":         "Current Label",
-                "unique_id":    f"{uid}_label",
-                "state_topic":  self.label_topic,
-                "icon":         "mdi:label-outline",
-                "availability": avail,
-                "device":       device,
-            }),
-            retain=True,
-        )
-
-        # ── Binary sensor — broker connectivity ───────────────────────────────
-        self.mqtt_client.publish(
-            f"{prefix}/binary_sensor/{uid}_connected/config",
-            json.dumps({
-                "name":         "MQTT Connected",
-                "unique_id":    f"{uid}_connected",
-                "state_topic":  self.availability_topic,
-                "payload_on":   "online",
-                "payload_off":  "offline",
-                "device_class": "connectivity",
-                "icon":         "mdi:wifi",
-                "device":       device,
-            }),
-            retain=True,
-        )
-
-        self.logger.info("Published HA MQTT discovery — device: %s", self.device_name)
-
-    def _remove_discovery(self) -> None:
-        """Clear HA discovery entries by publishing empty retained payloads."""
         if not self.ha_discovery or not self.mqtt_client:
             return
         prefix = self.discovery_prefix
         uid    = self._discovery_uid()
-        for topic in [
+        device = self._discovery_device()
+        avail  = [{"topic": self.availability_topic,
+                   "payload_available": "online",
+                   "payload_not_available": "offline"}]
+
+        self.mqtt_client.publish(
             f"{prefix}/switch/{uid}/config",
+            json.dumps({
+                "name": "On Air", "unique_id": f"{uid}_switch",
+                "command_topic": self.command_topic, "state_topic": self.state_topic,
+                "payload_on": "ON", "payload_off": "OFF",
+                "state_on": "ON", "state_off": "OFF",
+                "icon": "mdi:broadcast",
+                "availability": avail, "device": device,
+            }), retain=True)
+
+        self.mqtt_client.publish(
             f"{prefix}/sensor/{uid}_label/config",
+            json.dumps({
+                "name": "Current Label", "unique_id": f"{uid}_label",
+                "state_topic": self.label_topic, "icon": "mdi:label-outline",
+                "availability": avail, "device": device,
+            }), retain=True)
+
+        self.mqtt_client.publish(
             f"{prefix}/binary_sensor/{uid}_connected/config",
-        ]:
+            json.dumps({
+                "name": "MQTT Connected", "unique_id": f"{uid}_connected",
+                "state_topic": self.availability_topic,
+                "payload_on": "online", "payload_off": "offline",
+                "device_class": "connectivity", "icon": "mdi:wifi",
+                "device": device,
+            }), retain=True)
+
+        self.logger.info("Published HA MQTT discovery — device: %s", self.device_name)
+
+    def _remove_discovery(self) -> None:
+        if not self.ha_discovery or not self.mqtt_client:
+            return
+        prefix = self.discovery_prefix
+        uid    = self._discovery_uid()
+        for topic in [f"{prefix}/switch/{uid}/config",
+                      f"{prefix}/sensor/{uid}_label/config",
+                      f"{prefix}/binary_sensor/{uid}_connected/config"]:
             try:
                 self.mqtt_client.publish(topic, "", retain=True)
             except Exception:
@@ -363,10 +323,7 @@ class OnAirPlugin(BasePlugin):
             return
         try:
             self.mqtt_client.publish(
-                self.availability_topic,
-                "online" if online else "offline",
-                retain=True,
-            )
+                self.availability_topic, "online" if online else "offline", retain=True)
         except Exception as e:
             self.logger.debug("Availability publish failed: %s", e)
 
@@ -380,28 +337,30 @@ class OnAirPlugin(BasePlugin):
 
     # ── MQTT payload ─────────────────────────────────────────────────────────────
 
-    def _parse_payload(self, raw: bytes) -> Tuple[bool, Optional[str], Optional[Tuple]]:
-        """Return (on_air, label_override, color_override) from raw MQTT payload."""
+    def _parse_payload(self, raw: bytes):
+        """Return (on_air, label, text_color, bg_color) from raw MQTT payload."""
         try:
             text = raw.decode('utf-8').strip()
         except UnicodeDecodeError:
-            return False, None, None
+            return False, None, None, None
 
         try:
             data = json.loads(text)
             if not isinstance(data, dict):
                 raise ValueError("not a JSON object")
-            state  = str(data.get('state', '')).lower()
-            on_air = state in ('on', '1', 'true')
-            label  = data.get('label') or None
-            raw_c  = data.get('color')
-            color  = tuple(int(c) for c in raw_c) if raw_c and len(raw_c) == 3 else None
-            return on_air, label, color
+            state   = str(data.get('state', '')).lower()
+            on_air  = state in ('on', '1', 'true')
+            label   = data.get('label') or None
+            raw_tc  = data.get('color') or data.get('text_color')
+            raw_bg  = data.get('bg') or data.get('background_color')
+            tc      = _rgb(raw_tc, None) if raw_tc and len(raw_tc) == 3 else None
+            bg      = _rgb(raw_bg, None) if raw_bg and len(raw_bg) == 3 else None
+            return on_air, label, tc, bg
         except (json.JSONDecodeError, TypeError, ValueError):
             pass
 
         on_air = text.lower() in ('on', '1', 'true')
-        return on_air, None, None
+        return on_air, None, None, None
 
     def _trigger_display(self, on: bool) -> None:
         req: Dict[str, Any] = {
@@ -418,8 +377,7 @@ class OnAirPlugin(BasePlugin):
         if not self.mqtt_client or not self.mqtt_connected:
             return
         try:
-            self.mqtt_client.publish(
-                self.state_topic, 'ON' if on else 'OFF', retain=True)
+            self.mqtt_client.publish(self.state_topic, 'ON' if on else 'OFF', retain=True)
         except Exception as e:
             self.logger.debug("State publish failed: %s", e)
 
@@ -435,30 +393,24 @@ class OnAirPlugin(BasePlugin):
             self._publish_discovery()
             self.logger.info("MQTT connected — subscribed to %s", self.command_topic)
         else:
-            self.mqtt_connected = False
+            self.mqtt_connecting = False
+            self.mqtt_connected  = False
             self.logger.error("MQTT connect failed rc=%s", rc)
 
     def _on_mqtt_disconnect(self, client, userdata, rc):  # pylint: disable=unused-argument
         self.mqtt_connected  = False
         self.mqtt_connecting = False
-        # LWT fires automatically on unexpected disconnect;
-        # log only for unexpected drops
         if rc != 0:
             self.logger.warning("MQTT disconnected unexpectedly rc=%s", rc)
 
     def _on_mqtt_message(self, client, userdata, msg):  # pylint: disable=unused-argument
         try:
-            on_air, label, color = self._parse_payload(msg.payload)
+            on_air, label, tc, bg = self._parse_payload(msg.payload)
             with self.state_lock:
                 self.on_air = on_air
-                if label:
-                    self.label = label
-                elif not on_air:
-                    self.label = self.default_label
-                if color:
-                    self.active_color = color
-                elif not on_air:
-                    self.active_color = self.default_color
+                self.label  = label if label else (self.default_label if on_air else self.default_label)
+                self.active_text_color = tc if tc else self.default_text_color
+                self.active_bg_color   = bg if bg else self.default_bg_color
                 current_label = self.label
             self._trigger_display(on_air)
             self._publish_state(on_air)
@@ -474,26 +426,17 @@ class OnAirPlugin(BasePlugin):
             try:
                 self.mqtt_client = mqtt.Client(
                     callback_api_version=mqtt.CallbackAPIVersion.VERSION1,
-                    client_id=self.mqtt_client_id,
-                    clean_session=True,
-                )
+                    client_id=self.mqtt_client_id, clean_session=True)
             except (TypeError, AttributeError):
                 self.mqtt_client = mqtt.Client(
-                    client_id=self.mqtt_client_id,
-                    clean_session=True,
-                )
-
+                    client_id=self.mqtt_client_id, clean_session=True)
             self.mqtt_client.on_connect    = self._on_mqtt_connect
             self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
             self.mqtt_client.on_message    = self._on_mqtt_message
-
             if self.mqtt_username:
                 self.mqtt_client.username_pw_set(self.mqtt_username, self.mqtt_password)
-
-            # Last Will — HA marks device unavailable if connection drops unexpectedly
             self.mqtt_client.will_set(
                 self.availability_topic, payload="offline", qos=1, retain=True)
-
             self.mqtt_client.connect(self.mqtt_host, self.mqtt_port, keepalive=60)
             return True
         except Exception as e:
@@ -507,8 +450,7 @@ class OnAirPlugin(BasePlugin):
                     self.mqtt_connecting = True
                     if self._connect_mqtt():
                         self.mqtt_client.loop_start()
-                        # Wait up to 5s for CONNACK before looping — prevents
-                        # the async-connect race that creates duplicate connections
+                        # Wait for CONNACK before looping — prevents duplicate connections
                         self.mqtt_stop_event.wait(5.0)
                     else:
                         self.mqtt_connecting = False
@@ -524,7 +466,8 @@ class OnAirPlugin(BasePlugin):
                     self.mqtt_reconnect_delay = 1.0
             except Exception as e:
                 self.logger.error("MQTT loop error: %s", e, exc_info=True)
-                self.mqtt_connected = False
+                self.mqtt_connected  = False
+                self.mqtt_connecting = False
                 if self.mqtt_client:
                     try:
                         self.mqtt_client.loop_stop()
@@ -538,7 +481,6 @@ class OnAirPlugin(BasePlugin):
                 self.mqtt_reconnect_delay = min(
                     self.mqtt_reconnect_delay * 2, self.mqtt_max_reconnect_delay)
 
-        # Clean shutdown — mark offline, optionally remove discovery
         self._publish_availability(False)
         if self.mqtt_client:
             try:
@@ -550,7 +492,6 @@ class OnAirPlugin(BasePlugin):
         self.logger.info("MQTT loop stopped")
 
     def _graceful_shutdown(self) -> None:
-        """Stop MQTT thread cleanly, publishing offline availability first."""
         if self.mqtt_thread and self.mqtt_thread.is_alive():
             self.mqtt_stop_event.set()
             if self.mqtt_client:
