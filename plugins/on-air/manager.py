@@ -143,16 +143,20 @@ class OnAirPlugin(BasePlugin):
             text_color = self.active_text_color
             bg_color   = self.active_bg_color
 
-        if not active:
-            return False  # skip this rotation slot entirely
-
         dw = self.display_manager.matrix.width
         dh = self.display_manager.matrix.height
 
-        canvas = Image.new('RGB', (dw, dh), bg_color)
+        # When off, render a plain black frame rather than returning False.
+        # Returning False while still in on-demand mode causes the display
+        # controller to fall to its "Initializing" state before the stop
+        # request is processed. The 1s get_display_duration() cycles past
+        # this black frame nearly instantly in normal rotation.
+        fill = bg_color if active else (0, 0, 0)
+        canvas = Image.new('RGB', (dw, dh), fill)
         draw   = ImageDraw.Draw(canvas)
 
-        self._draw_centered_text(draw, dw, dh, label, text_color)
+        if active:
+            self._draw_centered_text(draw, dw, dh, label, text_color)
 
         self.display_manager.image = canvas
         self.display_manager.draw  = draw
