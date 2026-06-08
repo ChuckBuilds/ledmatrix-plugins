@@ -12,7 +12,7 @@
   "compatible_versions": [">=2.0.0"],
   "versions": [
     {
-      "released": "2026-06-07",
+      "released": "2026-06-08",
       "version": "1.2.0",
       "notes": "Fully customisable display: text, font path, font size, text color, background color. Removed animation/glow/tally-dot. Font loaded via PIL ImageFont.truetype with auto fallback to built-in display fonts. Per-MQTT-message color and bg override via JSON payload.",
       "ledmatrix_min": "2.0.0"
@@ -36,7 +36,7 @@
   "license": "MIT",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/on-air",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-06-07",
+  "last_updated": "2026-06-08",
   "stars": 0,
   "downloads": 0,
   "verified": true,

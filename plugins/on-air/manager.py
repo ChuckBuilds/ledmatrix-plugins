@@ -402,29 +402,43 @@ class OnAirPlugin(BasePlugin):
     # ── MQTT payload ─────────────────────────────────────────────────────────────
 
     def _parse_payload(self, raw: bytes):
-        """Return (on_air, label, text_color, bg_color) from raw MQTT payload."""
+        """Return (on_air, label, text_color, bg_color) from raw MQTT payload.
+
+        Returns (None, None, None, None) for unrecognized payloads so the
+        caller can treat them as a no-op rather than an accidental OFF.
+        """
         try:
             text = raw.decode('utf-8').strip()
         except UnicodeDecodeError:
-            return False, None, None, None
+            return None, None, None, None
 
         try:
             data = json.loads(text)
             if not isinstance(data, dict):
                 raise ValueError("not a JSON object")
-            state   = str(data.get('state', '')).lower()
-            on_air  = state in ('on', '1', 'true')
-            label   = data.get('label') or None
-            raw_tc  = data.get('color') or data.get('text_color')
-            raw_bg  = data.get('bg') or data.get('background_color')
-            tc      = _rgb(raw_tc, None) if raw_tc and len(raw_tc) == 3 else None
-            bg      = _rgb(raw_bg, None) if raw_bg and len(raw_bg) == 3 else None
+            raw_state = data.get('state')
+            if raw_state is None:
+                return None, None, None, None  # no state key — ignore
+            state = str(raw_state).lower()
+            if state not in ('on', 'off', '1', '0', 'true', 'false'):
+                return None, None, None, None  # unrecognised state value — ignore
+            on_air = state in ('on', '1', 'true')
+            label  = data.get('label') or None
+            raw_tc = data.get('color') or data.get('text_color')
+            raw_bg = data.get('bg') or data.get('background_color')
+            tc     = _rgb(raw_tc, None) if raw_tc and len(raw_tc) == 3 else None
+            bg     = _rgb(raw_bg, None) if raw_bg and len(raw_bg) == 3 else None
             return on_air, label, tc, bg
         except (json.JSONDecodeError, TypeError, ValueError):
             pass
 
-        on_air = text.lower() in ('on', '1', 'true')
-        return on_air, None, None, None
+        # Plain string: only act on explicitly recognised values
+        lower = text.lower()
+        if lower in ('on', '1', 'true'):
+            return True, None, None, None
+        if lower in ('off', '0', 'false'):
+            return False, None, None, None
+        return None, None, None, None  # unrecognised plain string — ignore
 
     def _trigger_display(self, on: bool) -> None:
         req: Dict[str, Any] = {
@@ -470,6 +484,9 @@ class OnAirPlugin(BasePlugin):
     def _on_mqtt_message(self, client, userdata, msg):  # pylint: disable=unused-argument
         try:
             on_air, label, tc, bg = self._parse_payload(msg.payload)
+            if on_air is None:
+                self.logger.debug("Ignoring unrecognised payload on %s", msg.topic)
+                return
             with self.state_lock:
                 self.on_air = on_air
                 self.label  = label if label else (self.default_label if on_air else self.default_label)
