@@ -79,6 +79,24 @@
       "title": "Pulse Speed (Hz)",
       "description": "How fast the glow pulses (cycles per second). 1.2 Hz ≈ one breath per second."
     },
+    "ha_discovery": {
+      "type": "boolean",
+      "default": true,
+      "title": "Home Assistant Auto-Discovery",
+      "description": "Publish MQTT discovery payloads on connect so Home Assistant automatically creates the device and entities. No configuration.yaml entry needed when enabled."
+    },
+    "discovery_prefix": {
+      "type": "string",
+      "default": "homeassistant",
+      "title": "Discovery Prefix",
+      "description": "MQTT topic prefix used by your HA MQTT integration. Leave as 'homeassistant' unless you changed it in HA."
+    },
+    "device_name": {
+      "type": "string",
+      "default": "LED Matrix — On Air",
+      "title": "Device Name",
+      "description": "How the device appears in Home Assistant under Settings → Devices & Services → MQTT."
+    },
     "display_duration": {
       "type": "number",
       "default": 5,
@@ -88,6 +106,6 @@
       "description": "How long to show the (dark) standby screen before rotating away when Off. Lower = cycles past faster."
     }
   },
-  "required": ["enabled", "mqtt_host", "mqtt_port", "command_topic"],
+  "required": ["enabled", "mqtt_host", "mqtt_port", "command_topic", "ha_discovery"],
   "additionalProperties": false
 }

@@ -457,7 +457,7 @@
     {
       "id": "on-air",
       "name": "On Air Light",
-      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u2014 stays on until you turn it off.",
+      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live — stays on until you turn it off.",
       "author": "ChuckBuilds",
       "category": "utility",
       "tags": [
@@ -476,7 +476,8 @@
       "last_updated": "2026-06-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.1.0",
+      "icon": "fa-circle-dot"
     },
     {
       "id": "nfl-draft",
