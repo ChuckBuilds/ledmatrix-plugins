@@ -220,8 +220,8 @@ class OnAirPlugin(BasePlugin):
                         bbox = draw.textbbox((0, 0), text, font=font)
                         tw   = bbox[2] - bbox[0]
                         th   = bbox[3] - bbox[1]
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        self.logger.debug("Font scale-down failed (%dpx): %s", new_size, e)
 
             x = max(0, (dw - tw) // 2)
             y = max(0, (dh - th) // 2)
