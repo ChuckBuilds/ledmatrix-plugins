@@ -78,6 +78,7 @@ class OnAirPlugin(BasePlugin):
         self.font_path          = config.get('font_path', '')
         self.font_size          = int(config.get('font_size', 0))  # 0 = auto
         self._configured_font   = self._load_configured_font()
+        self._auto_font_cache: Dict[int, Any] = {}   # dh → font
 
         # Runtime state
         self.state_lock        = threading.Lock()
@@ -123,13 +124,48 @@ class OnAirPlugin(BasePlugin):
         self.logger.warning("Font not found: %s — using built-in", path)
         return None
 
+    def _find_system_ttf(self) -> Optional[str]:
+        """Search the LEDMatrix assets folder for a usable TTF font file."""
+        plugin_dir   = Path(__file__).parent
+        project_root = plugin_dir.parent.parent
+        preferred = [
+            'assets/fonts/PressStart2P-Regular.ttf',
+            'assets/fonts/4x6-font.ttf',
+        ]
+        for rel in preferred:
+            p = project_root / rel
+            if p.exists():
+                return str(p)
+        # Fall back to any .ttf found in assets/fonts/
+        fonts_dir = project_root / 'assets' / 'fonts'
+        if fonts_dir.is_dir():
+            for p in sorted(fonts_dir.glob('*.ttf')):
+                return str(p)
+        return None
+
+    def _auto_font(self, dh: int):
+        """Load (and cache) a TTF at 80% of display height, or fall back to built-in."""
+        if dh in self._auto_font_cache:
+            return self._auto_font_cache[dh]
+        size = max(6, int(dh * 0.80))
+        font = None
+        ttf  = self._find_system_ttf()
+        if ttf:
+            try:
+                font = ImageFont.truetype(ttf, size)
+            except Exception as e:
+                self.logger.debug("Auto-font load failed: %s", e)
+        if font is None:
+            font = (self.display_manager.small_font if dh > 32
+                    else self.display_manager.extra_small_font)
+        self._auto_font_cache[dh] = font
+        return font
+
     def _active_font(self, dw: int, dh: int):
         """Return the font to use for rendering."""
         if self._configured_font is not None:
             return self._configured_font
-        # Auto-select built-in based on display dimensions
-        return (self.display_manager.small_font if dw > 64
-                else self.display_manager.extra_small_font)
+        return self._auto_font(dh)
 
     # ── BasePlugin interface ────────────────────────────────────────────────────
 
@@ -166,14 +202,29 @@ class OnAirPlugin(BasePlugin):
     def _draw_centered_text(self, draw: ImageDraw.ImageDraw,
                             dw: int, dh: int,
                             text: str, color: Tuple[int, int, int]) -> None:
-        """Draw text centred both horizontally and vertically."""
+        """Draw text centred on the display, scaling down to fit width if needed."""
         font = self._active_font(dw, dh)
         try:
             bbox = draw.textbbox((0, 0), text, font=font)
             tw   = bbox[2] - bbox[0]
             th   = bbox[3] - bbox[1]
-            x    = max(0, (dw - tw) // 2)
-            y    = max(0, (dh - th) // 2)
+
+            # Scale down if text is wider than 95% of display width
+            if tw > dw * 0.95:
+                font_path = getattr(font, 'path', None)
+                font_size = getattr(font, 'size', None)
+                if font_path and font_size:
+                    new_size = max(6, int(font_size * (dw * 0.95) / tw))
+                    try:
+                        font = ImageFont.truetype(font_path, new_size)
+                        bbox = draw.textbbox((0, 0), text, font=font)
+                        tw   = bbox[2] - bbox[0]
+                        th   = bbox[3] - bbox[1]
+                    except Exception:
+                        pass
+
+            x = max(0, (dw - tw) // 2)
+            y = max(0, (dh - th) // 2)
             draw.text((x, y), text, fill=color, font=font)
         except Exception as e:
             self.logger.debug("draw text fallback: %s", e)
@@ -227,6 +278,7 @@ class OnAirPlugin(BasePlugin):
         self.font_path          = new_config.get('font_path', '')
         self.font_size          = int(new_config.get('font_size', 0))
         self._configured_font   = self._load_configured_font()
+        self._auto_font_cache   = {}
         if broker_changed:
             self._graceful_shutdown()
             self.on_enable()
