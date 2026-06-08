@@ -51,7 +51,7 @@ class OnAirPlugin(BasePlugin):
         self.mqtt_port      = int(config.get('mqtt_port', 1883))
         self.mqtt_username  = config.get('mqtt_username', '')
         self.mqtt_password  = config.get('mqtt_password', '')
-        self.mqtt_client_id = f'ledmatrix-on-air-{plugin_id}'
+        self.mqtt_client_id = f'ledmatrix-on-air-{plugin_id}-{uuid.uuid4().hex[:8]}'
         self.command_topic  = config.get('command_topic', 'ledmatrix/on-air/set')
         self.state_topic    = config.get('state_topic',   'ledmatrix/on-air/state')
 
@@ -79,7 +79,8 @@ class OnAirPlugin(BasePlugin):
         # MQTT internals — same pattern as mqtt-notifications
         self.mqtt_client: Optional[mqtt.Client] = None
         self.mqtt_thread: Optional[threading.Thread] = None
-        self.mqtt_connected = False
+        self.mqtt_connected  = False
+        self.mqtt_connecting = False   # True while waiting for CONNACK
         self.mqtt_reconnect_delay     = 1.0
         self.mqtt_max_reconnect_delay = 60.0
         self.mqtt_stop_event = threading.Event()
@@ -423,7 +424,8 @@ class OnAirPlugin(BasePlugin):
 
     def _on_mqtt_connect(self, client, userdata, flags, rc):  # pylint: disable=unused-argument
         if rc == 0:
-            self.mqtt_connected = True
+            self.mqtt_connected  = True
+            self.mqtt_connecting = False
             self.mqtt_reconnect_delay = 1.0
             client.subscribe(self.command_topic, qos=1)
             self._publish_availability(True)
@@ -434,7 +436,8 @@ class OnAirPlugin(BasePlugin):
             self.logger.error("MQTT connect failed rc=%s", rc)
 
     def _on_mqtt_disconnect(self, client, userdata, rc):  # pylint: disable=unused-argument
-        self.mqtt_connected = False
+        self.mqtt_connected  = False
+        self.mqtt_connecting = False
         # LWT fires automatically on unexpected disconnect;
         # log only for unexpected drops
         if rc != 0:
@@ -497,10 +500,15 @@ class OnAirPlugin(BasePlugin):
     def _mqtt_loop(self) -> None:
         while not self.mqtt_stop_event.is_set():
             try:
-                if not self.mqtt_connected:
+                if not self.mqtt_connected and not self.mqtt_connecting:
+                    self.mqtt_connecting = True
                     if self._connect_mqtt():
                         self.mqtt_client.loop_start()
+                        # Wait up to 5s for CONNACK before looping — prevents
+                        # the async-connect race that creates duplicate connections
+                        self.mqtt_stop_event.wait(5.0)
                     else:
+                        self.mqtt_connecting = False
                         wait = min(self.mqtt_reconnect_delay, self.mqtt_max_reconnect_delay)
                         self.logger.info("Retrying MQTT in %.0fs", wait)
                         if self.mqtt_stop_event.wait(wait):
@@ -549,4 +557,5 @@ class OnAirPlugin(BasePlugin):
                 except Exception:
                     pass
             self.mqtt_thread.join(timeout=5.0)
-        self.mqtt_connected = False
+        self.mqtt_connected  = False
+        self.mqtt_connecting = False
