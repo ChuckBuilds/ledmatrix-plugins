@@ -2,57 +2,38 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "title": "On Air Light",
-  "description": "Configuration for the On Air sign plugin",
+  "description": "Displays an ON AIR sign on the matrix, controlled remotely via MQTT or Home Assistant.",
+  "x-propertyOrder": [
+    "enabled",
+    "default_label",
+    "text_color",
+    "background_color",
+    "font_path",
+    "font_size",
+    "mqtt_host",
+    "mqtt_port",
+    "mqtt_username",
+    "mqtt_password",
+    "command_topic",
+    "state_topic",
+    "ha_discovery",
+    "discovery_prefix",
+    "device_name",
+    "display_duration"
+  ],
   "properties": {
     "enabled": {
       "type": "boolean",
       "default": true,
       "title": "Enabled"
     },
-    "mqtt_host": {
-      "type": "string",
-      "default": "localhost",
-      "title": "MQTT Broker Host",
-      "description": "Hostname or IP address of your MQTT broker (e.g. your Home Assistant instance)"
-    },
-    "mqtt_port": {
-      "type": "integer",
-      "default": 1883,
-      "minimum": 1,
-      "maximum": 65535,
-      "title": "MQTT Port"
-    },
-    "mqtt_username": {
-      "type": "string",
-      "default": "",
-      "title": "MQTT Username",
-      "description": "Leave blank if no authentication is required"
-    },
-    "mqtt_password": {
-      "type": "string",
-      "default": "",
-      "title": "MQTT Password",
-      "description": "Leave blank if no authentication is required",
-      "x-sensitive": true
-    },
-    "command_topic": {
-      "type": "string",
-      "default": "ledmatrix/on-air/set",
-      "title": "Command Topic",
-      "description": "MQTT topic to subscribe to. Accepts ON/OFF or JSON {\"state\":\"on\",\"label\":\"RECORDING\",\"color\":[255,20,20],\"bg\":[0,0,0]}"
-    },
-    "state_topic": {
-      "type": "string",
-      "default": "ledmatrix/on-air/state",
-      "title": "State Topic",
-      "description": "Topic the plugin publishes ON or OFF to after each state change. Use as state_topic in a Home Assistant MQTT switch."
-    },
+
     "default_label": {
       "type": "string",
       "default": "ON AIR",
       "maxLength": 32,
-      "title": "Default Label",
-      "description": "Text displayed when activated. Can be overridden per-message via MQTT JSON payload."
+      "title": "Sign Text",
+      "description": "Text shown on the display when activated. Can be overridden per-message by sending JSON over MQTT."
     },
     "text_color": {
       "type": "array",
@@ -61,7 +42,7 @@
       "maxItems": 3,
       "default": [255, 255, 255],
       "title": "Text Color",
-      "description": "RGB color of the label text. Default is white [255, 255, 255]."
+      "x-widget": "color-picker"
     },
     "background_color": {
       "type": "array",
@@ -70,13 +51,13 @@
       "maxItems": 3,
       "default": [200, 10, 10],
       "title": "Background Color",
-      "description": "RGB background color. Default is broadcast red [200, 10, 10]."
+      "x-widget": "color-picker"
     },
     "font_path": {
       "type": "string",
       "default": "",
-      "title": "Font Path",
-      "description": "Path to a TTF font file, relative to the LEDMatrix root (e.g. assets/fonts/PressStart2P-Regular.ttf). Leave blank to use the built-in display font."
+      "title": "Font",
+      "description": "Path to a TTF font file relative to the LEDMatrix root, e.g. assets/fonts/PressStart2P-Regular.ttf. Leave blank to use the default font (auto-sized to 80% of display height)."
     },
     "font_size": {
       "type": "integer",
@@ -84,33 +65,75 @@
       "minimum": 0,
       "maximum": 64,
       "title": "Font Size (px)",
-      "description": "Font height in pixels. Set to 0 for auto-sizing based on display height. Only applies when Font Path is set."
+      "description": "Font height in pixels when a custom Font path is set. Set to 0 to auto-size to 80% of the display height."
     },
+
+    "mqtt_host": {
+      "type": "string",
+      "default": "localhost",
+      "title": "Broker Address",
+      "description": "Hostname or IP of your MQTT broker — usually the same address as your Home Assistant instance."
+    },
+    "mqtt_port": {
+      "type": "integer",
+      "default": 1883,
+      "minimum": 1,
+      "maximum": 65535,
+      "title": "Broker Port",
+      "description": "Default is 1883. Use 8883 for TLS."
+    },
+    "mqtt_username": {
+      "type": "string",
+      "default": "",
+      "title": "Username",
+      "description": "MQTT broker username. Leave blank if your broker does not require authentication."
+    },
+    "mqtt_password": {
+      "type": "string",
+      "default": "",
+      "title": "Password",
+      "description": "MQTT broker password. Leave blank if your broker does not require authentication.",
+      "x-sensitive": true
+    },
+    "command_topic": {
+      "type": "string",
+      "default": "ledmatrix/on-air/set",
+      "title": "Command Topic",
+      "description": "The plugin subscribes to this topic. Publish ON to activate or OFF to deactivate. Also accepts JSON for per-message label and color overrides."
+    },
+    "state_topic": {
+      "type": "string",
+      "default": "ledmatrix/on-air/state",
+      "title": "State Topic",
+      "description": "The plugin publishes ON or OFF here after each state change. Use this as the state_topic in your Home Assistant MQTT switch to keep the HA toggle in sync."
+    },
+
     "ha_discovery": {
       "type": "boolean",
       "default": true,
-      "title": "Home Assistant Auto-Discovery",
-      "description": "Publish MQTT discovery payloads on connect so Home Assistant automatically creates the device and entities. No configuration.yaml entry needed."
+      "title": "Enable Home Assistant Auto-Discovery",
+      "description": "When enabled, the plugin announces itself to Home Assistant via MQTT discovery. HA will automatically create a device with switch, label sensor, and connectivity entities — no configuration.yaml entry needed."
     },
     "discovery_prefix": {
       "type": "string",
       "default": "homeassistant",
-      "title": "Discovery Prefix",
-      "description": "MQTT topic prefix used by your HA MQTT integration. Leave as 'homeassistant' unless you changed it in HA."
+      "title": "HA Discovery Prefix",
+      "description": "The MQTT topic prefix your HA MQTT integration listens on. Leave as 'homeassistant' unless you changed it in HA."
     },
     "device_name": {
       "type": "string",
       "default": "LED Matrix — On Air",
-      "title": "Device Name",
-      "description": "How the device appears in Home Assistant under Settings → Devices & Services → MQTT."
+      "title": "Device Name in Home Assistant",
+      "description": "How this device appears under Settings → Devices & Services → MQTT in Home Assistant."
     },
+
     "display_duration": {
       "type": "number",
       "default": 5,
       "minimum": 1,
       "maximum": 60,
-      "title": "Display Duration (s)",
-      "description": "How long the On Air sign stays on screen per rotation cycle while active."
+      "title": "Display Duration (seconds)",
+      "description": "How long the sign stays on screen each rotation cycle while active."
     }
   },
   "required": ["enabled", "mqtt_host", "mqtt_port", "command_topic", "ha_discovery"],
