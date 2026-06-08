@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "On Air Light",
+  "description": "Configuration for the On Air tally light plugin",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "title": "Enabled",
+      "description": "Enable or disable this plugin"
+    },
+    "mqtt_host": {
+      "type": "string",
+      "default": "localhost",
+      "title": "MQTT Broker Host",
+      "description": "Hostname or IP address of your MQTT broker (e.g. your Home Assistant instance)"
+    },
+    "mqtt_port": {
+      "type": "integer",
+      "default": 1883,
+      "minimum": 1,
+      "maximum": 65535,
+      "title": "MQTT Port",
+      "description": "MQTT broker port (default 1883)"
+    },
+    "mqtt_username": {
+      "type": "string",
+      "default": "",
+      "title": "MQTT Username",
+      "description": "Leave blank if no authentication is required"
+    },
+    "mqtt_password": {
+      "type": "string",
+      "default": "",
+      "title": "MQTT Password",
+      "description": "Leave blank if no authentication is required",
+      "x-sensitive": true
+    },
+    "command_topic": {
+      "type": "string",
+      "default": "ledmatrix/on-air/set",
+      "title": "Command Topic",
+      "description": "MQTT topic to subscribe to for ON/OFF commands. Accepts plain ON/OFF or JSON {\"state\":\"on\",\"label\":\"RECORDING\",\"color\":[255,20,20]}"
+    },
+    "state_topic": {
+      "type": "string",
+      "default": "ledmatrix/on-air/state",
+      "title": "State Topic",
+      "description": "MQTT topic the plugin publishes to after each state change (publishes ON or OFF). Use this as state_topic in a Home Assistant MQTT switch."
+    },
+    "default_label": {
+      "type": "string",
+      "default": "ON AIR",
+      "maxLength": 16,
+      "title": "Default Label",
+      "description": "Text shown when activated without a label in the MQTT payload"
+    },
+    "default_color": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [255, 20, 20],
+      "title": "Default Color",
+      "description": "RGB glow color when activated without a color in the MQTT payload. Default is broadcast red."
+    },
+    "pulse_enabled": {
+      "type": "boolean",
+      "default": true,
+      "title": "Enable Pulsing",
+      "description": "Animate the glow with a slow pulse for a live broadcast feel"
+    },
+    "pulse_speed": {
+      "type": "number",
+      "default": 1.2,
+      "minimum": 0.1,
+      "maximum": 5.0,
+      "title": "Pulse Speed (Hz)",
+      "description": "How fast the glow pulses (cycles per second). 1.2 Hz ≈ one breath per second."
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 60,
+      "title": "Standby Rotation Duration (s)",
+      "description": "How long to show the (dark) standby screen before rotating away when Off. Lower = cycles past faster."
+    }
+  },
+  "required": ["enabled", "mqtt_host", "mqtt_port", "command_topic"],
+  "additionalProperties": false
+}
