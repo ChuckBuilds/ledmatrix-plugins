@@ -131,13 +131,16 @@ class OnAirPlugin(BasePlugin):
 
         if active:
             self._render_on_air(canvas, dw, dh, label, color)
+            self.display_manager.update_display()
         else:
-            self._render_standby(canvas, dw, dh)
-
-        self.display_manager.update_display()
+            # Not active — don't render, signal rotation to skip this slot
+            return False
 
     def get_display_duration(self) -> float:
-        return float(self.config.get('display_duration', 5))
+        # When off, cycle past the (dark) standby screen in 1s so rotation resumes quickly
+        with self.state_lock:
+            active = self.on_air
+        return float(self.config.get('display_duration', 5)) if active else 1.0
 
     def on_enable(self) -> None:
         super().on_enable()
