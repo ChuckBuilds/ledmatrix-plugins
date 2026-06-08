@@ -384,7 +384,9 @@ class OnAirPlugin(BasePlugin):
             return False, None, None
 
         try:
-            data   = json.loads(text)
+            data = json.loads(text)
+            if not isinstance(data, dict):
+                raise ValueError("not a JSON object")
             state  = str(data.get('state', '')).lower()
             on_air = state in ('on', '1', 'true')
             label  = data.get('label') or None
