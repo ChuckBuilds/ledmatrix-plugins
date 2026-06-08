@@ -28,7 +28,7 @@ if _HERE not in sys.path:
 import json  # noqa: E402
 from datetime import date  # noqa: E402
 
-from data_model import Race  # noqa: E402
+from election_data_model import Race  # noqa: E402
 from providers import create_providers  # noqa: E402
 from providers.nyt import NytStaticProvider  # noqa: E402
 from store import RaceStore  # noqa: E402

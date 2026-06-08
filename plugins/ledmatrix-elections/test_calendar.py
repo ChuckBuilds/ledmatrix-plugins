@@ -22,7 +22,7 @@ from datetime import date, datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from data_model import Candidate, Race, Scope  # noqa: E402
+from election_data_model import Candidate, Race, Scope  # noqa: E402
 from store import RaceStore  # noqa: E402
 from providers.nyt import NytStaticProvider  # noqa: E402
 from election_calendar import (  # noqa: E402

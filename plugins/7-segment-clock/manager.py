@@ -198,23 +198,22 @@ class SevenSegmentClockPlugin(BasePlugin):
         # Get the base image (transparent foreground on black background)
         base_image = self.number_images[digit].copy()
 
-        # Create a colored version with transparent background
-        # The images have white/colored pixels for lit segments on transparent/black background
+        # Create a colored version with transparent background.
+        # The digit assets encode lit segments as fully transparent pixels and
+        # unlit areas as opaque black, so a transparent pixel is a lit segment.
         colored_image = Image.new("RGBA", base_image.size, (0, 0, 0, 0))
-        
-        # Apply color to visible pixels (non-transparent pixels that represent lit segments)
+
+        # Color the lit (transparent) pixels; keep the unlit (opaque) ones clear.
         for x in range(base_image.width):
             for y in range(base_image.height):
                 pixel = base_image.getpixel((x, y))
                 if len(pixel) == 4:  # RGBA
                     r, g, b, a = pixel
-                    # If pixel has any alpha and is not pure black, it's a lit segment
-                    # Apply the configured color to lit segments
-                    if a > 0 and (r, g, b) != (0, 0, 0):
-                        # This is a lit segment - apply the configured color with full opacity
+                    if a == 0:
+                        # Transparent pixel = lit segment - apply the configured color
                         colored_image.putpixel((x, y), (*color, 255))
                     else:
-                        # Black or transparent pixel - keep fully transparent
+                        # Opaque pixel = unlit - keep fully transparent so it doesn't draw
                         colored_image.putpixel((x, y), (0, 0, 0, 0))
                 else:
                     # Not RGBA format - convert and handle
@@ -265,12 +264,12 @@ class SevenSegmentClockPlugin(BasePlugin):
                 pixel = base_image.getpixel((x, y))
                 if len(pixel) == 4:  # RGBA
                     r, g, b, a = pixel
-                    # If pixel has any alpha and is not pure black, it's a lit segment
-                    if a > 0 and (r, g, b) != (0, 0, 0):
-                        # This is a lit segment - apply the configured color with full opacity
+                    # Lit segments are transparent, unlit areas are opaque black.
+                    if a == 0:
+                        # Transparent pixel = lit segment - apply the configured color
                         colored_image.putpixel((x, y), (*color, 255))
                     else:
-                        # Black or transparent pixel - keep fully transparent
+                        # Opaque pixel = unlit - keep fully transparent so it doesn't draw
                         colored_image.putpixel((x, y), (0, 0, 0, 0))
                 else:
                     # Not RGBA format - convert and handle

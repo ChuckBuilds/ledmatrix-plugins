@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-elections",
   "name": "Election Results",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "rpierce99",
   "description": "Live election results: a scrolling ticker of important races plus a full-screen interrupt when a race is newly called. Auto-activates for your state's primary + general (dormant otherwise), drains stale calls from the ticker, and survives restarts. Filterable to your state. NYT baseline provider + optional California SoS county/city rollup.",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
   "versions": [
     {
       "released": "2026-06-06",
+      "version": "1.0.2",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Rename the internal data_model module to election_data_model so it can't collide with another plugin's identically-named module. The loader puts plugin modules on sys.path by bare name; a deferred import (providers/__init__) could otherwise bind a different plugin's data_model and fail to load."
+    },
+    {
+      "released": "2026-06-05",
       "version": "1.0.1",
       "ledmatrix_min": "2.0.0",
       "notes": "Fix the called-race interrupt looping forever: give colliding local races (e.g. multiple 'Mayor' races) a stable id derived from NYT's per-race id instead of an order-dependent counter, so the newly-called diff no longer re-fires every fetch."

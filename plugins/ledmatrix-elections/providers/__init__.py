@@ -13,7 +13,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Set
 
-from data_model import Race
+from election_data_model import Race
 
 logger = logging.getLogger(__name__)
 

@@ -17,7 +17,7 @@ from typing import Dict, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
-from data_model import Race, chamber_of_office
+from election_data_model import Race, chamber_of_office
 
 logger = logging.getLogger(__name__)
 

@@ -20,10 +20,10 @@
       "plugin_path": "plugins/7-segment-clock",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-06-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.1"
+      "latest_version": "1.0.2"
     },
     {
       "id": "baseball-scoreboard",
@@ -871,7 +871,7 @@
       "last_updated": "2026-06-06",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.0.1"
+      "latest_version": "1.0.2"
     },
     {
       "id": "ledmatrix-dresden-departures",

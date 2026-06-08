@@ -14,7 +14,7 @@ import time
 from dataclasses import replace
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from data_model import Race, Scope, chamber_of_office, office_rank, race_type_token
+from election_data_model import Race, Scope, chamber_of_office, office_rank, race_type_token
 
 logger = logging.getLogger(__name__)
 

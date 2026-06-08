@@ -1,0 +1,26 @@
+name: Module Collisions
+
+# Fails when a plugin's deferred import (subpackage file or function-scoped
+# import) targets a sibling top-level module whose name is also shipped by
+# another plugin. The core loads plugin modules by bare name on sys.path and
+# isolates them after the entry point loads, so such a deferred import can bind
+# a different plugin's same-named module and fail to load. Scans ALL plugins
+# because a newly added plugin can collide with an existing one.
+
+on:
+  pull_request:
+    paths:
+      - 'plugins/**'
+      - 'scripts/check_module_collisions.py'
+  workflow_dispatch:
+
+jobs:
+  collisions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check for cross-plugin module collisions
+        run: python scripts/check_module_collisions.py

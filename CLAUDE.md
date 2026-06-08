@@ -5,6 +5,38 @@
 - `plugins.json` — Central registry consumed by the LEDMatrix plugin store
 - `update_registry.py` — Syncs `plugins.json` from local plugin manifests
 
+## Module Naming — Avoid Cross-Plugin Collisions
+
+The core loads every plugin's top-level `*.py` files as **bare-name** modules on
+`sys.path` (e.g. `import data_model`), then namespace-isolates them *after* the
+entry point finishes loading. Two plugins **may** ship identically-named
+top-level modules (the sports plugins all share `sports.py`, `scroll_display.py`,
+…) — but only if every intra-plugin import runs **while the entry point is
+loading**.
+
+It breaks for **deferred imports** — a `from data_model import X` that runs
+*after* isolation:
+- inside a **subpackage** `__init__`/module that's imported lazily during
+  instantiation (e.g. `providers/__init__.py`), or
+- inside a **function/method body** that runs at update/display time.
+
+By then the bare name has been popped from `sys.modules`, so the import
+re-resolves via `sys.path` and can bind a **different plugin's** identically-named
+module — the plugin fails to load. (Real case: `ledmatrix-elections` and
+`ledmatrix-flights` both shipped `data_model.py`; elections' `providers/`
+subpackage bound flights' `data_model` and failed.)
+
+**Rule:** if a module is imported from a subpackage or a deferred (function-scoped)
+position, give it a **plugin-unique name** — prefix with the plugin domain, e.g.
+`election_data_model.py`, not `data_model.py`. Relative imports are **not** an
+option: the loader loads the entry point via `spec_from_file_location` with no
+package context, so `from .data_model import X` raises "no known parent package."
+
+**Enforcement:** `scripts/check_module_collisions.py` fails CI when a plugin's
+deferred import targets a sibling top-level module whose name is also shipped by
+another plugin. It runs on every PR via `.github/workflows/module-collisions.yml`.
+Run it locally with `python scripts/check_module_collisions.py`.
+
 ## Plugin Version Workflow
 
 **IMPORTANT:** When modifying any plugin, you MUST bump its version. This is how users receive updates — the LEDMatrix plugin store compares `manifest.json` version against `plugins.json` latest_version.

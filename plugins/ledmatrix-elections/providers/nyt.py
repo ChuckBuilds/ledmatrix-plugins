@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import requests
 
-from data_model import (
+from election_data_model import (
     Candidate,
     Race,
     make_race_id,

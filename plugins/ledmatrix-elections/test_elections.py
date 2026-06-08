@@ -16,7 +16,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from data_model import Candidate, Race, Scope  # noqa: E402
+from election_data_model import Candidate, Race, Scope  # noqa: E402
 from providers.nyt import NytStaticProvider, parse_called_slugs  # noqa: E402
 from providers.ca_sos import CaSosProvider  # noqa: E402
 from store import RaceStore  # noqa: E402
@@ -268,7 +268,7 @@ def test_ca_sos_defaults():
 
 def test_chamber_classification():
     print("[Chamber classification]")
-    from data_model import chamber_of_office
+    from election_data_model import chamber_of_office
     check(chamber_of_office("State Senate") == "upper", "State Senate -> upper")
     check(chamber_of_office("State Assembly") == "lower", "State Assembly -> lower")
     check(chamber_of_office("State House") == "lower", "State House -> lower")
