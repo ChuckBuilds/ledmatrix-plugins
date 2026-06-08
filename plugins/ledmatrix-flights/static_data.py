@@ -156,7 +156,33 @@ class CityLookup:
         return best_name
 
 
+class AircraftTypeLookup:
+    """Map an ICAO aircraft type designator to a human-readable model name."""
+
+    def __init__(self):
+        self._by_code: Dict[str, str] = {}
+        self._loaded = False
+
+    def _ensure_loaded(self) -> None:
+        if self._loaded:
+            return
+        data = _load_json("aircraft_types.json")
+        if isinstance(data, dict):
+            self._by_code = {str(k).upper(): str(v) for k, v in data.items()}
+        self._loaded = True
+        logger.info(f"[Flight Tracker] Loaded {len(self._by_code)} aircraft type names")
+
+    def name(self, code: str) -> str:
+        """Return the friendly model name for a designator (e.g. 'B739' ->
+        'Boeing 737-900'), falling back to the raw code when unknown."""
+        if not code:
+            return ""
+        self._ensure_loaded()
+        return self._by_code.get(code.upper(), code)
+
+
 # Module-level singletons (lazy-loaded on first use)
 airports = AirportLookup()
 airlines = AirlineLookup()
 cities = CityLookup()
+aircraft_types = AircraftTypeLookup()

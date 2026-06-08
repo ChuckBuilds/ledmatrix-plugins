@@ -553,6 +553,14 @@
       "maximum": 10,
       "default": 2
     },
+    "overhead_alt_interval": {
+      "type": "number",
+      "title": "Route/Model Swap Interval",
+      "description": "On the overhead (live-priority) card, the route (e.g. SEA>PHX) and the aircraft model share one text row and alternate. This is how many seconds each stays up before swapping. Set to 0 to disable alternation (route always wins). The model is shown as a friendly name (e.g. 'Boeing 737-900') when the type is known.",
+      "minimum": 0,
+      "maximum": 30,
+      "default": 4
+    },
     "opensky_username": {
       "type": "string",
       "title": "OpenSky Username (Advanced)",
@@ -778,6 +786,7 @@
     "show_banner",
     "show_aircraft_icon",
     "scroll_speed",
+    "overhead_alt_interval",
     "map_background",
     "show_trails",
     "trail_length",

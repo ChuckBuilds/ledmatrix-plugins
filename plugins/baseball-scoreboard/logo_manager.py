@@ -117,10 +117,15 @@ class BaseballLogoManager:
                 self.logger.error(f"Logo file still doesn't exist at {actual_logo_path} after download attempt")
                 return None
 
-            # Resize to fit display (150% of display dimensions to allow extending off screen)
-            max_width = int(self.display_width * 1.5)
-            max_height = int(self.display_height * 1.5)
-            logo.thumbnail((max_width, max_height), RESAMPLE_FILTER)
+            # Crop transparent padding so scaling operates on actual content
+            bbox = logo.getbbox()
+            if bbox:
+                logo = logo.crop(bbox)
+
+            # Cap at logo slot width and 75% of display height
+            logo_slot = min(self.display_height, self.display_width // 2)
+            max_logo_h = int(self.display_height * 0.75)
+            logo.thumbnail((logo_slot, max_logo_h), RESAMPLE_FILTER)
 
             # Cache the logo
             self._logo_cache[team_abbr] = logo
@@ -158,10 +163,14 @@ class BaseballLogoManager:
                 self.logger.warning(f"MiLB logo not found for {team_abbr} at {logo_path}")
                 return None
 
-            # Resize to fit display (150% of display dimensions)
-            max_width = int(self.display_width * 1.5)
-            max_height = int(self.display_height * 1.5)
-            logo.thumbnail((max_width, max_height), RESAMPLE_FILTER)
+            # Crop transparent padding so scaling operates on actual content
+            bbox = logo.getbbox()
+            if bbox:
+                logo = logo.crop(bbox)
+
+            logo_slot = min(self.display_height, self.display_width // 2)
+            max_logo_h = int(self.display_height * 0.75)
+            logo.thumbnail((logo_slot, max_logo_h), RESAMPLE_FILTER)
 
             # Cache the logo
             self._logo_cache[team_abbr] = logo

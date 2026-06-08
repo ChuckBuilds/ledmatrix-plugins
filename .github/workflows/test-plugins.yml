@@ -1,0 +1,152 @@
+name: Plugin Safety
+
+# Renders every changed plugin across a representative spread of matrix sizes and
+# screens using the LEDMatrix core harness, and validates manifests. Gates PRs
+# that touch plugin code so a change can't silently break a size or screen.
+
+on:
+  pull_request:
+    paths:
+      - 'plugins/**'
+  workflow_dispatch:
+    inputs:
+      all:
+        description: 'Check every plugin (not just changed ones)'
+        type: boolean
+        default: false
+
+env:
+  # The core repo provides the harness (scripts/check_plugin.py). Point these at
+  # the fork/branch where the harness lives until it is merged upstream.
+  CORE_REPO: ChuckBuilds/LEDMatrix
+  CORE_REF: main
+
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout plugins
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: plugins-repo
+
+      - name: Checkout core (harness)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.CORE_REPO }}
+          ref: ${{ env.CORE_REF }}
+          path: core
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install core + harness deps
+        working-directory: core
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-test.txt
+          pip install RGBMatrixEmulator
+
+      - name: Determine changed plugins (non-test code only)
+        id: changed
+        working-directory: plugins-repo
+        env:
+          ALL_INPUT: ${{ github.event.inputs.all }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$ALL_INPUT" = "true" ]; then
+            ids=$(ls plugins)
+          else
+            # Plugins with a changed file outside their test/ dir.
+            ids=$(git diff --name-only "$BASE_SHA"...HEAD -- 'plugins/*' \
+              | grep -vE '^plugins/[^/]+/test/' \
+              | sed -E 's#^plugins/([^/]+)/.*#\1#' | sort -u)
+          fi
+          echo "ids<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$ids" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "Changed plugins:"; echo "$ids"
+
+      - name: Enforce version bump on changed plugins
+        if: steps.changed.outputs.ids != '' && github.event.inputs.all != 'true'
+        working-directory: plugins-repo
+        env:
+          # Read IDs from env (never interpolate ${{ }} into the script body) and
+          # validate each one — plugin ids flow into python -c strings below, so a
+          # crafted directory name on a PR branch could otherwise inject code.
+          IDS: ${{ steps.changed.outputs.ids }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          fail=0
+          for pid in $IDS; do
+            case "$pid" in
+              '' | *[!a-z0-9._-]*) echo "::error::invalid plugin id '$pid'"; fail=1; continue ;;
+            esac
+            cur=$(python -c "import json;print(json.load(open('plugins/$pid/manifest.json'))['version'])")
+            old=$(git show "$BASE_SHA:plugins/$pid/manifest.json" 2>/dev/null \
+              | python -c "import json,sys;print(json.load(sys.stdin)['version'])" 2>/dev/null || echo "")
+            if [ -n "$old" ] && [ "$cur" = "$old" ]; then
+              echo "::error::$pid code changed but version not bumped (still $cur). Users won't get the update."
+              fail=1
+            else
+              echo "[ok] $pid version $old -> $cur"
+            fi
+          done
+          exit $fail
+
+      - name: Validate manifests against schema
+        if: steps.changed.outputs.ids != ''
+        env:
+          IDS: ${{ steps.changed.outputs.ids }}
+        run: |
+          python - <<'PY'
+          import json, os, re, sys
+          from pathlib import Path
+          import jsonschema
+          schema = json.load(open("core/schema/manifest_schema.json"))
+          valid = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
+          ids = os.environ.get("IDS", "").split()
+          failed = False
+          for pid in ids:
+              if not valid.match(pid):
+                  print(f"[FAIL] invalid plugin id: {pid!r}"); failed = True; continue
+              mpath = Path("plugins-repo/plugins") / pid / "manifest.json"
+              if not mpath.exists():
+                  print(f"[skip] {pid}: no manifest (deleted?)"); continue
+              try:
+                  jsonschema.validate(json.load(open(mpath)), schema)
+                  print(f"[ok]   {pid}: manifest valid")
+              except jsonschema.ValidationError as e:
+                  print(f"[FAIL] {pid}: {e.message}"); failed = True
+          sys.exit(1 if failed else 0)
+          PY
+
+      - name: Run safety harness on changed plugins
+        if: steps.changed.outputs.ids != ''
+        env:
+          IDS: ${{ steps.changed.outputs.ids }}
+        run: |
+          set -e
+          fail=0
+          for pid in $IDS; do
+            case "$pid" in
+              '' | *[!a-z0-9._-]*) echo "::error::invalid plugin id '$pid'"; fail=1; continue ;;
+            esac
+            pdir="plugins-repo/plugins/$pid"
+            [ -d "$pdir" ] || { echo "::notice::$pid removed, skipping"; continue; }
+            echo "::group::$pid"
+            # Install the plugin's own runtime deps so it loads like a real install.
+            # A failure here is a real problem (the plugin can't load), so let it fail.
+            if [ -f "$pdir/requirements.txt" ]; then pip install -r "$pdir/requirements.txt"; fi
+            python core/scripts/check_plugin.py --plugin "$pid" \
+              --plugin-dir "$PWD/plugins-repo/plugins" || fail=1
+            echo "::endgroup::"
+          done
+          exit $fail
+
+      - name: Nothing to check
+        if: steps.changed.outputs.ids == ''
+        run: echo "No plugin code changed (test-only or docs change) — safety harness skipped."

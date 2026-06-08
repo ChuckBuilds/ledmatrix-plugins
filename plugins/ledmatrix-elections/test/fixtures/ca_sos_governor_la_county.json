@@ -1,0 +1,870 @@
+[
+  {
+    "raceTitle": "Governor - Los Angeles County Results",
+    "Reporting": "100% (2,175 of 2,175) precincts reporting",
+    "ReportingTime": "June 3, 2026, 2:12 a.m.",
+    "candidates": [
+      {
+        "Name": "Akinyemi Agbede",
+        "Party": "Dem",
+        "Votes": "1,179",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Mohammad Arif",
+        "Party": "Dem",
+        "Votes": "2,455",
+        "Percent": "0.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Larry Azevedo",
+        "Party": "Dem",
+        "Votes": "1,841",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Xavier Becerra",
+        "Party": "Dem",
+        "Votes": "363,720",
+        "Percent": "28.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Carolina Buhler",
+        "Party": "Dem",
+        "Votes": "1,422",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Louis A. De Barraicua",
+        "Party": "Dem",
+        "Votes": "895",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Sophia Edum-a-Sam",
+        "Party": "Dem",
+        "Votes": "1,500",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Derek Grasty",
+        "Party": "Dem",
+        "Votes": "1,709",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Joel E. Jacob",
+        "Party": "Dem",
+        "Votes": "258",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Gary Howard Kidgell",
+        "Party": "Dem",
+        "Votes": "1,360",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Matthew Chase Levy",
+        "Party": "Dem",
+        "Votes": "1,352",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Matt Mahan",
+        "Party": "Dem",
+        "Votes": "47,147",
+        "Percent": "3.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Barack D. Obama Shaw",
+        "Party": "Dem",
+        "Votes": "4,710",
+        "Percent": "0.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Thunder Parley",
+        "Party": "Dem",
+        "Votes": "721",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Katie Porter",
+        "Party": "Dem",
+        "Votes": "55,475",
+        "Percent": "4.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Raji Rab",
+        "Party": "Dem",
+        "Votes": "497",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Satish Rao",
+        "Party": "Dem",
+        "Votes": "415",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Scott P Shields",
+        "Party": "Dem",
+        "Votes": "1,761",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Tom Steyer",
+        "Party": "Dem",
+        "Votes": "280,585",
+        "Percent": "22.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Eric Swalwell",
+        "Party": "Dem",
+        "Votes": "4,469",
+        "Percent": "0.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Tony K. Thurmond",
+        "Party": "Dem",
+        "Votes": "9,562",
+        "Percent": "0.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Antonio Villaraigosa",
+        "Party": "Dem",
+        "Votes": "35,769",
+        "Percent": "2.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Betty T. Yee",
+        "Party": "Dem",
+        "Votes": "5,717",
+        "Percent": "0.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Erin \"Zez\" Zezulak",
+        "Party": "Dem",
+        "Votes": "1,567",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "James Athans Jr.",
+        "Party": "Rep",
+        "Votes": "3,472",
+        "Percent": "0.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Chad Bianco",
+        "Party": "Rep",
+        "Votes": "94,191",
+        "Percent": "7.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Patricia De Luca Basualdo",
+        "Party": "Rep",
+        "Votes": "279",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Randeep S. Dhillon",
+        "Party": "Rep",
+        "Votes": "2,537",
+        "Percent": "0.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Rafael M. Hernandez",
+        "Party": "Rep",
+        "Votes": "576",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Steve Hilton",
+        "Party": "Rep",
+        "Votes": "292,131",
+        "Percent": "23.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Alicia Olivia Lapp",
+        "Party": "Rep",
+        "Votes": "878",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Leo Naranjo IV",
+        "Party": "Rep",
+        "Votes": "932",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Tim Nelson",
+        "Party": "Rep",
+        "Votes": "4,299",
+        "Percent": "0.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Gretha Solórzano",
+        "Party": "Rep",
+        "Votes": "3,568",
+        "Percent": "0.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Leo Samuel Zacky",
+        "Party": "Rep",
+        "Votes": "5,064",
+        "Percent": "0.4",
+        "incumbent": false
+      },
+      {
+        "Name": "David Zickefoose",
+        "Party": "Rep",
+        "Votes": "2,258",
+        "Percent": "0.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Tom Woodard",
+        "Party": "Lib",
+        "Votes": "1,930",
+        "Percent": "0.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Ramsey Robinson",
+        "Party": "P&F",
+        "Votes": "6,625",
+        "Percent": "0.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Naomi Bar-Lev",
+        "Party": "NPP",
+        "Votes": "257",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Joseph Cabrera",
+        "Party": "NPP",
+        "Votes": "472",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Elaine Culotti",
+        "Party": "NPP",
+        "Votes": "507",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "LivingForGod AndCountry DeMott",
+        "Party": "NPP",
+        "Votes": "255",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Serge Fiankan",
+        "Party": "NPP",
+        "Votes": "61",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Lukasz Adam Filinski",
+        "Party": "NPP",
+        "Votes": "62",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Max Fomin",
+        "Party": "NPP",
+        "Votes": "110",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Don J. Grundmann",
+        "Party": "NPP",
+        "Votes": "757",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Jon Henderson",
+        "Party": "NPP",
+        "Votes": "396",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Lewis Herms",
+        "Party": "NPP",
+        "Votes": "238",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Dawit Kellel",
+        "Party": "NPP",
+        "Votes": "662",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Anne Komarovsk",
+        "Party": "NPP",
+        "Votes": "845",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Duane Terrence Loynes Jr.",
+        "Party": "NPP",
+        "Votes": "315",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Amanda Martin",
+        "Party": "NPP",
+        "Votes": "1,204",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Brent Maupin",
+        "Party": "NPP",
+        "Votes": "336",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Daniel Mercuri",
+        "Party": "NPP",
+        "Votes": "335",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Mauro Alberto Orozco",
+        "Party": "NPP",
+        "Votes": "1,112",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Reza Safarnejad",
+        "Party": "NPP",
+        "Votes": "880",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Sam Sandak",
+        "Party": "NPP",
+        "Votes": "479",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Christine R. Sarmiento",
+        "Party": "NPP",
+        "Votes": "1,463",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Frederic C. Schultz",
+        "Party": "NPP",
+        "Votes": "1,413",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Margaret Trowe",
+        "Party": "NPP",
+        "Votes": "648",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Nancy D. Young",
+        "Party": "NPP",
+        "Votes": "1,274",
+        "Percent": "0.1",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "Governor - Statewide Results",
+    "Reporting": "100% (19,788 of 19,788) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Akinyemi Agbede",
+        "Party": "Dem",
+        "Votes": "2,010",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Mohammad Arif",
+        "Party": "Dem",
+        "Votes": "5,482",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Larry Azevedo",
+        "Party": "Dem",
+        "Votes": "3,397",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Xavier Becerra",
+        "Party": "Dem",
+        "Votes": "1,267,070",
+        "Percent": "25.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Carolina Buhler",
+        "Party": "Dem",
+        "Votes": "8,974",
+        "Percent": "0.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Louis A. De Barraicua",
+        "Party": "Dem",
+        "Votes": "5,442",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Sophia Edum-a-Sam",
+        "Party": "Dem",
+        "Votes": "2,284",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Derek Grasty",
+        "Party": "Dem",
+        "Votes": "3,242",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Joel E. Jacob",
+        "Party": "Dem",
+        "Votes": "1,608",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Gary Howard Kidgell",
+        "Party": "Dem",
+        "Votes": "1,843",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Matthew Chase Levy",
+        "Party": "Dem",
+        "Votes": "7,322",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Matt Mahan",
+        "Party": "Dem",
+        "Votes": "205,563",
+        "Percent": "4.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Barack D. Obama Shaw",
+        "Party": "Dem",
+        "Votes": "10,906",
+        "Percent": "0.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Thunder Parley",
+        "Party": "Dem",
+        "Votes": "1,551",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Katie Porter",
+        "Party": "Dem",
+        "Votes": "231,488",
+        "Percent": "4.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Raji Rab",
+        "Party": "Dem",
+        "Votes": "2,298",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Satish Rao",
+        "Party": "Dem",
+        "Votes": "3,437",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Scott P Shields",
+        "Party": "Dem",
+        "Votes": "3,494",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Tom Steyer",
+        "Party": "Dem",
+        "Votes": "979,007",
+        "Percent": "19.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Eric Swalwell",
+        "Party": "Dem",
+        "Votes": "18,602",
+        "Percent": "0.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Tony K. Thurmond",
+        "Party": "Dem",
+        "Votes": "33,137",
+        "Percent": "0.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Antonio Villaraigosa",
+        "Party": "Dem",
+        "Votes": "66,509",
+        "Percent": "1.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Betty T. Yee",
+        "Party": "Dem",
+        "Votes": "25,130",
+        "Percent": "0.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Erin \"Zez\" Zezulak",
+        "Party": "Dem",
+        "Votes": "5,498",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "James Athans Jr.",
+        "Party": "Rep",
+        "Votes": "4,984",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Chad Bianco",
+        "Party": "Rep",
+        "Votes": "566,679",
+        "Percent": "11.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Patricia De Luca Basualdo",
+        "Party": "Rep",
+        "Votes": "2,751",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Randeep S. Dhillon",
+        "Party": "Rep",
+        "Votes": "14,971",
+        "Percent": "0.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Rafael M. Hernandez",
+        "Party": "Rep",
+        "Votes": "3,603",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Steve Hilton",
+        "Party": "Rep",
+        "Votes": "1,386,966",
+        "Percent": "27.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Alicia Olivia Lapp",
+        "Party": "Rep",
+        "Votes": "3,854",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Leo Naranjo IV",
+        "Party": "Rep",
+        "Votes": "5,623",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Tim Nelson",
+        "Party": "Rep",
+        "Votes": "15,919",
+        "Percent": "0.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Gretha Solórzano",
+        "Party": "Rep",
+        "Votes": "8,686",
+        "Percent": "0.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Leo Samuel Zacky",
+        "Party": "Rep",
+        "Votes": "10,537",
+        "Percent": "0.2",
+        "incumbent": false
+      },
+      {
+        "Name": "David Zickefoose",
+        "Party": "Rep",
+        "Votes": "4,383",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Tom Woodard",
+        "Party": "Lib",
+        "Votes": "5,804",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Ramsey Robinson",
+        "Party": "P&F",
+        "Votes": "21,305",
+        "Percent": "0.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Naomi Bar-Lev",
+        "Party": "NPP",
+        "Votes": "1,628",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Joseph Cabrera",
+        "Party": "NPP",
+        "Votes": "3,538",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Elaine Culotti",
+        "Party": "NPP",
+        "Votes": "2,576",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "LivingForGod AndCountry DeMott",
+        "Party": "NPP",
+        "Votes": "1,345",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Serge Fiankan",
+        "Party": "NPP",
+        "Votes": "305",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Lukasz Adam Filinski",
+        "Party": "NPP",
+        "Votes": "340",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Max Fomin",
+        "Party": "NPP",
+        "Votes": "537",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Don J. Grundmann",
+        "Party": "NPP",
+        "Votes": "1,350",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Jon Henderson",
+        "Party": "NPP",
+        "Votes": "3,284",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Lewis Herms",
+        "Party": "NPP",
+        "Votes": "1,673",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Dawit Kellel",
+        "Party": "NPP",
+        "Votes": "982",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Anne Komarovsk",
+        "Party": "NPP",
+        "Votes": "1,181",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Duane Terrence Loynes Jr.",
+        "Party": "NPP",
+        "Votes": "1,034",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Amanda Martin",
+        "Party": "NPP",
+        "Votes": "3,330",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Brent Maupin",
+        "Party": "NPP",
+        "Votes": "1,893",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Daniel Mercuri",
+        "Party": "NPP",
+        "Votes": "1,591",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Mauro Alberto Orozco",
+        "Party": "NPP",
+        "Votes": "2,769",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Reza Safarnejad",
+        "Party": "NPP",
+        "Votes": "1,465",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Sam Sandak",
+        "Party": "NPP",
+        "Votes": "845",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Christine R. Sarmiento",
+        "Party": "NPP",
+        "Votes": "3,633",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Frederic C. Schultz",
+        "Party": "NPP",
+        "Votes": "3,393",
+        "Percent": "0.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Margaret Trowe",
+        "Party": "NPP",
+        "Votes": "1,507",
+        "Percent": "0.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Nancy D. Young",
+        "Party": "NPP",
+        "Votes": "4,568",
+        "Percent": "0.1",
+        "incumbent": false
+      }
+    ]
+  }
+]

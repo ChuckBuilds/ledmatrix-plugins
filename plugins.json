@@ -46,10 +46,10 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-31",
+      "last_updated": "2026-06-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.6.2"
+      "latest_version": "1.6.3"
     },
     {
       "id": "basketball-scoreboard",
@@ -334,7 +334,7 @@
       "last_updated": "2026-06-01",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.8.2"
+      "latest_version": "1.9.0"
     },
     {
       "id": "march-madness",
@@ -773,7 +773,7 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.3.1",
+      "latest_version": "2.3.2",
       "stars": 0,
       "downloads": 0,
       "last_updated": "2026-05-27",
@@ -824,6 +824,54 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.0.2"
+    },
+    {
+      "id": "ledmatrix-elections",
+      "name": "Election Results",
+      "description": "Live election results: a scrolling ticker of important races plus a full-screen interrupt when a race is newly called. Auto-activates for your state's primary + general (dormant otherwise), drains stale calls from the ticker, and survives restarts. Filterable to your state. NYT baseline provider + optional California SoS county/city rollup.",
+      "author": "rpierce99",
+      "category": "info",
+      "tags": [
+        "elections",
+        "news",
+        "results",
+        "ticker",
+        "live"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/ledmatrix-elections",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-06-06",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.0.1"
+    },
+    {
+      "id": "ledmatrix-dresden-departures",
+      "name": "Dresden Departures Board",
+      "description": "Dresden VVO departure board with tram times, date, clock, and weather. Shows upcoming tram/bus departures from a configurable DVB/VVO stop alongside a clock, date, and weather info.",
+      "author": "ryug0",
+      "category": "transit",
+      "tags": [
+        "dresden",
+        "tram",
+        "vvo",
+        "dvb",
+        "transit",
+        "departures",
+        "germany"
+      ],
+      "repo": "https://github.com/ryug0/ledmatrix-dresden-departures",
+      "branch": "main",
+      "plugin_path": "",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-06-02",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.0.0"
     }
   ]
 }

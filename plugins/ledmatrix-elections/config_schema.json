@@ -1,0 +1,298 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Election Results Plugin Configuration",
+  "description": "Scrolling ticker of important races + full-screen interrupt when a race is newly called. Filterable to your state. NYT baseline provider with an optional California SoS county/city rollup.",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "description": "Enable or disable the election results plugin",
+      "default": false
+    },
+    "display_duration": {
+      "type": "number",
+      "title": "Ticker Duration (seconds)",
+      "description": "How long the scrolling ticker shows per rotation. Dynamic duration may extend this to fit all races.",
+      "minimum": 10,
+      "maximum": 300,
+      "default": 30
+    },
+    "update_interval": {
+      "type": "integer",
+      "title": "Data Update Interval (seconds)",
+      "description": "How often to poll the election feeds. On election night use 30-60s; off-night the feeds are static so a higher value is fine.",
+      "minimum": 30,
+      "maximum": 3600,
+      "default": 60
+    },
+    "state": {
+      "type": "string",
+      "title": "Your State",
+      "description": "2-letter state code (e.g. CA, WA). Used to filter races and to build the NYT per-state feed URL.",
+      "default": "CA"
+    },
+    "hide_called_after_seconds": {
+      "type": "integer",
+      "title": "Hide Called Races After (seconds)",
+      "description": "Drop a called race from the ticker this long after it was called, even while other races are still uncalled. This drains the ticker as results settle. Default 24h.",
+      "minimum": 0,
+      "maximum": 1209600,
+      "default": 86400
+    },
+    "override": {
+      "type": "object",
+      "title": "Manual Override",
+      "description": "Force the plugin on without waiting for the built-in calendar. Use to demo, or to point at a specific election feed.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Treat today as an election day (skips the calendar/window check). Combine with State + Election Date to control what is shown.",
+          "default": false
+        },
+        "state": {
+          "type": "string",
+          "description": "2-letter state for the override (defaults to Your State).",
+          "default": ""
+        },
+        "election_date": {
+          "type": "string",
+          "title": "Election Date (YYYY-MM-DD)",
+          "description": "The election feed to show. Defaults to today when Active is on.",
+          "default": ""
+        },
+        "election_type": {
+          "type": "string",
+          "enum": ["primary", "general", "special"],
+          "default": "general"
+        },
+        "feed_filename": {
+          "type": "string",
+          "description": "Exact NYT results filename when the slug is non-standard (e.g. a special: results-georgia-special-senate.json). Built under the election date.",
+          "default": ""
+        },
+        "feed_url": {
+          "type": "string",
+          "description": "Full URL of a specific results JSON to show. Bypasses date/state URL building entirely.",
+          "default": ""
+        },
+        "trail_days": {
+          "type": "integer",
+          "description": "How many days after the election day to keep showing results.",
+          "minimum": 0,
+          "maximum": 60,
+          "default": 14
+        }
+      },
+      "default": {
+        "active": false,
+        "state": "",
+        "election_date": "",
+        "election_type": "general",
+        "feed_filename": "",
+        "feed_url": "",
+        "trail_days": 14
+      }
+    },
+    "calendar_events": {
+      "type": "array",
+      "title": "Extra Scheduled Elections",
+      "description": "Add elections the built-in calendar doesn't know (e.g. your state's primary date, or a special). Each must be predictable enough to build a feed URL: primary/general use the standard slug; a special needs feed_filename.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "state": { "type": "string", "description": "2-letter state (defaults to Your State)." },
+          "date": { "type": "string", "description": "Election day, YYYY-MM-DD." },
+          "type": { "type": "string", "enum": ["primary", "general", "special"] },
+          "feed_filename": { "type": "string", "description": "Required for specials: exact NYT results filename." },
+          "trail_days": { "type": "integer", "minimum": 0, "maximum": 60 }
+        },
+        "required": ["date"]
+      },
+      "default": []
+    },
+    "only_my_state": {
+      "type": "boolean",
+      "title": "Only My State",
+      "description": "Keep national races (President) plus every race in your state (statewide + that state's U.S. House districts). Turn off to show all fetched races.",
+      "default": true
+    },
+    "local_races": {
+      "type": "boolean",
+      "title": "Show Local Races (where available)",
+      "description": "Where your state has an authoritative results source, use it for granular/local results on top of the national baseline. Auto-engages by state (currently California); no effect for states not yet supported.",
+      "default": true
+    },
+    "lower_chamber_district": {
+      "type": "string",
+      "title": "Lower Chamber District",
+      "description": "Your state legislature lower-chamber district number — whatever your state calls it (CA: State Assembly; VA/MD/WV: House of Delegates; NJ: General Assembly; most states: State House). Set this to show that local race in the ticker; the feed carries every district and this picks out yours. Empty = off. (Alias: assembly_district.)",
+      "default": ""
+    },
+    "upper_chamber_district": {
+      "type": "string",
+      "title": "Upper Chamber (Senate) District",
+      "description": "Your state senate district number. Set this to show that local race in the ticker. Empty = off. (Alias: senate_district.)",
+      "default": ""
+    },
+    "race_types": {
+      "type": "array",
+      "title": "Race Types",
+      "description": "Which office types to show. Leave as-is for the standard set; downballot offices are excluded by default.",
+      "items": {
+        "type": "string",
+        "enum": ["president", "senate", "governor", "house", "ballot", "other"]
+      },
+      "default": ["president", "senate", "governor", "house", "ballot"]
+    },
+    "live_priority": {
+      "type": "boolean",
+      "title": "Live Priority (Interrupt)",
+      "description": "Allow this plugin to take over the screen when a race is newly called, the same way live sports preempt the rotation.",
+      "default": true
+    },
+    "interrupt": {
+      "type": "object",
+      "title": "Interrupt (Race Called) Settings",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Show a full-screen card when a race is newly called.",
+          "default": true
+        },
+        "duration_seconds": {
+          "type": "number",
+          "description": "How long each newly-called card holds the screen.",
+          "minimum": 3,
+          "maximum": 60,
+          "default": 12
+        },
+        "my_state_only": {
+          "type": "boolean",
+          "description": "Only interrupt for races that pass the state filter.",
+          "default": true
+        },
+        "max_age_seconds": {
+          "type": "integer",
+          "description": "Drop a queued call if it has waited longer than this without being shown (avoids stale interrupts).",
+          "minimum": 30,
+          "maximum": 3600,
+          "default": 300
+        }
+      },
+      "default": {
+        "enabled": true,
+        "duration_seconds": 12,
+        "my_state_only": true,
+        "max_age_seconds": 300
+      }
+    },
+    "providers": {
+      "type": "object",
+      "title": "Data Providers",
+      "properties": {
+        "nyt": {
+          "type": "object",
+          "title": "NYT (baseline)",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Use the NYT static results feed (national + all states).",
+              "default": true
+            },
+            "election_date": {
+              "type": "string",
+              "title": "Election Date (YYYY-MM-DD)",
+              "description": "Drives the feed URL, e.g. results-{state}-primary.json under this date.",
+              "default": "2026-06-02"
+            },
+            "election_type": {
+              "type": "string",
+              "title": "Election Type",
+              "description": "Primary feeds are per-state (results-{state}-primary.json); general feeds use results-{state}.json.",
+              "enum": ["primary", "general"],
+              "default": "primary"
+            },
+            "base_url": {
+              "type": "string",
+              "description": "NYT elections-assets data base URL.",
+              "default": "https://static01.nyt.com/elections-assets/pages/data"
+            }
+          },
+          "default": {
+            "enabled": true,
+            "election_date": "2026-06-02",
+            "election_type": "primary",
+            "base_url": "https://static01.nyt.com/elections-assets/pages/data"
+          }
+        },
+        "ca_sos": {
+          "type": "object",
+          "title": "California SoS rollup (advanced)",
+          "description": "Optional, off by default. The national feed already covers CA's statewide, U.S. House, and state-legislature races with an accurate reporting estimate, so these knobs are only for a county/statewide California Secretary of State rollup.",
+          "properties": {
+            "base_url": {
+              "type": "string",
+              "description": "California SoS returns API base URL.",
+              "default": "https://api.sos.ca.gov/returns"
+            },
+            "county": {
+              "type": "string",
+              "title": "County Slug",
+              "description": "County slug (e.g. los-angeles) for a county-level rollup of the offices below. Empty = statewide totals.",
+              "default": ""
+            },
+            "city": {
+              "type": "string",
+              "title": "City",
+              "description": "Convenience: a major CA city, mapped to its county for the rollup. Ignored if County is set.",
+              "default": ""
+            },
+            "offices": {
+              "type": "array",
+              "title": "Statewide Offices",
+              "description": "Statewide office slugs to fetch from the SoS (e.g. governor, attorney-general). Empty = none.",
+              "items": { "type": "string" },
+              "default": []
+            },
+            "include_house": {
+              "type": "boolean",
+              "description": "Also fetch CA U.S. House results from the SoS. Off by default — the national feed already covers House with a more accurate reporting estimate.",
+              "default": false
+            },
+            "called_threshold": {
+              "type": "number",
+              "description": "Reporting % at which an SoS office is treated as called (SoS has no winner flag).",
+              "minimum": 0,
+              "maximum": 100,
+              "default": 99.0
+            }
+          },
+          "default": {
+            "base_url": "https://api.sos.ca.gov/returns",
+            "county": "",
+            "city": "",
+            "offices": [],
+            "include_house": false,
+            "called_threshold": 99.0
+          }
+        }
+      }
+    },
+    "scroll_speed": {
+      "type": "number",
+      "title": "Scroll Speed",
+      "description": "Ticker scroll speed (pixels per frame in frame-based mode).",
+      "minimum": 0.1,
+      "maximum": 5.0,
+      "default": 1.0
+    },
+    "scroll_delay": {
+      "type": "number",
+      "title": "Scroll Delay (seconds)",
+      "description": "Delay between scroll steps; lower is faster. ~0.03 reads comfortably; 0.01 is fast.",
+      "minimum": 0.001,
+      "maximum": 0.1,
+      "default": 0.03
+    }
+  }
+}

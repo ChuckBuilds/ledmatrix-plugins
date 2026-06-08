@@ -1,0 +1,14 @@
+{
+  "_comment": "Deterministic config for the plugin safety harness. test_mode parses the bundled June-2-2026 primary fixtures offline (no network), so both the ticker and called-card screens render identically on any host for golden-image comparison.",
+  "config": {
+    "enabled": true,
+    "test_mode": true,
+    "state": "CA",
+    "only_my_state": true,
+    "race_types": ["governor", "house"],
+    "providers": {
+      "nyt": { "enabled": true },
+      "ca_sos": { "enabled": false }
+    }
+  }
+}

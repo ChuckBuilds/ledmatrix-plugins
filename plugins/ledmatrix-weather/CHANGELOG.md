@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.3.2] - 2026-06-04
+
+### Fixed
+- **Almanac (moon) page overflow on short/narrow panels**: the moon-phase name
+  is rendered in a wide 8px font (PressStart2P), so names like "Wax Gibbous" or
+  "Last Quarter" overran the narrow text column on 64- and 128-wide panels —
+  colliding with the right-aligned illumination % and, for the longer names,
+  running clean off the right edge. The day-length row was also drawn past the
+  bottom of a 32px-tall panel. The page now sizes its title font and row
+  positions to the actual panel: it falls back to the 6px font (and truncates
+  as a last resort) when the name won't fit beside the %, and drops any row that
+  would spill past the bottom edge. Verified across 64×32, 128×32, 256×32, and
+  128×64.
+
 ## [2.3.0] - 2026-05-27
 
 ### Changed

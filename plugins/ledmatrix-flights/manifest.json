@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.8.2",
+  "version": "1.9.0",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -34,6 +34,12 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "released": "2026-06-05",
+      "version": "1.9.0",
+      "notes": "Overhead (live-priority) card now alternates its shared secondary row between the flight route (e.g. SEA>PHX) and the aircraft model instead of always showing the route. The model is rendered as a friendly name (e.g. 'Boeing 737-900') via a new bundled ICAO type-designator lookup, falling back to the raw type code when unknown. New 'overhead_alt_interval' config option controls the swap cadence (default 4s; 0 disables alternation).",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-06-02",
       "version": "1.8.2",

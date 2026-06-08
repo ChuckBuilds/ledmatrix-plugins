@@ -185,7 +185,7 @@ class ScrollDisplay:
             "gap_between_games": 48,
             "show_league_separators": True,
             "dynamic_duration": True,
-            "game_card_width": 128,
+            "game_card_width": self.display_width,
         }
 
         # Try to get league-specific settings first
@@ -335,10 +335,10 @@ class ScrollDisplay:
         scroll_settings = self._get_scroll_settings()
         gap_between_games = scroll_settings.get("gap_between_games", 24)
         show_separators = scroll_settings.get("show_league_separators", True)
-        game_card_width = scroll_settings.get("game_card_width", 128)
+        game_card_width = scroll_settings.get("game_card_width", self.display_width)
 
-        # Get or create cached game renderer using game_card_width so cards are a fixed
-        # size regardless of the full chain width (display_width may span multiple panels)
+        # Get or create cached game renderer; default card width is the full display width
+        # so each game card fills the viewport and logos sit at the display edges
         renderer = self._get_game_renderer(game_card_width)
 
         # Pass rankings cache to renderer if available
@@ -374,8 +374,9 @@ class ScrollDisplay:
                 individual_game_type = self._determine_game_type(game)
                 game_img = renderer.render_game_card(game, individual_game_type)
 
-                # Add horizontal padding to prevent logos from being cut off at edges
-                padding = 12  # Padding on each side to ensure logos aren't cut off
+                # Only pad when card is narrower than the viewport; full-width cards
+                # need no padding or the card becomes wider than the display.
+                padding = 0 if game_img.width >= self.display_width else 12
                 padded_width = game_img.width + (padding * 2)
                 padded_img = Image.new('RGB', (padded_width, game_img.height), (0, 0, 0))
                 padded_img.paste(game_img, (padding, 0))

@@ -1,0 +1,2389 @@
+[
+  {
+    "raceTitle": "U.S. House of Representatives District 1 - Districtwide Results",
+    "Reporting": "100% (713 of 713) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Audrey Denney",
+        "Party": "Dem",
+        "Votes": "14,057",
+        "Percent": "13.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Janice Karrman",
+        "Party": "Dem",
+        "Votes": "877",
+        "Percent": "0.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Mike McGuire",
+        "Party": "Dem",
+        "Votes": "39,416",
+        "Percent": "37.5",
+        "incumbent": false
+      },
+      {
+        "Name": "James Gallagher",
+        "Party": "Rep",
+        "Votes": "49,625",
+        "Percent": "47.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Timothy Sean Kelly",
+        "Party": "NPP",
+        "Votes": "753",
+        "Percent": "0.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Richard T. Minner",
+        "Party": "NPP",
+        "Votes": "365",
+        "Percent": "0.3",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 2 - Districtwide Results",
+    "Reporting": "100% (484 of 484) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Jared Huffman",
+        "Party": "Dem",
+        "Votes": "51,723",
+        "Percent": "50.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Rose Penelope Yee",
+        "Party": "Dem",
+        "Votes": "7,456",
+        "Percent": "7.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Tim Geist",
+        "Party": "Rep",
+        "Votes": "8,507",
+        "Percent": "8.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Robin Littau",
+        "Party": "Rep",
+        "Votes": "13,049",
+        "Percent": "12.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Paul Saulsbury",
+        "Party": "Rep",
+        "Votes": "7,428",
+        "Percent": "7.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Angelita Valles",
+        "Party": "Rep",
+        "Votes": "8,527",
+        "Percent": "8.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Gregory Burgess",
+        "Party": "NPP",
+        "Votes": "770",
+        "Percent": "0.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Nicolette Hahn Niman",
+        "Party": "NPP",
+        "Votes": "5,100",
+        "Percent": "5.0",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 3 - Districtwide Results",
+    "Reporting": "100% (307 of 307) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Chris Bennett",
+        "Party": "Dem",
+        "Votes": "6,063",
+        "Percent": "5.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Ami Bera",
+        "Party": "Dem",
+        "Votes": "38,460",
+        "Percent": "33.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Lyndon \"Pacey\" Cervantes",
+        "Party": "Dem",
+        "Votes": "1,229",
+        "Percent": "1.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Heidi Hall",
+        "Party": "Dem",
+        "Votes": "13,236",
+        "Percent": "11.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Christine Bish",
+        "Party": "Rep",
+        "Votes": "14,647",
+        "Percent": "12.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Laura Koscki",
+        "Party": "Rep",
+        "Votes": "1,864",
+        "Percent": "1.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Robb Tucker",
+        "Party": "Rep",
+        "Votes": "39,949",
+        "Percent": "34.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Chris Richardson",
+        "Party": "Grn",
+        "Votes": "1,130",
+        "Percent": "1.0",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 4 - Districtwide Results",
+    "Reporting": "100% (433 of 433) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Eric Jones",
+        "Party": "Dem",
+        "Votes": "21,474",
+        "Percent": "21.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Mike Thompson",
+        "Party": "Dem",
+        "Votes": "38,297",
+        "Percent": "37.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Sharon Brown",
+        "Party": "Rep",
+        "Votes": "5,731",
+        "Percent": "5.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Mandy Ghusar",
+        "Party": "Rep",
+        "Votes": "1,069",
+        "Percent": "1.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Jimih Jones",
+        "Party": "Rep",
+        "Votes": "1,660",
+        "Percent": "1.6",
+        "incumbent": false
+      },
+      {
+        "Name": "John Mackenzie",
+        "Party": "Rep",
+        "Votes": "5,046",
+        "Percent": "4.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Ray Riehle",
+        "Party": "Rep",
+        "Votes": "24,395",
+        "Percent": "23.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Chuck Uribe",
+        "Party": "Rep",
+        "Votes": "3,894",
+        "Percent": "3.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Thomas M Roach",
+        "Party": "NPP",
+        "Votes": "739",
+        "Percent": "0.7",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 5 - Districtwide Results",
+    "Reporting": "100% (294 of 294) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Michael J. \"Mike\" Barkley",
+        "Party": "Dem",
+        "Votes": "11,313",
+        "Percent": "9.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Michael Masuda",
+        "Party": "Dem",
+        "Votes": "28,143",
+        "Percent": "22.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Dan Stroud",
+        "Party": "Dem",
+        "Votes": "6,303",
+        "Percent": "5.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Tom McClintock",
+        "Party": "Rep",
+        "Votes": "78,192",
+        "Percent": "63.1",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 6 - Districtwide Results",
+    "Reporting": "100% (257 of 257) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Lauren Babb Tomlinson",
+        "Party": "Dem",
+        "Votes": "10,987",
+        "Percent": "10.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Martha Guerrero",
+        "Party": "Dem",
+        "Votes": "7,400",
+        "Percent": "7.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Thien Ho",
+        "Party": "Dem",
+        "Votes": "11,603",
+        "Percent": "11.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Richard Pan",
+        "Party": "Dem",
+        "Votes": "22,385",
+        "Percent": "21.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Tyler Vandenberg",
+        "Party": "Dem",
+        "Votes": "1,489",
+        "Percent": "1.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Michael Stansfield",
+        "Party": "Rep",
+        "Votes": "23,493",
+        "Percent": "22.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Kevin Kiley",
+        "Party": "NPP",
+        "Votes": "28,362",
+        "Percent": "26.8",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 7 - Districtwide Results",
+    "Reporting": "100% (315 of 315) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Doris Matsui",
+        "Party": "Dem",
+        "Votes": "31,988",
+        "Percent": "30.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Robby Morin",
+        "Party": "Dem",
+        "Votes": "2,162",
+        "Percent": "2.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Enayat Nazhat",
+        "Party": "Dem",
+        "Votes": "857",
+        "Percent": "0.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Mai Vang",
+        "Party": "Dem",
+        "Votes": "26,002",
+        "Percent": "24.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Ralph Nwobi",
+        "Party": "Rep",
+        "Votes": "18,229",
+        "Percent": "17.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Zachariah Wooden",
+        "Party": "Rep",
+        "Votes": "25,158",
+        "Percent": "24.1",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 8 - Districtwide Results",
+    "Reporting": "100% (352 of 352) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Nicolas Carjuzaa",
+        "Party": "Dem",
+        "Votes": "9,636",
+        "Percent": "10.0",
+        "incumbent": false
+      },
+      {
+        "Name": "John Garamendi",
+        "Party": "Dem",
+        "Votes": "51,338",
+        "Percent": "53.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Aaron Rowden",
+        "Party": "Dem",
+        "Votes": "4,479",
+        "Percent": "4.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Rudy Recile",
+        "Party": "Rep",
+        "Votes": "30,750",
+        "Percent": "32.0",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 9 - Districtwide Results",
+    "Reporting": "100% (279 of 279) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Josh Harder",
+        "Party": "Dem",
+        "Votes": "40,267",
+        "Percent": "57.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Khalid Jeffrey Jafri",
+        "Party": "Rep",
+        "Votes": "5,330",
+        "Percent": "7.6",
+        "incumbent": false
+      },
+      {
+        "Name": "John McBride",
+        "Party": "Rep",
+        "Votes": "16,997",
+        "Percent": "24.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Parminder \"Happy\" Singh",
+        "Party": "Rep",
+        "Votes": "1,313",
+        "Percent": "1.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Martin \"Vmann\" Veprauskas",
+        "Party": "Rep",
+        "Votes": "5,876",
+        "Percent": "8.4",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 10 - Districtwide Results",
+    "Reporting": "100% (699 of 699) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Mark DeSaulnier",
+        "Party": "Dem",
+        "Votes": "69,312",
+        "Percent": "57.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Joshua Hamilton",
+        "Party": "Dem",
+        "Votes": "4,045",
+        "Percent": "3.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Mitchell Maisler",
+        "Party": "Dem",
+        "Votes": "3,420",
+        "Percent": "2.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Bob Rowland",
+        "Party": "Dem",
+        "Votes": "2,026",
+        "Percent": "1.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Jeff Frese",
+        "Party": "Rep",
+        "Votes": "18,253",
+        "Percent": "15.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Angela Griffiths",
+        "Party": "Rep",
+        "Votes": "8,500",
+        "Percent": "7.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Katherine Piccinini",
+        "Party": "Rep",
+        "Votes": "15,409",
+        "Percent": "12.7",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 11 - Districtwide Results",
+    "Reporting": "100% (453 of 453) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "John \"Gus\" Buffler",
+        "Party": "Dem",
+        "Votes": "487",
+        "Percent": "0.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Saikat Chakrabarti",
+        "Party": "Dem",
+        "Votes": "16,118",
+        "Percent": "14.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Connie Chan",
+        "Party": "Dem",
+        "Votes": "30,887",
+        "Percent": "28.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Keith Freedman",
+        "Party": "Dem",
+        "Votes": "358",
+        "Percent": "0.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Omed Hamid",
+        "Party": "Dem",
+        "Votes": "232",
+        "Percent": "0.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Gregory M Haynes",
+        "Party": "Dem",
+        "Votes": "1,102",
+        "Percent": "1.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Marie Hurabiell",
+        "Party": "Dem",
+        "Votes": "5,109",
+        "Percent": "4.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Scott Wiener",
+        "Party": "Dem",
+        "Votes": "44,521",
+        "Percent": "41.3",
+        "incumbent": false
+      },
+      {
+        "Name": "David Ganezer",
+        "Party": "Rep",
+        "Votes": "6,052",
+        "Percent": "5.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Jingchao Xiong",
+        "Party": "Rep",
+        "Votes": "2,647",
+        "Percent": "2.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Nathan Deer",
+        "Party": "NPP",
+        "Votes": "390",
+        "Percent": "0.4",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 12 - Districtwide Results",
+    "Reporting": "100% (194 of 194) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Jamie Joyce",
+        "Party": "Dem",
+        "Votes": "12,714",
+        "Percent": "19.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Lateefah Simon",
+        "Party": "Dem",
+        "Votes": "53,660",
+        "Percent": "80.8",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 13 - Districtwide Results",
+    "Reporting": "100% (852 of 852) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Daniel Garibay Rodriguez",
+        "Party": "Dem",
+        "Votes": "6,689",
+        "Percent": "13.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Adam Gray",
+        "Party": "Dem",
+        "Votes": "20,481",
+        "Percent": "40.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Vin Kruttiventi",
+        "Party": "Rep",
+        "Votes": "8,332",
+        "Percent": "16.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Kevin Lincoln",
+        "Party": "Rep",
+        "Votes": "14,577",
+        "Percent": "29.1",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 14 - Districtwide Results",
+    "Reporting": "100% (289 of 289) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Victor Aguilar, Jr.",
+        "Party": "Dem",
+        "Votes": "1,817",
+        "Percent": "2.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Carin Elam",
+        "Party": "Dem",
+        "Votes": "1,001",
+        "Percent": "1.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Melissa Hernandez",
+        "Party": "Dem",
+        "Votes": "10,933",
+        "Percent": "16.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Matt Ortega",
+        "Party": "Dem",
+        "Votes": "1,283",
+        "Percent": "1.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Rakhi Israni Singh",
+        "Party": "Dem",
+        "Votes": "7,815",
+        "Percent": "11.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Aisha Wahab",
+        "Party": "Dem",
+        "Votes": "23,296",
+        "Percent": "34.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Wendy Huang",
+        "Party": "Rep",
+        "Votes": "10,839",
+        "Percent": "16.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Dena Maldonado",
+        "Party": "Rep",
+        "Votes": "10,052",
+        "Percent": "14.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Suzanne Chenault",
+        "Party": "NPP",
+        "Votes": "892",
+        "Percent": "1.3",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 15 - Districtwide Results",
+    "Reporting": "100% (265 of 265) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Anthony Van Dang",
+        "Party": "Dem",
+        "Votes": "4,566",
+        "Percent": "6.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Mantosh Kumar",
+        "Party": "Dem",
+        "Votes": "2,874",
+        "Percent": "4.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Kevin Mullin",
+        "Party": "Dem",
+        "Votes": "40,501",
+        "Percent": "59.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Charles Hoelter",
+        "Party": "Rep",
+        "Votes": "17,134",
+        "Percent": "25.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Jim Garrity",
+        "Party": "NPP",
+        "Votes": "3,051",
+        "Percent": "4.5",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 16 - Districtwide Results",
+    "Reporting": "100% (268 of 268) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Sam Liccardo",
+        "Party": "Dem",
+        "Votes": "61,711",
+        "Percent": "70.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Kevin Johnson",
+        "Party": "Rep",
+        "Votes": "11,361",
+        "Percent": "12.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Peter Sundin Soulé",
+        "Party": "Rep",
+        "Votes": "11,898",
+        "Percent": "13.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Jotham Stein",
+        "Party": "NPP",
+        "Votes": "3,069",
+        "Percent": "3.5",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 17 - Districtwide Results",
+    "Reporting": "100% (184 of 184) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Ethan Agarwal",
+        "Party": "Dem",
+        "Votes": "4,053",
+        "Percent": "6.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Mike Katz",
+        "Party": "Dem",
+        "Votes": "3,225",
+        "Percent": "4.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Ro Khanna",
+        "Party": "Dem",
+        "Votes": "38,105",
+        "Percent": "57.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Jennie Ha Phan",
+        "Party": "Rep",
+        "Votes": "8,509",
+        "Percent": "12.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Ritesh Tandon",
+        "Party": "Rep",
+        "Votes": "11,337",
+        "Percent": "17.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Joe Dehn",
+        "Party": "Lib",
+        "Votes": "641",
+        "Percent": "1.0",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 18 - Districtwide Results",
+    "Reporting": "100% (289 of 289) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Luis Arreguín",
+        "Party": "Dem",
+        "Votes": "7,376",
+        "Percent": "11.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Zoe Lofgren",
+        "Party": "Dem",
+        "Votes": "32,122",
+        "Percent": "52.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Shane Lewis",
+        "Party": "Rep",
+        "Votes": "20,567",
+        "Percent": "33.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Chris Demers",
+        "Party": "NPP",
+        "Votes": "1,660",
+        "Percent": "2.7",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 19 - Districtwide Results",
+    "Reporting": "100% (336 of 336) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Sean Dougherty",
+        "Party": "Dem",
+        "Votes": "10,165",
+        "Percent": "9.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Jimmy Panetta",
+        "Party": "Dem",
+        "Votes": "64,596",
+        "Percent": "58.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Tuka Gafari",
+        "Party": "Rep",
+        "Votes": "7,173",
+        "Percent": "6.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Peter Coe Verbica",
+        "Party": "Rep",
+        "Votes": "25,297",
+        "Percent": "22.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Lars Mapstead",
+        "Party": "Lib",
+        "Votes": "1,337",
+        "Percent": "1.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Ana Luz Acevedo-Cabrera",
+        "Party": "NPP",
+        "Votes": "1,650",
+        "Percent": "1.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Thomas Coxe",
+        "Party": "NPP",
+        "Votes": "534",
+        "Percent": "0.5",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 20 - Districtwide Results",
+    "Reporting": "100% (567 of 567) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Sandra Van Scotter",
+        "Party": "Dem",
+        "Votes": "25,169",
+        "Percent": "26.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Vince Fong",
+        "Party": "Rep",
+        "Votes": "66,669",
+        "Percent": "70.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Ben Dewell",
+        "Party": "NPP",
+        "Votes": "1,587",
+        "Percent": "1.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Jeremy Fox",
+        "Party": "NPP",
+        "Votes": "1,115",
+        "Percent": "1.2",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 21 - Districtwide Results",
+    "Reporting": "100% (173 of 173) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Jim Costa",
+        "Party": "Dem",
+        "Votes": "22,301",
+        "Percent": "41.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Eric Garcia",
+        "Party": "Dem",
+        "Votes": "2,617",
+        "Percent": "4.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Lourin Hubbard",
+        "Party": "Dem",
+        "Votes": "4,441",
+        "Percent": "8.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Kyle Kirkland",
+        "Party": "Rep",
+        "Votes": "15,545",
+        "Percent": "28.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Lorenzo Rios",
+        "Party": "Rep",
+        "Votes": "8,948",
+        "Percent": "16.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Lance Kruse",
+        "Party": "NPP",
+        "Votes": "587",
+        "Percent": "1.1",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 22 - Districtwide Results",
+    "Reporting": "100% (429 of 429) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Jasmeet Bains",
+        "Party": "Dem",
+        "Votes": "10,529",
+        "Percent": "25.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Randy Villegas",
+        "Party": "Dem",
+        "Votes": "12,234",
+        "Percent": "29.8",
+        "incumbent": false
+      },
+      {
+        "Name": "David G. Valadao",
+        "Party": "Rep",
+        "Votes": "18,256",
+        "Percent": "44.5",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 23 - Districtwide Results",
+    "Reporting": "100% (1,240 of 1,240) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Tessa Lynn Hodge",
+        "Party": "Dem",
+        "Votes": "15,546",
+        "Percent": "18.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Karsten Scott Nicholson",
+        "Party": "Dem",
+        "Votes": "2,846",
+        "Percent": "3.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Pat Wallis",
+        "Party": "Dem",
+        "Votes": "11,842",
+        "Percent": "14.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Jay Obernolte",
+        "Party": "Rep",
+        "Votes": "48,613",
+        "Percent": "58.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Karen Leigh Matthews",
+        "Party": "NPP",
+        "Votes": "3,439",
+        "Percent": "4.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Eli C. Owens",
+        "Party": "NPP",
+        "Votes": "638",
+        "Percent": "0.8",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 24 - Districtwide Results",
+    "Reporting": "100% (510 of 510) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Sarah Bacon",
+        "Party": "Dem",
+        "Votes": "6,826",
+        "Percent": "6.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Salud Carbajal",
+        "Party": "Dem",
+        "Votes": "58,307",
+        "Percent": "52.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Bob Smith",
+        "Party": "Rep",
+        "Votes": "43,905",
+        "Percent": "39.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Helena Pasquarella",
+        "Party": "P&F",
+        "Votes": "2,115",
+        "Percent": "1.9",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 25 - Districtwide Results",
+    "Reporting": "100% (515 of 515) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Raul Ruiz",
+        "Party": "Dem",
+        "Votes": "46,956",
+        "Percent": "58.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Ceci Andrade Truman",
+        "Party": "Rep",
+        "Votes": "7,191",
+        "Percent": "8.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Ronald Huffman",
+        "Party": "Rep",
+        "Votes": "10,345",
+        "Percent": "12.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Joe Males",
+        "Party": "Rep",
+        "Votes": "16,398",
+        "Percent": "20.3",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 26 - Districtwide Results",
+    "Reporting": "100% (1,059 of 1,059) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Chris Espinosa",
+        "Party": "Dem",
+        "Votes": "9,958",
+        "Percent": "8.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Liam Andres O'Neill Hernandez",
+        "Party": "Dem",
+        "Votes": "1,978",
+        "Percent": "1.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Jacqui Irwin",
+        "Party": "Dem",
+        "Votes": "47,970",
+        "Percent": "40.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Sonia Kacker",
+        "Party": "Dem",
+        "Votes": "5,296",
+        "Percent": "4.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Sasan Samadzadeh",
+        "Party": "Dem",
+        "Votes": "1,941",
+        "Percent": "1.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Sam Gallucci",
+        "Party": "Rep",
+        "Votes": "26,356",
+        "Percent": "22.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Michael S. Koslow",
+        "Party": "Rep",
+        "Votes": "12,762",
+        "Percent": "10.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Daniel Miller",
+        "Party": "Rep",
+        "Votes": "2,276",
+        "Percent": "1.9",
+        "incumbent": false
+      },
+      {
+        "Name": "William \"Bill\" Scott",
+        "Party": "Rep",
+        "Votes": "11,108",
+        "Percent": "9.3",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 27 - Districtwide Results",
+    "Reporting": "100% (170 of 170) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Caleb Norwood",
+        "Party": "Dem",
+        "Votes": "6,815",
+        "Percent": "7.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Roberto Ramos",
+        "Party": "Dem",
+        "Votes": "9,145",
+        "Percent": "9.5",
+        "incumbent": false
+      },
+      {
+        "Name": "George Whitesides",
+        "Party": "Dem",
+        "Votes": "36,270",
+        "Percent": "37.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Jason Gibbs",
+        "Party": "Rep",
+        "Votes": "44,129",
+        "Percent": "45.8",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 28 - Districtwide Results",
+    "Reporting": "100% (299 of 299) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Judy Chu",
+        "Party": "Dem",
+        "Votes": "64,662",
+        "Percent": "58.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Peter Roybal",
+        "Party": "Dem",
+        "Votes": "6,406",
+        "Percent": "5.8",
+        "incumbent": false
+      },
+      {
+        "Name": "April A. Verlato",
+        "Party": "Rep",
+        "Votes": "39,565",
+        "Percent": "35.8",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 29 - Districtwide Results",
+    "Reporting": "100% (125 of 125) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Angélica María Dueñas",
+        "Party": "Dem",
+        "Votes": "15,482",
+        "Percent": "21.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Luz Maria Rivas",
+        "Party": "Dem",
+        "Votes": "35,880",
+        "Percent": "49.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Rudy Melendez",
+        "Party": "Rep",
+        "Votes": "20,945",
+        "Percent": "29.0",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 30 - Districtwide Results",
+    "Reporting": "100% (225 of 225) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Laura Friedman",
+        "Party": "Dem",
+        "Votes": "57,329",
+        "Percent": "50.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Pini Herman",
+        "Party": "Dem",
+        "Votes": "3,181",
+        "Percent": "2.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Joel Lava",
+        "Party": "Dem",
+        "Votes": "4,393",
+        "Percent": "3.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Cameron Tennyson",
+        "Party": "Dem",
+        "Votes": "12,627",
+        "Percent": "11.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Dennis Feitosa",
+        "Party": "Rep",
+        "Votes": "6,439",
+        "Percent": "5.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Scott Alan Meyers",
+        "Party": "Rep",
+        "Votes": "23,237",
+        "Percent": "20.3",
+        "incumbent": false
+      },
+      {
+        "Name": "John Armenian",
+        "Party": "NPP",
+        "Votes": "7,254",
+        "Percent": "6.3",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 31 - Districtwide Results",
+    "Reporting": "100% (213 of 213) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Gil Cisneros",
+        "Party": "Dem",
+        "Votes": "54,288",
+        "Percent": "56.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Eric Ching",
+        "Party": "Rep",
+        "Votes": "25,778",
+        "Percent": "26.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Erskine Levi",
+        "Party": "Rep",
+        "Votes": "15,890",
+        "Percent": "16.6",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 32 - Districtwide Results",
+    "Reporting": "100% (274 of 274) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Chris Ahuja",
+        "Party": "Dem",
+        "Votes": "4,085",
+        "Percent": "3.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Dory Benami",
+        "Party": "Dem",
+        "Votes": "1,499",
+        "Percent": "1.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Jake Levine",
+        "Party": "Dem",
+        "Votes": "17,158",
+        "Percent": "13.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Marena Lin",
+        "Party": "Dem",
+        "Votes": "6,920",
+        "Percent": "5.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Josh Sautter",
+        "Party": "Dem",
+        "Votes": "1,199",
+        "Percent": "0.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Brad Sherman",
+        "Party": "Dem",
+        "Votes": "47,037",
+        "Percent": "36.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Anna Wilding",
+        "Party": "Dem",
+        "Votes": "2,816",
+        "Percent": "2.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Larry Thompson",
+        "Party": "Rep",
+        "Votes": "48,317",
+        "Percent": "37.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Doug Smith",
+        "Party": "NPP",
+        "Votes": "987",
+        "Percent": "0.8",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 33 - Districtwide Results",
+    "Reporting": "100% (487 of 487) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Pete Aguilar",
+        "Party": "Dem",
+        "Votes": "33,025",
+        "Percent": "51.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Antonis P. Christodoulou",
+        "Party": "Dem",
+        "Votes": "3,754",
+        "Percent": "5.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Tom Herman",
+        "Party": "Rep",
+        "Votes": "7,999",
+        "Percent": "12.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Ernest \"Ernie\" Richter",
+        "Party": "Rep",
+        "Votes": "3,060",
+        "Percent": "4.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Stephanie M. Vargas",
+        "Party": "Rep",
+        "Votes": "12,251",
+        "Percent": "19.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Eugene Weems",
+        "Party": "Rep",
+        "Votes": "3,178",
+        "Percent": "5.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Ling Ling Shi",
+        "Party": "NPP",
+        "Votes": "666",
+        "Percent": "1.0",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 34 - Districtwide Results",
+    "Reporting": "100% (151 of 151) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Arthur Dixon",
+        "Party": "Dem",
+        "Votes": "2,423",
+        "Percent": "3.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Jimmy Gomez",
+        "Party": "Dem",
+        "Votes": "30,833",
+        "Percent": "45.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Angela Gonzales-Torres",
+        "Party": "Dem",
+        "Votes": "17,201",
+        "Percent": "25.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Robert George Lucero Jr.",
+        "Party": "Dem",
+        "Votes": "3,980",
+        "Percent": "5.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Calvin Lee",
+        "Party": "Rep",
+        "Votes": "11,833",
+        "Percent": "17.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Loren Colin",
+        "Party": "NPP",
+        "Votes": "865",
+        "Percent": "1.3",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 35 - Districtwide Results",
+    "Reporting": "100% (262 of 262) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Norma J. Torres",
+        "Party": "Dem",
+        "Votes": "37,414",
+        "Percent": "56.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Mike Cargile",
+        "Party": "Rep",
+        "Votes": "29,060",
+        "Percent": "43.7",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 36 - Districtwide Results",
+    "Reporting": "100% (143 of 143) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Rustin Knudtson",
+        "Party": "Dem",
+        "Votes": "1,546",
+        "Percent": "1.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Ted W. Lieu",
+        "Party": "Dem",
+        "Votes": "81,231",
+        "Percent": "57.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Frederick Reardon",
+        "Party": "Dem",
+        "Votes": "1,652",
+        "Percent": "1.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Marianne Shamma",
+        "Party": "Dem",
+        "Votes": "7,998",
+        "Percent": "5.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Houston Brignano",
+        "Party": "Rep",
+        "Votes": "25,157",
+        "Percent": "17.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Melissa Toomim",
+        "Party": "Rep",
+        "Votes": "21,222",
+        "Percent": "15.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Claire Ragge Anderson",
+        "Party": "NPP",
+        "Votes": "1,390",
+        "Percent": "1.0",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 37 - Districtwide Results",
+    "Reporting": "100% (135 of 135) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Ryan Duckett",
+        "Party": "Dem",
+        "Votes": "5,269",
+        "Percent": "7.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Elizabeth Fenner",
+        "Party": "Dem",
+        "Votes": "4,431",
+        "Percent": "6.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Sydney Kamlager-Dove",
+        "Party": "Dem",
+        "Votes": "36,046",
+        "Percent": "51.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Todd Lombardo",
+        "Party": "Dem",
+        "Votes": "2,790",
+        "Percent": "4.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Samantha Mota",
+        "Party": "Dem",
+        "Votes": "7,231",
+        "Percent": "10.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Baltazar Fedalizo",
+        "Party": "Rep",
+        "Votes": "9,580",
+        "Percent": "13.6",
+        "incumbent": false
+      },
+      {
+        "Name": "John Thompson Parker",
+        "Party": "P&F",
+        "Votes": "2,176",
+        "Percent": "3.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Steve Hill",
+        "Party": "NPP",
+        "Votes": "1,449",
+        "Percent": "2.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Juan Rey",
+        "Party": "NPP",
+        "Votes": "1,535",
+        "Percent": "2.2",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 38 - Districtwide Results",
+    "Reporting": "100% (285 of 285) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Erik Lutz",
+        "Party": "Dem",
+        "Votes": "2,867",
+        "Percent": "3.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Monica M. Sanchez",
+        "Party": "Dem",
+        "Votes": "10,259",
+        "Percent": "12.1",
+        "incumbent": false
+      },
+      {
+        "Name": "Hilda Solis",
+        "Party": "Dem",
+        "Votes": "37,599",
+        "Percent": "44.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Pedro Antonio Casas",
+        "Party": "Rep",
+        "Votes": "33,946",
+        "Percent": "40.1",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 39 - Districtwide Results",
+    "Reporting": "100% (166 of 166) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Mark Takano",
+        "Party": "Dem",
+        "Votes": "31,928",
+        "Percent": "56.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Steve Manos",
+        "Party": "Rep",
+        "Votes": "24,893",
+        "Percent": "43.8",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 40 - Districtwide Results",
+    "Reporting": "100% (494 of 494) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Francis Xavier Hoffman",
+        "Party": "Dem",
+        "Votes": "1,907",
+        "Percent": "1.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Claude M Keissieh",
+        "Party": "Dem",
+        "Votes": "2,765",
+        "Percent": "2.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Joe Kerr",
+        "Party": "Dem",
+        "Votes": "9,159",
+        "Percent": "7.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Esther Kim-Varet",
+        "Party": "Dem",
+        "Votes": "17,984",
+        "Percent": "15.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Lisa Ramirez",
+        "Party": "Dem",
+        "Votes": "15,378",
+        "Percent": "13.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Ken Calvert",
+        "Party": "Rep",
+        "Votes": "41,925",
+        "Percent": "36.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Young Kim",
+        "Party": "Rep",
+        "Votes": "25,058",
+        "Percent": "21.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Nina Linh",
+        "Party": "NPP",
+        "Votes": "1,577",
+        "Percent": "1.4",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 41 - Districtwide Results",
+    "Reporting": "100% (222 of 222) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Hector De La Torre",
+        "Party": "Dem",
+        "Votes": "12,607",
+        "Percent": "13.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Linda Sánchez",
+        "Party": "Dem",
+        "Votes": "34,595",
+        "Percent": "35.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Shonique Williams",
+        "Party": "Dem",
+        "Votes": "10,077",
+        "Percent": "10.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Mitch Clemmons",
+        "Party": "Rep",
+        "Votes": "39,470",
+        "Percent": "40.8",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 42 - Districtwide Results",
+    "Reporting": "100% (408 of 408) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Robert Garcia",
+        "Party": "Dem",
+        "Votes": "65,292",
+        "Percent": "51.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Brian Burley",
+        "Party": "Rep",
+        "Votes": "28,694",
+        "Percent": "22.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Long Pham",
+        "Party": "Rep",
+        "Votes": "6,819",
+        "Percent": "5.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Noah Von Blom",
+        "Party": "Rep",
+        "Votes": "23,871",
+        "Percent": "18.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Larisa Vermeulen",
+        "Party": "NPP",
+        "Votes": "1,526",
+        "Percent": "1.2",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 43 - Districtwide Results",
+    "Reporting": "100% (177 of 177) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Myla Rahman",
+        "Party": "Dem",
+        "Votes": "9,292",
+        "Percent": "13.7",
+        "incumbent": false
+      },
+      {
+        "Name": "David Sedlik",
+        "Party": "Dem",
+        "Votes": "2,868",
+        "Percent": "4.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Maxine Waters",
+        "Party": "Dem",
+        "Votes": "41,800",
+        "Percent": "61.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Cristian Morales",
+        "Party": "Rep",
+        "Votes": "13,638",
+        "Percent": "20.2",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 44 - Districtwide Results",
+    "Reporting": "100% (145 of 145) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Nanette Diaz Barragan",
+        "Party": "Dem",
+        "Votes": "46,419",
+        "Percent": "72.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Genevieve Angel",
+        "Party": "Rep",
+        "Votes": "17,523",
+        "Percent": "27.4",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 45 - Districtwide Results",
+    "Reporting": "100% (417 of 417) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Derek Tran",
+        "Party": "Dem",
+        "Votes": "50,265",
+        "Percent": "49.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Mark Leonard",
+        "Party": "Rep",
+        "Votes": "6,879",
+        "Percent": "6.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Chi \"Charlie\" Nguyen",
+        "Party": "Rep",
+        "Votes": "12,652",
+        "Percent": "12.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Chuong V. Vo",
+        "Party": "Rep",
+        "Votes": "16,465",
+        "Percent": "16.3",
+        "incumbent": false
+      },
+      {
+        "Name": "Tom Vo",
+        "Party": "Rep",
+        "Votes": "9,753",
+        "Percent": "9.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Amy Phan West",
+        "Party": "Rep",
+        "Votes": "5,148",
+        "Percent": "5.1",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 46 - Districtwide Results",
+    "Reporting": "100% (423 of 423) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Frank Bahena",
+        "Party": "Dem",
+        "Votes": "1,528",
+        "Percent": "2.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Lou Correa",
+        "Party": "Dem",
+        "Votes": "33,680",
+        "Percent": "49.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Christian Mendez",
+        "Party": "Dem",
+        "Votes": "4,475",
+        "Percent": "6.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Armando \"Mando\" Perez-Serrato",
+        "Party": "Dem",
+        "Votes": "2,909",
+        "Percent": "4.2",
+        "incumbent": false
+      },
+      {
+        "Name": "David Pan",
+        "Party": "Rep",
+        "Votes": "25,906",
+        "Percent": "37.8",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 47 - Districtwide Results",
+    "Reporting": "100% (561 of 561) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Dave Min",
+        "Party": "Dem",
+        "Votes": "54,910",
+        "Percent": "42.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Hunter Garcia Miranda",
+        "Party": "Dem",
+        "Votes": "9,924",
+        "Percent": "7.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Bill Brough",
+        "Party": "Rep",
+        "Votes": "8,626",
+        "Percent": "6.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Christopher J. Gonzales",
+        "Party": "Rep",
+        "Votes": "6,983",
+        "Percent": "5.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Jenny Rae Le Roux",
+        "Party": "Rep",
+        "Votes": "34,421",
+        "Percent": "26.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Michael Maxsenti",
+        "Party": "Rep",
+        "Votes": "9,835",
+        "Percent": "7.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Derrick Michael Reid",
+        "Party": "Lib",
+        "Votes": "868",
+        "Percent": "0.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Jesus Patino",
+        "Party": "NPP",
+        "Votes": "510",
+        "Percent": "0.4",
+        "incumbent": false
+      },
+      {
+        "Name": "Eric Troutman",
+        "Party": "NPP",
+        "Votes": "2,397",
+        "Percent": "1.9",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 48 - Districtwide Results",
+    "Reporting": "100% (411 of 411) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Ammar Campa-Najjar",
+        "Party": "Dem",
+        "Votes": "9,982",
+        "Percent": "9.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Abel Chavez",
+        "Party": "Dem",
+        "Votes": "4,980",
+        "Percent": "4.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Stephen Clemons",
+        "Party": "Dem",
+        "Votes": "930",
+        "Percent": "0.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Corinna Contreras",
+        "Party": "Dem",
+        "Votes": "4,986",
+        "Percent": "4.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Ferguson Porter",
+        "Party": "Dem",
+        "Votes": "716",
+        "Percent": "0.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Brandon Riker",
+        "Party": "Dem",
+        "Votes": "6,947",
+        "Percent": "6.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Mike Schaefer",
+        "Party": "Dem",
+        "Votes": "2,967",
+        "Percent": "2.8",
+        "incumbent": false
+      },
+      {
+        "Name": "Eric Shaw",
+        "Party": "Dem",
+        "Votes": "722",
+        "Percent": "0.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Marni von Wilpert",
+        "Party": "Dem",
+        "Votes": "20,358",
+        "Percent": "19.5",
+        "incumbent": false
+      },
+      {
+        "Name": "Jim Desmond",
+        "Party": "Rep",
+        "Votes": "43,548",
+        "Percent": "41.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Kevin Patrick O'Neil",
+        "Party": "Rep",
+        "Votes": "7,539",
+        "Percent": "7.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Luis F. Reyna",
+        "Party": "NPP",
+        "Votes": "895",
+        "Percent": "0.9",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 49 - Districtwide Results",
+    "Reporting": "100% (485 of 485) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Mike Levin",
+        "Party": "Dem",
+        "Votes": "72,521",
+        "Percent": "51.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Armen Kurdian",
+        "Party": "Rep",
+        "Votes": "40,904",
+        "Percent": "29.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Star Parker",
+        "Party": "Rep",
+        "Votes": "26,713",
+        "Percent": "19.1",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 50 - Districtwide Results",
+    "Reporting": "100% (472 of 472) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Tim Arnous",
+        "Party": "Dem",
+        "Votes": "2,235",
+        "Percent": "1.7",
+        "incumbent": false
+      },
+      {
+        "Name": "Aishwarya \"Sparky\" Mitra",
+        "Party": "Dem",
+        "Votes": "7,541",
+        "Percent": "5.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Scott Peters",
+        "Party": "Dem",
+        "Votes": "58,924",
+        "Percent": "46.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Steve Cohen",
+        "Party": "Rep",
+        "Votes": "56,605",
+        "Percent": "44.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Joseph \"Joe\" Shea",
+        "Party": "Lib",
+        "Votes": "2,053",
+        "Percent": "1.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Lucinda KWH Jahn",
+        "Party": "NPP",
+        "Votes": "694",
+        "Percent": "0.5",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 51 - Districtwide Results",
+    "Reporting": "100% (460 of 460) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Stan Caplan",
+        "Party": "Dem",
+        "Votes": "2,284",
+        "Percent": "2.1",
+        "incumbent": false
+      },
+      {
+        "Name": "David W Engel",
+        "Party": "Dem",
+        "Votes": "3,271",
+        "Percent": "2.9",
+        "incumbent": false
+      },
+      {
+        "Name": "Sara Jacobs",
+        "Party": "Dem",
+        "Votes": "59,073",
+        "Percent": "53.2",
+        "incumbent": false
+      },
+      {
+        "Name": "Ricardo Cabrera",
+        "Party": "Rep",
+        "Votes": "46,381",
+        "Percent": "41.8",
+        "incumbent": false
+      }
+    ]
+  },
+  {
+    "raceTitle": "U.S. House of Representatives District 52 - Districtwide Results",
+    "Reporting": "100% (422 of 422) precincts reporting",
+    "ReportingTime": "June 3, 2026, 4:44 a.m.",
+    "candidates": [
+      {
+        "Name": "Deborah Calhoun Rhodes",
+        "Party": "Dem",
+        "Votes": "6,576",
+        "Percent": "8.6",
+        "incumbent": false
+      },
+      {
+        "Name": "Juan Vargas",
+        "Party": "Dem",
+        "Votes": "41,060",
+        "Percent": "54.0",
+        "incumbent": false
+      },
+      {
+        "Name": "Jeff Belle",
+        "Party": "Rep",
+        "Votes": "28,450",
+        "Percent": "37.4",
+        "incumbent": false
+      }
+    ]
+  }
+]

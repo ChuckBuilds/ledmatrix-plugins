@@ -1217,6 +1217,63 @@ class WeatherPlugin(BasePlugin):
         h12 = h % 12 or 12
         return f"{h12}:{m:02d}{ampm}"
 
+    def _truncate_to_width(self, draw, text, font, max_w):
+        """Trim trailing characters until `text` fits within `max_w` pixels."""
+        if max_w <= 0:
+            return ""
+        while text and draw.textlength(text, font=font) > max_w:
+            text = text[:-1]
+        return text
+
+    def _almanac_layout(self, draw, width, height, text_x, phase_name, show_pct):
+        """Choose fonts and row positions for the almanac page so nothing
+        overflows the panel or collides with the illumination %.
+
+        The 8px title font is wide (PressStart2P): a name like "Wax Gibbous"
+        is 88px, which doesn't fit the ~94px text column next to a right-aligned
+        %, and longer names run clean off a 128-wide panel. Short panels also
+        can't stack a 9px title plus three 7px rows in 32px of height. This
+        sizes both axes to the actual panel.
+
+        Returns a dict with `title_font`, `title_text` (fitted), `pct_font`,
+        and `rows` — a list of four y-positions (title, sun, moon, day) where
+        an entry is None if that row would spill past the bottom edge.
+        """
+        title_font = self.display_manager.small_font        # 8px PressStart2P
+        body_font = self.display_manager.extra_small_font   # 6px 4x6
+        title_h, body_h = 8, 6
+
+        col_w = width - text_x
+        pct_w = (int(draw.textlength("100%", font=body_font)) + 2) if show_pct else 0
+        name_budget = col_w - pct_w
+
+        # Prefer the bold 8px title, but drop to the 6px font when the name
+        # (with room reserved for the %) won't fit, or when the panel is too
+        # short to spare the extra height. Truncate as a last resort.
+        compact = height < 40
+        if compact or draw.textlength(phase_name, font=title_font) > name_budget:
+            title_font = body_font
+            title_h = body_h
+        title_text = self._truncate_to_width(draw, phase_name, title_font, name_budget)
+
+        # Stack rows top-down, dropping any that would spill past the bottom.
+        row_gap = 1 if compact else 2
+        rows = []
+        y = 1 if compact else 2
+        for h in (title_h, body_h, body_h, body_h):
+            if y + h <= height:
+                rows.append(y)
+                y += h + row_gap
+            else:
+                rows.append(None)
+
+        return {
+            "title_font": title_font,
+            "title_text": title_text,
+            "pct_font": body_font,
+            "rows": rows,
+        }
+
     def _display_almanac(self) -> None:
         """Display almanac: sunrise/sunset, moon phase, day length."""
         try:
@@ -1225,10 +1282,7 @@ class WeatherPlugin(BasePlugin):
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
 
-            font = self.display_manager.small_font          # 8px - main text
-            font_sm = self.display_manager.extra_small_font  # 6px - secondary
-            font_h = 9   # line height for small_font
-            font_sm_h = 7  # line height for extra_small_font
+            font_sm = self.display_manager.extra_small_font  # 6px - secondary rows
             tz_offset = self.weather_data.get('timezone_offset', 0) if self.weather_data else 0
             sun = self.weather_data.get('sun', {}) if self.weather_data else {}
             moon = self.weather_data.get('moon', {}) if self.weather_data else {}
@@ -1267,32 +1321,48 @@ class WeatherPlugin(BasePlugin):
 
             # Text area starts after the icon
             text_x = icon_size + 8
+            col_w = width - text_x
 
-            # Row 1: Phase name (prominent)
-            draw.text((text_x, 2), phase_name, font=font, fill=(200, 200, 255))
-            if moon_phase is not None:
-                pct = f"{int(moon_phase * 100)}%"
-                pct_w = draw.textlength(pct, font=font)
-                draw.text((width - pct_w - 2, 2), pct, font=font, fill=(140, 140, 180))
+            # Size fonts and rows to the actual panel so nothing overflows the
+            # edge or collides with the illumination %.
+            layout = self._almanac_layout(
+                draw, width, height, text_x, phase_name, moon_phase is not None)
+            rows = layout["rows"]
+            pct_font = layout["pct_font"]
+
+            def draw_pair(y, left, left_fill, right, right_fill):
+                """Left-aligned + right-aligned text on one row, each clamped to
+                the text column so neither bleeds off-panel."""
+                draw.text((text_x, y), self._truncate_to_width(draw, left, font_sm, col_w),
+                          font=font_sm, fill=left_fill)
+                right = self._truncate_to_width(draw, right, font_sm, col_w)
+                rx = max(text_x, width - draw.textlength(right, font=font_sm) - 2)
+                draw.text((rx, y), right, font=font_sm, fill=right_fill)
+
+            # Row 1: Phase name (+ illumination %)
+            if rows[0] is not None:
+                draw.text((text_x, rows[0]), layout["title_text"],
+                          font=layout["title_font"], fill=(200, 200, 255))
+                if moon_phase is not None:
+                    pct = f"{int(moon_phase * 100)}%"
+                    pct_w = draw.textlength(pct, font=pct_font)
+                    draw.text((width - pct_w - 2, rows[0]), pct,
+                              font=pct_font, fill=(140, 140, 180))
 
             # Row 2: Sunrise / Sunset
-            y2 = 2 + font_h + 2
-            draw.text((text_x, y2), f"Rise {sunrise}", font=font_sm, fill=(255, 200, 0))
-            set_text = f"Set {sunset}"
-            set_w = draw.textlength(set_text, font=font_sm)
-            draw.text((width - set_w - 2, y2), set_text, font=font_sm, fill=(255, 120, 50))
+            if rows[1] is not None:
+                draw_pair(rows[1], f"Rise {sunrise}", (255, 200, 0),
+                          f"Set {sunset}", (255, 120, 50))
 
             # Row 3: Moonrise / Moonset
-            y3 = y2 + font_sm_h + 2
-            draw.text((text_x, y3), f"MR {moonrise}", font=font_sm, fill=(180, 180, 220))
-            ms_text = f"MS {moonset}"
-            ms_w = draw.textlength(ms_text, font=font_sm)
-            draw.text((width - ms_w - 2, y3), ms_text, font=font_sm, fill=(140, 140, 180))
+            if rows[2] is not None:
+                draw_pair(rows[2], f"MR {moonrise}", (180, 180, 220),
+                          f"MS {moonset}", (140, 140, 180))
 
             # Row 4: Day length
-            y4 = y3 + font_sm_h + 2
-            if day_len:
-                draw.text((text_x, y4), f"Day {day_len}", font=font_sm, fill=self.COLORS['dim'])
+            if day_len and rows[3] is not None:
+                draw.text((text_x, rows[3]), f"Day {day_len}", font=font_sm,
+                          fill=self.COLORS['dim'])
 
             self.display_manager.image = img
             self.display_manager.update_display()

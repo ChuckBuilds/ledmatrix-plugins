@@ -165,13 +165,16 @@ class GameRenderer:
                 if logo.mode != 'RGBA':
                     logo = logo.convert('RGBA')
 
-                # Crop transparent padding then scale so ink fills display_height.
-                # thumbnail into a display_height square box preserves aspect ratio
-                # and prevents wide logos from exceeding their half-card slot.
+                # Crop transparent padding so scaling operates on actual content.
+                # Then constrain to the logo slot width and 75% of display height —
+                # this prevents wide 1200x630 source images (common in MiLB/ESPN)
+                # from producing full-height logos that overwhelm the center text.
                 bbox = logo.getbbox()
                 if bbox:
                     logo = logo.crop(bbox)
-                logo.thumbnail((self.display_height, self.display_height), RESAMPLE_FILTER)
+                logo_slot = min(self.display_height, self.display_width // 2)
+                max_logo_h = int(self.display_height * 0.75)
+                logo.thumbnail((logo_slot, max_logo_h), RESAMPLE_FILTER)
 
                 # Copy before exiting context manager
                 cached_logo = logo.copy()

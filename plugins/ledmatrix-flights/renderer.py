@@ -126,6 +126,12 @@ class FlightRenderer:
         self.show_aircraft_icon = config.get("show_aircraft_icon", False)
         self.scroll_speed = config.get("scroll_speed", 2)
 
+        # Overhead/area cards share one secondary text row between the flight
+        # route and the aircraft model; alternate them every N seconds so both
+        # are visible on a panel too small to show them side by side. 0 disables
+        # alternation (route wins, as before).
+        self.overhead_alt_interval = float(config.get("overhead_alt_interval", 4.0))
+
         self._banner_shown = False
         self._banner_start = 0.0
 
@@ -648,6 +654,19 @@ class FlightRenderer:
     # =====================================================================
 
     @staticmethod
+    def _alternating_pick(options, now, interval):
+        """Pick one entry from *options* based on wall-clock *now*, cycling every
+        *interval* seconds. Empty entries are skipped. With one option (or a
+        non-positive interval) the first available entry is returned, so a single
+        known value never flickers to blank."""
+        opts = [o for o in options if o]
+        if not opts:
+            return ""
+        if len(opts) == 1 or interval <= 0:
+            return opts[0]
+        return opts[int(now / interval) % len(opts)]
+
+    @staticmethod
     def _heading_arrow_points(cx, cy, size, heading):
         """Polygon points for an arrowhead centered at (cx, cy) pointing toward
         compass ``heading`` (0=N/up, 90=E/right). Pure geometry — returns [] for
@@ -796,18 +815,33 @@ class FlightRenderer:
         # plane riding it) rather than a "99%" suffix on the route line.
         use_bar = spacious and progress is not None and bool(origin and destination)
 
-        # Route, with progress appended only if it fits (never truncate mid-word).
-        route = ""
+        # Secondary row: the route and the aircraft model share one line, so
+        # alternate between them every overhead_alt_interval seconds (whichever
+        # are known). Progress is appended only to the route, and only if it fits
+        # (never truncate mid-word).
+        route_str = ""
         if origin and destination:
-            route = f"{origin}>{destination}"
+            route_str = f"{origin}>{destination}"
             if progress is not None and not use_bar:
                 pct = int(progress * 100)
-                for cand in (f"{route} {pct}%", f"{route}{pct}%"):
+                for cand in (f"{route_str} {pct}%", f"{route_str}{pct}%"):
                     if self._tw(draw, cand, body_font) <= main_w:
-                        route = cand
+                        route_str = cand
                         break
-        elif atype and atype != "Unknown":
-            route = atype
+        model_str = ""
+        if atype and atype != "Unknown":
+            from static_data import aircraft_types
+            friendly = aircraft_types.name(atype)
+            # Prefer the full friendly name; if it won't fit the row, drop the
+            # manufacturer word ("Boeing 737-900" -> "737-900") and finally fall
+            # back to the raw type code, so the row never clips mid-number.
+            model_str = atype
+            for cand in (friendly, friendly.split(" ", 1)[-1]):
+                if self._tw(draw, cand, body_font) <= main_w:
+                    model_str = cand
+                    break
+        route = self._alternating_pick([route_str, model_str], time.time(),
+                                       self.overhead_alt_interval)
 
         # --- Row stack: callsign hero, metric strip, route, delay — vertically
         # centered (above the progress bar's reserved band) so it reads on both

@@ -1,0 +1,11 @@
+{
+  "_comment": "Settings the plugin safety harness uses to render clock-simple deterministically for golden-image comparison. timezone=UTC + a frozen UTC instant make the output identical on any host.",
+  "config": {
+    "timezone": "UTC",
+    "time_format": "12h",
+    "show_seconds": false,
+    "show_date": true
+  },
+  "mock_data": {},
+  "freeze_time": "2025-08-01 15:25:00"
+}

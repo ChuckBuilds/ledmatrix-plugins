@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-06-05",
+      "version": "1.6.3",
+      "notes": "Fix MiLB/NCAA logo layout: crop transparent padding before scaling, cap logo height at 75% of display height, default game card width to full display width so logos anchor at display edges instead of center",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-05-31",
       "version": "1.6.2",
@@ -127,7 +133,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-05-31",
+  "last_updated": "2026-06-05",
   "stars": 0,
   "downloads": 0,
   "verified": true,

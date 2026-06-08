@@ -1,0 +1,46 @@
+{
+  "id": "ledmatrix-elections",
+  "name": "Election Results",
+  "version": "1.0.1",
+  "author": "rpierce99",
+  "description": "Live election results: a scrolling ticker of important races plus a full-screen interrupt when a race is newly called. Auto-activates for your state's primary + general (dormant otherwise), drains stale calls from the ticker, and survives restarts. Filterable to your state. NYT baseline provider + optional California SoS county/city rollup.",
+  "entry_point": "manager.py",
+  "class_name": "ElectionPlugin",
+  "category": "info",
+  "tags": [
+    "elections",
+    "news",
+    "results",
+    "ticker",
+    "live"
+  ],
+  "display_modes": [
+    "election_ticker",
+    "election_called"
+  ],
+  "dependencies": [
+    "cache_manager"
+  ],
+  "versions": [
+    {
+      "released": "2026-06-06",
+      "version": "1.0.1",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Fix the called-race interrupt looping forever: give colliding local races (e.g. multiple 'Mayor' races) a stable id derived from NYT's per-race id instead of an order-dependent counter, so the newly-called diff no longer re-fires every fetch."
+    },
+    {
+      "released": "2026-06-03",
+      "version": "1.0.0",
+      "ledmatrix_min": "2.0.0"
+    }
+  ],
+  "last_updated": "2026-06-06",
+  "stars": 0,
+  "downloads": 0,
+  "verified": false,
+  "screenshot": "",
+  "config_schema": "config_schema.json",
+  "compatible_versions": [
+    ">=2.0.0"
+  ]
+}
