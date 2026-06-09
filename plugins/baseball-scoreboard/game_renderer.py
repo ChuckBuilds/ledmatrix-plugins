@@ -166,15 +166,20 @@ class GameRenderer:
                     logo = logo.convert('RGBA')
 
                 # Crop transparent padding so scaling operates on actual content.
-                # Then constrain to the logo slot width and 75% of display height —
-                # this prevents wide 1200x630 source images (common in MiLB/ESPN)
-                # from producing full-height logos that overwhelm the center text.
                 bbox = logo.getbbox()
                 if bbox:
                     logo = logo.crop(bbox)
-                logo_slot = min(self.display_height, self.display_width // 2)
-                max_logo_h = int(self.display_height * 0.75)
-                logo.thumbnail((logo_slot, max_logo_h), RESAMPLE_FILTER)
+                # MiLB logos are landscape banner art (1.2–2.7:1 aspect ratio) —
+                # cap width at 1/3 of display width and height at full display height
+                # so they stay in their corner and never overlap center score text.
+                # All other leagues use the compact slot sizing.
+                if league == 'milb':
+                    max_logo_w = self.display_width // 3
+                    max_logo_h = self.display_height
+                else:
+                    max_logo_w = min(self.display_height, self.display_width // 2)
+                    max_logo_h = int(self.display_height * 0.75)
+                logo.thumbnail((max_logo_w, max_logo_h), RESAMPLE_FILTER)
 
                 # Copy before exiting context manager
                 cached_logo = logo.copy()

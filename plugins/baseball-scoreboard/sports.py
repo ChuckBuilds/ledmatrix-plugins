@@ -536,8 +536,14 @@ class SportsCore(ABC):
             if logo.mode != "RGBA":
                 logo = logo.convert("RGBA")
 
-            max_width = int(self.display_width * 1.5)
-            max_height = int(self.display_height * 1.5)
+            # MiLB logos are landscape banner art — cap to 1/3 display width so
+            # they don't overflow into center score text.
+            if 'milb' in str(logo_path).lower():
+                max_width = self.display_width // 3
+                max_height = self.display_height
+            else:
+                max_width = int(self.display_width * 1.5)
+                max_height = int(self.display_height * 1.5)
             logo.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
             self._logo_cache[team_abbrev] = logo
             return logo

@@ -168,9 +168,12 @@ class BaseballLogoManager:
             if bbox:
                 logo = logo.crop(bbox)
 
-            logo_slot = min(self.display_height, self.display_width // 2)
-            max_logo_h = int(self.display_height * 0.75)
-            logo.thumbnail((logo_slot, max_logo_h), RESAMPLE_FILTER)
+            # MiLB logos are landscape banner art (1.2–2.7:1 aspect ratio).
+            # Cap width at 1/3 of display width and height at full display height so
+            # the logo stays within its corner and never overlaps center score text.
+            max_logo_w = self.display_width // 3
+            max_logo_h = self.display_height
+            logo.thumbnail((max_logo_w, max_logo_h), RESAMPLE_FILTER)
 
             # Cache the logo
             self._logo_cache[team_abbr] = logo
