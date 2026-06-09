@@ -13,6 +13,11 @@ from PIL import Image, ImageDraw, ImageFont
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+try:
+    RESAMPLE_FILTER = Image.Resampling.LANCZOS
+except AttributeError:
+    RESAMPLE_FILTER = Image.LANCZOS
+
 # Import simplified dependencies for plugin use
 from dynamic_team_resolver import DynamicTeamResolver
 from logo_downloader import LogoDownloader, download_missing_logo
@@ -538,13 +543,13 @@ class SportsCore(ABC):
 
             # MiLB logos are landscape banner art — cap to 1/3 display width so
             # they don't overflow into center score text.
-            if 'milb' in str(logo_path).lower():
+            if self.sport_key == 'milb':
                 max_width = self.display_width // 3
                 max_height = self.display_height
             else:
                 max_width = int(self.display_width * 1.5)
                 max_height = int(self.display_height * 1.5)
-            logo.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            logo.thumbnail((max_width, max_height), RESAMPLE_FILTER)
             self._logo_cache[team_abbrev] = logo
             return logo
 
