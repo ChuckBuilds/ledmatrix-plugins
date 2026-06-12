@@ -97,7 +97,8 @@ class GeochronPlugin(BasePlugin):
         self.timezone = self._get_timezone()
 
         map_center = config.get("map_center_longitude")
-        self.map_center_longitude = float(map_center) if map_center is not None else self._derive_map_center_longitude()
+        raw_center = float(map_center) if map_center is not None else self._derive_map_center_longitude()
+        self.map_center_longitude = ((raw_center + 180.0) % 360.0) - 180.0
 
     def _get_global_timezone(self):
         try:
@@ -181,6 +182,12 @@ class GeochronPlugin(BasePlugin):
 
             self.display_manager.image.paste(self._cached_map, (layout["map_x"], layout["map_y"]))
             draw = self.display_manager.draw
+
+            if layout["sidebar_w"]:
+                draw.rectangle(
+                    [layout["sidebar_x"], 0, layout["dw"] - 1, layout["dh"] - 1],
+                    fill=(10, 10, 10),
+                )
 
             if self.show_grid:
                 gr.draw_graticule(draw, layout, self.graticule_step_deg, self.colors["grid_color"])
