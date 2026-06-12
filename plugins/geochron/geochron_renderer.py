@@ -37,28 +37,31 @@ def _layout(dw, dh, map_center_lon=0.0):
         sidebar_w = max(32, int(dw * 0.22))
         map_w = dw - sidebar_w
         map_h = dh
-        # Fixed +-70 degree latitude band: covers all default cities (max
-        # |lat| is Moscow at 55.75) plus the rest of Canada, Alaska,
-        # Scandinavia, and Iceland, while excluding only the largely empty
-        # high-Arctic/Antarctic regions. The aspect-based formula this
-        # replaced always floored to 30 degrees for wide_sidebar's aspect
-        # range (>=3.0), hiding most of North America, Europe, and northern
-        # Asia.
-        lat_half = 70.0
+        # Asymmetric latitude band, biased toward the northern hemisphere:
+        # +70 covers Moscow (55.75) plus the rest of Canada, Alaska,
+        # Scandinavia, and Iceland; -50 still covers Sydney (-33.87) and Rio
+        # (-22.91) with margin while cropping out the mostly-empty Southern
+        # Ocean and Antarctica. The resulting 120-degree span also closely
+        # matches typical wide_sidebar map aspect ratios, reducing vertical
+        # stretching from the crop->resize step.
+        lat_min = -50.0
+        lat_max = 70.0
         lon_extent = 360.0
         lon_center = 0.0
     elif aspect >= 1.5:
         mode = "near_bleed"
         sidebar_w = 0
         map_w, map_h = dw, dh
-        lat_half = 90.0
+        lat_min = -90.0
+        lat_max = 90.0
         lon_extent = 360.0
         lon_center = 0.0
     else:
         mode = "square_tall"
         sidebar_w = 0
         map_w, map_h = dw, dh
-        lat_half = 90.0
+        lat_min = -90.0
+        lat_max = 90.0
         lon_extent = max(90.0, min(360.0, 180.0 * aspect))
         lon_center = map_center_lon
 
@@ -74,8 +77,8 @@ def _layout(dw, dh, map_center_lon=0.0):
         "sidebar_x": map_w if sidebar_w else None,
         "lon_min": lon_center - lon_extent / 2.0,
         "lon_max": lon_center + lon_extent / 2.0,
-        "lat_min": -lat_half,
-        "lat_max": lat_half,
+        "lat_min": lat_min,
+        "lat_max": lat_max,
     }
 
 
