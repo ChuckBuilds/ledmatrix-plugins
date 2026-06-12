@@ -37,13 +37,14 @@ def _layout(dw, dh, map_center_lon=0.0):
         sidebar_w = max(32, int(dw * 0.22))
         map_w = dw - sidebar_w
         map_h = dh
-        # Fixed +-60 degree latitude band: covers all default cities (max
-        # |lat| is Moscow at 55.75) and nearly all populated land, while
-        # excluding only the sparsely-populated polar regions. The
-        # aspect-based formula this replaced always floored to 30 degrees
-        # for wide_sidebar's aspect range (>=3.0), hiding most of North
-        # America, Europe, and northern Asia.
-        lat_half = 60.0
+        # Fixed +-70 degree latitude band: covers all default cities (max
+        # |lat| is Moscow at 55.75) plus the rest of Canada, Alaska,
+        # Scandinavia, and Iceland, while excluding only the largely empty
+        # high-Arctic/Antarctic regions. The aspect-based formula this
+        # replaced always floored to 30 degrees for wide_sidebar's aspect
+        # range (>=3.0), hiding most of North America, Europe, and northern
+        # Asia.
+        lat_half = 70.0
         lon_extent = 360.0
         lon_center = 0.0
     elif aspect >= 1.5:
