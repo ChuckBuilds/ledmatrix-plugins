@@ -1,0 +1,275 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Geochron World Clock Configuration",
+  "description": "Configuration for the Geochron World Clock plugin - a real-time world map showing the day/night terminator, subsolar point, city markers, and a digital clock.",
+  "type": "object",
+  "x-propertyOrder": [
+    "enabled",
+    "display_duration",
+    "update_interval",
+    "timezone",
+    "map_center_longitude",
+    "show_terminator_bands",
+    "night_brightness",
+    "show_grid",
+    "graticule_step_deg",
+    "show_sun_marker",
+    "show_cities",
+    "cities",
+    "show_digital_clock",
+    "clock_format",
+    "show_seconds",
+    "colors"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable or disable the Geochron World Clock plugin"
+    },
+    "display_duration": {
+      "type": "number",
+      "title": "Seconds per Display",
+      "default": 20,
+      "minimum": 5,
+      "maximum": 300,
+      "description": "How long to show the Geochron before rotating to the next plugin"
+    },
+    "update_interval": {
+      "type": "integer",
+      "title": "Update Interval (seconds)",
+      "default": 45,
+      "minimum": 15,
+      "maximum": 300,
+      "description": "How often to recompute the sun position and re-render the map. The terminator drifts slowly, so this can be infrequent."
+    },
+    "timezone": {
+      "type": ["string", "null"],
+      "title": "Local Timezone",
+      "default": null,
+      "description": "IANA timezone name (e.g. 'America/New_York') used for the local time readout and to auto-derive the map center longitude on square/tall panels. Leave null to inherit the LEDMatrix global timezone."
+    },
+    "map_center_longitude": {
+      "type": ["number", "null"],
+      "title": "Map Center Longitude",
+      "default": null,
+      "minimum": -180,
+      "maximum": 180,
+      "description": "Longitude to center the map on for square/tall panels that can't show the full 360 degrees. Leave null to auto-derive from the local timezone's UTC offset."
+    },
+    "show_terminator_bands": {
+      "type": "boolean",
+      "title": "Show Twilight Bands",
+      "default": true,
+      "description": "Show smooth civil/nautical/astronomical twilight gradient bands at the day/night terminator. When off, the terminator is a hard day/night line."
+    },
+    "night_brightness": {
+      "type": "number",
+      "title": "Night Side Brightness",
+      "default": 0.20,
+      "minimum": 0.05,
+      "maximum": 0.6,
+      "description": "Brightness multiplier applied to the map on the night side (1.0 = no darkening)"
+    },
+    "show_grid": {
+      "type": "boolean",
+      "title": "Show Lat/Lon Grid",
+      "default": true,
+      "description": "Draw a latitude/longitude graticule over the map"
+    },
+    "graticule_step_deg": {
+      "type": "integer",
+      "title": "Grid Spacing (degrees)",
+      "enum": [15, 30, 45, 90],
+      "default": 30,
+      "description": "Spacing between graticule lines, in degrees of latitude/longitude"
+    },
+    "show_sun_marker": {
+      "type": "boolean",
+      "title": "Show Sun Marker",
+      "default": true,
+      "description": "Draw a marker at the subsolar point (where the sun is directly overhead)"
+    },
+    "show_cities": {
+      "type": "boolean",
+      "title": "Show City Markers",
+      "default": true,
+      "description": "Draw markers for the configured cities"
+    },
+    "cities": {
+      "type": "array",
+      "title": "City Markers",
+      "description": "Cities to mark on the map. Each is plotted as a dot; labels and local times are shown when space allows.",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "maxLength": 20
+          },
+          "lat": {
+            "type": "number",
+            "title": "Latitude",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lon": {
+            "type": "number",
+            "title": "Longitude",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone",
+            "description": "IANA timezone name for this city's local time"
+          }
+        },
+        "required": ["name", "lat", "lon"],
+        "additionalProperties": false
+      },
+      "default": [
+        {"name": "New York", "lat": 40.71, "lon": -74.01, "timezone": "America/New_York"},
+        {"name": "Los Angeles", "lat": 34.05, "lon": -118.24, "timezone": "America/Los_Angeles"},
+        {"name": "Rio de Janeiro", "lat": -22.91, "lon": -43.17, "timezone": "America/Sao_Paulo"},
+        {"name": "London", "lat": 51.51, "lon": -0.13, "timezone": "Europe/London"},
+        {"name": "Cairo", "lat": 30.04, "lon": 31.24, "timezone": "Africa/Cairo"},
+        {"name": "Moscow", "lat": 55.75, "lon": 37.62, "timezone": "Europe/Moscow"},
+        {"name": "Tokyo", "lat": 35.68, "lon": 139.65, "timezone": "Asia/Tokyo"},
+        {"name": "Sydney", "lat": -33.87, "lon": 151.21, "timezone": "Australia/Sydney"}
+      ]
+    },
+    "show_digital_clock": {
+      "type": "boolean",
+      "title": "Show Digital Clock",
+      "default": true,
+      "description": "Show a digital UTC/local time readout"
+    },
+    "clock_format": {
+      "type": "string",
+      "title": "Clock Format",
+      "enum": ["12h", "24h"],
+      "default": "24h",
+      "description": "12-hour (with AM/PM) or 24-hour time format"
+    },
+    "show_seconds": {
+      "type": "boolean",
+      "title": "Show Seconds",
+      "default": true,
+      "description": "Show seconds in the digital clock readout"
+    },
+    "colors": {
+      "type": "object",
+      "title": "Colors",
+      "description": "Color palette for the map and overlays",
+      "x-propertyOrder": [
+        "ocean_color",
+        "land_color",
+        "coastline_color",
+        "night_tint_color",
+        "sun_marker_color",
+        "city_marker_color",
+        "grid_color",
+        "text_primary_color",
+        "text_secondary_color"
+      ],
+      "properties": {
+        "ocean_color": {
+          "type": "array",
+          "title": "Ocean Color",
+          "x-widget": "color-picker",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [10, 35, 90],
+          "description": "RGB color for ocean/water [R, G, B]"
+        },
+        "land_color": {
+          "type": "array",
+          "title": "Land Color",
+          "x-widget": "color-picker",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [40, 110, 50],
+          "description": "RGB color for land masses [R, G, B]"
+        },
+        "coastline_color": {
+          "type": "array",
+          "title": "Coastline Color",
+          "x-widget": "color-picker",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [90, 160, 100],
+          "description": "RGB color for coastlines and country borders [R, G, B]"
+        },
+        "night_tint_color": {
+          "type": "array",
+          "title": "Night Tint Color",
+          "x-widget": "color-picker",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [10, 10, 40],
+          "description": "Color the night side of the map is tinted toward [R, G, B]"
+        },
+        "sun_marker_color": {
+          "type": "array",
+          "title": "Sun Marker Color",
+          "x-widget": "color-picker",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 220, 0],
+          "description": "RGB color for the subsolar point marker [R, G, B]"
+        },
+        "city_marker_color": {
+          "type": "array",
+          "title": "City Marker Color",
+          "x-widget": "color-picker",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 60, 60],
+          "description": "RGB color for city marker dots [R, G, B]"
+        },
+        "grid_color": {
+          "type": "array",
+          "title": "Grid Color",
+          "x-widget": "color-picker",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [70, 70, 70],
+          "description": "RGB color for the lat/lon graticule [R, G, B]"
+        },
+        "text_primary_color": {
+          "type": "array",
+          "title": "Primary Text Color",
+          "x-widget": "color-picker",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 255, 255],
+          "description": "RGB color for primary text (clock, headings) [R, G, B]"
+        },
+        "text_secondary_color": {
+          "type": "array",
+          "title": "Secondary Text Color",
+          "x-widget": "color-picker",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [180, 180, 180],
+          "description": "RGB color for secondary text (dates, labels) [R, G, B]"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["enabled"],
+  "additionalProperties": false
+}

@@ -1,0 +1,9 @@
+{
+  "_comment": "Settings the plugin safety harness uses to render geochron deterministically for golden-image comparison. timezone=UTC (map_center_longitude auto-derives to 0) + a frozen UTC instant make the output identical on any host.",
+  "config": {
+    "enabled": true,
+    "timezone": "UTC"
+  },
+  "mock_data": {},
+  "freeze_time": "2025-08-01 15:25:00"
+}
