@@ -214,53 +214,69 @@ Same as Champions League — use the club's domestic abbreviation from the table
 
 ## FIFA World Cup 2026 (fifa.world)
 
-> **⚠️ Verify abbreviations via debug logs.** ESPN's internal abbreviations for national teams are not always the same as FIFA country codes. Enable debug logging and check the `home_abbr`/`away_abbr` values logged for each game to confirm the exact codes the ESPN feed uses before setting `favorite_teams`.
+National-team flags are **bundled with the plugin** and seeded into a dedicated
+`soccer_logos/national/` directory on startup. This keeps them isolated from club
+logos that share an abbreviation — without it, Espanyol's `ESP` crest would
+shadow Spain's flag, Portland Timbers' `POR` would shadow Portugal, and Colorado
+Rapids' `COL` would shadow Colombia. Every country below renders its real flag
+out of the box; no per-game download is required.
 
-The table below lists high-confidence ESPN abbreviations based on prior international tournament data. Entries marked with `*` should be treated as approximate until confirmed from the live feed.
+The abbreviations below are confirmed from ESPN's live `fifa.world` feed and are
+the exact codes to use in `favorite_teams`.
 
 | Country | Abbreviation |
 |---------|-------------|
+| Algeria | ALG |
 | Argentina | ARG |
 | Australia | AUS |
+| Austria | AUT |
 | Belgium | BEL |
+| Bosnia-Herzegovina | BIH |
 | Brazil | BRA |
-| Cameroon | CMR |
 | Canada | CAN |
-| Chile | CHI |
+| Cape Verde | CPV |
 | Colombia | COL |
-| Costa Rica | CRC |
+| Congo DR | COD |
 | Croatia | CRO |
-| Czech Republic | CZE |
+| Curaçao | CUW |
+| Czechia | CZE |
 | Ecuador | ECU |
 | Egypt | EGY |
 | England | ENG |
 | France | FRA |
 | Germany | GER |
 | Ghana | GHA |
-| Hungary | HUN |
+| Haiti | HAI |
 | Iran | IRN |
+| Iraq | IRQ |
+| Ivory Coast | CIV |
 | Japan | JPN |
-| Mali | MLI * |
+| Jordan | JOR |
 | Mexico | MEX |
 | Morocco | MAR |
 | Netherlands | NED |
 | New Zealand | NZL |
-| Nigeria | NGA |
+| Norway | NOR |
 | Panama | PAN |
 | Paraguay | PAR |
 | Portugal | POR |
+| Qatar | QAT |
 | Saudi Arabia | KSA |
+| Scotland | SCO |
 | Senegal | SEN |
-| Serbia | SRB |
-| Slovakia | SVK |
+| South Africa | RSA |
 | South Korea | KOR |
 | Spain | ESP |
+| Sweden | SWE |
 | Switzerland | SUI |
 | Tunisia | TUN |
+| Türkiye | TUR |
 | United States | USA |
 | Uruguay | URU |
+| Uzbekistan | UZB |
 
-To find your team's abbreviation: enable the plugin, set `debug` log level, then look for lines like `Extracted: USA@MEX` in the logs — those are the exact codes ESPN returns.
+If a team isn't listed (e.g. a late playoff qualifier), the plugin still
+downloads its flag on demand from ESPN into the same `national/` directory.
 
 ---
 
