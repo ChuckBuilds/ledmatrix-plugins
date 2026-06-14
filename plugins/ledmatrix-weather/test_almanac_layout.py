@@ -83,19 +83,56 @@ def check_layout_helper(w, h):
     pct_reserve = int(draw.textlength("100%", font=plugin.display_manager.extra_small_font)) + 2
 
     fails = []
-    for name in ["New Moon", "Wax Crescent", "First Quarter", "Wax Gibbous",
-                 "Full Moon", "Wan Gibbous", "Last Quarter", "Wan Crescent"]:
+    for name in ["New Moon", "Waxing Crescent", "First Quarter", "Waxing Gibbous",
+                 "Full Moon", "Waning Gibbous", "Last Quarter", "Waning Crescent"]:
         lay = plugin._almanac_layout(draw, w, h, text_x, name, True)
         title_w = draw.textlength(lay["title_text"], font=lay["title_font"])
         # Horizontal: fitted title must not run into the reserved % zone.
         if title_w > col_w - pct_reserve:
             fails.append(f"'{name}': title {title_w:.0f}px > budget "
                          f"{col_w - pct_reserve}px (collides with %)")
+        # The fitted title must be a clean variant — the full name or its
+        # abbreviation — unless even the abbreviation can't fit, in which case a
+        # trim is the only option. Never trim mid-word when a whole word fits.
+        short = plugin._PHASE_ABBREV.get(name, name)
+        short_fits = draw.textlength(short, font=lay["title_font"]) <= col_w - pct_reserve
+        if short_fits and lay["title_text"] not in (name, short):
+            fails.append(f"'{name}': fitted title '{lay['title_text']}' is a "
+                         f"mid-word trim though '{short}' fits")
         # Vertical: every placed row's glyphs stay above the bottom edge.
         for i, y in enumerate(lay["rows"]):
             row_h = 8 if (i == 0 and lay["title_font"] is plugin.display_manager.small_font) else body_h
             if y is not None and y + row_h > h:
                 fails.append(f"'{name}': row {i} bottom {y + row_h} > height {h}")
+    return fails
+
+
+def check_full_names_restored():
+    """The phase namer returns full Waxing/Waning names, and the layout shows
+    them in full on a roomy panel (the point of restoring the abbreviated text)."""
+    fails = []
+    expected = {
+        0.12: "Waxing Crescent",
+        0.40: "Waxing Gibbous",
+        0.60: "Waning Gibbous",
+        0.90: "Waning Crescent",
+    }
+    plugin = _new_plugin(256, 32)
+    for phase, name in expected.items():
+        got = plugin._get_moon_phase_name(phase)
+        if got != name:
+            fails.append(f"_get_moon_phase_name({phase}) = '{got}', want '{name}'")
+
+    # On a wide panel the full name should survive intact (not abbreviated).
+    from PIL import ImageDraw
+    w, h = 256, 32
+    draw = ImageDraw.Draw(Image.new("RGB", (w, h)))
+    text_x = min(h - 6, 32) + 8
+    for name in expected.values():
+        lay = plugin._almanac_layout(draw, w, h, text_x, name, True)
+        if lay["title_text"] != name:
+            fails.append(f"256x32: '{name}' rendered as "
+                         f"'{lay['title_text']}' (full name not restored)")
     return fails
 
 
@@ -233,6 +270,17 @@ def main():
                 print(f"       {f}")
         else:
             print(f"PASS {tag}")
+
+    # The full Waxing/Waning phase names are restored and shown intact on a
+    # roomy panel (degrading to the abbreviation only where the column is tight).
+    fails = check_full_names_restored()
+    if fails:
+        total_fail += 1
+        print("FAIL full-names:")
+        for f in fails:
+            print(f"       {f}")
+    else:
+        print("PASS full-names")
 
     if total_fail:
         print(f"\n{total_fail} check(s) failed")

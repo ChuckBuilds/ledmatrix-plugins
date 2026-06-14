@@ -1,0 +1,11 @@
+{
+  "_comment": "Deterministic render settings for the plugin safety harness. The cached payload (real Open-Meteo + astral data for Dallas, 2026-06-14) drives every weather screen without a network call; the frozen instant matches that day so the hourly/daily screens show real future data. 06-14 is a day astral resolves cleanly, so the almanac shows a real moonrise (5:26am) and moonset (8:42pm). Moon phase 0.97 renders as 'Waning Crescent' — the longest restored phase name, which exercises the title fit/abbreviation fallback at every panel size.",
+  "config": {
+    "location_city": "Dallas",
+    "location_state": "Texas",
+    "location_country": "US",
+    "units": "imperial"
+  },
+  "mock_data": "test/fixtures/mock.json",
+  "freeze_time": "2026-06-14 17:00:00"
+}

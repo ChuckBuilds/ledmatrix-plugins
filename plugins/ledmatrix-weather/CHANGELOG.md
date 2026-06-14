@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.5.1] - 2026-06-14
+
+### Changed
+- **Full moon-phase names restored on the almanac page**: the redesigned layout
+  (capped moon icon + adaptive title font) freed up the horizontal room the old
+  abbreviations were working around, so the page now shows "Waxing/Waning
+  Crescent" and "Waxing/Waning Gibbous" instead of the abbreviated "Wax/Wan"
+  forms. It renders the full name where it fits, degrades to the abbreviation
+  when the column is tight, and only trims characters as a last resort — so no
+  panel ever shows a mid-word cut where a whole word would fit.
+
+### Fixed
+- **Missing moonset on the almanac page**: once a month the moonset slot showed
+  `---`. astral only searches a single calendar day, so on the one day the
+  moon's set straddles midnight it raises "Moon never sets on this date" even
+  though the moon clearly sets that afternoon (sffjunkie/astral #88, #105 — both
+  open and unreleased as of astral 3.2, the latest release). When astral fails,
+  we now recover the time by scanning the moon's elevation across the local day
+  with astral's own ephemeris and bisecting the horizon crossing. Matches
+  astral to the minute on normal days; the same fallback covers moonrise.
+- **"Illumination %" was actually cycle progress**: the percentage next to the
+  moon-phase name showed how far through the lunar cycle the moon is (0=new,
+  0.5=full), not how much of the disc is lit — so a waning crescent read "86%"
+  when it's ~13% illuminated. It now shows the true illuminated fraction.
+
 ## [2.3.2] - 2026-06-04
 
 ### Fixed

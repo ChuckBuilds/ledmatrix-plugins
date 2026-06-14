@@ -13,6 +13,7 @@ Features:
 - Automatic error handling and retry logic
 """
 
+import math
 import requests
 import time
 from datetime import datetime
@@ -648,6 +649,75 @@ class WeatherPlugin(BasePlugin):
             })
         return result
 
+    @staticmethod
+    def _moon_illumination(phase):
+        """Fraction of the moon's disc lit (0..1) for a cycle position
+        (0=new, 0.5=full, 0.75=last quarter). Distinct from `phase`, which is
+        progress through the cycle — they agree only at the quarters, so a
+        waning crescent at phase 0.86 is ~13% lit, not 86%.
+        """
+        return (1 - math.cos(2 * math.pi * phase)) / 2
+
+    def _astral_moon_event(self, astral_fn, observer, d, tz, rising):
+        """Moonrise/moonset unix timestamp, recovering astral's monthly "never
+        rises/sets on this date" failure via the elevation-scan fallback.
+
+        astral signals the no-event-on-this-date case inconsistently — usually a
+        ValueError, sometimes a None return (sffjunkie/astral #94, #105) — and
+        both mean "recover it ourselves". Any *other* astral error is logged and
+        reported as a missing field rather than propagating: moon rise/set is a
+        secondary value, and update() turns any exception from the fetch into
+        error backoff that blanks the entire weather widget.
+        """
+        try:
+            dt = astral_fn(observer, d, tzinfo=tz)
+        except ValueError:
+            dt = self._moon_event_fallback(observer, d, tz, rising=rising)
+        except Exception:
+            self.logger.warning("Unexpected astral moon event error for %s", d,
+                                exc_info=True)
+            dt = None
+        else:
+            if dt is None:
+                dt = self._moon_event_fallback(observer, d, tz, rising=rising)
+        return int(dt.timestamp()) if dt else None
+
+    def _moon_event_fallback(self, observer, d, tz, rising):
+        """Recover a moonrise/moonset that astral wrongly reports as absent.
+
+        astral only searches within the single calendar day, so on the one day
+        each month the event straddles the day boundary it raises "Moon never
+        rises/sets on this date" even though it does (sffjunkie/astral #88, #105
+        — both open and unreleased as of astral 3.2, the latest release). Scan
+        the moon's elevation across the local day using astral's own ephemeris
+        and bisect the horizon crossing ourselves.
+        """
+        from astral import moon as astral_moon
+        from datetime import datetime, time, timedelta
+        import zoneinfo
+        utc = zoneinfo.ZoneInfo('UTC')
+
+        def elev(t):
+            # astral.elevation ignores tzinfo, so feed it the UTC instant.
+            # 0.125deg is the standard moon rise/set altitude (parallax less
+            # refraction and semidiameter).
+            return astral_moon.elevation(observer, t.astimezone(utc)) - 0.125
+
+        start = datetime.combine(d, time(0, 0), tzinfo=tz)
+        end = start + timedelta(days=1)
+        prev_t, prev_e, t = start, elev(start), start + timedelta(minutes=20)
+        while t <= end:
+            e = elev(t)
+            crossed = (prev_e < 0 <= e) if rising else (prev_e >= 0 > e)
+            if crossed:
+                lo, hi = prev_t, t
+                for _ in range(20):  # bisect to ~sub-second
+                    mid = lo + (hi - lo) / 2
+                    lo, hi = (mid, hi) if (elev(mid) < 0) == rising else (lo, mid)
+                return lo + (hi - lo) / 2
+            prev_t, prev_e, t = t, e, t + timedelta(minutes=20)
+        return None
+
     def _map_om_daily(self, om_data: Dict) -> List[Dict]:
         """Convert Open-Meteo daily arrays to OWM-compatible daily list.
 
@@ -689,16 +759,10 @@ class WeatherPlugin(BasePlugin):
 
             # Moon phase: astral returns 0-28; normalize to 0-1 to match OWM convention
             moon_phase = astral_moon.phase(d) / 28.0
-            try:
-                moonrise_dt = astral_moon.moonrise(observer, d, tzinfo=tz)
-                moonrise_ts = int(moonrise_dt.timestamp()) if moonrise_dt else None
-            except Exception:
-                moonrise_ts = None
-            try:
-                moonset_dt = astral_moon.moonset(observer, d, tzinfo=tz)
-                moonset_ts = int(moonset_dt.timestamp()) if moonset_dt else None
-            except Exception:
-                moonset_ts = None
+            moonrise_ts = self._astral_moon_event(
+                astral_moon.moonrise, observer, d, tz, rising=True)
+            moonset_ts = self._astral_moon_event(
+                astral_moon.moonset, observer, d, tz, rising=False)
 
             result.append({
                 'dt': ts,
@@ -1225,6 +1289,16 @@ class WeatherPlugin(BasePlugin):
     
     # --- Almanac Display Mode ---
 
+    # Abbreviated phase names used by the almanac layout when the full name
+    # won't fit the text column (see _almanac_layout). Only the long
+    # waxing/waning names need shortening; the rest already fit.
+    _PHASE_ABBREV = {
+        "Waxing Crescent": "Wax Crescent",
+        "Waxing Gibbous": "Wax Gibbous",
+        "Waning Gibbous": "Wan Gibbous",
+        "Waning Crescent": "Wan Crescent",
+    }
+
     def _get_moon_phase_name(self, phase: float) -> str:
         """Convert moon phase float (0-1) to a name."""
         if phase is None:
@@ -1232,19 +1306,19 @@ class WeatherPlugin(BasePlugin):
         if phase == 0:
             return "New Moon"
         elif phase < 0.25:
-            return "Wax Crescent"
+            return "Waxing Crescent"
         elif phase == 0.25:
             return "First Quarter"
         elif phase < 0.5:
-            return "Wax Gibbous"
+            return "Waxing Gibbous"
         elif phase == 0.5:
             return "Full Moon"
         elif phase < 0.75:
-            return "Wan Gibbous"
+            return "Waning Gibbous"
         elif phase == 0.75:
             return "Last Quarter"
         else:
-            return "Wan Crescent"
+            return "Waning Crescent"
 
     def _get_moon_icon_code(self, phase: float) -> str:
         """Map moon phase float (0-1) to one of 8 icon filename stems."""
@@ -1364,11 +1438,15 @@ class WeatherPlugin(BasePlugin):
         """Choose fonts and row positions for the almanac page so nothing
         overflows the panel or collides with the illumination %.
 
-        The 8px title font is wide (PressStart2P): a name like "Wax Gibbous"
-        is 88px, which doesn't fit the ~94px text column next to a right-aligned
+        The 8px title font is wide (PressStart2P): a name like "Waxing Gibbous"
+        is 112px, which doesn't fit the ~94px text column next to a right-aligned
         %, and longer names run clean off a 128-wide panel. Short panels also
         can't stack a 9px title plus three 7px rows in 32px of height. This
-        sizes both axes to the actual panel.
+        sizes both axes to the actual panel and, when the full phase name still
+        won't fit, falls back to the abbreviated form (e.g. "Wax Gibbous")
+        before trimming characters — so wide panels show the full name and
+        cramped ones degrade to a readable abbreviation rather than a mid-word
+        cut.
 
         Returns a dict with `title_font`, `title_text` (fitted), `pct_font`,
         and `rows` — a list of four y-positions (title, sun, moon, day) where
@@ -1384,12 +1462,21 @@ class WeatherPlugin(BasePlugin):
 
         # Prefer the bold 8px title, but drop to the 6px font when the name
         # (with room reserved for the %) won't fit, or when the panel is too
-        # short to spare the extra height. Truncate as a last resort.
+        # short to spare the extra height.
         compact = height < 40
         if compact or draw.textlength(phase_name, font=title_font) > name_budget:
             title_font = body_font
             title_h = body_h
-        title_text = self._truncate_to_width(draw, phase_name, title_font, name_budget)
+
+        # At the chosen font, show the fullest variant that fits: the full phase
+        # name first, then the abbreviation, and only trim characters as a last
+        # resort.
+        short_name = self._PHASE_ABBREV.get(phase_name, phase_name)
+        title_text = next(
+            (cand for cand in (phase_name, short_name)
+             if draw.textlength(cand, font=title_font) <= name_budget),
+            self._truncate_to_width(draw, short_name, title_font, name_budget),
+        )
 
         # Stack rows top-down, dropping any that would spill past the bottom.
         row_gap = 1 if compact else 2
@@ -1478,7 +1565,7 @@ class WeatherPlugin(BasePlugin):
                 draw.text((text_x, rows[0]), layout["title_text"],
                           font=layout["title_font"], fill=(200, 200, 255))
                 if moon_phase is not None:
-                    pct = f"{int(moon_phase * 100)}%"
+                    pct = f"{int(round(self._moon_illumination(moon_phase) * 100))}%"
                     pct_w = draw.textlength(pct, font=pct_font)
                     draw.text((width - pct_w - 2, rows[0]), pct,
                               font=pct_font, fill=(140, 140, 180))
