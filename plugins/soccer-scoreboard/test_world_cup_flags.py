@@ -86,7 +86,7 @@ def test_bundled_flags_present():
     """The plugin ships the full World Cup flag set, not placeholders."""
     assert BUNDLED_FLAGS.is_dir(), f"bundled flags dir missing: {BUNDLED_FLAGS}"
     flags = list(BUNDLED_FLAGS.glob("*.png"))
-    assert len(flags) >= 40, f"expected the full World Cup field, found {len(flags)} flags"
+    assert len(flags) >= 48, f"expected the full World Cup field (48 teams), found {len(flags)} flags"
     aus = BUNDLED_FLAGS / "AUS.png"
     assert aus.exists(), "Australia flag (AUS.png) is not bundled"
     # The old broken behaviour shipped a ~577-byte gray placeholder. A real
