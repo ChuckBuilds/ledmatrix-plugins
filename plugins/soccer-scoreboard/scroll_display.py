@@ -95,6 +95,9 @@ class ScrollDisplay:
         self.plugin_dir = plugin_dir
         self.logger = logging.getLogger(__name__)
 
+        # Shared logo cache reused across renders so each team logo is loaded once
+        self._logo_cache: Dict[str, Image.Image] = {}
+
         # Initialize ScrollHelper if available
         self.scroll_helper: Optional[Any] = None
         if ScrollHelper:
@@ -331,7 +334,8 @@ class ScrollDisplay:
             game_card_width,
             self.display_height,
             self.config,
-            self.plugin_dir
+            logo_cache=self._logo_cache,
+            custom_logger=self.logger
         )
         if rankings_cache:
             renderer.set_rankings_cache(rankings_cache)

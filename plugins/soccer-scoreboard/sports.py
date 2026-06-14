@@ -1082,6 +1082,20 @@ class SportsCore(ABC):
     def _custom_scorebug_layout(self, game: dict, draw_overlay: ImageDraw.ImageDraw):
         pass
 
+    def _get_team_record_text(self, abbr: str, record: str) -> str:
+        """Return the corner text for a team: ranking (if enabled/available) or record.
+
+        When rankings are enabled they take precedence; unranked teams show
+        nothing rather than falling back to a record, matching the behavior of
+        the recent/upcoming layouts.
+        """
+        if self.show_ranking:
+            rank = self._team_rankings_cache.get(abbr, 0)
+            return f"#{rank}" if rank > 0 else ""
+        if self.show_records:
+            return record
+        return ""
+
     def cleanup(self):
         """Clean up resources when plugin is unloaded."""
         # Close HTTP session
@@ -2202,6 +2216,161 @@ class SportsLive(SportsCore):
         # Track game update timestamps for stale data detection
         self.game_update_timestamps = {}
         self.stale_game_timeout = self.mode_config.get("stale_game_timeout", 300)  # 5 minutes default
+
+    def _get_live_status_text(self, game: Dict) -> str:
+        """Build the top status string for a live game (period + clock)."""
+        if game.get("is_halftime"):
+            return "HALF"
+        if game.get("is_period_break"):
+            return game.get("status_text", "BREAK")
+        # period_text already combines period + clock (e.g. "2H 75'") in the
+        # soccer managers; fall back to the raw clock, then a generic "LIVE".
+        period_text = game.get("period_text", "")
+        if period_text:
+            return period_text
+        clock = game.get("clock", "")
+        if clock:
+            return clock
+        return "LIVE"
+
+    def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
+        """Draw the switch-mode scorebug for a live soccer game.
+
+        Mirrors the recent-game layout (logos at the edges, score centered low)
+        but shows the live period/clock at the top instead of "Final".
+        """
+        try:
+            if force_clear:
+                self.display_manager.clear()
+
+            display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_width
+            display_height = self.display_manager.matrix.height if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_height
+
+            main_img = Image.new("RGBA", (display_width, display_height), (0, 0, 0, 255))
+            overlay = Image.new("RGBA", (display_width, display_height), (0, 0, 0, 0))
+            draw_overlay = ImageDraw.Draw(overlay)
+
+            home_logo = self._load_and_resize_logo(
+                game["home_id"],
+                game["home_abbr"],
+                game["home_logo_path"],
+                game.get("home_logo_url"),
+            )
+            away_logo = self._load_and_resize_logo(
+                game["away_id"],
+                game["away_abbr"],
+                game["away_logo_path"],
+                game.get("away_logo_url"),
+            )
+
+            if not home_logo or not away_logo:
+                self.logger.error(f"Failed to load logos for live game: {game.get('id')}")
+                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                self._draw_text_with_outline(
+                    draw_final, "Logo Error", (5, 5), self.fonts["status"]
+                )
+                self.display_manager.image = main_img.convert("RGB")
+                self.display_manager.update_display()
+                return
+
+            center_y = display_height // 2
+
+            # Logos at the edges (matches recent/upcoming layouts)
+            home_x = display_width - home_logo.width + 2 + self._get_layout_offset('home_logo', 'x_offset')
+            home_y = center_y - (home_logo.height // 2) + self._get_layout_offset('home_logo', 'y_offset')
+            main_img.paste(home_logo, (home_x, home_y), home_logo)
+
+            away_x = -2 + self._get_layout_offset('away_logo', 'x_offset')
+            away_y = center_y - (away_logo.height // 2) + self._get_layout_offset('away_logo', 'y_offset')
+            main_img.paste(away_logo, (away_x, away_y), away_logo)
+
+            # Score (centered, low — same position as recent games)
+            def format_score(score):
+                try:
+                    if score is None:
+                        return "0"
+                    if isinstance(score, str):
+                        score = score.strip()
+                        if not score:
+                            return "0"
+                        try:
+                            return str(int(float(score)))
+                        except ValueError:
+                            import re
+                            numbers = re.findall(r'\d+', score)
+                            return str(int(numbers[0])) if numbers else "0"
+                    if isinstance(score, dict):
+                        score_value = score.get("value", score.get("displayValue", 0))
+                        return str(int(float(score_value)))
+                    return str(int(float(score)))
+                except (ValueError, TypeError):
+                    return "0"
+
+            home_score = format_score(game.get("home_score", "0"))
+            away_score = format_score(game.get("away_score", "0"))
+            score_text = f"{away_score}-{home_score}"
+            score_width = draw_overlay.textlength(score_text, font=self.fonts["score"])
+            score_x = (display_width - score_width) // 2 + self._get_layout_offset('score', 'x_offset')
+            score_y = display_height - 14 + self._get_layout_offset('score', 'y_offset')
+            self._draw_text_with_outline(
+                draw_overlay, score_text, (score_x, score_y), self.fonts["score"]
+            )
+
+            # Live status (period + clock) at the top center
+            status_text = self._get_live_status_text(game)
+            status_width = draw_overlay.textlength(status_text, font=self.fonts["time"])
+            status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
+            status_y = 1 + self._get_layout_offset('status_text', 'y_offset')
+            self._draw_text_with_outline(
+                draw_overlay, status_text, (status_x, status_y), self.fonts["time"]
+            )
+
+            # Draw odds if available
+            if "odds" in game and game["odds"]:
+                self._draw_dynamic_odds(
+                    draw_overlay, game["odds"], display_width, display_height
+                )
+
+            # Draw records or rankings if enabled
+            if self.show_records or self.show_ranking:
+                try:
+                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+                except IOError:
+                    record_font = ImageFont.load_default()
+
+                away_abbr = game.get("away_abbr", "")
+                home_abbr = game.get("home_abbr", "")
+
+                record_bbox = draw_overlay.textbbox((0, 0), "0-0", font=record_font)
+                record_height = record_bbox[3] - record_bbox[1]
+                record_y = self.display_height - record_height + self._get_layout_offset('records', 'y_offset')
+
+                if away_abbr:
+                    away_text = self._get_team_record_text(away_abbr, game.get("away_record", ""))
+                    if away_text:
+                        away_record_x = 0 + self._get_layout_offset('records', 'away_x_offset')
+                        self._draw_text_with_outline(
+                            draw_overlay, away_text, (away_record_x, record_y), record_font
+                        )
+
+                if home_abbr:
+                    home_text = self._get_team_record_text(home_abbr, game.get("home_record", ""))
+                    if home_text:
+                        home_record_bbox = draw_overlay.textbbox((0, 0), home_text, font=record_font)
+                        home_record_width = home_record_bbox[2] - home_record_bbox[0]
+                        home_record_x = display_width - home_record_width + self._get_layout_offset('records', 'home_x_offset')
+                        self._draw_text_with_outline(
+                            draw_overlay, home_text, (home_record_x, record_y), record_font
+                        )
+
+            self._custom_scorebug_layout(game, draw_overlay)
+            main_img = Image.alpha_composite(main_img, overlay)
+            main_img = main_img.convert("RGB")
+            self.display_manager.image = main_img
+            self.display_manager.update_display()
+
+        except Exception as e:
+            self.logger.error(f"Error displaying live game: {e}", exc_info=True)
 
     def _is_game_really_over(self, game: Dict) -> bool:
         """Check if a game appears to be over even if API says it's live.

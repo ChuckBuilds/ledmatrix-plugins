@@ -6,6 +6,7 @@ Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Champions League, an
 """
 
 import logging
+import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -67,6 +68,15 @@ class BaseSoccerManager(SportsCore):
         self.sport = "soccer"
         self.league = league_key
 
+        # National-team flags (FIFA World Cup) live in a dedicated subdirectory so
+        # they never collide with club logos that share an abbreviation — e.g. ESP
+        # (Spain vs Espanyol), POR (Portugal vs Portland Timbers), COL (Colombia vs
+        # Colorado Rapids). The plugin bundles every World Cup nation's flag and seeds
+        # them here on startup, so all teams render correctly instead of falling back
+        # to a stale placeholder or a colliding club crest.
+        if league_key == "fifa.world":
+            self.logo_dir = self._setup_national_flags_dir(self.logo_dir)
+
         # Check display modes to determine what data to fetch
         display_modes = self.mode_config.get("display_modes", {})
         self.recent_enabled = display_modes.get(f"soccer_{league_key}_recent", False)
@@ -80,6 +90,45 @@ class BaseSoccerManager(SportsCore):
         self.logger.info(
             f"Display modes - Recent: {self.recent_enabled}, Upcoming: {self.upcoming_enabled}, Live: {self.live_enabled}"
         )
+
+    def _setup_national_flags_dir(self, club_logo_dir: Path) -> Path:
+        """Return a dedicated logo directory for national-team flags, seeded from
+        the plugin's bundled flags.
+
+        World Cup flags share a flat abbreviation namespace with club logos, so
+        keeping them in a 'national' subdirectory prevents a club crest (e.g.
+        Espanyol's ESP.png) from shadowing a nation's flag (Spain's ESP). The
+        bundled flags are copied in once so every World Cup team renders without
+        depending on a per-game download.
+        """
+        flags_dir = Path(club_logo_dir) / "national"
+        try:
+            flags_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            self.logger.warning(
+                f"Could not create national flags directory {flags_dir}: {e}; "
+                "falling back to the shared soccer logo directory"
+            )
+            return Path(club_logo_dir)
+
+        bundled = Path(__file__).resolve().parent / "assets" / "flags"
+        if not bundled.is_dir():
+            self.logger.warning(f"Bundled flags directory not found at {bundled}")
+            return flags_dir
+
+        seeded = 0
+        for src in bundled.glob("*.png"):
+            dest = flags_dir / src.name
+            if dest.exists():
+                continue
+            try:
+                shutil.copyfile(src, dest)
+                seeded += 1
+            except OSError as e:
+                self.logger.warning(f"Failed to seed flag {src.name}: {e}")
+        if seeded:
+            self.logger.info(f"Seeded {seeded} World Cup flags into {flags_dir}")
+        return flags_dir
 
     def _fetch_soccer_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """

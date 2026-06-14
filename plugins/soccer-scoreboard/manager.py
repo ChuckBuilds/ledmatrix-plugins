@@ -1126,6 +1126,19 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             except Exception as e:
                 self.logger.warning(f"Error updating manager: {e}")
 
+    def _manager_has_displayable_games(self, manager, mode_type: str) -> bool:
+        """Return True if the manager currently has games to show for this mode.
+
+        Live managers expose their games as ``live_games``; recent and upcoming
+        managers expose ``games_list``. In switch mode an empty manager must be
+        skipped: its ``display()`` clears the shared canvas when it has no games,
+        which would erase content another league's manager just drew for the same
+        mode and leave the panel blank for the rest of the slot.
+        """
+        if mode_type == 'live':
+            return bool(getattr(manager, 'live_games', None))
+        return bool(getattr(manager, 'games_list', None))
+
     def _get_available_modes(self) -> list:
         """Get list of available display modes based on enabled leagues."""
         modes = []
@@ -1409,7 +1422,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 continue
 
             manager = self._get_league_manager_for_mode(league_key, mode_type)
-            if manager:
+            if manager and self._manager_has_displayable_games(manager, mode_type):
                 managers_to_try.append((league_key, manager))
         
         # Try each manager until one returns True (has content)
@@ -1475,7 +1488,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                                     managers_to_try.append((live_priority, league_key, live_manager))
                         else:
                             manager = self._get_league_manager_for_mode(league_key, mode_type)
-                            if manager:
+                            if manager and self._manager_has_displayable_games(manager, mode_type):
                                 managers_to_try.append((False, league_key, manager))
 
                     # Sort by live_priority (True first) for live mode, then try each manager
@@ -1564,7 +1577,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 enabled_league_keys = self._get_enabled_leagues_for_mode(mode_type)
                 for key in enabled_league_keys:
                     manager = self._get_league_manager_for_mode(key, mode_type)
-                    if manager:
+                    if manager and self._manager_has_displayable_games(manager, mode_type):
                         managers_to_try.append((key, manager))
                 
                 # Try each manager until one returns True (has content)
@@ -1753,23 +1766,51 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
 
     def get_live_modes(self) -> list:
         """
-        Return the registered plugin mode name(s) that have live content.
-        
-        This should return the mode names as registered in manifest.json, not internal
-        mode names. The plugin is registered with "soccer_live", "soccer_recent", "soccer_upcoming".
+        Return the registered live mode name(s) of the leagues that currently
+        have live content, e.g. ``["soccer_fifa.world_live"]``.
+
+        The host registers this plugin's modes per-league (``soccer_<league>_live``,
+        built by ``_get_available_modes``), not under the generic ``soccer_live``
+        manifest name. The display controller looks the returned modes up in its
+        registered-mode map and only switches to one that exists; returning the
+        generic ``soccer_live`` matches nothing, so it falls back to the first
+        ``*_live`` mode in registration order — which may be an empty league whose
+        game isn't the one that's actually live. Returning the real per-league
+        mode names lets the controller switch straight to the league with the
+        live game.
         """
         if not self.is_enabled:
             return []
 
-        # Check if any league has live content
-        has_any_live = self.has_live_content()
-        
-        if has_any_live:
-            # Return the registered plugin mode name, not internal mode names
-            # The plugin is registered with "soccer_live" in manifest.json
-            return ["soccer_live"]
-        
-        return []
+        with self._config_lock:
+            registry = dict(self._league_registry)
+
+        live_modes = []
+        for league_key, league_data in registry.items():
+            if not league_data.get('enabled', False):
+                continue
+
+            live_manager = self._get_league_manager_for_mode(league_key, 'live')
+            if not live_manager:
+                continue
+            live_games = getattr(live_manager, "live_games", [])
+            if not live_games:
+                continue
+
+            show_all_live = league_data.get('show_all_live', False) or getattr(live_manager, 'show_all_live', False)
+            if show_all_live:
+                live_modes.append(f"soccer_{league_key}_live")
+                continue
+
+            favorite_teams = getattr(live_manager, "favorite_teams", [])
+            if favorite_teams and any(
+                game.get("home_abbr") in favorite_teams
+                or game.get("away_abbr") in favorite_teams
+                for game in live_games
+            ):
+                live_modes.append(f"soccer_{league_key}_live")
+
+        return live_modes
 
     def get_info(self) -> Dict[str, Any]:
         """Get plugin information."""
@@ -1792,7 +1833,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             info = {
                 "plugin_id": self.plugin_id,
                 "name": "Soccer Scoreboard",
-                "version": "1.7.1",
+                "version": "1.7.2",
                 "enabled": self.is_enabled,
                 "display_size": f"{self.display_width}x{self.display_height}",
                 "leagues": league_info,
