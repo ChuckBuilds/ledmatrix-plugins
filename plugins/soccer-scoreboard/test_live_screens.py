@@ -166,7 +166,7 @@ def test_live_layout_is_overridden_and_draws_score():
         def update_display(self):
             self.updated = True
 
-    live = live_cls.__new__(live_cls)
+    live = object.__new__(live_cls)
     live.display_manager = _FakeDisplayManager()
     live.display_width = 128
     live.display_height = 32
@@ -233,7 +233,7 @@ def test_live_status_text_variants():
     from sports import SportsLive
 
     live_cls = _concrete_live(SportsLive)
-    live = live_cls.__new__(live_cls)
+    live = object.__new__(live_cls)
     assert live._get_live_status_text({"is_halftime": True, "period_text": "1H"}) == "HALF"
     assert live._get_live_status_text({"is_period_break": True, "status_text": "ET"}) == "ET"
     assert live._get_live_status_text({"period_text": "2H 75'"}) == "2H 75'"
@@ -313,7 +313,7 @@ def _render_switch_live(width, height):
             pass
 
     live_cls = _concrete_live(SportsLive)
-    o = live_cls.__new__(live_cls)
+    o = object.__new__(live_cls)
     o.display_manager = _FakeDisplayManager()
     o.display_width = width
     o.display_height = height
