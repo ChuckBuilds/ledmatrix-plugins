@@ -1435,11 +1435,13 @@ class SportsUpcoming(SportsCore):
 
             # Note: Rankings are now handled in the records/rankings section below
 
-            # "Next Game" at the top (use smaller status font) with layout offsets
+            # League name at the top so the competition is identifiable (falls back
+            # to "Next Game" when the manager didn't set one). The small status font
+            # keeps long names like "Scottish Premiership" on a single line.
             status_font = self.fonts["status"]
             if display_width > 128:
                 status_font = self.fonts["time"]
-            status_text = "Next Game"
+            status_text = getattr(self, "league_name", "") or "Next Game"
             status_width = draw_overlay.textlength(status_text, font=status_font)
             status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
             status_y = 1 + self._get_layout_offset('status_text', 'y_offset')
@@ -1990,7 +1992,9 @@ class SportsRecent(SportsCore):
             score_text = f"{away_score}-{home_score}"
             score_width = draw_overlay.textlength(score_text, font=self.fonts["score"])
             score_x = (display_width - score_width) // 2 + self._get_layout_offset('score', 'x_offset')
-            score_y = display_height - 14 + self._get_layout_offset('score', 'y_offset')
+            # Centered vertically (matches the baseball recent layout) so the game
+            # date fits on the bottom line without colliding with the score.
+            score_y = (display_height // 2) - 3 + self._get_layout_offset('score', 'y_offset')
             self._draw_text_with_outline(
                 draw_overlay, score_text, (score_x, score_y), self.fonts["score"]
             )
@@ -2005,6 +2009,17 @@ class SportsRecent(SportsCore):
             self._draw_text_with_outline(
                 draw_overlay, status_text, (status_x, status_y), self.fonts["time"]
             )
+
+            # Game date (bottom center, one line above the edge) — when the game was
+            # played. Matches the baseball recent layout.
+            game_date = game.get("game_date", "")
+            if game_date:
+                date_width = draw_overlay.textlength(game_date, font=self.fonts["time"])
+                date_x = (display_width - date_width) // 2 + self._get_layout_offset('date', 'x_offset')
+                date_y = display_height - 7 + self._get_layout_offset('date', 'y_offset')
+                self._draw_text_with_outline(
+                    draw_overlay, game_date, (date_x, date_y), self.fonts["time"]
+                )
 
             # Draw odds if available
             if "odds" in game and game["odds"]:

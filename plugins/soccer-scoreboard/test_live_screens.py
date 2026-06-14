@@ -366,12 +366,88 @@ def test_golden_live_screens():
     print("PASS: golden live screens" + (" (regenerated)" if update else ""))
 
 
+def _render_switch_card(base_name, game, league_name=None, width=128, height=32):
+    """Render a switch-mode card for SportsRecent/SportsUpcoming via __new__."""
+    import sports as _sports
+
+    base = getattr(_sports, base_name)
+    cls = type(
+        f"_Concrete{base_name}", (base,),
+        {"_fetch_data": lambda self, *a, **k: None,
+         "_extract_game_details": lambda self, *a, **k: None},
+    )
+
+    class _FakeMatrix:
+        pass
+
+    class _FakeDisplayManager:
+        def __init__(self):
+            self.matrix = _FakeMatrix()
+            self.matrix.width = width
+            self.matrix.height = height
+            self.image = Image.new("RGB", (width, height), (0, 0, 0))
+
+        def clear(self):
+            self.image = Image.new("RGB", (width, height), (0, 0, 0))
+
+        def update_display(self):
+            pass
+
+    o = object.__new__(cls)
+    o.display_manager = _FakeDisplayManager()
+    o.display_width = width
+    o.display_height = height
+    o.config = {}
+    o.show_records = False
+    o.show_ranking = False
+    o._team_rankings_cache = {}
+    o.logger = logging.getLogger("g")
+    o.fonts = _sports.SportsCore._load_fonts(o)
+    if league_name is not None:
+        o.league_name = league_name
+    o._load_and_resize_logo = lambda *a, **k: Image.new("RGBA", (12, 12), (0, 255, 0, 255))
+    o._draw_scorebug_layout(game, force_clear=True)
+    return o.display_manager.image.convert("RGB")
+
+
+def test_recent_card_shows_game_date():
+    """The recent (final) card must render the game date (parity with baseball)."""
+    base = {
+        "home_abbr": "USA", "home_id": "1", "home_logo_path": "x",
+        "away_abbr": "BRA", "away_id": "2", "away_logo_path": "y",
+        "home_score": "2", "away_score": "1", "period_text": "Final",
+    }
+    no_date = _render_switch_card("SportsRecent", dict(base))
+    with_date = _render_switch_card("SportsRecent", dict(base, game_date="6/12"))
+    assert ImageChops.difference(no_date, with_date).getbbox() is not None, (
+        "recent card is identical with/without game_date — the date is not drawn"
+    )
+    print("PASS: recent card shows the game date")
+
+
+def test_upcoming_card_shows_league_name():
+    """The upcoming card header must reflect the league name when available."""
+    game = {
+        "home_abbr": "USA", "home_id": "1", "home_logo_path": "x",
+        "away_abbr": "MEX", "away_id": "2", "away_logo_path": "y",
+        "game_time": "3:00PM", "game_date": "6/14",
+    }
+    with_league = _render_switch_card("SportsUpcoming", dict(game), league_name="FIFA World Cup")
+    fallback = _render_switch_card("SportsUpcoming", dict(game), league_name=None)
+    assert ImageChops.difference(with_league, fallback).getbbox() is not None, (
+        "upcoming header did not change with league_name set — league not shown"
+    )
+    print("PASS: upcoming card shows the league name")
+
+
 def main():
     tests = [
         test_scroll_passes_real_logo_cache_to_renderer,
         test_live_layout_is_overridden_and_draws_score,
         test_live_scroll_card_ignores_game_date,
         test_live_status_text_variants,
+        test_recent_card_shows_game_date,
+        test_upcoming_card_shows_league_name,
         test_golden_live_screens,
     ]
     failed = 0
