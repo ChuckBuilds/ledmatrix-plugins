@@ -39,6 +39,7 @@ BUNDLED_FLAGS = PLUGIN_DIR / "assets" / "flags"
 # full core checkout on the path.
 # ---------------------------------------------------------------------------
 def _install_host_stubs() -> None:
+    """Register fake LEDMatrix host modules so the plugin imports resolve."""
     for name in ["src", "src.background_data_service"]:
         sys.modules.setdefault(name, types.ModuleType(name))
     sys.modules["src.background_data_service"].get_background_service = (
@@ -48,15 +49,20 @@ def _install_host_stubs() -> None:
     logo_mod = types.ModuleType("src.logo_downloader")
 
     class _LogoDownloader:
+        """Minimal stand-in for the core LogoDownloader used during import."""
+
         def get_logo_directory(self, league):
-            return "/tmp/soccer_logos"
+            """Return a throwaway logo directory (unused — __init__ is bypassed)."""
+            return str(Path(tempfile.gettempdir()) / "soccer_logos")
 
         @staticmethod
         def normalize_abbreviation(abbr):
+            """Uppercase an abbreviation, matching the real downloader."""
             return abbr.upper()
 
         @staticmethod
         def get_logo_filename_variations(abbr):
+            """Return the single uppercase filename variation for the stub."""
             return [f"{abbr.upper()}.png"]
 
     logo_mod.LogoDownloader = _LogoDownloader
@@ -77,6 +83,7 @@ def _make_manager_stub():
 # Tests
 # ---------------------------------------------------------------------------
 def test_bundled_flags_present():
+    """The plugin ships the full World Cup flag set, not placeholders."""
     assert BUNDLED_FLAGS.is_dir(), f"bundled flags dir missing: {BUNDLED_FLAGS}"
     flags = list(BUNDLED_FLAGS.glob("*.png"))
     assert len(flags) >= 40, f"expected the full World Cup field, found {len(flags)} flags"
@@ -90,6 +97,7 @@ def test_bundled_flags_present():
 
 
 def test_fifa_world_uses_isolated_seeded_dir():
+    """fifa.world gets a dedicated national/ dir seeded from the bundled flags."""
     mgr = _make_manager_stub()
     with tempfile.TemporaryDirectory() as tmp:
         club_dir = Path(tmp)
@@ -132,6 +140,7 @@ def test_does_not_collide_with_club_logos():
 
 
 def main() -> int:
+    """Run every flag test and return a process exit code."""
     _install_host_stubs()
     tests = [
         ("bundled flags present", test_bundled_flags_present),
