@@ -280,6 +280,23 @@
               "maximum": 300,
               "description": "How often to update live game data (seconds)"
             },
+            "celebration_enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "celebration_duration": {
+              "type": "integer",
+              "default": 8,
+              "minimum": 3,
+              "maximum": 30,
+              "description": "How long the goal/win celebration stays on screen (seconds)"
+            },
+            "celebrate_opponent_goals": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+            },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
@@ -614,6 +631,23 @@
               "minimum": 5,
               "maximum": 300,
               "description": "How often to update live game data (seconds)"
+            },
+            "celebration_enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "celebration_duration": {
+              "type": "integer",
+              "default": 8,
+              "minimum": 3,
+              "maximum": 30,
+              "description": "How long the goal/win celebration stays on screen (seconds)"
+            },
+            "celebrate_opponent_goals": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
             },
             "update_interval_seconds": {
               "type": "integer",
@@ -950,6 +984,23 @@
               "maximum": 300,
               "description": "How often to update live game data (seconds)"
             },
+            "celebration_enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "celebration_duration": {
+              "type": "integer",
+              "default": 8,
+              "minimum": 3,
+              "maximum": 30,
+              "description": "How long the goal/win celebration stays on screen (seconds)"
+            },
+            "celebrate_opponent_goals": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+            },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
@@ -1284,6 +1335,23 @@
               "minimum": 5,
               "maximum": 300,
               "description": "How often to update live game data (seconds)"
+            },
+            "celebration_enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "celebration_duration": {
+              "type": "integer",
+              "default": 8,
+              "minimum": 3,
+              "maximum": 30,
+              "description": "How long the goal/win celebration stays on screen (seconds)"
+            },
+            "celebrate_opponent_goals": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
             },
             "update_interval_seconds": {
               "type": "integer",
@@ -1620,6 +1688,23 @@
               "maximum": 300,
               "description": "How often to update live game data (seconds)"
             },
+            "celebration_enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "celebration_duration": {
+              "type": "integer",
+              "default": 8,
+              "minimum": 3,
+              "maximum": 30,
+              "description": "How long the goal/win celebration stays on screen (seconds)"
+            },
+            "celebrate_opponent_goals": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+            },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
@@ -1954,6 +2039,23 @@
               "minimum": 5,
               "maximum": 300,
               "description": "How often to update live game data (seconds)"
+            },
+            "celebration_enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "celebration_duration": {
+              "type": "integer",
+              "default": 8,
+              "minimum": 3,
+              "maximum": 30,
+              "description": "How long the goal/win celebration stays on screen (seconds)"
+            },
+            "celebrate_opponent_goals": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
             },
             "update_interval_seconds": {
               "type": "integer",
@@ -2290,6 +2392,23 @@
               "maximum": 300,
               "description": "How often to update live game data (seconds)"
             },
+            "celebration_enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "celebration_duration": {
+              "type": "integer",
+              "default": 8,
+              "minimum": 3,
+              "maximum": 30,
+              "description": "How long the goal/win celebration stays on screen (seconds)"
+            },
+            "celebrate_opponent_goals": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+            },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
@@ -2624,6 +2743,23 @@
               "minimum": 5,
               "maximum": 300,
               "description": "How often to update live game data (seconds)"
+            },
+            "celebration_enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "celebration_duration": {
+              "type": "integer",
+              "default": 8,
+              "minimum": 3,
+              "maximum": 30,
+              "description": "How long the goal/win celebration stays on screen (seconds)"
+            },
+            "celebrate_opponent_goals": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
             },
             "update_interval_seconds": {
               "type": "integer",
@@ -2960,6 +3096,23 @@
               "maximum": 300,
               "description": "How often to update live game data (seconds)"
             },
+            "celebration_enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "celebration_duration": {
+              "type": "integer",
+              "default": 8,
+              "minimum": 3,
+              "maximum": 30,
+              "description": "How long the goal/win celebration stays on screen (seconds)"
+            },
+            "celebrate_opponent_goals": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+            },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
@@ -3294,6 +3447,23 @@
               "minimum": 5,
               "maximum": 300,
               "description": "How often to update live game data (seconds)"
+            },
+            "celebration_enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "celebration_duration": {
+              "type": "integer",
+              "default": 8,
+              "minimum": 3,
+              "maximum": 30,
+              "description": "How long the goal/win celebration stays on screen (seconds)"
+            },
+            "celebrate_opponent_goals": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
             },
             "update_interval_seconds": {
               "type": "integer",

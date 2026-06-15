@@ -1457,6 +1457,20 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             return False
 
         try:
+            # A goal/win celebration takes over the screen ahead of normal
+            # rendering. It only fires for live modes (or internal cycling), and
+            # bypasses scroll mode + cross-league selection by rendering the
+            # celebrating manager's switch-style takeover directly.
+            is_live_request = display_mode is None or display_mode.endswith("_live")
+            if is_live_request:
+                celebrating = self._get_active_celebration_manager()
+                if celebrating is not None:
+                    league_key, live_manager = celebrating
+                    self._current_display_league = league_key
+                    self._current_display_mode_type = "live"
+                    if live_manager.display(force_clear):
+                        return True
+
             # If display_mode is provided, use it to determine which manager to call
             if display_mode:
                 self.logger.debug(f"Display called with mode: {display_mode}")
@@ -1728,10 +1742,32 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             for _lk, league_data in registry.items()
         )
 
+    def _get_active_celebration_manager(self):
+        """Return the (league_key, live_manager) of an enabled league whose live
+        manager currently has an active goal/win celebration, else None."""
+        with self._config_lock:
+            registry = dict(self._league_registry)
+        for league_key, league_data in registry.items():
+            if not league_data.get('enabled', False):
+                continue
+            live_manager = self._get_league_manager_for_mode(league_key, 'live')
+            if (
+                live_manager
+                and hasattr(live_manager, "has_active_celebration")
+                and live_manager.has_active_celebration()
+            ):
+                return league_key, live_manager
+        return None
+
     def has_live_content(self) -> bool:
         """Check if any league has live content."""
         if not self.is_enabled:
             return False
+
+        # An active celebration (notably a win, whose game has already left the
+        # live list) must keep the live mode on screen.
+        if self._get_active_celebration_manager() is not None:
+            return True
 
         with self._config_lock:
             registry = dict(self._league_registry)
@@ -1793,6 +1829,16 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             live_manager = self._get_league_manager_for_mode(league_key, 'live')
             if not live_manager:
                 continue
+
+            # A celebrating league must be selectable even if its live list is
+            # already empty (a win fires as the game goes final).
+            if (
+                hasattr(live_manager, "has_active_celebration")
+                and live_manager.has_active_celebration()
+            ):
+                live_modes.append(f"soccer_{league_key}_live")
+                continue
+
             live_games = getattr(live_manager, "live_games", [])
             if not live_games:
                 continue
