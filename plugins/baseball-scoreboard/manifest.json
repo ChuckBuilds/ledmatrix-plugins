@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.6.4",
+  "version": "1.6.5",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-06-13",
+      "version": "1.6.5",
+      "notes": "Resolve font family aliases (press_start, four_by_six, five_by_seven) to their real font files when loading fonts. These are the default values shipped in the config schema, but the loaders treated them as literal filenames and logged 'Font file not found ... using default' on every load before silently falling back. Aliases now map to the correct files; literal filenames still pass through unchanged.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-06-09",
       "version": "1.6.4",
@@ -139,7 +145,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-06-05",
+  "last_updated": "2026-06-13",
   "stars": 0,
   "downloads": 0,
   "verified": true,

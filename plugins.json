@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-06-10",
+  "last_updated": "2026-06-13",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -46,10 +46,10 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-05",
+      "last_updated": "2026-06-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.6.4"
+      "latest_version": "1.6.5"
     },
     {
       "id": "basketball-scoreboard",
