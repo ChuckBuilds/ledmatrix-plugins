@@ -271,6 +271,32 @@ GOLDEN_GAME = {
     "is_live": True, "league": "eng.1",
 }
 
+# Pinned recent / upcoming games for golden renders. These use real bundled
+# World Cup flags (assets/flags) so the crests are reproducible without hiding a
+# rendering-code bug, mirroring the live golden's use of the fixture logos.
+_FLAGS = os.path.join(PLUGIN_DIR, "assets", "flags")
+GOLDEN_RECENT = {
+    "home_abbr": "USA", "home_id": "1", "home_logo_path": os.path.join(_FLAGS, "USA.png"),
+    "away_abbr": "BRA", "away_id": "2", "away_logo_path": os.path.join(_FLAGS, "BRA.png"),
+    "home_score": "2", "away_score": "1",
+    "period_text": "Final", "game_date": "6/12", "league": "fifa.world",
+}
+GOLDEN_UPCOMING = {
+    "home_abbr": "USA", "home_id": "1", "home_logo_path": os.path.join(_FLAGS, "USA.png"),
+    "away_abbr": "MEX", "away_id": "2", "away_logo_path": os.path.join(_FLAGS, "MEX.png"),
+    "game_time": "3:00PM", "game_date": "6/14", "league": "fifa.world",
+}
+
+
+def _flag_loader(height):
+    """Logo loader that reads the real bundled flags, sized like the plugin does."""
+    def _loader(team_id, abbr, path, url=None):
+        im = Image.open(path).convert("RGBA")
+        im.thumbnail((height, height), Image.Resampling.LANCZOS)
+        return im
+    return _loader
+
+
 # The real fonts the production loader reads, relative to cwd. When these aren't
 # resolvable the loader silently falls back to PIL's default font, which would
 # make goldens meaningless — so the golden test skips instead of rendering with
@@ -366,7 +392,29 @@ def test_golden_live_screens():
     print("PASS: golden live screens" + (" (regenerated)" if update else ""))
 
 
-def _render_switch_card(base_name, game, league_name=None, width=128, height=32):
+def test_golden_recent_upcoming_screens():
+    """Lock the recent (final + date) and upcoming (league header) switch screens."""
+    if not _real_fonts_available():
+        print("SKIP: golden recent/upcoming screens (run from the core LEDMatrix "
+              "tree so assets/fonts resolves; production fonts are required)")
+        return
+    update = os.environ.get("UPDATE_GOLDEN") == "1"
+    for w, h in ((128, 32), (128, 64)):
+        recent = _render_switch_card(
+            "SportsRecent", dict(GOLDEN_RECENT),
+            width=w, height=h, logo_loader=_flag_loader(h),
+        )
+        _check_golden("recent_switch", recent, update)
+        upcoming = _render_switch_card(
+            "SportsUpcoming", dict(GOLDEN_UPCOMING), league_name="FIFA World Cup",
+            width=w, height=h, logo_loader=_flag_loader(h),
+        )
+        _check_golden("upcoming_switch", upcoming, update)
+    print("PASS: golden recent/upcoming screens" + (" (regenerated)" if update else ""))
+
+
+def _render_switch_card(base_name, game, league_name=None, width=128, height=32,
+                        logo_loader=None):
     """Render a switch-mode card for SportsRecent/SportsUpcoming via __new__."""
     import sports as _sports
 
@@ -405,7 +453,9 @@ def _render_switch_card(base_name, game, league_name=None, width=128, height=32)
     o.fonts = _sports.SportsCore._load_fonts(o)
     if league_name is not None:
         o.league_name = league_name
-    o._load_and_resize_logo = lambda *a, **k: Image.new("RGBA", (12, 12), (0, 255, 0, 255))
+    o._load_and_resize_logo = logo_loader or (
+        lambda *a, **k: Image.new("RGBA", (12, 12), (0, 255, 0, 255))
+    )
     o._draw_scorebug_layout(game, force_clear=True)
     return o.display_manager.image.convert("RGB")
 
@@ -449,6 +499,7 @@ def main():
         test_recent_card_shows_game_date,
         test_upcoming_card_shows_league_name,
         test_golden_live_screens,
+        test_golden_recent_upcoming_screens,
     ]
     failed = 0
     for t in tests:
