@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), precipitation radar, weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
@@ -25,6 +25,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-06-14",
+      "version": "2.5.1",
+      "note": "Almanac (moon) page fixes plus full moon-phase names. (1) Missing moonset: astral only searches a single calendar day, so on the one day a month the event straddles midnight it raises 'Moon never sets on this date' and the page drew '---' (sffjunkie/astral #88, #105, open as of astral 3.2). When astral fails, fall back to scanning the moon's elevation across the day and bisecting the horizon crossing using astral's own ephemeris. (2) The 'illumination %' actually showed cycle progress, so a waning crescent read 86% instead of ~13% lit; it now converts phase to true illuminated fraction. (3) Restore the full moon-phase names ('Waxing/Waning Crescent', 'Waxing/Waning Gibbous') now that the redesigned layout has room: the page shows the full name where it fits and degrades to the abbreviation before trimming, so narrow panels stay clean.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-06-10",
       "version": "2.5.0",
@@ -107,7 +113,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-06-10",
+  "last_updated": "2026-06-14",
   "stars": 0,
   "downloads": 0,
   "verified": true,
