@@ -18,6 +18,21 @@ try:
 except AttributeError:
     RESAMPLE_FILTER = Image.LANCZOS
 
+# Maps the core FontManager's common-font family aliases (src/font_manager.py
+# `common_fonts`) to the real files in assets/fonts. A font config value may be
+# either one of these family names or a literal filename; aliases resolve here,
+# filenames pass through unchanged.
+FONT_ALIASES = {
+    "press_start": "PressStart2P-Regular.ttf",
+    "four_by_six": "4x6-font.ttf",
+    "five_by_seven": "5x7.bdf",
+}
+
+
+def resolve_font_name(font_name: str) -> str:
+    """Resolve a font family alias to its filename, leaving filenames as-is."""
+    return FONT_ALIASES.get(font_name, font_name)
+
 # Import simplified dependencies for plugin use
 from dynamic_team_resolver import DynamicTeamResolver
 from logo_downloader import LogoDownloader, download_missing_logo
@@ -223,9 +238,9 @@ class SportsCore(ABC):
         # Get font name and size, with defaults
         font_name = element_config.get('font', 'PressStart2P-Regular.ttf')
         font_size = int(element_config.get('font_size', default_size))  # Ensure integer for PIL
-        
-        # Build font path
-        font_path = os.path.join('assets', 'fonts', font_name)
+
+        # Resolve family aliases (e.g. "press_start") to real filenames, then build path
+        font_path = os.path.join('assets', 'fonts', resolve_font_name(font_name))
         
         # Try to load the font
         try:

@@ -14,6 +14,22 @@ from typing import Any, Dict, Optional
 import pytz
 from PIL import Image, ImageDraw, ImageFont
 
+# Maps the core FontManager's common-font family aliases (src/font_manager.py
+# `common_fonts`) to the real files in assets/fonts. A font config value may be
+# either one of these family names or a literal filename; aliases resolve here,
+# filenames pass through unchanged.
+FONT_ALIASES = {
+    "press_start": "PressStart2P-Regular.ttf",
+    "four_by_six": "4x6-font.ttf",
+    "five_by_seven": "5x7.bdf",
+}
+
+
+def resolve_font_name(font_name: str) -> str:
+    """Resolve a font family alias to its filename, leaving filenames as-is."""
+    return FONT_ALIASES.get(font_name, font_name)
+
+
 # Pillow compatibility: Image.Resampling.LANCZOS is available in Pillow >= 9.1
 # Fall back to Image.LANCZOS for older versions
 try:
@@ -101,7 +117,8 @@ class GameRenderer:
         """Load a custom font from an element configuration dictionary."""
         font_name = element_config.get('font', default_font)
         font_size = int(element_config.get('font_size', default_size))
-        font_path = os.path.join('assets', 'fonts', font_name)
+        # Resolve family aliases (e.g. "press_start") to real filenames, then build path
+        font_path = os.path.join('assets', 'fonts', resolve_font_name(font_name))
 
         try:
             if os.path.exists(font_path):
