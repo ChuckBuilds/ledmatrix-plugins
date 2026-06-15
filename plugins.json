@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-06-13",
+  "last_updated": "2026-06-14",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -654,10 +654,10 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-02",
+      "last_updated": "2026-06-14",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.7.1"
+      "latest_version": "2.1.0"
     },
     {
       "id": "static-image",

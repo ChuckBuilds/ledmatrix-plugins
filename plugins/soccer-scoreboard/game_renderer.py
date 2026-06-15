@@ -392,15 +392,11 @@ class GameRenderer:
         status_x = (self.display_width - status_width) // 2
         status_y = 1
         self._draw_text_with_outline(draw, period_clock_text, (status_x, status_y), self.fonts['time'])
-        
-        # Game date or additional info (Bottom center) - optional for live games
-        game_date = game.get("game_date", "")
-        if game_date:
-            date_width = draw.textlength(game_date, font=self.fonts['detail'])
-            date_x = (self.display_width - date_width) // 2
-            date_y = self.display_height - 7
-            self._draw_text_with_outline(draw, game_date, (date_x, date_y), self.fonts['detail'])
-    
+
+        # No bottom date line for live games: the period/clock already conveys the
+        # game is in progress, and a third stacked line overflows the bottom on
+        # short panels (e.g. 128x32). Matches the baseball live scorebug.
+
     def _draw_recent_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw status elements for a recently completed soccer game."""
         # Final status (Top center) - e.g., "Final", "Final/OT"
