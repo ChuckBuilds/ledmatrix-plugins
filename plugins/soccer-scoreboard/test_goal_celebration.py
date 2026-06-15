@@ -228,11 +228,15 @@ def test_display_dispatches_celebration_then_scorebug():
 
     # Force expiry by backdating the start beyond the window.
     live.active_celebration["started_at"] = real_time() - 999
+    live.last_game_switch = 0.0
     calls.clear()
     assert live.display() is True and calls == ["scorebug"], (
         "an expired celebration must clear and defer to the scorebug"
     )
     assert live.active_celebration is None, "expired celebration must be cleared"
+    # Clearing must reset the dwell timer so rotation can't immediately move off
+    # the scoring game (closes the update()/display() expiry race).
+    assert live.last_game_switch > 0, "clearing an expired celebration must reset last_game_switch"
     print("PASS: display() shows the celebration then falls back to the scorebug")
 
 

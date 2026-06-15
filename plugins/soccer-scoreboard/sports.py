@@ -2536,6 +2536,9 @@ class SportsLive(SportsCore):
                     )
             else:
                 self.active_celebration = None
+                # Reset the dwell so the scorebug resumes on the scoring/winning
+                # game for a full duration before rotation can move on.
+                self.last_game_switch = time.time()
         return super().display(force_clear)
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
@@ -3031,12 +3034,14 @@ class SportsLive(SportsCore):
                     self.current_game = None  # Clear current game if fetch fails and no games were active
 
             # Handle game switching (protected by lock for thread safety).
-            # Hold the current game while a celebration is on screen so the view
-            # doesn't rotate away mid-celebration.
+            # Hold the current game while a celebration is pending so the view
+            # doesn't rotate away mid-celebration — or in the window between the
+            # duration expiring and display() clearing it (display() resets the
+            # dwell timer when it clears, so the scoring game resumes first).
             with self._games_lock:
                 if (
                     len(self.live_games) > 1
-                    and not self.has_active_celebration()
+                    and self.active_celebration is None
                     and (current_time - self.last_game_switch) >= self.game_display_duration
                 ):
                     self.current_game_index = (self.current_game_index + 1) % len(
