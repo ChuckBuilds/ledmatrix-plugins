@@ -29,8 +29,8 @@ PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
 if PLUGIN_DIR not in sys.path:
     sys.path.insert(0, PLUGIN_DIR)
 
-FIXTURES = os.path.join(PLUGIN_DIR, "test", "fixtures")
 GOLDEN = os.path.join(PLUGIN_DIR, "test", "golden")
+_FLAGS = os.path.join(PLUGIN_DIR, "assets", "flags")
 
 # sports.py imports ``from src.logo_downloader import ...`` at module load; stub
 # the names so the import succeeds. Tests build instances via __new__, so the
@@ -279,13 +279,24 @@ def _render_celebration(scored_side, width=128, height=32, elapsed=2.5):
     live.config = {}
     live.logger = logging.getLogger("g")
     live.fonts = SportsCore._load_fonts(live)
-    live._load_and_resize_logo = lambda *a, **k: Image.new("RGBA", (12, 12), (0, 255, 0, 255))
 
+    # Real bundled flags (assets/flags) as crests — committed, reproducible
+    # inputs, sized like the live golden's loader.
+    def _flag_loader(team_id, abbr, path, url=None):
+        im = Image.open(path).convert("RGBA")
+        im.thumbnail((height, height), Image.Resampling.LANCZOS)
+        return im
+
+    live._load_and_resize_logo = _flag_loader
+
+    game = _game(away="USA", home="BRA", away_score="2", home_score="1")
+    game["away_logo_path"] = os.path.join(_FLAGS, "USA.png")
+    game["home_logo_path"] = os.path.join(_FLAGS, "BRA.png")
     celebration = {
         "kind": "goal",
-        "game": _game(away_score="2", home_score="1"),
+        "game": game,
         "scored_side": scored_side,
-        "team_abbr": "LIV" if scored_side == "away" else "MCI",
+        "team_abbr": "USA" if scored_side == "away" else "BRA",
         "away_score": 2, "home_score": 1,
         "started_at": 0.0,
         "phrase": "GOOOOAAALLL!",

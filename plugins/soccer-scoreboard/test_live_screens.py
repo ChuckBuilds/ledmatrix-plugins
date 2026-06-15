@@ -30,7 +30,6 @@ PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
 if PLUGIN_DIR not in sys.path:
     sys.path.insert(0, PLUGIN_DIR)
 
-FIXTURES = os.path.join(PLUGIN_DIR, "test", "fixtures")
 GOLDEN = os.path.join(PLUGIN_DIR, "test", "golden")
 
 # sports.py imports ``from src.logo_downloader import ...`` at module load.
@@ -206,11 +205,12 @@ def test_live_scroll_card_ignores_game_date():
     """
     from game_renderer import GameRenderer
 
+    flags = os.path.join(PLUGIN_DIR, "assets", "flags")
     base = {
-        "home_abbr": "MCI", "home_id": "1",
-        "home_logo_path": os.path.join(FIXTURES, "logos", "MCI.png"),
-        "away_abbr": "LIV", "away_id": "2",
-        "away_logo_path": os.path.join(FIXTURES, "logos", "LIV.png"),
+        "home_abbr": "BRA", "home_id": "1",
+        "home_logo_path": os.path.join(flags, "BRA.png"),
+        "away_abbr": "USA", "away_id": "2",
+        "away_logo_path": os.path.join(flags, "USA.png"),
         "home_score": "2", "away_score": "1",
         "period_text": "2H 75'", "clock": "75'", "is_live": True,
     }
@@ -260,21 +260,19 @@ def test_live_status_text_variants():
 #     UPDATE_GOLDEN=1 .venv/bin/python <plugin>/test_live_screens.py   # refresh
 # ---------------------------------------------------------------------------
 
+# All golden renders use real bundled World Cup flags (assets/flags) as the
+# crests: they're committed, reproducible inputs that don't hide a rendering-code
+# bug, and avoid carrying synthetic placeholder logos in the repo.
+_FLAGS = os.path.join(PLUGIN_DIR, "assets", "flags")
+
 # Pinned live game used for every golden render.
 GOLDEN_GAME = {
-    "home_abbr": "MCI", "home_id": "1",
-    "home_logo_path": os.path.join(FIXTURES, "logos", "MCI.png"),
-    "away_abbr": "LIV", "away_id": "2",
-    "away_logo_path": os.path.join(FIXTURES, "logos", "LIV.png"),
+    "home_abbr": "BRA", "home_id": "1", "home_logo_path": os.path.join(_FLAGS, "BRA.png"),
+    "away_abbr": "USA", "away_id": "2", "away_logo_path": os.path.join(_FLAGS, "USA.png"),
     "home_score": "2", "away_score": "1",
     "period_text": "2H 75'", "clock": "75'",
-    "is_live": True, "league": "eng.1",
+    "is_live": True, "league": "fifa.world",
 }
-
-# Pinned recent / upcoming games for golden renders. These use real bundled
-# World Cup flags (assets/flags) so the crests are reproducible without hiding a
-# rendering-code bug, mirroring the live golden's use of the fixture logos.
-_FLAGS = os.path.join(PLUGIN_DIR, "assets", "flags")
 GOLDEN_RECENT = {
     "home_abbr": "USA", "home_id": "1", "home_logo_path": os.path.join(_FLAGS, "USA.png"),
     "away_abbr": "BRA", "away_id": "2", "away_logo_path": os.path.join(_FLAGS, "BRA.png"),
