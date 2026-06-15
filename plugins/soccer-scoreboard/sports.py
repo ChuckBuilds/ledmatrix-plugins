@@ -1,7 +1,7 @@
 import logging
 import os
-import random
 import re
+import secrets
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -2318,10 +2318,8 @@ class SportsLive(SportsCore):
         score digit gets highlighted ('away' or 'home')."""
         if kind == "win":
             phrase = f"{team_abbr} WINS!"
-        elif random.random() < 0.5:
-            phrase = "GOOOOAAALLL!"
         else:
-            phrase = f"{team_abbr} SCORES!"
+            phrase = secrets.choice(("GOOOOAAALLL!", f"{team_abbr} SCORES!"))
 
         self.active_celebration = {
             "kind": kind,

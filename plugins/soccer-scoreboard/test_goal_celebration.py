@@ -212,8 +212,8 @@ def test_display_dispatches_celebration_then_scorebug():
     live.is_enabled = True
     live.current_game = _game()
     calls = []
-    live._draw_celebration_layout = lambda c, fc=False: calls.append("celebration")
-    live._draw_scorebug_layout = lambda g, fc=False: calls.append("scorebug")
+    live._draw_celebration_layout = lambda c, force_clear=False: calls.append("celebration")
+    live._draw_scorebug_layout = lambda g, force_clear=False: calls.append("scorebug")
 
     # Arm a celebration "now".
     real_time = sports.time.time
