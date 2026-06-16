@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-06-14",
+  "last_updated": "2026-06-15",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -213,7 +213,7 @@
       "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.3.5"
+      "latest_version": "2.4.0"
     },
     {
       "id": "geochron",

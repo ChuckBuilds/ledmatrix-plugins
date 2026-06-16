@@ -1465,6 +1465,21 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             return False
 
         try:
+            # A score/win celebration takes over the screen ahead of normal
+            # rendering. It only fires for live mode requests (or internal
+            # cycling) and renders the celebrating live manager directly, so a
+            # win celebration still shows even after its game has dropped out of
+            # the live list.
+            is_live_request = display_mode is None or display_mode.endswith("_live")
+            if is_live_request:
+                celebrating = self._get_active_celebration_manager()
+                if celebrating is not None:
+                    league_key, live_manager = celebrating
+                    self._current_display_league = league_key
+                    self._current_display_mode_type = "live"
+                    if live_manager.display(force_clear):
+                        return True
+
             # Track the current active display mode for use in is_cycle_complete()
             if display_mode:
                 # Early exit: Skip if this mode is not in our available modes (disabled league)
@@ -1595,6 +1610,23 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             self.logger.error(f"Error in display method: {e}")
             return False
 
+    def _get_active_celebration_manager(self):
+        """Return the (league_key, live_manager) of an enabled league whose live
+        manager currently has an active score/win celebration, else None."""
+        if not self.is_enabled:
+            return None
+        for league_key in self._league_registry:
+            if not self._league_registry[league_key].get("enabled", False):
+                continue
+            live_manager = self._get_league_manager_for_mode(league_key, "live")
+            if (
+                live_manager
+                and hasattr(live_manager, "has_active_celebration")
+                and live_manager.has_active_celebration()
+            ):
+                return league_key, live_manager
+        return None
+
     def has_live_priority(self) -> bool:
         if not self.is_enabled:
             return False
@@ -1610,6 +1642,11 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not self.is_enabled:
             self.logger.debug("[LIVE_PRIORITY_DEBUG] has_live_content: plugin not enabled, returning False")
             return False
+
+        # An active celebration (notably a win, whose game has already left the
+        # live list) must keep the live mode on screen.
+        if self._get_active_celebration_manager() is not None:
+            return True
 
         # Check NFL live content
         nfl_live = False
@@ -1813,6 +1850,14 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             and self.nfl_live_priority
             and hasattr(self, "nfl_live")
         ):
+            # A celebrating league must be selectable even if its live list is
+            # already empty (a win fires as the game goes final).
+            if (
+                hasattr(self.nfl_live, "has_active_celebration")
+                and self.nfl_live.has_active_celebration()
+            ):
+                live_modes.append("nfl_live")
+
             live_games = getattr(self.nfl_live, "live_games", [])
             if live_games:
                 # Filter out any games that are final or appear over
@@ -1841,6 +1886,14 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             and self.ncaa_fb_live_priority
             and hasattr(self, "ncaa_fb_live")
         ):
+            # A celebrating league must be selectable even if its live list is
+            # already empty (a win fires as the game goes final).
+            if (
+                hasattr(self.ncaa_fb_live, "has_active_celebration")
+                and self.ncaa_fb_live.has_active_celebration()
+            ):
+                live_modes.append("ncaa_fb_live")
+
             live_games = getattr(self.ncaa_fb_live, "live_games", [])
             if live_games:
                 # Filter out any games that are final or appear over
@@ -1862,8 +1915,9 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                     else:
                         # No favorite teams configured, include if any live games exist
                         live_modes.append("ncaa_fb_live")
-        
-        return live_modes
+
+        # A celebration and live games for the same league can both append it.
+        return list(dict.fromkeys(live_modes))
 
     def _get_game_duration(self, league: str, mode_type: str, manager=None) -> float:
         """Get game duration for a league and mode type combination.

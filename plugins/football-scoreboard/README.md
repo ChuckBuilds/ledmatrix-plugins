@@ -44,6 +44,7 @@ Recent Game (NCAA FB):
 - **Rankings Display**: AP Top 25 rankings for NCAA Football teams
 
 ### Advanced Features
+- **Score/Win Celebrations**: Full-screen takeover when a favorite team scores or wins a live game (see below)
 - **Background Data Service**: Non-blocking API calls with intelligent caching
 - **Smart Filtering**: Show favorite teams only or all games
 - **Granular Mode Control**: Enable/disable specific league/mode combinations independently
@@ -330,6 +331,33 @@ Layout offsets work across different display sizes. The plugin calculates defaul
 - **Final Games**: Gray text for completed games
 - **Upcoming Games**: Yellow text for scheduled games
 - **Odds**: Green text for betting information
+
+### Score & Win Celebrations
+When a favorite team scores or wins a **live** game, the scorebug briefly gives
+way to a full-screen celebration: the involved team logos at the edges, the new
+score centered with the scoring side's digit pulsing, and a banner at the top.
+
+The banner is chosen from the **points scored between two updates** (not from any
+feed text), so it works for every league the same way:
+
+| Points gained | Banner |
+|---|---|
+| 6 or more | `TOUCHDOWN!` / `<TEAM> TD!` |
+| 3 | `<TEAM> FIELD GOAL!` |
+| 2 | `<TEAM> SAFETY!` |
+| other (e.g. lone extra point) | `<TEAM> SCORES!` |
+| game goes final, favorite ahead | `<TEAM> WINS!` |
+
+A touchdown that arrives as `+6` then a `+1` extra point a few seconds later
+shows a **single** celebration — the extra point is folded in while the first is
+still on screen. Note that a 2-point conversion and a safety are both `+2`; the
+banner reads `SAFETY!` for either.
+
+Configure per league (`nfl_scoreboard` / `ncaa_fb_scoreboard`):
+- `celebration_enabled` (boolean, default `true`)
+- `celebration_duration` (seconds on screen, default `8`)
+- `celebrate_opponent_scores` (also celebrate the opponent, default `false`; when
+  no favorite teams are configured, any team's score celebrates)
 
 ## 🏷️ Team Abbreviations
 
