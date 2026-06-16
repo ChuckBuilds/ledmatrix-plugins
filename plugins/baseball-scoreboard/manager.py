@@ -247,6 +247,111 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Sequential block display shows all games from one league before moving to the next,
         # which is simpler and more predictable than the sticky manager approach
 
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply config edits live, without restarting the display.
+
+        Re-derives the league/display settings and rebuilds the per-league
+        managers, league registry, scroll manager and rotation modes so changes
+        like favorite teams, enabling/disabling a league, durations or live
+        priority take effect immediately. The old managers are cleaned up (HTTP
+        sessions closed) before they are replaced. Per-game progress tracking is
+        reset since manager keys may have changed.
+        """
+        self.config = new_config or {}
+
+        # Resolve timezone the same way __init__ does so sub-managers inherit it.
+        if not self.config.get("timezone"):
+            global_tz = None
+            config_manager = getattr(self.cache_manager, "config_manager", None)
+            if config_manager is not None:
+                try:
+                    global_tz = config_manager.get_timezone()
+                except (AttributeError, TypeError):
+                    self.logger.debug("Global timezone unavailable; falling back to UTC")
+                except Exception:
+                    self.logger.exception(
+                        "Failed to read global timezone from config_manager.get_timezone(); falling back to UTC."
+                    )
+            self.config["timezone"] = global_tz or "UTC"
+
+        # Re-derive scalar settings.
+        self.enabled = self.config.get("enabled", getattr(self, "enabled", True))
+        self.is_enabled = self.config.get("enabled", True)
+        self.mlb_enabled = self.config.get("mlb", {}).get("enabled", False)
+        self.milb_enabled = self.config.get("milb", {}).get("enabled", False)
+        self.ncaa_baseball_enabled = self.config.get("ncaa_baseball", {}).get("enabled", False)
+        self.display_duration = float(self.config.get("display_duration", 30))
+        self.game_display_duration = float(self.config.get("game_display_duration", 15))
+        self.mlb_live_priority = self.config.get("mlb", {}).get("live_priority", False)
+        self.milb_live_priority = self.config.get("milb", {}).get("live_priority", False)
+        self.ncaa_baseball_live_priority = self.config.get("ncaa_baseball", {}).get("live_priority", False)
+        self._display_mode_settings = self._parse_display_mode_settings()
+
+        # Tear down the existing managers (close HTTP sessions) before rebuilding.
+        self._cleanup_managers()
+
+        # Rebuild managers + registry so favorite teams, intervals, filtering and
+        # league enable/disable all apply.
+        self._initialize_managers()
+        self._initialize_league_registry()
+
+        # Rebuild the scroll display manager so it sees the new config.
+        self._scroll_manager = None
+        if SCROLL_AVAILABLE and ScrollDisplayManager:
+            try:
+                self._scroll_manager = ScrollDisplayManager(
+                    self.display_manager, self.config, self.logger
+                )
+            except Exception as e:
+                self.logger.warning(f"Could not rebuild scroll display manager: {e}")
+                self._scroll_manager = None
+        self.enable_scrolling = self._scroll_manager is not None
+        self._scroll_active = {}
+        self._scroll_prepared = {}
+
+        # Rebuild rotation modes and reset cycling state.
+        self.modes = self._get_available_modes()
+        self.current_mode_index = 0
+        self.last_mode_switch = 0
+
+        # Reset dynamic-duration tracking (manager keys may have changed).
+        self._dynamic_cycle_seen_modes = set()
+        self._dynamic_mode_to_manager_key = {}
+        self._dynamic_manager_progress = {}
+        self._dynamic_managers_completed = set()
+        self._dynamic_cycle_complete = False
+        self._single_game_manager_start_times = {}
+        self._game_id_start_times = {}
+        self._display_mode_to_managers = {}
+        self._current_display_league = None
+        self._current_display_mode_type = None
+        self._last_display_mode = None
+        self._last_display_mode_time = 0.0
+        self._current_active_display_mode = None
+        self._current_game_tracking = {}
+        self._mode_start_time = {}
+
+        self.logger.info(
+            "Baseball config updated live - MLB:%s MiLB:%s NCAA:%s, modes=%s",
+            self.mlb_enabled, self.milb_enabled, self.ncaa_baseball_enabled, self.modes,
+        )
+
+    def _cleanup_managers(self) -> None:
+        """Close HTTP sessions / clear caches on the current league managers."""
+        for attr in (
+            "mlb_live", "mlb_recent", "mlb_upcoming",
+            "milb_live", "milb_recent", "milb_upcoming",
+            "ncaa_baseball_live", "ncaa_baseball_recent", "ncaa_baseball_upcoming",
+        ):
+            manager = getattr(self, attr, None)
+            if manager is not None and hasattr(manager, "cleanup"):
+                try:
+                    manager.cleanup()
+                except Exception as e:
+                    self.logger.debug(f"Error cleaning up manager {attr}: {e}")
+            if hasattr(self, attr):
+                setattr(self, attr, None)
+
     def _initialize_managers(self):
         """Initialize all manager instances."""
         try:

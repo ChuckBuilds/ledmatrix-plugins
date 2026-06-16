@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.3.5",
+  "version": "2.4.0",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "released": "2026-06-15",
+      "version": "2.4.0",
+      "notes": "Apply config changes live via on_config_change (favorite teams, league enable/disable, durations, live priority, display modes); rebuilds the league managers, registry, scroll manager and rotation so edits take effect without a display restart.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-05-15",
       "version": "2.3.5",
@@ -245,7 +251,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-06-15",
   "stars": 0,
   "downloads": 0,
   "verified": true,
