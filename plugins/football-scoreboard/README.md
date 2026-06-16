@@ -353,7 +353,7 @@ shows a **single** celebration — the extra point is folded in while the first 
 still on screen. Note that a 2-point conversion and a safety are both `+2`; the
 banner reads `SAFETY!` for either.
 
-Configure per league (`nfl_scoreboard` / `ncaa_fb_scoreboard`):
+Configure per league (under the `nfl` / `ncaa_fb` config sections):
 - `celebration_enabled` (boolean, default `true`)
 - `celebration_duration` (seconds on screen, default `8`)
 - `celebrate_opponent_scores` (also celebrate the opponent, default `false`; when

@@ -300,6 +300,40 @@ def test_has_active_celebration_window():
 
 
 # ---------------------------------------------------------------------------
+# Config wiring (plugin -> manager)
+# ---------------------------------------------------------------------------
+def test_config_adapter_forwards_celebration_keys():
+    """The plugin config lives under `nfl`/`ncaa_fb`, but the live managers read
+    `<league>_scoreboard`. _adapt_config_for_manager must forward the celebration
+    keys across that boundary, or the config knobs are silently dead."""
+    import manager
+
+    plugin = object.__new__(manager.FootballScoreboardPlugin)
+    plugin.logger = logging.getLogger("cfg")
+    plugin.cache_manager = object()  # no config_manager attr -> defaults used
+    plugin.config = {
+        "nfl": {
+            "enabled": True,
+            "celebration_enabled": False,
+            "celebration_duration": 12,
+            "celebrate_opponent_scores": True,
+        },
+        "ncaa_fb": {"enabled": True},  # nothing set -> defaults
+    }
+
+    nfl = plugin._adapt_config_for_manager("nfl")["nfl_scoreboard"]
+    assert nfl["celebration_enabled"] is False, "celebration_enabled not forwarded"
+    assert nfl["celebration_duration"] == 12, "celebration_duration not forwarded"
+    assert nfl["celebrate_opponent_scores"] is True, "celebrate_opponent_scores not forwarded"
+
+    ncaa = plugin._adapt_config_for_manager("ncaa_fb")["ncaa_fb_scoreboard"]
+    assert ncaa["celebration_enabled"] is True, "default celebration_enabled wrong"
+    assert ncaa["celebration_duration"] == 8, "default celebration_duration wrong"
+    assert ncaa["celebrate_opponent_scores"] is False, "default celebrate_opponent_scores wrong"
+    print("PASS: config adapter forwards celebration keys from nfl/ncaa_fb to the manager")
+
+
+# ---------------------------------------------------------------------------
 # Rendering
 # ---------------------------------------------------------------------------
 def _render_celebration(scored_side, width=128, height=32, elapsed=2.5):
@@ -435,6 +469,7 @@ def main():
         test_favorite_loss_no_celebration,
         test_display_dispatches_celebration_then_scorebug,
         test_has_active_celebration_window,
+        test_config_adapter_forwards_celebration_keys,
         test_celebration_renders_score_and_side_highlight,
         test_golden_celebration_screen,
     ]

@@ -553,6 +553,11 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "live_priority": league_config.get("live_priority", False),
                 "show_favorite_teams_only": show_favorites_only,
                 "show_all_live": show_all_live,
+                "celebration_enabled": league_config.get("celebration_enabled", True),
+                "celebration_duration": league_config.get("celebration_duration", 8),
+                "celebrate_opponent_scores": league_config.get(
+                    "celebrate_opponent_scores", False
+                ),
                 "filtering": filtering,
                 "background_service": {
                     "request_timeout": 30,
@@ -2376,7 +2381,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             info = {
                 "plugin_id": self.plugin_id,
                 "name": "Football Scoreboard",
-                "version": "2.1.1",
+                "version": "2.4.0",
                 "enabled": self.is_enabled,
                 "display_size": f"{self.display_width}x{self.display_height}",
                 "nfl_enabled": self.nfl_enabled,
