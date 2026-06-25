@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.4.0] - 2026-06-15
+
+### Added
+- **Score/win celebration takeover**: a full-screen flash when a favorite team
+  scores or wins a live game. The phrase is inferred from the points scored
+  between updates: `TOUCHDOWN!` / `<TEAM> TD!` (+6 or more), `<TEAM> FIELD GOAL!`
+  (+3), `<TEAM> SAFETY!` (+2), `<TEAM> SCORES!` (otherwise), and `<TEAM> WINS!`
+  when a tracked game goes final in the favorite's favor.
+  - A touchdown that lands as +6 then a +1 extra point produces a single
+    takeover (the follow-up is suppressed while the first is on screen).
+  - First-sighting and downward corrections never fire; wins only fire for games
+    actually watched go live (no false win when the board boots after the final).
+  - Per-league config: `celebration_enabled` (default on), `celebration_duration`
+    (seconds, default 8), `celebrate_opponent_scores` (default off).
+
 ## [2.0.4] - 2025-10-21
 
 ### Added
