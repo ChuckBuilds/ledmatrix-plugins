@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-06-15",
+  "last_updated": "2026-06-25",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -479,7 +479,7 @@
       "last_updated": "2026-06-01",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.7"
+      "latest_version": "1.0.8"
     },
     {
       "id": "on-air",

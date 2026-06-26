@@ -1,7 +1,7 @@
 {
   "id": "news",
   "name": "News Ticker",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
   "author": "ChuckBuilds",
   "category": "content",
@@ -20,6 +20,11 @@
   "branch": "main",
   "plugin_path": "plugins/news",
   "versions": [
+    {
+      "version": "1.0.8",
+      "released": "2026-06-25",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.0.7",
       "released": "2026-06-01",

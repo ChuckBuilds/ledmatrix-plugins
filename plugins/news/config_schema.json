@@ -261,6 +261,7 @@
         },
         "text_color": {
           "type": "array",
+          "x-widget": "color-picker",
           "items": {
             "type": "integer",
             "minimum": 0,
@@ -273,6 +274,7 @@
         },
         "separator_color": {
           "type": "array",
+          "x-widget": "color-picker",
           "items": {
             "type": "integer",
             "minimum": 0,
