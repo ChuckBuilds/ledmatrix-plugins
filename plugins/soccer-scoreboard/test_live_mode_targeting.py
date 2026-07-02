@@ -50,6 +50,7 @@ def _stub_core_src():
 _stub_core_src()
 
 from manager import SoccerScoreboardPlugin  # noqa: E402
+from sports import SportsLive  # noqa: E402
 
 
 class StubLiveManager:
@@ -143,6 +144,99 @@ check(
     "all modes are soccer_<league>_live",
     all(m.startswith("soccer_") and m.endswith("_live") for m in modes) and modes,
 )
+
+# =============================================================================
+# exclude_teams / favorite_live_boost: _is_favorite_game() and _swrr_advance()
+#
+# These exercise the real SportsLive methods (not reimplementations) on a
+# bare namespace object carrying just the attributes they read, so we don't
+# need to build a full live manager (network fetch, ESPN payload shapes, etc).
+# The exclude-teams filter branch itself lives inline in SportsLive.update()
+# (an early "should_include = False" guard ahead of the existing
+# show_all_live/show_favorite_teams_only chain) and is covered by code
+# review rather than a unit test here, since exercising it needs mocking the
+# full ESPN fetch/update pipeline - left as a follow-up if that's wanted.
+# =============================================================================
+
+
+class Games:
+    """Bare namespace exposing only what _is_favorite_game/_swrr_advance read.
+
+    Binds the real SportsLive._is_favorite_game as a method (rather than
+    reimplementing it) since _swrr_advance calls self._is_favorite_game(g)
+    internally.
+    """
+
+    _is_favorite_game = SportsLive._is_favorite_game
+
+    def __init__(self, favorite_teams, boost):
+        self.favorite_teams = favorite_teams
+        self.favorite_live_boost = boost
+
+
+def g(gid, home, away):
+    return {"id": gid, "home_abbr": home, "away_abbr": away}
+
+
+# --- _is_favorite_game --------------------------------------------------
+fake = Games(favorite_teams=["LIV"], boost=2)
+check(
+    "_is_favorite_game: home match",
+    SportsLive._is_favorite_game(fake, g("1", "LIV", "MUN")) is True,
+)
+check(
+    "_is_favorite_game: away match",
+    SportsLive._is_favorite_game(fake, g("1", "MUN", "LIV")) is True,
+)
+check(
+    "_is_favorite_game: no match",
+    SportsLive._is_favorite_game(fake, g("1", "MUN", "ARS")) is False,
+)
+fake_no_fav = Games(favorite_teams=[], boost=2)
+check(
+    "_is_favorite_game: no favorites configured -> never favorite",
+    SportsLive._is_favorite_game(fake_no_fav, g("1", "LIV", "MUN")) is False,
+)
+
+# --- _swrr_advance: boost=1 reproduces plain round-robin order (regression) -
+games3 = [g("LIV", "LIV", "X"), g("ARS", "ARS", "Y"), g("MUN", "MUN", "Z")]
+fake = Games(favorite_teams=["LIV"], boost=1)
+seq = [SportsLive._swrr_advance(fake, games3)["id"] for _ in range(9)]
+check(
+    "boost=1: identical to plain round robin through games in list order",
+    seq == ["LIV", "ARS", "MUN"] * 3,
+)
+
+# --- _swrr_advance: favorite not live -> boost has no effect ---------------
+fake = Games(favorite_teams=["NOTPLAYING"], boost=4)
+seq = [SportsLive._swrr_advance(fake, games3)["id"] for _ in range(9)]
+check(
+    "favorite not among live games: boost has no effect, plain order",
+    seq == ["LIV", "ARS", "MUN"] * 3,
+)
+
+# --- _swrr_advance: boost=2 gives the favorite exactly 2x the turns ---------
+fake = Games(favorite_teams=["LIV"], boost=2)
+seq = [SportsLive._swrr_advance(fake, games3)["id"] for _ in range(16)]
+counts = {gid: seq.count(gid) for gid in ("LIV", "ARS", "MUN")}
+check(
+    "boost=2: favorite gets exactly 2x the turns of each other game",
+    counts["LIV"] == 2 * counts["ARS"] == 2 * counts["MUN"] and counts["LIV"] == 8,
+)
+check(
+    "boost=2: favorite never absent from a 16-pick sample",
+    counts["LIV"] > 0,
+)
+
+# --- _swrr_advance: single game -> always that game -------------------------
+fake = Games(favorite_teams=[], boost=3)
+seq = [SportsLive._swrr_advance(fake, [g("ONLY", "A", "B")])["id"] for _ in range(4)]
+check("single live game: always returned", seq == ["ONLY"] * 4)
+
+# --- _swrr_advance: empty list -> None --------------------------------------
+fake = Games(favorite_teams=["LIV"], boost=2)
+check("no live games: returns None", SportsLive._swrr_advance(fake, []) is None)
+
 
 print()
 passed = sum(1 for _, p in results if p)

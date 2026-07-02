@@ -719,6 +719,8 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         favorite_teams = resolve_value(["teams", "favorite_teams"], ["favorite_teams"], [])
         favorite_only = resolve_value(["teams", "favorite_teams_only"], ["favorite_teams_only"], False)
         show_all_live = resolve_value(["teams", "show_all_live"], ["show_all_live"], False)
+        exclude_teams = resolve_value(["teams", "exclude_teams"], ["exclude_teams"], [])
+        favorite_live_boost = resolve_value(["teams", "favorite_live_boost"], ["favorite_live_boost"], 2)
 
         # Resolve filtering settings
         recent_games_to_show = resolve_value(["filtering", "recent_games_to_show"], ["recent_games_to_show"], 5)
@@ -768,6 +770,8 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_shots": show_shots,
                 "show_favorite_teams_only": favorite_only,
                 "show_all_live": show_all_live,
+                "exclude_teams": exclude_teams,
+                "favorite_live_boost": favorite_live_boost,
                 "live_priority": league_config.get("live_priority", False),
                 "update_interval_seconds": update_interval_seconds,
                 "live_update_interval": live_update_interval,

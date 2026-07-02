@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "released": "2026-07-02",
+      "version": "2.2.0",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league, including custom leagues.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-06-14",
       "version": "2.1.0",
@@ -112,7 +118,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-06-14",
+  "last_updated": "2026-07-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

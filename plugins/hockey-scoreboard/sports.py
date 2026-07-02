@@ -92,6 +92,12 @@ class SportsCore(ABC):
             "show_favorite_teams_only", False
         )
         self.show_all_live: bool = self.mode_config.get("show_all_live", False)
+        try:
+            self.favorite_live_boost: int = max(
+                1, min(5, int(self.mode_config.get("favorite_live_boost", 2)))
+            )
+        except (TypeError, ValueError):
+            self.favorite_live_boost = 2
 
         self.session = requests.Session()
         retry_strategy = Retry(
@@ -135,6 +141,14 @@ class SportsCore(ABC):
             )
         else:
             self.logger.info(f"Favorite teams: {self.favorite_teams}")
+
+        # Teams to always hide from live rotation and recent/final scores (spoiler protection)
+        raw_exclude_teams = self.mode_config.get("exclude_teams", [])
+        self.exclude_teams = self.dynamic_resolver.resolve_teams(
+            raw_exclude_teams, sport_key
+        )
+        if self.exclude_teams:
+            self.logger.info(f"Excluded teams: {self.exclude_teams}")
 
         self.logger.setLevel(logging.INFO)
 
@@ -1589,6 +1603,13 @@ class SportsRecent(SportsCore):
                 else:
                     self._clear_zero_clock_tracking(game_id)
 
+                # Excluded teams are hidden from recent/final scores too (spoiler protection)
+                if self.exclude_teams and (
+                    game.get("home_abbr") in self.exclude_teams
+                    or game.get("away_abbr") in self.exclude_teams
+                ):
+                    continue
+
                 # Filter criteria: must be final OR appear finished, AND within recent date range
                 is_eligible = game.get("is_final", False) or appears_finished
                 if is_eligible:
@@ -1937,6 +1958,7 @@ class SportsLive(SportsCore):
             self.logger.warning(f"Error logging SportsLive initialization: {e}")
         self.last_update = 0
         self.live_games = []
+        self._rotation_schedule = []
         self.current_game_index = 0
         self.last_game_switch = 0
         self.game_display_duration = self.mode_config.get("live_game_duration", 20)
@@ -1950,6 +1972,61 @@ class SportsLive(SportsCore):
         # Track game update timestamps for stale data detection
         self.game_update_timestamps = {}
         self.stale_game_timeout = self.mode_config.get("stale_game_timeout", 300)  # 5 minutes default
+
+    def _is_live_game_included(self, home_abbr: str, away_abbr: str) -> bool:
+        """Decide whether a live game should be included in the rotation.
+
+        Filtering logic matching SportsUpcoming:
+        - Excluded teams are always hidden, regardless of every other setting
+        - If show_all_live = True -> show all games
+        - If show_favorite_teams_only = False -> show all games
+        - If show_favorite_teams_only = True but favorite_teams is empty -> show all games (fallback)
+        - If show_favorite_teams_only = True and favorite_teams has teams -> only show games with those teams
+        """
+        if self.exclude_teams and (
+            home_abbr in self.exclude_teams or away_abbr in self.exclude_teams
+        ):
+            return False
+        if self.show_all_live:
+            return True
+        if not self.show_favorite_teams_only:
+            return True
+        if not self.favorite_teams:
+            return True
+        return home_abbr in self.favorite_teams or away_abbr in self.favorite_teams
+
+    def _build_rotation_schedule(self, games: List[Dict]) -> List[str]:
+        """Build a Smooth Weighted Round-Robin schedule of game IDs.
+
+        Favorite-team games get `favorite_live_boost` slots per cycle,
+        evenly spaced (not clumped); every other live game gets 1 slot.
+        When favorite_live_boost == 1 (or no favorite is live) this
+        degenerates to a single pass over `games` in order - identical
+        to today's plain round robin.
+        """
+        weights = []
+        for g in games:
+            is_favorite = bool(self.favorite_teams) and (
+                g.get("home_abbr") in self.favorite_teams
+                or g.get("away_abbr") in self.favorite_teams
+            )
+            weights.append((g["id"], self.favorite_live_boost if is_favorite else 1))
+
+        total_weight = sum(w for _, w in weights)
+        if not weights or total_weight <= 0:
+            return [g["id"] for g in games]
+
+        current_weights = {gid: 0 for gid, _ in weights}
+        schedule: List[str] = []
+        for _ in range(total_weight):
+            best_id, best_current = None, None
+            for gid, w in weights:
+                current_weights[gid] += w
+                if best_current is None or current_weights[gid] > best_current:
+                    best_id, best_current = gid, current_weights[gid]
+            current_weights[best_id] -= total_weight
+            schedule.append(best_id)
+        return schedule
 
     def _is_game_really_over(self, game: Dict) -> bool:
         """Check if a game appears to be over even if API says it's live.
@@ -2105,29 +2182,10 @@ class SportsLive(SportsCore):
 
                             live_or_halftime_count += 1
 
-                            # Filtering logic matching SportsUpcoming:
-                            # - If show_all_live = True → show all games
-                            # - If show_favorite_teams_only = False → show all games
-                            # - If show_favorite_teams_only = True but favorite_teams is empty → show all games (fallback)
-                            # - If show_favorite_teams_only = True and favorite_teams has teams → only show games with those teams
-                            if self.show_all_live:
-                                # Always show all live games if show_all_live is enabled
-                                should_include = True
-                            elif not self.show_favorite_teams_only:
-                                # If favorite teams filtering is disabled, show all games
-                                should_include = True
-                            elif not self.favorite_teams:
-                                # If favorite teams filtering is enabled but no favorites are configured,
-                                # show all games (same behavior as SportsUpcoming)
-                                should_include = True
-                            else:
-                                # Favorite teams filtering is enabled AND favorites are configured
-                                # Only show games involving favorite teams
-                                should_include = (
-                                    details["home_abbr"] in self.favorite_teams
-                                    or details["away_abbr"] in self.favorite_teams
-                                )
-                            
+                            should_include = self._is_live_game_included(
+                                details["home_abbr"], details["away_abbr"]
+                            )
+
                             if not should_include:
                                 filtered_out_count += 1
                                 self.logger.debug(
@@ -2228,7 +2286,7 @@ class SportsLive(SportsCore):
                             current_game_ids = {g["id"] for g in self.live_games}
 
                             if new_game_ids != current_game_ids:
-                                # Sort with favorites first, then by start time
+                                # Sort with favorites first, then by start time (display order)
                                 def sort_key(g):
                                     is_favorite = self.favorite_teams and (g["home_abbr"] in self.favorite_teams or g["away_abbr"] in self.favorite_teams)
                                     start_time = g.get("start_time_utc") or datetime.now(timezone.utc)
@@ -2236,32 +2294,48 @@ class SportsLive(SportsCore):
                                     return (0 if is_favorite else 1, start_time)
 
                                 self.live_games = sorted(new_live_games, key=sort_key)
+                                # Weighted rotation order (favorite gets favorite_live_boost
+                                # slots per cycle, evenly spaced) - what current_game_index
+                                # actually cycles through.
+                                self._rotation_schedule = self._build_rotation_schedule(
+                                    self.live_games
+                                )
                                 # Reset index if current game is gone or list is new
                                 if (
                                     not self.current_game
                                     or self.current_game["id"] not in new_game_ids
                                 ):
                                     self.current_game_index = 0
-                                    self.current_game = (
-                                        self.live_games[0] if self.live_games else None
+                                    game_by_id = {g["id"]: g for g in self.live_games}
+                                    first_id = (
+                                        self._rotation_schedule[0]
+                                        if self._rotation_schedule
+                                        else None
                                     )
+                                    self.current_game = game_by_id.get(first_id)
                                     self.last_game_switch = current_time
                                 else:
-                                    # Find current game's new index if it still exists
+                                    # Find current game's new index in the schedule if it still exists
                                     try:
-                                        self.current_game_index = next(
-                                            i
-                                            for i, g in enumerate(self.live_games)
-                                            if g["id"] == self.current_game["id"]
+                                        self.current_game_index = self._rotation_schedule.index(
+                                            self.current_game["id"]
                                         )
-                                        self.current_game = self.live_games[
-                                            self.current_game_index
+                                        game_by_id = {g["id"]: g for g in self.live_games}
+                                        self.current_game = game_by_id[
+                                            self.current_game["id"]
                                         ]  # Update current_game with fresh data
                                     except (
-                                        StopIteration
+                                        ValueError,
+                                        KeyError,
                                     ):  # Should not happen if check above passed, but safety first
                                         self.current_game_index = 0
-                                        self.current_game = self.live_games[0]
+                                        game_by_id = {g["id"]: g for g in self.live_games}
+                                        first_id = (
+                                            self._rotation_schedule[0]
+                                            if self._rotation_schedule
+                                            else None
+                                        )
+                                        self.current_game = game_by_id.get(first_id)
                                         self.last_game_switch = current_time
 
                             else:
@@ -2284,6 +2358,7 @@ class SportsLive(SportsCore):
                                     "Live games previously showing have ended or are no longer live."
                                 )  # Changed log prefix
                             self.live_games = []
+                            self._rotation_schedule = []
                             self.current_game = None
                             self.current_game_index = 0
 
@@ -2312,14 +2387,16 @@ class SportsLive(SportsCore):
             with self._games_lock:
                 if (
                     not self.test_mode
-                    and len(self.live_games) > 1
+                    and len(self._rotation_schedule) > 1
                     and self.last_game_switch > 0
                     and (current_time - self.last_game_switch) >= self.game_display_duration
                 ):
                     self.current_game_index = (self.current_game_index + 1) % len(
-                        self.live_games
+                        self._rotation_schedule
                     )
-                    self.current_game = self.live_games[self.current_game_index]
+                    next_id = self._rotation_schedule[self.current_game_index]
+                    game_by_id = {g["id"]: g for g in self.live_games}
+                    self.current_game = game_by_id.get(next_id, self.current_game)
                     self.last_game_switch = current_time
                     self.logger.info(
                         f"Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}"

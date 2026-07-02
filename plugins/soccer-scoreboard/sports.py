@@ -92,6 +92,13 @@ class SportsCore(ABC):
             "show_all_live",
             filtering_config.get("show_all_live", False),
         )
+        try:
+            self.favorite_live_boost: int = max(1, min(5, int(self.mode_config.get(
+                "favorite_live_boost",
+                filtering_config.get("favorite_live_boost", 2),
+            ))))
+        except (TypeError, ValueError):
+            self.favorite_live_boost = 2
 
         self.session = requests.Session()
         retry_strategy = Retry(
@@ -128,6 +135,10 @@ class SportsCore(ABC):
         self.favorite_teams = self.dynamic_resolver.resolve_teams(
             raw_favorite_teams, sport_key
         )
+        raw_exclude_teams = self.mode_config.get("exclude_teams", [])
+        self.exclude_teams = self.dynamic_resolver.resolve_teams(
+            raw_exclude_teams, sport_key
+        )
 
         # Log dynamic team resolution
         if raw_favorite_teams != self.favorite_teams:
@@ -136,6 +147,8 @@ class SportsCore(ABC):
             )
         else:
             self.logger.info(f"Favorite teams: {self.favorite_teams}")
+        if self.exclude_teams:
+            self.logger.info(f"Excluded teams: {self.exclude_teams}")
 
         self.logger.setLevel(logging.INFO)
 
@@ -168,6 +181,54 @@ class SportsCore(ABC):
             self.logger.warning(
                 "Background service not available - using synchronous fetching"
             )
+
+    def _is_favorite_game(self, game: Dict) -> bool:
+        return bool(self.favorite_teams) and (
+            game.get("home_abbr") in self.favorite_teams
+            or game.get("away_abbr") in self.favorite_teams
+        )
+
+    def _swrr_advance(self, games: List[Dict]) -> Optional[Dict]:
+        """Pick the next live game to display via Smooth Weighted Round-Robin.
+
+        Favorite-team games get weight ``favorite_live_boost`` (shown that many
+        turns for every 1 turn other live games get); everything else gets
+        weight 1. Per-game weight state (``self._swrr_weights``) persists
+        across calls so spacing stays even indefinitely - no fixed-length
+        cycle, so no clustering seam at a cycle boundary. A brand-new game
+        (including a favorite's game that just went live) starts at weight 0
+        and gets its full weight added on the very next call, so a live
+        favorite naturally wins the first pick after it appears ("queued
+        first" on refresh) without any special-cased branch.
+
+        With ``favorite_live_boost == 1`` (or no favorite live), every game
+        has weight 1, so this always just returns games in their existing
+        order - identical behavior to the plain round-robin it replaces.
+        """
+        if not games:
+            return None
+        weights = {}
+        for g in games:
+            gid = g.get("id")
+            if gid is None:
+                continue
+            weights[gid] = self.favorite_live_boost if self._is_favorite_game(g) else 1
+        if not weights:
+            return None
+
+        if not hasattr(self, "_swrr_weights"):
+            self._swrr_weights = {}
+        # Drop state for games no longer live; keep it for games still live.
+        self._swrr_weights = {gid: w for gid, w in self._swrr_weights.items() if gid in weights}
+
+        for gid, w in weights.items():
+            self._swrr_weights[gid] = self._swrr_weights.get(gid, 0) + w
+
+        total_weight = sum(weights.values())
+        ids_in_order = [g.get("id") for g in games if g.get("id") in weights]
+        best_gid = max(ids_in_order, key=lambda gid: self._swrr_weights[gid])
+        self._swrr_weights[best_gid] -= total_weight
+        return next(g for g in games if g.get("id") == best_gid)
 
     def _initialize_logo_dir(self, configured_path: Path) -> Path:
         """Resolve and ensure a writable logo directory, falling back when necessary."""
@@ -1807,6 +1868,13 @@ class SportsRecent(SportsCore):
                 if is_eligible:
                     game_time = game.get("start_time_utc")
                     if game_time and game_time >= recent_cutoff:
+                        # Excluded teams are hidden from final/recent scores too
+                        # (spoiler protection), regardless of every other filter.
+                        if (
+                            game.get("home_abbr") in self.exclude_teams
+                            or game.get("away_abbr") in self.exclude_teams
+                        ):
+                            continue
                         processed_games.append(game)
             # Use single-pass algorithm for game selection
             # This properly handles games between two favorite teams (counts for both)
@@ -2826,11 +2894,17 @@ class SportsLive(SportsCore):
                             live_or_halftime_count += 1
                             
                             # Filtering logic matching SportsUpcoming:
+                            # - Excluded team → never show, regardless of any other setting
                             # - If show_all_live = True → show all games
                             # - If show_favorite_teams_only = False → show all games
                             # - If show_favorite_teams_only = True but favorite_teams is empty → show all games (fallback)
                             # - If show_favorite_teams_only = True and favorite_teams has teams → only show games with those teams
-                            if self.show_all_live:
+                            if (
+                                details["home_abbr"] in self.exclude_teams
+                                or details["away_abbr"] in self.exclude_teams
+                            ):
+                                should_include = False
+                            elif self.show_all_live:
                                 # Always show all live games if show_all_live is enabled
                                 should_include = True
                             elif not self.show_favorite_teams_only:
@@ -2956,14 +3030,21 @@ class SportsLive(SportsCore):
                                 key=lambda g: g.get("start_time_utc")
                                 or datetime.now(timezone.utc),
                             )  # Sort by start time
-                            # Reset index if current game is gone or list is new
+                            # Reset index if current game is gone or list is new.
+                            # Pick via weighted round-robin so a live favorite is
+                            # queued first (see _swrr_advance).
                             if (
                                 not self.current_game
                                 or self.current_game["id"] not in new_game_ids
                             ):
-                                self.current_game_index = 0
                                 self.current_game = (
-                                    self.live_games[0] if self.live_games else None
+                                    self._swrr_advance(self.live_games)
+                                    if self.live_games else None
+                                )
+                                self.current_game_index = next(
+                                    (i for i, g in enumerate(self.live_games)
+                                     if self.current_game and g["id"] == self.current_game["id"]),
+                                    0,
                                 )
                                 self.last_game_switch = current_time
                             else:
@@ -3044,10 +3125,16 @@ class SportsLive(SportsCore):
                     and self.active_celebration is None
                     and (current_time - self.last_game_switch) >= self.game_display_duration
                 ):
-                    self.current_game_index = (self.current_game_index + 1) % len(
-                        self.live_games
+                    # Weighted pick (see _swrr_advance) instead of plain +1 index -
+                    # gives a live favorite's game extra turns per
+                    # favorite_live_boost while everything else still rotates
+                    # fairly (boost==1 reproduces the old flat round robin).
+                    self.current_game = self._swrr_advance(self.live_games)
+                    self.current_game_index = next(
+                        (i for i, g in enumerate(self.live_games)
+                         if self.current_game and g["id"] == self.current_game["id"]),
+                        0,
                     )
-                    self.current_game = self.live_games[self.current_game_index]
                     self.last_game_switch = current_time
                     self.logger.info(
                         f"Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}"

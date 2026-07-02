@@ -76,6 +76,14 @@
           "default": [],
           "description": "List of favorite NBA team abbreviations (e.g., LAL, BOS, GSW). Use 2-3 letter codes."
         },
+        "exclude_teams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Team abbreviations to always hide from live rotation and recent/final scores (e.g. to avoid spoilers when watching delayed). Takes priority over favorite_teams and show_all_live."
+        },
         "display_modes": {
           "type": "object",
           "title": "Display Modes",
@@ -244,6 +252,13 @@
               "type": "boolean",
               "default": false,
               "description": "Show all live games, not just favorites"
+            },
+            "favorite_live_boost": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
             }
           }
         },
@@ -394,6 +409,14 @@
           },
           "default": [],
           "description": "List of favorite WNBA team abbreviations (e.g., NYL, LAS, SEA). Use 2-3 letter codes."
+        },
+        "exclude_teams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Team abbreviations to always hide from live rotation and recent/final scores (e.g. to avoid spoilers when watching delayed). Takes priority over favorite_teams and show_all_live."
         },
         "display_modes": {
           "type": "object",
@@ -563,6 +586,13 @@
               "type": "boolean",
               "default": false,
               "description": "Show all live games, not just favorites"
+            },
+            "favorite_live_boost": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
             }
           }
         },
@@ -713,6 +743,14 @@
           },
           "default": [],
           "description": "List of favorite NCAA Men's Basketball team abbreviations (e.g., DUKE, UNC, UK). Use 2-4 letter codes."
+        },
+        "exclude_teams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Team abbreviations to always hide from live rotation and recent/final scores (e.g. to avoid spoilers when watching delayed). Takes priority over favorite_teams and show_all_live."
         },
         "display_modes": {
           "type": "object",
@@ -882,6 +920,13 @@
               "type": "boolean",
               "default": false,
               "description": "Show all live games, not just favorites"
+            },
+            "favorite_live_boost": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
             }
           }
         },
@@ -1066,6 +1111,14 @@
           "default": [],
           "description": "List of favorite NCAA Women's Basketball team abbreviations (e.g., UCONN, SCAR, STAN). Use 2-4 letter codes."
         },
+        "exclude_teams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Team abbreviations to always hide from live rotation and recent/final scores (e.g. to avoid spoilers when watching delayed). Takes priority over favorite_teams and show_all_live."
+        },
         "display_modes": {
           "type": "object",
           "title": "Display Modes",
@@ -1234,6 +1287,13 @@
               "type": "boolean",
               "default": false,
               "description": "Show all live games, not just favorites"
+            },
+            "favorite_live_boost": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
             }
           }
         },

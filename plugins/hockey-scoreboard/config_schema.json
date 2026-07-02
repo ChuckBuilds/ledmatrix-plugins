@@ -165,6 +165,12 @@
               "default": [],
               "description": "NHL favorite team abbreviations (e.g., ['TB', 'TOR', 'BOS'])"
             },
+            "exclude_teams": {
+              "type": "array",
+              "items": {"type": "string"},
+              "default": [],
+              "description": "NHL team abbreviations to always hide from live rotation and recent/final scores (e.g. to avoid spoilers when watching delayed). Takes precedence over favorite_teams and show_all_live."
+            },
             "favorite_teams_only": {
               "type": "boolean",
               "default": false,
@@ -174,6 +180,13 @@
               "type": "boolean",
               "default": false,
               "description": "Show all live NHL games, not just favorites"
+            },
+            "favorite_live_boost": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "How many turns your favorite team's live NHL game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
             }
           }
         },
@@ -513,6 +526,12 @@
               "default": [],
               "description": "NCAA Men's Hockey favorite team abbreviations (e.g., ['BU', 'BC', 'MICH'])"
             },
+            "exclude_teams": {
+              "type": "array",
+              "items": {"type": "string"},
+              "default": [],
+              "description": "NCAA Men's Hockey team abbreviations to always hide from live rotation and recent/final scores (e.g. to avoid spoilers when watching delayed). Takes precedence over favorite_teams and show_all_live."
+            },
             "favorite_teams_only": {
               "type": "boolean",
               "default": false,
@@ -522,6 +541,13 @@
               "type": "boolean",
               "default": false,
               "description": "Show all live NCAA Men's Hockey games, not just favorites"
+            },
+            "favorite_live_boost": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "How many turns your favorite team's live NCAA Men's Hockey game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
             }
           }
         },
@@ -861,6 +887,12 @@
               "default": [],
               "description": "NCAA Women's Hockey favorite team abbreviations (e.g., ['WISC', 'MINN', 'OSU'])"
             },
+            "exclude_teams": {
+              "type": "array",
+              "items": {"type": "string"},
+              "default": [],
+              "description": "NCAA Women's Hockey team abbreviations to always hide from live rotation and recent/final scores (e.g. to avoid spoilers when watching delayed). Takes precedence over favorite_teams and show_all_live."
+            },
             "favorite_teams_only": {
               "type": "boolean",
               "default": false,
@@ -870,6 +902,13 @@
               "type": "boolean",
               "default": false,
               "description": "Show all live NCAA Women's Hockey games, not just favorites"
+            },
+            "favorite_live_boost": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "How many turns your favorite team's live NCAA Women's Hockey game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
             }
           }
         },

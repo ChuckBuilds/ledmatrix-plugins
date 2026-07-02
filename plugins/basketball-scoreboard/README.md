@@ -341,8 +341,24 @@ The `filtering` section controls which games are displayed:
 
 - `show_favorite_teams_only` (default: true): When enabled, only shows games involving your favorite teams. When disabled, shows all games.
 - `show_all_live` (default: false): When enabled, shows all live games regardless of favorite teams setting. This is useful if you want to see all live action even if you only have favorite teams configured for recent/upcoming modes.
+- `favorite_live_boost` (default: 2, range 1-5): With both filters above off (or `show_all_live` on), all live games rotate evenly by default. This setting gives your favorite's live game extra turns in that rotation — it's always queued first whenever the live list refreshes, and gets `favorite_live_boost` turns for every 1 turn other live games get. Set to `1` for perfectly even rotation (no boost). Has no effect if you don't have `favorite_teams` configured, or if your favorite isn't currently live.
 
-**Note**: For live mode, if `show_all_live` is true, all live games will be shown. If false and `show_favorite_teams_only` is true, only live games involving favorite teams will be shown.
+**Note**: For live mode, if `show_all_live` is true, all live games will be shown. If false and `show_favorite_teams_only` is true, only live games involving favorite teams will be shown. If both are off, all live games are shown and rotate evenly, with `favorite_live_boost` giving your favorite's game precedence whenever it's playing.
+
+## Excluding Teams (Spoiler Protection)
+
+`exclude_teams` (per league, same format as `favorite_teams`, e.g. `["LAL"]`) hides specific teams from both the live rotation and Recent/Final scores — handy if you're planning to watch a game delayed and don't want the result spoiled. Exclusion always wins: if a team appears in both `favorite_teams` and `exclude_teams`, it's excluded. Upcoming/schedule listings are unaffected since they carry no result to spoil.
+
+```json
+{
+  "nba": {
+    "exclude_teams": ["LAL"],
+    "filtering": {
+      "favorite_live_boost": 3
+    }
+  }
+}
+```
 
 ## Troubleshooting
 
