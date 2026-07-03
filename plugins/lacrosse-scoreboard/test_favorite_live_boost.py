@@ -17,7 +17,6 @@ Run: <core-venv>/bin/python plugins/lacrosse-scoreboard/test_favorite_live_boost
 
 import sys
 import threading
-import time
 import types
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
