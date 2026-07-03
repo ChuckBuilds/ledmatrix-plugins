@@ -628,14 +628,14 @@
                         "show_all_live": {
                             "type": "boolean",
                             "default": false,
-                            "description": "Show all live games, not just favorites",
+                            "description": "Show all live games, not just favorites"
+                        },
                         "favorite_live_boost": {
                             "type": "integer",
                             "default": 2,
                             "minimum": 1,
                             "maximum": 5,
                             "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
-                        }
                         }
                     }
                 },
@@ -1001,14 +1001,14 @@
                         "show_all_live": {
                             "type": "boolean",
                             "default": false,
-                            "description": "Show all live games, not just favorites",
+                            "description": "Show all live games, not just favorites"
+                        },
                         "favorite_live_boost": {
                             "type": "integer",
                             "default": 2,
                             "minimum": 1,
                             "maximum": 5,
                             "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
-                        }
                         }
                     }
                 },

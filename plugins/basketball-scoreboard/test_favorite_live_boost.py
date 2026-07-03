@@ -70,20 +70,14 @@ def game(gid, home, away, is_tournament=False):
 
 
 def filter_decision(live, details):
-    """Mirror the inclusion branch added in sports.py's SportsLive.update()."""
-    if (details.get("home_abbr") in live.exclude_teams
-            or details.get("away_abbr") in live.exclude_teams):
-        return False
-    if live.tournament_mode and details.get("is_tournament"):
-        return True
-    if live.show_all_live:
-        return True
-    if not live.show_favorite_teams_only:
-        return True
-    if not live.favorite_teams:
-        return True
-    return (details["home_abbr"] in live.favorite_teams
-            or details["away_abbr"] in live.favorite_teams)
+    """Call the real production inclusion check (SportsLive._classify_live_game)
+    directly, rather than a hand-copied mirror of its logic — so a future change
+    to the real branch order/precedence in sports.py is actually caught here."""
+    return live._classify_live_game(
+        details.get("home_abbr"),
+        details.get("away_abbr"),
+        is_tournament=details.get("is_tournament", False),
+    )
 
 
 results = []

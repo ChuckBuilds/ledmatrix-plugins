@@ -146,16 +146,16 @@ check(
 )
 
 # =============================================================================
-# exclude_teams / favorite_live_boost: _is_favorite_game() and _swrr_advance()
+# exclude_teams / favorite_live_boost: _is_favorite_game(), _swrr_advance(),
+# and _classify_live_game()
 #
 # These exercise the real SportsLive methods (not reimplementations) on a
 # bare namespace object carrying just the attributes they read, so we don't
 # need to build a full live manager (network fetch, ESPN payload shapes, etc).
-# The exclude-teams filter branch itself lives inline in SportsLive.update()
-# (an early "should_include = False" guard ahead of the existing
-# show_all_live/show_favorite_teams_only chain) and is covered by code
-# review rather than a unit test here, since exercising it needs mocking the
-# full ESPN fetch/update pipeline - left as a follow-up if that's wanted.
+# The live-inclusion filter (exclude > show_all_live > favorites-only) was
+# extracted from inline code in SportsLive.update() into _classify_live_game()
+# specifically so it could be unit-tested directly here, the same way
+# _is_favorite_game/_swrr_advance already were.
 # =============================================================================
 
 
@@ -169,9 +169,13 @@ class Games:
 
     _is_favorite_game = SportsLive._is_favorite_game
 
-    def __init__(self, favorite_teams, boost):
+    def __init__(self, favorite_teams, boost, exclude_teams=None,
+                 show_all_live=False, show_favorite_teams_only=False):
         self.favorite_teams = favorite_teams
         self.favorite_live_boost = boost
+        self.exclude_teams = exclude_teams or []
+        self.show_all_live = show_all_live
+        self.show_favorite_teams_only = show_favorite_teams_only
 
 
 def g(gid, home, away):
@@ -236,6 +240,39 @@ check("single live game: always returned", seq == ["ONLY"] * 4)
 # --- _swrr_advance: empty list -> None --------------------------------------
 fake = Games(favorite_teams=["LIV"], boost=2)
 check("no live games: returns None", SportsLive._swrr_advance(fake, []) is None)
+
+# --- _classify_live_game: exclude wins over everything ----------------------
+fake = Games(favorite_teams=[], boost=2, exclude_teams=["LIV"], show_all_live=True)
+check(
+    "_classify_live_game: excluded team hidden even with show_all_live=True",
+    SportsLive._classify_live_game(fake, "LIV", "MUN") is False,
+)
+
+fake = Games(favorite_teams=["LIV"], boost=2, exclude_teams=["LIV"],
+             show_favorite_teams_only=True)
+check(
+    "_classify_live_game: exclude wins over favorite_teams",
+    SportsLive._classify_live_game(fake, "LIV", "MUN") is False,
+)
+
+# --- _classify_live_game: both filters off -> show everything not excluded --
+fake = Games(favorite_teams=["LIV"], boost=2, show_favorite_teams_only=False,
+             show_all_live=False)
+check(
+    "_classify_live_game: both filters off shows non-favorite live games",
+    SportsLive._classify_live_game(fake, "ARS", "MUN") is True,
+)
+
+# --- _classify_live_game: favorites-only filters correctly ------------------
+fake = Games(favorite_teams=["LIV"], boost=2, show_favorite_teams_only=True)
+check(
+    "_classify_live_game: favorites-only includes favorite's game",
+    SportsLive._classify_live_game(fake, "LIV", "MUN") is True,
+)
+check(
+    "_classify_live_game: favorites-only excludes non-favorite game",
+    SportsLive._classify_live_game(fake, "ARS", "MUN") is False,
+)
 
 
 print()

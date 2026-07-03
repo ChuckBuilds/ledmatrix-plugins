@@ -1539,14 +1539,6 @@ class SportsRecent(SportsCore):
             reverse=True,
         )
 
-        if self.exclude_teams:
-            # Excluded teams never show up in recent/final scores either (spoiler protection)
-            sorted_games = [
-                g for g in sorted_games
-                if g.get("home_abbr") not in self.exclude_teams
-                and g.get("away_abbr") not in self.exclude_teams
-            ]
-
         if not favorite_teams:
             # No favorites: return all games (caller will apply limits)
             return sorted_games
@@ -1684,6 +1676,15 @@ class SportsRecent(SportsCore):
                 
                 # Filter criteria: must be final OR appear finished, AND within recent date range
                 is_eligible = game.get("is_final", False) or appears_finished
+                # Excluded teams are always hidden from recent/final scores too
+                # (spoiler protection), regardless of favorites settings — apply
+                # here so both the favorites-only and "show all" branches below
+                # inherit it, since only one of them re-filters by favorite_teams.
+                if (
+                    game.get("home_abbr") in self.exclude_teams
+                    or game.get("away_abbr") in self.exclude_teams
+                ):
+                    is_eligible = False
                 if is_eligible:
                     game_time = game.get("start_time_utc")
                     if game_time and game_time >= recent_cutoff:

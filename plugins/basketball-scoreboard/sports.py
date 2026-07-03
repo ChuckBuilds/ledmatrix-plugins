@@ -2419,6 +2419,26 @@ class SportsLive(SportsCore):
         self.game_update_timestamps = {}
         self.stale_game_timeout = self.mode_config.get("stale_game_timeout", 300)  # 5 minutes default
 
+    def _classify_live_game(self, home_abbr, away_abbr, is_tournament=False) -> bool:
+        """Whether a live game should be included in the live rotation.
+
+        Priority: excluded team (never shown, overrides everything, including
+        tournament mode) > tournament game in tournament mode > show_all_live
+        > show_favorite_teams_only disabled > no favorites configured >
+        favorite-teams-only membership check.
+        """
+        if home_abbr in self.exclude_teams or away_abbr in self.exclude_teams:
+            return False
+        if self.tournament_mode and is_tournament:
+            return True
+        if self.show_all_live:
+            return True
+        if not self.show_favorite_teams_only:
+            return True
+        if not self.favorite_teams:
+            return True
+        return home_abbr in self.favorite_teams or away_abbr in self.favorite_teams
+
     def _build_weighted_schedule(self, games: List[Dict]) -> List[str]:
         """Build a Smooth Weighted Round-Robin order of game IDs for the live rotation.
 
@@ -2617,38 +2637,15 @@ class SportsLive(SportsCore):
                         if details["is_live"] or details["is_halftime"]:
                             live_or_halftime_count += 1
 
-                            # Filtering logic:
-                            # - Excluded team → never show (overrides everything, including tournament mode)
-                            # - Tournament mode + tournament game → always show
-                            # - If show_all_live = True → show all games
-                            # - If show_favorite_teams_only = False → show all games
-                            # - If show_favorite_teams_only = True but favorite_teams is empty → show all games (fallback)
-                            # - If show_favorite_teams_only = True and favorite_teams has teams → only show games with those teams
-                            if (details.get("home_abbr") in self.exclude_teams
-                                    or details.get("away_abbr") in self.exclude_teams):
-                                # Excluded teams are always hidden, regardless of any other setting
-                                should_include = False
-                            elif self.tournament_mode and details.get("is_tournament"):
-                                # Tournament mode: show ALL tournament games
-                                should_include = True
-                            elif self.show_all_live:
-                                # Always show all live games if show_all_live is enabled
-                                should_include = True
-                            elif not self.show_favorite_teams_only:
-                                # If favorite teams filtering is disabled, show all games
-                                should_include = True
-                            elif not self.favorite_teams:
-                                # If favorite teams filtering is enabled but no favorites are configured,
-                                # show all games (same behavior as SportsUpcoming)
-                                should_include = True
-                            else:
-                                # Favorite teams filtering is enabled AND favorites are configured
-                                # Only show games involving favorite teams
-                                should_include = (
-                                    details["home_abbr"] in self.favorite_teams
-                                    or details["away_abbr"] in self.favorite_teams
-                                )
-                                
+                            # Filtering logic (see _classify_live_game for the
+                            # full precedence order: exclude > tournament >
+                            # show_all_live > favorites-only membership).
+                            should_include = self._classify_live_game(
+                                details.get("home_abbr"),
+                                details.get("away_abbr"),
+                                is_tournament=details.get("is_tournament", False),
+                            )
+
                             if not should_include:
                                 filtered_out_count += 1
                                 self.logger.debug(

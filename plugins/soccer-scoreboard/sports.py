@@ -188,6 +188,23 @@ class SportsCore(ABC):
             or game.get("away_abbr") in self.favorite_teams
         )
 
+    def _classify_live_game(self, home_abbr, away_abbr) -> bool:
+        """Whether a live game should be included in the live rotation.
+
+        Priority: excluded team (never shown, overrides everything) >
+        show_all_live > show_favorite_teams_only disabled > no favorites
+        configured (fallback: show all) > favorite-teams-only membership.
+        """
+        if home_abbr in self.exclude_teams or away_abbr in self.exclude_teams:
+            return False
+        if self.show_all_live:
+            return True
+        if not self.show_favorite_teams_only:
+            return True
+        if not self.favorite_teams:
+            return True
+        return home_abbr in self.favorite_teams or away_abbr in self.favorite_teams
+
     def _swrr_advance(self, games: List[Dict]) -> Optional[Dict]:
         """Pick the next live game to display via Smooth Weighted Round-Robin.
 
@@ -2893,35 +2910,13 @@ class SportsLive(SportsCore):
                         if details["is_live"] or details["is_halftime"]:
                             live_or_halftime_count += 1
                             
-                            # Filtering logic matching SportsUpcoming:
-                            # - Excluded team → never show, regardless of any other setting
-                            # - If show_all_live = True → show all games
-                            # - If show_favorite_teams_only = False → show all games
-                            # - If show_favorite_teams_only = True but favorite_teams is empty → show all games (fallback)
-                            # - If show_favorite_teams_only = True and favorite_teams has teams → only show games with those teams
-                            if (
-                                details["home_abbr"] in self.exclude_teams
-                                or details["away_abbr"] in self.exclude_teams
-                            ):
-                                should_include = False
-                            elif self.show_all_live:
-                                # Always show all live games if show_all_live is enabled
-                                should_include = True
-                            elif not self.show_favorite_teams_only:
-                                # If favorite teams filtering is disabled, show all games
-                                should_include = True
-                            elif not self.favorite_teams:
-                                # If favorite teams filtering is enabled but no favorites are configured,
-                                # show all games (same behavior as SportsUpcoming)
-                                should_include = True
-                            else:
-                                # Favorite teams filtering is enabled AND favorites are configured
-                                # Only show games involving favorite teams
-                                should_include = (
-                                    details["home_abbr"] in self.favorite_teams
-                                    or details["away_abbr"] in self.favorite_teams
-                                )
-                            
+                            # Filtering logic (see _classify_live_game for the
+                            # full precedence order: exclude > show_all_live >
+                            # favorites-only membership; matches SportsUpcoming).
+                            should_include = self._classify_live_game(
+                                details["home_abbr"], details["away_abbr"]
+                            )
+
                             if not should_include:
                                 filtered_out_count += 1
                                 self.logger.debug(

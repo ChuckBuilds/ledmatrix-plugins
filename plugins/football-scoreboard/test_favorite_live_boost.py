@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """
 Tests for the exclude_teams + favorite_live_boost live-rotation logic added
-to SportsLive (_classify_live_game, _build_weighted_schedule).
+to SportsLive (_classify_live_game, _build_weighted_schedule), and the
+exclude_teams recent/final-scores spoiler protection in SportsRecent.update().
 
 Run: <core-venv>/bin/python plugins/football-scoreboard/test_favorite_live_boost.py
 """
 
 import sys
+import threading
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 plugin_dir = Path(__file__).parent
@@ -15,7 +18,7 @@ sys.path.insert(0, str(plugin_dir))
 # SportsLive itself is abstract (_extract_game_details/_fetch_data are supplied
 # by league mixins) - use the concrete NFL live manager, which shares the exact
 # same SportsLive._classify_live_game/_build_weighted_schedule implementation.
-from nfl_managers import NFLLiveManager  # noqa: E402
+from nfl_managers import NFLLiveManager, NFLRecentManager  # noqa: E402
 
 
 def make_live(favorite_teams=None, exclude_teams=None, show_favorite_teams_only=False,
@@ -97,6 +100,57 @@ check("single live game repeats boost times", schedule == ["fav", "fav", "fav"])
 # --- empty games list --------------------------------------------------------
 live = make_live()
 check("empty games -> empty schedule", live._build_weighted_schedule([]) == [])
+
+
+# --- exclude_teams must also hide games in the *default* recent-games path ---
+# Regression test for a bug CodeRabbit caught on this PR: the exclude filter
+# was only applied inside _select_recent_games_for_display, which is skipped
+# entirely when show_favorite_teams_only is False (the schema default) - so
+# excluded teams' final scores still leaked through. Fixed by filtering at the
+# point processed_games is built in update(), so both branches inherit it.
+def _final_game(gid, home, away, days_ago=1):
+    return {
+        "id": gid,
+        "home_abbr": home,
+        "away_abbr": away,
+        "is_final": True,
+        "clock": "0:00",
+        "period": 4,
+        "status_text": "Final",
+        "start_time_utc": datetime.now(timezone.utc) - timedelta(days=days_ago),
+        "home_score": "20",
+        "away_score": "17",
+    }
+
+
+recent = NFLRecentManager.__new__(NFLRecentManager)
+recent.logger = type("StubLogger", (), {"__getattr__": lambda self, _n: (lambda *a, **k: None)})()
+recent.sport_key = "nfl"
+recent.favorite_teams = []
+recent.exclude_teams = ["SF"]
+recent.show_favorite_teams_only = False  # the default/no-favorites path
+recent.recent_games_to_show = 5
+recent.games_list = []
+recent.current_game = None
+recent.current_game_index = 0
+recent.last_update = 0
+recent.update_interval = 999999
+recent.last_game_switch = 0
+recent.game_display_duration = 15
+recent.show_ranking = False
+recent._games_lock = threading.RLock()
+recent._zero_clock_timestamps = {}
+recent.is_enabled = True
+excluded_game = _final_game("g1", "SF", "LAD")
+other_game = _final_game("g2", "SEA", "ARI")
+recent._extract_game_details = lambda game_event: game_event
+recent._fetch_data = lambda: {"events": [excluded_game, other_game]}
+recent._fetch_team_rankings = lambda: None
+
+recent.update()
+result_ids = {g["id"] for g in recent.games_list}
+check("excluded team hidden from recent/final scores in default (no-favorites) path",
+      "g1" not in result_ids and "g2" in result_ids)
 
 print()
 failed = [n for n, p in results if not p]
