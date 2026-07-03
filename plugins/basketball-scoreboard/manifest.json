@@ -104,7 +104,7 @@
     "ncaaw_upcoming",
     "ncaaw_live"
   ],
-  "dependencies": {},
+  "dependencies": [],
   "entry_point": "manager.py",
   "class_name": "BasketballScoreboardPlugin",
   "compatible_versions": [
