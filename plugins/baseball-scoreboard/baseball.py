@@ -7,16 +7,123 @@ with baseball-specific logic for innings, outs, bases, strikes, balls, etc.
 
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from PIL import Image, ImageDraw
 
 from data_sources import ESPNDataSource
 from sports import SportsCore, SportsLive, SportsRecent
 
+# ESPN categorical play types that map unambiguously to a short code.
+CLEAN_PLAY_TYPE_MAP: Dict[str, str] = {
+    "single": "1B",
+    "double": "2B",
+    "triple": "3B",
+    "home-run": "HR",
+    "fly-out": "F",
+    "ground-out": "GO",
+    "line-out": "L",
+    "pop-out": "P",
+    "hit-by-pitch": "HBP",
+}
+
+# Walks/strikeouts (and a few other outcomes as a fallback) have no
+# dedicated ESPN `type.type` -- they land in a generic "play-result" bucket
+# and are only recoverable via keyword-matching the free-text description.
+# Ordered so more specific phrases are checked before shorter substrings
+# that could otherwise false-match (e.g. "walked" vs "walked back").
+PLAY_RESULT_KEYWORDS: List[Tuple[str, str]] = [
+    ("struck out", "K"),
+    ("walked", "BB"),
+    ("hit by pitch", "HBP"),
+    ("homered", "HR"),
+    ("tripled", "3B"),
+    ("doubled", "2B"),
+    ("singled", "1B"),
+]
+
+
+def _build_athlete_name_map(rosters: Optional[List[Dict]]) -> Dict[str, str]:
+    """Join both teams' roster lists into {athlete_id: shortName}."""
+    names: Dict[str, str] = {}
+    for team_roster in rosters or []:
+        for entry in team_roster.get("roster", []) or []:
+            athlete = entry.get("athlete", {}) or {}
+            athlete_id = str(athlete.get("id", "") or "")
+            if not athlete_id:
+                continue
+            name = athlete.get("shortName") or athlete.get("fullName") or ""
+            if name:
+                names[athlete_id] = name
+    return names
+
+
+def _get_current_pitcher_batter(
+    plays: Optional[List[Dict]], athlete_names: Dict[str, str]
+) -> Tuple[Optional[str], Optional[str]]:
+    """Scan plays backward for the most recent play naming a pitcher/batter.
+
+    The last entry in `plays` is often a transition marker (e.g. end of
+    inning) with no `participants`, so a simple `plays[-1]` lookup misses
+    the actual at-bat most of the time.
+    """
+    for play in reversed(plays or []):
+        pitcher_id = None
+        batter_id = None
+        for participant in play.get("participants") or []:
+            role = participant.get("type")
+            athlete_id = str(participant.get("athlete", {}).get("id", "") or "")
+            if not athlete_id:
+                continue
+            if role == "pitcher":
+                pitcher_id = athlete_id
+            elif role == "batter":
+                batter_id = athlete_id
+        pitcher = athlete_names.get(pitcher_id) if pitcher_id else None
+        batter = athlete_names.get(batter_id) if batter_id else None
+        if pitcher or batter:
+            return pitcher, batter
+    return None, None
+
+
+def _map_play_type(play: Dict) -> Optional[str]:
+    """Map a single play to a short code, or None on no confident match."""
+    play_type = (play.get("type") or {}).get("type", "")
+    if play_type in CLEAN_PLAY_TYPE_MAP:
+        return CLEAN_PLAY_TYPE_MAP[play_type]
+
+    text = (play.get("text") or "").lower()
+    for keyword, code in PLAY_RESULT_KEYWORDS:
+        if keyword in text:
+            return code
+    return None
+
+
+def _get_last_play_code(plays: Optional[List[Dict]]) -> Optional[str]:
+    """Return the short code for the most recently completed play, or None.
+
+    Skips trailing empty transition-marker entries (no type, no text), but
+    stops at the first substantive play and returns its mapped code -- or
+    None if that play's outcome can't be confidently mapped, rather than
+    scanning further back and risking showing a stale result.
+    """
+    for play in reversed(plays or []):
+        play_type = (play.get("type") or {}).get("type", "")
+        text = play.get("text") or ""
+        if not play_type and not text:
+            continue
+        return _map_play_type(play)
+    return None
+
 
 class Baseball(SportsCore):
     """Base class for baseball sports with common functionality."""
+
+    # Set by league-specific base managers to opt into the ESPN per-game
+    # summary endpoint (pitcher/batter/last-play). Left None for leagues
+    # (e.g. MiLB) whose live game IDs aren't ESPN IDs and have no verified
+    # summary endpoint shape.
+    espn_summary_sport_league: Optional[Tuple[str, str]] = None
 
     def __init__(
         self,
@@ -33,54 +140,10 @@ class Baseball(SportsCore):
         self.show_bases = self.mode_config.get("show_bases", True)
         self.show_count = self.mode_config.get("show_count", True)
         self.show_pitcher_batter = self.mode_config.get("show_pitcher_batter", False)
+        self.show_last_play = self.mode_config.get("show_last_play", False)
         self.show_series_summary = self.mode_config.get("show_series_summary", False)
         self.data_source = ESPNDataSource(logger)
         self.sport = "baseball"
-
-    def _get_baseball_display_text(self, game: Dict) -> str:
-        """Get baseball-specific display text."""
-        try:
-            display_parts = []
-
-            # Inning information
-            if self.show_innings:
-                inning = game.get("inning", "")
-                if inning:
-                    display_parts.append(f"Inning: {inning}")
-
-            # Outs information
-            if self.show_outs:
-                outs = game.get("outs", 0)
-                if outs is not None:
-                    display_parts.append(f"Outs: {outs}")
-
-            # Bases information
-            if self.show_bases:
-                bases = game.get("bases", "")
-                if bases:
-                    display_parts.append(f"Bases: {bases}")
-
-            # Count information
-            if self.show_count:
-                strikes = game.get("strikes", 0)
-                balls = game.get("balls", 0)
-                if strikes is not None and balls is not None:
-                    display_parts.append(f"Count: {balls}-{strikes}")
-
-            # Pitcher/Batter information
-            if self.show_pitcher_batter:
-                pitcher = game.get("pitcher", "")
-                batter = game.get("batter", "")
-                if pitcher:
-                    display_parts.append(f"Pitcher: {pitcher}")
-                if batter:
-                    display_parts.append(f"Batter: {batter}")
-
-            return " | ".join(display_parts) if display_parts else ""
-
-        except Exception as e:
-            self.logger.error(f"Error getting baseball display text: {e}")
-            return ""
 
     def _is_baseball_game_live(self, game: Dict) -> bool:
         """Check if a baseball game is currently live."""
@@ -376,6 +439,116 @@ class BaseballLive(Baseball, SportsLive):
         sport_key: str,
     ):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
+        # Pitcher/batter/last-play: keyed by game id, holds the resolved
+        # {"pitcher", "batter", "last_play_code"}. Kept separate from
+        # current_game/live_games since those get fully rebuilt from fresh
+        # scoreboard data on every poll and would silently drop extra keys.
+        self._play_by_play_cache: Dict[str, Dict] = {}
+        self._play_by_play_last_attempt: Dict[str, float] = {}
+        self.play_by_play_update_interval = self.mode_config.get(
+            "play_by_play_update_interval", 20
+        )
+        # Dedicated at-bat-info rotating screen timing state.
+        self._at_bat_screen_last_shown = 0.0
+        self._at_bat_screen_showing_until = 0.0
+
+    def update(self):
+        super().update()
+        if self.test_mode:
+            return
+        if not (self.show_pitcher_batter or self.show_last_play):
+            return
+        if not self.espn_summary_sport_league:
+            return
+        if not self.current_game:
+            return
+
+        game_id = self.current_game.get("id")
+        if not game_id:
+            return
+
+        now = time.time()
+        last_attempt = self._play_by_play_last_attempt.get(game_id, 0)
+        if now - last_attempt >= self.play_by_play_update_interval:
+            self._play_by_play_last_attempt[game_id] = now
+            self._fetch_play_by_play(game_id)
+
+        self._prune_stale_play_by_play()
+
+    def _prune_stale_play_by_play(self) -> None:
+        """Drop cached/attempted entries for games no longer live so this
+        doesn't grow unbounded across a long-running session."""
+        live_ids = {g.get("id") for g in self.live_games}
+        for gid in list(self._play_by_play_cache.keys()):
+            if gid not in live_ids:
+                del self._play_by_play_cache[gid]
+        for gid in list(self._play_by_play_last_attempt.keys()):
+            if gid not in live_ids:
+                del self._play_by_play_last_attempt[gid]
+
+    def _fetch_play_by_play(self, game_id: str) -> None:
+        """Fetch and parse the ESPN game summary for one game, off-thread.
+
+        Mirrors SportsCore._fetch_odds's background-thread-with-bounded-
+        timeout pattern (sports.py) so a slow/heavy per-game summary
+        response can never block the render/update loop -- on timeout or
+        error we simply keep whatever was cached from the previous
+        successful fetch (or nothing, if there wasn't one yet).
+        """
+        import threading
+        import queue
+
+        sport, league = self.espn_summary_sport_league
+        result_queue = queue.Queue()
+
+        def fetch():
+            try:
+                data = self.data_source.fetch_game_summary(sport, league, game_id)
+                result_queue.put(("success", data))
+            except Exception as e:
+                result_queue.put(("error", e))
+
+        thread = threading.Thread(target=fetch)
+        thread.daemon = True
+        thread.start()
+
+        try:
+            result_type, result_data = result_queue.get(timeout=2.0)
+        except queue.Empty:
+            self.logger.debug(
+                f"Play-by-play fetch timed out for game {game_id} (non-blocking)"
+            )
+            return
+
+        if result_type != "success" or not result_data:
+            self.logger.debug(
+                f"Play-by-play fetch failed for game {game_id}: {result_data}"
+            )
+            return
+
+        try:
+            plays = result_data.get("plays") or []
+            rosters = result_data.get("rosters") or []
+            athlete_names = _build_athlete_name_map(rosters)
+            pitcher, batter = _get_current_pitcher_batter(plays, athlete_names)
+            last_play_code = _get_last_play_code(plays)
+            self._play_by_play_cache[game_id] = {
+                "pitcher": pitcher,
+                "batter": batter,
+                "last_play_code": last_play_code,
+            }
+        except Exception as e:
+            self.logger.error(f"Error parsing play-by-play for game {game_id}: {e}")
+
+    # Sample data cycled through in test_mode so the at-bat info screen's
+    # real draw path (font/color/dwell/interval config) gets exercised
+    # offline, with zero network calls.
+    _TEST_MODE_AT_BAT_SAMPLES = [
+        {"pitcher": "G. Cole", "batter": "J. Soto", "last_play_code": "1B"},
+        {"pitcher": "G. Cole", "batter": "A. Judge", "last_play_code": "K"},
+        {"pitcher": "Y. Yamamoto", "batter": "F. Freeman", "last_play_code": "HR"},
+        {"pitcher": "Y. Yamamoto", "batter": "M. Betts", "last_play_code": "BB"},
+    ]
 
     def _test_mode_update(self):
         if self.current_game and self.current_game["is_live"]:
@@ -399,8 +572,120 @@ class BaseballLive(Baseball, SportsLive):
                     int(self.current_game["away_score"]) + 1
                 )
 
+            if self.show_pitcher_batter or self.show_last_play:
+                game_id = self.current_game.get("id", "test")
+                sample_index = self.current_game["inning"] % len(
+                    self._TEST_MODE_AT_BAT_SAMPLES
+                )
+                self._play_by_play_cache[game_id] = self._TEST_MODE_AT_BAT_SAMPLES[
+                    sample_index
+                ]
+
+    def _maybe_draw_at_bat_info_screen(self, game: Dict, force_clear: bool = False) -> bool:
+        """Rotate in the dedicated pitcher/batter/last-play screen if it's
+        due. Returns True if it drew (caller should skip the normal
+        scorebug draw for this frame), False otherwise.
+        """
+        if not (self.show_pitcher_batter or self.show_last_play):
+            return False
+
+        pbp = self._play_by_play_cache.get(game.get("id"))
+        if not pbp or not (
+            pbp.get("pitcher") or pbp.get("batter") or pbp.get("last_play_code")
+        ):
+            return False
+
+        at_bat_cfg = self.config.get("customization", {}).get("at_bat_info", {})
+        dwell = at_bat_cfg.get("dwell_seconds", 4)
+        interval = at_bat_cfg.get("interval_seconds", 25)
+
+        now = time.time()
+        showing = now < self._at_bat_screen_showing_until
+        if not showing and now - self._at_bat_screen_last_shown >= interval:
+            self._at_bat_screen_last_shown = now
+            self._at_bat_screen_showing_until = now + dwell
+            showing = True
+
+        if not showing:
+            return False
+
+        self._draw_at_bat_info_screen(game, pbp, force_clear)
+        return True
+
+    @staticmethod
+    def _truncate_to_width(draw, text: str, font, max_width: int) -> str:
+        """Hard-truncate text (no ellipsis -- pixel fonts render one poorly
+        at small sizes) so it never draws past the panel edge. A long
+        player name is more useful clipped than overlapping the next
+        line's outline or bleeding off-canvas."""
+        if draw.textbbox((0, 0), text, font=font)[2] <= max_width:
+            return text
+        truncated = text
+        while len(truncated) > 1:
+            truncated = truncated[:-1]
+            if draw.textbbox((0, 0), truncated, font=font)[2] <= max_width:
+                return truncated
+        return truncated
+
+    def _draw_at_bat_info_screen(
+        self, game: Dict, pbp: Dict, force_clear: bool = False
+    ) -> None:
+        """Draw the dedicated pitcher/batter/last-play screen.
+
+        This replaces the normal scorebug while it's showing rather than
+        overlaying on top of it -- there isn't enough room on the scorebug,
+        especially at small display sizes, to add this text without
+        crowding or clipping the existing elements.
+        """
+        try:
+            img = Image.new("RGB", (self.display_width, self.display_height), (0, 0, 0))
+            draw = ImageDraw.Draw(img)
+
+            at_bat_cfg = self.config.get("customization", {}).get("at_bat_info", {})
+            font = self._load_custom_font_from_element_config(at_bat_cfg, default_size=6)
+
+            pitcher_color = tuple(at_bat_cfg.get("pitcher_color", [255, 255, 255]))
+            batter_color = tuple(at_bat_cfg.get("batter_color", [255, 255, 0]))
+            last_play_color = tuple(at_bat_cfg.get("last_play_color", [0, 255, 255]))
+
+            lines = []
+            if self.show_pitcher_batter and pbp.get("pitcher"):
+                lines.append((f"P: {pbp['pitcher']}", pitcher_color))
+            if self.show_pitcher_batter and pbp.get("batter"):
+                lines.append((f"B: {pbp['batter']}", batter_color))
+            if self.show_last_play and pbp.get("last_play_code"):
+                lines.append((pbp["last_play_code"], last_play_color))
+
+            if not lines:
+                return
+
+            try:
+                bbox = font.getbbox("Ay")
+                line_height = bbox[3] - bbox[1] + 2
+            except AttributeError:
+                line_height = 10
+
+            total_height = line_height * len(lines)
+            y = max(1, (self.display_height - total_height) // 2)
+            max_text_width = self.display_width - 4  # 2px padding each side
+
+            for text, color in lines:
+                if y >= self.display_height:
+                    break
+                text = self._truncate_to_width(draw, text, font, max_text_width)
+                self._draw_text_with_outline(draw, text, (2, y), font, fill=color)
+                y += line_height
+
+            self.display_manager.image.paste(img, (0, 0))
+            self.display_manager.update_display()
+
+        except Exception as e:
+            self.logger.error(f"Error drawing at-bat info screen: {e}", exc_info=True)
+
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live baseball game."""
+        if self._maybe_draw_at_bat_info_screen(game, force_clear):
+            return
         try:
             main_img = Image.new(
                 "RGBA", (self.display_width, self.display_height), (0, 0, 0, 255)

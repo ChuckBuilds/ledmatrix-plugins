@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-06",
+      "version": "1.8.0",
+      "notes": "Add optional Pitcher/Batter and Last Play info (MLB and NCAA Baseball only) -- a dedicated screen that periodically rotates into the live view showing the current at-bat's pitcher, batter, and a short code for the most recently completed play (1B, HR, K, BB, etc.). Toggle per league under Display Options; customize font/colors/timing under Customization > Pitcher / Batter / Last Play Screen. Fetches the extra per-game data on a background thread with a bounded timeout so a slow response can't block the render loop.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-02",
       "version": "1.7.0",
@@ -151,7 +157,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-02",
+  "last_updated": "2026-07-06",
   "stars": 0,
   "downloads": 0,
   "verified": true,

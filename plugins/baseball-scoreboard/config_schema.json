@@ -239,6 +239,16 @@
                             "type": "boolean",
                             "default": false,
                             "description": "Show series summary information"
+                        },
+                        "show_pitcher_batter": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Periodically show a dedicated screen with the current pitcher and batter during a live at-bat (requires an extra per-game data fetch)"
+                        },
+                        "show_last_play": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show a short code for the most recently completed play (1B, HR, K, BB, etc.) on the pitcher/batter screen"
                         }
                     }
                 },
@@ -985,6 +995,16 @@
                             "type": "boolean",
                             "default": false,
                             "description": "Show series summary information"
+                        },
+                        "show_pitcher_batter": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Periodically show a dedicated screen with the current pitcher and batter during a live at-bat (requires an extra per-game data fetch)"
+                        },
+                        "show_last_play": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show a short code for the most recently completed play (1B, HR, K, BB, etc.) on the pitcher/batter screen"
                         }
                     }
                 },
@@ -1520,7 +1540,68 @@
                     }
                 },
                 "additionalProperties": false
-                }
+                },
+            "at_bat_info": {
+                "type": "object",
+                "title": "Pitcher / Batter / Last Play Screen",
+                "description": "A dedicated full-screen view (not an overlay on the scorebug -- there is not enough room there) that periodically rotates into the live display, showing the current pitcher, batter, and a short code for the last completed play. Enable per-league via Display Options > Show Pitcher/Batter and Show Last Play (MLB and NCAA Baseball only).",
+                "properties": {
+                    "font": {
+                        "type": "string",
+                        "default": "four_by_six",
+                        "description": "Font family for this screen's text"
+                    },
+                    "font_size": {
+                        "type": "integer",
+                        "default": 6,
+                        "minimum": 4,
+                        "maximum": 16,
+                        "description": "Font size for this screen's text"
+                    },
+                    "pitcher_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [255, 255, 255],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Text color [R, G, B] for the pitcher line"
+                    },
+                    "batter_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [255, 255, 0],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Text color [R, G, B] for the batter line"
+                    },
+                    "last_play_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [0, 255, 255],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Text color [R, G, B] for the last-play code line"
+                    },
+                    "dwell_seconds": {
+                        "type": "number",
+                        "default": 4,
+                        "minimum": 2,
+                        "maximum": 15,
+                        "description": "How many seconds to show this screen each time it rotates in"
+                    },
+                    "interval_seconds": {
+                        "type": "number",
+                        "default": 25,
+                        "minimum": 10,
+                        "maximum": 120,
+                        "description": "How often (in seconds) this screen rotates into the normal live view"
+                    }
+                },
+                "additionalProperties": false
+            }
             },
             "x-propertyOrder": [
                 "score_text",
@@ -1532,7 +1613,8 @@
                 "layout",
                 "bases",
                 "outs",
-                "count"
+                "count",
+                "at_bat_info"
             ],
             "additionalProperties": false
         }

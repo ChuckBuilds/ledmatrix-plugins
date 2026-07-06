@@ -28,6 +28,8 @@ class BaseNCAABaseballManager(Baseball):
     _shared_rankings_timestamp: ClassVar[float] = 0
     _shared_rankings_lock: ClassVar[threading.Lock] = threading.Lock()
 
+    espn_summary_sport_league = ("baseball", "college-baseball")
+
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         self.logger = logging.getLogger("NCAABaseball")
         super().__init__(
