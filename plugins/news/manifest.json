@@ -59,11 +59,7 @@
   "display_modes": [
     "news_ticker"
   ],
-  "dependencies": {
-    "managers": [
-      "cache_manager"
-    ]
-  },
+  "dependencies": [],
   "compatible_versions": [
     ">=2.0.0"
   ]
