@@ -116,6 +116,14 @@ class TidePlugin(BasePlugin):
         self.tide_color   = _rgb('tide_color',      C_WATER_MID)
         self.hi_color     = _rgb('highlight_color', C_WAVE1)
 
+        self.show_mode    = {
+            'current':  bool(config.get('show_current',  True)),
+            'schedule': bool(config.get('show_schedule', True)),
+            'chart':    bool(config.get('show_chart',    True)),
+            'stats':    bool(config.get('show_stats',    True)),
+        }
+        self.modes = self._build_enabled_modes()
+
         self.mode_idx   = 0
         self.mode_start = time.time()
         self.wave_phase = 0.0
@@ -125,6 +133,12 @@ class TidePlugin(BasePlugin):
         self.live:   Optional[float] = None
 
     # ── BasePlugin ──────────────────────────────────────────────────────────────
+
+    def _build_enabled_modes(self) -> List[str]:
+        """Modes the user has toggled on, in MODES order. Falls back to all
+        modes if the user disables every screen, so the plugin never goes dark."""
+        modes = [m for m in self.MODES if self.show_mode.get(m, True)]
+        return modes or list(self.MODES)
 
     def update(self):
         if not self.station_id: return
@@ -165,7 +179,7 @@ class TidePlugin(BasePlugin):
         elif not self.hilo:
             self._loading(draw, dw, dh, L)
         else:
-            m = self.MODES[self.mode_idx]
+            m = self.modes[self.mode_idx % len(self.modes)]
             if   m == 'current':  self._mode_current(canvas, draw, dw, dh, L)
             elif m == 'schedule': self._mode_schedule(draw, dw, dh, L)
             elif m == 'chart':    self._mode_chart(canvas, draw, dw, dh, L)
@@ -180,7 +194,7 @@ class TidePlugin(BasePlugin):
 
     def is_cycle_complete(self):
         if time.time() - self.mode_start >= self.mode_dur:
-            self.mode_idx   = (self.mode_idx + 1) % len(self.MODES)
+            self.mode_idx   = (self.mode_idx + 1) % len(self.modes)
             self.mode_start = time.time()
             return True
         return False
@@ -784,5 +798,13 @@ class TidePlugin(BasePlugin):
         self.show_moon    = bool(self.config.get('show_moon_phase', True))
         self.tide_color   = _rgb('tide_color',      C_WATER_MID)
         self.hi_color     = _rgb('highlight_color', C_WAVE1)
+        self.show_mode    = {
+            'current':  bool(self.config.get('show_current',  True)),
+            'schedule': bool(self.config.get('show_schedule', True)),
+            'chart':    bool(self.config.get('show_chart',    True)),
+            'stats':    bool(self.config.get('show_stats',    True)),
+        }
+        self.modes   = self._build_enabled_modes()
+        self.mode_idx = self.mode_idx % len(self.modes)
         self.hilo = []; self.hourly = []; self.live = None
         self.update()

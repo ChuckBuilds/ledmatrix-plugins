@@ -33,7 +33,13 @@ Coastal tide information with four auto-rotating display modes.
 | `station_name` | `""` | Optional display name override |
 | `units` | `imperial` | `imperial` (feet) or `metric` (meters) |
 | `display_duration` | `12` | Seconds to show each mode before rotating |
+| `show_current` | `true` | Show the Current screen (animated wave level) |
+| `show_schedule` | `true` | Show the Schedule screen (today's H/L tides) |
+| `show_chart` | `true` | Show the Chart screen (24-hour tide curve) |
+| `show_stats` | `true` | Show the Stats screen (moon phase, spring/neap, range) |
 | `show_moon_phase` | `true` | Show moon phase icon on the stats screen |
+
+> Disabling every screen above falls back to showing all four — the plugin never goes blank.
 | `tide_color` | `[0,100,200]` | RGB color for tide water fill |
 | `highlight_color` | `[0,220,255]` | RGB color for wave crests and chart line |
 
