@@ -411,6 +411,20 @@ Each league (NFL, NCAA FB) can be configured with:
 - **Display Style**: Choose "switch" (one game at a time) or "scroll" (all games scrolling) for each game type
 - **Scroll Settings**: Configure scroll speed, frame delay, gap between games, and league separators
 
+### Filtering & Favorites
+
+Per league (`nfl`, `ncaa_fb`), under `filtering`:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `favorite_teams` | `[]` | Teams to follow — see [Dynamic Team Resolution](#-dynamic-team-resolution) |
+| `exclude_teams` | `[]` | Teams to always hide from live rotation **and** recent/final scores (e.g. to avoid spoilers if you're watching delayed). Wins over every other setting below — an excluded team never shows up even if `show_all_live` is on. |
+| `filtering.show_favorite_teams_only` | `true` | Only show games from favorite teams |
+| `filtering.show_all_live` | `false` | Show all live games, not just favorites |
+| `filtering.favorite_live_boost` | `2` | How many turns your favorite's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to `1` for perfectly even rotation. Only has a visible effect when more than one game is live at once and `favorite_teams` is configured. |
+
+With both `show_favorite_teams_only` and `show_all_live` off, all live games rotate evenly — `favorite_live_boost` is what gives your favorite's game precedence in that mode without hiding everyone else's scores.
+
 ### Customization Options
 
 - **Font Customization**: Adjust font family and size for:

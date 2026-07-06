@@ -181,6 +181,21 @@
               "type": "boolean",
               "default": false,
               "description": "Show all live NCAA Men's Lacrosse games, not just favorites"
+            },
+            "exclude_teams": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "description": "NCAA Men's Lacrosse team abbreviations to always hide from the live rotation and recent/final scores (e.g. to avoid spoilers when watching delayed). Takes precedence over favorite_teams and show_all_live."
+            },
+            "favorite_live_boost": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "default": 2,
+              "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
             }
           }
         },
@@ -545,6 +560,21 @@
               "type": "boolean",
               "default": false,
               "description": "Show all live NCAA Women's Lacrosse games, not just favorites"
+            },
+            "exclude_teams": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "description": "NCAA Women's Lacrosse team abbreviations to always hide from the live rotation and recent/final scores (e.g. to avoid spoilers when watching delayed). Takes precedence over favorite_teams and show_all_live."
+            },
+            "favorite_live_boost": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "default": 2,
+              "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
             }
           }
         },

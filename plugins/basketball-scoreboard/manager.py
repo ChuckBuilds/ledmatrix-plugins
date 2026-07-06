@@ -764,6 +764,7 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
             f"{league}_scoreboard": {
                 "enabled": league_config.get("enabled", False),
                 "favorite_teams": league_config.get("favorite_teams", []),
+                "exclude_teams": league_config.get("exclude_teams", []),
                 "display_modes": manager_display_modes,
                 "recent_games_to_show": game_limits.get("recent_games_to_show", 5),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", 10),

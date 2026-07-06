@@ -83,14 +83,19 @@ class HockeyGameFilter:
             league_config = game.get('league_config', {})
             status = game.get('status', {})
             state = status.get('state')
-            
+
             # Check if this mode is enabled for this league
             display_modes = league_config.get('display_modes', {})
             # Support both new format (live, recent, upcoming) and legacy (hockey_live, etc.)
             mode_enabled = display_modes.get(mode_type, display_modes.get(mode, False))
             if not mode_enabled:
                 continue
-            
+
+            # Excluded teams are hidden from live and recent modes regardless of
+            # every other setting (spoiler protection); upcoming is unaffected.
+            if mode_type in ('live', 'recent') and self._is_excluded_game(game):
+                continue
+
             # Filter by game state
             if mode_type == 'live' and state == 'in':
                 state_filtered.append(game)
@@ -130,14 +135,27 @@ class HockeyGameFilter:
         """Check if game involves a favorite team."""
         league_config = game.get('league_config', {})
         favorites = league_config.get('favorite_teams', [])
-        
+
         if not favorites:
             return False
-        
+
         home_abbrev = game.get('home_team', {}).get('abbrev')
         away_abbrev = game.get('away_team', {}).get('abbrev')
-        
+
         return home_abbrev in favorites or away_abbrev in favorites
+
+    def _is_excluded_game(self, game: Dict) -> bool:
+        """Check if game involves a team on the exclude list (spoiler protection)."""
+        league_config = game.get('league_config', {})
+        excluded = league_config.get('exclude_teams', [])
+
+        if not excluded:
+            return False
+
+        home_abbrev = game.get('home_team', {}).get('abbrev')
+        away_abbrev = game.get('away_team', {}).get('abbrev')
+
+        return home_abbrev in excluded or away_abbrev in excluded
     
     def has_live_games(self, games: List[Dict]) -> bool:
         """Check if there are any live games available."""

@@ -89,6 +89,42 @@ A plugin for LEDMatrix that displays live, recent, and upcoming baseball games a
 }
 ```
 
+### Filtering & Live Priority
+
+Each league's `filtering` block controls which live games are shown, and
+`favorite_teams` / `exclude_teams` control which teams are eligible:
+
+```json
+{
+  "mlb": {
+    "favorite_teams": ["SF"],
+    "exclude_teams": [],
+    "filtering": {
+      "show_favorite_teams_only": false,
+      "show_all_live": false,
+      "favorite_live_boost": 2
+    }
+  }
+}
+```
+
+- `favorite_teams`: teams you follow. When a favorite is live, it's always
+  queued first as soon as the live rotation refreshes.
+- `exclude_teams`: teams to always hide from the live rotation **and**
+  recent/final scores (e.g. to avoid spoilers if you're watching delayed).
+  This always wins — even over `show_all_live` or a team also listed in
+  `favorite_teams`.
+- `show_favorite_teams_only`: only show live games involving a favorite team.
+- `show_all_live`: show every live game regardless of favorites.
+- With both `show_favorite_teams_only` and `show_all_live` off, every live
+  game is shown and rotated evenly — this is the same set as `show_all_live`,
+  the difference is in *how* they rotate (see `favorite_live_boost` below).
+- `favorite_live_boost` (1-5, default 2): how many turns your favorite's live
+  game gets in the rotation for every 1 turn other live games get. Set to `1`
+  for perfectly even rotation. Only matters when more than one live game is
+  eligible to show (i.e. not when `show_favorite_teams_only` is on with a
+  single favorite).
+
 ## Display Modes
 
 The plugin registers per-league granular modes in `manifest.json`. The

@@ -48,6 +48,14 @@
           "default": [],
           "description": "List of favorite NFL team abbreviations (e.g., TB, DAL, GB). Use 2-3 letter codes."
         },
+        "exclude_teams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "List of NFL team abbreviations to always hide from live rotation and recent/final scores (e.g., to avoid spoilers if you're watching a game delayed). Takes priority over every other filter, including favorite_teams."
+        },
         "display_modes": {
           "type": "object",
           "title": "Display Modes",
@@ -236,6 +244,13 @@
               "type": "boolean",
               "default": false,
               "description": "Show all live games, not just favorites"
+            },
+            "favorite_live_boost": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
             }
           }
         },
@@ -356,6 +371,14 @@
           },
           "default": [],
           "description": "List of favorite NCAA FB team abbreviations (e.g., UGA, AUB, BAMA). Use 2-4 letter codes."
+        },
+        "exclude_teams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "List of NCAA FB team abbreviations to always hide from live rotation and recent/final scores (e.g., to avoid spoilers if you're watching a game delayed). Takes priority over every other filter, including favorite_teams."
         },
         "display_modes": {
           "type": "object",
@@ -545,6 +568,13 @@
               "type": "boolean",
               "default": false,
               "description": "Show all live games, not just favorites"
+            },
+            "favorite_live_boost": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
             }
           }
         },

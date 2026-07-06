@@ -50,6 +50,16 @@
                     "maxItems": 30,
                     "description": "List of favorite MLB team abbreviations (e.g., NYY, BOS, LAD). Use 2-3 letter codes."
                 },
+                "exclude_teams": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [],
+                    "uniqueItems": true,
+                    "maxItems": 30,
+                    "description": "Team abbreviations to always hide from the live rotation and recent/final scores (e.g., to avoid spoilers if you're watching a game delayed). Takes priority over favorite_teams and every other filtering setting."
+                },
                 "display_modes": {
                     "type": "object",
                     "title": "Display Modes",
@@ -246,6 +256,13 @@
                             "type": "boolean",
                             "default": false,
                             "description": "Show all live games, not just favorites"
+                        },
+                        "favorite_live_boost": {
+                            "type": "integer",
+                            "default": 2,
+                            "minimum": 1,
+                            "maximum": 5,
+                            "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                         }
                     }
                 },
@@ -405,6 +422,16 @@
                     "uniqueItems": true,
                     "maxItems": 120,
                     "description": "List of favorite MiLB team abbreviations (e.g., DUR, SWB). Use 2-4 letter codes."
+                },
+                "exclude_teams": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [],
+                    "uniqueItems": true,
+                    "maxItems": 120,
+                    "description": "Team abbreviations to always hide from the live rotation and recent/final scores (e.g., to avoid spoilers if you're watching a game delayed). Takes priority over favorite_teams and every other filtering setting."
                 },
                 "display_modes": {
                     "type": "object",
@@ -602,6 +629,13 @@
                             "type": "boolean",
                             "default": false,
                             "description": "Show all live games, not just favorites"
+                        },
+                        "favorite_live_boost": {
+                            "type": "integer",
+                            "default": 2,
+                            "minimum": 1,
+                            "maximum": 5,
+                            "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                         }
                     }
                 },
@@ -761,6 +795,16 @@
                     "uniqueItems": true,
                     "maxItems": 300,
                     "description": "List of favorite NCAA Baseball team abbreviations (e.g., LSU, FLA). Use 2-4 letter codes."
+                },
+                "exclude_teams": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [],
+                    "uniqueItems": true,
+                    "maxItems": 300,
+                    "description": "Team abbreviations to always hide from the live rotation and recent/final scores (e.g., to avoid spoilers if you're watching a game delayed). Takes priority over favorite_teams and every other filtering setting."
                 },
                 "display_modes": {
                     "type": "object",
@@ -958,6 +1002,13 @@
                             "type": "boolean",
                             "default": false,
                             "description": "Show all live games, not just favorites"
+                        },
+                        "favorite_live_boost": {
+                            "type": "integer",
+                            "default": 2,
+                            "minimum": 1,
+                            "maximum": 5,
+                            "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                         }
                     }
                 },
