@@ -328,6 +328,132 @@ class FlightTrackerPlugin(BasePlugin):
         self.modes = self._get_available_modes()
         self.logger.info(f"[Flight Tracker] Rotation modes: {self.modes}")
 
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply config edits live, without restarting the display.
+
+        Re-derives every config-driven setting, rebuilds the components that
+        capture config at construction (data-source fetcher, route enrichment,
+        renderer) and the rotation mode list, and invalidates the cached map
+        background so a new center/radius/zoom redraws. Runtime state — tracked
+        aircraft, trails, API counters, records, the proximity state machine —
+        is left untouched.
+        """
+        self.config = new_config or {}
+        self._normalize_flightaware_config(self.config)
+
+        self.enabled = self.config.get('enabled', getattr(self, 'enabled', False))
+        self.update_interval = self.config.get('update_interval', 5)
+        self.skyaware_url = self.config.get('skyaware_url', 'http://192.168.86.30/skyaware/data/aircraft.json')
+
+        # FlightAware
+        self.flight_plan_enabled = self._fa_config('enabled', False)
+        self.flightaware_api_key = self._fa_config('api_key', '')
+        self.max_api_calls_per_hour = self._fa_config('max_api_calls_per_hour', 20)
+        self.cache_ttl_seconds = self._fa_config('cache_ttl_hours', 12) * 3600
+        self.min_callsign_length = self._fa_config('min_callsign_length', 4)
+        self.daily_api_budget = self._fa_config('daily_api_budget', 60)
+        self.airline_callsign_prefixes = self._fa_config('airline_callsign_prefixes', [
+            'AAL', 'UAL', 'DAL', 'SWA', 'JBU', 'ASQ', 'ENY', 'FFT', 'NKS', 'F9', 'G4', 'B6', 'WN', 'AA', 'UA', 'DL'
+        ])
+
+        # Location
+        self.center_lat = self.config.get('center_latitude', 27.9506)
+        self.center_lon = self.config.get('center_longitude', -82.4572)
+        self.map_radius_miles = self.config.get('map_radius_miles', 10)
+        self.zoom_factor = self.config.get('zoom_factor', 1.0)
+
+        # Map background
+        self.map_bg_config = self.config.get('map_background', {})
+        self.map_bg_enabled = self.map_bg_config.get('enabled', True)
+        self.tile_provider = self.map_bg_config.get('tile_provider', 'osm')
+        self.tile_size = self.map_bg_config.get('tile_size', 256)
+        self.cache_ttl_hours = self.map_bg_config.get('cache_ttl_hours', 8760)
+        self.fade_intensity = self.map_bg_config.get('fade_intensity', 0.3)
+        self.map_brightness = self.map_bg_config.get('brightness', 1.0)
+        self.map_contrast = self.map_bg_config.get('contrast', 1.0)
+        self.map_saturation = self.map_bg_config.get('saturation', 1.0)
+        self.disable_on_cache_error = self.map_bg_config.get('disable_on_cache_error', False)
+        self.custom_tile_server = self.map_bg_config.get('custom_tile_server', None)
+
+        # Trails
+        self.show_trails = self.config.get('show_trails', False)
+        self.trail_length = self.config.get('trail_length', 10)
+
+        # Proximity alert / overhead live-priority
+        self.proximity_config = self.config.get('proximity_alert', {})
+        self.proximity_enabled = self.proximity_config.get('enabled', True)
+        self.proximity_distance_miles = self.proximity_config.get('distance_miles', 0.1)
+        self.proximity_duration = self.proximity_config.get('duration_seconds', 30)
+        self.proximity_cooldown = self.proximity_config.get('cooldown_seconds', 30)
+        self.live_priority_enabled = self.config.get('live_priority', False)
+        self.live_update_interval = self.config.get('live_update_interval', 2)
+
+        # Background service for flight plan data
+        bg_svc = self._fa_config('background_service', {})
+        self.background_service_enabled = bg_svc.get('enabled', True)
+        self.background_fetch_interval = bg_svc.get('fetch_interval_hours', 4) * 3600
+        self.max_background_calls_per_run = bg_svc.get('max_calls_per_run', 10)
+
+        # Data source / enrichment
+        self.data_source = self.config.get('data_source', 'skyaware')
+        self.fr24_enrichment = self.config.get('fr24_enrichment', True)
+        self.fr24_enrichment_interval = self.config.get('fr24_enrichment_interval', 60)
+
+        # Display / filtering
+        self.display_mode = self.config.get('display_mode', 'auto')
+        self.units_system = self.config.get('units', 'imperial')
+        self.max_aircraft = self.config.get('max_aircraft', 5)
+        self.min_altitude_ft = self.config.get('min_altitude_ft', 0)
+        self.max_altitude_ft = self.config.get('max_altitude_ft', 0)
+        self.aircraft_categories = self.config.get('aircraft_categories', [])
+        self.tracked_flights_cfg = self.config.get('tracked_flights', [])
+        # Drop runtime tracking state for identifiers no longer in config --
+        # otherwise a flight removed from tracked_flights keeps showing up
+        # (frozen at its last-known state) until a full restart.
+        _tracked_idents = set(self.tracked_flights_cfg)
+        for _stale_ident in [k for k in self.tracked_flight_data if k not in _tracked_idents]:
+            del self.tracked_flight_data[_stale_ident]
+        self.anchor_airport = self.config.get('anchor_airport', '')
+        self.route_cache_ttl = self.config.get('route_cache_ttl', 300)
+
+        # Offline aircraft database
+        self.use_offline_db = self.config.get('use_offline_database', True)
+        self.offline_db_auto_update = self.config.get('offline_database_auto_update', True)
+        self.offline_db_update_interval_days = self.config.get('offline_database_update_interval_days', 30)
+
+        # Start loading records if they were just enabled.
+        was_records_enabled = getattr(self, 'flight_records_enabled', False)
+        self.flight_records_enabled = self.config.get('flight_records', {}).get('enabled', True)
+        if self.flight_records_enabled and not was_records_enabled:
+            try:
+                self._load_flight_records()
+            except Exception as e:
+                self.logger.warning(f"[Flight Tracker] Could not load flight records on config change: {e}")
+
+        # Rebuild components that captured the config at construction so the new
+        # data source / enrichment / renderer config takes effect immediately.
+        try:
+            self._fetcher = create_fetcher(self.config, self.cache_manager)
+            self._enrichment = create_enrichment_provider(self.config, self.cache_manager)
+            self._renderer = FlightRenderer(self.display_manager, self.fonts, self.config)
+        except Exception as e:
+            self.logger.error(f"[Flight Tracker] Error rebuilding components on config change: {e}", exc_info=True)
+
+        # Invalidate the cached map background so center/radius/zoom/appearance
+        # changes are re-tiled on the next render.
+        self.cached_map_bg = None
+        self.last_map_center = None
+        self.last_map_zoom = None
+        self.cached_pixels_per_mile = None
+
+        # Rebuild the rotation slots in case enabled views changed.
+        self.modes = self._get_available_modes()
+        self.logger.info(
+            f"[Flight Tracker] Config updated live - source={self.data_source}, "
+            f"center=({self.center_lat}, {self.center_lon}), radius={self.map_radius_miles}mi, "
+            f"modes={self.modes}"
+        )
+
     @property
     def display_width(self) -> int:
         return self._display_manager_ref.matrix.width

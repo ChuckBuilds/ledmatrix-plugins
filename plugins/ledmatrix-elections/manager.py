@@ -116,6 +116,68 @@ class ElectionPlugin(BasePlugin):
             self.state, [p.name for p in self.providers],
         )
 
+    def on_config_change(self, new_config: dict) -> None:
+        """Apply config edits live, without restarting the display.
+
+        Re-derives every config-driven setting, rebuilds the providers and the
+        race store (so a changed state, provider list, or vote-override takes
+        effect), reconfigures the scroll helper in place, and clears the cached
+        races/segments so the ticker re-fetches and rebuilds on the next update.
+        """
+        self.config = new_config or {}
+        self.enabled = self.config.get("enabled", self.enabled)
+        config = self.config
+
+        self.state = (config.get("state") or "").upper() or None
+        self.only_my_state = config.get("only_my_state", True)
+        self.race_types = config.get("race_types") or None
+        self.local_districts = self._build_local_districts(config)
+        self.update_interval = int(config.get("update_interval", 60))
+        self.display_duration = float(config.get("display_duration", 30))
+        self.hide_called_after = float(config.get("hide_called_after_seconds", 86400))
+        self.test_mode = config.get("test_mode", False)
+
+        self.override_cfg = config.get("override", {}) or {}
+        self.calendar_events_cfg = config.get("calendar_events", []) or []
+        self._fetch_state = self.state
+
+        interrupt_cfg = config.get("interrupt", {}) or {}
+        self.interrupt_enabled = interrupt_cfg.get("enabled", True)
+        self.interrupt_duration = float(interrupt_cfg.get("duration_seconds", 12))
+        self.interrupt_my_state_only = interrupt_cfg.get("my_state_only", True)
+        self.interrupt_max_age = float(interrupt_cfg.get("max_age_seconds", 300))
+
+        ca_cfg = (config.get("providers", {}) or {}).get("ca_sos", {}) or {}
+        override_votes = ca_cfg.get("override_nyt_votes", True)
+
+        # Rebuild providers + store so a changed state / provider list / vote
+        # override applies. The store is reseeded on the next update().
+        self.providers = create_providers(config, self.cache_manager)
+        self.store = RaceStore(override_votes=override_votes, cache_manager=self.cache_manager)
+
+        # Reconfigure the scroll helper in place (panel dimensions are unchanged).
+        self.scroll_speed = float(config.get("scroll_speed", 1.0))
+        self.scroll_delay = float(config.get("scroll_delay", 0.01))
+        self.scroll_helper.set_scroll_speed(self.scroll_speed)
+        self.scroll_helper.set_scroll_delay(self.scroll_delay)
+        self.scroll_helper.set_dynamic_duration_settings(
+            enabled=True, min_duration=int(self.display_duration), max_duration=300
+        )
+
+        # Force a re-fetch + segment rebuild with the new filters/sources.
+        self.races = []
+        self._segments = []
+        self._last_update = 0.0
+        self._scroll_ready = False
+        self._pending_calls = []
+        self._current_call = None
+        self._showing_called = False
+
+        self.logger.info(
+            "Elections config updated live: state=%s providers=%s",
+            self.state, [p.name for p in self.providers],
+        )
+
     # -- Update loop --------------------------------------------------------
 
     def update(self) -> None:

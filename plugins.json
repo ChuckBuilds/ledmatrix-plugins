@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-06-29",
+  "last_updated": "2026-07-07",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -46,10 +46,10 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-02",
+      "last_updated": "2026-07-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.7.0"
+      "latest_version": "1.8.0"
     },
     {
       "id": "basketball-scoreboard",
@@ -210,10 +210,10 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-15",
+      "last_updated": "2026-07-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.5.0"
+      "latest_version": "2.6.0"
     },
     {
       "id": "geochron",
@@ -381,10 +381,10 @@
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-14",
+      "last_updated": "2026-06-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.9.2"
+      "latest_version": "1.10.0"
     },
     {
       "id": "march-madness",
@@ -943,10 +943,10 @@
       "plugin_path": "plugins/ledmatrix-elections",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-06",
+      "last_updated": "2026-06-15",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.1.0"
     },
     {
       "id": "ledmatrix-dresden-departures",

@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-07",
+      "version": "1.8.0",
+      "notes": "Apply config changes live via on_config_change (favorite teams, league enable/disable, durations, live priority, display modes); rebuilds the league managers, registry, scroll manager and rotation so edits take effect without a display restart.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-02",
       "version": "1.7.0",
@@ -151,7 +157,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-02",
+  "last_updated": "2026-07-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

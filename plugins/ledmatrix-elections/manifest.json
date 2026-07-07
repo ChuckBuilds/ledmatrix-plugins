@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-elections",
   "name": "Election Results",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "author": "rpierce99",
   "description": "Live election results: a scrolling ticker of important races plus a full-screen interrupt when a race is newly called. Auto-activates for your state's primary + general (dormant otherwise), drains stale calls from the ticker, and survives restarts. Filterable to your state. NYT baseline provider + optional California SoS county/city rollup.",
   "entry_point": "manager.py",
@@ -23,6 +23,12 @@
   ],
   "versions": [
     {
+      "released": "2026-06-15",
+      "version": "1.1.0",
+      "notes": "Apply config changes live via on_config_change (state, filters, providers, scroll speed); rebuilds providers and the race store and re-fetches so edits take effect without a display restart.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
       "released": "2026-06-06",
       "version": "1.0.2",
       "ledmatrix_min": "2.0.0",
@@ -40,7 +46,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-06-06",
+  "last_updated": "2026-06-15",
   "stars": 0,
   "downloads": 0,
   "verified": false,
