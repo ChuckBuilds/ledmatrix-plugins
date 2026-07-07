@@ -1619,15 +1619,20 @@
                 "properties": {
                     "font": {
                         "type": "string",
-                        "default": "four_by_six",
-                        "description": "Font family for this screen's text"
+                        "default": "press_start",
+                        "description": "Font family for this screen's text -- 'press_start' is a genuine 8-bit arcade font for a retro/NES look"
                     },
                     "font_size": {
                         "type": "integer",
-                        "default": 6,
-                        "minimum": 4,
-                        "maximum": 16,
-                        "description": "Font size for this screen's text"
+                        "default": 24,
+                        "minimum": 6,
+                        "maximum": 24,
+                        "description": "Maximum font size cap. This screen auto-fits the largest text that still leaves room for the At Bat panel (when applicable), so the default (24) effectively means 'as big as the display allows' -- lower this to force a smaller, more consistent size instead"
+                    },
+                    "use_team_colors": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Color each team's abbreviation using their real team colors (from ESPN) instead of a single flat text color"
                     },
                     "text_color": {
                         "type": "array",
@@ -1636,7 +1641,7 @@
                         "default": [255, 255, 255],
                         "minItems": 3,
                         "maxItems": 3,
-                        "description": "Text color [R, G, B] for team abbreviations and score digits"
+                        "description": "Text color [R, G, B] for score digits, and for team abbreviations when team colors are off or unavailable"
                     },
                     "header_color": {
                         "type": "array",
@@ -1655,6 +1660,20 @@
                         "minItems": 3,
                         "maxItems": 3,
                         "description": "Accent color [R, G, B] for the current-inning highlight, the At Bat label, and lit ball/strike/out indicators"
+                    },
+                    "show_dividers": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Draw thin 1px grid lines between innings, rows, and the R/H/E columns for readability"
+                    },
+                    "divider_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [90, 90, 90],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Color [R, G, B] for the grid divider lines"
                     },
                     "dwell_seconds": {
                         "type": "number",

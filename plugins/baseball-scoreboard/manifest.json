@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-07",
+      "version": "1.11.0",
+      "notes": "Redesign the Traditional Scoreboard screen for readability: switch to the PressStart2P retro font at an auto-fit size that fills the display (configurable max via font_size), color each team's abbreviation with their real ESPN team colors (brightness-clamped for legibility, toggle via use_team_colors), and cap the test-mode fixture's simulated game at 10 innings instead of climbing indefinitely.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-07",
       "version": "1.10.0",

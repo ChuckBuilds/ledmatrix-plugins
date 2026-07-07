@@ -4,7 +4,7 @@ import time
 from typing import ClassVar, Dict, Any, Optional
 from datetime import datetime
 import pytz
-from baseball import Baseball, BaseballLive, BaseballRecent
+from baseball import Baseball, BaseballLive, BaseballRecent, _parse_team_color
 from sports import SportsUpcoming
 from pathlib import Path
 
@@ -250,6 +250,9 @@ class NCAABaseballLiveManager(BaseNCAABaseballManager, BaseballLive):
                 "away_hits": "6",
                 "home_errors": "1",
                 "away_errors": "0",
+                # Real ESPN primary colors (LSU purple, Ole Miss red).
+                "home_team_color": _parse_team_color("461d7c"),
+                "away_team_color": _parse_team_color("ce1126"),
             }
             self.live_games = [self.current_game]
             self.logger.info(

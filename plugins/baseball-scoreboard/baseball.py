@@ -141,6 +141,37 @@ def _extract_team_stat(team: Optional[Dict], stat_name: str) -> str:
     return "0"
 
 
+# Team primary colors from ESPN are sometimes too dark (near-black) or too
+# light (near-white) to read well against a black LED panel background;
+# clamp into a legible brightness band rather than using the raw hex.
+_MIN_COLOR_BRIGHTNESS = 90
+_MAX_COLOR_BRIGHTNESS = 235
+
+
+def _parse_team_color(hex_str: Optional[str]) -> Optional[Tuple[int, int, int]]:
+    """Parse an ESPN team color hex string (e.g. 'be0a14') into an (R, G, B)
+    tuple, brightness-clamped for legibility on a black background. Returns
+    None if the string is missing or malformed."""
+    if not hex_str:
+        return None
+    hex_str = hex_str.strip().lstrip("#")
+    if len(hex_str) != 6:
+        return None
+    try:
+        r, g, b = (int(hex_str[i:i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        return None
+
+    brightness = (r + g + b) / 3
+    if brightness < _MIN_COLOR_BRIGHTNESS and brightness > 0:
+        scale = _MIN_COLOR_BRIGHTNESS / brightness
+        r, g, b = (min(255, int(c * scale)) for c in (r, g, b))
+    elif brightness > _MAX_COLOR_BRIGHTNESS:
+        scale = _MAX_COLOR_BRIGHTNESS / brightness
+        r, g, b = (int(c * scale) for c in (r, g, b))
+    return (r, g, b)
+
+
 class Baseball(SportsCore):
     """Base class for baseball sports with common functionality."""
 
@@ -404,6 +435,8 @@ class Baseball(SportsCore):
                     "home_errors": _extract_team_stat(home_team, "errors"),
                     "away_hits": _extract_team_stat(away_team, "hits"),
                     "away_errors": _extract_team_stat(away_team, "errors"),
+                    "home_team_color": _parse_team_color(home_team["team"].get("color")),
+                    "away_team_color": _parse_team_color(away_team["team"].get("color")),
                 }
             )
 
@@ -816,10 +849,41 @@ class BaseballLive(Baseball, SportsLive):
             draw = ImageDraw.Draw(img)
 
             cfg = self.config.get("customization", {}).get("traditional_scoreboard", {})
-            font = self._load_custom_font_from_element_config(cfg, default_size=6)
+            margin = 1
+            is_live_now = bool(game.get("is_live")) and not game.get("is_final")
+            has_count_data = game.get("has_count_data", True)
+            at_bat_panel_applicable = is_live_now and has_count_data
+
+            # font_size acts as an optional cap, not a fixed size: by default
+            # (24, the max) this auto-fits the largest text that still
+            # reserves room for the 3 grid rows (header + both teams) plus,
+            # when applicable, an At Bat label + at least a condensed
+            # ball/strike/out row -- otherwise a display just tall enough
+            # for 3 big grid rows would squeeze the At Bat panel out
+            # entirely rather than showing it condensed. Lower the config
+            # value to force a smaller, more consistent size instead.
+            font_size_cap = cfg.get("font_size", 24)
+            # +1 extra row of slack: a font's actual glyph height can run a
+            # little taller than its nominal size (fonts aren't required to
+            # be exactly `size` px tall), so budgeting the bare minimum rows
+            # occasionally rounds away the room needed for the At Bat panel.
+            needed_rows = 6 if at_bat_panel_applicable else 3
+            max_row_h = (self.display_height - 2 * margin) / needed_rows
+            effective_font_size = max(6, min(font_size_cap, round(max_row_h - 2)))
+            font_cfg = dict(cfg)
+            font_cfg["font_size"] = effective_font_size
+            font = self._load_custom_font_from_element_config(font_cfg, default_size=effective_font_size)
+
             text_color = tuple(cfg.get("text_color", [255, 255, 255]))
             header_color = tuple(cfg.get("header_color", [180, 180, 180]))
             highlight_color = tuple(cfg.get("highlight_color", [255, 140, 0]))
+            use_team_colors = cfg.get("use_team_colors", True)
+            away_color = (
+                (use_team_colors and game.get("away_team_color")) or text_color
+            )
+            home_color = (
+                (use_team_colors and game.get("home_team_color")) or text_color
+            )
 
             try:
                 char_w = max(3, font.getbbox("0")[2])  # width of a single digit
@@ -827,7 +891,6 @@ class BaseballLive(Baseball, SportsLive):
             except AttributeError:
                 char_w, row_h = 5, 10
 
-            margin = 1
             team_col_w = char_w * 3 + 1  # 3-letter abbreviation + gap
             rhe_col_w = char_w + 1  # R/H/E are almost always a single digit
             gap_w = 2
@@ -838,7 +901,6 @@ class BaseballLive(Baseball, SportsLive):
 
             start_inning, num_cols = self._traditional_scoreboard_inning_window(game, max_cols)
             current_inning = int(game.get("inning", 1) or 1)
-            is_live_now = bool(game.get("is_live")) and not game.get("is_final")
 
             away_abbr = (game.get("away_abbr") or "")[:3]
             home_abbr = (game.get("home_abbr") or "")[:3]
@@ -880,8 +942,8 @@ class BaseballLive(Baseball, SportsLive):
                     self._draw_text_with_outline(draw, home_val, (cell_x, home_y), font, fill=text_color)
 
             # Team abbreviations (left column).
-            self._draw_text_with_outline(draw, away_abbr, (x_offset, away_y), font, fill=text_color)
-            self._draw_text_with_outline(draw, home_abbr, (x_offset, home_y), font, fill=text_color)
+            self._draw_text_with_outline(draw, away_abbr, (x_offset, away_y), font, fill=away_color)
+            self._draw_text_with_outline(draw, home_abbr, (x_offset, home_y), font, fill=home_color)
 
             # R / H / E columns.
             rhe_x = grid_x + num_cols * inning_col_w + gap_w
@@ -895,10 +957,33 @@ class BaseballLive(Baseball, SportsLive):
             for i, val in enumerate(home_rhe):
                 self._draw_text_with_outline(draw, str(val), (rhe_x + i * rhe_col_w, home_y), font, fill=text_color)
 
+            # Grid divider lines (team | innings | R H E columns, and
+            # header/away/home rows) -- drawn last so they cleanly overwrite
+            # any outline bleed from the text above rather than being drawn
+            # over by it, keeping every line crisp and unbroken.
+            if cfg.get("show_dividers", True):
+                divider_color = tuple(cfg.get("divider_color", [90, 90, 90]))
+                grid_left = x_offset
+                grid_right = rhe_x + 3 * rhe_col_w - 1
+                grid_bottom = home_y + row_h - 1
+
+                col_boundaries = [grid_x - 1]
+                col_boundaries.extend(
+                    grid_x + col * inning_col_w - 1 for col in range(1, num_cols)
+                )
+                col_boundaries.append(rhe_x - 1)
+                col_boundaries.append(rhe_x + rhe_col_w - 1)
+                col_boundaries.append(rhe_x + 2 * rhe_col_w - 1)
+                for vx in col_boundaries:
+                    if grid_left <= vx <= grid_right:
+                        draw.line([(vx, header_y), (vx, grid_bottom)], fill=divider_color)
+
+                for hy in (away_y - 1, home_y - 1):
+                    draw.line([(grid_left, hy), (grid_right, hy)], fill=divider_color)
+
             # At Bat panel: ball/strike/out indicators, only for a live game
             # with count data (NCAA's feed doesn't provide balls/strikes).
             panel_y = home_y + row_h + 2
-            has_count_data = game.get("has_count_data", True)
             if is_live_now and has_count_data and panel_y + row_h <= self.display_height:
                 self._draw_traditional_scoreboard_at_bat_panel(
                     draw, game, font, row_h, panel_y, text_color, highlight_color, x_offset
