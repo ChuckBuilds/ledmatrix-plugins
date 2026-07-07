@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-07",
+      "version": "1.9.0",
+      "notes": "Add an optional Traditional Scoreboard screen (MLB and NCAA Baseball only) -- a full-screen outfield-style scoreboard that periodically rotates into the live view: an inning-by-inning line score with R/H/E, the current inning highlighted, and (for leagues with count data) an At Bat panel with lit ball/strike/out indicators. Automatically fits as many innings as the display width allows, scrolling to a trailing window once the game progresses further than that. Toggle per league under Display Options > Show Traditional Scoreboard; customize font/colors/timing under Customization > Traditional Scoreboard Screen.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-06",
       "version": "1.8.0",
@@ -157,7 +163,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-06",
+  "last_updated": "2026-07-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

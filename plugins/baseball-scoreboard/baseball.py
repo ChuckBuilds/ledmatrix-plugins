@@ -116,6 +116,31 @@ def _get_last_play_code(plays: Optional[List[Dict]]) -> Optional[str]:
     return None
 
 
+def _extract_linescore(team: Optional[Dict]) -> List[str]:
+    """Per-inning runs for one team, in period order, as display strings.
+
+    ESPN only includes an entry once that inning has started -- there's no
+    placeholder for innings not yet reached -- so the returned list's length
+    reflects how far the game has actually progressed.
+    """
+    if not team:
+        return []
+    linescores = team.get("linescores") or []
+    ordered = sorted(linescores, key=lambda ls: ls.get("period", 0))
+    return [str(ls.get("displayValue", ls.get("value", "0"))) for ls in ordered]
+
+
+def _extract_team_stat(team: Optional[Dict], stat_name: str) -> str:
+    """Pull a named stat (e.g. 'hits', 'errors') from a team competitor's
+    statistics array. Returns '0' if the team or stat is missing."""
+    if not team:
+        return "0"
+    for stat in team.get("statistics") or []:
+        if stat.get("name") == stat_name:
+            return str(stat.get("displayValue", "0"))
+    return "0"
+
+
 class Baseball(SportsCore):
     """Base class for baseball sports with common functionality."""
 
@@ -141,6 +166,7 @@ class Baseball(SportsCore):
         self.show_count = self.mode_config.get("show_count", True)
         self.show_pitcher_batter = self.mode_config.get("show_pitcher_batter", False)
         self.show_last_play = self.mode_config.get("show_last_play", False)
+        self.show_traditional_scoreboard = self.mode_config.get("show_traditional_scoreboard", False)
         self.show_series_summary = self.mode_config.get("show_series_summary", False)
         self.data_source = ESPNDataSource(logger)
         self.sport = "baseball"
@@ -372,6 +398,12 @@ class Baseball(SportsCore):
                     "has_count_data": has_count_data,
                     "start_time": game_event["date"],
                     "series_summary": series_summary,
+                    "home_linescore": _extract_linescore(home_team),
+                    "away_linescore": _extract_linescore(away_team),
+                    "home_hits": _extract_team_stat(home_team, "hits"),
+                    "home_errors": _extract_team_stat(home_team, "errors"),
+                    "away_hits": _extract_team_stat(away_team, "hits"),
+                    "away_errors": _extract_team_stat(away_team, "errors"),
                 }
             )
 
@@ -451,6 +483,9 @@ class BaseballLive(Baseball, SportsLive):
         # Dedicated at-bat-info rotating screen timing state.
         self._at_bat_screen_last_shown = 0.0
         self._at_bat_screen_showing_until = 0.0
+        # Dedicated traditional-scoreboard rotating screen timing state.
+        self._trad_scoreboard_last_shown = 0.0
+        self._trad_scoreboard_showing_until = 0.0
 
     def update(self):
         super().update()
@@ -557,6 +592,16 @@ class BaseballLive(Baseball, SportsLive):
             else:
                 self.current_game["inning_half"] = "top"
                 self.current_game["inning"] += 1
+                # The inning that just fully completed (bottom just ended)
+                # gets a new line-score entry for both teams.
+                self.current_game.setdefault("away_linescore", []).append(
+                    str(self.current_game["inning"] % 3)
+                )
+                self.current_game.setdefault("home_linescore", []).append(
+                    str((self.current_game["inning"] + 1) % 3)
+                )
+                self.current_game["away_hits"] = str(int(self.current_game.get("away_hits", 0)) + 1)
+                self.current_game["home_hits"] = str(int(self.current_game.get("home_hits", 0)) + 1)
             self.current_game["balls"] = (self.current_game["balls"] + 1) % 4
             self.current_game["strikes"] = (self.current_game["strikes"] + 1) % 3
             self.current_game["outs"] = (self.current_game["outs"] + 1) % 3
@@ -682,9 +727,203 @@ class BaseballLive(Baseball, SportsLive):
         except Exception as e:
             self.logger.error(f"Error drawing at-bat info screen: {e}", exc_info=True)
 
+    def _maybe_draw_traditional_scoreboard_screen(self, game: Dict, force_clear: bool = False) -> bool:
+        """Rotate in the dedicated traditional-scoreboard screen if it's due.
+        Returns True if it drew (caller should skip the normal scorebug draw
+        for this frame), False otherwise."""
+        if not self.show_traditional_scoreboard:
+            return False
+        if not (game.get("is_live") or game.get("is_final")):
+            return False
+
+        cfg = self.config.get("customization", {}).get("traditional_scoreboard", {})
+        dwell = cfg.get("dwell_seconds", 6)
+        interval = cfg.get("interval_seconds", 30)
+
+        now = time.time()
+        showing = now < self._trad_scoreboard_showing_until
+        if not showing and now - self._trad_scoreboard_last_shown >= interval:
+            self._trad_scoreboard_last_shown = now
+            self._trad_scoreboard_showing_until = now + dwell
+            showing = True
+
+        if not showing:
+            return False
+
+        self._draw_traditional_scoreboard_screen(game, force_clear)
+        return True
+
+    @staticmethod
+    def _traditional_scoreboard_inning_window(game: Dict, max_cols: int) -> Tuple[int, int]:
+        """Return (start_inning, num_innings) to display, at most max_cols wide.
+
+        Shows the full 1..9 (or more, for extras already in progress) if it
+        fits. On a narrow display that can't fit all of it, shows a fixed
+        1..max_cols view until the game actually progresses past that point,
+        then scrolls to a trailing window ending at the current inning --
+        the same way a real fixed-width scoreboard handles extra innings.
+        """
+        away_ls = game.get("away_linescore") or []
+        home_ls = game.get("home_linescore") or []
+        current_inning = max(int(game.get("inning", 1) or 1), len(away_ls), len(home_ls), 1)
+        rightmost_needed = max(9, current_inning)
+        max_cols = max(1, max_cols)
+
+        if rightmost_needed <= max_cols:
+            return 1, rightmost_needed
+        if current_inning <= max_cols:
+            return 1, max_cols
+        return current_inning - max_cols + 1, max_cols
+
+    def _draw_traditional_scoreboard_screen(self, game: Dict, force_clear: bool = False) -> None:
+        """Draw a full-screen traditional ballpark scoreboard: an
+        inning-by-inning line score with R/H/E, and (for live games with
+        count data) an At Bat panel with ball/strike/out indicators."""
+        try:
+            img = Image.new("RGB", (self.display_width, self.display_height), (0, 0, 0))
+            draw = ImageDraw.Draw(img)
+
+            cfg = self.config.get("customization", {}).get("traditional_scoreboard", {})
+            font = self._load_custom_font_from_element_config(cfg, default_size=6)
+            text_color = tuple(cfg.get("text_color", [255, 255, 255]))
+            header_color = tuple(cfg.get("header_color", [180, 180, 180]))
+            highlight_color = tuple(cfg.get("highlight_color", [255, 140, 0]))
+
+            try:
+                char_w = max(3, font.getbbox("0")[2])  # width of a single digit
+                row_h = (font.getbbox("Ay")[3] - font.getbbox("Ay")[1]) + 2
+            except AttributeError:
+                char_w, row_h = 5, 10
+
+            margin = 1
+            team_col_w = char_w * 3 + 1  # 3-letter abbreviation + gap
+            rhe_col_w = char_w + 1  # R/H/E are almost always a single digit
+            gap_w = 2
+
+            available = self.display_width - 2 * margin - team_col_w - 3 * rhe_col_w - gap_w
+            inning_col_w = char_w + 1
+            max_cols = max(1, available // inning_col_w) if inning_col_w > 0 else 1
+
+            start_inning, num_cols = self._traditional_scoreboard_inning_window(game, max_cols)
+            current_inning = int(game.get("inning", 1) or 1)
+            is_live_now = bool(game.get("is_live")) and not game.get("is_final")
+
+            away_abbr = (game.get("away_abbr") or "")[:3]
+            home_abbr = (game.get("home_abbr") or "")[:3]
+            away_ls = game.get("away_linescore") or []
+            home_ls = game.get("home_linescore") or []
+
+            def cell_value(linescore: List[str], inning_num: int) -> str:
+                idx = inning_num - 1
+                if 0 <= idx < len(linescore):
+                    return linescore[idx]
+                return ""
+
+            grid_x = margin + team_col_w
+            header_y = margin
+            away_y = header_y + row_h
+            home_y = away_y + row_h
+
+            # Inning-number header + per-inning score rows.
+            for col in range(num_cols):
+                inning_num = start_inning + col
+                cell_x = grid_x + col * inning_col_w
+                is_current_col = is_live_now and inning_num == current_inning
+                col_color = highlight_color if is_current_col else header_color
+                self._draw_text_with_outline(
+                    draw, str(inning_num), (cell_x, header_y), font, fill=col_color
+                )
+                away_val = cell_value(away_ls, inning_num)
+                if away_val:
+                    self._draw_text_with_outline(draw, away_val, (cell_x, away_y), font, fill=text_color)
+                home_val = cell_value(home_ls, inning_num)
+                if home_val:
+                    self._draw_text_with_outline(draw, home_val, (cell_x, home_y), font, fill=text_color)
+
+            # Team abbreviations (left column).
+            self._draw_text_with_outline(draw, away_abbr, (margin, away_y), font, fill=text_color)
+            self._draw_text_with_outline(draw, home_abbr, (margin, home_y), font, fill=text_color)
+
+            # R / H / E columns.
+            rhe_x = grid_x + num_cols * inning_col_w + gap_w
+            for i, label in enumerate(("R", "H", "E")):
+                col_x = rhe_x + i * rhe_col_w
+                self._draw_text_with_outline(draw, label, (col_x, header_y), font, fill=header_color)
+            away_rhe = (str(game.get("away_score", "0")), game.get("away_hits", "0"), game.get("away_errors", "0"))
+            home_rhe = (str(game.get("home_score", "0")), game.get("home_hits", "0"), game.get("home_errors", "0"))
+            for i, val in enumerate(away_rhe):
+                self._draw_text_with_outline(draw, str(val), (rhe_x + i * rhe_col_w, away_y), font, fill=text_color)
+            for i, val in enumerate(home_rhe):
+                self._draw_text_with_outline(draw, str(val), (rhe_x + i * rhe_col_w, home_y), font, fill=text_color)
+
+            # At Bat panel: ball/strike/out indicators, only for a live game
+            # with count data (NCAA's feed doesn't provide balls/strikes).
+            panel_y = home_y + row_h + 2
+            has_count_data = game.get("has_count_data", True)
+            if is_live_now and has_count_data and panel_y + row_h <= self.display_height:
+                self._draw_traditional_scoreboard_at_bat_panel(
+                    draw, game, font, row_h, panel_y, text_color, highlight_color
+                )
+
+            self.display_manager.image.paste(img, (0, 0))
+            self.display_manager.update_display()
+
+        except Exception as e:
+            self.logger.error(f"Error drawing traditional scoreboard screen: {e}", exc_info=True)
+
+    def _draw_traditional_scoreboard_at_bat_panel(
+        self, draw, game: Dict, font, row_h: int, panel_y: int,
+        text_color: tuple, highlight_color: tuple,
+    ) -> None:
+        """Draw the 'AT BAT' label and ball/strike/out light indicators
+        below the line score. Uses a spacious 3-row layout (one row each
+        for balls/strikes/outs) when there's room, else a single condensed
+        row -- the same adaptive-to-available-space approach as the rest of
+        this plugin's live layout.
+        """
+        margin = 2
+        balls = min(int(game.get("balls", 0) or 0), 3)
+        strikes = min(int(game.get("strikes", 0) or 0), 2)
+        outs = min(int(game.get("outs", 0) or 0), 2)
+        inning_half = (game.get("inning_half") or "top").lower()
+        at_bat_indicator = "▲" if inning_half == "top" else "▼"  # away/home batting
+
+        label = f"AT BAT {at_bat_indicator}"
+        self._draw_text_with_outline(draw, label, (margin, panel_y), font, fill=highlight_color)
+
+        rows_remaining = (self.display_height - (panel_y + row_h)) // row_h
+        dot_d = max(2, row_h - 4)
+
+        def draw_dots(y: int, lit: int, total: int, dot_label: str) -> None:
+            self._draw_text_with_outline(draw, dot_label, (margin, y), font, fill=text_color)
+            x = margin + font.getbbox(dot_label + " ")[2]
+            for i in range(total):
+                color = highlight_color if i < lit else (60, 60, 60)
+                draw.ellipse([x, y + 1, x + dot_d, y + 1 + dot_d], fill=color)
+                x += dot_d + 2
+
+        if rows_remaining >= 3:
+            draw_dots(panel_y + row_h, balls, 3, "B")
+            draw_dots(panel_y + 2 * row_h, strikes, 2, "S")
+            draw_dots(panel_y + 3 * row_h, outs, 2, "O")
+        elif rows_remaining >= 1:
+            # Condensed: one combined row, B/S/O groups side by side.
+            y = panel_y + row_h
+            x = margin
+            for dot_label, lit, total in (("B", balls, 3), ("S", strikes, 2), ("O", outs, 2)):
+                self._draw_text_with_outline(draw, dot_label, (x, y), font, fill=text_color)
+                x += font.getbbox(dot_label + " ")[2]
+                for i in range(total):
+                    color = highlight_color if i < lit else (60, 60, 60)
+                    draw.ellipse([x, y + 1, x + dot_d, y + 1 + dot_d], fill=color)
+                    x += dot_d + 2
+                x += 3
+
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live baseball game."""
         if self._maybe_draw_at_bat_info_screen(game, force_clear):
+            return
+        if self._maybe_draw_traditional_scoreboard_screen(game, force_clear):
             return
         try:
             main_img = Image.new(

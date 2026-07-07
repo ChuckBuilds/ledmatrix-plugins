@@ -586,6 +586,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_odds": display_options.get("show_odds", False),
                 "show_pitcher_batter": display_options.get("show_pitcher_batter", False),
                 "show_last_play": display_options.get("show_last_play", False),
+                "show_traditional_scoreboard": display_options.get("show_traditional_scoreboard", False),
                 "update_interval_seconds": league_config.get(
                     "update_interval_seconds", 300
                 ),

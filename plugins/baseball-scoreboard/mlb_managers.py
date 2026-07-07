@@ -236,6 +236,13 @@ class MLBLiveManager(BaseMLBManager, BaseballLive):
                 "away_logo_url": "",
                 "series_summary": "",
                 "status_text": "Top 7th",
+                "home_linescore": ["1", "0", "1", "0", "0", "2"],
+                "away_linescore": ["0", "1", "0", "0", "2", "0"],
+                "home_hits": "7",
+                "away_hits": "5",
+                "home_errors": "0",
+                "away_errors": "1",
+                "has_count_data": True,
             }
             self.live_games = [self.current_game]
             self.logger.info("Initialized MLBLiveManager with test game: BOS @ NYY")

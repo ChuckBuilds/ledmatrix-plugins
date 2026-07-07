@@ -244,6 +244,12 @@ class NCAABaseballLiveManager(BaseNCAABaseballManager, BaseballLive):
                 "status_text": "Bot 7th",
                 "series_summary": "",
                 "has_count_data": False,
+                "home_linescore": ["0", "2", "0", "1", "0", "2"],
+                "away_linescore": ["1", "0", "0", "1", "1", "0", "0"],
+                "home_hits": "9",
+                "away_hits": "6",
+                "home_errors": "1",
+                "away_errors": "0",
             }
             self.live_games = [self.current_game]
             self.logger.info(

@@ -249,6 +249,11 @@
                             "type": "boolean",
                             "default": false,
                             "description": "Show a short code for the most recently completed play (1B, HR, K, BB, etc.) on the pitcher/batter screen"
+                        },
+                        "show_traditional_scoreboard": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Periodically show a full-screen traditional ballpark scoreboard: inning-by-inning line score, R/H/E, and an At Bat panel with ball/strike/out indicators"
                         }
                     }
                 },
@@ -1005,6 +1010,11 @@
                             "type": "boolean",
                             "default": false,
                             "description": "Show a short code for the most recently completed play (1B, HR, K, BB, etc.) on the pitcher/batter screen"
+                        },
+                        "show_traditional_scoreboard": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Periodically show a full-screen traditional ballpark scoreboard: inning-by-inning line score, R/H/E, and an At Bat panel with ball/strike/out indicators"
                         }
                     }
                 },
@@ -1601,6 +1611,67 @@
                     }
                 },
                 "additionalProperties": false
+            },
+            "traditional_scoreboard": {
+                "type": "object",
+                "title": "Traditional Scoreboard Screen",
+                "description": "A dedicated full-screen view (like an outfield ballpark scoreboard) that periodically rotates into the live display: an inning-by-inning line score with R/H/E, and an At Bat panel with ball/strike/out indicators. Enable per-league via Display Options > Show Traditional Scoreboard (MLB and NCAA Baseball only).",
+                "properties": {
+                    "font": {
+                        "type": "string",
+                        "default": "four_by_six",
+                        "description": "Font family for this screen's text"
+                    },
+                    "font_size": {
+                        "type": "integer",
+                        "default": 6,
+                        "minimum": 4,
+                        "maximum": 16,
+                        "description": "Font size for this screen's text"
+                    },
+                    "text_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [255, 255, 255],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Text color [R, G, B] for team abbreviations and score digits"
+                    },
+                    "header_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [180, 180, 180],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Text color [R, G, B] for the inning-number and R/H/E header row"
+                    },
+                    "highlight_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [255, 140, 0],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Accent color [R, G, B] for the current-inning highlight, the At Bat label, and lit ball/strike/out indicators"
+                    },
+                    "dwell_seconds": {
+                        "type": "number",
+                        "default": 6,
+                        "minimum": 2,
+                        "maximum": 20,
+                        "description": "How many seconds to show this screen each time it rotates in"
+                    },
+                    "interval_seconds": {
+                        "type": "number",
+                        "default": 30,
+                        "minimum": 10,
+                        "maximum": 180,
+                        "description": "How often (in seconds) this screen rotates into the normal live view"
+                    }
+                },
+                "additionalProperties": false
             }
             },
             "x-propertyOrder": [
@@ -1614,7 +1685,8 @@
                 "bases",
                 "outs",
                 "count",
-                "at_bat_info"
+                "at_bat_info",
+                "traditional_scoreboard"
             ],
             "additionalProperties": false
         }
