@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-07",
+      "version": "1.13.0",
+      "notes": "On wide-enough displays, move the Traditional Scoreboard screen's At Bat ball/strike/out indicators into a compact side column (vertically aligned with the header/away/home rows) instead of stacking them below the grid -- that only needs 3 rows of vertical space instead of 6, so the whole grid renders noticeably bigger. Falls back to the below-grid layout automatically when there isn't enough leftover width beside the grid. Also fixes BDF font-size detection to read the file's real PIXEL_SIZE property instead of assuming point-size always equals pixel height, which was silently substituting the wrong font for a couple of sizes in the fallback ladder (6x13, 5x8) on 75dpi-defined fonts.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-07",
       "version": "1.12.0",

@@ -312,21 +312,30 @@ class SportsCore(ABC):
 
     @staticmethod
     def _read_bdf_native_size(bdf_path: str) -> Optional[int]:
-        """Read a BDF file's own SIZE header line to find its one true pixel
-        size (BDF is a fixed-size bitmap format -- FreeType can only render
-        it at that exact size, not an arbitrary point size)."""
+        """Read a BDF file's own header to find its one true pixel size
+        (BDF is a fixed-size bitmap format -- FreeType can only render it
+        at that exact size, not an arbitrary point size). Prefers the
+        PIXEL_SIZE property, which states the real pixel height directly;
+        falls back to the SIZE line's point-size only if PIXEL_SIZE is
+        absent, since point-size only equals pixel height at exactly
+        100dpi -- several fonts here (e.g. 6x13.bdf, 5x8.bdf) are defined
+        at 75dpi, where the two values genuinely differ."""
+        size_line_value = None
         try:
             with open(bdf_path, "r", encoding="ascii", errors="ignore") as f:
                 for line in f:
-                    if line.startswith("SIZE"):
-                        # Format: "SIZE <point_size> <xres> <yres>"
+                    if line.startswith("PIXEL_SIZE"):
                         parts = line.split()
                         if len(parts) >= 2:
                             return int(float(parts[1]))
-                        break
+                    elif line.startswith("SIZE") and size_line_value is None:
+                        # Format: "SIZE <point_size> <xres> <yres>"
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            size_line_value = int(float(parts[1]))
         except (OSError, ValueError):
             pass
-        return None
+        return size_line_value
 
     def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
         """

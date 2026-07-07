@@ -382,6 +382,148 @@ def test_at_bat_panel_fits_alongside_bigger_font_at_medium_size():
     print("test_at_bat_panel_fits_alongside_bigger_font_at_medium_size: PASS")
 
 
+def _find_font_asset(name):
+    """Generalized version of _find_pixel_font for an arbitrary filename."""
+    candidates = []
+    d = PLUGIN_DIR
+    for _ in range(6):
+        candidates.append(os.path.join(d, "assets", "fonts", name))
+        d = os.path.dirname(d)
+    candidates.append(os.path.join(os.getcwd(), "assets", "fonts", name))
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def _real_bdf_aware_loader(fonts_dir):
+    """A _load_custom_font_from_element_config stand-in that mirrors the
+    real one's BDF-native-size fallback (via BaseballLive._read_bdf_native_size)
+    but resolves filenames against an absolute fonts_dir instead of a
+    cwd-relative 'assets/fonts' path, so it works regardless of cwd."""
+    from PIL import ImageFont
+
+    def loader(cfg, default_size=6):
+        name = cfg.get("font", "9x15.bdf")
+        size = cfg.get("font_size", default_size)
+        path = os.path.join(fonts_dir, name)
+        try:
+            return ImageFont.truetype(path, size)
+        except Exception:
+            native = BaseballLive._read_bdf_native_size(path)
+            if native:
+                return ImageFont.truetype(path, native)
+            raise
+
+    return loader
+
+
+_LIVE_GAME_WITH_COUNT_DATA = {
+    "away_abbr": "BOS", "home_abbr": "NYY",
+    "away_score": "3", "home_score": "4",
+    "away_hits": "5", "home_hits": "7",
+    "away_errors": "1", "home_errors": "0",
+    "away_linescore": ["0", "1", "0", "0", "2", "0"],
+    "home_linescore": ["1", "0", "1", "0", "0", "2"],
+    "inning": 7, "inning_half": "top",
+    "balls": 2, "strikes": 1, "outs": 1,
+    "is_live": True, "is_final": False, "has_count_data": True,
+}
+
+
+def test_side_panel_used_on_wide_display_for_bigger_text():
+    # Regression: on a wide display there's normally room beside the grid
+    # for a compact B/S/O side column, which should be preferred over
+    # stacking them below the grid (that needs only 3 rows of vertical
+    # space instead of 6, letting the grid render bigger). This needs the
+    # real 9x15.bdf font since the fallback ladder's fit math depends on
+    # real measured glyph metrics -- skip if it can't be found.
+    font_path = _find_font_asset("9x15.bdf")
+    if not font_path:
+        print("SKIP test_side_panel_used_on_wide_display_for_bigger_text: "
+              "could not locate 9x15.bdf (run from LEDMatrix tree)")
+        return
+
+    live = _make_live(256, 32)
+    live._load_custom_font_from_element_config = _real_bdf_aware_loader(os.path.dirname(font_path))
+    live.config = {}
+    live._draw_traditional_scoreboard_screen(dict(_LIVE_GAME_WITH_COUNT_DATA))
+    img = live.display_manager.image
+    w, h = img.size
+
+    # The side panel keeps everything within the 3-row grid's vertical
+    # span; the below-grid panel always draws further down starting at
+    # home_y + row_h + 2. Compute where the grid ends independently and
+    # check nothing is drawn past it -- position-independent regardless of
+    # how the grid is horizontally centered.
+    margin = 1
+    available_height = h - 2 * margin
+    _, _, row_h = live._load_traditional_scoreboard_font(
+        {"font": "9x15.bdf"}, needed_rows=3, available_height=available_height
+    )
+    grid_bottom = margin + 3 * row_h
+    below_grid_has_content = any(
+        img.getpixel((x, y)) != (0, 0, 0) for x in range(w) for y in range(min(grid_bottom, h), h)
+    )
+    assert not below_grid_has_content, (
+        "expected nothing drawn below the 3-row grid when the side panel is used"
+    )
+
+    # And confirm the dots actually got drawn somewhere (not just the
+    # header row's single highlighted inning digit) -- dots cover
+    # noticeably more area than one character.
+    highlight = (255, 140, 0)
+    highlight_pixels = sum(
+        1 for x in range(w) for y in range(margin, min(grid_bottom, h))
+        if img.getpixel((x, y)) == highlight
+    )
+    assert highlight_pixels > 60, (
+        f"expected the side panel's B/S/O dots to add substantial highlight-colored "
+        f"area within the grid rows, only found {highlight_pixels} px"
+    )
+    print("test_side_panel_used_on_wide_display_for_bigger_text: PASS")
+
+
+def test_side_panel_not_used_on_narrow_display():
+    # The inverse: a narrow display shouldn't have enough leftover width
+    # for the side column, so it should fall back to the below-grid panel
+    # (whose "AT BAT" label draws in highlight_color starting flush-left).
+    font_path = _find_font_asset("9x15.bdf")
+    if not font_path:
+        print("SKIP test_side_panel_not_used_on_narrow_display: "
+              "could not locate 9x15.bdf (run from LEDMatrix tree)")
+        return
+
+    live = _make_live(64, 32)
+    live._load_custom_font_from_element_config = _real_bdf_aware_loader(os.path.dirname(font_path))
+    live.config = {}
+    live._draw_traditional_scoreboard_screen(dict(_LIVE_GAME_WITH_COUNT_DATA))
+    img = live.display_manager.image
+    w, h = img.size
+
+    # A narrow display doesn't have room for a legible side column, so it
+    # should fall back to the (possibly also-skipped-if-too-tight)
+    # below-grid panel -- either way, the side panel's dots (which would
+    # add substantial highlight-colored area within the grid's own rows)
+    # should NOT appear there.
+    margin = 1
+    available_height = h - 2 * margin
+    _, _, row_h = live._load_traditional_scoreboard_font(
+        {"font": "9x15.bdf"}, needed_rows=3, available_height=available_height
+    )
+    grid_bottom = margin + 3 * row_h
+    highlight = (255, 140, 0)
+    highlight_pixels = sum(
+        1 for x in range(w) for y in range(margin, min(grid_bottom, h))
+        if img.getpixel((x, y)) == highlight
+    )
+    assert highlight_pixels <= 30, (
+        f"did not expect side-panel B/S/O dots within the grid rows on a narrow "
+        f"display, found {highlight_pixels} highlight-colored px there"
+    )
+    print("test_side_panel_not_used_on_narrow_display: PASS")
+
+
 def test_draws_without_crashing_when_final_and_no_count_data():
     live = _make_live(128, 64)
     game = {
@@ -425,6 +567,8 @@ if __name__ == "__main__":
         test_team_colors_used_when_enabled_and_available,
         test_team_colors_fall_back_to_text_color_when_disabled,
         test_at_bat_panel_fits_alongside_bigger_font_at_medium_size,
+        test_side_panel_used_on_wide_display_for_bigger_text,
+        test_side_panel_not_used_on_narrow_display,
         test_draws_without_crashing_when_final_and_no_count_data,
     ):
         try:
