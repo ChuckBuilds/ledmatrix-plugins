@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -32,8 +32,14 @@
   "versions": [
     {
       "released": "2026-07-07",
+      "version": "1.12.0",
+      "notes": "Switch the Traditional Scoreboard screen's default font from PressStart2P to 9x15 -- a cleaner, less blocky bitmap font -- with an automatic fallback ladder (9x15 -> 8x13 -> 7x13 -> 6x13 -> 6x12 -> 6x10 -> 6x9 -> 5x8 -> 5x7) that steps down to a smaller same-family font on displays too small to fit the default at full size, so no row gets clipped off. Also fixes font loading to resolve a .bdf file's real native pixel size instead of failing when a mismatched size is requested.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-07",
       "version": "1.11.0",
-      "notes": "Redesign the Traditional Scoreboard screen for readability: switch to the PressStart2P retro font at an auto-fit size that fills the display (configurable max via font_size), color each team's abbreviation with their real ESPN team colors (brightness-clamped for legibility, toggle via use_team_colors), and cap the test-mode fixture's simulated game at 10 innings instead of climbing indefinitely.",
+      "notes": "Redesign the Traditional Scoreboard screen for readability: switch to a retro pixel font at an auto-fit size that fills the display (configurable max via font_size), color each team's abbreviation with their real ESPN team colors (brightness-clamped for legibility, toggle via use_team_colors), add 1px grid divider lines between innings/rows/R-H-E columns, and cap the test-mode fixture's simulated game at 10 innings instead of climbing indefinitely.",
       "ledmatrix_min": "2.0.0"
     },
     {

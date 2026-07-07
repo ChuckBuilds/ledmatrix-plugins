@@ -840,6 +840,47 @@ class BaseballLive(Baseball, SportsLive):
             return 1, max_cols
         return current_inning - max_cols + 1, max_cols
 
+    # Ordered largest-to-smallest fallback ladder within the same clean X11
+    # bitmap family as the default traditional-scoreboard font (9x15.bdf).
+    # BDF fonts are fixed-size bitmaps -- they can't shrink to an arbitrary
+    # computed size the way a scalable .ttf can -- so if the configured
+    # font's real (measured) row height doesn't leave room for the needed
+    # grid/panel rows on a small display, step down to the next smaller
+    # same-family sibling rather than silently losing a row off the bottom.
+    _TRADITIONAL_SCOREBOARD_FONT_FALLBACK_LADDER: List[str] = [
+        "9x15.bdf", "8x13.bdf", "7x13.bdf", "6x13.bdf",
+        "6x12.bdf", "6x10.bdf", "6x9.bdf", "5x8.bdf", "5x7.bdf",
+    ]
+
+    def _load_traditional_scoreboard_font(
+        self, font_cfg: Dict, needed_rows: int, available_height: int
+    ) -> Tuple[Any, int, int]:
+        """Load the configured font and measure it; if it doesn't leave
+        room for needed_rows on this display, step down the fallback ladder
+        (see _TRADITIONAL_SCOREBOARD_FONT_FALLBACK_LADDER) until one fits,
+        or fall back to the smallest rung as a best effort."""
+        candidates = [font_cfg.get("font", "9x15.bdf")]
+        for fallback in self._TRADITIONAL_SCOREBOARD_FONT_FALLBACK_LADDER:
+            if fallback not in candidates:
+                candidates.append(fallback)
+
+        result = None
+        for i, font_name in enumerate(candidates):
+            cfg_try = dict(font_cfg)
+            cfg_try["font"] = font_name
+            font = self._load_custom_font_from_element_config(
+                cfg_try, default_size=font_cfg.get("font_size", 24)
+            )
+            try:
+                char_w = max(3, font.getbbox("0")[2])
+                row_h = (font.getbbox("Ay")[3] - font.getbbox("Ay")[1]) + 2
+            except AttributeError:
+                char_w, row_h = 5, 10
+            result = (font, char_w, row_h)
+            if needed_rows * row_h <= available_height or i == len(candidates) - 1:
+                break
+        return result
+
     def _draw_traditional_scoreboard_screen(self, game: Dict, force_clear: bool = False) -> None:
         """Draw a full-screen traditional ballpark scoreboard: an
         inning-by-inning line score with R/H/E, and (for live games with
@@ -871,8 +912,17 @@ class BaseballLive(Baseball, SportsLive):
             max_row_h = (self.display_height - 2 * margin) / needed_rows
             effective_font_size = max(6, min(font_size_cap, round(max_row_h - 2)))
             font_cfg = dict(cfg)
+            # Match config_schema.json's default explicitly -- the schema
+            # default only applies once a config UI materializes it into
+            # config.json; _load_custom_font_from_element_config's own
+            # hardcoded fallback (PressStart2P) would otherwise win whenever
+            # this key is genuinely absent (e.g. in the safety harness).
+            font_cfg.setdefault("font", "9x15.bdf")
             font_cfg["font_size"] = effective_font_size
-            font = self._load_custom_font_from_element_config(font_cfg, default_size=effective_font_size)
+            available_height = self.display_height - 2 * margin
+            font, char_w, row_h = self._load_traditional_scoreboard_font(
+                font_cfg, needed_rows, available_height
+            )
 
             text_color = tuple(cfg.get("text_color", [255, 255, 255]))
             header_color = tuple(cfg.get("header_color", [180, 180, 180]))
@@ -884,12 +934,6 @@ class BaseballLive(Baseball, SportsLive):
             home_color = (
                 (use_team_colors and game.get("home_team_color")) or text_color
             )
-
-            try:
-                char_w = max(3, font.getbbox("0")[2])  # width of a single digit
-                row_h = (font.getbbox("Ay")[3] - font.getbbox("Ay")[1]) + 2
-            except AttributeError:
-                char_w, row_h = 5, 10
 
             team_col_w = char_w * 3 + 1  # 3-letter abbreviation + gap
             rhe_col_w = char_w + 1  # R/H/E are almost always a single digit

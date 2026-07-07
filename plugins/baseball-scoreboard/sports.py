@@ -265,13 +265,30 @@ class SportsCore(ABC):
                     self.logger.debug(f"Loaded font: {font_name} at size {font_size}")
                     return font
                 elif font_path.lower().endswith('.bdf'):
-                    # PIL's ImageFont.truetype() can sometimes handle BDF files
-                    # If it fails, we'll fall through to the default font
+                    # BDF fonts are fixed-size bitmaps, not scalable outlines --
+                    # FreeType only accepts the exact pixel size baked into the
+                    # file (its "strike") and raises "invalid pixel size" for
+                    # anything else. Try the requested size first (in case it
+                    # happens to match), then fall back to the file's real
+                    # native size read from its SIZE header line, so a BDF
+                    # font can still be selected via font_size-driven configs
+                    # without the caller needing to know its exact strike size.
                     try:
                         font = ImageFont.truetype(font_path, font_size)
                         self.logger.debug(f"Loaded BDF font: {font_name} at size {font_size}")
                         return font
                     except Exception:
+                        native_size = self._read_bdf_native_size(font_path)
+                        if native_size and native_size != font_size:
+                            try:
+                                font = ImageFont.truetype(font_path, native_size)
+                                self.logger.debug(
+                                    f"Loaded BDF font: {font_name} at its native size {native_size} "
+                                    f"(requested {font_size} isn't a valid strike for this file)"
+                                )
+                                return font
+                            except Exception:
+                                pass
                         self.logger.warning(f"Could not load BDF font {font_name} with PIL, using default")
                         # Fall through to default
                 else:
@@ -292,7 +309,25 @@ class SportsCore(ABC):
         except Exception as e:
             self.logger.error(f"Error loading default font: {e}")
             return ImageFont.load_default()
-    
+
+    @staticmethod
+    def _read_bdf_native_size(bdf_path: str) -> Optional[int]:
+        """Read a BDF file's own SIZE header line to find its one true pixel
+        size (BDF is a fixed-size bitmap format -- FreeType can only render
+        it at that exact size, not an arbitrary point size)."""
+        try:
+            with open(bdf_path, "r", encoding="ascii", errors="ignore") as f:
+                for line in f:
+                    if line.startswith("SIZE"):
+                        # Format: "SIZE <point_size> <xres> <yres>"
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            return int(float(parts[1]))
+                        break
+        except (OSError, ValueError):
+            pass
+        return None
+
     def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
         """
         Get layout offset for a specific element and axis.

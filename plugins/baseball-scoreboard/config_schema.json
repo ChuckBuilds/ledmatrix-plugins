@@ -1619,15 +1619,15 @@
                 "properties": {
                     "font": {
                         "type": "string",
-                        "default": "press_start",
-                        "description": "Font family for this screen's text -- 'press_start' is a genuine 8-bit arcade font for a retro/NES look"
+                        "default": "9x15.bdf",
+                        "description": "Font for this screen's text. '9x15.bdf' is a clean, bold, highly legible bitmap font. Fixed-size bitmap (.bdf) fonts always render at their own native pixel size regardless of font_size below; use a scalable .ttf font (e.g. 'press_start' for PressStart2P, a chunkier 8-bit retro look) if you want font_size to control the size"
                     },
                     "font_size": {
                         "type": "integer",
                         "default": 24,
                         "minimum": 6,
                         "maximum": 24,
-                        "description": "Maximum font size cap. This screen auto-fits the largest text that still leaves room for the At Bat panel (when applicable), so the default (24) effectively means 'as big as the display allows' -- lower this to force a smaller, more consistent size instead"
+                        "description": "Maximum font size cap, for scalable .ttf fonts only (ignored by fixed-size .bdf fonts like the default). This screen auto-fits the largest text that still leaves room for the At Bat panel (when applicable), so the default (24) effectively means 'as big as the display allows' -- lower this to force a smaller, more consistent size instead"
                     },
                     "use_team_colors": {
                         "type": "boolean",

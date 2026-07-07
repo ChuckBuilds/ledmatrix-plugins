@@ -22,6 +22,60 @@ from baseball import (  # noqa: E402
 )
 
 
+def test_font_fallback_ladder_steps_down_when_default_does_not_fit():
+    # Regression: 9x15.bdf (the default traditional-scoreboard font) is a
+    # fixed-size bitmap -- it can't shrink to fit a small display the way a
+    # scalable .ttf can. Simulate that with a fake loader whose measured
+    # row_h depends on which font name was requested, and confirm the
+    # ladder steps down to the first same-family sibling that actually fits
+    # rather than keeping a font that doesn't leave room for the needed rows.
+    live = _make_live(64, 32)
+    row_h_by_font = {"9x15.bdf": 17, "8x13.bdf": 15, "7x13.bdf": 15, "6x13.bdf": 15, "6x12.bdf": 14}
+
+    class _FakeFont:
+        def __init__(self, row_h):
+            self._row_h = row_h
+
+        def getbbox(self, text):
+            return (0, 0, 6, self._row_h - 2)
+
+    def fake_loader(cfg, default_size=6):
+        return _FakeFont(row_h_by_font.get(cfg.get("font"), 14))
+
+    live._load_custom_font_from_element_config = fake_loader
+    font_cfg = {"font": "9x15.bdf"}
+    # 6 needed rows in 85px available: 9x15/8x13/7x13/6x13 (row_h 15-17) all
+    # overflow (6*15=90 > 85), but 6x12 (row_h 14, 6*14=84 <= 85) fits --
+    # the ladder should stop there rather than walking further or picking
+    # one of the earlier, too-tall candidates.
+    font, char_w, row_h = live._load_traditional_scoreboard_font(font_cfg, needed_rows=6, available_height=85)
+    assert row_h == row_h_by_font["6x12.bdf"], (
+        f"expected the ladder to stop at the first fitting rung (6x12, row_h=14), got row_h={row_h}"
+    )
+    print("test_font_fallback_ladder_steps_down_when_default_does_not_fit: PASS")
+
+
+def test_font_fallback_ladder_keeps_default_when_it_already_fits():
+    live = _make_live(256, 128)
+    row_h_by_font = {"9x15.bdf": 17}
+
+    class _FakeFont:
+        def __init__(self, row_h):
+            self._row_h = row_h
+
+        def getbbox(self, text):
+            return (0, 0, 6, self._row_h - 2)
+
+    def fake_loader(cfg, default_size=6):
+        return _FakeFont(row_h_by_font[cfg.get("font")])
+
+    live._load_custom_font_from_element_config = fake_loader
+    font_cfg = {"font": "9x15.bdf"}
+    font, char_w, row_h = live._load_traditional_scoreboard_font(font_cfg, needed_rows=6, available_height=126)
+    assert row_h == 17, f"expected the default font to be kept since it already fits, got row_h={row_h}"
+    print("test_font_fallback_ladder_keeps_default_when_it_already_fits: PASS")
+
+
 def test_extract_linescore_orders_by_period():
     team = {
         "linescores": [
@@ -359,6 +413,8 @@ if __name__ == "__main__":
         test_parse_team_color_valid_hex,
         test_parse_team_color_missing_or_malformed,
         test_parse_team_color_clamps_near_black_and_near_white,
+        test_font_fallback_ladder_steps_down_when_default_does_not_fit,
+        test_font_fallback_ladder_keeps_default_when_it_already_fits,
         test_inning_window_fits_full_nine,
         test_inning_window_extra_innings_fit,
         test_inning_window_narrow_display_early_game_shows_fixed_view,
