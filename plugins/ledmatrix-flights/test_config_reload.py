@@ -25,6 +25,7 @@ if _core and _core not in sys.path:
     sys.path.insert(0, _core)
 
 from manager import FlightTrackerPlugin  # noqa: E402
+from data_model import TrackedFlight  # noqa: E402
 
 _passed = 0
 _failed = 0
@@ -108,7 +109,35 @@ def test_on_config_change_applies_live():
     check(tracker.last_map_center is None, "cached map center invalidated")
 
 
+def test_stale_tracked_flight_data_pruned_on_config_change():
+    print("[ledmatrix-flights tracked_flight_data pruning]")
+    tracker = _make_tracker(
+        {
+            "data_source": "skyaware",
+            "tracked_flights": ["AA123", "UAL456"],
+        }
+    )
+    # Seed runtime tracking state as if both flights had been seen live.
+    tracker.tracked_flight_data["AA123"] = TrackedFlight(identifier="AA123")
+    tracker.tracked_flight_data["UAL456"] = TrackedFlight(identifier="UAL456")
+
+    tracker.on_config_change(
+        {
+            "data_source": "skyaware",
+            "tracked_flights": ["AA123"],  # UAL456 removed
+        }
+    )
+
+    check(tracker.tracked_flights_cfg == ["AA123"], "tracked_flights_cfg updated live")
+    check("AA123" in tracker.tracked_flight_data, "kept flight's runtime state is preserved")
+    check(
+        "UAL456" not in tracker.tracked_flight_data,
+        "removed flight's stale runtime state is pruned",
+    )
+
+
 if __name__ == "__main__":
     test_on_config_change_applies_live()
+    test_stale_tracked_flight_data_pruned_on_config_change()
     print(f"\n{_passed} passed, {_failed} failed")
     sys.exit(1 if _failed else 0)

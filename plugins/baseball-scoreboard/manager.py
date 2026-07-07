@@ -276,7 +276,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         # Re-derive scalar settings.
         self.enabled = self.config.get("enabled", getattr(self, "enabled", True))
-        self.is_enabled = self.config.get("enabled", True)
+        self.is_enabled = self.config.get("enabled", getattr(self, "is_enabled", True))
         self.mlb_enabled = self.config.get("mlb", {}).get("enabled", False)
         self.milb_enabled = self.config.get("milb", {}).get("enabled", False)
         self.ncaa_baseball_enabled = self.config.get("ncaa_baseball", {}).get("enabled", False)

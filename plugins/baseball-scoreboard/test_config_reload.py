@@ -97,7 +97,21 @@ def test_on_config_change_applies_live():
     check(isinstance(plugin.modes, list) and len(plugin.modes) > 0, "rotation modes rebuilt without crashing")
 
 
+def test_is_enabled_preserved_when_key_omitted():
+    print("[baseball-scoreboard is_enabled preservation]")
+    plugin = _make_plugin({"enabled": False, "display_duration": 30})
+    check(plugin.is_enabled is False, "initial is_enabled derived")
+
+    # A config update that omits the top-level "enabled" key entirely (e.g. a
+    # partial save from the web UI) must not silently re-enable the plugin.
+    plugin.on_config_change({"display_duration": 45})
+
+    check(plugin.is_enabled is False, "is_enabled preserved when key omitted")
+    check(plugin.enabled is False, "enabled preserved when key omitted (unchanged behavior)")
+
+
 if __name__ == "__main__":
     test_on_config_change_applies_live()
+    test_is_enabled_preserved_when_key_omitted()
     print(f"\n{_passed} passed, {_failed} failed")
     sys.exit(1 if _failed else 0)

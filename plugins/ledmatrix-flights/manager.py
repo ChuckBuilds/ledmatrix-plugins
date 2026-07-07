@@ -407,6 +407,12 @@ class FlightTrackerPlugin(BasePlugin):
         self.max_altitude_ft = self.config.get('max_altitude_ft', 0)
         self.aircraft_categories = self.config.get('aircraft_categories', [])
         self.tracked_flights_cfg = self.config.get('tracked_flights', [])
+        # Drop runtime tracking state for identifiers no longer in config --
+        # otherwise a flight removed from tracked_flights keeps showing up
+        # (frozen at its last-known state) until a full restart.
+        _tracked_idents = set(self.tracked_flights_cfg)
+        for _stale_ident in [k for k in self.tracked_flight_data if k not in _tracked_idents]:
+            del self.tracked_flight_data[_stale_ident]
         self.anchor_airport = self.config.get('anchor_airport', '')
         self.route_cache_ttl = self.config.get('route_cache_ttl', 300)
 
