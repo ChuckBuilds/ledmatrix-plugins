@@ -24,6 +24,14 @@ _core = os.environ.get("LEDMATRIX_CORE")
 if _core and _core not in sys.path:
     sys.path.insert(0, _core)
 
+# Other plugins also ship a top-level manager.py/data_model.py. If this
+# process already imported a different plugin's copy under those bare
+# names (e.g. another plugin's test_config_reload.py ran first in the
+# same pytest session), drop the stale cache entries first so the bare
+# imports below resolve to *this* plugin's files, not the cached ones.
+for _stale in ("manager", "data_model"):
+    sys.modules.pop(_stale, None)
+
 from manager import FlightTrackerPlugin  # noqa: E402
 from data_model import TrackedFlight  # noqa: E402
 
@@ -39,6 +47,7 @@ def check(cond, msg):
     else:
         _failed += 1
         print(f"  FAIL: {msg}")
+        raise AssertionError(msg)
 
 
 class _Matrix:
@@ -137,7 +146,13 @@ def test_stale_tracked_flight_data_pruned_on_config_change():
 
 
 if __name__ == "__main__":
-    test_on_config_change_applies_live()
-    test_stale_tracked_flight_data_pruned_on_config_change()
+    for _test_fn in (
+        test_on_config_change_applies_live,
+        test_stale_tracked_flight_data_pruned_on_config_change,
+    ):
+        try:
+            _test_fn()
+        except AssertionError:
+            pass  # already logged by check(); keep going so later tests still run
     print(f"\n{_passed} passed, {_failed} failed")
     sys.exit(1 if _failed else 0)

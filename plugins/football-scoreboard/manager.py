@@ -257,7 +257,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         # Re-derive scalar settings.
         self.enabled = self.config.get("enabled", getattr(self, "enabled", True))
-        self.is_enabled = self.config.get("enabled", True)
+        self.is_enabled = self.config.get("enabled", getattr(self, "is_enabled", True))
         self.nfl_enabled = self.config.get("nfl", {}).get("enabled", False)
         self.ncaa_fb_enabled = self.config.get("ncaa_fb", {}).get("enabled", False)
         self.display_duration = float(self.config.get("display_duration", 30))

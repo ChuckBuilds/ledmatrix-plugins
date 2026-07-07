@@ -40,6 +40,7 @@ def check(cond, msg):
     else:
         _failed += 1
         print(f"  FAIL: {msg}")
+        raise AssertionError(msg)
 
 
 class _Matrix:
@@ -111,7 +112,13 @@ def test_is_enabled_preserved_when_key_omitted():
 
 
 if __name__ == "__main__":
-    test_on_config_change_applies_live()
-    test_is_enabled_preserved_when_key_omitted()
+    for _test_fn in (
+        test_on_config_change_applies_live,
+        test_is_enabled_preserved_when_key_omitted,
+    ):
+        try:
+            _test_fn()
+        except AssertionError:
+            pass  # already logged by check(); keep going so later tests still run
     print(f"\n{_passed} passed, {_failed} failed")
     sys.exit(1 if _failed else 0)

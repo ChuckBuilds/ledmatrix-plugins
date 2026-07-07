@@ -37,6 +37,7 @@ def check(cond, msg):
     else:
         _failed += 1
         print(f"  FAIL: {msg}")
+        raise AssertionError(msg)
 
 
 def _make_plugin(config):
@@ -87,6 +88,9 @@ def test_on_config_change_applies_live():
 
 
 if __name__ == "__main__":
-    test_on_config_change_applies_live()
+    try:
+        test_on_config_change_applies_live()
+    except AssertionError:
+        pass  # already logged by check()
     print(f"\n{_passed} passed, {_failed} failed")
     sys.exit(1 if _failed else 0)
