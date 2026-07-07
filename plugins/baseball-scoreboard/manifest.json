@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -32,14 +32,20 @@
   "versions": [
     {
       "released": "2026-07-07",
-      "version": "1.9.0",
+      "version": "1.10.0",
       "notes": "Add an optional Traditional Scoreboard screen (MLB and NCAA Baseball only) -- a full-screen outfield-style scoreboard that periodically rotates into the live view: an inning-by-inning line score with R/H/E, the current inning highlighted, and (for leagues with count data) an At Bat panel with lit ball/strike/out indicators. Automatically fits as many innings as the display width allows, scrolling to a trailing window once the game progresses further than that. Toggle per league under Display Options > Show Traditional Scoreboard; customize font/colors/timing under Customization > Traditional Scoreboard Screen.",
       "ledmatrix_min": "2.0.0"
     },
     {
       "released": "2026-07-06",
-      "version": "1.8.0",
+      "version": "1.9.0",
       "notes": "Add optional Pitcher/Batter and Last Play info (MLB and NCAA Baseball only) -- a dedicated screen that periodically rotates into the live view showing the current at-bat's pitcher, batter, and a short code for the most recently completed play (1B, HR, K, BB, etc.). Toggle per league under Display Options; customize font/colors/timing under Customization > Pitcher / Batter / Last Play Screen. Fetches the extra per-game data on a background thread with a bounded timeout so a slow response can't block the render loop.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-06",
+      "version": "1.8.0",
+      "notes": "Apply config changes live via on_config_change (favorite teams, league enable/disable, durations, live priority, display modes); rebuilds the league managers, registry, scroll manager and rotation so edits take effect without a display restart.",
       "ledmatrix_min": "2.0.0"
     },
     {
