@@ -341,7 +341,7 @@ class FlightTrackerPlugin(BasePlugin):
         self.config = new_config or {}
         self._normalize_flightaware_config(self.config)
 
-        self.enabled = self.config.get('enabled', False)
+        self.enabled = self.config.get('enabled', getattr(self, 'enabled', False))
         self.update_interval = self.config.get('update_interval', 5)
         self.skyaware_url = self.config.get('skyaware_url', 'http://192.168.86.30/skyaware/data/aircraft.json')
 
