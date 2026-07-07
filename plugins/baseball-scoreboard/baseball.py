@@ -567,11 +567,17 @@ class BaseballLive(Baseball, SportsLive):
             athlete_names = _build_athlete_name_map(rosters)
             pitcher, batter = _get_current_pitcher_batter(plays, athlete_names)
             last_play_code = _get_last_play_code(plays)
-            self._play_by_play_cache[game_id] = {
-                "pitcher": pitcher,
-                "batter": batter,
-                "last_play_code": last_play_code,
-            }
+            if pitcher or batter or last_play_code:
+                self._play_by_play_cache[game_id] = {
+                    "pitcher": pitcher,
+                    "batter": batter,
+                    "last_play_code": last_play_code,
+                }
+            else:
+                self.logger.debug(
+                    f"Play-by-play response for game {game_id} had no usable "
+                    "pitcher/batter/last-play data; keeping prior cache entry"
+                )
         except Exception as e:
             self.logger.error(f"Error parsing play-by-play for game {game_id}: {e}")
 

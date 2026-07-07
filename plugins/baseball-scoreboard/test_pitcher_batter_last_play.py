@@ -146,6 +146,49 @@ def test_prune_stale_play_by_play():
     print("test_prune_stale_play_by_play: PASS")
 
 
+class _StubDataSource:
+    def __init__(self, response):
+        self._response = response
+
+    def fetch_game_summary(self, sport, league, game_id):
+        return self._response
+
+
+def _make_live_for_fetch(response):
+    live = object.__new__(_ConcreteBaseballLive)
+    live._play_by_play_cache = {"g1": {"pitcher": "G. Cole", "batter": "J. Soto", "last_play_code": "1B"}}
+    live.espn_summary_sport_league = ("baseball", "mlb")
+    live.data_source = _StubDataSource(response)
+    import logging
+    live.logger = logging.getLogger("test_fetch_play_by_play")
+    return live
+
+
+def test_fetch_play_by_play_keeps_prior_cache_on_empty_response():
+    # A "successful" response with no plays/rosters (e.g. right before the
+    # game starts) must not clobber a previously-good cache entry.
+    live = _make_live_for_fetch({"plays": [], "rosters": []})
+    live._fetch_play_by_play("g1")
+    assert live._play_by_play_cache["g1"] == {
+        "pitcher": "G. Cole", "batter": "J. Soto", "last_play_code": "1B"
+    }, live._play_by_play_cache
+    print("test_fetch_play_by_play_keeps_prior_cache_on_empty_response: PASS")
+
+
+def test_fetch_play_by_play_updates_cache_on_real_data():
+    names = {"10": "Y. Yamamoto", "20": "F. Freeman"}
+    rosters = [
+        {"roster": [{"athlete": {"id": "10", "shortName": names["10"]}}]},
+        {"roster": [{"athlete": {"id": "20", "shortName": names["20"]}}]},
+    ]
+    plays = [_play(participants=[_participant("pitcher", "10"), _participant("batter", "20")])]
+    live = _make_live_for_fetch({"plays": plays, "rosters": rosters})
+    live._fetch_play_by_play("g1")
+    assert live._play_by_play_cache["g1"]["pitcher"] == "Y. Yamamoto"
+    assert live._play_by_play_cache["g1"]["batter"] == "F. Freeman"
+    print("test_fetch_play_by_play_updates_cache_on_real_data: PASS")
+
+
 if __name__ == "__main__":
     print("pitcher/batter/last-play parsing regression tests")
     print("=" * 55)
@@ -160,6 +203,8 @@ if __name__ == "__main__":
         test_get_current_pitcher_batter_backward_scan,
         test_get_current_pitcher_batter_no_participants_returns_none,
         test_prune_stale_play_by_play,
+        test_fetch_play_by_play_keeps_prior_cache_on_empty_response,
+        test_fetch_play_by_play_updates_cache_on_real_data,
     ):
         try:
             t()
