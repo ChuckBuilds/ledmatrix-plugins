@@ -825,7 +825,14 @@ class BaseballLive(Baseball, SportsLive):
                     return linescore[idx]
                 return ""
 
-            grid_x = margin + team_col_w
+            # Center the grid horizontally -- num_cols is capped at 9 (a
+            # standard game), so a display much wider than that would
+            # otherwise leave the whole block jammed against the left edge
+            # with a large dead area on the right.
+            content_w = team_col_w + num_cols * inning_col_w + gap_w + 3 * rhe_col_w
+            x_offset = max(margin, (self.display_width - content_w) // 2)
+
+            grid_x = x_offset + team_col_w
             header_y = margin
             away_y = header_y + row_h
             home_y = away_y + row_h
@@ -847,8 +854,8 @@ class BaseballLive(Baseball, SportsLive):
                     self._draw_text_with_outline(draw, home_val, (cell_x, home_y), font, fill=text_color)
 
             # Team abbreviations (left column).
-            self._draw_text_with_outline(draw, away_abbr, (margin, away_y), font, fill=text_color)
-            self._draw_text_with_outline(draw, home_abbr, (margin, home_y), font, fill=text_color)
+            self._draw_text_with_outline(draw, away_abbr, (x_offset, away_y), font, fill=text_color)
+            self._draw_text_with_outline(draw, home_abbr, (x_offset, home_y), font, fill=text_color)
 
             # R / H / E columns.
             rhe_x = grid_x + num_cols * inning_col_w + gap_w
@@ -868,7 +875,7 @@ class BaseballLive(Baseball, SportsLive):
             has_count_data = game.get("has_count_data", True)
             if is_live_now and has_count_data and panel_y + row_h <= self.display_height:
                 self._draw_traditional_scoreboard_at_bat_panel(
-                    draw, game, font, row_h, panel_y, text_color, highlight_color
+                    draw, game, font, row_h, panel_y, text_color, highlight_color, x_offset
                 )
 
             self.display_manager.image.paste(img, (0, 0))
@@ -879,15 +886,16 @@ class BaseballLive(Baseball, SportsLive):
 
     def _draw_traditional_scoreboard_at_bat_panel(
         self, draw, game: Dict, font, row_h: int, panel_y: int,
-        text_color: tuple, highlight_color: tuple,
+        text_color: tuple, highlight_color: tuple, margin: int = 2,
     ) -> None:
         """Draw the 'AT BAT' label and ball/strike/out light indicators
         below the line score. Uses a spacious 3-row layout (one row each
         for balls/strikes/outs) when there's room, else a single condensed
         row -- the same adaptive-to-available-space approach as the rest of
-        this plugin's live layout.
+        this plugin's live layout. `margin` is the grid's horizontal offset
+        (see _draw_traditional_scoreboard_screen) so this panel lines up
+        with the line score above it instead of always starting flush-left.
         """
-        margin = 2
         balls = min(int(game.get("balls", 0) or 0), 3)
         strikes = min(int(game.get("strikes", 0) or 0), 2)
         outs = min(int(game.get("outs", 0) or 0), 2)
