@@ -591,11 +591,37 @@ class BaseballLive(Baseball, SportsLive):
         {"pitcher": "Y. Yamamoto", "batter": "M. Betts", "last_play_code": "BB"},
     ]
 
+    # After this many innings, reset the simulated game back to a fresh
+    # start rather than climbing forever -- most real games are 9 innings;
+    # this lets the occasional extra-inning case show without the fixture
+    # running away to absurd inning numbers the longer the service is up.
+    _TEST_MODE_MAX_INNING = 10
+
+    def _test_mode_reset_game(self) -> None:
+        game = self.current_game
+        game["inning"] = 1
+        game["inning_half"] = "top"
+        game["balls"] = 0
+        game["strikes"] = 0
+        game["outs"] = 0
+        game["bases_occupied"] = [False, False, False]
+        game["home_score"] = "0"
+        game["away_score"] = "0"
+        game["home_linescore"] = []
+        game["away_linescore"] = []
+        game["home_hits"] = "0"
+        game["away_hits"] = "0"
+        game["home_errors"] = "0"
+        game["away_errors"] = "0"
+
     def _test_mode_update(self):
         if self.current_game and self.current_game["is_live"]:
             if self.current_game["inning_half"] == "top":
                 self.current_game["inning_half"] = "bottom"
             else:
+                if self.current_game["inning"] >= self._TEST_MODE_MAX_INNING:
+                    self._test_mode_reset_game()
+                    return
                 self.current_game["inning_half"] = "top"
                 self.current_game["inning"] += 1
                 # The inning that just fully completed (bottom just ended)

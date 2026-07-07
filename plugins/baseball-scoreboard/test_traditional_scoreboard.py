@@ -139,6 +139,35 @@ def _make_live(width, height):
     return live
 
 
+def test_test_mode_update_resets_instead_of_climbing_forever():
+    # Regression: _test_mode_update() used to increment self.current_game
+    # ["inning"] with no cap, so a long-running service would eventually
+    # show absurd extra-inning counts. It should now reset to a fresh game
+    # once it goes a bit past a normal 9 innings.
+    live = _make_live(128, 64)
+    live.show_pitcher_batter = False
+    live.show_last_play = False
+    live._play_by_play_cache = {}
+    live.current_game = {
+        "id": "test", "is_live": True, "inning": 1, "inning_half": "top",
+        "balls": 0, "strikes": 0, "outs": 0, "bases_occupied": [False, False, False],
+        "home_score": "0", "away_score": "0",
+        "home_linescore": [], "away_linescore": [],
+        "home_hits": "0", "away_hits": "0", "home_errors": "0", "away_errors": "0",
+    }
+
+    max_inning_seen = 1
+    for _ in range(200):
+        live._test_mode_update()
+        max_inning_seen = max(max_inning_seen, live.current_game["inning"])
+
+    assert max_inning_seen <= BaseballLive._TEST_MODE_MAX_INNING, (
+        f"inning climbed to {max_inning_seen}, expected a reset at "
+        f"{BaseballLive._TEST_MODE_MAX_INNING}"
+    )
+    print(f"test_test_mode_update_resets_instead_of_climbing_forever: PASS (max inning seen: {max_inning_seen})")
+
+
 def test_draws_without_crashing_at_small_size():
     live = _make_live(64, 32)
     game = {
@@ -191,6 +220,7 @@ if __name__ == "__main__":
         test_inning_window_narrow_display_early_game_shows_fixed_view,
         test_inning_window_narrow_display_scrolls_once_progressed_past_fit,
         test_inning_window_minimum_one_column,
+        test_test_mode_update_resets_instead_of_climbing_forever,
         test_draws_without_crashing_at_small_size,
         test_draws_without_crashing_when_final_and_no_count_data,
     ):
