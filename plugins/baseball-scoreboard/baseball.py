@@ -939,28 +939,42 @@ class BaseballLive(Baseball, SportsLive):
             # with the header/away/home rows) over stacking them below the
             # grid -- that only needs 3 rows of vertical space instead of 6,
             # so the whole grid can render at a noticeably bigger size.
-            # Only worth it if there's enough leftover width beside the
-            # grid+RHE columns to fit the widest row (3 ball dots) legibly;
-            # narrow displays fall back to the below-grid stacked layout.
+            # Only worth it if the grid+RHE block *plus* the side panel
+            # together still fit within the display -- checked against the
+            # combined width, not just "leftover" past a flush-left grid,
+            # since the grid is centered and would otherwise eat into the
+            # panel's space from the left too. Narrow displays fall back to
+            # the below-grid stacked layout.
             use_side_panel = False
             layout = None
+            side_panel_w = 0
+            side_gap = 3
             if at_bat_panel_applicable:
                 side_try = load_layout(3)
-                start_inning, num_cols = self._traditional_scoreboard_inning_window(
+                side_start_inning, side_num_cols = self._traditional_scoreboard_inning_window(
                     game, side_try["max_cols"]
                 )
-                content_w = (
-                    side_try["team_col_w"] + num_cols * side_try["inning_col_w"]
+                side_content_w = (
+                    side_try["team_col_w"] + side_num_cols * side_try["inning_col_w"]
                     + side_try["gap_w"] + 3 * side_try["rhe_col_w"]
                 )
-                leftover = self.display_width - 2 * margin - content_w
                 dot_d = max(2, side_try["row_h"] - 4)
-                # Widest row is Balls (3 dots): label + 3 dots + gaps
-                # *between* them only -- no trailing gap after the last dot.
-                side_panel_w = side_try["font"].getbbox("B ")[2] + 3 * dot_d + 2 * 2
-                if leftover >= side_panel_w + 1:
+                font_try = side_try["font"]
+                # Widest row could be either Balls (3 dots, no suffix) or
+                # Outs (2 dots + the batting-team ▲/▼ arrow) depending on
+                # font metrics -- measure both, gaps only *between* dots.
+                b_row_w = font_try.getbbox("B ")[2] + 3 * dot_d + 2 * 2
+                o_row_w = (
+                    font_try.getbbox("O ")[2] + 2 * dot_d + 1 * 2 + 2
+                    + font_try.getbbox("▼")[2]
+                )
+                candidate_panel_w = max(b_row_w, o_row_w)
+                combined_w = side_content_w + side_gap + candidate_panel_w
+                if combined_w + 2 * margin <= self.display_width:
                     use_side_panel = True
                     layout = side_try
+                    start_inning, num_cols = side_start_inning, side_num_cols
+                    side_panel_w = candidate_panel_w
             if layout is None:
                 layout = load_layout(6 if at_bat_panel_applicable else 3)
                 start_inning, num_cols = self._traditional_scoreboard_inning_window(
@@ -1002,9 +1016,13 @@ class BaseballLive(Baseball, SportsLive):
             # Center the grid horizontally -- num_cols is capped at 9 (a
             # standard game), so a display much wider than that would
             # otherwise leave the whole block jammed against the left edge
-            # with a large dead area on the right.
+            # with a large dead area on the right. When a side panel is
+            # used, center the grid+panel *together* -- centering the grid
+            # alone would eat into the panel's reserved space from the
+            # left and push its dots past the right edge.
             content_w = team_col_w + num_cols * inning_col_w + gap_w + 3 * rhe_col_w
-            x_offset = max(margin, (self.display_width - content_w) // 2)
+            total_w = content_w + side_gap + side_panel_w if use_side_panel else content_w
+            x_offset = max(margin, (self.display_width - total_w) // 2)
 
             grid_x = x_offset + team_col_w
             header_y = margin

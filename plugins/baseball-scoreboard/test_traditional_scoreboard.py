@@ -484,6 +484,43 @@ def test_side_panel_used_on_wide_display_for_bigger_text():
     print("test_side_panel_used_on_wide_display_for_bigger_text: PASS")
 
 
+def test_side_panel_at_max_counts_does_not_clip_off_the_right_edge():
+    # Regression: the side-panel fit check compared leftover width against
+    # a flush-left grid, but the grid is actually centered -- centering
+    # eats into the panel's reserved space from the left too, so the
+    # panel (checked only against the Balls row, 3 dots) could still run
+    # past the right edge, most visibly at max counts (3 balls, 2 strikes,
+    # 2 outs -- real baseball maximums) where the Outs row's ▲/▼ batting
+    # indicator suffix pushed it over. Verify nothing draws past the
+    # right margin at max counts, across every standard size.
+    font_path = _find_font_asset("9x15.bdf")
+    if not font_path:
+        print("SKIP test_side_panel_at_max_counts_does_not_clip_off_the_right_edge: "
+              "could not locate 9x15.bdf (run from LEDMatrix tree)")
+        return
+
+    game = dict(_LIVE_GAME_WITH_COUNT_DATA)
+    game["balls"], game["strikes"], game["outs"] = 3, 2, 2  # real baseball maximums
+
+    for w, h in ((64, 32), (128, 32), (128, 64), (192, 48), (256, 32), (256, 128)):
+        live = _make_live(w, h)
+        live._load_custom_font_from_element_config = _real_bdf_aware_loader(os.path.dirname(font_path))
+        live.config = {}
+        live._draw_traditional_scoreboard_screen(dict(game))
+        img = live.display_manager.image
+        margin = 1
+        clipped = any(
+            img.getpixel((x, y)) != (0, 0, 0)
+            for x in range(w - margin, w)
+            for y in range(h)
+        )
+        assert not clipped, (
+            f"content drawn into the right margin column at {w}x{h} with max "
+            f"B/S/O counts -- likely clipped off the edge"
+        )
+    print("test_side_panel_at_max_counts_does_not_clip_off_the_right_edge: PASS")
+
+
 def test_side_panel_not_used_on_narrow_display():
     # The inverse: a narrow display shouldn't have enough leftover width
     # for the side column, so it should fall back to the below-grid panel
@@ -568,6 +605,7 @@ if __name__ == "__main__":
         test_team_colors_fall_back_to_text_color_when_disabled,
         test_at_bat_panel_fits_alongside_bigger_font_at_medium_size,
         test_side_panel_used_on_wide_display_for_bigger_text,
+        test_side_panel_at_max_counts_does_not_clip_off_the_right_edge,
         test_side_panel_not_used_on_narrow_display,
         test_draws_without_crashing_when_final_and_no_count_data,
     ):
