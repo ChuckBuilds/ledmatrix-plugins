@@ -152,6 +152,17 @@
               "maxItems": 20,
               "description": "List of favorite Premier League teams to prioritize"
             },
+            "exclude_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "ENG team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "default": [],
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+            },
             "display_modes": {
               "type": "object",
               "title": "Display Modes",
@@ -361,6 +372,13 @@
                   "type": "boolean",
                   "default": false,
                   "description": "Show all live games, not just favorites"
+                },
+                "favorite_live_boost": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "default": 2,
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                 }
               }
             },
@@ -447,7 +465,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -503,6 +521,17 @@
               "uniqueItems": true,
               "maxItems": 20,
               "description": "List of favorite La Liga teams to prioritize"
+            },
+            "exclude_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "ESP team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "default": [],
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
             },
             "display_modes": {
               "type": "object",
@@ -713,6 +742,13 @@
                   "type": "boolean",
                   "default": false,
                   "description": "Show all live games, not just favorites"
+                },
+                "favorite_live_boost": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "default": 2,
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                 }
               }
             },
@@ -799,7 +835,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -855,6 +891,17 @@
               "uniqueItems": true,
               "maxItems": 18,
               "description": "List of favorite Bundesliga teams to prioritize"
+            },
+            "exclude_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "GER team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "default": [],
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
             },
             "display_modes": {
               "type": "object",
@@ -1065,6 +1112,13 @@
                   "type": "boolean",
                   "default": false,
                   "description": "Show all live games, not just favorites"
+                },
+                "favorite_live_boost": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "default": 2,
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                 }
               }
             },
@@ -1151,7 +1205,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1207,6 +1261,17 @@
               "uniqueItems": true,
               "maxItems": 20,
               "description": "List of favorite Serie A teams to prioritize"
+            },
+            "exclude_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "ITA team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "default": [],
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
             },
             "display_modes": {
               "type": "object",
@@ -1417,6 +1482,13 @@
                   "type": "boolean",
                   "default": false,
                   "description": "Show all live games, not just favorites"
+                },
+                "favorite_live_boost": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "default": 2,
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                 }
               }
             },
@@ -1503,7 +1575,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1559,6 +1631,17 @@
               "uniqueItems": true,
               "maxItems": 18,
               "description": "List of favorite Ligue 1 teams to prioritize"
+            },
+            "exclude_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "FRA team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "default": [],
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
             },
             "display_modes": {
               "type": "object",
@@ -1769,6 +1852,13 @@
                   "type": "boolean",
                   "default": false,
                   "description": "Show all live games, not just favorites"
+                },
+                "favorite_live_boost": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "default": 2,
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                 }
               }
             },
@@ -1855,7 +1945,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1911,6 +2001,17 @@
               "uniqueItems": true,
               "maxItems": 29,
               "description": "List of favorite MLS teams to prioritize"
+            },
+            "exclude_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "USA team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "default": [],
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
             },
             "display_modes": {
               "type": "object",
@@ -2121,6 +2222,13 @@
                   "type": "boolean",
                   "default": false,
                   "description": "Show all live games, not just favorites"
+                },
+                "favorite_live_boost": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "default": 2,
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                 }
               }
             },
@@ -2207,7 +2315,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2263,6 +2371,17 @@
               "uniqueItems": true,
               "maxItems": 32,
               "description": "List of favorite Champions League teams to prioritize"
+            },
+            "exclude_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "UEFA team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "default": [],
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
             },
             "display_modes": {
               "type": "object",
@@ -2473,6 +2592,13 @@
                   "type": "boolean",
                   "default": false,
                   "description": "Show all live games, not just favorites"
+                },
+                "favorite_live_boost": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "default": 2,
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                 }
               }
             },
@@ -2559,7 +2685,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2615,6 +2741,17 @@
               "uniqueItems": true,
               "maxItems": 32,
               "description": "List of favorite Europa League teams to prioritize"
+            },
+            "exclude_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "UEFA team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "default": [],
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
             },
             "display_modes": {
               "type": "object",
@@ -2825,6 +2962,13 @@
                   "type": "boolean",
                   "default": false,
                   "description": "Show all live games, not just favorites"
+                },
+                "favorite_live_boost": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "default": 2,
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                 }
               }
             },
@@ -2911,7 +3055,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2967,6 +3111,17 @@
               "uniqueItems": true,
               "maxItems": 20,
               "description": "List of favorite Liga Portugal teams to prioritize"
+            },
+            "exclude_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "POR team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "default": [],
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
             },
             "display_modes": {
               "type": "object",
@@ -3177,6 +3332,13 @@
                   "type": "boolean",
                   "default": false,
                   "description": "Show all live games, not just favorites"
+                },
+                "favorite_live_boost": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "default": 2,
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                 }
               }
             },
@@ -3263,7 +3425,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3319,6 +3481,17 @@
               "uniqueItems": true,
               "maxItems": 20,
               "description": "List of favorite national team abbreviations to prioritize (e.g. USA, BRA, ARG)"
+            },
+            "exclude_teams": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "FIFA team name or abbreviation"
+              },
+              "uniqueItems": true,
+              "maxItems": 20,
+              "default": [],
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
             },
             "display_modes": {
               "type": "object",
@@ -3529,6 +3702,13 @@
                   "type": "boolean",
                   "default": false,
                   "description": "Show all live games, not just favorites"
+                },
+                "favorite_live_boost": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "default": 2,
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
                 }
               }
             },
@@ -3615,7 +3795,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3660,7 +3840,7 @@
     "custom_leagues": {
       "type": "array",
       "title": "Add More Leagues",
-      "description": "Add any soccer league available on ESPN. Click 'Add Item' then enter a league code. Common codes: mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish S\u00fcper Lig), bel.1 (Belgian Pro League)",
+      "description": "Add any soccer league available on ESPN. Click 'Add Item' then enter a league code. Common codes: mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish Süper Lig), bel.1 (Belgian Pro League)",
       "x-widget": "array-table",
       "x-columns": [
         "name",
@@ -3708,6 +3888,17 @@
             "uniqueItems": true,
             "maxItems": 20,
             "description": "Favorite team abbreviations for this league"
+          },
+          "exclude_teams": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Custom league team name or abbreviation"
+            },
+            "uniqueItems": true,
+            "maxItems": 20,
+            "default": [],
+            "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
           },
           "live_priority": {
             "type": "boolean",
@@ -3821,6 +4012,13 @@
                 "type": "boolean",
                 "default": true,
                 "description": "Show all live games, not just favorites"
+              },
+              "favorite_live_boost": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5,
+                "default": 2,
+                "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
               }
             },
             "additionalProperties": false

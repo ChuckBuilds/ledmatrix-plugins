@@ -682,6 +682,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             f"{league}_scoreboard": {
                 "enabled": league_config.get("enabled", False),
                 "favorite_teams": league_config.get("favorite_teams", []),
+                "exclude_teams": league_config.get("exclude_teams", []),
                 "display_modes": manager_display_modes,
                 "recent_games_to_show": game_limits.get("recent_games_to_show", 5),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", 10),
@@ -2697,7 +2698,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             info = {
                 "plugin_id": self.plugin_id,
                 "name": "Baseball Scoreboard",
-                "version": "1.6.0",
+                "version": "1.8.0",
                 "enabled": self.is_enabled,
                 "display_size": f"{self.display_width}x{self.display_height}",
                 "mlb_enabled": self.mlb_enabled,

@@ -44,6 +44,7 @@ Recent Game (NCAA FB):
 - **Rankings Display**: AP Top 25 rankings for NCAA Football teams
 
 ### Advanced Features
+- **Score/Win Celebrations**: Full-screen takeover when a favorite team scores or wins a live game (see below)
 - **Background Data Service**: Non-blocking API calls with intelligent caching
 - **Smart Filtering**: Show favorite teams only or all games
 - **Granular Mode Control**: Enable/disable specific league/mode combinations independently
@@ -331,6 +332,33 @@ Layout offsets work across different display sizes. The plugin calculates defaul
 - **Upcoming Games**: Yellow text for scheduled games
 - **Odds**: Green text for betting information
 
+### Score & Win Celebrations
+When a favorite team scores or wins a **live** game, the scorebug briefly gives
+way to a full-screen celebration: the involved team logos at the edges, the new
+score centered with the scoring side's digit pulsing, and a banner at the top.
+
+The banner is chosen from the **points scored between two updates** (not from any
+feed text), so it works for every league the same way:
+
+| Points gained | Banner |
+|---|---|
+| 6 or more | `TOUCHDOWN!` / `<TEAM> TD!` |
+| 3 | `<TEAM> FIELD GOAL!` |
+| 2 | `<TEAM> SAFETY!` |
+| other (e.g. lone extra point) | `<TEAM> SCORES!` |
+| game goes final, favorite ahead | `<TEAM> WINS!` |
+
+A touchdown that arrives as `+6` then a `+1` extra point a few seconds later
+shows a **single** celebration — the extra point is folded in while the first is
+still on screen. Note that a 2-point conversion and a safety are both `+2`; the
+banner reads `SAFETY!` for either.
+
+Configure per league (under the `nfl` / `ncaa_fb` config sections):
+- `celebration_enabled` (boolean, default `true`)
+- `celebration_duration` (seconds on screen, default `8`)
+- `celebrate_opponent_scores` (also celebrate the opponent, default `false`; when
+  no favorite teams are configured, any team's score celebrates)
+
 ## 🏷️ Team Abbreviations
 
 ### NFL Teams
@@ -382,6 +410,20 @@ Each league (NFL, NCAA FB) can be configured with:
 - **Mode Toggles**: Enable/disable live, recent, or upcoming games independently
 - **Display Style**: Choose "switch" (one game at a time) or "scroll" (all games scrolling) for each game type
 - **Scroll Settings**: Configure scroll speed, frame delay, gap between games, and league separators
+
+### Filtering & Favorites
+
+Per league (`nfl`, `ncaa_fb`), under `filtering`:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `favorite_teams` | `[]` | Teams to follow — see [Dynamic Team Resolution](#-dynamic-team-resolution) |
+| `exclude_teams` | `[]` | Teams to always hide from live rotation **and** recent/final scores (e.g. to avoid spoilers if you're watching delayed). Wins over every other setting below — an excluded team never shows up even if `show_all_live` is on. |
+| `filtering.show_favorite_teams_only` | `true` | Only show games from favorite teams |
+| `filtering.show_all_live` | `false` | Show all live games, not just favorites |
+| `filtering.favorite_live_boost` | `2` | How many turns your favorite's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to `1` for perfectly even rotation. Only has a visible effect when more than one game is live at once and `favorite_teams` is configured. |
+
+With both `show_favorite_teams_only` and `show_all_live` off, all live games rotate evenly — `favorite_live_boost` is what gives your favorite's game precedence in that mode without hiding everyone else's scores.
 
 ### Customization Options
 

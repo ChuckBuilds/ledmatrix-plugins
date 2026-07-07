@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-06-15",
+  "last_updated": "2026-07-07",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -46,10 +46,10 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-15",
+      "last_updated": "2026-07-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.7.0"
+      "latest_version": "1.8.0"
     },
     {
       "id": "basketball-scoreboard",
@@ -71,10 +71,10 @@
       "plugin_path": "plugins/basketball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.6"
+      "latest_version": "1.6.0"
     },
     {
       "id": "calendar",
@@ -210,10 +210,10 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-15",
+      "last_updated": "2026-07-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.4.0"
+      "latest_version": "2.6.0"
     },
     {
       "id": "geochron",
@@ -241,6 +241,29 @@
       "screenshot": "",
       "latest_version": "1.0.0",
       "icon": "fa-globe"
+    },
+    {
+      "id": "gif-player",
+      "name": "GIF Player",
+      "description": "Plays animated GIFs in the display rotation. Includes a web portal to upload, reorder, toggle, and delete animations.",
+      "author": "ant456",
+      "category": "media",
+      "tags": [
+        "gif",
+        "animation",
+        "upload",
+        "portal",
+        "display"
+      ],
+      "repo": "https://github.com/ant456/ledmatrix-gif-player",
+      "branch": "main",
+      "plugin_path": "",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-06-17",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.0.0"
     },
     {
       "id": "hello-world",
@@ -285,7 +308,7 @@
       "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.5",
+      "latest_version": "1.3.0",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -309,7 +332,7 @@
       "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.2",
+      "latest_version": "1.3.0",
       "icon": "fas fa-baseball-ball"
     },
     {
@@ -479,12 +502,12 @@
       "last_updated": "2026-06-01",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.7"
+      "latest_version": "1.0.8"
     },
     {
       "id": "on-air",
       "name": "On Air Light",
-      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live — stays on until you turn it off.",
+      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u2014 stays on until you turn it off.",
       "author": "ChuckBuilds",
       "category": "utility",
       "tags": [
@@ -629,6 +652,31 @@
       "latest_version": "1.4.8"
     },
     {
+      "id": "plex-marquee",
+      "name": "Plex Marquee",
+      "description": "Cinema marquee display powered by Fanart.tv \u2014 shows banner art for whatever is currently playing on Plex, with a web portal to browse and pick banners for your library.",
+      "author": "ant456",
+      "category": "media",
+      "tags": [
+        "plex",
+        "cinema",
+        "marquee",
+        "fanart",
+        "tmdb",
+        "banner",
+        "media"
+      ],
+      "repo": "https://github.com/ant456/ledmatrix-plex-marquee",
+      "branch": "main",
+      "plugin_path": "",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-06-22",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.0.0"
+    },
+    {
       "id": "soccer-scoreboard",
       "name": "Soccer Scoreboard",
       "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
@@ -654,10 +702,10 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-14",
+      "last_updated": "2026-07-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.1.0"
+      "latest_version": "2.2.0"
     },
     {
       "id": "static-image",
@@ -777,7 +825,7 @@
       "last_updated": "2026-06-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.4",
+      "latest_version": "1.1.0",
       "icon": "fa-water"
     },
     {

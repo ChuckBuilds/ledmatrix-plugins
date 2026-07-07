@@ -9,6 +9,10 @@
     "station_name",
     "units",
     "display_duration",
+    "show_current",
+    "show_schedule",
+    "show_chart",
+    "show_stats",
     "show_moon_phase",
     "tide_color",
     "highlight_color"
@@ -51,6 +55,30 @@
       "minimum": 5,
       "maximum": 60,
       "description": "How many seconds to show each display mode before rotating to the next"
+    },
+    "show_current": {
+      "type": "boolean",
+      "title": "Show Current Level Screen",
+      "default": true,
+      "description": "Show the full-display animated water level screen with tide direction and next tides"
+    },
+    "show_schedule": {
+      "type": "boolean",
+      "title": "Show Schedule Screen",
+      "default": true,
+      "description": "Show today's high/low tide schedule in columns"
+    },
+    "show_chart": {
+      "type": "boolean",
+      "title": "Show Chart Screen",
+      "default": true,
+      "description": "Show the 24-hour tide curve chart with current-time marker"
+    },
+    "show_stats": {
+      "type": "boolean",
+      "title": "Show Stats Screen",
+      "default": true,
+      "description": "Show the moon phase, spring/neap, and tidal range stats screen"
     },
     "show_moon_phase": {
       "type": "boolean",

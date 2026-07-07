@@ -1,7 +1,7 @@
 {
   "id": "tide-display",
   "name": "Tide Display",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "author": "ChuckBuilds",
   "description": "Coastal tide display with animated wave level, tide schedule, 24-hour chart, and tidal statistics. Powered by the free NOAA Tides & Currents API (US stations, no API key required).",
   "entry_point": "manager.py",
@@ -11,6 +11,12 @@
   "display_modes": ["current", "schedule", "chart", "stats"],
   "compatible_versions": [">=2.0.0"],
   "versions": [
+    {
+      "released": "2026-07-02",
+      "version": "1.1.0",
+      "notes": "Add per-screen toggles (Show Current/Schedule/Chart/Stats) so users can turn individual display modes on or off from the config UI. Disabling every screen falls back to showing all of them.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-06-07",
       "version": "1.0.4",

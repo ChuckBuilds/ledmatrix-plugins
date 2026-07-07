@@ -238,6 +238,25 @@ Specify team abbreviations for each league:
 }
 ```
 
+#### Favorite Live Boost
+
+Each league's `teams` block also has a `favorite_live_boost` (default `2`,
+range 1-5): whenever one of your favorite teams is playing live, their game
+is always queued first in the live rotation, and gets `favorite_live_boost`
+turns for every 1 turn other live games get (evenly spaced, not clumped
+together). Set it to `1` for perfectly even rotation among all live games —
+this exactly matches the plugin's previous behavior. It has no effect unless
+`favorite_teams` is configured, so it's safe to leave at its default.
+
+#### Exclude Teams
+
+Each league's `teams` block also has an `exclude_teams` list (same format as
+`favorite_teams`) for teams you never want to see — useful if you're
+planning to watch a game delayed and don't want the score spoiled. An
+excluded team's games are hidden from **both** the live rotation and the
+Recent/Final-scores mode, regardless of `favorite_teams`, `favorite_teams_only`,
+or `show_all_live`. If a team is in both `favorite_teams` and `exclude_teams`,
+exclusion wins.
 
 #### Display Settings
 

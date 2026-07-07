@@ -96,7 +96,9 @@ The plugin config is split into per-league blocks. See `config_schema.json` for 
     "teams": {
       "favorite_teams": ["NCAA_MENS_TOP_10", "JOHNS HOPKINS"],
       "favorite_teams_only": false,
-      "show_all_live": true
+      "show_all_live": true,
+      "exclude_teams": [],
+      "favorite_live_boost": 2
     },
     "filtering": {
       "recent_games_to_show": 5,
@@ -133,6 +135,27 @@ Each of live / recent / upcoming can be independently enabled and given its own 
 ### Live priority
 
 When `live_priority: true`, live games for configured favorite teams will interrupt the normal rotation whenever they are in progress.
+
+### Favorite live boost
+
+`teams.favorite_live_boost` (default `2`, range `1`-`5`) tunes how much extra
+attention your favorite team gets *within* the live rotation itself: while a
+favorite's game is live, it's always queued first whenever the rotation
+refreshes, and gets that many turns for every 1 turn other live games get
+(e.g. `favorite_live_boost: 2` with your favorite plus two other live games
+rotates `[favorite, other1, favorite, other2]`). It never interrupts a game
+already on screen — it just gets more/sooner turns. Set it to `1` for a
+perfectly even rotation (the pre-1.3.0 default behavior). This is independent
+of `live_priority`, which controls whether live games preempt the
+recent/upcoming rotation at all.
+
+### Excluding teams (spoiler protection)
+
+`teams.exclude_teams` (default `[]`) hides specific teams from **both** the
+live rotation and the recent/final-scores display — useful if you plan to
+watch a game delayed and don't want the score spoiled. It uses the same
+full-name abbreviation format as `favorite_teams` (see below), and always
+wins if a team appears in both lists.
 
 ## Team Abbreviations
 

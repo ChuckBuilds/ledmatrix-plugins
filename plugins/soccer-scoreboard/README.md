@@ -208,6 +208,37 @@ Example:
 
 > **Tip:** If you're unsure of an abbreviation, enable debug logging — the plugin logs `home_abbr` and `away_abbr` for every game it processes.
 
+## Filtering & Live Priority
+
+Each league (and each custom league) has its own `filtering` block plus a couple of sibling settings:
+
+| Setting | Default | Effect |
+|---|---|---|
+| `filtering.show_favorite_teams_only` | `true` | Only show games involving `favorite_teams`. |
+| `filtering.show_all_live` | `false` | Overrides the above — show every live game, favorites or not. |
+| `favorite_teams` | `[]` | Teams to prioritize (see above for abbreviation format). |
+| `exclude_teams` | `[]` | Teams to always hide, from **both** the live rotation and Recent/Final scores — useful for spoiler protection if you're planning to watch a game delayed. Takes precedence over every other setting: an excluded team's games never show, even if `show_all_live` is on or the team is also listed in `favorite_teams`. |
+| `filtering.favorite_live_boost` | `2` | How many turns your favorite's live game gets in the live rotation for every 1 turn other live games get. Your favorite's game is also always queued first the moment it goes live. Set to `1` for perfectly even rotation (no boost). Has no effect unless `favorite_teams` is configured and more than one game is live. |
+| `live_priority` | varies | Lets this league's live games interrupt the recent/upcoming mode rotation (unrelated to which *specific* live game is shown — that's what `favorite_live_boost` controls). |
+
+Example:
+```json
+{
+  "leagues": {
+    "eng.1": {
+      "favorite_teams": ["LIV"],
+      "exclude_teams": ["MUN"],
+      "filtering": {
+        "show_favorite_teams_only": false,
+        "show_all_live": false,
+        "favorite_live_boost": 3
+      }
+    }
+  }
+}
+```
+With both `show_favorite_teams_only` and `show_all_live` off, all live games rotate evenly — except Liverpool's game shows 3× as often (and jumps to the front the instant it goes live) whenever they're playing, and Man United's games never appear in live or recent/final scores at all.
+
 ## Background Service
 
 The plugin uses background data fetching for efficient API calls:
