@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from PIL import Image, ImageDraw
 
 from data_sources import ESPNDataSource
-from sports import SportsCore, SportsLive, SportsRecent
+from sports import RESAMPLE_FILTER, SportsCore, SportsLive, SportsRecent
 
 # ESPN categorical play types that map unambiguously to a short code.
 CLEAN_PLAY_TYPE_MAP: Dict[str, str] = {
@@ -896,10 +896,12 @@ class BaseballLive(Baseball, SportsLive):
             at_bat_panel_applicable = is_live_now and has_count_data
 
             # font_size acts as an optional cap, not a fixed size: by default
-            # (24, the max) this auto-fits the largest text that still
-            # reserves room for the 3 grid rows (header + both teams) plus,
-            # when applicable, the At Bat ball/strike/out indicators.
-            # Lower the config value to force a smaller, more consistent
+            # (24, the max) this auto-fits the largest text that still fills
+            # the display. The At Bat ball/strike/out indicators live in
+            # their own column to the left of the grid (vertically aligned
+            # with the header/away/home rows) rather than needing extra rows
+            # stacked underneath, so sizing only ever has to budget for 3
+            # rows -- lower font_size to force a smaller, more consistent
             # size instead.
             font_size_cap = cfg.get("font_size", 24)
             font_cfg = dict(cfg)
@@ -911,83 +913,50 @@ class BaseballLive(Baseball, SportsLive):
             font_cfg.setdefault("font", "9x15.bdf")
             available_height = self.display_height - 2 * margin
 
-            def load_layout(needed_rows: int) -> Dict[str, Any]:
-                # +1 extra row of slack: a font's actual glyph height can
-                # run a little taller than its nominal size, so budgeting
-                # the bare minimum rows occasionally rounds away the room
-                # needed for the At Bat panel below the grid.
-                max_row_h = available_height / needed_rows
-                effective_font_size = max(6, min(font_size_cap, round(max_row_h - 2)))
-                cfg_try = dict(font_cfg)
-                cfg_try["font_size"] = effective_font_size
-                font, char_w, row_h = self._load_traditional_scoreboard_font(
-                    cfg_try, needed_rows, available_height
-                )
-                team_col_w = char_w * 3 + 1  # 3-letter abbreviation + gap
-                rhe_col_w = char_w + 1  # R/H/E are almost always a single digit
-                gap_w = 2
-                inning_col_w = char_w + 1
-                avail_cols = self.display_width - 2 * margin - team_col_w - 3 * rhe_col_w - gap_w
-                max_cols = max(1, avail_cols // inning_col_w) if inning_col_w > 0 else 1
-                return {
-                    "font": font, "char_w": char_w, "row_h": row_h,
-                    "team_col_w": team_col_w, "rhe_col_w": rhe_col_w,
-                    "gap_w": gap_w, "inning_col_w": inning_col_w, "max_cols": max_cols,
-                }
+            max_row_h = available_height / 3
+            effective_font_size = max(6, min(font_size_cap, round(max_row_h - 2)))
+            font_cfg["font_size"] = effective_font_size
+            font, char_w, row_h = self._load_traditional_scoreboard_font(
+                font_cfg, 3, available_height
+            )
 
-            # Prefer a side column of At Bat indicators (vertically aligned
-            # with the header/away/home rows) over stacking them below the
-            # grid -- that only needs 3 rows of vertical space instead of 6,
-            # so the whole grid can render at a noticeably bigger size.
-            # Only worth it if the grid+RHE block *plus* the side panel
-            # together still fit within the display -- checked against the
-            # combined width, not just "leftover" past a flush-left grid,
-            # since the grid is centered and would otherwise eat into the
-            # panel's space from the left too. Narrow displays fall back to
-            # the below-grid stacked layout.
-            use_side_panel = False
-            layout = None
-            side_panel_w = 0
-            side_gap = 3
+            team_col_w = char_w * 3 + 1  # 3-letter abbreviation + gap
+            rhe_col_w = char_w + 1  # R/H/E are almost always a single digit
+            gap_w = 2
+            inning_col_w = char_w + 1
+            at_bat_gap = 3
+
+            # Width of the At Bat side column -- widest row could be either
+            # Balls (3 dots, no suffix) or Outs (2 dots + the batting-team
+            # ▲/▼ arrow) depending on font metrics, so measure both. Gaps
+            # only *between* dots, no trailing gap after the last one.
+            at_bat_panel_w = 0
             if at_bat_panel_applicable:
-                side_try = load_layout(3)
-                side_start_inning, side_num_cols = self._traditional_scoreboard_inning_window(
-                    game, side_try["max_cols"]
-                )
-                side_content_w = (
-                    side_try["team_col_w"] + side_num_cols * side_try["inning_col_w"]
-                    + side_try["gap_w"] + 3 * side_try["rhe_col_w"]
-                )
-                dot_d = max(2, side_try["row_h"] - 4)
-                font_try = side_try["font"]
-                # Widest row could be either Balls (3 dots, no suffix) or
-                # Outs (2 dots + the batting-team ▲/▼ arrow) depending on
-                # font metrics -- measure both, gaps only *between* dots.
-                b_row_w = font_try.getbbox("B ")[2] + 3 * dot_d + 2 * 2
+                dot_d = max(2, row_h - 4)
+                b_row_w = font.getbbox("B ")[2] + 3 * dot_d + 2 * 2
                 o_row_w = (
-                    font_try.getbbox("O ")[2] + 2 * dot_d + 1 * 2 + 2
-                    + font_try.getbbox("▼")[2]
+                    font.getbbox("O ")[2] + 2 * dot_d + 1 * 2 + 2
+                    + font.getbbox("▼")[2]
                 )
-                candidate_panel_w = max(b_row_w, o_row_w)
-                combined_w = side_content_w + side_gap + candidate_panel_w
-                if combined_w + 2 * margin <= self.display_width:
-                    use_side_panel = True
-                    layout = side_try
-                    start_inning, num_cols = side_start_inning, side_num_cols
-                    side_panel_w = candidate_panel_w
-            if layout is None:
-                layout = load_layout(6 if at_bat_panel_applicable else 3)
-                start_inning, num_cols = self._traditional_scoreboard_inning_window(
-                    game, layout["max_cols"]
-                )
+                at_bat_panel_w = max(b_row_w, o_row_w)
+            at_bat_block_w = (at_bat_panel_w + at_bat_gap) if at_bat_panel_applicable else 0
 
-            font = layout["font"]
-            char_w = layout["char_w"]
-            row_h = layout["row_h"]
-            team_col_w = layout["team_col_w"]
-            rhe_col_w = layout["rhe_col_w"]
-            gap_w = layout["gap_w"]
-            inning_col_w = layout["inning_col_w"]
+            # Factor the At Bat column into the inning-column budget (like
+            # team_col_w/rhe_col_w already are) so a narrow display shows
+            # fewer innings to make room for it, rather than losing it.
+            # But if even a single inning column still wouldn't fit
+            # alongside it (a very narrow display, e.g. 64px wide), drop
+            # the At Bat column entirely rather than clipping it off the
+            # edge -- the grid itself always takes priority.
+            min_fixed_w = team_col_w + 3 * rhe_col_w + gap_w
+            if at_bat_block_w and min_fixed_w + at_bat_block_w + inning_col_w > self.display_width - 2 * margin:
+                at_bat_panel_applicable = False
+                at_bat_panel_w = 0
+                at_bat_block_w = 0
+
+            avail_cols = self.display_width - 2 * margin - at_bat_block_w - min_fixed_w
+            max_cols = max(1, avail_cols // inning_col_w) if inning_col_w > 0 else 1
+            start_inning, num_cols = self._traditional_scoreboard_inning_window(game, max_cols)
 
             text_color = tuple(cfg.get("text_color", [255, 255, 255]))
             header_color = tuple(cfg.get("header_color", [180, 180, 180]))
@@ -1013,18 +982,61 @@ class BaseballLive(Baseball, SportsLive):
                     return linescore[idx]
                 return ""
 
-            # Center the grid horizontally -- num_cols is capped at 9 (a
-            # standard game), so a display much wider than that would
-            # otherwise leave the whole block jammed against the left edge
-            # with a large dead area on the right. When a side panel is
-            # used, center the grid+panel *together* -- centering the grid
-            # alone would eat into the panel's reserved space from the
-            # left and push its dots past the right edge.
-            content_w = team_col_w + num_cols * inning_col_w + gap_w + 3 * rhe_col_w
-            total_w = content_w + side_gap + side_panel_w if use_side_panel else content_w
-            x_offset = max(margin, (self.display_width - total_w) // 2)
+            # Small team logos beside the abbreviations, but only when
+            # there's leftover width to spare -- unlike the At Bat column
+            # (which is worth shrinking the grid's inning count for), a
+            # logo is a nice-to-have that shouldn't cost a displayed
+            # inning. Check against the layout already decided above
+            # (At Bat column + grid + RHE) before adding anything.
+            away_logo = home_logo = None
+            logo_size = 0
+            logo_gap = 2
+            if cfg.get("show_logos", True):
+                base_content_w = at_bat_block_w + team_col_w + num_cols * inning_col_w + gap_w + 3 * rhe_col_w
+                spare_w = self.display_width - 2 * margin - base_content_w
+                candidate_logo_size = max(4, row_h - 2)
+                if spare_w >= candidate_logo_size + logo_gap:
+                    try:
+                        away_logo_full = self._load_and_resize_logo(
+                            game.get("away_id"), game.get("away_abbr"),
+                            game.get("away_logo_path"), game.get("away_logo_url"),
+                        )
+                        home_logo_full = self._load_and_resize_logo(
+                            game.get("home_id"), game.get("home_abbr"),
+                            game.get("home_logo_path"), game.get("home_logo_url"),
+                        )
+                        if away_logo_full and home_logo_full:
+                            # Copy before thumbnailing -- _load_and_resize_logo
+                            # caches and returns the SAME Image object used
+                            # by other screens (e.g. the full-size scorebug);
+                            # thumbnailing in place would permanently shrink
+                            # their copy too.
+                            away_logo = away_logo_full.copy()
+                            away_logo.thumbnail((candidate_logo_size, candidate_logo_size), RESAMPLE_FILTER)
+                            home_logo = home_logo_full.copy()
+                            home_logo.thumbnail((candidate_logo_size, candidate_logo_size), RESAMPLE_FILTER)
+                            logo_size = candidate_logo_size
+                    except Exception as e:
+                        self.logger.debug(f"Traditional scoreboard: skipping logos ({e})")
+                        away_logo = home_logo = None
 
-            grid_x = x_offset + team_col_w
+            logo_w = (logo_size + logo_gap) if (away_logo and home_logo) else 0
+            team_col_w += logo_w
+
+            # Center the whole block (At Bat column + team/logo + grid +
+            # RHE) horizontally -- num_cols is capped at 9 (a standard
+            # game), so a display much wider than that would otherwise
+            # leave everything jammed against the left edge with a large
+            # dead area on the right. Centering the combined block (rather
+            # than just the grid) keeps padding minimal on both sides
+            # instead of wasting half the leftover space to the left of
+            # content that isn't actually flush-left to begin with.
+            content_w = at_bat_block_w + team_col_w + num_cols * inning_col_w + gap_w + 3 * rhe_col_w
+            x_offset = max(margin, (self.display_width - content_w) // 2)
+
+            at_bat_x = x_offset
+            team_x = x_offset + at_bat_block_w
+            grid_x = team_x + team_col_w
             header_y = margin
             away_y = header_y + row_h
             home_y = away_y + row_h
@@ -1045,9 +1057,15 @@ class BaseballLive(Baseball, SportsLive):
                 if home_val:
                     self._draw_text_with_outline(draw, home_val, (cell_x, home_y), font, fill=text_color)
 
-            # Team abbreviations (left column).
-            self._draw_text_with_outline(draw, away_abbr, (x_offset, away_y), font, fill=away_color)
-            self._draw_text_with_outline(draw, home_abbr, (x_offset, home_y), font, fill=home_color)
+            # Small team logos (when there was spare width for them, see
+            # above), then abbreviations -- shifted right past the logos.
+            if away_logo:
+                img.paste(away_logo, (team_x, away_y + (row_h - away_logo.height) // 2), away_logo)
+            if home_logo:
+                img.paste(home_logo, (team_x, home_y + (row_h - home_logo.height) // 2), home_logo)
+            abbr_x = team_x + logo_w
+            self._draw_text_with_outline(draw, away_abbr, (abbr_x, away_y), font, fill=away_color)
+            self._draw_text_with_outline(draw, home_abbr, (abbr_x, home_y), font, fill=home_color)
 
             # R / H / E columns.
             rhe_x = grid_x + num_cols * inning_col_w + gap_w
@@ -1067,7 +1085,7 @@ class BaseballLive(Baseball, SportsLive):
             # over by it, keeping every line crisp and unbroken.
             if cfg.get("show_dividers", True):
                 divider_color = tuple(cfg.get("divider_color", [90, 90, 90]))
-                grid_left = x_offset
+                grid_left = team_x
                 grid_right = rhe_x + 3 * rhe_col_w - 1
                 grid_bottom = home_y + row_h - 1
 
@@ -1085,22 +1103,14 @@ class BaseballLive(Baseball, SportsLive):
                 for hy in (away_y - 1, home_y - 1):
                     draw.line([(grid_left, hy), (grid_right, hy)], fill=divider_color)
 
-            # At Bat panel: ball/strike/out indicators, only for a live game
-            # with count data (NCAA's feed doesn't provide balls/strikes).
-            # Prefer the side column (see use_side_panel above) so the grid
-            # can render bigger; fall back to stacking below the grid when
-            # there isn't enough leftover width beside it.
-            if use_side_panel:
-                side_x = rhe_x + 3 * rhe_col_w + 3
+            # At Bat column: ball/strike/out indicators, only for a live
+            # game with count data (NCAA's feed doesn't provide balls/
+            # strikes). Always to the left of the grid, vertically aligned
+            # with the header/away/home rows.
+            if at_bat_panel_applicable:
                 self._draw_traditional_scoreboard_at_bat_side_panel(
-                    draw, game, font, row_h, side_x, header_y, away_y, home_y, text_color, highlight_color
+                    draw, game, font, row_h, at_bat_x, header_y, away_y, home_y, text_color, highlight_color
                 )
-            else:
-                panel_y = home_y + row_h + 2
-                if is_live_now and has_count_data and panel_y + row_h <= self.display_height:
-                    self._draw_traditional_scoreboard_at_bat_panel(
-                        draw, game, font, row_h, panel_y, text_color, highlight_color, x_offset
-                    )
 
             self.display_manager.image.paste(img, (0, 0))
             self.display_manager.update_display()
@@ -1108,66 +1118,16 @@ class BaseballLive(Baseball, SportsLive):
         except Exception as e:
             self.logger.error(f"Error drawing traditional scoreboard screen: {e}", exc_info=True)
 
-    def _draw_traditional_scoreboard_at_bat_panel(
-        self, draw, game: Dict, font, row_h: int, panel_y: int,
-        text_color: tuple, highlight_color: tuple, margin: int = 2,
-    ) -> None:
-        """Draw the 'AT BAT' label and ball/strike/out light indicators
-        below the line score. Uses a spacious 3-row layout (one row each
-        for balls/strikes/outs) when there's room, else a single condensed
-        row -- the same adaptive-to-available-space approach as the rest of
-        this plugin's live layout. `margin` is the grid's horizontal offset
-        (see _draw_traditional_scoreboard_screen) so this panel lines up
-        with the line score above it instead of always starting flush-left.
-        """
-        balls = min(int(game.get("balls", 0) or 0), 3)
-        strikes = min(int(game.get("strikes", 0) or 0), 2)
-        outs = min(int(game.get("outs", 0) or 0), 2)
-        inning_half = (game.get("inning_half") or "top").lower()
-        at_bat_indicator = "▲" if inning_half == "top" else "▼"  # away/home batting
-
-        label = f"AT BAT {at_bat_indicator}"
-        self._draw_text_with_outline(draw, label, (margin, panel_y), font, fill=highlight_color)
-
-        rows_remaining = (self.display_height - (panel_y + row_h)) // row_h
-        dot_d = max(2, row_h - 4)
-
-        def draw_dots(y: int, lit: int, total: int, dot_label: str) -> None:
-            self._draw_text_with_outline(draw, dot_label, (margin, y), font, fill=text_color)
-            x = margin + font.getbbox(dot_label + " ")[2]
-            for i in range(total):
-                color = highlight_color if i < lit else (60, 60, 60)
-                draw.ellipse([x, y + 1, x + dot_d, y + 1 + dot_d], fill=color)
-                x += dot_d + 2
-
-        if rows_remaining >= 3:
-            draw_dots(panel_y + row_h, balls, 3, "B")
-            draw_dots(panel_y + 2 * row_h, strikes, 2, "S")
-            draw_dots(panel_y + 3 * row_h, outs, 2, "O")
-        elif rows_remaining >= 1:
-            # Condensed: one combined row, B/S/O groups side by side.
-            y = panel_y + row_h
-            x = margin
-            for dot_label, lit, total in (("B", balls, 3), ("S", strikes, 2), ("O", outs, 2)):
-                self._draw_text_with_outline(draw, dot_label, (x, y), font, fill=text_color)
-                x += font.getbbox(dot_label + " ")[2]
-                for i in range(total):
-                    color = highlight_color if i < lit else (60, 60, 60)
-                    draw.ellipse([x, y + 1, x + dot_d, y + 1 + dot_d], fill=color)
-                    x += dot_d + 2
-                x += 3
-
     def _draw_traditional_scoreboard_at_bat_side_panel(
         self, draw, game: Dict, font, row_h: int, x: int,
         header_y: int, away_y: int, home_y: int,
         text_color: tuple, highlight_color: tuple,
     ) -> None:
-        """Draw ball/strike/out indicators as a compact vertical column
-        beside the grid, one row each aligned with the header/away/home
-        rows -- used instead of _draw_traditional_scoreboard_at_bat_panel's
-        below-grid layout when there's enough leftover width, so the 3
-        rows that would otherwise be spent on a below-grid panel are freed
-        up for a bigger main grid font instead."""
+        """Draw ball/strike/out indicators as a compact vertical column to
+        the left of the grid, one row each aligned with the header/away/
+        home rows -- keeps the whole screen to 3 rows of vertical space so
+        the grid's auto-fit font can render as big as possible, instead of
+        needing extra rows stacked below for these indicators."""
         balls = min(int(game.get("balls", 0) or 0), 3)
         strikes = min(int(game.get("strikes", 0) or 0), 2)
         outs = min(int(game.get("outs", 0) or 0), 2)

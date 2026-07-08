@@ -1634,6 +1634,11 @@
                         "default": true,
                         "description": "Color each team's abbreviation using their real team colors (from ESPN) instead of a single flat text color"
                     },
+                    "show_logos": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Show a small team logo beside each abbreviation, but only when there's leftover width to spare -- never at the cost of a displayed inning or the At Bat side panel"
+                    },
                     "text_color": {
                         "type": "array",
                         "x-widget": "color-picker",

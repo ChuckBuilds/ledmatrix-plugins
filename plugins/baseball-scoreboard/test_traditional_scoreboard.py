@@ -431,31 +431,24 @@ _LIVE_GAME_WITH_COUNT_DATA = {
 }
 
 
-def test_side_panel_used_on_wide_display_for_bigger_text():
-    # Regression: on a wide display there's normally room beside the grid
-    # for a compact B/S/O side column, which should be preferred over
-    # stacking them below the grid (that needs only 3 rows of vertical
-    # space instead of 6, letting the grid render bigger). This needs the
-    # real 9x15.bdf font since the fallback ladder's fit math depends on
-    # real measured glyph metrics -- skip if it can't be found.
+def test_at_bat_column_appears_on_the_left_not_below():
+    # The At Bat ball/strike/out column always sits to the left of the
+    # grid now (vertically aligned with the header/away/home rows),
+    # instead of stacking below it -- verify the dots actually land near
+    # the left margin, and that nothing is drawn below the 3-row grid.
     font_path = _find_font_asset("9x15.bdf")
     if not font_path:
-        print("SKIP test_side_panel_used_on_wide_display_for_bigger_text: "
+        print("SKIP test_at_bat_column_appears_on_the_left_not_below: "
               "could not locate 9x15.bdf (run from LEDMatrix tree)")
         return
 
-    live = _make_live(256, 32)
+    live = _make_live(192, 48)
     live._load_custom_font_from_element_config = _real_bdf_aware_loader(os.path.dirname(font_path))
     live.config = {}
     live._draw_traditional_scoreboard_screen(dict(_LIVE_GAME_WITH_COUNT_DATA))
     img = live.display_manager.image
     w, h = img.size
 
-    # The side panel keeps everything within the 3-row grid's vertical
-    # span; the below-grid panel always draws further down starting at
-    # home_y + row_h + 2. Compute where the grid ends independently and
-    # check nothing is drawn past it -- position-independent regardless of
-    # how the grid is horizontally centered.
     margin = 1
     available_height = h - 2 * margin
     _, _, row_h = live._load_traditional_scoreboard_font(
@@ -465,37 +458,34 @@ def test_side_panel_used_on_wide_display_for_bigger_text():
     below_grid_has_content = any(
         img.getpixel((x, y)) != (0, 0, 0) for x in range(w) for y in range(min(grid_bottom, h), h)
     )
-    assert not below_grid_has_content, (
-        "expected nothing drawn below the 3-row grid when the side panel is used"
-    )
+    assert not below_grid_has_content, "expected nothing drawn below the 3-row grid"
 
-    # And confirm the dots actually got drawn somewhere (not just the
-    # header row's single highlighted inning digit) -- dots cover
-    # noticeably more area than one character.
     highlight = (255, 140, 0)
-    highlight_pixels = sum(
-        1 for x in range(w) for y in range(margin, min(grid_bottom, h))
+    # Left third of the display, within the grid's row span -- the At Bat
+    # column should land here now, near the left margin, not the right.
+    left_third = w // 3
+    highlight_pixels_left = sum(
+        1 for x in range(left_third) for y in range(margin, min(grid_bottom, h))
         if img.getpixel((x, y)) == highlight
     )
-    assert highlight_pixels > 60, (
-        f"expected the side panel's B/S/O dots to add substantial highlight-colored "
-        f"area within the grid rows, only found {highlight_pixels} px"
+    assert highlight_pixels_left > 60, (
+        f"expected the At Bat column's B/S/O dots near the left margin, "
+        f"only found {highlight_pixels_left} highlight-colored px there"
     )
-    print("test_side_panel_used_on_wide_display_for_bigger_text: PASS")
+    print("test_at_bat_column_appears_on_the_left_not_below: PASS")
 
 
-def test_side_panel_at_max_counts_does_not_clip_off_the_right_edge():
-    # Regression: the side-panel fit check compared leftover width against
-    # a flush-left grid, but the grid is actually centered -- centering
-    # eats into the panel's reserved space from the left too, so the
-    # panel (checked only against the Balls row, 3 dots) could still run
-    # past the right edge, most visibly at max counts (3 balls, 2 strikes,
-    # 2 outs -- real baseball maximums) where the Outs row's ▲/▼ batting
-    # indicator suffix pushed it over. Verify nothing draws past the
-    # right margin at max counts, across every standard size.
+def test_at_bat_column_at_max_counts_does_not_clip_off_either_edge():
+    # Regression coverage for two related bugs: (1) the fit check used to
+    # compare leftover width against a flush-left grid, but the grid is
+    # centered, so it could still run content past an edge; (2) the Outs
+    # row's extra batting-team ▲/▼ arrow wasn't factored into the width
+    # check at all. Verify nothing draws into either margin column at max
+    # counts (3 balls, 2 strikes, 2 outs -- real baseball maximums),
+    # across every standard size.
     font_path = _find_font_asset("9x15.bdf")
     if not font_path:
-        print("SKIP test_side_panel_at_max_counts_does_not_clip_off_the_right_edge: "
+        print("SKIP test_at_bat_column_at_max_counts_does_not_clip_off_either_edge: "
               "could not locate 9x15.bdf (run from LEDMatrix tree)")
         return
 
@@ -511,23 +501,24 @@ def test_side_panel_at_max_counts_does_not_clip_off_the_right_edge():
         margin = 1
         clipped = any(
             img.getpixel((x, y)) != (0, 0, 0)
-            for x in range(w - margin, w)
+            for edge in (range(0, margin), range(w - margin, w))
+            for x in edge
             for y in range(h)
         )
         assert not clipped, (
-            f"content drawn into the right margin column at {w}x{h} with max "
-            f"B/S/O counts -- likely clipped off the edge"
+            f"content drawn into a margin column at {w}x{h} with max "
+            f"B/S/O counts -- likely clipped off an edge"
         )
-    print("test_side_panel_at_max_counts_does_not_clip_off_the_right_edge: PASS")
+    print("test_at_bat_column_at_max_counts_does_not_clip_off_either_edge: PASS")
 
 
-def test_side_panel_not_used_on_narrow_display():
-    # The inverse: a narrow display shouldn't have enough leftover width
-    # for the side column, so it should fall back to the below-grid panel
-    # (whose "AT BAT" label draws in highlight_color starting flush-left).
+def test_at_bat_column_hidden_when_display_too_narrow():
+    # At 64x32 there isn't room for the At Bat column alongside even a
+    # single inning column -- it should be dropped entirely (grid takes
+    # priority) rather than clipped off the edge.
     font_path = _find_font_asset("9x15.bdf")
     if not font_path:
-        print("SKIP test_side_panel_not_used_on_narrow_display: "
+        print("SKIP test_at_bat_column_hidden_when_display_too_narrow: "
               "could not locate 9x15.bdf (run from LEDMatrix tree)")
         return
 
@@ -538,11 +529,6 @@ def test_side_panel_not_used_on_narrow_display():
     img = live.display_manager.image
     w, h = img.size
 
-    # A narrow display doesn't have room for a legible side column, so it
-    # should fall back to the (possibly also-skipped-if-too-tight)
-    # below-grid panel -- either way, the side panel's dots (which would
-    # add substantial highlight-colored area within the grid's own rows)
-    # should NOT appear there.
     margin = 1
     available_height = h - 2 * margin
     _, _, row_h = live._load_traditional_scoreboard_font(
@@ -555,10 +541,10 @@ def test_side_panel_not_used_on_narrow_display():
         if img.getpixel((x, y)) == highlight
     )
     assert highlight_pixels <= 30, (
-        f"did not expect side-panel B/S/O dots within the grid rows on a narrow "
-        f"display, found {highlight_pixels} highlight-colored px there"
+        f"did not expect At Bat column B/S/O dots on a display too narrow "
+        f"to fit them, found {highlight_pixels} highlight-colored px there"
     )
-    print("test_side_panel_not_used_on_narrow_display: PASS")
+    print("test_at_bat_column_hidden_when_display_too_narrow: PASS")
 
 
 def test_draws_without_crashing_when_final_and_no_count_data():
@@ -604,9 +590,9 @@ if __name__ == "__main__":
         test_team_colors_used_when_enabled_and_available,
         test_team_colors_fall_back_to_text_color_when_disabled,
         test_at_bat_panel_fits_alongside_bigger_font_at_medium_size,
-        test_side_panel_used_on_wide_display_for_bigger_text,
-        test_side_panel_at_max_counts_does_not_clip_off_the_right_edge,
-        test_side_panel_not_used_on_narrow_display,
+        test_at_bat_column_appears_on_the_left_not_below,
+        test_at_bat_column_at_max_counts_does_not_clip_off_either_edge,
+        test_at_bat_column_hidden_when_display_too_narrow,
         test_draws_without_crashing_when_final_and_no_count_data,
     ):
         try:
