@@ -88,7 +88,7 @@ A plugin for LEDMatrix that displays live, recent, and upcoming basketball games
   - `show_upcoming`: Show upcoming games (default: true)
 - `live_priority`: Give live games priority over other modes - interrupts normal rotation (default: true)
 - `live_game_duration`: Duration in seconds to display each live game (10-120, default: 20). With a non-favorite duration set, this applies to games with a favorite team.
-- `non_favorite_live_game_duration`: Duration in seconds for live games with **no** favorite team (0-120, default: 0 = off). Only applies when favorite teams are set and `show_favorite_teams_only` is off. See [Shorter dwell for non-favorite live games](#shorter-dwell-for-non-favorite-live-games).
+- `non_favorite_live_game_duration`: Duration in seconds for live games with **no** favorite team (0-120, default: 0 = off). Only applies when favorite teams are set and non-favorite live games are shown (`show_favorite_teams_only` off, or `show_all_live` on). See [Shorter dwell for non-favorite live games](#shorter-dwell-for-non-favorite-live-games).
 - `live_update_interval`: How often to update live game data in seconds (5-300, default: 30)
 - `update_interval_seconds`: How often to fetch new data in seconds (30-86400, default: 3600)
 - `game_limits`: Control how many games to show
@@ -355,16 +355,16 @@ favorites. For example `live_game_duration: 30` with
 else's games flash by in 5s.
 
 This **only takes effect** when favorite teams are configured **and**
-`show_favorite_teams_only` is off (otherwise non-favorite games are never on
-screen to shorten). Leave it at `0` to display every live game for
-`live_game_duration`.
+non-favorite live games are being shown — `show_favorite_teams_only` off, or
+`show_all_live` on (otherwise non-favorite games are never on screen to
+shorten). Leave it at `0` to display every live game for `live_game_duration`.
 
-| Favorite teams set? | Show favorites only | Live game has a favorite? | Duration used |
+| Favorite teams set? | Non-favorite games shown? | Live game has a favorite? | Duration used |
 |---|---|---|---|
 | No | — | — | `live_game_duration` (unchanged) |
-| Yes | On (default) | favorite | `live_game_duration` |
-| Yes | Off | favorite | `live_game_duration` |
-| Yes | Off | none | `non_favorite_live_game_duration` (when > 0) |
+| Yes | No (`show_favorite_teams_only` on, `show_all_live` off) | favorite | `live_game_duration` |
+| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | favorite | `live_game_duration` |
+| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | none | `non_favorite_live_game_duration` (when > 0) |
 
 ## Excluding Teams (Spoiler Protection)
 

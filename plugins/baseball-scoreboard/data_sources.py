@@ -6,7 +6,7 @@ to support different APIs and data providers.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import Dict, List, Optional
 import requests
 import logging
 from datetime import datetime
@@ -140,6 +140,21 @@ class ESPNDataSource(DataSource):
                 # Non-404 error - log at error level since this is unexpected
                 self.logger.error(f"Error fetching standings from ESPN for {sport}/{league}: {e}")
                 return {}
+
+    def fetch_game_summary(self, sport: str, league: str, event_id: str) -> Optional[Dict]:
+        """Fetch the per-game summary (play-by-play, rosters) from ESPN API."""
+        try:
+            url = f"{self.base_url}/{sport}/{league}/summary"
+            response = self.session.get(url, params={"event": event_id}, headers=self.get_headers(), timeout=15)
+            response.raise_for_status()
+
+            data = response.json()
+            self.logger.debug(f"Fetched game summary for {sport}/{league} event {event_id}")
+            return data
+
+        except Exception as e:
+            self.logger.error(f"Error fetching game summary from ESPN for {sport}/{league} event {event_id}: {e}")
+            return None
 
 
 class MLBAPIDataSource(DataSource):

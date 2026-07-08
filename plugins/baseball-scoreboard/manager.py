@@ -689,6 +689,9 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_records": display_options.get("show_records", False),
                 "show_ranking": display_options.get("show_ranking", False),
                 "show_odds": display_options.get("show_odds", False),
+                "show_pitcher_batter": display_options.get("show_pitcher_batter", False),
+                "show_last_play": display_options.get("show_last_play", False),
+                "show_traditional_scoreboard": display_options.get("show_traditional_scoreboard", False),
                 "update_interval_seconds": league_config.get(
                     "update_interval_seconds", 300
                 ),
@@ -2701,7 +2704,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             info = {
                 "plugin_id": self.plugin_id,
                 "name": "Baseball Scoreboard",
-                "version": "1.8.0",
+                "version": "1.10.0",
                 "enabled": self.is_enabled,
                 "display_size": f"{self.display_width}x{self.display_height}",
                 "mlb_enabled": self.mlb_enabled,

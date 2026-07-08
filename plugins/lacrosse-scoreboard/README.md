@@ -158,16 +158,16 @@ your favorites. For example `ncaa_mens.display_durations.live: 30` with
 while everyone else's games flash by in 5s.
 
 This **only takes effect** when favorite teams are configured **and**
-`favorite_teams_only` is off (otherwise non-favorite games are never on screen
-to shorten). Leave it at `0` to display every live game for
-`display_durations.live`.
+non-favorite live games are being shown — `favorite_teams_only` off, or
+`show_all_live` on (otherwise non-favorite games are never on screen to
+shorten). Leave it at `0` to display every live game for `display_durations.live`.
 
-| Favorite teams set? | Favorites only | Live game has a favorite? | Duration used |
+| Favorite teams set? | Non-favorite games shown? | Live game has a favorite? | Duration used |
 |---|---|---|---|
 | No | — | — | `display_durations.live` (unchanged) |
-| Yes | On | favorite | `display_durations.live` |
-| Yes | Off | favorite | `display_durations.live` |
-| Yes | Off | none | `display_durations.non_favorite_live` (when > 0) |
+| Yes | No (`favorite_teams_only` on, `show_all_live` off) | favorite | `display_durations.live` |
+| Yes | Yes (`favorite_teams_only` off, or `show_all_live` on) | favorite | `display_durations.live` |
+| Yes | Yes (`favorite_teams_only` off, or `show_all_live` on) | none | `display_durations.non_favorite_live` (when > 0) |
 
 ### Excluding teams (spoiler protection)
 

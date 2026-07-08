@@ -7,7 +7,7 @@ from typing import Any, ClassVar, Dict, Optional
 
 import pytz
 
-from baseball import Baseball, BaseballLive, BaseballRecent
+from baseball import Baseball, BaseballLive, BaseballRecent, _parse_team_color
 from sports import SportsUpcoming
 
 # Constants
@@ -29,6 +29,8 @@ class BaseMLBManager(Baseball):
     _shared_rankings_cache: ClassVar[Dict] = {}
     _shared_rankings_timestamp: ClassVar[float] = 0
     _shared_rankings_lock: ClassVar[threading.Lock] = threading.Lock()
+
+    espn_summary_sport_league = ("baseball", "mlb")
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         self.logger = logging.getLogger("MLB")
@@ -234,6 +236,18 @@ class MLBLiveManager(BaseMLBManager, BaseballLive):
                 "away_logo_url": "",
                 "series_summary": "",
                 "status_text": "Top 7th",
+                "home_linescore": ["1", "0", "1", "0", "0", "2"],
+                "away_linescore": ["0", "1", "0", "0", "2", "0"],
+                "home_hits": "7",
+                "away_hits": "5",
+                "home_errors": "0",
+                "away_errors": "1",
+                "has_count_data": True,
+                # Real ESPN primary colors (NYY navy, BOS red) so test-mode
+                # renders actually demonstrate the team-color feature instead
+                # of falling back to flat white text.
+                "home_team_color": _parse_team_color("132448"),
+                "away_team_color": _parse_team_color("bd3039"),
             }
             self.live_games = [self.current_game]
             self.logger.info("Initialized MLBLiveManager with test game: BOS @ NYY")

@@ -283,7 +283,7 @@
               "default": 0,
               "minimum": 0,
               "maximum": 120,
-              "description": "Display duration for live NCAA Men's Lacrosse games with NO favorite team. Only applies when favorite teams are set AND 'show_favorite_teams_only' is off. 0 (default) = use the live duration for every game (no change)."
+              "description": "Display duration for live NCAA Men's Lacrosse games with NO favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use the live duration for every game (no change)."
             },
             "recent": {
               "type": "number",
@@ -669,7 +669,7 @@
               "default": 0,
               "minimum": 0,
               "maximum": 120,
-              "description": "Display duration for live NCAA Women's Lacrosse games with NO favorite team. Only applies when favorite teams are set AND 'show_favorite_teams_only' is off. 0 (default) = use the live duration for every game (no change)."
+              "description": "Display duration for live NCAA Women's Lacrosse games with NO favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use the live duration for every game (no change)."
             },
             "recent": {
               "type": "number",

@@ -171,7 +171,7 @@
                     "default": 0,
                     "minimum": 0,
                     "maximum": 120,
-                    "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND 'show_favorite_teams_only' is off (so non-favorite games are shown). 0 (default) = use live_game_duration for every live game (no change)."
+                    "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
                 },
                 "recent_game_duration": {
                     "type": "number",
@@ -246,6 +246,21 @@
                             "type": "boolean",
                             "default": false,
                             "description": "Show series summary information"
+                        },
+                        "show_pitcher_batter": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Periodically show a dedicated screen with the current pitcher and batter during a live at-bat (requires an extra per-game data fetch)"
+                        },
+                        "show_last_play": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show a short code for the most recently completed play (1B, HR, K, BB, etc.) on the pitcher/batter screen"
+                        },
+                        "show_traditional_scoreboard": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Periodically show a full-screen traditional ballpark scoreboard: inning-by-inning line score, R/H/E, and an At Bat panel with ball/strike/out indicators"
                         }
                     }
                 },
@@ -551,7 +566,7 @@
                     "default": 0,
                     "minimum": 0,
                     "maximum": 120,
-                    "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND 'show_favorite_teams_only' is off (so non-favorite games are shown). 0 (default) = use live_game_duration for every live game (no change)."
+                    "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
                 },
                 "recent_game_duration": {
                     "type": "number",
@@ -931,7 +946,7 @@
                     "default": 0,
                     "minimum": 0,
                     "maximum": 120,
-                    "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND 'show_favorite_teams_only' is off (so non-favorite games are shown). 0 (default) = use live_game_duration for every live game (no change)."
+                    "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
                 },
                 "recent_game_duration": {
                     "type": "number",
@@ -1006,6 +1021,21 @@
                             "type": "boolean",
                             "default": false,
                             "description": "Show series summary information"
+                        },
+                        "show_pitcher_batter": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Periodically show a dedicated screen with the current pitcher and batter during a live at-bat (requires an extra per-game data fetch)"
+                        },
+                        "show_last_play": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Show a short code for the most recently completed play (1B, HR, K, BB, etc.) on the pitcher/batter screen"
+                        },
+                        "show_traditional_scoreboard": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Periodically show a full-screen traditional ballpark scoreboard: inning-by-inning line score, R/H/E, and an At Bat panel with ball/strike/out indicators"
                         }
                     }
                 },
@@ -1541,7 +1571,188 @@
                     }
                 },
                 "additionalProperties": false
-                }
+                },
+            "at_bat_info": {
+                "type": "object",
+                "title": "Pitcher / Batter / Last Play Screen",
+                "description": "A dedicated full-screen view (not an overlay on the scorebug -- there is not enough room there) that periodically rotates into the live display, showing the current pitcher, batter, and a short code for the last completed play. Enable per-league via Display Options > Show Pitcher/Batter and Show Last Play (MLB and NCAA Baseball only).",
+                "properties": {
+                    "font": {
+                        "type": "string",
+                        "default": "9x15.bdf",
+                        "description": "Font for this screen's text -- a clean, bold bitmap font that auto-fits as large as the display and each line's actual text allows (falling back to a smaller same-family font, e.g. on a narrow display or with a long player name, down to as small as '4x6-font.ttf' -- ('four_by_six') was previously the flat default here, but it renders 'B' and '8' almost identically, making last-play codes like 'BB' misreadable as '88'; the fallback ladder never steps down to it for this reason). A fixed-size .bdf font always renders at its own native pixel size regardless of font_size below; use a scalable .ttf font (e.g. 'press_start') if you want font_size to directly control the size."
+                    },
+                    "font_size": {
+                        "type": "integer",
+                        "default": 24,
+                        "minimum": 6,
+                        "maximum": 24,
+                        "description": "Maximum font size cap, for scalable .ttf fonts only (ignored by fixed-size .bdf fonts like the default). This screen auto-fits the largest text that still fits every line, so the default effectively means 'as big as the display and text allow' -- lower it to force a smaller, more consistent size."
+                    },
+                    "use_team_colors": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Color the pitcher's name with the fielding team's real ESPN color and the batter's name with the batting team's color, instead of the flat pitcher_color/batter_color below. Falls back to those flat colors when off, or when a team's color isn't available."
+                    },
+                    "pitcher_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [255, 255, 255],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Text color [R, G, B] for the pitcher line when use_team_colors is off or the fielding team's color is unavailable"
+                    },
+                    "batter_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [255, 255, 0],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Text color [R, G, B] for the batter line when use_team_colors is off or the batting team's color is unavailable"
+                    },
+                    "last_play_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [0, 255, 255],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Text color [R, G, B] for the last-play code line"
+                    },
+                    "dwell_seconds": {
+                        "type": "number",
+                        "default": 4,
+                        "minimum": 2,
+                        "maximum": 15,
+                        "description": "How many seconds to show this screen each time it rotates in"
+                    },
+                    "interval_seconds": {
+                        "type": "number",
+                        "default": 25,
+                        "minimum": 10,
+                        "maximum": 120,
+                        "description": "How often (in seconds) this screen rotates into the normal live view"
+                    },
+                    "favorites_only": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Only rotate this screen in for games involving one of this league's favorite_teams. Useful if show_all_live is on (so every team's live game rotates through) but you only want the pitcher/batter/last-play treatment for your own team -- other teams still get the normal compact scorebug. Has no effect if favorite_teams is empty."
+                    }
+                },
+                "additionalProperties": false
+            },
+            "traditional_scoreboard": {
+                "type": "object",
+                "title": "Traditional Scoreboard Screen",
+                "description": "A dedicated full-screen view (like an outfield ballpark scoreboard) that periodically rotates into the live display: an inning-by-inning line score with R/H/E, and an At Bat panel with ball/strike/out indicators. Enable per-league via Display Options > Show Traditional Scoreboard (MLB and NCAA Baseball only).",
+                "properties": {
+                    "font": {
+                        "type": "string",
+                        "default": "9x15.bdf",
+                        "description": "Font for this screen's text. '9x15.bdf' is a clean, bold, highly legible bitmap font. Fixed-size bitmap (.bdf) fonts always render at their own native pixel size regardless of font_size below; use a scalable .ttf font (e.g. 'press_start' for PressStart2P, a chunkier 8-bit retro look) if you want font_size to control the size"
+                    },
+                    "font_size": {
+                        "type": "integer",
+                        "default": 24,
+                        "minimum": 6,
+                        "maximum": 24,
+                        "description": "Maximum font size cap, for scalable .ttf fonts only (ignored by fixed-size .bdf fonts like the default). This screen auto-fits the largest text that still leaves room for the At Bat panel (when applicable), so the default (24) effectively means 'as big as the display allows' -- lower this to force a smaller, more consistent size instead"
+                    },
+                    "use_team_colors": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Color each team's abbreviation using their real team colors (from ESPN) instead of a single flat text color"
+                    },
+                    "show_logos": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Show a small team logo beside each abbreviation, but only when there's leftover width to spare -- never at the cost of a displayed inning or the At Bat side panel"
+                    },
+                    "text_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [255, 255, 255],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Text color [R, G, B] for score digits, and for team abbreviations when team colors are off or unavailable"
+                    },
+                    "header_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [180, 180, 180],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Text color [R, G, B] for the inning-number and R/H/E header row"
+                    },
+                    "highlight_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [255, 140, 0],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Accent color [R, G, B] for the current-inning highlight, the At Bat label, and lit ball/strike/out indicators"
+                    },
+                    "show_dividers": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Draw thin 1px grid lines between innings, rows, and the R/H/E columns for readability"
+                    },
+                    "game_scope": {
+                        "type": "string",
+                        "enum": ["live", "recent", "both"],
+                        "default": "both",
+                        "description": "Which games this screen rotates in for: 'live' only during live action, 'recent' only for final/completed games (handy for seeing the winner and full line score at a glance), or 'both'"
+                    },
+                    "favorites_only": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Only rotate this screen in for games involving one of this league's favorite_teams. Useful if show_all_live is on (so every team's live game rotates through) but you only want the full-screen treatment for your own team -- other teams still get the normal compact scorebug. Has no effect if favorite_teams is empty."
+                    },
+                    "divider_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [90, 90, 90],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Color [R, G, B] for the grid divider lines"
+                    },
+                    "highlight_winner": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "On a final game, color the winning team's run total in winner_color so the winner is obvious at a glance instead of having to compare both R values yourself"
+                    },
+                    "winner_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [0, 200, 0],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Color [R, G, B] for the winning team's run total on a final game"
+                    },
+                    "dwell_seconds": {
+                        "type": "number",
+                        "default": 6,
+                        "minimum": 2,
+                        "maximum": 20,
+                        "description": "How many seconds to show this screen each time it rotates in"
+                    },
+                    "interval_seconds": {
+                        "type": "number",
+                        "default": 30,
+                        "minimum": 10,
+                        "maximum": 180,
+                        "description": "How often (in seconds) this screen rotates into the normal live view"
+                    }
+                },
+                "additionalProperties": false
+            }
             },
             "x-propertyOrder": [
                 "score_text",
@@ -1553,7 +1764,9 @@
                 "layout",
                 "bases",
                 "outs",
-                "count"
+                "count",
+                "at_bat_info",
+                "traditional_scoreboard"
             ],
             "additionalProperties": false
         }

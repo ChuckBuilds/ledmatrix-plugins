@@ -170,14 +170,14 @@ Set `non_favorite_live_game_duration` to give live games that don't involve one 
 This **only takes effect when both** of the following are true:
 
 - one or more `favorite_teams` are configured for the league, **and**
-- `filtering.show_favorite_teams_only` is **off** (otherwise non-favorite games are never shown in the first place).
+- non-favorite live games are actually shown — `filtering.show_favorite_teams_only` is **off**, or `filtering.show_all_live` is **on** (otherwise non-favorite games never appear in the first place).
 
-| Favorite teams set? | Show favorites only | Live game has a favorite? | Duration used |
+| Favorite teams set? | Non-favorite games shown? | Live game has a favorite? | Duration used |
 |---|---|---|---|
 | No | — | — | `live_game_duration` (unchanged) |
-| Yes | On (default) | favorite | `live_game_duration` |
-| Yes | Off | favorite | `live_game_duration` |
-| Yes | Off | none | `non_favorite_live_game_duration` (when > 0) |
+| Yes | No (`show_favorite_teams_only` on, `show_all_live` off) | favorite | `live_game_duration` |
+| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | favorite | `live_game_duration` |
+| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | none | `non_favorite_live_game_duration` (when > 0) |
 
 Leave it at `0` to display every live game for `live_game_duration` (the previous behavior).
 
