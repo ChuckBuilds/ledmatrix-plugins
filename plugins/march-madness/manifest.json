@@ -22,7 +22,7 @@
       "version": "1.0.1",
       "ledmatrix_min": "2.0.0",
       "released": "2026-07-08",
-      "notes": "Add README and LICENSE (GPL-3.0), and the required compatible_versions manifest field. Mount the HTTP retry adapter on http:// as well as https:// so redirected ESPN requests keep the retry/backoff policy."
+      "notes": "Add README and LICENSE (GPL-3.0). Conform the manifest to the schema (add required compatible_versions; make dependencies an array). Mount the HTTP retry adapter on http:// as well as https:// so redirected ESPN requests keep the retry/backoff policy."
     },
     {
       "version": "1.0.0",
@@ -38,7 +38,7 @@
   "display_modes": [
     "march_madness"
   ],
-  "dependencies": {},
+  "dependencies": [],
   "entry_point": "manager.py",
   "class_name": "MarchMadnessPlugin",
   "license": "GPL-3.0"
