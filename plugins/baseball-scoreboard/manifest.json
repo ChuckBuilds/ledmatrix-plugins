@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.8.0",
+  "version": "1.17.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -31,7 +31,91 @@
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
     {
+      "released": "2026-07-08",
+      "version": "1.17.1",
+      "notes": "Log the BDF native-size retry's failure instead of silently swallowing it (was a bare except/pass, flagged by static analysis) -- font-loading fallback failures are now traceable.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-08",
+      "version": "1.17.0",
+      "notes": "Redesign the Pitcher/Batter/Last Play screen for visual parity with the Traditional Scoreboard: text is now centered both horizontally and vertically (was flush top-left), auto-fits the largest font that still fits every line's actual text -- falling back to a smaller same-family font, and truncating as a last resort, rather than overflowing -- instead of a small fixed size. Adds use_team_colors (default on): colors the pitcher's name with the fielding team's real ESPN color and the batter's name with the batting team's color.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-08",
+      "version": "1.16.1",
+      "notes": "Fix the Pitcher/Batter/Last Play screen's default font ('four_by_six') rendering 'B' and '8' almost identically, making last-play codes like 'BB' (walk) misreadable as '88'. Switched the default to '5x7.bdf', a small bitmap font with clearly distinct glyphs.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-08",
+      "version": "1.16.0",
+      "notes": "Fix a real KeyError('status') crash on live MiLB games (its converted-from-Stats-API events never carried a duplicate top-level status key the way real ESPN events do; _extract_game_details now correctly reuses the already-validated competition-level status instead of a separate, unreliable top-level lookup). Add favorites_only to the Pitcher/Batter/Last Play screen, matching the Traditional Scoreboard's option. Add highlight_winner (default on) to the Traditional Scoreboard: colors the winning team's run total on a final game so the winner is obvious at a glance, pairing naturally with game_scope: recent.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-08",
+      "version": "1.15.0",
+      "notes": "Add game_scope (live / recent / both) and favorites_only options for the Traditional Scoreboard screen, so it can be restricted to only live games, only final/recent games (handy for glancing at the winner via the final line score), and/or only your favorite teams -- independent of the league's normal show_all_live rotation. Also extends the screen to the recent-games manager (it previously only ever rotated in from the live manager), and documents the screen and all its toggles in the README.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-08",
+      "version": "1.14.2",
+      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team ▲/▼ indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-08",
+      "version": "1.14.1",
+      "notes": "Move the Traditional Scoreboard's At Bat ball/strike/out column back to the right of the grid (past R/H/E), still vertically aligned with the header/away/home rows and still always-on (3-row budget, factored into the inning-column count). Also shrink the ball/strike/out circle indicators slightly for a cleaner look.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-08",
+      "version": "1.14.0",
+      "notes": "Move the Traditional Scoreboard's At Bat ball/strike/out column permanently to the left of the grid (vertically aligned with the header/away/home rows) instead of only sometimes to the right or stacked below -- it now always budgets 3 rows of vertical space, so the grid font is consistently bigger, and its width is factored into how many innings fit so narrow displays show fewer innings rather than losing the column (it's dropped entirely only if even a single inning column wouldn't otherwise fit). Centers the whole combined block (At Bat column + team + grid + RHE) to minimize dead space on both sides. Also adds small team logos beside each abbreviation when there's leftover width to spare, toggle via the new show_logos option.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
       "released": "2026-07-07",
+      "version": "1.13.1",
+      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team ▲/▼ arrow, which wasn't factored into the width check at all.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-07",
+      "version": "1.13.0",
+      "notes": "On wide-enough displays, move the Traditional Scoreboard screen's At Bat ball/strike/out indicators into a compact side column (vertically aligned with the header/away/home rows) instead of stacking them below the grid -- that only needs 3 rows of vertical space instead of 6, so the whole grid renders noticeably bigger. Falls back to the below-grid layout automatically when there isn't enough leftover width beside the grid. Also fixes BDF font-size detection to read the file's real PIXEL_SIZE property instead of assuming point-size always equals pixel height, which was silently substituting the wrong font for a couple of sizes in the fallback ladder (6x13, 5x8) on 75dpi-defined fonts.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-07",
+      "version": "1.12.0",
+      "notes": "Switch the Traditional Scoreboard screen's default font from PressStart2P to 9x15 -- a cleaner, less blocky bitmap font -- with an automatic fallback ladder (9x15 -> 8x13 -> 7x13 -> 6x13 -> 6x12 -> 6x10 -> 6x9 -> 5x8 -> 5x7) that steps down to a smaller same-family font on displays too small to fit the default at full size, so no row gets clipped off. Also fixes font loading to resolve a .bdf file's real native pixel size instead of failing when a mismatched size is requested.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-07",
+      "version": "1.11.0",
+      "notes": "Redesign the Traditional Scoreboard screen for readability: switch to a retro pixel font at an auto-fit size that fills the display (configurable max via font_size), color each team's abbreviation with their real ESPN team colors (brightness-clamped for legibility, toggle via use_team_colors), add 1px grid divider lines between innings/rows/R-H-E columns, and cap the test-mode fixture's simulated game at 10 innings instead of climbing indefinitely.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-07",
+      "version": "1.10.0",
+      "notes": "Add an optional Traditional Scoreboard screen (MLB and NCAA Baseball only) -- a full-screen outfield-style scoreboard that periodically rotates into the live view: an inning-by-inning line score with R/H/E, the current inning highlighted, and (for leagues with count data) an At Bat panel with lit ball/strike/out indicators. Automatically fits as many innings as the display width allows, scrolling to a trailing window once the game progresses further than that. Toggle per league under Display Options > Show Traditional Scoreboard; customize font/colors/timing under Customization > Traditional Scoreboard Screen.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-06",
+      "version": "1.9.0",
+      "notes": "Add optional Pitcher/Batter and Last Play info (MLB and NCAA Baseball only) -- a dedicated screen that periodically rotates into the live view showing the current at-bat's pitcher, batter, and a short code for the most recently completed play (1B, HR, K, BB, etc.). Toggle per league under Display Options; customize font/colors/timing under Customization > Pitcher / Batter / Last Play Screen. Fetches the extra per-game data on a background thread with a bounded timeout so a slow response can't block the render loop.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-06",
       "version": "1.8.0",
       "notes": "Apply config changes live via on_config_change (favorite teams, league enable/disable, durations, live priority, display modes); rebuilds the league managers, registry, scroll manager and rotation so edits take effect without a display restart.",
       "ledmatrix_min": "2.0.0"
@@ -157,7 +241,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-07",
+  "last_updated": "2026-07-08",
   "stars": 0,
   "downloads": 0,
   "verified": true,

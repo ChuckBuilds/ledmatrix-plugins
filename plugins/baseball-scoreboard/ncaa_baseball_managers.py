@@ -4,7 +4,7 @@ import time
 from typing import ClassVar, Dict, Any, Optional
 from datetime import datetime
 import pytz
-from baseball import Baseball, BaseballLive, BaseballRecent
+from baseball import Baseball, BaseballLive, BaseballRecent, _parse_team_color
 from sports import SportsUpcoming
 from pathlib import Path
 
@@ -27,6 +27,8 @@ class BaseNCAABaseballManager(Baseball):
     _shared_rankings_cache: ClassVar[Dict] = {}
     _shared_rankings_timestamp: ClassVar[float] = 0
     _shared_rankings_lock: ClassVar[threading.Lock] = threading.Lock()
+
+    espn_summary_sport_league = ("baseball", "college-baseball")
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         self.logger = logging.getLogger("NCAABaseball")
@@ -242,6 +244,15 @@ class NCAABaseballLiveManager(BaseNCAABaseballManager, BaseballLive):
                 "status_text": "Bot 7th",
                 "series_summary": "",
                 "has_count_data": False,
+                "home_linescore": ["0", "2", "0", "1", "0", "2"],
+                "away_linescore": ["1", "0", "0", "1", "1", "0", "0"],
+                "home_hits": "9",
+                "away_hits": "6",
+                "home_errors": "1",
+                "away_errors": "0",
+                # Real ESPN primary colors (LSU purple, Ole Miss red).
+                "home_team_color": _parse_team_color("461d7c"),
+                "away_team_color": _parse_team_color("ce1126"),
             }
             self.live_games = [self.current_game]
             self.logger.info(
