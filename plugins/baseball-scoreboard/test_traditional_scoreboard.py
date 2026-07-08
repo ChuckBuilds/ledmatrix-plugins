@@ -431,14 +431,14 @@ _LIVE_GAME_WITH_COUNT_DATA = {
 }
 
 
-def test_at_bat_column_appears_on_the_left_not_below():
-    # The At Bat ball/strike/out column always sits to the left of the
-    # grid now (vertically aligned with the header/away/home rows),
-    # instead of stacking below it -- verify the dots actually land near
-    # the left margin, and that nothing is drawn below the 3-row grid.
+def test_at_bat_column_appears_on_the_right_not_below():
+    # The At Bat ball/strike/out column always sits to the right of the
+    # grid (past R/H/E), vertically aligned with the header/away/home
+    # rows, instead of stacking below it -- verify the dots actually land
+    # near the right margin, and that nothing is drawn below the 3-row grid.
     font_path = _find_font_asset("9x15.bdf")
     if not font_path:
-        print("SKIP test_at_bat_column_appears_on_the_left_not_below: "
+        print("SKIP test_at_bat_column_appears_on_the_right_not_below: "
               "could not locate 9x15.bdf (run from LEDMatrix tree)")
         return
 
@@ -461,18 +461,18 @@ def test_at_bat_column_appears_on_the_left_not_below():
     assert not below_grid_has_content, "expected nothing drawn below the 3-row grid"
 
     highlight = (255, 140, 0)
-    # Left third of the display, within the grid's row span -- the At Bat
-    # column should land here now, near the left margin, not the right.
-    left_third = w // 3
-    highlight_pixels_left = sum(
-        1 for x in range(left_third) for y in range(margin, min(grid_bottom, h))
+    # Right third of the display, within the grid's row span -- the At Bat
+    # column should land here now, near the right margin, not the left.
+    right_third_start = 2 * w // 3
+    highlight_pixels_right = sum(
+        1 for x in range(right_third_start, w) for y in range(margin, min(grid_bottom, h))
         if img.getpixel((x, y)) == highlight
     )
-    assert highlight_pixels_left > 60, (
-        f"expected the At Bat column's B/S/O dots near the left margin, "
-        f"only found {highlight_pixels_left} highlight-colored px there"
+    assert highlight_pixels_right > 40, (
+        f"expected the At Bat column's B/S/O dots near the right margin, "
+        f"only found {highlight_pixels_right} highlight-colored px there"
     )
-    print("test_at_bat_column_appears_on_the_left_not_below: PASS")
+    print("test_at_bat_column_appears_on_the_right_not_below: PASS")
 
 
 def test_at_bat_column_at_max_counts_does_not_clip_off_either_edge():
@@ -590,7 +590,7 @@ if __name__ == "__main__":
         test_team_colors_used_when_enabled_and_available,
         test_team_colors_fall_back_to_text_color_when_disabled,
         test_at_bat_panel_fits_alongside_bigger_font_at_medium_size,
-        test_at_bat_column_appears_on_the_left_not_below,
+        test_at_bat_column_appears_on_the_right_not_below,
         test_at_bat_column_at_max_counts_does_not_clip_off_either_edge,
         test_at_bat_column_hidden_when_display_too_narrow,
         test_draws_without_crashing_when_final_and_no_count_data,

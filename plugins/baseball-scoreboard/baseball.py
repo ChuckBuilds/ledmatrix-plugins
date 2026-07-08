@@ -898,7 +898,7 @@ class BaseballLive(Baseball, SportsLive):
             # font_size acts as an optional cap, not a fixed size: by default
             # (24, the max) this auto-fits the largest text that still fills
             # the display. The At Bat ball/strike/out indicators live in
-            # their own column to the left of the grid (vertically aligned
+            # their own column to the right of the grid (vertically aligned
             # with the header/away/home rows) rather than needing extra rows
             # stacked underneath, so sizing only ever has to budget for 3
             # rows -- lower font_size to force a smaller, more consistent
@@ -932,7 +932,7 @@ class BaseballLive(Baseball, SportsLive):
             # only *between* dots, no trailing gap after the last one.
             at_bat_panel_w = 0
             if at_bat_panel_applicable:
-                dot_d = max(2, row_h - 4)
+                dot_d = max(2, row_h - 6)
                 b_row_w = font.getbbox("B ")[2] + 3 * dot_d + 2 * 2
                 o_row_w = (
                     font.getbbox("O ")[2] + 2 * dot_d + 1 * 2 + 2
@@ -1031,11 +1031,10 @@ class BaseballLive(Baseball, SportsLive):
             # than just the grid) keeps padding minimal on both sides
             # instead of wasting half the leftover space to the left of
             # content that isn't actually flush-left to begin with.
-            content_w = at_bat_block_w + team_col_w + num_cols * inning_col_w + gap_w + 3 * rhe_col_w
+            content_w = team_col_w + num_cols * inning_col_w + gap_w + 3 * rhe_col_w + at_bat_block_w
             x_offset = max(margin, (self.display_width - content_w) // 2)
 
-            at_bat_x = x_offset
-            team_x = x_offset + at_bat_block_w
+            team_x = x_offset
             grid_x = team_x + team_col_w
             header_y = margin
             away_y = header_y + row_h
@@ -1069,6 +1068,7 @@ class BaseballLive(Baseball, SportsLive):
 
             # R / H / E columns.
             rhe_x = grid_x + num_cols * inning_col_w + gap_w
+            at_bat_x = rhe_x + 3 * rhe_col_w + at_bat_gap
             for i, label in enumerate(("R", "H", "E")):
                 col_x = rhe_x + i * rhe_col_w
                 self._draw_text_with_outline(draw, label, (col_x, header_y), font, fill=header_color)
@@ -1105,8 +1105,8 @@ class BaseballLive(Baseball, SportsLive):
 
             # At Bat column: ball/strike/out indicators, only for a live
             # game with count data (NCAA's feed doesn't provide balls/
-            # strikes). Always to the left of the grid, vertically aligned
-            # with the header/away/home rows.
+            # strikes). Always to the right of the grid (past RHE),
+            # vertically aligned with the header/away/home rows.
             if at_bat_panel_applicable:
                 self._draw_traditional_scoreboard_at_bat_side_panel(
                     draw, game, font, row_h, at_bat_x, header_y, away_y, home_y, text_color, highlight_color
@@ -1124,7 +1124,7 @@ class BaseballLive(Baseball, SportsLive):
         text_color: tuple, highlight_color: tuple,
     ) -> None:
         """Draw ball/strike/out indicators as a compact vertical column to
-        the left of the grid, one row each aligned with the header/away/
+        the right of the grid, one row each aligned with the header/away/
         home rows -- keeps the whole screen to 3 rows of vertical space so
         the grid's auto-fit font can render as big as possible, instead of
         needing extra rows stacked below for these indicators."""
@@ -1134,7 +1134,7 @@ class BaseballLive(Baseball, SportsLive):
         inning_half = (game.get("inning_half") or "top").lower()
         at_bat_indicator = "▲" if inning_half == "top" else "▼"  # away/home batting
 
-        dot_d = max(2, row_h - 4)
+        dot_d = max(2, row_h - 6)
 
         def draw_row(y: int, label: str, lit: int, total: int, suffix: str = "") -> None:
             self._draw_text_with_outline(draw, label, (x, y), font, fill=text_color)

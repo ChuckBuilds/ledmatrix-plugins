@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-08",
+      "version": "1.14.1",
+      "notes": "Move the Traditional Scoreboard's At Bat ball/strike/out column back to the right of the grid (past R/H/E), still vertically aligned with the header/away/home rows and still always-on (3-row budget, factored into the inning-column count). Also shrink the ball/strike/out circle indicators slightly for a cleaner look.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-08",
       "version": "1.14.0",
