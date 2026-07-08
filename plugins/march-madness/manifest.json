@@ -16,12 +16,13 @@
   "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
   "branch": "main",
   "plugin_path": "plugins/march-madness",
+  "compatible_versions": [">=2.0.0"],
   "versions": [
     {
       "version": "1.0.1",
       "ledmatrix_min": "2.0.0",
       "released": "2026-07-08",
-      "notes": "Add README and LICENSE (GPL-3.0). Mount the HTTP retry adapter on http:// as well as https:// so redirected ESPN requests keep the retry/backoff policy."
+      "notes": "Add README and LICENSE (GPL-3.0), and the required compatible_versions manifest field. Mount the HTTP retry adapter on http:// as well as https:// so redirected ESPN requests keep the retry/backoff policy."
     },
     {
       "version": "1.0.0",

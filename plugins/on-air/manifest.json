@@ -14,7 +14,7 @@
     {
       "released": "2026-07-08",
       "version": "1.2.1",
-      "notes": "Add MIT LICENSE file matching the manifest's declared license.",
+      "notes": "Add MIT LICENSE file matching the manifest's declared license. Remove the invalid update_interval:0 manifest field (this plugin is MQTT push-driven and does not poll, matching mqtt-notifications).",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -36,7 +36,6 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "update_interval": 0,
   "default_duration": 5,
   "icon": "fa-circle-dot",
   "license": "MIT",
