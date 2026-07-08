@@ -137,6 +137,92 @@ display controller rotates through any that are enabled:
 Toggle individual modes per league with the `show_live` / `show_recent`
 / `show_upcoming` flags inside each league's `display_modes` block.
 
+## Traditional Scoreboard Screen
+
+A dedicated full-screen view styled after a real outfield ballpark
+scoreboard: an inning-by-inning line score with R/H/E, the current
+inning highlighted, small team logos and team-colored abbreviations
+when there's room, and (for live at-bats) a compact column of lit
+ball/strike/out indicators. Available for **MLB and NCAA Baseball
+only** (MiLB's data doesn't come from ESPN's API in the same shape, so
+it isn't wired up for that league).
+
+### How it works
+
+This isn't a separate display mode you select — it periodically
+*rotates into* whichever game the normal live/recent rotation is
+already showing, replacing the usual compact scorebug for a few
+seconds at a time, then reverting. Nothing needs to be "currently
+selected" for it to appear; as long as the toggle is on, it takes over
+automatically on its own timer while a live or final game is on screen.
+
+The layout adapts to your display size automatically:
+- The font auto-fits as large as your panel allows (see `font_size`).
+- The ball/strike/out column only appears if there's enough width to
+  fit it without shrinking the number of innings shown; on very narrow
+  displays it's dropped entirely rather than clipped or forced in.
+- Team logos only appear if there's leftover width to spare after
+  everything else — they never cost a displayed inning or push out the
+  ball/strike/out column.
+
+### Enabling it
+
+Turn it on per league under that league's `display_options`:
+
+```json
+{
+  "mlb": {
+    "display_options": {
+      "show_traditional_scoreboard": true
+    }
+  }
+}
+```
+
+The same flag exists under `ncaa_baseball.display_options`. It's off
+by default.
+
+### Toggles and customization
+
+All of the following live under `customization.traditional_scoreboard`
+in the config (this block is shared across leagues that support the
+screen):
+
+| Option | Default | What it does |
+|---|---|---|
+| `game_scope` | `"both"` | Which games this screen rotates in for. `"live"` — only during live action. `"recent"` — only for final/completed games (handy for glancing at the final line score and picking out the winner without watching the whole game). `"both"` — either. |
+| `favorites_only` | `false` | When `true`, only rotates in for games involving one of this league's `favorite_teams`. This is independent of `show_all_live`/`show_favorite_teams_only` (which control the *normal* rotation) — so you can watch every team's live games in the compact scorebug, but reserve the full-screen ballpark treatment for your own team. Has no effect if `favorite_teams` is empty. |
+| `dwell_seconds` | `6` | How many seconds this screen stays on screen each time it rotates in. |
+| `interval_seconds` | `30` | How often (in seconds) it rotates in. |
+| `font` | `"9x15.bdf"` | Font for all text on this screen. The default is a clean, bold bitmap font sized to fit the display; a fixed-size `.bdf` font always renders at its own native pixel size (with an automatic fallback to a smaller sibling font if your display is too small to fit it) rather than scaling to `font_size`. Use a scalable `.ttf` font (e.g. `"press_start"` for a chunkier 8-bit retro look) if you want `font_size` to directly control the size. |
+| `font_size` | `24` | Maximum font size cap, for scalable `.ttf` fonts only (ignored by fixed-size `.bdf` fonts like the default). The screen auto-fits the largest text that still leaves room for the ball/strike/out column, so the default effectively means "as big as the display allows" — lower it to force a smaller, more consistent size. |
+| `use_team_colors` | `true` | Color each team's abbreviation with their real ESPN team colors (brightness-adjusted for legibility on black) instead of a flat `text_color`. |
+| `show_logos` | `true` | Show a small team logo beside each abbreviation when there's spare width (see "How it works" above). |
+| `show_dividers` | `true` | Draw thin 1px grid lines between innings, rows, and the R/H/E columns for readability. |
+| `text_color` | `[255, 255, 255]` | `[R, G, B]` for score digits, and team abbreviations when `use_team_colors` is off or a team's color is unavailable. |
+| `header_color` | `[180, 180, 180]` | `[R, G, B]` for the inning-number and R/H/E header row. |
+| `highlight_color` | `[255, 140, 0]` | `[R, G, B]` accent color for the current-inning highlight, the batting-team ▲/▼ indicator, and lit ball/strike/out indicators. |
+| `divider_color` | `[90, 90, 90]` | `[R, G, B]` for the grid divider lines. |
+
+Example — only show this screen for your favorite team, and only once
+the game is final (a simple "check the final score" use case):
+
+```json
+{
+  "mlb": {
+    "display_options": {
+      "show_traditional_scoreboard": true
+    }
+  },
+  "customization": {
+    "traditional_scoreboard": {
+      "game_scope": "recent",
+      "favorites_only": true
+    }
+  }
+}
+```
+
 ## Team Abbreviations
 
 ### MLB Teams

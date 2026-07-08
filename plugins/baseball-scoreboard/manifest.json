@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.14.2",
+  "version": "1.15.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-08",
+      "version": "1.15.0",
+      "notes": "Add game_scope (live / recent / both) and favorites_only options for the Traditional Scoreboard screen, so it can be restricted to only live games, only final/recent games (handy for glancing at the winner via the final line score), and/or only your favorite teams -- independent of the league's normal show_all_live rotation. Also extends the screen to the recent-games manager (it previously only ever rotated in from the live manager), and documents the screen and all its toggles in the README.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-08",
       "version": "1.14.2",

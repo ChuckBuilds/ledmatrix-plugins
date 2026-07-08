@@ -1671,6 +1671,17 @@
                         "default": true,
                         "description": "Draw thin 1px grid lines between innings, rows, and the R/H/E columns for readability"
                     },
+                    "game_scope": {
+                        "type": "string",
+                        "enum": ["live", "recent", "both"],
+                        "default": "both",
+                        "description": "Which games this screen rotates in for: 'live' only during live action, 'recent' only for final/completed games (handy for seeing the winner and full line score at a glance), or 'both'"
+                    },
+                    "favorites_only": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Only rotate this screen in for games involving one of this league's favorite_teams. Useful if show_all_live is on (so every team's live game rotates through) but you only want the full-screen treatment for your own team -- other teams still get the normal compact scorebug. Has no effect if favorite_teams is empty."
+                    },
                     "divider_color": {
                         "type": "array",
                         "x-widget": "color-picker",

@@ -212,6 +212,7 @@ def _make_live(width, height):
     live.show_traditional_scoreboard = True
     live._trad_scoreboard_last_shown = 0.0
     live._trad_scoreboard_showing_until = 0.0
+    live.favorite_teams = []
     import logging
     from PIL import ImageFont
     live.logger = logging.getLogger("test_traditional_scoreboard")
@@ -547,6 +548,70 @@ def test_at_bat_column_hidden_when_display_too_narrow():
     print("test_at_bat_column_hidden_when_display_too_narrow: PASS")
 
 
+def _make_gate_test_live(game_scope=None, favorites_only=None, favorite_teams=None):
+    """A minimal live-like object for testing _maybe_draw_traditional_scoreboard_screen's
+    gating logic in isolation, without needing a real font/render pass."""
+    live = _make_live(192, 48)
+    live.favorite_teams = favorite_teams or []
+    cfg = {}
+    if game_scope is not None:
+        cfg["game_scope"] = game_scope
+    if favorites_only is not None:
+        cfg["favorites_only"] = favorites_only
+    live.config = {"customization": {"traditional_scoreboard": cfg}}
+    drawn = []
+    live._draw_traditional_scoreboard_screen = lambda game, force_clear=False: drawn.append(game)
+    return live, drawn
+
+
+def test_game_scope_live_only_skips_final_games():
+    live, drawn = _make_gate_test_live(game_scope="live")
+    live._maybe_draw_traditional_scoreboard_screen({"is_live": False, "is_final": True, "home_abbr": "A", "away_abbr": "B"})
+    assert drawn == [], "expected game_scope=live to skip a final game"
+    result = live._maybe_draw_traditional_scoreboard_screen({"is_live": True, "is_final": False, "home_abbr": "A", "away_abbr": "B"})
+    assert drawn and result is True, "expected game_scope=live to draw a live game"
+    print("test_game_scope_live_only_skips_final_games: PASS")
+
+
+def test_game_scope_recent_only_skips_live_games():
+    live, drawn = _make_gate_test_live(game_scope="recent")
+    live._maybe_draw_traditional_scoreboard_screen({"is_live": True, "is_final": False, "home_abbr": "A", "away_abbr": "B"})
+    assert drawn == [], "expected game_scope=recent to skip a live game"
+    result = live._maybe_draw_traditional_scoreboard_screen({"is_live": False, "is_final": True, "home_abbr": "A", "away_abbr": "B"})
+    assert drawn and result is True, "expected game_scope=recent to draw a final game"
+    print("test_game_scope_recent_only_skips_live_games: PASS")
+
+
+def test_game_scope_both_draws_live_and_final():
+    live, drawn = _make_gate_test_live(game_scope="both")
+    live._maybe_draw_traditional_scoreboard_screen({"is_live": True, "is_final": False, "home_abbr": "A", "away_abbr": "B"})
+    # Reset the rotation timer so the second call is treated as a fresh
+    # rotate-in (due again) instead of "still showing" or "not due yet".
+    live._trad_scoreboard_showing_until = 0.0
+    live._trad_scoreboard_last_shown = 0.0
+    live._maybe_draw_traditional_scoreboard_screen({"is_live": False, "is_final": True, "home_abbr": "A", "away_abbr": "B"})
+    assert len(drawn) == 2, f"expected game_scope=both to draw both live and final games, drew {len(drawn)}"
+    print("test_game_scope_both_draws_live_and_final: PASS")
+
+
+def test_favorites_only_skips_non_favorite_teams():
+    live, drawn = _make_gate_test_live(favorites_only=True, favorite_teams=["NYY"])
+    live._maybe_draw_traditional_scoreboard_screen({"is_live": True, "is_final": False, "home_abbr": "BOS", "away_abbr": "TB"})
+    assert drawn == [], "expected favorites_only to skip a game with no favorite team"
+    result = live._maybe_draw_traditional_scoreboard_screen({"is_live": True, "is_final": False, "home_abbr": "NYY", "away_abbr": "BOS"})
+    assert drawn and result is True, "expected favorites_only to draw a game involving a favorite team"
+    print("test_favorites_only_skips_non_favorite_teams: PASS")
+
+
+def test_favorites_only_has_no_effect_when_favorite_teams_empty():
+    live, drawn = _make_gate_test_live(favorites_only=True, favorite_teams=[])
+    result = live._maybe_draw_traditional_scoreboard_screen({"is_live": True, "is_final": False, "home_abbr": "BOS", "away_abbr": "TB"})
+    assert drawn and result is True, (
+        "expected favorites_only to have no effect (draw normally) when favorite_teams is empty"
+    )
+    print("test_favorites_only_has_no_effect_when_favorite_teams_empty: PASS")
+
+
 def test_draws_without_crashing_when_final_and_no_count_data():
     live = _make_live(128, 64)
     game = {
@@ -593,6 +658,11 @@ if __name__ == "__main__":
         test_at_bat_column_appears_on_the_right_not_below,
         test_at_bat_column_at_max_counts_does_not_clip_off_either_edge,
         test_at_bat_column_hidden_when_display_too_narrow,
+        test_game_scope_live_only_skips_final_games,
+        test_game_scope_recent_only_skips_live_games,
+        test_game_scope_both_draws_live_and_final,
+        test_favorites_only_skips_non_favorite_teams,
+        test_favorites_only_has_no_effect_when_favorite_teams_empty,
         test_draws_without_crashing_when_final_and_no_count_data,
     ):
         try:

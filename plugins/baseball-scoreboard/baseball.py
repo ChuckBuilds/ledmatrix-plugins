@@ -201,6 +201,12 @@ class Baseball(SportsCore):
         self.show_series_summary = self.mode_config.get("show_series_summary", False)
         self.data_source = ESPNDataSource(logger)
         self.sport = "baseball"
+        # Dedicated traditional-scoreboard rotating screen timing state --
+        # shared by both live and recent-games managers (see
+        # _maybe_draw_traditional_scoreboard_screen) so the screen can
+        # rotate in for live action, final/recent games, or both.
+        self._trad_scoreboard_last_shown = 0.0
+        self._trad_scoreboard_showing_until = 0.0
 
     def _is_baseball_game_live(self, game: Dict) -> bool:
         """Check if a baseball game is currently live."""
@@ -474,334 +480,40 @@ class Baseball(SportsCore):
             draw_overlay, series_summary, (shots_x, shots_y), self.fonts['time']
         )
 
-class BaseballRecent(Baseball, SportsRecent):
-    """Base class for recent baseball games."""
-
-    def __init__(
-        self,
-        config: Dict[str, Any],
-        display_manager,
-        cache_manager,
-        logger: logging.Logger,
-        sport_key: str,
-    ):
-        super().__init__(config, display_manager, cache_manager, logger, sport_key)
-
-
-    def _custom_scorebug_layout(self, game: dict, draw_overlay: ImageDraw.ImageDraw):
-        self.display_series_summary(game, draw_overlay)
-
-
-class BaseballLive(Baseball, SportsLive):
-    """Base class for live baseball games."""
-
-    def __init__(
-        self,
-        config: Dict[str, Any],
-        display_manager,
-        cache_manager,
-        logger: logging.Logger,
-        sport_key: str,
-    ):
-        super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        # Pitcher/batter/last-play: keyed by game id, holds the resolved
-        # {"pitcher", "batter", "last_play_code"}. Kept separate from
-        # current_game/live_games since those get fully rebuilt from fresh
-        # scoreboard data on every poll and would silently drop extra keys.
-        self._play_by_play_cache: Dict[str, Dict] = {}
-        self._play_by_play_last_attempt: Dict[str, float] = {}
-        self.play_by_play_update_interval = self.mode_config.get(
-            "play_by_play_update_interval", 20
-        )
-        # Dedicated at-bat-info rotating screen timing state.
-        self._at_bat_screen_last_shown = 0.0
-        self._at_bat_screen_showing_until = 0.0
-        # Dedicated traditional-scoreboard rotating screen timing state.
-        self._trad_scoreboard_last_shown = 0.0
-        self._trad_scoreboard_showing_until = 0.0
-
-    def update(self):
-        super().update()
-        if self.test_mode:
-            return
-        if not (self.show_pitcher_batter or self.show_last_play):
-            return
-        if not self.espn_summary_sport_league:
-            return
-        if not self.current_game:
-            return
-
-        game_id = self.current_game.get("id")
-        if not game_id:
-            return
-
-        now = time.time()
-        last_attempt = self._play_by_play_last_attempt.get(game_id, 0)
-        if now - last_attempt >= self.play_by_play_update_interval:
-            self._play_by_play_last_attempt[game_id] = now
-            self._fetch_play_by_play(game_id)
-
-        self._prune_stale_play_by_play()
-
-    def _prune_stale_play_by_play(self) -> None:
-        """Drop cached/attempted entries for games no longer live so this
-        doesn't grow unbounded across a long-running session."""
-        live_ids = {g.get("id") for g in self.live_games}
-        for gid in list(self._play_by_play_cache.keys()):
-            if gid not in live_ids:
-                del self._play_by_play_cache[gid]
-        for gid in list(self._play_by_play_last_attempt.keys()):
-            if gid not in live_ids:
-                del self._play_by_play_last_attempt[gid]
-
-    def _fetch_play_by_play(self, game_id: str) -> None:
-        """Fetch and parse the ESPN game summary for one game, off-thread.
-
-        Mirrors SportsCore._fetch_odds's background-thread-with-bounded-
-        timeout pattern (sports.py) so a slow/heavy per-game summary
-        response can never block the render/update loop -- on timeout or
-        error we simply keep whatever was cached from the previous
-        successful fetch (or nothing, if there wasn't one yet).
-        """
-        import threading
-        import queue
-
-        sport, league = self.espn_summary_sport_league
-        result_queue = queue.Queue()
-
-        def fetch():
-            try:
-                data = self.data_source.fetch_game_summary(sport, league, game_id)
-                result_queue.put(("success", data))
-            except Exception as e:
-                result_queue.put(("error", e))
-
-        thread = threading.Thread(target=fetch)
-        thread.daemon = True
-        thread.start()
-
-        try:
-            result_type, result_data = result_queue.get(timeout=2.0)
-        except queue.Empty:
-            self.logger.debug(
-                f"Play-by-play fetch timed out for game {game_id} (non-blocking)"
-            )
-            return
-
-        if result_type != "success" or not result_data:
-            self.logger.debug(
-                f"Play-by-play fetch failed for game {game_id}: {result_data}"
-            )
-            return
-
-        try:
-            plays = result_data.get("plays") or []
-            rosters = result_data.get("rosters") or []
-            athlete_names = _build_athlete_name_map(rosters)
-            pitcher, batter = _get_current_pitcher_batter(plays, athlete_names)
-            last_play_code = _get_last_play_code(plays)
-            if pitcher or batter or last_play_code:
-                self._play_by_play_cache[game_id] = {
-                    "pitcher": pitcher,
-                    "batter": batter,
-                    "last_play_code": last_play_code,
-                }
-            else:
-                self.logger.debug(
-                    f"Play-by-play response for game {game_id} had no usable "
-                    "pitcher/batter/last-play data; keeping prior cache entry"
-                )
-        except Exception as e:
-            self.logger.error(f"Error parsing play-by-play for game {game_id}: {e}")
-
-    # Sample data cycled through in test_mode so the at-bat info screen's
-    # real draw path (font/color/dwell/interval config) gets exercised
-    # offline, with zero network calls.
-    _TEST_MODE_AT_BAT_SAMPLES = [
-        {"pitcher": "G. Cole", "batter": "J. Soto", "last_play_code": "1B"},
-        {"pitcher": "G. Cole", "batter": "A. Judge", "last_play_code": "K"},
-        {"pitcher": "Y. Yamamoto", "batter": "F. Freeman", "last_play_code": "HR"},
-        {"pitcher": "Y. Yamamoto", "batter": "M. Betts", "last_play_code": "BB"},
-    ]
-
-    # After this many innings, reset the simulated game back to a fresh
-    # start rather than climbing forever -- most real games are 9 innings;
-    # this lets the occasional extra-inning case show without the fixture
-    # running away to absurd inning numbers the longer the service is up.
-    _TEST_MODE_MAX_INNING = 10
-
-    def _test_mode_reset_game(self) -> None:
-        game = self.current_game
-        game["inning"] = 1
-        game["inning_half"] = "top"
-        game["balls"] = 0
-        game["strikes"] = 0
-        game["outs"] = 0
-        game["bases_occupied"] = [False, False, False]
-        game["home_score"] = "0"
-        game["away_score"] = "0"
-        game["home_linescore"] = []
-        game["away_linescore"] = []
-        game["home_hits"] = "0"
-        game["away_hits"] = "0"
-        game["home_errors"] = "0"
-        game["away_errors"] = "0"
-
-    def _test_mode_update(self):
-        if self.current_game and self.current_game["is_live"]:
-            if self.current_game["inning_half"] == "top":
-                self.current_game["inning_half"] = "bottom"
-            else:
-                if self.current_game["inning"] >= self._TEST_MODE_MAX_INNING:
-                    self._test_mode_reset_game()
-                    return
-                self.current_game["inning_half"] = "top"
-                self.current_game["inning"] += 1
-                # The inning that just fully completed (bottom just ended)
-                # gets a new line-score entry for both teams.
-                self.current_game.setdefault("away_linescore", []).append(
-                    str(self.current_game["inning"] % 3)
-                )
-                self.current_game.setdefault("home_linescore", []).append(
-                    str((self.current_game["inning"] + 1) % 3)
-                )
-                self.current_game["away_hits"] = str(int(self.current_game.get("away_hits", 0)) + 1)
-                self.current_game["home_hits"] = str(int(self.current_game.get("home_hits", 0)) + 1)
-            self.current_game["balls"] = (self.current_game["balls"] + 1) % 4
-            self.current_game["strikes"] = (self.current_game["strikes"] + 1) % 3
-            self.current_game["outs"] = (self.current_game["outs"] + 1) % 3
-            self.current_game["bases_occupied"] = [
-                not b for b in self.current_game["bases_occupied"]
-            ]
-            if self.current_game["inning"] % 2 == 0:
-                self.current_game["home_score"] = str(
-                    int(self.current_game["home_score"]) + 1
-                )
-            else:
-                self.current_game["away_score"] = str(
-                    int(self.current_game["away_score"]) + 1
-                )
-
-            if self.show_pitcher_batter or self.show_last_play:
-                game_id = self.current_game.get("id", "test")
-                sample_index = self.current_game["inning"] % len(
-                    self._TEST_MODE_AT_BAT_SAMPLES
-                )
-                self._play_by_play_cache[game_id] = self._TEST_MODE_AT_BAT_SAMPLES[
-                    sample_index
-                ]
-
-    def _maybe_draw_at_bat_info_screen(self, game: Dict, force_clear: bool = False) -> bool:
-        """Rotate in the dedicated pitcher/batter/last-play screen if it's
-        due. Returns True if it drew (caller should skip the normal
-        scorebug draw for this frame), False otherwise.
-        """
-        if not (self.show_pitcher_batter or self.show_last_play):
-            return False
-
-        pbp = self._play_by_play_cache.get(game.get("id"))
-        if not pbp or not (
-            pbp.get("pitcher") or pbp.get("batter") or pbp.get("last_play_code")
-        ):
-            return False
-
-        at_bat_cfg = self.config.get("customization", {}).get("at_bat_info", {})
-        dwell = at_bat_cfg.get("dwell_seconds", 4)
-        interval = at_bat_cfg.get("interval_seconds", 25)
-
-        now = time.time()
-        showing = now < self._at_bat_screen_showing_until
-        if not showing and now - self._at_bat_screen_last_shown >= interval:
-            self._at_bat_screen_last_shown = now
-            self._at_bat_screen_showing_until = now + dwell
-            showing = True
-
-        if not showing:
-            return False
-
-        self._draw_at_bat_info_screen(game, pbp, force_clear)
-        return True
-
-    @staticmethod
-    def _truncate_to_width(draw, text: str, font, max_width: int) -> str:
-        """Hard-truncate text (no ellipsis -- pixel fonts render one poorly
-        at small sizes) so it never draws past the panel edge. A long
-        player name is more useful clipped than overlapping the next
-        line's outline or bleeding off-canvas."""
-        if draw.textbbox((0, 0), text, font=font)[2] <= max_width:
-            return text
-        truncated = text
-        while len(truncated) > 1:
-            truncated = truncated[:-1]
-            if draw.textbbox((0, 0), truncated, font=font)[2] <= max_width:
-                return truncated
-        return truncated
-
-    def _draw_at_bat_info_screen(
-        self, game: Dict, pbp: Dict, force_clear: bool = False
-    ) -> None:
-        """Draw the dedicated pitcher/batter/last-play screen.
-
-        This replaces the normal scorebug while it's showing rather than
-        overlaying on top of it -- there isn't enough room on the scorebug,
-        especially at small display sizes, to add this text without
-        crowding or clipping the existing elements.
-        """
-        try:
-            img = Image.new("RGB", (self.display_width, self.display_height), (0, 0, 0))
-            draw = ImageDraw.Draw(img)
-
-            at_bat_cfg = self.config.get("customization", {}).get("at_bat_info", {})
-            font = self._load_custom_font_from_element_config(at_bat_cfg, default_size=6)
-
-            pitcher_color = tuple(at_bat_cfg.get("pitcher_color", [255, 255, 255]))
-            batter_color = tuple(at_bat_cfg.get("batter_color", [255, 255, 0]))
-            last_play_color = tuple(at_bat_cfg.get("last_play_color", [0, 255, 255]))
-
-            lines = []
-            if self.show_pitcher_batter and pbp.get("pitcher"):
-                lines.append((f"P: {pbp['pitcher']}", pitcher_color))
-            if self.show_pitcher_batter and pbp.get("batter"):
-                lines.append((f"B: {pbp['batter']}", batter_color))
-            if self.show_last_play and pbp.get("last_play_code"):
-                lines.append((pbp["last_play_code"], last_play_color))
-
-            if not lines:
-                return
-
-            try:
-                bbox = font.getbbox("Ay")
-                line_height = bbox[3] - bbox[1] + 2
-            except AttributeError:
-                line_height = 10
-
-            total_height = line_height * len(lines)
-            y = max(1, (self.display_height - total_height) // 2)
-            max_text_width = self.display_width - 4  # 2px padding each side
-
-            for text, color in lines:
-                if y >= self.display_height:
-                    break
-                text = self._truncate_to_width(draw, text, font, max_text_width)
-                self._draw_text_with_outline(draw, text, (2, y), font, fill=color)
-                y += line_height
-
-            self.display_manager.image.paste(img, (0, 0))
-            self.display_manager.update_display()
-
-        except Exception as e:
-            self.logger.error(f"Error drawing at-bat info screen: {e}", exc_info=True)
-
     def _maybe_draw_traditional_scoreboard_screen(self, game: Dict, force_clear: bool = False) -> bool:
         """Rotate in the dedicated traditional-scoreboard screen if it's due.
         Returns True if it drew (caller should skip the normal scorebug draw
         for this frame), False otherwise."""
         if not self.show_traditional_scoreboard:
             return False
-        if not (game.get("is_live") or game.get("is_final")):
+        is_live = bool(game.get("is_live"))
+        is_final = bool(game.get("is_final"))
+        if not (is_live or is_final):
             return False
 
         cfg = self.config.get("customization", {}).get("traditional_scoreboard", {})
+
+        # game_scope lets this screen apply to only live action, only
+        # final/recent games (handy for seeing the winner and full line
+        # score at a glance), or both (default, matches original behavior).
+        game_scope = cfg.get("game_scope", "both")
+        if game_scope == "live" and not is_live:
+            return False
+        if game_scope == "recent" and not is_final:
+            return False
+
+        # favorites_only restricts this screen to games involving one of
+        # this league's favorite_teams -- independent of show_all_live,
+        # which controls the *normal* rotation separately. A user running
+        # show_all_live can still get the fancy treatment only for their
+        # own team while other teams keep the compact scorebug.
+        if cfg.get("favorites_only", False) and self.favorite_teams:
+            if (
+                game.get("home_abbr") not in self.favorite_teams
+                and game.get("away_abbr") not in self.favorite_teams
+            ):
+                return False
+
         dwell = cfg.get("dwell_seconds", 6)
         interval = cfg.get("interval_seconds", 30)
 
@@ -1156,6 +868,327 @@ class BaseballLive(Baseball, SportsLive):
         draw_row(header_y, "B", balls, 3)
         draw_row(away_y, "S", strikes, 2)
         draw_row(home_y, "O", outs, 2)
+
+
+
+class BaseballRecent(Baseball, SportsRecent):
+    """Base class for recent baseball games."""
+
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        display_manager,
+        cache_manager,
+        logger: logging.Logger,
+        sport_key: str,
+    ):
+        super().__init__(config, display_manager, cache_manager, logger, sport_key)
+
+    def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
+        if self._maybe_draw_traditional_scoreboard_screen(game, force_clear):
+            return
+        super()._draw_scorebug_layout(game, force_clear)
+
+    def _custom_scorebug_layout(self, game: dict, draw_overlay: ImageDraw.ImageDraw):
+        self.display_series_summary(game, draw_overlay)
+
+
+class BaseballLive(Baseball, SportsLive):
+    """Base class for live baseball games."""
+
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        display_manager,
+        cache_manager,
+        logger: logging.Logger,
+        sport_key: str,
+    ):
+        super().__init__(config, display_manager, cache_manager, logger, sport_key)
+        # Pitcher/batter/last-play: keyed by game id, holds the resolved
+        # {"pitcher", "batter", "last_play_code"}. Kept separate from
+        # current_game/live_games since those get fully rebuilt from fresh
+        # scoreboard data on every poll and would silently drop extra keys.
+        self._play_by_play_cache: Dict[str, Dict] = {}
+        self._play_by_play_last_attempt: Dict[str, float] = {}
+        self.play_by_play_update_interval = self.mode_config.get(
+            "play_by_play_update_interval", 20
+        )
+        # Dedicated at-bat-info rotating screen timing state.
+        self._at_bat_screen_last_shown = 0.0
+        self._at_bat_screen_showing_until = 0.0
+
+    def update(self):
+        super().update()
+        if self.test_mode:
+            return
+        if not (self.show_pitcher_batter or self.show_last_play):
+            return
+        if not self.espn_summary_sport_league:
+            return
+        if not self.current_game:
+            return
+
+        game_id = self.current_game.get("id")
+        if not game_id:
+            return
+
+        now = time.time()
+        last_attempt = self._play_by_play_last_attempt.get(game_id, 0)
+        if now - last_attempt >= self.play_by_play_update_interval:
+            self._play_by_play_last_attempt[game_id] = now
+            self._fetch_play_by_play(game_id)
+
+        self._prune_stale_play_by_play()
+
+    def _prune_stale_play_by_play(self) -> None:
+        """Drop cached/attempted entries for games no longer live so this
+        doesn't grow unbounded across a long-running session."""
+        live_ids = {g.get("id") for g in self.live_games}
+        for gid in list(self._play_by_play_cache.keys()):
+            if gid not in live_ids:
+                del self._play_by_play_cache[gid]
+        for gid in list(self._play_by_play_last_attempt.keys()):
+            if gid not in live_ids:
+                del self._play_by_play_last_attempt[gid]
+
+    def _fetch_play_by_play(self, game_id: str) -> None:
+        """Fetch and parse the ESPN game summary for one game, off-thread.
+
+        Mirrors SportsCore._fetch_odds's background-thread-with-bounded-
+        timeout pattern (sports.py) so a slow/heavy per-game summary
+        response can never block the render/update loop -- on timeout or
+        error we simply keep whatever was cached from the previous
+        successful fetch (or nothing, if there wasn't one yet).
+        """
+        import threading
+        import queue
+
+        sport, league = self.espn_summary_sport_league
+        result_queue = queue.Queue()
+
+        def fetch():
+            try:
+                data = self.data_source.fetch_game_summary(sport, league, game_id)
+                result_queue.put(("success", data))
+            except Exception as e:
+                result_queue.put(("error", e))
+
+        thread = threading.Thread(target=fetch)
+        thread.daemon = True
+        thread.start()
+
+        try:
+            result_type, result_data = result_queue.get(timeout=2.0)
+        except queue.Empty:
+            self.logger.debug(
+                f"Play-by-play fetch timed out for game {game_id} (non-blocking)"
+            )
+            return
+
+        if result_type != "success" or not result_data:
+            self.logger.debug(
+                f"Play-by-play fetch failed for game {game_id}: {result_data}"
+            )
+            return
+
+        try:
+            plays = result_data.get("plays") or []
+            rosters = result_data.get("rosters") or []
+            athlete_names = _build_athlete_name_map(rosters)
+            pitcher, batter = _get_current_pitcher_batter(plays, athlete_names)
+            last_play_code = _get_last_play_code(plays)
+            if pitcher or batter or last_play_code:
+                self._play_by_play_cache[game_id] = {
+                    "pitcher": pitcher,
+                    "batter": batter,
+                    "last_play_code": last_play_code,
+                }
+            else:
+                self.logger.debug(
+                    f"Play-by-play response for game {game_id} had no usable "
+                    "pitcher/batter/last-play data; keeping prior cache entry"
+                )
+        except Exception as e:
+            self.logger.error(f"Error parsing play-by-play for game {game_id}: {e}")
+
+    # Sample data cycled through in test_mode so the at-bat info screen's
+    # real draw path (font/color/dwell/interval config) gets exercised
+    # offline, with zero network calls.
+    _TEST_MODE_AT_BAT_SAMPLES = [
+        {"pitcher": "G. Cole", "batter": "J. Soto", "last_play_code": "1B"},
+        {"pitcher": "G. Cole", "batter": "A. Judge", "last_play_code": "K"},
+        {"pitcher": "Y. Yamamoto", "batter": "F. Freeman", "last_play_code": "HR"},
+        {"pitcher": "Y. Yamamoto", "batter": "M. Betts", "last_play_code": "BB"},
+    ]
+
+    # After this many innings, reset the simulated game back to a fresh
+    # start rather than climbing forever -- most real games are 9 innings;
+    # this lets the occasional extra-inning case show without the fixture
+    # running away to absurd inning numbers the longer the service is up.
+    _TEST_MODE_MAX_INNING = 10
+
+    def _test_mode_reset_game(self) -> None:
+        game = self.current_game
+        game["inning"] = 1
+        game["inning_half"] = "top"
+        game["balls"] = 0
+        game["strikes"] = 0
+        game["outs"] = 0
+        game["bases_occupied"] = [False, False, False]
+        game["home_score"] = "0"
+        game["away_score"] = "0"
+        game["home_linescore"] = []
+        game["away_linescore"] = []
+        game["home_hits"] = "0"
+        game["away_hits"] = "0"
+        game["home_errors"] = "0"
+        game["away_errors"] = "0"
+
+    def _test_mode_update(self):
+        if self.current_game and self.current_game["is_live"]:
+            if self.current_game["inning_half"] == "top":
+                self.current_game["inning_half"] = "bottom"
+            else:
+                if self.current_game["inning"] >= self._TEST_MODE_MAX_INNING:
+                    self._test_mode_reset_game()
+                    return
+                self.current_game["inning_half"] = "top"
+                self.current_game["inning"] += 1
+                # The inning that just fully completed (bottom just ended)
+                # gets a new line-score entry for both teams.
+                self.current_game.setdefault("away_linescore", []).append(
+                    str(self.current_game["inning"] % 3)
+                )
+                self.current_game.setdefault("home_linescore", []).append(
+                    str((self.current_game["inning"] + 1) % 3)
+                )
+                self.current_game["away_hits"] = str(int(self.current_game.get("away_hits", 0)) + 1)
+                self.current_game["home_hits"] = str(int(self.current_game.get("home_hits", 0)) + 1)
+            self.current_game["balls"] = (self.current_game["balls"] + 1) % 4
+            self.current_game["strikes"] = (self.current_game["strikes"] + 1) % 3
+            self.current_game["outs"] = (self.current_game["outs"] + 1) % 3
+            self.current_game["bases_occupied"] = [
+                not b for b in self.current_game["bases_occupied"]
+            ]
+            if self.current_game["inning"] % 2 == 0:
+                self.current_game["home_score"] = str(
+                    int(self.current_game["home_score"]) + 1
+                )
+            else:
+                self.current_game["away_score"] = str(
+                    int(self.current_game["away_score"]) + 1
+                )
+
+            if self.show_pitcher_batter or self.show_last_play:
+                game_id = self.current_game.get("id", "test")
+                sample_index = self.current_game["inning"] % len(
+                    self._TEST_MODE_AT_BAT_SAMPLES
+                )
+                self._play_by_play_cache[game_id] = self._TEST_MODE_AT_BAT_SAMPLES[
+                    sample_index
+                ]
+
+    def _maybe_draw_at_bat_info_screen(self, game: Dict, force_clear: bool = False) -> bool:
+        """Rotate in the dedicated pitcher/batter/last-play screen if it's
+        due. Returns True if it drew (caller should skip the normal
+        scorebug draw for this frame), False otherwise.
+        """
+        if not (self.show_pitcher_batter or self.show_last_play):
+            return False
+
+        pbp = self._play_by_play_cache.get(game.get("id"))
+        if not pbp or not (
+            pbp.get("pitcher") or pbp.get("batter") or pbp.get("last_play_code")
+        ):
+            return False
+
+        at_bat_cfg = self.config.get("customization", {}).get("at_bat_info", {})
+        dwell = at_bat_cfg.get("dwell_seconds", 4)
+        interval = at_bat_cfg.get("interval_seconds", 25)
+
+        now = time.time()
+        showing = now < self._at_bat_screen_showing_until
+        if not showing and now - self._at_bat_screen_last_shown >= interval:
+            self._at_bat_screen_last_shown = now
+            self._at_bat_screen_showing_until = now + dwell
+            showing = True
+
+        if not showing:
+            return False
+
+        self._draw_at_bat_info_screen(game, pbp, force_clear)
+        return True
+
+    @staticmethod
+    def _truncate_to_width(draw, text: str, font, max_width: int) -> str:
+        """Hard-truncate text (no ellipsis -- pixel fonts render one poorly
+        at small sizes) so it never draws past the panel edge. A long
+        player name is more useful clipped than overlapping the next
+        line's outline or bleeding off-canvas."""
+        if draw.textbbox((0, 0), text, font=font)[2] <= max_width:
+            return text
+        truncated = text
+        while len(truncated) > 1:
+            truncated = truncated[:-1]
+            if draw.textbbox((0, 0), truncated, font=font)[2] <= max_width:
+                return truncated
+        return truncated
+
+    def _draw_at_bat_info_screen(
+        self, game: Dict, pbp: Dict, force_clear: bool = False
+    ) -> None:
+        """Draw the dedicated pitcher/batter/last-play screen.
+
+        This replaces the normal scorebug while it's showing rather than
+        overlaying on top of it -- there isn't enough room on the scorebug,
+        especially at small display sizes, to add this text without
+        crowding or clipping the existing elements.
+        """
+        try:
+            img = Image.new("RGB", (self.display_width, self.display_height), (0, 0, 0))
+            draw = ImageDraw.Draw(img)
+
+            at_bat_cfg = self.config.get("customization", {}).get("at_bat_info", {})
+            font = self._load_custom_font_from_element_config(at_bat_cfg, default_size=6)
+
+            pitcher_color = tuple(at_bat_cfg.get("pitcher_color", [255, 255, 255]))
+            batter_color = tuple(at_bat_cfg.get("batter_color", [255, 255, 0]))
+            last_play_color = tuple(at_bat_cfg.get("last_play_color", [0, 255, 255]))
+
+            lines = []
+            if self.show_pitcher_batter and pbp.get("pitcher"):
+                lines.append((f"P: {pbp['pitcher']}", pitcher_color))
+            if self.show_pitcher_batter and pbp.get("batter"):
+                lines.append((f"B: {pbp['batter']}", batter_color))
+            if self.show_last_play and pbp.get("last_play_code"):
+                lines.append((pbp["last_play_code"], last_play_color))
+
+            if not lines:
+                return
+
+            try:
+                bbox = font.getbbox("Ay")
+                line_height = bbox[3] - bbox[1] + 2
+            except AttributeError:
+                line_height = 10
+
+            total_height = line_height * len(lines)
+            y = max(1, (self.display_height - total_height) // 2)
+            max_text_width = self.display_width - 4  # 2px padding each side
+
+            for text, color in lines:
+                if y >= self.display_height:
+                    break
+                text = self._truncate_to_width(draw, text, font, max_text_width)
+                self._draw_text_with_outline(draw, text, (2, y), font, fill=color)
+                y += line_height
+
+            self.display_manager.image.paste(img, (0, 0))
+            self.display_manager.update_display()
+
+        except Exception as e:
+            self.logger.error(f"Error drawing at-bat info screen: {e}", exc_info=True)
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live baseball game."""
