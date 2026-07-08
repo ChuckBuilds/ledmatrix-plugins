@@ -1558,15 +1558,15 @@
                 "properties": {
                     "font": {
                         "type": "string",
-                        "default": "four_by_six",
-                        "description": "Font family for this screen's text"
+                        "default": "5x7.bdf",
+                        "description": "Font for this screen's text. The default is a small, clean bitmap font -- the previous default ('four_by_six') rendered 'B' and '8' almost identically at this size, making last-play codes like 'BB' (walk) misreadable as '88'. A fixed-size .bdf font always renders at its own native pixel size regardless of font_size below (falling back automatically to its native size if the requested one isn't valid)."
                     },
                     "font_size": {
                         "type": "integer",
-                        "default": 6,
+                        "default": 7,
                         "minimum": 4,
                         "maximum": 16,
-                        "description": "Font size for this screen's text"
+                        "description": "Font size for this screen's text, for scalable .ttf fonts only (ignored by fixed-size .bdf fonts like the default, which always render at their native size)"
                     },
                     "pitcher_color": {
                         "type": "array",

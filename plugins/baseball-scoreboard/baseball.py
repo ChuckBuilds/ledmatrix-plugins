@@ -1188,7 +1188,11 @@ class BaseballLive(Baseball, SportsLive):
             draw = ImageDraw.Draw(img)
 
             at_bat_cfg = self.config.get("customization", {}).get("at_bat_info", {})
-            font = self._load_custom_font_from_element_config(at_bat_cfg, default_size=6)
+            font_cfg = dict(at_bat_cfg)
+            # Match config_schema.json's default explicitly -- see the same
+            # pattern (and reasoning) in _draw_traditional_scoreboard_screen.
+            font_cfg.setdefault("font", "5x7.bdf")
+            font = self._load_custom_font_from_element_config(font_cfg, default_size=7)
 
             pitcher_color = tuple(at_bat_cfg.get("pitcher_color", [255, 255, 255]))
             batter_color = tuple(at_bat_cfg.get("batter_color", [255, 255, 0]))

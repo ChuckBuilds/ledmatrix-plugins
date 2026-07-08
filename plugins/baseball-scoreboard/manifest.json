@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.16.0",
+  "version": "1.16.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-08",
+      "version": "1.16.1",
+      "notes": "Fix the Pitcher/Batter/Last Play screen's default font ('four_by_six') rendering 'B' and '8' almost identically, making last-play codes like 'BB' (walk) misreadable as '88'. Switched the default to '5x7.bdf', a small bitmap font with clearly distinct glyphs.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-08",
       "version": "1.16.0",
