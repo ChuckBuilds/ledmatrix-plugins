@@ -790,6 +790,16 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 return int(league_config["live_display_duration"])
             return 20
 
+        def resolve_non_favorite_live_duration() -> int:
+            # Shorter dwell for live games with no favorite team. Try new nested
+            # structure first, then the flat key; 0 (default) = feature off.
+            durations = league_config.get("display_durations", {})
+            if "non_favorite_live" in durations:
+                return int(durations["non_favorite_live"])
+            if "non_favorite_live_game_duration" in league_config:
+                return int(league_config["non_favorite_live_game_duration"])
+            return 0
+
         # Resolve display options with defaults fallback
         show_records = resolve_value(["display_options", "show_records"], ["show_records"], self.show_records)
         show_ranking = resolve_value(["display_options", "show_ranking"], ["show_ranking"], self.show_ranking)
@@ -824,6 +834,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "recent_update_interval": recent_update_interval,
                 "upcoming_update_interval": upcoming_update_interval,
                 "live_game_duration": resolve_live_duration(),
+                "non_favorite_live_game_duration": resolve_non_favorite_live_duration(),
                 "background_service": {
                     "request_timeout": 30,
                     "max_retries": 3,

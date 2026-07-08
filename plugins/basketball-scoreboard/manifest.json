@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -18,6 +18,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-08",
+      "version": "1.7.0",
+      "notes": "Add non_favorite_live_game_duration per league: give live games without a favorite team a shorter on-screen turn than your favorites. Applies only when favorite teams are set and show_favorite_teams_only is off; defaults to 0 (off) for unchanged behavior.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-02",
       "version": "1.6.0",
@@ -87,7 +93,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-07-02",
+  "last_updated": "2026-07-08",
   "verified": true,
   "screenshot": "",
   "display_modes": [

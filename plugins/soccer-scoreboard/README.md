@@ -219,6 +219,7 @@ Each league (and each custom league) has its own `filtering` block plus a couple
 | `favorite_teams` | `[]` | Teams to prioritize (see above for abbreviation format). |
 | `exclude_teams` | `[]` | Teams to always hide, from **both** the live rotation and Recent/Final scores — useful for spoiler protection if you're planning to watch a game delayed. Takes precedence over every other setting: an excluded team's games never show, even if `show_all_live` is on or the team is also listed in `favorite_teams`. |
 | `filtering.favorite_live_boost` | `2` | How many turns your favorite's live game gets in the live rotation for every 1 turn other live games get. Your favorite's game is also always queued first the moment it goes live. Set to `1` for perfectly even rotation (no boost). Has no effect unless `favorite_teams` is configured and more than one game is live. |
+| `non_favorite_live_game_duration` | `0` (off) | Seconds to show live games with **no** favorite team, so they flash by faster than your favorites (which keep `live_game_duration`). Only applies when `favorite_teams` is set **and** `show_favorite_teams_only` is off. `0` = every live game uses `live_game_duration` (no change). See below. |
 | `live_priority` | varies | Lets this league's live games interrupt the recent/upcoming mode rotation (unrelated to which *specific* live game is shown — that's what `favorite_live_boost` controls). |
 
 Example:
@@ -238,6 +239,26 @@ Example:
 }
 ```
 With both `show_favorite_teams_only` and `show_all_live` off, all live games rotate evenly — except Liverpool's game shows 3× as often (and jumps to the front the instant it goes live) whenever they're playing, and Man United's games never appear in live or recent/final scores at all.
+
+### Shorter dwell for non-favorite live games
+
+`non_favorite_live_game_duration` (0-120, default 0 = off) gives live games that
+involve **none** of your favorite teams a shorter on-screen turn than your
+favorites. For example `live_game_duration: 30` with
+`non_favorite_live_game_duration: 5` shows your teams for 30s each while everyone
+else's games flash by in 5s.
+
+This **only takes effect** when favorite teams are configured **and**
+`show_favorite_teams_only` is off (otherwise non-favorite games are never on
+screen to shorten). Leave it at `0` to display every live game for
+`live_game_duration`.
+
+| Favorite teams set? | Show favorites only | Live game has a favorite? | Duration used |
+|---|---|---|---|
+| No | — | — | `live_game_duration` (unchanged) |
+| Yes | On (default) | favorite | `live_game_duration` |
+| Yes | Off | favorite | `live_game_duration` |
+| Yes | Off | none | `non_favorite_live_game_duration` (when > 0) |
 
 ## Background Service
 

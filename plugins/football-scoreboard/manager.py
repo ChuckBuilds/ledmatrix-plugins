@@ -646,6 +646,9 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 ),
                 "live_update_interval": league_config.get("live_update_interval", 30),
                 "live_game_duration": league_config.get("live_game_duration", 20),
+                "non_favorite_live_game_duration": league_config.get(
+                    "non_favorite_live_game_duration", 0
+                ),
                 "recent_game_duration": league_config.get(
                     "recent_game_duration",
                     15  # Default per-game duration for recent games

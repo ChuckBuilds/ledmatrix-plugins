@@ -776,6 +776,9 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 ),
                 "live_update_interval": league_config.get("live_update_interval", 30),
                 "live_game_duration": league_config.get("live_game_duration", 20),
+                "non_favorite_live_game_duration": league_config.get(
+                    "non_favorite_live_game_duration", 0
+                ),
                 "live_priority": league_config.get("live_priority", False),
                 "show_favorite_teams_only": show_favorites_only,
                 "show_all_live": show_all_live,

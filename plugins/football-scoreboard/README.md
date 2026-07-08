@@ -157,10 +157,29 @@ Controls how long each individual game displays before rotating to the next game
 
 **Configuration:**
 - `live_game_duration`: Seconds per live game (default: 30s)
+- `non_favorite_live_game_duration`: Seconds per live game with **no** favorite team (default: 0 = off)
 - `recent_game_duration`: Seconds per recent game (default: 15s)
 - `upcoming_game_duration`: Seconds per upcoming game (default: 15s)
 
 **Example:** With `recent_game_duration: 15`, each recent game shows for 15 seconds before moving to the next.
+
+#### Shorter dwell for non-favorite live games
+
+Set `non_favorite_live_game_duration` to give live games that don't involve one of your favorite teams a shorter turn than your favorites. For example, `live_game_duration: 30` and `non_favorite_live_game_duration: 5` shows your teams for 30s each while everyone else's games flash by in 5s.
+
+This **only takes effect when both** of the following are true:
+
+- one or more `favorite_teams` are configured for the league, **and**
+- `filtering.show_favorite_teams_only` is **off** (otherwise non-favorite games are never shown in the first place).
+
+| Favorite teams set? | Show favorites only | Live game has a favorite? | Duration used |
+|---|---|---|---|
+| No | — | — | `live_game_duration` (unchanged) |
+| Yes | On (default) | favorite | `live_game_duration` |
+| Yes | Off | favorite | `live_game_duration` |
+| Yes | Off | none | `non_favorite_live_game_duration` (when > 0) |
+
+Leave it at `0` to display every live game for `live_game_duration` (the previous behavior).
 
 ### Per-Mode Duration
 

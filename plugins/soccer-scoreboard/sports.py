@@ -188,6 +188,24 @@ class SportsCore(ABC):
             or game.get("away_abbr") in self.favorite_teams
         )
 
+    def _effective_live_duration(self, game):
+        """How long the given live game should stay on screen before rotating.
+
+        Non-favorite live games use non_favorite_live_game_duration, but only
+        when it is set (> 0) AND favorite teams are configured. With no favorites
+        (or the knob at 0) every live game uses game_display_duration - identical
+        to the prior single-duration behavior. When show_favorite_teams_only is
+        on, non-favorite games are never shown, so this naturally never fires."""
+        non_fav = getattr(self, "non_favorite_live_game_duration", 0) or 0
+        if (
+            non_fav > 0
+            and self.favorite_teams
+            and game is not None
+            and not self._is_favorite_game(game)
+        ):
+            return non_fav
+        return self.game_display_duration
+
     def _classify_live_game(self, home_abbr, away_abbr) -> bool:
         """Whether a live game should be included in the live rotation.
 
@@ -2307,6 +2325,16 @@ class SportsLive(SportsCore):
         self.current_game_index = 0
         self.last_game_switch = 0
         self.game_display_duration = self.mode_config.get("live_game_duration", 20)
+        # Optional shorter dwell for live games that involve NO favorite team.
+        # 0 (default) means "use game_display_duration for every live game" -
+        # i.e. today's behavior. Only bites when favorites are configured and
+        # show_favorite_teams_only is off (so non-favorite games are on screen).
+        try:
+            self.non_favorite_live_game_duration = int(
+                self.mode_config.get("non_favorite_live_game_duration", 0) or 0
+            )
+        except (TypeError, ValueError):
+            self.non_favorite_live_game_duration = 0
         self.last_display_update = 0
         self.last_log_time = 0
         self.log_interval = 300
@@ -3118,7 +3146,8 @@ class SportsLive(SportsCore):
                 if (
                     len(self.live_games) > 1
                     and self.active_celebration is None
-                    and (current_time - self.last_game_switch) >= self.game_display_duration
+                    and (current_time - self.last_game_switch)
+                    >= self._effective_live_duration(self.current_game)
                 ):
                     # Weighted pick (see _swrr_advance) instead of plain +1 index -
                     # gives a live favorite's game extra turns per

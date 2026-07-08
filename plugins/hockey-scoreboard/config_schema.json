@@ -267,7 +267,14 @@
               "default": 20,
               "minimum": 5,
               "maximum": 120,
-              "description": "Display duration for live NHL games"
+              "description": "Display duration for live NHL games (games with a favorite team when a non-favorite duration is set)"
+            },
+            "non_favorite_live": {
+              "type": "number",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 120,
+              "description": "Display duration for live NHL games with NO favorite team. Only applies when favorite teams are set AND 'show_favorite_teams_only' is off. 0 (default) = use the live duration for every game (no change)."
             },
             "recent": {
               "type": "number",
@@ -628,7 +635,14 @@
               "default": 15,
               "minimum": 5,
               "maximum": 120,
-              "description": "Display duration for live NCAA Men's Hockey games"
+              "description": "Display duration for live NCAA Men's Hockey games (games with a favorite team when a non-favorite duration is set)"
+            },
+            "non_favorite_live": {
+              "type": "number",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 120,
+              "description": "Display duration for live NCAA Men's Hockey games with NO favorite team. Only applies when favorite teams are set AND 'show_favorite_teams_only' is off. 0 (default) = use the live duration for every game (no change)."
             },
             "recent": {
               "type": "number",
@@ -989,7 +1003,14 @@
               "default": 15,
               "minimum": 5,
               "maximum": 120,
-              "description": "Display duration for live NCAA Women's Hockey games"
+              "description": "Display duration for live NCAA Women's Hockey games (games with a favorite team when a non-favorite duration is set)"
+            },
+            "non_favorite_live": {
+              "type": "number",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 120,
+              "description": "Display duration for live NCAA Women's Hockey games with NO favorite team. Only applies when favorite teams are set AND 'show_favorite_teams_only' is off. 0 (default) = use the live duration for every game (no change)."
             },
             "recent": {
               "type": "number",

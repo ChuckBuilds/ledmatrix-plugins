@@ -164,7 +164,14 @@
                     "default": 30,
                     "minimum": 10,
                     "maximum": 120,
-                    "description": "Duration in seconds to display each live game before rotating to the next live game"
+                    "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+                },
+                "non_favorite_live_game_duration": {
+                    "type": "integer",
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 120,
+                    "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND 'show_favorite_teams_only' is off (so non-favorite games are shown). 0 (default) = use live_game_duration for every live game (no change)."
                 },
                 "recent_game_duration": {
                     "type": "number",
@@ -537,7 +544,14 @@
                     "default": 30,
                     "minimum": 10,
                     "maximum": 120,
-                    "description": "Duration in seconds to display each live game before rotating to the next live game"
+                    "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+                },
+                "non_favorite_live_game_duration": {
+                    "type": "integer",
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 120,
+                    "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND 'show_favorite_teams_only' is off (so non-favorite games are shown). 0 (default) = use live_game_duration for every live game (no change)."
                 },
                 "recent_game_duration": {
                     "type": "number",
@@ -910,7 +924,14 @@
                     "default": 30,
                     "minimum": 10,
                     "maximum": 120,
-                    "description": "Duration in seconds to display each live game before rotating to the next live game"
+                    "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+                },
+                "non_favorite_live_game_duration": {
+                    "type": "integer",
+                    "default": 0,
+                    "minimum": 0,
+                    "maximum": 120,
+                    "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND 'show_favorite_teams_only' is off (so non-favorite games are shown). 0 (default) = use live_game_duration for every live game (no change)."
                 },
                 "recent_game_duration": {
                     "type": "number",
