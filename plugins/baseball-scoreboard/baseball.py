@@ -278,7 +278,7 @@ class Baseball(SportsCore):
 
             # Only log detailed information for favorite teams
             if is_favorite_game:
-                self.logger.debug(f"Full status data: {game_event['status']}")
+                self.logger.debug(f"Full status data: {status}")
                 self.logger.debug(f"Status type: {game_status}, State: {status_state}")
                 self.logger.debug(f"Status detail: {status['type'].get('detail', '')}")
                 self.logger.debug(
@@ -290,8 +290,15 @@ class Baseball(SportsCore):
                 series_summary = series.get("summary", "")
             # Get game state information
             if status_state == "in":
-                # For live games, get detailed state
-                inning = game_event["status"].get(
+                # For live games, get detailed state. Use the already-
+                # validated `status` (competition-level, from
+                # _extract_game_details_common) rather than a separate
+                # top-level game_event["status"] lookup -- real ESPN
+                # events duplicate status in both places, but MiLB's
+                # events (synthesized from the MLB Stats API into an
+                # ESPN-like shape) only ever populate the competition-level
+                # one, so the top-level lookup raised a bare KeyError.
+                inning = status.get(
                     "period", 1
                 )  # Get inning from status period
 
@@ -314,7 +321,7 @@ class Baseball(SportsCore):
                 if "end" in status_detail or "end" in status_short:
                     inning_half = "top"
                     inning = (
-                        game_event["status"].get("period", 1) + 1
+                        status.get("period", 1) + 1
                     )  # Use period and increment for next inning
                     if is_favorite_game:
                         self.logger.debug(
@@ -787,10 +794,29 @@ class Baseball(SportsCore):
                 self._draw_text_with_outline(draw, label, (col_x, header_y), font, fill=header_color)
             away_rhe = (str(game.get("away_score", "0")), game.get("away_hits", "0"), game.get("away_errors", "0"))
             home_rhe = (str(game.get("home_score", "0")), game.get("home_hits", "0"), game.get("home_errors", "0"))
+
+            # On a final game, call out the winner's run total at a glance
+            # (e.g. for game_scope: "recent") instead of making the viewer
+            # read and compare both R values themselves.
+            away_run_color = home_run_color = text_color
+            if game.get("is_final") and cfg.get("highlight_winner", True):
+                try:
+                    away_runs, home_runs = int(game.get("away_score", 0) or 0), int(game.get("home_score", 0) or 0)
+                except (TypeError, ValueError):
+                    away_runs = home_runs = None
+                if away_runs is not None and away_runs != home_runs:
+                    winner_color = tuple(cfg.get("winner_color", [0, 200, 0]))
+                    if away_runs > home_runs:
+                        away_run_color = winner_color
+                    else:
+                        home_run_color = winner_color
+
             for i, val in enumerate(away_rhe):
-                self._draw_text_with_outline(draw, str(val), (rhe_x + i * rhe_col_w, away_y), font, fill=text_color)
+                color = away_run_color if i == 0 else text_color
+                self._draw_text_with_outline(draw, str(val), (rhe_x + i * rhe_col_w, away_y), font, fill=color)
             for i, val in enumerate(home_rhe):
-                self._draw_text_with_outline(draw, str(val), (rhe_x + i * rhe_col_w, home_y), font, fill=text_color)
+                color = home_run_color if i == 0 else text_color
+                self._draw_text_with_outline(draw, str(val), (rhe_x + i * rhe_col_w, home_y), font, fill=color)
 
             # Grid divider lines (team | innings | R H E columns, and
             # header/away/home rows) -- drawn last so they cleanly overwrite
@@ -1104,6 +1130,18 @@ class BaseballLive(Baseball, SportsLive):
             return False
 
         at_bat_cfg = self.config.get("customization", {}).get("at_bat_info", {})
+
+        # favorites_only restricts this screen to games involving one of
+        # this league's favorite_teams -- independent of show_all_live,
+        # which controls the *normal* rotation separately (same option as
+        # the traditional scoreboard screen).
+        if at_bat_cfg.get("favorites_only", False) and self.favorite_teams:
+            if (
+                game.get("home_abbr") not in self.favorite_teams
+                and game.get("away_abbr") not in self.favorite_teams
+            ):
+                return False
+
         dwell = at_bat_cfg.get("dwell_seconds", 4)
         interval = at_bat_cfg.get("interval_seconds", 25)
 

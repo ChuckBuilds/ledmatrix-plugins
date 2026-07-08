@@ -612,6 +612,77 @@ def test_favorites_only_has_no_effect_when_favorite_teams_empty():
     print("test_favorites_only_has_no_effect_when_favorite_teams_empty: PASS")
 
 
+def test_winner_run_total_is_highlighted_on_final_game():
+    live = _make_live(192, 48)
+    winner_color = (0, 200, 0)
+    game = {
+        "away_abbr": "BOS", "home_abbr": "NYY",
+        "away_score": "7", "home_score": "3",  # BOS wins
+        "away_hits": "10", "home_hits": "6",
+        "away_errors": "0", "home_errors": "1",
+        "away_linescore": ["2", "1", "0", "1", "3", "0", "0", "0", "0"],
+        "home_linescore": ["0", "1", "0", "1", "0", "1", "0", "0", "0"],
+        "inning": 9, "inning_half": "bottom",
+        "balls": 0, "strikes": 0, "outs": 0,
+        "is_live": False, "is_final": True,
+        "has_count_data": True,
+    }
+    live.config = {"customization": {"traditional_scoreboard": {}}}
+    live._draw_traditional_scoreboard_screen(game)
+    img = live.display_manager.image
+    assert _image_contains_color(img, winner_color), (
+        "expected the winning team's (BOS, 7 runs) run total to be drawn in winner_color"
+    )
+    print("test_winner_run_total_is_highlighted_on_final_game: PASS")
+
+
+def test_winner_highlight_can_be_disabled():
+    live = _make_live(192, 48)
+    winner_color = (0, 200, 0)
+    game = {
+        "away_abbr": "BOS", "home_abbr": "NYY",
+        "away_score": "7", "home_score": "3",
+        "away_hits": "10", "home_hits": "6",
+        "away_errors": "0", "home_errors": "1",
+        "away_linescore": ["2", "1", "0", "1", "3", "0", "0", "0", "0"],
+        "home_linescore": ["0", "1", "0", "1", "0", "1", "0", "0", "0"],
+        "inning": 9, "inning_half": "bottom",
+        "balls": 0, "strikes": 0, "outs": 0,
+        "is_live": False, "is_final": True,
+        "has_count_data": True,
+    }
+    live.config = {"customization": {"traditional_scoreboard": {"highlight_winner": False}}}
+    live._draw_traditional_scoreboard_screen(game)
+    img = live.display_manager.image
+    assert not _image_contains_color(img, winner_color), (
+        "expected no winner_color pixels when highlight_winner is disabled"
+    )
+    print("test_winner_highlight_can_be_disabled: PASS")
+
+
+def test_winner_highlight_not_applied_to_live_games():
+    live = _make_live(192, 48)
+    winner_color = (0, 200, 0)
+    game = {
+        "away_abbr": "BOS", "home_abbr": "NYY",
+        "away_score": "7", "home_score": "3",
+        "away_hits": "5", "home_hits": "3",
+        "away_errors": "0", "home_errors": "1",
+        "away_linescore": ["2", "1", "0", "1", "3"], "home_linescore": ["0", "1", "0", "1", "0"],
+        "inning": 5, "inning_half": "top",
+        "balls": 1, "strikes": 1, "outs": 1,
+        "is_live": True, "is_final": False,
+        "has_count_data": True,
+    }
+    live.config = {"customization": {"traditional_scoreboard": {}}}
+    live._draw_traditional_scoreboard_screen(game)
+    img = live.display_manager.image
+    assert not _image_contains_color(img, winner_color), (
+        "did not expect winner_color while the game is still live (not final)"
+    )
+    print("test_winner_highlight_not_applied_to_live_games: PASS")
+
+
 def test_draws_without_crashing_when_final_and_no_count_data():
     live = _make_live(128, 64)
     game = {
@@ -663,6 +734,9 @@ if __name__ == "__main__":
         test_game_scope_both_draws_live_and_final,
         test_favorites_only_skips_non_favorite_teams,
         test_favorites_only_has_no_effect_when_favorite_teams_empty,
+        test_winner_run_total_is_highlighted_on_final_game,
+        test_winner_highlight_can_be_disabled,
+        test_winner_highlight_not_applied_to_live_games,
         test_draws_without_crashing_when_final_and_no_count_data,
     ):
         try:

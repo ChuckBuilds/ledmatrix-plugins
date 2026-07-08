@@ -199,10 +199,12 @@ screen):
 | `use_team_colors` | `true` | Color each team's abbreviation with their real ESPN team colors (brightness-adjusted for legibility on black) instead of a flat `text_color`. |
 | `show_logos` | `true` | Show a small team logo beside each abbreviation when there's spare width (see "How it works" above). |
 | `show_dividers` | `true` | Draw thin 1px grid lines between innings, rows, and the R/H/E columns for readability. |
+| `highlight_winner` | `true` | On a final game, color the winning team's run total in `winner_color` so the winner is obvious at a glance instead of having to compare both R values yourself. Pairs naturally with `game_scope: "recent"`. No effect on live games. |
 | `text_color` | `[255, 255, 255]` | `[R, G, B]` for score digits, and team abbreviations when `use_team_colors` is off or a team's color is unavailable. |
 | `header_color` | `[180, 180, 180]` | `[R, G, B]` for the inning-number and R/H/E header row. |
 | `highlight_color` | `[255, 140, 0]` | `[R, G, B]` accent color for the current-inning highlight, the batting-team ▲/▼ indicator, and lit ball/strike/out indicators. |
 | `divider_color` | `[90, 90, 90]` | `[R, G, B]` for the grid divider lines. |
+| `winner_color` | `[0, 200, 0]` | `[R, G, B]` for the winning team's run total on a final game (see `highlight_winner`). |
 
 Example — only show this screen for your favorite team, and only once
 the game is final (a simple "check the final score" use case):

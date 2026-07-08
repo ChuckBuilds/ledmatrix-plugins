@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-08",
+      "version": "1.16.0",
+      "notes": "Fix a real KeyError('status') crash on live MiLB games (its converted-from-Stats-API events never carried a duplicate top-level status key the way real ESPN events do; _extract_game_details now correctly reuses the already-validated competition-level status instead of a separate, unreliable top-level lookup). Add favorites_only to the Pitcher/Batter/Last Play screen, matching the Traditional Scoreboard's option. Add highlight_winner (default on) to the Traditional Scoreboard: colors the winning team's run total on a final game so the winner is obvious at a glance, pairing naturally with game_scope: recent.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-08",
       "version": "1.15.0",

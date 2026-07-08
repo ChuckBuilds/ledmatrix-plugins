@@ -189,6 +189,41 @@ def test_fetch_play_by_play_updates_cache_on_real_data():
     print("test_fetch_play_by_play_updates_cache_on_real_data: PASS")
 
 
+def _make_gate_test_live(favorites_only=None, favorite_teams=None):
+    live = object.__new__(_ConcreteBaseballLive)
+    live.show_pitcher_batter = True
+    live.show_last_play = True
+    live._play_by_play_cache = {"g1": {"pitcher": "G. Cole", "batter": "J. Soto"}}
+    live._at_bat_screen_last_shown = 0.0
+    live._at_bat_screen_showing_until = 0.0
+    live.favorite_teams = favorite_teams or []
+    cfg = {}
+    if favorites_only is not None:
+        cfg["favorites_only"] = favorites_only
+    live.config = {"customization": {"at_bat_info": cfg}}
+    drawn = []
+    live._draw_at_bat_info_screen = lambda game, pbp, force_clear=False: drawn.append(game)
+    return live, drawn
+
+
+def test_at_bat_info_favorites_only_skips_non_favorite_teams():
+    live, drawn = _make_gate_test_live(favorites_only=True, favorite_teams=["NYY"])
+    live._maybe_draw_at_bat_info_screen({"id": "g1", "home_abbr": "BOS", "away_abbr": "TB"})
+    assert drawn == [], "expected favorites_only to skip a game with no favorite team"
+    result = live._maybe_draw_at_bat_info_screen({"id": "g1", "home_abbr": "NYY", "away_abbr": "BOS"})
+    assert drawn and result is True, "expected favorites_only to draw a game involving a favorite team"
+    print("test_at_bat_info_favorites_only_skips_non_favorite_teams: PASS")
+
+
+def test_at_bat_info_favorites_only_has_no_effect_when_favorite_teams_empty():
+    live, drawn = _make_gate_test_live(favorites_only=True, favorite_teams=[])
+    result = live._maybe_draw_at_bat_info_screen({"id": "g1", "home_abbr": "BOS", "away_abbr": "TB"})
+    assert drawn and result is True, (
+        "expected favorites_only to have no effect (draw normally) when favorite_teams is empty"
+    )
+    print("test_at_bat_info_favorites_only_has_no_effect_when_favorite_teams_empty: PASS")
+
+
 if __name__ == "__main__":
     print("pitcher/batter/last-play parsing regression tests")
     print("=" * 55)
@@ -205,6 +240,8 @@ if __name__ == "__main__":
         test_prune_stale_play_by_play,
         test_fetch_play_by_play_keeps_prior_cache_on_empty_response,
         test_fetch_play_by_play_updates_cache_on_real_data,
+        test_at_bat_info_favorites_only_skips_non_favorite_teams,
+        test_at_bat_info_favorites_only_has_no_effect_when_favorite_teams_empty,
     ):
         try:
             t()

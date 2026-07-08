@@ -1608,6 +1608,11 @@
                         "minimum": 10,
                         "maximum": 120,
                         "description": "How often (in seconds) this screen rotates into the normal live view"
+                    },
+                    "favorites_only": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Only rotate this screen in for games involving one of this league's favorite_teams. Useful if show_all_live is on (so every team's live game rotates through) but you only want the pitcher/batter/last-play treatment for your own team -- other teams still get the normal compact scorebug. Has no effect if favorite_teams is empty."
                     }
                 },
                 "additionalProperties": false
@@ -1690,6 +1695,20 @@
                         "minItems": 3,
                         "maxItems": 3,
                         "description": "Color [R, G, B] for the grid divider lines"
+                    },
+                    "highlight_winner": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "On a final game, color the winning team's run total in winner_color so the winner is obvious at a glance instead of having to compare both R values yourself"
+                    },
+                    "winner_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [0, 200, 0],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Color [R, G, B] for the winning team's run total on a final game"
                     },
                     "dwell_seconds": {
                         "type": "number",
