@@ -1558,15 +1558,20 @@
                 "properties": {
                     "font": {
                         "type": "string",
-                        "default": "5x7.bdf",
-                        "description": "Font for this screen's text. The default is a small, clean bitmap font -- the previous default ('four_by_six') rendered 'B' and '8' almost identically at this size, making last-play codes like 'BB' (walk) misreadable as '88'. A fixed-size .bdf font always renders at its own native pixel size regardless of font_size below (falling back automatically to its native size if the requested one isn't valid)."
+                        "default": "9x15.bdf",
+                        "description": "Font for this screen's text -- a clean, bold bitmap font that auto-fits as large as the display and each line's actual text allows (falling back to a smaller same-family font, e.g. on a narrow display or with a long player name, down to as small as '4x6-font.ttf' -- ('four_by_six') was previously the flat default here, but it renders 'B' and '8' almost identically, making last-play codes like 'BB' misreadable as '88'; the fallback ladder never steps down to it for this reason). A fixed-size .bdf font always renders at its own native pixel size regardless of font_size below; use a scalable .ttf font (e.g. 'press_start') if you want font_size to directly control the size."
                     },
                     "font_size": {
                         "type": "integer",
-                        "default": 7,
-                        "minimum": 4,
-                        "maximum": 16,
-                        "description": "Font size for this screen's text, for scalable .ttf fonts only (ignored by fixed-size .bdf fonts like the default, which always render at their native size)"
+                        "default": 24,
+                        "minimum": 6,
+                        "maximum": 24,
+                        "description": "Maximum font size cap, for scalable .ttf fonts only (ignored by fixed-size .bdf fonts like the default). This screen auto-fits the largest text that still fits every line, so the default effectively means 'as big as the display and text allow' -- lower it to force a smaller, more consistent size."
+                    },
+                    "use_team_colors": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Color the pitcher's name with the fielding team's real ESPN color and the batter's name with the batting team's color, instead of the flat pitcher_color/batter_color below. Falls back to those flat colors when off, or when a team's color isn't available."
                     },
                     "pitcher_color": {
                         "type": "array",
@@ -1575,7 +1580,7 @@
                         "default": [255, 255, 255],
                         "minItems": 3,
                         "maxItems": 3,
-                        "description": "Text color [R, G, B] for the pitcher line"
+                        "description": "Text color [R, G, B] for the pitcher line when use_team_colors is off or the fielding team's color is unavailable"
                     },
                     "batter_color": {
                         "type": "array",
@@ -1584,7 +1589,7 @@
                         "default": [255, 255, 0],
                         "minItems": 3,
                         "maxItems": 3,
-                        "description": "Text color [R, G, B] for the batter line"
+                        "description": "Text color [R, G, B] for the batter line when use_team_colors is off or the batting team's color is unavailable"
                     },
                     "last_play_color": {
                         "type": "array",

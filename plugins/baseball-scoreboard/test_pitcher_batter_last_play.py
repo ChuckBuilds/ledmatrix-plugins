@@ -224,6 +224,163 @@ def test_at_bat_info_favorites_only_has_no_effect_when_favorite_teams_empty():
     print("test_at_bat_info_favorites_only_has_no_effect_when_favorite_teams_empty: PASS")
 
 
+class _DisplayManager:
+    def __init__(self, width, height):
+        from PIL import Image
+        self.image = Image.new("RGB", (width, height))
+        self._updated = False
+
+    def update_display(self):
+        self._updated = True
+
+
+def _make_render_live(width, height):
+    live = object.__new__(_ConcreteBaseballLive)
+    live.display_width = width
+    live.display_height = height
+    live.display_manager = _DisplayManager(width, height)
+    live.config = {}
+    live.show_pitcher_batter = True
+    live.show_last_play = True
+    import logging
+    live.logger = logging.getLogger("test_at_bat_info_render")
+    return live
+
+
+def _find_font_asset(name="9x15.bdf"):
+    """The at-bat-info screen's auto-fit sizing (and these rendering tests)
+    depend on real font metrics -- _load_custom_font_from_element_config
+    resolves fonts relative to cwd ('assets/fonts/...'), so this only
+    succeeds when run from the LEDMatrix tree. Mirrors
+    test_traditional_scoreboard.py's _find_font_asset."""
+    candidates = []
+    d = PLUGIN_DIR
+    for _ in range(6):
+        candidates.append(os.path.join(d, "assets", "fonts", name))
+        d = os.path.dirname(d)
+    candidates.append(os.path.join(os.getcwd(), "assets", "fonts", name))
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return None
+
+
+_SAMPLE_GAME = {
+    "home_abbr": "NYY", "away_abbr": "BOS", "inning_half": "top",
+    "home_team_color": (38, 82, 150), "away_team_color": (189, 48, 57),
+}
+_SAMPLE_PBP = {"pitcher": "Y. Yamamoto", "batter": "M. Betts", "last_play_code": "BB"}
+
+
+def test_at_bat_info_text_is_horizontally_centered():
+    if not _find_font_asset():
+        print("SKIP test_at_bat_info_text_is_horizontally_centered: "
+              "could not locate assets/fonts (run from LEDMatrix tree)")
+        return
+    live = _make_render_live(192, 48)
+    live._draw_at_bat_info_screen(_SAMPLE_GAME, _SAMPLE_PBP)
+    img = live.display_manager.image
+    w, _ = img.size
+    non_black_xs = [x for x in range(w) for y in range(img.height) if img.getpixel((x, y)) != (0, 0, 0)]
+    assert non_black_xs, "expected some text to be drawn"
+    left_margin = min(non_black_xs)
+    right_margin = w - 1 - max(non_black_xs)
+    assert abs(left_margin - right_margin) <= 2, (
+        f"expected text roughly centered horizontally, left margin={left_margin} right margin={right_margin}"
+    )
+    print("test_at_bat_info_text_is_horizontally_centered: PASS")
+
+
+def test_at_bat_info_uses_team_colors_when_available():
+    if not _find_font_asset():
+        print("SKIP test_at_bat_info_uses_team_colors_when_available: "
+              "could not locate assets/fonts (run from LEDMatrix tree)")
+        return
+    # inning_half "top" -> away (BOS) batting, home (NYY) fielding/pitching.
+    live = _make_render_live(192, 48)
+    live.config = {"customization": {"at_bat_info": {"use_team_colors": True}}}
+    live._draw_at_bat_info_screen(_SAMPLE_GAME, _SAMPLE_PBP)
+    img = live.display_manager.image
+    colors = set(img.getdata())
+    assert (38, 82, 150) in colors, "expected the pitcher's line in the fielding team's (NYY) color"
+    assert (189, 48, 57) in colors, "expected the batter's line in the batting team's (BOS) color"
+    print("test_at_bat_info_uses_team_colors_when_available: PASS")
+
+
+def test_at_bat_info_falls_back_to_flat_colors_when_team_colors_disabled():
+    if not _find_font_asset():
+        print("SKIP test_at_bat_info_falls_back_to_flat_colors_when_team_colors_disabled: "
+              "could not locate assets/fonts (run from LEDMatrix tree)")
+        return
+    live = _make_render_live(192, 48)
+    live.config = {"customization": {"at_bat_info": {
+        "use_team_colors": False,
+        "pitcher_color": [10, 20, 30],
+        "batter_color": [40, 50, 60],
+    }}}
+    live._draw_at_bat_info_screen(_SAMPLE_GAME, _SAMPLE_PBP)
+    img = live.display_manager.image
+    colors = set(img.getdata())
+    assert (10, 20, 30) in colors, "expected the flat pitcher_color to be used"
+    assert (40, 50, 60) in colors, "expected the flat batter_color to be used"
+    assert (38, 82, 150) not in colors and (189, 48, 57) not in colors, (
+        "did not expect team colors when use_team_colors is disabled"
+    )
+    print("test_at_bat_info_falls_back_to_flat_colors_when_team_colors_disabled: PASS")
+
+
+def test_at_bat_info_bigger_font_on_larger_display():
+    if not _find_font_asset():
+        print("SKIP test_at_bat_info_bigger_font_on_larger_display: "
+              "could not locate assets/fonts (run from LEDMatrix tree)")
+        return
+    small = _make_render_live(64, 32)
+    small._draw_at_bat_info_screen(_SAMPLE_GAME, _SAMPLE_PBP)
+    small_img = small.display_manager.image
+    small_rows = [y for y in range(small_img.height) if any(
+        small_img.getpixel((x, y)) != (0, 0, 0) for x in range(small_img.width)
+    )]
+
+    large = _make_render_live(256, 128)
+    large._draw_at_bat_info_screen(_SAMPLE_GAME, _SAMPLE_PBP)
+    large_img = large.display_manager.image
+    large_rows = [y for y in range(large_img.height) if any(
+        large_img.getpixel((x, y)) != (0, 0, 0) for x in range(large_img.width)
+    )]
+
+    assert len(large_rows) > len(small_rows), (
+        f"expected a bigger auto-fit font (more lit rows) on a larger display, "
+        f"small={len(small_rows)} rows, large={len(large_rows)} rows"
+    )
+    print("test_at_bat_info_bigger_font_on_larger_display: PASS")
+
+
+def test_at_bat_info_long_name_does_not_clip():
+    if not _find_font_asset():
+        print("SKIP test_at_bat_info_long_name_does_not_clip: "
+              "could not locate assets/fonts (run from LEDMatrix tree)")
+        return
+    game = dict(_SAMPLE_GAME)
+    pbp = {
+        "pitcher": "Yoshinobu Yamamoto-Sanchez",
+        "batter": "Mookie Betts",
+        "last_play_code": "HR",
+    }
+    for w, h in ((64, 32), (128, 32), (128, 64), (192, 48)):
+        live = _make_render_live(w, h)
+        live._draw_at_bat_info_screen(game, pbp)
+        img = live.display_manager.image
+        margin = 1
+        clipped = any(
+            img.getpixel((x, y)) != (0, 0, 0)
+            for edge in (range(0, margin), range(w - margin, w))
+            for x in edge
+            for y in range(h)
+        )
+        assert not clipped, f"content drawn into a margin column at {w}x{h} with a long name"
+    print("test_at_bat_info_long_name_does_not_clip: PASS")
+
+
 if __name__ == "__main__":
     print("pitcher/batter/last-play parsing regression tests")
     print("=" * 55)
@@ -242,6 +399,11 @@ if __name__ == "__main__":
         test_fetch_play_by_play_updates_cache_on_real_data,
         test_at_bat_info_favorites_only_skips_non_favorite_teams,
         test_at_bat_info_favorites_only_has_no_effect_when_favorite_teams_empty,
+        test_at_bat_info_text_is_horizontally_centered,
+        test_at_bat_info_uses_team_colors_when_available,
+        test_at_bat_info_falls_back_to_flat_colors_when_team_colors_disabled,
+        test_at_bat_info_bigger_font_on_larger_display,
+        test_at_bat_info_long_name_does_not_clip,
     ):
         try:
             t()

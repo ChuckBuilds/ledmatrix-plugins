@@ -600,6 +600,40 @@ class Baseball(SportsCore):
                 break
         return result
 
+    def _load_multiline_fit_font(
+        self, font_cfg: Dict, lines: List[str], available_width: int, available_height: int
+    ) -> Tuple[Any, int]:
+        """Like _load_traditional_scoreboard_font, but for screens showing
+        arbitrary-length text (player names) rather than a fixed grid --
+        measures the *actual* strings being shown, not just a generic
+        digit, so a long name can push the fallback ladder down a rung
+        that a short one wouldn't need. Existing per-line truncation is
+        still the last-resort safety net if even the smallest rung
+        doesn't fit some especially long name."""
+        needed_rows = max(1, len(lines))
+        candidates = [font_cfg.get("font", "9x15.bdf")]
+        for fallback in self._TRADITIONAL_SCOREBOARD_FONT_FALLBACK_LADDER:
+            if fallback not in candidates:
+                candidates.append(fallback)
+
+        result = None
+        for i, font_name in enumerate(candidates):
+            cfg_try = dict(font_cfg)
+            cfg_try["font"] = font_name
+            font = self._load_custom_font_from_element_config(
+                cfg_try, default_size=font_cfg.get("font_size", 24)
+            )
+            try:
+                row_h = (font.getbbox("Ay")[3] - font.getbbox("Ay")[1]) + 3
+                max_line_w = max((font.getbbox(t)[2] for t in lines), default=0)
+            except AttributeError:
+                row_h, max_line_w = 10, available_width + 1  # force the loop to keep trying
+            result = (font, row_h)
+            fits = needed_rows * row_h <= available_height and max_line_w <= available_width
+            if fits or i == len(candidates) - 1:
+                break
+        return result
+
     def _draw_traditional_scoreboard_screen(self, game: Dict, force_clear: bool = False) -> None:
         """Draw a full-screen traditional ballpark scoreboard: an
         inning-by-inning line score with R/H/E, and (for live games with
@@ -1188,15 +1222,23 @@ class BaseballLive(Baseball, SportsLive):
             draw = ImageDraw.Draw(img)
 
             at_bat_cfg = self.config.get("customization", {}).get("at_bat_info", {})
-            font_cfg = dict(at_bat_cfg)
-            # Match config_schema.json's default explicitly -- see the same
-            # pattern (and reasoning) in _draw_traditional_scoreboard_screen.
-            font_cfg.setdefault("font", "5x7.bdf")
-            font = self._load_custom_font_from_element_config(font_cfg, default_size=7)
-
             pitcher_color = tuple(at_bat_cfg.get("pitcher_color", [255, 255, 255]))
             batter_color = tuple(at_bat_cfg.get("batter_color", [255, 255, 0]))
             last_play_color = tuple(at_bat_cfg.get("last_play_color", [0, 255, 255]))
+
+            # Color the pitcher/batter names by their real team colors when
+            # available -- the fielding team is pitching, the team at bat
+            # is batting -- falling back to the flat pitcher_color/
+            # batter_color above when this is off or a color's missing.
+            use_team_colors = at_bat_cfg.get("use_team_colors", True)
+            if use_team_colors:
+                batting_away = (game.get("inning_half") or "top").lower() == "top"
+                batting_color = game.get("away_team_color") if batting_away else game.get("home_team_color")
+                fielding_color = game.get("home_team_color") if batting_away else game.get("away_team_color")
+                if fielding_color:
+                    pitcher_color = fielding_color
+                if batting_color:
+                    batter_color = batting_color
 
             lines = []
             if self.show_pitcher_batter and pbp.get("pitcher"):
@@ -1209,22 +1251,36 @@ class BaseballLive(Baseball, SportsLive):
             if not lines:
                 return
 
-            try:
-                bbox = font.getbbox("Ay")
-                line_height = bbox[3] - bbox[1] + 2
-            except AttributeError:
-                line_height = 10
+            # font_size acts as an optional cap, not a fixed size -- this
+            # auto-fits the largest text that still fits every line's
+            # actual width (not just a generic character) within the
+            # display, the same "cap, not fixed size" convention the
+            # traditional scoreboard uses. Lower font_size to force a
+            # smaller, more consistent size instead.
+            margin = 1
+            available_height = self.display_height - 2 * margin
+            available_width = self.display_width - 2 * margin
+            font_cfg = dict(at_bat_cfg)
+            # Match config_schema.json's default explicitly -- see the same
+            # pattern (and reasoning) in _draw_traditional_scoreboard_screen.
+            font_cfg.setdefault("font", "9x15.bdf")
+            font_size_cap = font_cfg.get("font_size", 24)
+            max_row_h = available_height / len(lines)
+            font_cfg["font_size"] = max(6, min(font_size_cap, round(max_row_h - 3)))
+            line_texts = [text for text, _ in lines]
+            font, row_h = self._load_multiline_fit_font(font_cfg, line_texts, available_width, available_height)
 
-            total_height = line_height * len(lines)
-            y = max(1, (self.display_height - total_height) // 2)
-            max_text_width = self.display_width - 4  # 2px padding each side
+            total_height = row_h * len(lines)
+            y = max(margin, (self.display_height - total_height) // 2)
 
             for text, color in lines:
                 if y >= self.display_height:
                     break
-                text = self._truncate_to_width(draw, text, font, max_text_width)
-                self._draw_text_with_outline(draw, text, (2, y), font, fill=color)
-                y += line_height
+                text = self._truncate_to_width(draw, text, font, available_width)
+                text_w = draw.textbbox((0, 0), text, font=font)[2]
+                x = max(margin, (self.display_width - text_w) // 2)
+                self._draw_text_with_outline(draw, text, (x, y), font, fill=color)
+                y += row_h
 
             self.display_manager.image.paste(img, (0, 0))
             self.display_manager.update_display()

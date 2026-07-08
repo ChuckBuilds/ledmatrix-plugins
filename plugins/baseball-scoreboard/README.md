@@ -225,6 +225,57 @@ the game is final (a simple "check the final score" use case):
 }
 ```
 
+## Pitcher / Batter / Last Play Screen
+
+A dedicated full-screen view showing the current at-bat's pitcher,
+batter, and a short code for the most recently completed play (`1B`,
+`HR`, `K`, `BB`, etc.), replacing the normal scorebug for a few
+seconds at a time. Available for **MLB and NCAA Baseball only**, and
+**live games only** — this data only exists during an actual live
+at-bat, so unlike the Traditional Scoreboard there's no `game_scope`
+option (nothing analogous exists for a final or upcoming game).
+
+Text is centered both horizontally and vertically, and auto-fits the
+largest font that still fits every line's actual text — a long name
+falls back to a smaller font (and, as a last resort, gets truncated)
+before it would otherwise run off the edge.
+
+### Enabling it
+
+Turn on the parts you want per league under that league's
+`display_options`:
+
+```json
+{
+  "mlb": {
+    "display_options": {
+      "show_pitcher_batter": true,
+      "show_last_play": true
+    }
+  }
+}
+```
+
+Both flags exist under `ncaa_baseball.display_options` too, and both
+default to off. You can enable just one (e.g. only `show_last_play`
+for a compact "what just happened" ticker).
+
+### Toggles and customization
+
+All of the following live under `customization.at_bat_info`:
+
+| Option | Default | What it does |
+|---|---|---|
+| `favorites_only` | `false` | Only rotates in for games involving one of this league's `favorite_teams` — independent of `show_all_live`/`show_favorite_teams_only`, which control the *normal* rotation. Has no effect if `favorite_teams` is empty. |
+| `dwell_seconds` | `4` | How many seconds this screen stays on screen each time it rotates in. |
+| `interval_seconds` | `25` | How often (in seconds) it rotates in. |
+| `font` | `"9x15.bdf"` | Font for all text on this screen. The default auto-fits as large as the display and each line's actual text allow, falling back to a smaller same-family font rather than overflowing. Use a scalable `.ttf` font (e.g. `"press_start"`) if you want `font_size` to directly control the size. |
+| `font_size` | `24` | Maximum font size cap, for scalable `.ttf` fonts only (ignored by fixed-size `.bdf` fonts like the default). Lower it to force a smaller, more consistent size. |
+| `use_team_colors` | `true` | Color the pitcher's name with the fielding team's real ESPN color and the batter's name with the batting team's color, instead of the flat colors below. |
+| `pitcher_color` | `[255, 255, 255]` | `[R, G, B]` for the pitcher line when `use_team_colors` is off or unavailable. |
+| `batter_color` | `[255, 255, 0]` | `[R, G, B]` for the batter line when `use_team_colors` is off or unavailable. |
+| `last_play_color` | `[0, 255, 255]` | `[R, G, B]` for the last-play code line (always this flat color — there's no "team" a play code belongs to). |
+
 ## Team Abbreviations
 
 ### MLB Teams

@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.16.1",
+  "version": "1.17.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-08",
+      "version": "1.17.0",
+      "notes": "Redesign the Pitcher/Batter/Last Play screen for visual parity with the Traditional Scoreboard: text is now centered both horizontally and vertically (was flush top-left), auto-fits the largest font that still fits every line's actual text -- falling back to a smaller same-family font, and truncating as a last resort, rather than overflowing -- instead of a small fixed size. Adds use_team_colors (default on): colors the pitcher's name with the fielding team's real ESPN color and the batter's name with the batting team's color.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-08",
       "version": "1.16.1",
