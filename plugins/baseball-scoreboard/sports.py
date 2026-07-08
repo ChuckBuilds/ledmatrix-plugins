@@ -287,8 +287,11 @@ class SportsCore(ABC):
                                     f"(requested {font_size} isn't a valid strike for this file)"
                                 )
                                 return font
-                            except Exception:
-                                pass
+                            except Exception as retry_exc:
+                                self.logger.debug(
+                                    f"BDF font {font_name} also failed to load at native "
+                                    f"size {native_size}: {retry_exc}"
+                                )
                         self.logger.warning(f"Could not load BDF font {font_name} with PIL, using default")
                         # Fall through to default
                 else:
