@@ -1,5 +1,7 @@
 # Geochron World Clock
 
+<img width="1156" height="287" alt="image" src="https://github.com/user-attachments/assets/f636a762-134b-4ed4-9e32-2aa9b959f0d4" />
+
 A real-time "Geochron"-style world map: a high-fidelity equirectangular map
 of the Earth with a live day/night terminator, smooth twilight bands, the
 subsolar point, configurable city markers, and a digital clock - scaled to
