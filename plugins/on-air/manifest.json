@@ -1,7 +1,7 @@
 {
   "id": "on-air",
   "name": "On Air Light",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "ChuckBuilds",
   "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live — stays on until you turn it off.",
   "entry_point": "manager.py",
@@ -11,6 +11,12 @@
   "display_modes": ["on_air"],
   "compatible_versions": [">=2.0.0"],
   "versions": [
+    {
+      "released": "2026-07-08",
+      "version": "1.2.1",
+      "notes": "Add MIT LICENSE file matching the manifest's declared license.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-06-08",
       "version": "1.2.0",
@@ -36,7 +42,7 @@
   "license": "MIT",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/on-air",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-06-08",
+  "last_updated": "2026-07-08",
   "stars": 0,
   "downloads": 0,
   "verified": true,
