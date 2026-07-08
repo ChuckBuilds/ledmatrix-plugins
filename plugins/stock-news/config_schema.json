@@ -47,6 +47,42 @@
           "default": false,
           "description": "Show current market price (e.g. '$189.42') before the headline"
         },
+        "price_color_mode": {
+          "type": "string",
+          "enum": ["fixed", "change"],
+          "default": "fixed",
+          "x-widget": "radio",
+          "description": "Price colour: 'fixed' always uses text_color; 'change' colours it price_up_color / price_down_color based on movement since market open"
+        },
+        "publisher_font_size": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 24,
+          "description": "Font size for the publisher segment (e.g. 'Reuters'). Set to 0 to match the main font_size."
+        },
+        "publisher_font_path": {
+          "type": "string",
+          "default": "",
+          "description": "Optional separate TTF for the publisher segment. Empty = use the main font_path."
+        },
+        "age_font_size": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 24,
+          "description": "Font size for the relative-age segment (e.g. '2h ago'). Set to 0 to match the main font_size."
+        },
+        "age_font_path": {
+          "type": "string",
+          "default": "",
+          "description": "Optional separate TTF for the relative-age segment. Empty = use the main font_path."
+        },
+        "eager_fetch_on_startup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fetch every configured symbol once immediately (ignoring the normal per-symbol spacing) so the ticker isn't left showing just 1-2 headlines for several minutes after a restart or config change. Falls back to the spread schedule once every symbol has data."
+        },
         "sync_with_stocks_plugin": {
           "type": "boolean",
           "default": false,
@@ -61,7 +97,7 @@
         },
         "scroll_pixels_per_second": {
           "type": "number",
-          "default": 25.0,
+          "default": 60.0,
           "minimum": 5.0,
           "maximum": 100.0,
           "description": "Scroll speed in pixels per second"
@@ -287,7 +323,25 @@
           "type": "string",
           "x-widget": "color-picker",
           "default": "#6e6e6e",
-          "description": "Color for publisher and age suffix (e.g. '• Reuters • 2h ago')"
+          "description": "Color for the publisher segment (e.g. '• Reuters')"
+        },
+        "age_color": {
+          "type": "string",
+          "x-widget": "color-picker",
+          "default": "#6e6e6e",
+          "description": "Color for the relative-age segment (e.g. '• 2h ago'), independent of publisher_color"
+        },
+        "price_up_color": {
+          "type": "string",
+          "x-widget": "color-picker",
+          "default": "#00ff00",
+          "description": "Price color when up since market open. Only used when price_color_mode is 'change'."
+        },
+        "price_down_color": {
+          "type": "string",
+          "x-widget": "color-picker",
+          "default": "#ff3b30",
+          "description": "Price color when down since market open. Only used when price_color_mode is 'change'."
         }
       },
       "additionalProperties": false
