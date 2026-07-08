@@ -926,19 +926,20 @@ class BaseballLive(Baseball, SportsLive):
             inning_col_w = char_w + 1
             at_bat_gap = 3
 
-            # Width of the At Bat side column -- widest row could be either
-            # Balls (3 dots, no suffix) or Outs (2 dots + the batting-team
-            # ▲/▼ arrow) depending on font metrics, so measure both. Gaps
-            # only *between* dots, no trailing gap after the last one.
+            # Width of the At Bat side column -- widest row is Balls (3
+            # dots, the other two rows only ever have 2). Gaps only
+            # *between* dots, no trailing gap after the last one. The
+            # batting-team ▲/▼ indicator lives up in the header row next
+            # to the innings instead of here (see below), so it doesn't
+            # factor into this width.
             at_bat_panel_w = 0
             if at_bat_panel_applicable:
-                dot_d = max(2, row_h - 6)
-                b_row_w = font.getbbox("B ")[2] + 3 * dot_d + 2 * 2
-                o_row_w = (
-                    font.getbbox("O ")[2] + 2 * dot_d + 1 * 2 + 2
-                    + font.getbbox("▼")[2]
-                )
-                at_bat_panel_w = max(b_row_w, o_row_w)
+                dot_d = max(2, round(row_h * 0.4))
+                # +1 safety margin: PIL's draw.ellipse() is inclusive of
+                # both endpoints, so each dot actually consumes dot_d + 1
+                # px, not dot_d -- without this, the last dot's right edge
+                # lands exactly on the calculated boundary with zero slack.
+                at_bat_panel_w = font.getbbox("B ")[2] + 3 * dot_d + 2 * 2 + 1
             at_bat_block_w = (at_bat_panel_w + at_bat_gap) if at_bat_panel_applicable else 0
 
             # Factor the At Bat column into the inning-column budget (like
@@ -1111,6 +1112,14 @@ class BaseballLive(Baseball, SportsLive):
                 self._draw_traditional_scoreboard_at_bat_side_panel(
                     draw, game, font, row_h, at_bat_x, header_y, away_y, home_y, text_color, highlight_color
                 )
+                # Batting-team ▲/▼ indicator, in the header row's team
+                # column -- otherwise-empty space right above the team
+                # abbreviations, next to the inning numbers.
+                inning_half = (game.get("inning_half") or "top").lower()
+                at_bat_indicator = "▲" if inning_half == "top" else "▼"
+                self._draw_text_with_outline(
+                    draw, at_bat_indicator, (team_x, header_y), font, fill=highlight_color
+                )
 
             self.display_manager.image.paste(img, (0, 0))
             self.display_manager.update_display()
@@ -1127,28 +1136,26 @@ class BaseballLive(Baseball, SportsLive):
         the right of the grid, one row each aligned with the header/away/
         home rows -- keeps the whole screen to 3 rows of vertical space so
         the grid's auto-fit font can render as big as possible, instead of
-        needing extra rows stacked below for these indicators."""
+        needing extra rows stacked below for these indicators. The
+        batting-team ▲/▼ indicator is drawn separately, up in the header
+        row next to the innings (see _draw_traditional_scoreboard_screen)."""
         balls = min(int(game.get("balls", 0) or 0), 3)
         strikes = min(int(game.get("strikes", 0) or 0), 2)
         outs = min(int(game.get("outs", 0) or 0), 2)
-        inning_half = (game.get("inning_half") or "top").lower()
-        at_bat_indicator = "▲" if inning_half == "top" else "▼"  # away/home batting
 
-        dot_d = max(2, row_h - 6)
+        dot_d = max(2, round(row_h * 0.4))
 
-        def draw_row(y: int, label: str, lit: int, total: int, suffix: str = "") -> None:
+        def draw_row(y: int, label: str, lit: int, total: int) -> None:
             self._draw_text_with_outline(draw, label, (x, y), font, fill=text_color)
             dx = x + font.getbbox(label + " ")[2]
             for i in range(total):
                 color = highlight_color if i < lit else (60, 60, 60)
                 draw.ellipse([dx, y + 1, dx + dot_d, y + 1 + dot_d], fill=color)
                 dx += dot_d + 2
-            if suffix:
-                self._draw_text_with_outline(draw, suffix, (dx + 2, y), font, fill=highlight_color)
 
         draw_row(header_y, "B", balls, 3)
         draw_row(away_y, "S", strikes, 2)
-        draw_row(home_y, "O", outs, 2, suffix=at_bat_indicator)
+        draw_row(home_y, "O", outs, 2)
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live baseball game."""
