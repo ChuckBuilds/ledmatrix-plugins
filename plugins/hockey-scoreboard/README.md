@@ -138,10 +138,29 @@ Controls how long each individual game displays before rotating to the next game
 
 **Configuration:**
 - Per-league `display_durations.live`: Seconds per live game (default: 20s for NHL)
+- Per-league `display_durations.non_favorite_live`: Seconds per live game with **no** favorite team (default: 0 = off)
 - Per-league `display_durations.recent`: Seconds per recent game (default: 15s)
 - Per-league `display_durations.upcoming`: Seconds per upcoming game (default: 15s)
 
 **Example:** With `nhl.display_durations.recent: 15`, each NHL recent game shows for 15 seconds before moving to the next.
+
+#### Shorter dwell for non-favorite live games
+
+Set `display_durations.non_favorite_live` to give live games that don't involve one of your favorite teams a shorter turn than your favorites. For example `nhl.display_durations.live: 30` with `nhl.display_durations.non_favorite_live: 5` shows your teams for 30s each while everyone else's games flash by in 5s.
+
+This **only takes effect when both** of the following are true:
+
+- one or more `favorite_teams` are configured for the league, **and**
+- non-favorite live games are actually shown — `filtering.show_favorite_teams_only` is **off**, or `filtering.show_all_live` is **on** (otherwise non-favorite games never appear in the first place).
+
+| Favorite teams set? | Non-favorite games shown? | Live game has a favorite? | Duration used |
+|---|---|---|---|
+| No | — | — | `display_durations.live` (unchanged) |
+| Yes | No (`show_favorite_teams_only` on, `show_all_live` off) | favorite | `display_durations.live` |
+| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | favorite | `display_durations.live` |
+| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | none | `display_durations.non_favorite_live` (when > 0) |
+
+Leave it at `0` to display every live game for `display_durations.live` (the previous behavior).
 
 ### Per-Mode Duration
 

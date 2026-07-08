@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "released": "2026-07-08",
+      "version": "2.3.0",
+      "notes": "Add non_favorite_live_game_duration per league (including custom leagues): give live games without a favorite team a shorter on-screen turn than your favorites. Applies only when favorite teams are set and show_favorite_teams_only is off; defaults to 0 (off) for unchanged behavior.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-02",
       "version": "2.2.0",
@@ -118,7 +124,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-02",
+  "last_updated": "2026-07-08",
   "stars": 0,
   "downloads": 0,
   "verified": true,

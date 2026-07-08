@@ -149,6 +149,26 @@ perfectly even rotation (the pre-1.3.0 default behavior). This is independent
 of `live_priority`, which controls whether live games preempt the
 recent/upcoming rotation at all.
 
+### Shorter dwell for non-favorite live games
+
+`display_durations.non_favorite_live` (0-120, default `0` = off) gives live
+games that involve **none** of your favorite teams a shorter on-screen turn than
+your favorites. For example `ncaa_mens.display_durations.live: 30` with
+`ncaa_mens.display_durations.non_favorite_live: 5` shows your teams for 30s each
+while everyone else's games flash by in 5s.
+
+This **only takes effect** when favorite teams are configured **and**
+non-favorite live games are being shown — `favorite_teams_only` off, or
+`show_all_live` on (otherwise non-favorite games are never on screen to
+shorten). Leave it at `0` to display every live game for `display_durations.live`.
+
+| Favorite teams set? | Non-favorite games shown? | Live game has a favorite? | Duration used |
+|---|---|---|---|
+| No | — | — | `display_durations.live` (unchanged) |
+| Yes | No (`favorite_teams_only` on, `show_all_live` off) | favorite | `display_durations.live` |
+| Yes | Yes (`favorite_teams_only` off, or `show_all_live` on) | favorite | `display_durations.live` |
+| Yes | Yes (`favorite_teams_only` off, or `show_all_live` on) | none | `display_durations.non_favorite_live` (when > 0) |
+
 ### Excluding teams (spoiler protection)
 
 `teams.exclude_teams` (default `[]`) hides specific teams from **both** the

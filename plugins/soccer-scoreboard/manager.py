@@ -397,6 +397,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 ),
                 "live_update_interval": league_config.get("live_update_interval", 30),
                 "live_game_duration": league_config.get("live_game_duration", 20),
+                "non_favorite_live_game_duration": league_config.get(
+                    "non_favorite_live_game_duration", 0
+                ),
                 "recent_game_duration": league_config.get("recent_game_duration", 15),
                 "upcoming_game_duration": league_config.get("upcoming_game_duration", 15),
                 "live_priority": league_config.get("live_priority", False),
@@ -626,6 +629,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "update_interval_seconds": custom_league.get("update_interval_seconds", 300),
                 "live_update_interval": custom_league.get("live_update_interval", 30),
                 "live_game_duration": custom_league.get("live_game_duration", 20),
+                "non_favorite_live_game_duration": custom_league.get(
+                    "non_favorite_live_game_duration", 0
+                ),
                 "recent_game_duration": custom_league.get("recent_game_duration", 15),
                 "upcoming_game_duration": custom_league.get("upcoming_game_duration", 15),
                 "live_priority": custom_league.get("live_priority", False),

@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.17.1",
+  "version": "1.18.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-08",
+      "version": "1.18.0",
+      "notes": "Add non_favorite_live_game_duration per league: give live games without a favorite team a shorter on-screen turn than your favorites. Applies only when favorite teams are set and non-favorite live games are shown (show_favorite_teams_only off, or show_all_live on); defaults to 0 (off) for unchanged behavior.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-08",
       "version": "1.17.1",
