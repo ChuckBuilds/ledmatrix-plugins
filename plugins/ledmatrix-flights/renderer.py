@@ -203,6 +203,17 @@ class FlightRenderer:
         else:
             self.font_small = _ttf(small_face, small_sz)
 
+        # Weather (METAR) view uses the cleaner, more legible 5x7 face rather than
+        # the blocky PressStart2P/4x6 — long weather strings (raw METAR/TAF) need to
+        # read like text, not an arcade marquee. Rendered normally (no pixel snapping).
+        wx_head_sz, wx_body_sz = (14, 10) if h >= 64 else (10, 7)
+        if self._font_override_medium is not None:
+            wx_head_sz = self._font_override_medium
+        if self._font_override_small is not None:
+            wx_body_sz = self._font_override_small
+        self.wx_font_head = _ttf("5by7.regular.ttf", wx_head_sz)
+        self.wx_font_body = _ttf("5by7.regular.ttf", wx_body_sz)
+
     # --- Row fitting helper ---
 
     def _row_plan(self, rows, avail_h, gap=0):
@@ -1083,18 +1094,18 @@ class FlightRenderer:
 
         # Header: ICAO (left) + a filled flight-category badge (right).
         y = 2
-        self._draw(draw, icao, (2, y), self.font_medium, self.header_color)
+        self._draw(draw, icao, (2, y), self.wx_font_head, self.header_color)
         if cat:
-            cat_w = self._tw(draw, cat, self.font_small)
+            cat_w = self._tw(draw, cat, self.wx_font_body)
             bx = w - cat_w - 4
-            fh = self._fh(self.font_small)
+            fh = self._fh(self.wx_font_body)
             draw.rectangle([bx - 2, y - 1, w - 1, y + fh + 1], fill=cat_color)
-            self._draw(draw, cat, (bx, y), self.font_small, (0, 0, 0))
-        y += self._lh(self.font_medium)
+            self._draw(draw, cat, (bx, y), self.wx_font_body, (0, 0, 0))
+        y += self._lh(self.wx_font_head)
 
         # Decoded field tokens, packed across as many rows as fit.
         tokens = self._metar_tokens(wx)
-        self._draw_token_rows(draw, tokens, x0=2, y0=y, font=self.font_small,
+        self._draw_token_rows(draw, tokens, x0=2, y0=y, font=self.wx_font_body,
                               max_w=w - 1, max_y=h - 1, gap_x=5, color=self.metric_color)
         return img
 
@@ -1150,18 +1161,18 @@ class FlightRenderer:
         draw = ImageDraw.Draw(img)
 
         y = 2
-        self._draw(draw, icao or "----", (2, y), self.font_medium, self.header_color)
+        self._draw(draw, icao or "----", (2, y), self.wx_font_head, self.header_color)
         if tag:
-            tag_w = self._tw(draw, tag, self.font_small)
-            self._draw(draw, tag, (w - tag_w - 2, y + 1), self.font_small, tag_color)
-        y += self._lh(self.font_medium) + 1
+            tag_w = self._tw(draw, tag, self.wx_font_body)
+            self._draw(draw, tag, (w - tag_w - 2, y + 1), self.wx_font_body, tag_color)
+        y += self._lh(self.wx_font_head) + 1
 
-        lh = self._lh(self.font_small)
-        fh = self._fh(self.font_small)
-        for line in self._wrap_text(draw, body or "", self.font_small, w - 4):
+        lh = self._lh(self.wx_font_body)
+        fh = self._fh(self.wx_font_body)
+        for line in self._wrap_text(draw, body or "", self.wx_font_body, w - 4):
             if y + fh > h - 1:
                 break
-            self._draw(draw, line, (2, y), self.font_small, body_color)
+            self._draw(draw, line, (2, y), self.wx_font_body, body_color)
             y += lh
         return img
 
@@ -1171,14 +1182,14 @@ class FlightRenderer:
         draw = ImageDraw.Draw(img)
 
         y = 2
-        self._draw(draw, "SIGMET", (2, y), self.font_medium, (255, 140, 0))
+        self._draw(draw, "SIGMET", (2, y), self.wx_font_head, (255, 140, 0))
         cnt = str(len(sigmets))
-        cw = self._tw(draw, cnt, self.font_small)
-        self._draw(draw, cnt, (w - cw - 2, y + 1), self.font_small, self.dim_color)
-        y += self._lh(self.font_medium) + 1
+        cw = self._tw(draw, cnt, self.wx_font_body)
+        self._draw(draw, cnt, (w - cw - 2, y + 1), self.wx_font_body, self.dim_color)
+        y += self._lh(self.wx_font_head) + 1
 
         if not sigmets:
-            self._draw(draw, "NONE ACTIVE", (2, y), self.font_small, self.dim_color)
+            self._draw(draw, "NONE ACTIVE", (2, y), self.wx_font_body, self.dim_color)
             return img
 
         # Dedupe by (advisory kind, hazard) so a nationwide feed collapses to the
@@ -1193,13 +1204,13 @@ class FlightRenderer:
                 seen.add(key)
                 rows.append(f"{abbr} {hazard}")
 
-        lh = self._lh(self.font_small)
-        fh = self._fh(self.font_small)
+        lh = self._lh(self.wx_font_body)
+        fh = self._fh(self.wx_font_body)
         for line in rows:
             if y + fh > h - 1:
                 break
-            self._draw(draw, self._truncate(draw, line, self.font_small, w - 4),
-                       (2, y), self.font_small, (220, 220, 220))
+            self._draw(draw, self._truncate(draw, line, self.wx_font_body, w - 4),
+                       (2, y), self.wx_font_body, (220, 220, 220))
             y += lh
         return img
 
