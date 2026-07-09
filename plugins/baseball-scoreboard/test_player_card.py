@@ -179,6 +179,17 @@ def test_parse_player_details_none_on_garbage():
     print("test_parse_player_details_none_on_garbage: PASS")
 
 
+# --- 3c. headshot filename sanitization -------------------------------------
+
+def test_safe_filename_strips_path_separators():
+    from logo_manager import BaseballLogoManager
+    assert BaseballLogoManager._safe_filename("33099") == "33099"
+    assert BaseballLogoManager._safe_filename("../../etc/passwd") == "etcpasswd"
+    assert BaseballLogoManager._safe_filename("a/b\\c") == "abc"
+    assert BaseballLogoManager._safe_filename(None) == ""
+    print("test_safe_filename_strips_path_separators: PASS")
+
+
 # --- 4. _player_card_team_color ---------------------------------------------
 
 def test_player_card_team_color_from_roster_team_id():
@@ -344,6 +355,7 @@ if __name__ == "__main__":
         test_parse_player_details_bio_and_stats,
         test_parse_player_details_tolerates_missing_overview,
         test_parse_player_details_none_on_garbage,
+        test_safe_filename_strips_path_separators,
         test_player_card_team_color_from_roster_team_id,
         test_gate_skips_milb_no_espn_league,
         test_gate_skips_when_no_bio_resolved,

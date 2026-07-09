@@ -191,6 +191,13 @@ class BaseballLogoManager:
     _HEADSHOT_DIR = Path(__file__).resolve().parent / "assets" / "headshots"
 
     @staticmethod
+    def _safe_filename(value: str) -> str:
+        """Reduce a value (e.g. an ESPN player id) to a safe filename stem --
+        only alphanumerics, '_' and '-'. Prevents an unexpected id from
+        escaping the headshot cache directory via path separators or '..'."""
+        return "".join(c for c in str(value or "") if c.isalnum() or c in ("_", "-"))
+
+    @staticmethod
     def _crop_square(img: Image.Image, size: int) -> Image.Image:
         """Crop to a square from the top-center (ESPN headshots frame the face
         at top-center) and resize to exactly fill a size x size box."""
@@ -215,9 +222,13 @@ class BaseballLogoManager:
         if cache_key in self._logo_cache:
             return self._logo_cache[cache_key]
 
+        # Sanitize the id/league before they touch the filesystem -- they
+        # originate from ESPN's API, so never trust them as raw path segments.
+        safe_id = self._safe_filename(player_id)
+        safe_league = self._safe_filename(league) or "unknown"
         disk_path = None
-        if player_id:
-            disk_path = self._HEADSHOT_DIR / league / f"{player_id}.png"
+        if safe_id:
+            disk_path = self._HEADSHOT_DIR / safe_league / f"{safe_id}.png"
             if disk_path.exists():
                 try:
                     with Image.open(disk_path) as src:
@@ -227,7 +238,9 @@ class BaseballLogoManager:
                 except Exception as e:
                     self.logger.debug(f"Failed to load cached headshot {player_id}: {e}")
 
-        if url:
+        # Only fetch over http(s); refuse file://, ftp://, etc. from an
+        # unexpected URL value.
+        if url and str(url).lower().startswith(("http://", "https://")):
             try:
                 resp = requests.get(
                     url, timeout=5, headers={"User-Agent": "LEDMatrix Baseball Plugin/1.0"}
