@@ -78,7 +78,7 @@ The plugin detects the draft automatically — **no config change is required**.
 
 ## License
 
-MIT License
+Released under the GNU General Public License v3.0 — see [LICENSE](LICENSE).
 
 ## Support
 
