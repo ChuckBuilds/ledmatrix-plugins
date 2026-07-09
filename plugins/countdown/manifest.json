@@ -24,7 +24,7 @@
     {
       "released": "2026-07-08",
       "version": "3.1.1",
-      "notes": "Rewrite the README config section as a per-key table covering the v3 keys (target_time, mode, layout_preset, text_align, and the per-countdown style/layout overrides), add a title to the top-level enabled option, and normalize the versions changelog key to ledmatrix_min.",
+      "notes": "Rewrite the README config section as a per-key table covering the v3 keys (target_time, mode, layout_preset, text_align, and the per-countdown style/layout overrides), add a title to the top-level enabled option, normalize the versions changelog key to ledmatrix_min, and set the manifest license to GPL-3.0 (project standard; the LICENSE file was already GPL).",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -61,7 +61,7 @@
   "update_interval": 30,
   "default_duration": 15,
   "icon": "fa-clock",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/countdown",
   "config_schema": "config_schema.json",
   "last_updated": "2026-07-08"
