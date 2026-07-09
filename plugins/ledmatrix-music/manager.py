@@ -733,6 +733,24 @@ class MusicPlugin(BasePlugin):
         if not self.poll_thread or not self.poll_thread.is_alive():
             self.start_polling()
 
+    def _clip_text_to_width(self, text, font, max_width):
+        """Trim trailing characters so the rendered text fits within max_width px.
+
+        The scrolling marquee rotates which characters lead, but the drawn
+        string is still full-length; without this clip it overflows the right
+        edge of the panel. This keeps the text inside its viewport, which
+        matters most on narrow 64px-wide displays where the text area is only
+        ~29px wide.
+        """
+        if not text or max_width <= 0:
+            return text
+        if self.display_manager.get_text_width(text, font) <= max_width:
+            return text
+        clipped = text
+        while clipped and self.display_manager.get_text_width(clipped, font) > max_width:
+            clipped = clipped[:-1]
+        return clipped
+
     def display(self, force_clear: bool = False) -> None:
         """Display music information - called by plugin system."""
         perform_full_refresh_this_cycle = force_clear
@@ -1056,7 +1074,7 @@ class MusicPlugin(BasePlugin):
             self.title_end_pause_counter = 0
             self.title_at_end = False
         
-        self.display_manager.draw_text(current_title_display_text, 
+        self.display_manager.draw_text(self._clip_text_to_width(current_title_display_text, font_title, text_area_width),
                                      x=text_area_x_start, y=y_pos_title_top, color=(255, 255, 255), font=font_title)
 
         # Artist scrolling with configurable settings
@@ -1111,7 +1129,7 @@ class MusicPlugin(BasePlugin):
             self.artist_end_pause_counter = 0
             self.artist_at_end = False
 
-        self.display_manager.draw_text(current_artist_display_text, 
+        self.display_manager.draw_text(self._clip_text_to_width(current_artist_display_text, font_artist, text_area_width),
                                      x=text_area_x_start, y=y_pos_artist_top, color=(180, 180, 180), font=font_artist)
             
         # Album
@@ -1127,7 +1145,7 @@ class MusicPlugin(BasePlugin):
             if album_width <= text_area_width:
                 # Album fits without scrolling - display normally
                 self.logger.debug(f"MusicPlugin.display: Drawing album '{album}' at ({text_area_x_start}, {y_pos_album_top}) - fits without scrolling")
-                self.display_manager.draw_text(album, 
+                self.display_manager.draw_text(self._clip_text_to_width(album, font_album, text_area_width),
                                              x=text_area_x_start, y=y_pos_album_top, color=(150, 150, 150), font=font_album)
                 self.scroll_position_album = 0
                 self.album_scroll_tick = 0
@@ -1179,7 +1197,7 @@ class MusicPlugin(BasePlugin):
                     self.album_scroll_tick = 0
                 
                 self.logger.debug(f"MusicPlugin.display: Drawing scrolling album '{current_album_display_text}' at ({text_area_x_start}, {y_pos_album_top}) - position: {self.scroll_position_album}")
-                self.display_manager.draw_text(current_album_display_text, 
+                self.display_manager.draw_text(self._clip_text_to_width(current_album_display_text, font_album, text_area_width),
                                              x=text_area_x_start, y=y_pos_album_top, color=(150, 150, 150), font=font_album)
         else:
             self.logger.debug(f"MusicPlugin.display: Album '{album}' not displayed - insufficient height (available: {available_height_for_album}, needed: {album_height})")
