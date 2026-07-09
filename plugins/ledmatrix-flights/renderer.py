@@ -213,18 +213,23 @@ class FlightRenderer:
         else:
             self.font_small = _ttf(small_face, small_sz)
 
-        # Weather (METAR) view uses the cleaner, more legible 5x7 face rather than
-        # the blocky PressStart2P/4x6. It is drawn in 1-bit "mono" mode (see the
-        # render_*_to_image methods) so it stays crisp on the LED grid instead of the
-        # soft anti-aliased look the face has when smoothed; a slightly larger size
-        # keeps the small weather text readable.
-        wx_head_sz, wx_body_sz = (16, 12) if h >= 64 else (13, 9)
-        if self._font_override_medium is not None:
-            wx_head_sz = self._font_override_medium
-        if self._font_override_small is not None:
-            wx_body_sz = self._font_override_small
-        self.wx_font_head = _ttf("5by7.regular.ttf", wx_head_sz)
-        self.wx_font_body = _ttf("5by7.regular.ttf", wx_body_sz)
+        # Weather (METAR) view uses the crisp 6x10 bitmap font (bundled) rather than
+        # the blocky PressStart2P or the soft, anti-aliased 5x7 TTF. FreeType renders
+        # a .bdf pixel-exact at its native pixel size only (here 10px), so the weather
+        # text is sharp on the LED grid with no anti-aliasing and no stretching blur.
+        try:
+            self.wx_font_head = _ttf("6x10.bdf", 10)
+        except Exception:
+            # Fall back if this Pillow/FreeType build can't load the .bdf bitmap.
+            logger.warning("[Flight Tracker] 6x10.bdf unavailable; using fallback weather font")
+            self.wx_font_head = self.font_small
+        self.wx_font_body = self.wx_font_head
+        # 6x10's cell is 10px but its inked glyphs are ~8px tall; textbbox reports the
+        # full cell, so use the known inked height and a tight row advance to fit a
+        # header + two field rows on a 32px-tall panel (wx_fh = fit-check height,
+        # wx_lh = row advance).
+        self.wx_fh = 8
+        self.wx_lh = 10
 
     # --- Row fitting helper ---
 
@@ -1134,7 +1139,7 @@ class FlightRenderer:
             if ax > 2 + icao_w + 4:  # only if it fits without hitting the ICAO
                 age_color = (255, 180, 0) if stale else self.dim_color
                 self._draw(draw, label, (ax, y + 1), self.wx_font_body, age_color)
-        y += self._lh(self.wx_font_head)
+        y += self.wx_lh
 
         # Decoded field tokens, packed across as many rows as fit.
         tokens = self._metar_tokens(wx)
@@ -1173,8 +1178,8 @@ class FlightRenderer:
                          color=(220, 220, 220)) -> None:
         """Greedily pack space-separated tokens into rows, wrapping when a token
         would overflow and stopping when vertical space runs out."""
-        lh = self._lh(font)
-        fh = self._fh(font)
+        lh = self.wx_lh
+        fh = self.wx_fh
         x, y = x0, y0
         for tok in tokens:
             tw = self._tw(draw, tok, font)
@@ -1200,10 +1205,10 @@ class FlightRenderer:
         if tag:
             tag_w = self._tw(draw, tag, self.wx_font_body)
             self._draw(draw, tag, (w - tag_w - 2, y + 1), self.wx_font_body, tag_color)
-        y += self._lh(self.wx_font_head) + 1
+        y += self.wx_lh
 
-        lh = self._lh(self.wx_font_body)
-        fh = self._fh(self.wx_font_body)
+        lh = self.wx_lh
+        fh = self.wx_fh
         for line in self._wrap_text(draw, body or "", self.wx_font_body, w - 4):
             if y + fh > h - 1:
                 break
@@ -1224,7 +1229,7 @@ class FlightRenderer:
         cnt = str(len(sigmets))
         cw = self._tw(draw, cnt, self.wx_font_body)
         self._draw(draw, cnt, (w - cw - 2, y + 1), self.wx_font_body, self.dim_color)
-        y += self._lh(self.wx_font_head) + 1
+        y += self.wx_lh
 
         if not sigmets:
             self._draw(draw, "NONE ACTIVE", (2, y), self.wx_font_body, self.dim_color)
@@ -1242,8 +1247,8 @@ class FlightRenderer:
                 seen.add(key)
                 rows.append(f"{abbr} {hazard}")
 
-        lh = self._lh(self.wx_font_body)
-        fh = self._fh(self.wx_font_body)
+        lh = self.wx_lh
+        fh = self.wx_fh
         for line in rows:
             if y + fh > h - 1:
                 break
