@@ -42,7 +42,7 @@
     {
       "released": "2026-07-08",
       "version": "2.3.1",
-      "notes": "Set the license to GPL-3.0 (project standard). The LICENSE file was already GPL; the manifest field previously said MIT.",
+      "notes": "Set the license to GPL-3.0 (project standard; the LICENSE file was already GPL, the manifest field said MIT). Guard the display_manager.process_deferred_updates() call with hasattr so the plugin renders under display managers that don't implement it (e.g. the plugin-safety harness).",
       "ledmatrix_min": "2.0.0"
     },
     {
