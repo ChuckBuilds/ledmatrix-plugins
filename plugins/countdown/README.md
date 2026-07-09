@@ -212,7 +212,7 @@ Feel free to submit issues, feature requests, or pull requests!
 
 ## License
 
-MIT License - See LICENSE file for details
+Released under the GNU General Public License v3.0 — see the LICENSE file for details.
 
 ## Credits
 
