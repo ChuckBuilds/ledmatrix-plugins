@@ -257,6 +257,11 @@
                             "default": false,
                             "description": "Show a short code for the most recently completed play (1B, HR, K, BB, etc.) on the pitcher/batter screen"
                         },
+                        "show_player_card": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Periodically show a full player card for the current batter (and optionally pitcher): headshot, jersey number, position, bat/throw, and season stats (AVG/HR/RBI for hitters, ERA/W-L/K for pitchers). Requires an extra ESPN athlete lookup; not available for MiLB. Configure look/timing under Customization > Player Card"
+                        },
                         "show_traditional_scoreboard": {
                             "type": "boolean",
                             "default": false,
@@ -1032,6 +1037,11 @@
                             "default": false,
                             "description": "Show a short code for the most recently completed play (1B, HR, K, BB, etc.) on the pitcher/batter screen"
                         },
+                        "show_player_card": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Periodically show a full player card for the current batter (and optionally pitcher): headshot, jersey number, position, bat/throw, and season stats (AVG/HR/RBI for hitters, ERA/W-L/K for pitchers). Requires an extra ESPN athlete lookup; not available for MiLB. Configure look/timing under Customization > Player Card"
+                        },
                         "show_traditional_scoreboard": {
                             "type": "boolean",
                             "default": false,
@@ -1643,6 +1653,92 @@
                 },
                 "additionalProperties": false
             },
+            "player_card": {
+                "type": "object",
+                "title": "Player Card Screen",
+                "description": "A dedicated full-screen player card that periodically rotates into the live display for the current batter (and optionally pitcher): headshot image, jersey number, position, bat/throw hand, and season stats (AVG/HR/RBI for hitters, ERA/W-L/K for pitchers). Enable per-league via Display Options > Show Player Card (MLB and NCAA Baseball only -- MiLB has no ESPN player data). On tiny panels (e.g. 64x32) the headshot is hidden and the card shows compact text.",
+                "properties": {
+                    "font": {
+                        "type": "string",
+                        "default": "9x15.bdf",
+                        "description": "Font for the card's text -- a clean, bold bitmap font that auto-fits the largest size the panel and text allow. A fixed-size .bdf font renders at its native pixel size regardless of font_size; use a scalable .ttf font (e.g. 'press_start') if you want font_size to control the size."
+                    },
+                    "font_size": {
+                        "type": "integer",
+                        "default": 24,
+                        "minimum": 6,
+                        "maximum": 24,
+                        "description": "Maximum font size cap, for scalable .ttf fonts only (ignored by fixed-size .bdf fonts like the default). The card auto-fits within the space beside the headshot, so the default effectively means 'as big as fits' -- lower it to force a smaller size."
+                    },
+                    "show_batter": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Show a card for the current batter"
+                    },
+                    "show_pitcher": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Also show a card for the current pitcher (the batter is preferred when both are available)"
+                    },
+                    "use_team_colors": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Color the player's name with their real ESPN team color instead of the flat text_color"
+                    },
+                    "use_team_colors_border": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Draw the headshot's frame in the player's team color instead of the flat border_color below"
+                    },
+                    "border_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [255, 200, 0],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Headshot frame color [R, G, B] when use_team_colors_border is off or the team color is unavailable"
+                    },
+                    "text_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [255, 255, 255],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Text color [R, G, B] for the name (when team colors are off) and the jersey/position/bat-throw line"
+                    },
+                    "stat_color": {
+                        "type": "array",
+                        "x-widget": "color-picker",
+                        "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                        "default": [0, 220, 255],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "Text color [R, G, B] for the season-stats line"
+                    },
+                    "dwell_seconds": {
+                        "type": "number",
+                        "default": 6,
+                        "minimum": 2,
+                        "maximum": 20,
+                        "description": "How many seconds to show the card each time it rotates in"
+                    },
+                    "interval_seconds": {
+                        "type": "number",
+                        "default": 40,
+                        "minimum": 10,
+                        "maximum": 180,
+                        "description": "How often (in seconds) the card rotates into the normal live view"
+                    },
+                    "favorites_only": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Only rotate the card in for games involving one of this league's favorite_teams. Has no effect if favorite_teams is empty."
+                    }
+                },
+                "additionalProperties": false
+            },
             "traditional_scoreboard": {
                 "type": "object",
                 "title": "Traditional Scoreboard Screen",
@@ -1664,6 +1760,11 @@
                         "type": "boolean",
                         "default": true,
                         "description": "Color each team's abbreviation using their real team colors (from ESPN) instead of a single flat text color"
+                    },
+                    "show_team_color_backgrounds": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Tint each team's row with a subtle (~12% brightness) wash of their real ESPN team color, plus a solid team-color accent strip on the left edge -- a colorful ballpark look. Requires use_team_colors; a team with no ESPN color gets no tint. Text stays legible (it is drawn with a black outline over the wash)."
                     },
                     "show_logos": {
                         "type": "boolean",
@@ -1766,6 +1867,7 @@
                 "outs",
                 "count",
                 "at_bat_info",
+                "player_card",
                 "traditional_scoreboard"
             ],
             "additionalProperties": false

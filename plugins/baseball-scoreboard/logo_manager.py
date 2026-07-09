@@ -6,9 +6,11 @@ Handles logo loading, caching, and auto-download for all baseball leagues.
 
 import os
 import logging
+from io import BytesIO
 from pathlib import Path
 from typing import Optional
 
+import requests
 from PIL import Image
 
 # Pillow compatibility: Image.Resampling.LANCZOS is available in Pillow >= 9.1
@@ -182,6 +184,69 @@ class BaseballLogoManager:
         except Exception as e:
             self.logger.error(f"Error loading MiLB logo for {team_abbr}: {e}", exc_info=True)
             return None
+
+    # Player headshots are cached on disk under the plugin dir, namespaced by
+    # league (MLB and NCAA athlete-id spaces differ), plus an in-memory cache
+    # keyed by id+size. Mirrors the masters plugin's headshot loader.
+    _HEADSHOT_DIR = Path(__file__).resolve().parent / "assets" / "headshots"
+
+    @staticmethod
+    def _crop_square(img: Image.Image, size: int) -> Image.Image:
+        """Crop to a square from the top-center (ESPN headshots frame the face
+        at top-center) and resize to exactly fill a size x size box."""
+        w, h = img.size
+        if w > h:
+            left = (w - h) // 2
+            img = img.crop((left, 0, left + h, h))
+        elif h > w:
+            img = img.crop((0, 0, w, w))
+        return img.resize((size, size), RESAMPLE_FILTER)
+
+    def load_headshot(
+        self, player_id: str, url: Optional[str], league: str = "mlb", max_size: int = 32
+    ) -> Optional[Image.Image]:
+        """Load a player's headshot, crop-to-fill a square, with in-memory +
+        on-disk caching and download-on-miss. Returns None on any failure so
+        callers can render a text-only card."""
+        if not player_id and not url:
+            return None
+
+        cache_key = f"headshot_{league}_{player_id}_{max_size}"
+        if cache_key in self._logo_cache:
+            return self._logo_cache[cache_key]
+
+        disk_path = None
+        if player_id:
+            disk_path = self._HEADSHOT_DIR / league / f"{player_id}.png"
+            if disk_path.exists():
+                try:
+                    with Image.open(disk_path) as src:
+                        img = self._crop_square(src.convert("RGBA"), max_size)
+                    self._logo_cache[cache_key] = img
+                    return img
+                except Exception as e:
+                    self.logger.debug(f"Failed to load cached headshot {player_id}: {e}")
+
+        if url:
+            try:
+                resp = requests.get(
+                    url, timeout=5, headers={"User-Agent": "LEDMatrix Baseball Plugin/1.0"}
+                )
+                resp.raise_for_status()
+                full = Image.open(BytesIO(resp.content)).convert("RGBA")
+                if disk_path is not None:
+                    try:
+                        disk_path.parent.mkdir(parents=True, exist_ok=True)
+                        full.save(disk_path, "PNG")
+                    except Exception as e:
+                        self.logger.debug(f"Could not cache headshot to disk for {player_id}: {e}")
+                img = self._crop_square(full, max_size)
+                self._logo_cache[cache_key] = img
+                return img
+            except Exception as e:
+                self.logger.debug(f"Failed to download headshot for {player_id}: {e}")
+
+        return None
 
     def clear_cache(self) -> None:
         """Clear the logo cache."""

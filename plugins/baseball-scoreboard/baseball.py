@@ -86,6 +86,74 @@ def _get_current_pitcher_batter(
     return None, None
 
 
+def _hand_abbr(value: Any) -> Optional[str]:
+    """Normalize an ESPN bats/throws field (dict or string) to a short code
+    like 'R'/'L'/'S'. Returns None when absent."""
+    if isinstance(value, dict):
+        return value.get("abbreviation") or value.get("displayValue") or value.get("type")
+    if isinstance(value, str) and value:
+        return value[:1].upper()
+    return None
+
+
+def _build_athlete_info_map(rosters: Optional[List[Dict]]) -> Dict[str, Dict]:
+    """Join both teams' rosters into {athlete_id: {name, jersey, position,
+    headshot_url, bat, throw, team_id, team_abbr}}.
+
+    Richer sibling of _build_athlete_name_map -- carries the extra fields the
+    player card needs (jersey/position/headshot + which team the athlete is
+    on, so the card can pick the correct team color). Kept separate so the
+    existing name-only map (and its tests) stay unchanged."""
+    info: Dict[str, Dict] = {}
+    for team_roster in rosters or []:
+        team = team_roster.get("team", {}) or {}
+        team_id = str(team.get("id", "") or "")
+        team_abbr = team.get("abbreviation") or ""
+        for entry in team_roster.get("roster", []) or []:
+            athlete = entry.get("athlete", {}) or {}
+            athlete_id = str(athlete.get("id", "") or "")
+            if not athlete_id:
+                continue
+            position = athlete.get("position") or {}
+            if isinstance(position, dict):
+                position = position.get("abbreviation") or position.get("displayName") or ""
+            headshot = (athlete.get("headshot") or {}).get("href")
+            info[athlete_id] = {
+                "name": athlete.get("shortName") or athlete.get("fullName") or "",
+                "jersey": athlete.get("jersey"),
+                "position": position or "",
+                "headshot_url": headshot,
+                "bat": _hand_abbr(athlete.get("bats")),
+                "throw": _hand_abbr(athlete.get("throws")),
+                "team_id": team_id,
+                "team_abbr": team_abbr,
+            }
+    return info
+
+
+def _get_current_pitcher_batter_ids(
+    plays: Optional[List[Dict]],
+) -> Tuple[Optional[str], Optional[str]]:
+    """Scan plays backward for the most recent play naming a pitcher/batter,
+    returning their athlete IDs (parallel to _get_current_pitcher_batter, which
+    returns names). The card needs the IDs to fetch bios/headshots."""
+    for play in reversed(plays or []):
+        pitcher_id = None
+        batter_id = None
+        for participant in play.get("participants") or []:
+            role = participant.get("type")
+            athlete_id = str(participant.get("athlete", {}).get("id", "") or "")
+            if not athlete_id:
+                continue
+            if role == "pitcher":
+                pitcher_id = athlete_id
+            elif role == "batter":
+                batter_id = athlete_id
+        if pitcher_id or batter_id:
+            return pitcher_id, batter_id
+    return None, None
+
+
 def _map_play_type(play: Dict) -> Optional[str]:
     """Map a single play to a short code, or None on no confident match."""
     play_type = (play.get("type") or {}).get("type", "")
@@ -197,6 +265,7 @@ class Baseball(SportsCore):
         self.show_count = self.mode_config.get("show_count", True)
         self.show_pitcher_batter = self.mode_config.get("show_pitcher_batter", False)
         self.show_last_play = self.mode_config.get("show_last_play", False)
+        self.show_player_card = self.mode_config.get("show_player_card", False)
         self.show_traditional_scoreboard = self.mode_config.get("show_traditional_scoreboard", False)
         self.show_series_summary = self.mode_config.get("show_series_summary", False)
         self.data_source = ESPNDataSource(logger)
@@ -794,6 +863,35 @@ class Baseball(SportsCore):
             away_y = header_y + row_h
             home_y = away_y + row_h
 
+            # Subtle team-color wash behind each team's row, plus a solid
+            # accent strip on the left edge -- drawn FIRST (before text,
+            # dividers, logos, and the At Bat panel) so everything else
+            # prints cleanly on top. The wash is dimmed to ~12% brightness so
+            # the black-outlined white text stays legible over it; the strip
+            # uses the full (already brightness-clamped) team color. Gated by
+            # use_team_colors (shared with the abbreviation coloring) and a
+            # dedicated show_team_color_backgrounds toggle; a team with no
+            # ESPN color simply gets no wash rather than a wrong one.
+            if use_team_colors and cfg.get("show_team_color_backgrounds", True):
+                # A 1px strip would collide with a flush-left abbreviation
+                # (no logo); keep it 1px there, otherwise scale with the font.
+                strip_w = max(1, char_w // 3) if logo_w else 1
+                grid_x_end = x_offset + content_w - 1
+                for row_y, tc in (
+                    (away_y, game.get("away_team_color")),
+                    (home_y, game.get("home_team_color")),
+                ):
+                    if not tc:
+                        continue
+                    tint = tuple(max(0, int(c * 0.12)) for c in tc)
+                    draw.rectangle(
+                        [x_offset, row_y, grid_x_end, row_y + row_h - 1], fill=tint
+                    )
+                    draw.rectangle(
+                        [x_offset, row_y, x_offset + strip_w - 1, row_y + row_h - 1],
+                        fill=tuple(tc),
+                    )
+
             # Inning-number header + per-inning score rows.
             for col in range(num_cols):
                 inning_num = start_inning + col
@@ -977,12 +1075,24 @@ class BaseballLive(Baseball, SportsLive):
         # Dedicated at-bat-info rotating screen timing state.
         self._at_bat_screen_last_shown = 0.0
         self._at_bat_screen_showing_until = 0.0
+        # Player-card rotating screen: timing state + a resolved-bio cache
+        # (keyed by athlete id) and a per-id fetch throttle. Bios change rarely
+        # so they're cached via the core cache_manager with a long TTL as well.
+        self._player_card_last_shown = 0.0
+        self._player_card_showing_until = 0.0
+        self._player_bio_cache: Dict[str, Optional[Dict]] = {}
+        self._player_bio_last_attempt: Dict[str, float] = {}
+        self.player_bio_update_interval = self.mode_config.get(
+            "player_bio_update_interval", 300
+        )
+        self._headshot_mgr = None  # lazily created in the render path
 
     def update(self):
         super().update()
         if self.test_mode:
             return
-        if not (self.show_pitcher_batter or self.show_last_play):
+        pbp_wanted = self.show_pitcher_batter or self.show_last_play or self.show_player_card
+        if not pbp_wanted:
             return
         if not self.espn_summary_sport_league:
             return
@@ -998,6 +1108,19 @@ class BaseballLive(Baseball, SportsLive):
         if now - last_attempt >= self.play_by_play_update_interval:
             self._play_by_play_last_attempt[game_id] = now
             self._fetch_play_by_play(game_id)
+
+        # Lazily enrich the current batter/pitcher with a full bio (season
+        # stats) for the player card -- only for the two current athlete IDs,
+        # throttled, so we never hammer the athlete API from the render loop.
+        if self.show_player_card:
+            pbp = self._play_by_play_cache.get(game_id) or {}
+            for pid in (pbp.get("batter_id"), pbp.get("pitcher_id")):
+                if not pid:
+                    continue
+                last = self._player_bio_last_attempt.get(pid, 0)
+                if now - last >= self.player_bio_update_interval:
+                    self._player_bio_last_attempt[pid] = now
+                    self._fetch_player_bio(pid)
 
         self._prune_stale_play_by_play()
 
@@ -1058,11 +1181,21 @@ class BaseballLive(Baseball, SportsLive):
             athlete_names = _build_athlete_name_map(rosters)
             pitcher, batter = _get_current_pitcher_batter(plays, athlete_names)
             last_play_code = _get_last_play_code(plays)
+            # Extra plumbing for the player card: the athlete IDs of the
+            # current pitcher/batter plus their roster info (jersey, position,
+            # headshot, team). Cheap to compute here alongside the names; the
+            # card's season-stats bio is fetched lazily/separately.
+            info_map = _build_athlete_info_map(rosters)
+            pitcher_id, batter_id = _get_current_pitcher_batter_ids(plays)
             if pitcher or batter or last_play_code:
                 self._play_by_play_cache[game_id] = {
                     "pitcher": pitcher,
                     "batter": batter,
                     "last_play_code": last_play_code,
+                    "pitcher_id": pitcher_id,
+                    "batter_id": batter_id,
+                    "pitcher_info": info_map.get(pitcher_id) if pitcher_id else None,
+                    "batter_info": info_map.get(batter_id) if batter_id else None,
                 }
             else:
                 self.logger.debug(
@@ -1072,15 +1205,122 @@ class BaseballLive(Baseball, SportsLive):
         except Exception as e:
             self.logger.error(f"Error parsing play-by-play for game {game_id}: {e}")
 
+    def _fetch_player_bio(self, player_id: str) -> None:
+        """Fetch and cache a player's bio + season stats for the player card,
+        off-thread with a bounded timeout (same non-blocking pattern as
+        _fetch_play_by_play). Results persist in-memory and, via the core
+        cache_manager, across restarts. Stores None on a definitive miss so we
+        don't refetch a player with no ESPN athlete record every interval."""
+        if not player_id or not self.espn_summary_sport_league:
+            return
+
+        # Serve from the durable cache first (bios rarely change).
+        cache_key = f"baseball_player_{player_id}"
+        if player_id not in self._player_bio_cache and self.cache_manager is not None:
+            try:
+                cached = self.cache_manager.get(cache_key)
+                if cached is not None:
+                    self._player_bio_cache[player_id] = cached or None
+                    return
+            except Exception:
+                pass
+
+        import threading
+        import queue
+
+        sport, league = self.espn_summary_sport_league
+        result_queue = queue.Queue()
+
+        def fetch():
+            try:
+                data = self.data_source.fetch_player_details(sport, league, player_id)
+                result_queue.put(("success", data))
+            except Exception as e:
+                result_queue.put(("error", e))
+
+        thread = threading.Thread(target=fetch, daemon=True)
+        thread.start()
+
+        try:
+            result_type, result_data = result_queue.get(timeout=2.0)
+        except queue.Empty:
+            self.logger.debug(f"Player bio fetch timed out for {player_id} (non-blocking)")
+            return
+
+        if result_type != "success":
+            self.logger.debug(f"Player bio fetch failed for {player_id}: {result_data}")
+            return
+
+        self._player_bio_cache[player_id] = result_data or None
+        if self.cache_manager is not None:
+            try:
+                self.cache_manager.set(
+                    cache_key, result_data or {}, ttl=self.player_bio_update_interval
+                )
+            except Exception:
+                pass
+
     # Sample data cycled through in test_mode so the at-bat info screen's
     # real draw path (font/color/dwell/interval config) gets exercised
     # offline, with zero network calls.
     _TEST_MODE_AT_BAT_SAMPLES = [
-        {"pitcher": "G. Cole", "batter": "J. Soto", "last_play_code": "1B"},
-        {"pitcher": "G. Cole", "batter": "A. Judge", "last_play_code": "K"},
-        {"pitcher": "Y. Yamamoto", "batter": "F. Freeman", "last_play_code": "HR"},
-        {"pitcher": "Y. Yamamoto", "batter": "M. Betts", "last_play_code": "BB"},
+        {
+            "pitcher": "G. Cole", "batter": "J. Soto", "last_play_code": "1B",
+            "pitcher_id": "p_cole", "batter_id": "b_soto",
+            "pitcher_info": {"name": "G. Cole", "jersey": "45", "position": "SP",
+                             "bat": "R", "throw": "R", "team_id": "away"},
+            "batter_info": {"name": "J. Soto", "jersey": "22", "position": "RF",
+                            "bat": "L", "throw": "L", "team_id": "home"},
+        },
+        {
+            "pitcher": "G. Cole", "batter": "A. Judge", "last_play_code": "K",
+            "pitcher_id": "p_cole", "batter_id": "b_judge",
+            "pitcher_info": {"name": "G. Cole", "jersey": "45", "position": "SP",
+                             "bat": "R", "throw": "R", "team_id": "away"},
+            "batter_info": {"name": "A. Judge", "jersey": "99", "position": "CF",
+                            "bat": "R", "throw": "R", "team_id": "home"},
+        },
+        {
+            "pitcher": "Y. Yamamoto", "batter": "F. Freeman", "last_play_code": "HR",
+            "pitcher_id": "p_yama", "batter_id": "b_freeman",
+            "pitcher_info": {"name": "Y. Yamamoto", "jersey": "18", "position": "SP",
+                             "bat": "R", "throw": "R", "team_id": "home"},
+            "batter_info": {"name": "F. Freeman", "jersey": "5", "position": "1B",
+                            "bat": "L", "throw": "R", "team_id": "away"},
+        },
+        {
+            "pitcher": "Y. Yamamoto", "batter": "M. Betts", "last_play_code": "BB",
+            "pitcher_id": "p_yama", "batter_id": "b_betts",
+            "pitcher_info": {"name": "Y. Yamamoto", "jersey": "18", "position": "SP",
+                             "bat": "R", "throw": "R", "team_id": "home"},
+            "batter_info": {"name": "M. Betts", "jersey": "50", "position": "SS",
+                            "bat": "R", "throw": "R", "team_id": "away"},
+        },
     ]
+
+    # Stub bios (season stats) keyed by the test athlete ids above, so the
+    # player card's full render path runs offline. Headshots resolve to None
+    # without a network -- exercising the text-only card layout.
+    _TEST_MODE_PLAYER_BIOS = {
+        "b_soto": {"display_name": "Juan Soto", "jersey": "22", "position": "RF",
+                   "bat": "L", "throw": "L", "headshot_url": None,
+                   "stats": {"AVG": ".288", "HR": "41", "RBI": "109"}},
+        "b_judge": {"display_name": "Aaron Judge", "jersey": "99", "position": "CF",
+                    "bat": "R", "throw": "R", "headshot_url": None,
+                    "stats": {"AVG": ".322", "HR": "58", "RBI": "144"}},
+        "b_freeman": {"display_name": "Freddie Freeman", "jersey": "5", "position": "1B",
+                      "bat": "L", "throw": "R", "headshot_url": None,
+                      "stats": {"AVG": ".282", "HR": "22", "RBI": "89"}},
+        "b_betts": {"display_name": "Mookie Betts", "jersey": "50", "position": "SS",
+                    "bat": "R", "throw": "R", "headshot_url": None,
+                    "stats": {"AVG": ".289", "HR": "19", "RBI": "75"}},
+        "p_cole": {"display_name": "Gerrit Cole", "jersey": "45", "position": "SP",
+                   "bat": "R", "throw": "R", "headshot_url": None,
+                   "stats": {"ERA": "3.41", "W": "8", "L": "5", "SO": "165"}},
+        "p_yama": {"display_name": "Yoshinobu Yamamoto", "jersey": "18", "position": "SP",
+                   "bat": "R", "throw": "R", "headshot_url": None,
+                   "stats": {"ERA": "2.90", "W": "11", "L": "4", "SO": "180"}},
+    }
 
     # After this many innings, reset the simulated game back to a fresh
     # start rather than climbing forever -- most real games are 9 innings;
@@ -1140,14 +1380,18 @@ class BaseballLive(Baseball, SportsLive):
                     int(self.current_game["away_score"]) + 1
                 )
 
-            if self.show_pitcher_batter or self.show_last_play:
+            if self.show_pitcher_batter or self.show_last_play or self.show_player_card:
                 game_id = self.current_game.get("id", "test")
                 sample_index = self.current_game["inning"] % len(
                     self._TEST_MODE_AT_BAT_SAMPLES
                 )
-                self._play_by_play_cache[game_id] = self._TEST_MODE_AT_BAT_SAMPLES[
-                    sample_index
-                ]
+                sample = self._TEST_MODE_AT_BAT_SAMPLES[sample_index]
+                self._play_by_play_cache[game_id] = sample
+                # Seed the bio cache so the player card renders offline.
+                if self.show_player_card:
+                    for pid in (sample.get("batter_id"), sample.get("pitcher_id")):
+                        if pid and pid not in self._player_bio_cache:
+                            self._player_bio_cache[pid] = self._TEST_MODE_PLAYER_BIOS.get(pid)
 
     def _maybe_draw_at_bat_info_screen(self, game: Dict, force_clear: bool = False) -> bool:
         """Rotate in the dedicated pitcher/batter/last-play screen if it's
@@ -1242,9 +1486,9 @@ class BaseballLive(Baseball, SportsLive):
 
             lines = []
             if self.show_pitcher_batter and pbp.get("pitcher"):
-                lines.append((f"P: {pbp['pitcher']}", pitcher_color))
+                lines.append((f"Pitcher: {pbp['pitcher']}", pitcher_color))
             if self.show_pitcher_batter and pbp.get("batter"):
-                lines.append((f"B: {pbp['batter']}", batter_color))
+                lines.append((f"Batter: {pbp['batter']}", batter_color))
             if self.show_last_play and pbp.get("last_play_code"):
                 lines.append((pbp["last_play_code"], last_play_color))
 
@@ -1288,9 +1532,270 @@ class BaseballLive(Baseball, SportsLive):
         except Exception as e:
             self.logger.error(f"Error drawing at-bat info screen: {e}", exc_info=True)
 
+    def _get_headshot_manager(self):
+        """Lazily create the headshot loader (a BaseballLogoManager, which
+        already has the disk/memory-cache + download machinery). Returns None
+        if it can't be constructed so the card degrades to text-only."""
+        if self._headshot_mgr is None:
+            try:
+                from logo_manager import BaseballLogoManager
+                self._headshot_mgr = BaseballLogoManager(
+                    self.display_manager, self.logger, self.sport_key
+                )
+            except Exception as e:
+                self.logger.debug(f"Could not create headshot manager: {e}")
+                return None
+        return self._headshot_mgr
+
+    def _player_card_team_color(self, game: Dict, info: Optional[Dict]):
+        """Pick the team color for a card's border/name from the athlete's
+        roster team_id (authoritative), cross-checked against the game's
+        home/away ids; fall back to inning-half inference, then None."""
+        if info:
+            team_id = str(info.get("team_id") or "")
+            if team_id and team_id == str(game.get("home_id") or ""):
+                return game.get("home_team_color")
+            if team_id and team_id == str(game.get("away_id") or ""):
+                return game.get("away_team_color")
+        return None
+
+    def _maybe_draw_player_card_screen(self, game: Dict, force_clear: bool = False) -> bool:
+        """Rotate in the masters-style player card (headshot + bio + season
+        stats) for the current batter/pitcher if it's due. Returns True if it
+        drew. Skips silently for MiLB (no ESPN athlete ids) and whenever a
+        resolved bio isn't available yet, so a blank card is never shown."""
+        if not self.show_player_card:
+            return False
+        if not self.espn_summary_sport_league:
+            return False  # MiLB: no ESPN athlete ids
+
+        pbp = self._play_by_play_cache.get(game.get("id"))
+        if not pbp:
+            return False
+
+        card_cfg = self.config.get("customization", {}).get("player_card", {})
+        show_batter = card_cfg.get("show_batter", True)
+        show_pitcher = card_cfg.get("show_pitcher", False)
+
+        # Resolve which player to show (batter takes priority) -- requires both
+        # roster info and a fetched bio, else there's nothing worth a card.
+        candidate = None
+        if show_batter and pbp.get("batter_id"):
+            bio = self._player_bio_cache.get(pbp["batter_id"])
+            if bio:
+                candidate = ("batter", pbp.get("batter_info"), bio)
+        if candidate is None and show_pitcher and pbp.get("pitcher_id"):
+            bio = self._player_bio_cache.get(pbp["pitcher_id"])
+            if bio:
+                candidate = ("pitcher", pbp.get("pitcher_info"), bio)
+        if candidate is None:
+            return False
+
+        if card_cfg.get("favorites_only", False) and self.favorite_teams:
+            if (
+                game.get("home_abbr") not in self.favorite_teams
+                and game.get("away_abbr") not in self.favorite_teams
+            ):
+                return False
+
+        dwell = card_cfg.get("dwell_seconds", 6)
+        interval = card_cfg.get("interval_seconds", 40)
+
+        now = time.time()
+        showing = now < self._player_card_showing_until
+        if not showing and now - self._player_card_last_shown >= interval:
+            self._player_card_last_shown = now
+            self._player_card_showing_until = now + dwell
+            showing = True
+
+        if not showing:
+            return False
+
+        role, info, bio = candidate
+        self._draw_player_card_screen(game, role, info, bio, force_clear)
+        return True
+
+    @staticmethod
+    def _format_card_stats(bio: Dict) -> List[Tuple[str, str]]:
+        """Pick a compact, position-appropriate set of (label, value) stat
+        pairs from a bio's stats dict. Prefers hitter stats (AVG/HR/RBI); falls
+        back to pitcher stats (ERA/W-L/K); else surfaces whatever ESPN gave,
+        so NCAA feeds with sparse/odd labels still show *something*."""
+        stats = bio.get("stats") or {}
+        if not stats:
+            return []
+
+        def pick(*names):
+            for n in names:
+                for k, v in stats.items():
+                    if k.upper() == n.upper():
+                        return v
+            return None
+
+        pos = (bio.get("position") or "").upper()
+        is_pitcher = pos in ("P", "SP", "RP", "CP")
+
+        avg, hr, rbi = pick("AVG", "BA"), pick("HR", "homeRuns"), pick("RBI", "RBIs")
+        era, so = pick("ERA"), pick("SO", "K", "strikeouts")
+        wins, losses = pick("W", "wins"), pick("L", "losses")
+
+        pairs: List[Tuple[str, str]] = []
+        if is_pitcher and (era is not None or wins is not None):
+            if era is not None:
+                pairs.append(("ERA", str(era)))
+            if wins is not None and losses is not None:
+                pairs.append(("W-L", f"{wins}-{losses}"))
+            if so is not None:
+                pairs.append(("K", str(so)))
+        elif avg is not None or hr is not None or rbi is not None:
+            if avg is not None:
+                pairs.append(("AVG", str(avg)))
+            if hr is not None:
+                pairs.append(("HR", str(hr)))
+            if rbi is not None:
+                pairs.append(("RBI", str(rbi)))
+        if not pairs:
+            # Generic fallback: first three labels ESPN provided.
+            for k, v in list(stats.items())[:3]:
+                pairs.append((str(k), str(v)))
+        return pairs
+
+    def _draw_player_card_screen(
+        self, game: Dict, role: str, info: Optional[Dict], bio: Dict,
+        force_clear: bool = False,
+    ) -> None:
+        """Draw a masters-style player card: headshot (when the panel is big
+        enough) + name, jersey/position, bat/throw, and season stats. Layout is
+        tiered by display size; the headshot is hidden on tiny panels and the
+        text degrades gracefully when fields are missing."""
+        try:
+            w, h = self.display_width, self.display_height
+            img = Image.new("RGB", (w, h), (0, 0, 0))
+            draw = ImageDraw.Draw(img)
+
+            card_cfg = self.config.get("customization", {}).get("player_card", {})
+            text_color = tuple(card_cfg.get("text_color", [255, 255, 255]))
+            stat_color = tuple(card_cfg.get("stat_color", [0, 220, 255]))
+            border_color = tuple(card_cfg.get("border_color", [255, 200, 0]))
+            use_team_colors = card_cfg.get("use_team_colors", True)
+            use_border_color = card_cfg.get("use_team_colors_border", True)
+
+            info = info or {}
+            name = bio.get("display_name") or info.get("name") or "Player"
+            jersey = bio.get("jersey") or info.get("jersey")
+            position = bio.get("position") or info.get("position") or ""
+            bat = bio.get("bat") or info.get("bat")
+            throw = bio.get("throw") or info.get("throw")
+            stats = self._format_card_stats(bio)
+
+            team_color = self._player_card_team_color(game, info)
+            name_color = team_color if (use_team_colors and team_color) else text_color
+            frame_color = team_color if (use_border_color and team_color) else border_color
+
+            # Text lines built compactly; label/value stat pairs are rendered
+            # as "AVG .312  HR 12  RBI 40" style joined strings.
+            jersey_pos = " ".join(
+                p for p in (f"#{jersey}" if jersey else "", position) if p
+            )
+            bt = " ".join(
+                p for p in ((f"B:{bat}" if bat else ""), (f"T:{throw}" if throw else "")) if p
+            )
+            stat_str = "  ".join(f"{lbl} {val}" for lbl, val in stats)
+
+            margin = 1
+            # Tier by size: hide the headshot on short/narrow panels.
+            show_headshot = w >= 96 and h >= 32
+            headshot = None
+            headshot_size = 0
+            if show_headshot:
+                # Height-constrained so it never overflows a 32px panel.
+                headshot_size = min(
+                    max(24, h - 2 * (margin + 2)), h - 2 * (margin + 1), w // 3
+                )
+                mgr = self._get_headshot_manager()
+                if mgr is not None:
+                    _, league = self.espn_summary_sport_league
+                    headshot = mgr.load_headshot(
+                        str(bio.get("player_id") or info.get("player_id") or "")
+                        or str(info.get("id") or ""),
+                        bio.get("headshot_url") or info.get("headshot_url"),
+                        league=league,
+                        max_size=headshot_size,
+                    )
+
+            if headshot is not None:
+                hx, hy = margin + 1, (h - headshot.height) // 2
+                # Team-color / gold frame around the headshot.
+                draw.rectangle(
+                    [hx - 1, hy - 1, hx + headshot.width, hy + headshot.height],
+                    outline=frame_color,
+                )
+                img.paste(headshot, (hx, hy), headshot)
+                text_x = hx + headshot.width + 4
+            else:
+                headshot_size = 0
+                text_x = margin + 1
+
+            # Reserve the margin plus 1px for the text outline (which
+            # _draw_text_with_outline paints 1px beyond the glyph on every
+            # side) so nothing bleeds into the edge columns.
+            avail_w = w - text_x - margin - 2
+            # Assemble the text lines for this tier.
+            if not show_headshot and h <= 32:
+                # Tiny tier: 2 compact centered lines.
+                lines = [(name if len(name) <= 12 else (info.get("name") or name), name_color)]
+                bottom = stat_str or jersey_pos
+                if bottom:
+                    lines.append((bottom, stat_color if stat_str else text_color))
+            else:
+                lines = [(name, name_color)]
+                meta = "  ".join(p for p in (jersey_pos, bt) if p)
+                if meta:
+                    lines.append((meta, text_color))
+                if stat_str:
+                    lines.append((stat_str, stat_color))
+
+            if not lines:
+                return
+
+            font_cfg = dict(card_cfg)
+            font_cfg.setdefault("font", "9x15.bdf")
+            available_height = h - 2 * margin
+            font_size_cap = font_cfg.get("font_size", 24)
+            max_row_h = available_height / max(1, len(lines))
+            font_cfg["font_size"] = max(6, min(font_size_cap, round(max_row_h - 3)))
+            line_texts = [t for t, _ in lines]
+            font, row_h = self._load_multiline_fit_font(
+                font_cfg, line_texts, max(8, avail_w), available_height
+            )
+
+            total_height = row_h * len(lines)
+            y = max(margin, (h - total_height) // 2)
+            for text, color in lines:
+                if y >= h:
+                    break
+                text = self._truncate_to_width(draw, text, font, avail_w)
+                if not show_headshot:
+                    # Center text-only tiers horizontally, keeping >=1px for
+                    # the outline on the left edge.
+                    tw = draw.textbbox((0, 0), text, font=font)[2]
+                    tx = max(margin + 1, (w - tw) // 2)
+                else:
+                    tx = text_x
+                self._draw_text_with_outline(draw, text, (tx, y), font, fill=color)
+                y += row_h
+
+            self.display_manager.image.paste(img, (0, 0))
+            self.display_manager.update_display()
+
+        except Exception as e:
+            self.logger.error(f"Error drawing player card screen: {e}", exc_info=True)
+
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live baseball game."""
         if self._maybe_draw_at_bat_info_screen(game, force_clear):
+            return
+        if self._maybe_draw_player_card_screen(game, force_clear):
             return
         if self._maybe_draw_traditional_scoreboard_screen(game, force_clear):
             return

@@ -156,6 +156,95 @@ class ESPNDataSource(DataSource):
             self.logger.error(f"Error fetching game summary from ESPN for {sport}/{league} event {event_id}: {e}")
             return None
 
+    # ESPN's athlete bio/stats live on a different host than the scoreboard
+    # (site.web.api vs site.api), under the common/v3 tree.
+    _ATHLETE_BASE = "https://site.web.api.espn.com/apis/common/v3/sports"
+
+    def fetch_player_details(self, sport: str, league: str, player_id: str) -> Optional[Dict]:
+        """Fetch a player's bio + season stats from ESPN's athlete + overview
+        endpoints. Returns a parsed dict (display_name, jersey, position, bat,
+        throw, height, weight, headshot_url, stats) or None on any failure.
+
+        Mirrors the masters plugin's fetch_player_details; the bio endpoint
+        carries the identity/headshot and the /overview endpoint carries the
+        season statistics (which NCAA feeds may omit -- handled gracefully)."""
+        if not player_id:
+            return None
+        try:
+            bio_url = f"{self._ATHLETE_BASE}/{sport}/{league}/athletes/{player_id}"
+            bio_resp = self.session.get(bio_url, headers=self.get_headers(), timeout=10)
+            if bio_resp.status_code != 200:
+                self.logger.debug(
+                    f"Player bio HTTP {bio_resp.status_code} for {sport}/{league} {player_id}"
+                )
+                return None
+            bio_data = bio_resp.json()
+
+            overview_data = None
+            try:
+                overview_resp = self.session.get(
+                    f"{bio_url}/overview", headers=self.get_headers(), timeout=10
+                )
+                if overview_resp.status_code == 200:
+                    overview_data = overview_resp.json()
+            except Exception as e:
+                self.logger.debug(f"Player overview fetch failed for {player_id}: {e}")
+
+            return self._parse_player_details(bio_data, overview_data)
+        except Exception as e:
+            self.logger.debug(f"Failed to fetch player details for {player_id}: {e}")
+            return None
+
+    @staticmethod
+    def _parse_player_details(bio_data: Dict, overview_data: Optional[Dict]) -> Optional[Dict]:
+        """Combine the bio + overview responses into one flat player dict.
+
+        The overview's statistics block is `{names/labels: [...], splits:
+        [{stats: [...]}, ...]}` -- we zip the labels against the first split's
+        values into a {label: value} map, then pull the baseball-relevant ones
+        (AVG/HR/RBI for hitters, ERA/W-L/K for pitchers) while keeping the full
+        map so anything ESPN provides is available to the renderer."""
+        try:
+            athlete = bio_data.get("athlete") or bio_data
+            if not isinstance(athlete, dict):
+                return None
+
+            headshot = (athlete.get("headshot") or {}).get("href")
+            position = athlete.get("position") or {}
+            if isinstance(position, dict):
+                position = position.get("abbreviation") or position.get("displayName") or ""
+
+            stats: Dict[str, str] = {}
+            if overview_data:
+                stat_block = overview_data.get("statistics") or {}
+                labels = stat_block.get("names") or stat_block.get("labels") or []
+                splits = stat_block.get("splits") or []
+                chosen = splits[0] if isinstance(splits, list) and splits else None
+                if isinstance(chosen, dict):
+                    values = chosen.get("stats") or []
+                    for label, value in zip(labels, values):
+                        if label:
+                            stats[str(label)] = value
+
+            return {
+                "player_id": athlete.get("id"),
+                "display_name": athlete.get("displayName"),
+                "first_name": athlete.get("firstName"),
+                "last_name": athlete.get("lastName"),
+                "jersey": athlete.get("jersey"),
+                "position": position or "",
+                "bat": (athlete.get("bats") or {}).get("abbreviation")
+                if isinstance(athlete.get("bats"), dict) else athlete.get("bats"),
+                "throw": (athlete.get("throws") or {}).get("abbreviation")
+                if isinstance(athlete.get("throws"), dict) else athlete.get("throws"),
+                "height": athlete.get("displayHeight") or athlete.get("height"),
+                "weight": athlete.get("displayWeight") or athlete.get("weight"),
+                "headshot_url": headshot,
+                "stats": stats,
+            }
+        except Exception:
+            return None
+
 
 class MLBAPIDataSource(DataSource):
     """MLB API data source."""
