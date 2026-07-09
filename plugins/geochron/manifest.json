@@ -14,7 +14,7 @@
     {
       "released": "2026-07-08",
       "version": "1.0.1",
-      "notes": "Add MIT LICENSE file matching the manifest's declared license.",
+      "notes": "Add a GPL-3.0 LICENSE file (project-standard license).",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -26,7 +26,7 @@
   "update_interval": 45,
   "default_duration": 20,
   "icon": "fa-globe",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/geochron",
   "config_schema": "config_schema.json",
   "last_updated": "2026-07-08",
