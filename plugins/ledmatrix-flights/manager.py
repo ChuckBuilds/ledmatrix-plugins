@@ -316,10 +316,18 @@ class FlightTrackerPlugin(BasePlugin):
         self._metar_data: Dict[str, Dict] = {}   # ICAO -> normalized weather dict
         self._pirep_data: Dict[str, list] = {}   # ICAO -> list of pilot reports
         self._sigmet_data: list = []             # active SIGMET/AIRMET advisories
+        self._metar_work: list = []              # queued fetch steps (spread across cycles)
         self._last_metar_fetch = 0.0
         self._metar_page = 0
         self._last_metar_page_change = 0.0
-        self._apply_metar_config()
+        # Guard construction: a bad METAR config must only disable the weather
+        # feature, never abort the whole plugin (mirrors on_config_change()).
+        try:
+            self._apply_metar_config()
+        except Exception:
+            self.logger.error("[Flight Tracker] METAR init failed; disabling weather feature",
+                               exc_info=True)
+            self._disable_metar()
 
         # Initialize offline aircraft database (lazy-loaded on first use for faster startup)
         self.use_offline_db = self.config.get('use_offline_database', True)
@@ -449,9 +457,16 @@ class FlightTrackerPlugin(BasePlugin):
             self._fetcher = create_fetcher(self.config, self.cache_manager)
             self._enrichment = create_enrichment_provider(self.config, self.cache_manager)
             self._renderer = FlightRenderer(self.display_manager, self.fonts, self.config)
-            self._apply_metar_config()
         except Exception as e:
             self.logger.error(f"[Flight Tracker] Error rebuilding components on config change: {e}", exc_info=True)
+
+        # Guarded separately so a bad METAR config only disables the weather feature.
+        try:
+            self._apply_metar_config()
+        except Exception:
+            self.logger.error("[Flight Tracker] METAR config reload failed; disabling weather feature",
+                               exc_info=True)
+            self._disable_metar()
 
         # Invalidate the cached map background so center/radius/zoom/appearance
         # changes are re-tiled on the next render.
@@ -493,6 +508,21 @@ class FlightTrackerPlugin(BasePlugin):
         except (TypeError, ValueError):
             self.metar_page_duration = 8
         self._metar_fetcher = MetarFetcher(self.config, self.cache_manager)
+
+    def _disable_metar(self) -> None:
+        """Set the weather feature to safe, disabled defaults so the rest of the
+        plugin keeps running when METAR config/fetcher setup fails."""
+        self.metar_enabled = False
+        self.metar_airports = []
+        self.metar_show_taf = False
+        self.metar_show_raw = False
+        self.metar_show_pirep = False
+        self.metar_show_sigmet = False
+        self.metar_pirep_distance_nm = 200
+        self.metar_update_interval = 600
+        self.metar_page_duration = 8
+        self._metar_fetcher = None
+        self._metar_work = []
 
     def _resolve_metar_airports(self, codes) -> list:
         """Normalize user-entered airport codes to uppercase ICAO, validated against
@@ -2322,34 +2352,57 @@ class FlightTrackerPlugin(BasePlugin):
             self._update_tracked_flights()
             self._last_tracked_update = current_time
 
-        # Airport weather (METAR/TAF/PIREP/SIGMET) — fetched on its own slow cadence,
-        # cached, and only while the plugin is on screen so it never slows the
-        # aircraft fetch/display loop.
-        if (self.metar_enabled and self.metar_airports and is_visible
-                and current_time - self._last_metar_fetch >= self.metar_update_interval):
-            self._last_metar_fetch = current_time
-            self._refresh_metar_data()
+        # Airport weather (METAR/TAF/PIREP/SIGMET): serviced incrementally — at most
+        # one HTTP request per cycle (see _service_metar) — and only while on screen,
+        # so a slow or failing weather request can never stall the aircraft loop for
+        # more than a single request.
+        if self.metar_enabled and self.metar_airports and is_visible:
+            self._service_metar(current_time)
 
-    def _refresh_metar_data(self) -> None:
-        """Refresh cached airport weather from the free NOAA AWC API. The fetcher is
-        cache-backed and never raises; this wrapper is defensive belt-and-braces so a
-        weather hiccup can never break the update loop."""
+    def _service_metar(self, now: float) -> None:
+        """Drive the weather refresh incrementally: refill a small work queue when the
+        refresh interval elapses, then run at most one fetch step per cycle. This keeps
+        the per-cycle cost to a single request even with many airports + PIREP/SIGMET,
+        so a slow or failed weather fetch can't stall the aircraft loop (mirrors the
+        bounded-per-cycle approach of _background_fetch_fr24_details)."""
+        if not self._metar_work and now - self._last_metar_fetch >= self.metar_update_interval:
+            self._last_metar_fetch = now
+            self._metar_work = self._build_metar_work()
+        if self._metar_work:
+            self._run_metar_step(self._metar_work.pop(0))
+
+    def _build_metar_work(self) -> list:
+        """Build the ordered fetch steps for one refresh pass: the batched METAR/TAF
+        first, then one PIREP step per airport (if enabled), then SIGMET (if enabled).
+        Also clears data for any page type that is now disabled so it doesn't linger."""
+        work = ['weather']
+        if self.metar_show_pirep:
+            work += [('pirep', icao) for icao in self.metar_airports]
+        else:
+            self._pirep_data = {}
+        if self.metar_show_sigmet:
+            work.append('sigmet')
+        else:
+            self._sigmet_data = []
+        return work
+
+    def _run_metar_step(self, step) -> None:
+        """Execute one queued weather fetch step. The fetcher is cache-backed and
+        already never raises; this extra guard means one bad step can't break the
+        update loop either."""
+        if self._metar_fetcher is None:
+            return
         try:
-            self._metar_data = self._metar_fetcher.fetch_weather(self.metar_airports)
-            if self.metar_show_pirep:
-                self._pirep_data = {
-                    icao: self._metar_fetcher.fetch_pireps(icao, self.metar_pirep_distance_nm)
-                    for icao in self.metar_airports
-                }
-            else:
-                self._pirep_data = {}
-            self._sigmet_data = (
-                self._metar_fetcher.fetch_sigmets() if self.metar_show_sigmet else []
-            )
-            self.logger.info(
-                f"[Flight Tracker] Refreshed airport weather for {list(self._metar_data.keys())}")
-        except Exception as e:
-            self.logger.warning(f"[Flight Tracker] METAR refresh failed: {e}")
+            if step == 'weather':
+                self._metar_data = self._metar_fetcher.fetch_weather(self.metar_airports)
+            elif step == 'sigmet':
+                self._sigmet_data = self._metar_fetcher.fetch_sigmets()
+            elif isinstance(step, tuple) and step[0] == 'pirep':
+                icao = step[1]
+                self._pirep_data[icao] = self._metar_fetcher.fetch_pireps(
+                    icao, self.metar_pirep_distance_nm)
+        except Exception:  # noqa: BLE001 - weather must never break the update loop
+            self.logger.warning("[Flight Tracker] METAR fetch step %r failed", step, exc_info=True)
 
     def _update_tracked_flights(self) -> None:
         """Update tracked flight data from enrichment sources and live ADS-B."""

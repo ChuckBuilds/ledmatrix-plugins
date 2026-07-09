@@ -1058,16 +1058,19 @@ class FlightRenderer:
         self.dm.update_display()
 
     def render_metar_raw(self, icao: str, raw: str) -> None:
+        """Render the raw METAR string on its own page and push to display."""
         img = self._render_labeled_page_to_image(icao, "METAR", self.dim_color, raw)
         self.dm.image = img.copy()
         self.dm.update_display()
 
     def render_taf_card(self, icao: str, raw_taf: str) -> None:
+        """Render the raw TAF (terminal forecast) page and push to display."""
         img = self._render_labeled_page_to_image(icao, "TAF", self.route_color, raw_taf)
         self.dm.image = img.copy()
         self.dm.update_display()
 
     def render_pirep_card(self, icao: str, pireps: list) -> None:
+        """Render a pilot-report page (count + most recent report) and push to display."""
         if pireps:
             body = f"({len(pireps)}) {pireps[0].get('raw', '')}"
         else:
@@ -1077,6 +1080,7 @@ class FlightRenderer:
         self.dm.update_display()
 
     def render_sigmet_card(self, sigmets: list) -> None:
+        """Render the active SIGMET/AIRMET advisories page and push to display."""
         img = self._render_sigmet_to_image(sigmets or [])
         self.dm.image = img.copy()
         self.dm.update_display()
@@ -1084,6 +1088,8 @@ class FlightRenderer:
     # --- weather rendering internals ---
 
     def _render_metar_card_to_image(self, wx: Dict[str, Any]) -> Image.Image:
+        """Build the decoded METAR card image (ICAO header, flight-category badge,
+        and the packed decoded field tokens)."""
         w, h = self.width, self.height
         img = Image.new("RGB", (w, h), (0, 0, 0))
         draw = ImageDraw.Draw(img)
@@ -1177,6 +1183,8 @@ class FlightRenderer:
         return img
 
     def _render_sigmet_to_image(self, sigmets: list) -> Image.Image:
+        """Build the advisories image: a 'SIGMET' header with a count, then the
+        distinct active hazards (deduped by kind + hazard)."""
         w, h = self.width, self.height
         img = Image.new("RGB", (w, h), (0, 0, 0))
         draw = ImageDraw.Draw(img)
@@ -1246,6 +1254,7 @@ class FlightRenderer:
         return lines
 
     def _fmt_wind(self, wdir, wspd, wgst) -> str:
+        """Format wind as e.g. '090@8', '090@8G20', 'VRB@5' or 'CALM'."""
         try:
             spd = int(round(float(wspd)))
         except (TypeError, ValueError):
@@ -1271,6 +1280,7 @@ class FlightRenderer:
         return s
 
     def _fmt_vis(self, vis) -> str:
+        """Format visibility in statute miles (e.g. '10+', '2', '1.5')."""
         if isinstance(vis, str):
             return vis.replace("statute miles", "").strip() or "?"
         try:
@@ -1284,6 +1294,8 @@ class FlightRenderer:
         return f"{v:.2f}".rstrip("0").rstrip(".")
 
     def _fmt_sky(self, clouds) -> str:
+        """Format the most significant cloud layer (ceiling if any) as e.g.
+        'BKN045' or 'CLR'."""
         if not clouds:
             return "CLR"
 
@@ -1304,6 +1316,7 @@ class FlightRenderer:
         return fmt_layer(cover, base)
 
     def _fmt_c(self, val) -> str:
+        """Format a temperature in whole degrees Celsius, or '--' if unavailable."""
         try:
             return f"{int(round(float(val)))}"
         except (TypeError, ValueError):

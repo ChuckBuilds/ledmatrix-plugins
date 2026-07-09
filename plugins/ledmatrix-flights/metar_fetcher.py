@@ -39,10 +39,16 @@ class MetarFetcher:
     BASE_URL = "https://aviationweather.gov/api/data"
 
     def __init__(self, config: Optional[Dict[str, Any]] = None, cache_manager: Any = None):
+        """Read the ``metar`` config block and set up the cache-backed HTTP session.
+        Malformed numeric options fall back to safe defaults rather than raising, so
+        a bad config can never crash plugin construction."""
         m = (config or {}).get("metar", {}) or {}
         self.cache_manager = cache_manager
         self.show_taf = bool(m.get("show_taf", True))
-        self.pirep_distance_nm = int(m.get("pirep_distance_nm", 200))
+        try:
+            self.pirep_distance_nm = int(m.get("pirep_distance_nm", 200))
+        except (TypeError, ValueError):
+            self.pirep_distance_nm = 200
 
         # TTLs: METAR follows the configured refresh cadence (obs update ~hourly);
         # TAF/PIREP/SIGMET change slowly so keep them a bit longer.

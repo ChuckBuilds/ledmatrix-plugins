@@ -100,6 +100,15 @@ def test_normalize_metar_fields():
     print("PASS test_normalize_metar_fields")
 
 
+def test_construction_survives_bad_numeric_config():
+    """Malformed numeric options must fall back to defaults, not raise (the fetcher
+    is built unguarded from FlightTrackerPlugin.__init__)."""
+    f = MetarFetcher({"metar": {"pirep_distance_nm": "oops", "update_interval_minutes": None}}, None)
+    assert f.pirep_distance_nm == 200, f.pirep_distance_nm
+    assert f.metar_ttl == 600, f.metar_ttl  # 10 min default
+    print("PASS test_construction_survives_bad_numeric_config")
+
+
 def test_altimeter_inhg_passthrough():
     """A feed already reporting inHg (<100) must not be re-scaled."""
     f = MetarFetcher({}, None)
