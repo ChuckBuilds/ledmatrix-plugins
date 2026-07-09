@@ -847,10 +847,11 @@ class MusicPlugin(BasePlugin):
                 if perform_full_refresh_this_cycle or not self.is_currently_showing_nothing_playing:
                     self.display_manager.clear()
                 
-                text_width = self.display_manager.get_text_width("Nothing Playing", self.display_manager.regular_font)
-                x_pos = (self.display_manager.matrix.width - text_width) // 2
+                np_text = self._clip_text_to_width("Nothing Playing", self.display_manager.regular_font, self.display_manager.matrix.width)
+                text_width = self.display_manager.get_text_width(np_text, self.display_manager.regular_font)
+                x_pos = max(0, (self.display_manager.matrix.width - text_width) // 2)
                 y_pos = (self.display_manager.matrix.height // 2) - 4
-                self.display_manager.draw_text("Nothing Playing", x=x_pos, y=y_pos, font=self.display_manager.regular_font)
+                self.display_manager.draw_text(np_text, x=x_pos, y=y_pos, font=self.display_manager.regular_font)
                 self.display_manager.update_display()
                 self.is_currently_showing_nothing_playing = True
 
