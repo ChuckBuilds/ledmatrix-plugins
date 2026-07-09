@@ -57,8 +57,9 @@ from it. Key options:
 |---|---|---|
 | `enabled` | `false` | Master switch |
 | `text` | `"Subscribe to ChuckBuilds"` | The message to display |
-| `font_path` | `assets/fonts/PressStart2P-Regular.ttf` | Path to TTF or BDF font file |
-| `font_size` | `8` | Font size in pixels |
+| `font_mode` | `manual` | `manual` uses `font_path`/`font_size` as-is. `auto` picks the largest crisp font that fits the display: static text is sized to fit the whole panel, scrolling text is sized to the panel height — so the same config is readable on a 64x32 and fills a 128x64. |
+| `font_path` | `assets/fonts/PressStart2P-Regular.ttf` | Path to TTF or BDF font file (manual mode) |
+| `font_size` | `8` | Font size in pixels (manual mode) |
 | `scroll` | `true` | Enable horizontal scrolling animation |
 | `scroll_speed` | `1` | Speed multiplier (≈ pixels per frame). Higher = faster. |
 | `scroll_delay` | `0.01` | Sleep between scroll steps in seconds. Lower = smoother but more CPU |
