@@ -214,9 +214,11 @@ class FlightRenderer:
             self.font_small = _ttf(small_face, small_sz)
 
         # Weather (METAR) view uses the cleaner, more legible 5x7 face rather than
-        # the blocky PressStart2P/4x6 — long weather strings (raw METAR/TAF) need to
-        # read like text, not an arcade marquee. Rendered normally (no pixel snapping).
-        wx_head_sz, wx_body_sz = (14, 10) if h >= 64 else (10, 7)
+        # the blocky PressStart2P/4x6. It is drawn in 1-bit "mono" mode (see the
+        # render_*_to_image methods) so it stays crisp on the LED grid instead of the
+        # soft anti-aliased look the face has when smoothed; a slightly larger size
+        # keeps the small weather text readable.
+        wx_head_sz, wx_body_sz = (16, 12) if h >= 64 else (13, 9)
         if self._font_override_medium is not None:
             wx_head_sz = self._font_override_medium
         if self._font_override_small is not None:
@@ -1103,6 +1105,7 @@ class FlightRenderer:
         w, h = self.width, self.height
         img = Image.new("RGB", (w, h), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # 1-bit, grid-snapped text: crisp on the LED grid, no AA blur
 
         icao = (wx.get("icao") or "----")
         cat = (wx.get("flt_cat") or "").upper()
@@ -1190,6 +1193,7 @@ class FlightRenderer:
         w, h = self.width, self.height
         img = Image.new("RGB", (w, h), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # crisp grid-snapped text (no anti-aliasing)
 
         y = 2
         self._draw(draw, icao or "----", (2, y), self.wx_font_head, self.header_color)
@@ -1213,6 +1217,7 @@ class FlightRenderer:
         w, h = self.width, self.height
         img = Image.new("RGB", (w, h), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # crisp grid-snapped text (no anti-aliasing)
 
         y = 2
         self._draw(draw, "SIGMET", (2, y), self.wx_font_head, (255, 140, 0))
