@@ -742,7 +742,11 @@ class MusicPlugin(BasePlugin):
         matters most on narrow 64px-wide displays where the text area is only
         ~29px wide.
         """
-        if not text or max_width <= 0:
+        if max_width <= 0:
+            # No horizontal room for text (e.g. a square panel where the album
+            # art fills the full width) — draw nothing rather than overflow.
+            return ""
+        if not text:
             return text
         if self.display_manager.get_text_width(text, font) <= max_width:
             return text
@@ -1206,7 +1210,7 @@ class MusicPlugin(BasePlugin):
         duration_ms = current_track_info_snapshot.get('duration_ms', 0)
         progress_ms = current_track_info_snapshot.get('progress_ms', 0)
 
-        if duration_ms > 0:
+        if duration_ms > 0 and text_area_width > 0:
             bar_total_width = text_area_width
             filled_ratio = progress_ms / duration_ms
             filled_width = int(filled_ratio * bar_total_width)
