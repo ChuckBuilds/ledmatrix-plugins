@@ -1027,3 +1027,273 @@ class FlightRenderer:
                             self.font_large, self.error_color)
         self.dm.image = img.copy()
         self.dm.update_display()
+
+    # =====================================================================
+    # Airport weather (METAR / TAF / PIREP / SIGMET)
+    # =====================================================================
+
+    # Flight-category colors (aviation standard: green/blue/red/magenta).
+    _FLT_CAT_COLORS = {
+        "VFR": (0, 200, 0),
+        "MVFR": (0, 120, 255),
+        "IFR": (255, 0, 0),
+        "LIFR": (255, 0, 255),
+    }
+
+    def render_metar_card(self, wx: Dict[str, Any]) -> None:
+        """Render a decoded METAR card (flight-category badge + key fields)."""
+        img = self._render_metar_card_to_image(wx)
+        self.dm.image = img.copy()
+        self.dm.update_display()
+
+    def render_metar_raw(self, icao: str, raw: str) -> None:
+        img = self._render_labeled_page_to_image(icao, "METAR", self.dim_color, raw)
+        self.dm.image = img.copy()
+        self.dm.update_display()
+
+    def render_taf_card(self, icao: str, raw_taf: str) -> None:
+        img = self._render_labeled_page_to_image(icao, "TAF", self.route_color, raw_taf)
+        self.dm.image = img.copy()
+        self.dm.update_display()
+
+    def render_pirep_card(self, icao: str, pireps: list) -> None:
+        if pireps:
+            body = f"({len(pireps)}) {pireps[0].get('raw', '')}"
+        else:
+            body = "NO REPORTS"
+        img = self._render_labeled_page_to_image(icao, "PIREP", (255, 180, 0), body)
+        self.dm.image = img.copy()
+        self.dm.update_display()
+
+    def render_sigmet_card(self, sigmets: list) -> None:
+        img = self._render_sigmet_to_image(sigmets or [])
+        self.dm.image = img.copy()
+        self.dm.update_display()
+
+    # --- weather rendering internals ---
+
+    def _render_metar_card_to_image(self, wx: Dict[str, Any]) -> Image.Image:
+        w, h = self.width, self.height
+        img = Image.new("RGB", (w, h), (0, 0, 0))
+        draw = ImageDraw.Draw(img)
+
+        icao = (wx.get("icao") or "----")
+        cat = (wx.get("flt_cat") or "").upper()
+        cat_color = self._FLT_CAT_COLORS.get(cat, self.dim_color)
+
+        # Header: ICAO (left) + a filled flight-category badge (right).
+        y = 2
+        self._draw(draw, icao, (2, y), self.font_medium, self.header_color)
+        if cat:
+            cat_w = self._tw(draw, cat, self.font_small)
+            bx = w - cat_w - 4
+            fh = self._fh(self.font_small)
+            draw.rectangle([bx - 2, y - 1, w - 1, y + fh + 1], fill=cat_color)
+            self._draw(draw, cat, (bx, y), self.font_small, (0, 0, 0))
+        y += self._lh(self.font_medium)
+
+        # Decoded field tokens, packed across as many rows as fit.
+        tokens = self._metar_tokens(wx)
+        self._draw_token_rows(draw, tokens, x0=2, y0=y, font=self.font_small,
+                              max_w=w - 1, max_y=h - 1, gap_x=5, color=self.metric_color)
+        return img
+
+    def _metar_tokens(self, wx: Dict[str, Any]) -> list:
+        """Build the compact decoded field tokens (e.g. '090@8', '10SM', 'BKN045',
+        '12/07', 'A30.01')."""
+        tokens = [self._fmt_wind(wx.get("wind_dir"), wx.get("wind_spd"), wx.get("wind_gust"))]
+
+        vis = wx.get("vis")
+        if vis is not None and vis != "":
+            tokens.append(f"{self._fmt_vis(vis)}SM")
+
+        wxs = (wx.get("wx_string") or "").strip()
+        if wxs:
+            tokens.append(wxs)
+
+        tokens.append(self._fmt_sky(wx.get("clouds") or []))
+
+        t = wx.get("temp_c")
+        if t is not None:
+            d = wx.get("dewp_c")
+            tokens.append(f"{self._fmt_c(t)}/{self._fmt_c(d) if d is not None else '--'}")
+
+        a = wx.get("altim_inhg")
+        if isinstance(a, (int, float)):
+            tokens.append(f"A{a:.2f}")
+
+        return [t for t in tokens if t]
+
+    def _draw_token_rows(self, draw, tokens, x0, y0, font, max_w, max_y, gap_x=5,
+                         color=(220, 220, 220)) -> None:
+        """Greedily pack space-separated tokens into rows, wrapping when a token
+        would overflow and stopping when vertical space runs out."""
+        lh = self._lh(font)
+        fh = self._fh(font)
+        x, y = x0, y0
+        for tok in tokens:
+            tw = self._tw(draw, tok, font)
+            if x > x0 and x + tw > max_w:
+                x = x0
+                y += lh
+            if y + fh > max_y:
+                break
+            self._draw(draw, tok, (x, y), font, color)
+            x += tw + gap_x
+
+    def _render_labeled_page_to_image(self, icao: str, tag: str, tag_color, body: str,
+                                      body_color=(210, 210, 210)) -> Image.Image:
+        """ICAO header + right-aligned tag (METAR/TAF/PIREP), then the raw body text
+        word-wrapped to fill the panel."""
+        w, h = self.width, self.height
+        img = Image.new("RGB", (w, h), (0, 0, 0))
+        draw = ImageDraw.Draw(img)
+
+        y = 2
+        self._draw(draw, icao or "----", (2, y), self.font_medium, self.header_color)
+        if tag:
+            tag_w = self._tw(draw, tag, self.font_small)
+            self._draw(draw, tag, (w - tag_w - 2, y + 1), self.font_small, tag_color)
+        y += self._lh(self.font_medium) + 1
+
+        lh = self._lh(self.font_small)
+        fh = self._fh(self.font_small)
+        for line in self._wrap_text(draw, body or "", self.font_small, w - 4):
+            if y + fh > h - 1:
+                break
+            self._draw(draw, line, (2, y), self.font_small, body_color)
+            y += lh
+        return img
+
+    def _render_sigmet_to_image(self, sigmets: list) -> Image.Image:
+        w, h = self.width, self.height
+        img = Image.new("RGB", (w, h), (0, 0, 0))
+        draw = ImageDraw.Draw(img)
+
+        y = 2
+        self._draw(draw, "SIGMET", (2, y), self.font_medium, (255, 140, 0))
+        cnt = str(len(sigmets))
+        cw = self._tw(draw, cnt, self.font_small)
+        self._draw(draw, cnt, (w - cw - 2, y + 1), self.font_small, self.dim_color)
+        y += self._lh(self.font_medium) + 1
+
+        if not sigmets:
+            self._draw(draw, "NONE ACTIVE", (2, y), self.font_small, self.dim_color)
+            return img
+
+        # Dedupe by (advisory kind, hazard) so a nationwide feed collapses to the
+        # distinct active hazards rather than dozens of near-identical rows.
+        seen, rows = set(), []
+        for s in sigmets:
+            atype = (s.get("type") or "").upper()
+            abbr = "S" if atype.startswith("SIGMET") else ("A" if atype.startswith("AIRMET") else "-")
+            hazard = (s.get("hazard") or "WX").upper()
+            key = (abbr, hazard)
+            if key not in seen:
+                seen.add(key)
+                rows.append(f"{abbr} {hazard}")
+
+        lh = self._lh(self.font_small)
+        fh = self._fh(self.font_small)
+        for line in rows:
+            if y + fh > h - 1:
+                break
+            self._draw(draw, self._truncate(draw, line, self.font_small, w - 4),
+                       (2, y), self.font_small, (220, 220, 220))
+            y += lh
+        return img
+
+    # --- weather formatting helpers ---
+
+    def _wrap_text(self, draw, text: str, font, max_w: int) -> list:
+        """Word-wrap *text* to lines no wider than *max_w* px. Hard-splits any single
+        token wider than the panel so nothing runs off the edge."""
+        lines, cur = [], ""
+        for word in (text or "").split():
+            if self._tw(draw, word, font) > max_w:
+                # flush current, then hard-split the oversized token
+                if cur:
+                    lines.append(cur)
+                    cur = ""
+                chunk = ""
+                for ch in word:
+                    if self._tw(draw, chunk + ch, font) > max_w and chunk:
+                        lines.append(chunk)
+                        chunk = ch
+                    else:
+                        chunk += ch
+                cur = chunk
+                continue
+            trial = f"{cur} {word}".strip()
+            if not cur or self._tw(draw, trial, font) <= max_w:
+                cur = trial
+            else:
+                lines.append(cur)
+                cur = word
+        if cur:
+            lines.append(cur)
+        return lines
+
+    def _fmt_wind(self, wdir, wspd, wgst) -> str:
+        try:
+            spd = int(round(float(wspd)))
+        except (TypeError, ValueError):
+            return "WIND --"
+        if spd == 0:
+            return "CALM"
+        if wdir is None or wdir == "":
+            d = ""
+        elif isinstance(wdir, str) and not wdir.isdigit():
+            d = wdir.upper()  # e.g. VRB
+        else:
+            try:
+                d = f"{int(round(float(wdir))):03d}"
+            except (TypeError, ValueError):
+                d = str(wdir)
+        s = f"{d}@{spd}" if d else f"{spd}KT"
+        try:
+            g = int(round(float(wgst)))
+            if g and g > spd:
+                s += f"G{g}"
+        except (TypeError, ValueError):
+            pass
+        return s
+
+    def _fmt_vis(self, vis) -> str:
+        if isinstance(vis, str):
+            return vis.replace("statute miles", "").strip() or "?"
+        try:
+            v = float(vis)
+        except (TypeError, ValueError):
+            return str(vis)
+        if v >= 10:
+            return "10+"
+        if v == int(v):
+            return str(int(v))
+        return f"{v:.2f}".rstrip("0").rstrip(".")
+
+    def _fmt_sky(self, clouds) -> str:
+        if not clouds:
+            return "CLR"
+
+        def fmt_layer(cover, base):
+            if base is None:
+                return cover or "CLR"
+            try:
+                return f"{cover}{int(base) // 100:03d}"
+            except (TypeError, ValueError):
+                return cover or "CLR"
+
+        for cover, base in clouds:
+            if cover in ("BKN", "OVC", "OVX") and base is not None:
+                return fmt_layer(cover, base)
+        cover, base = clouds[0]
+        if cover in ("CLR", "SKC", "NSC", "CAVOK", ""):
+            return cover or "CLR"
+        return fmt_layer(cover, base)
+
+    def _fmt_c(self, val) -> str:
+        try:
+            return f"{int(round(float(val)))}"
+        except (TypeError, ValueError):
+            return "--"

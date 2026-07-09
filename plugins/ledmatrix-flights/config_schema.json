@@ -278,7 +278,8 @@
           "map",
           "stats",
           "area",
-          "flight_tracking"
+          "flight_tracking",
+          "metar"
         ]
       },
       "x-options": {
@@ -286,10 +287,82 @@
           "map": "Map",
           "stats": "Stats",
           "area": "Area (multi-aircraft)",
-          "flight_tracking": "Flight Tracking"
+          "flight_tracking": "Flight Tracking",
+          "metar": "Airport Weather (METAR/TAF)"
         }
       },
       "uniqueItems": true
+    },
+    "metar": {
+      "type": "object",
+      "title": "Airport Weather (METAR/TAF)",
+      "description": "Optional add-on for pilots: show aviation weather for airports you choose, using the free NOAA Aviation Weather Center API (no API key or account needed). After enabling, add 'metar' to Rotation Views above to include it in the display rotation. NOTAMs are not included (they require separate FAA API credentials).",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enable Airport Weather",
+          "description": "Fetch and display METAR/TAF/PIREP/SIGMET for the airports below.",
+          "default": false
+        },
+        "airports": {
+          "type": "array",
+          "title": "Airports",
+          "description": "ICAO (e.g. KTPA) or IATA (e.g. TPA) airport codes. The display rotates through each airport's weather. Example: [\"KTPA\", \"KJFK\"].",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "show_taf": {
+          "type": "boolean",
+          "title": "Show TAF",
+          "description": "Show the terminal aerodrome forecast (raw) on a page after each airport's METAR.",
+          "default": true
+        },
+        "show_raw": {
+          "type": "boolean",
+          "title": "Show Raw METAR",
+          "description": "Show the raw METAR string on its own page in addition to the decoded card.",
+          "default": true
+        },
+        "show_pirep": {
+          "type": "boolean",
+          "title": "Show PIREPs",
+          "description": "Show recent pilot reports near each airport.",
+          "default": false
+        },
+        "show_sigmet": {
+          "type": "boolean",
+          "title": "Show SIGMETs/AIRMETs",
+          "description": "Show active domestic SIGMET/AIRMET advisories (region-based, not airport-specific).",
+          "default": false
+        },
+        "pirep_distance_nm": {
+          "type": "integer",
+          "title": "PIREP Search Radius (nm)",
+          "description": "How far from each airport to search for pilot reports.",
+          "minimum": 25,
+          "maximum": 500,
+          "default": 200
+        },
+        "update_interval_minutes": {
+          "type": "integer",
+          "title": "Weather Refresh Interval (minutes)",
+          "description": "How often to refresh weather from NOAA. METARs update roughly hourly, so 10 minutes is plenty.",
+          "minimum": 5,
+          "maximum": 120,
+          "default": 10
+        },
+        "page_duration_seconds": {
+          "type": "integer",
+          "title": "Seconds per Page",
+          "description": "How long each weather page (decoded METAR, raw, TAF, etc.) is shown before advancing.",
+          "minimum": 3,
+          "maximum": 60,
+          "default": 8
+        }
+      },
+      "additionalProperties": false
     },
     "units": {
       "type": "string",
@@ -760,6 +833,7 @@
     "route_cache_ttl",
     "display_mode",
     "rotation_views",
+    "metar",
     "display_duration",
     "update_interval",
     "live_update_interval",
