@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-08",
+  "last_updated": "2026-07-09",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -381,10 +381,10 @@
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-15",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.10.0"
+      "latest_version": "1.10.1"
     },
     {
       "id": "march-madness",
@@ -475,10 +475,10 @@
       "plugin_path": "plugins/ledmatrix-music",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.6"
+      "latest_version": "1.0.7"
     },
     {
       "id": "news",
@@ -774,10 +774,10 @@
       "plugin_path": "plugins/ledmatrix-stocks",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-28",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.3.0",
+      "latest_version": "2.3.1",
       "icon": "fas fa-chart-line"
     },
     {

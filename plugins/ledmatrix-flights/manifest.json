@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -27,13 +27,19 @@
   ],
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-flights",
   "website": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-flights",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "compatible_versions": [
     ">=2.0.0"
   ],
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "released": "2026-07-08",
+      "version": "1.10.1",
+      "notes": "Set the license to GPL-3.0 (project standard). The LICENSE file was already GPL; the manifest field previously said MIT.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-06-15",
       "version": "1.10.0",
@@ -134,5 +140,5 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-06-15"
+  "last_updated": "2026-07-08"
 }

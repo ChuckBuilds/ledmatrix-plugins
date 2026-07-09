@@ -205,7 +205,7 @@ Configuration has been flattened - remove the `flight_tracker` wrapper from your
 
 ## License
 
-MIT
+Released under the GNU General Public License v3.0 — see [LICENSE](LICENSE).
 
 ## Author
 
