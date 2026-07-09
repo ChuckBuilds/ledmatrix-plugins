@@ -153,6 +153,9 @@ airport:
 - **Decoded METAR card** — airport identifier, a color-coded flight-category
   badge (**VFR** green, **MVFR** blue, **IFR** red, **LIFR** magenta), plus wind,
   visibility, present weather, ceiling/clouds, temperature/dewpoint, and altimeter.
+  It also shows the **observation age** (e.g. `14m`); if the report is stale
+  (older than ~75 min, i.e. a likely missed hourly update) the age turns amber
+  with a `!` so you never read old weather as current.
 - **Raw METAR page** — the raw observation as filed (toggle with `show_raw`).
 - **TAF page** — the terminal forecast (toggle with `show_taf`).
 - **PIREP page** — recent pilot reports near the airport (toggle with `show_pirep`).
@@ -180,14 +183,24 @@ airport:
     "show_pirep": false,
     "show_sigmet": false,
     "update_interval_minutes": 10,
-    "page_duration_seconds": 8
+    "page_duration_seconds": 8,
+    "altimeter_unit": "inhg",
+    "temp_unit": "c",
+    "wind_unit": "kt",
+    "visibility_unit": "sm"
   }
 }
 ```
 
+**Units** default to the US convention (`A30.01` inHg, statute miles, knots, °C).
+For international style set `altimeter_unit` to `hpa` (shows `Q1013`) and
+`visibility_unit` to `m` or `km`; `temp_unit` also accepts `f`, and `wind_unit`
+accepts `mph`, `kmh`, or `ms`.
+
 Weather is fetched on its own slow cadence (default every 10 minutes; METARs
-update roughly hourly), cached, and served stale on any network hiccup, so it
-never slows the aircraft display loop.
+update roughly hourly), cached, and served stale on any network hiccup. The
+refresh is serviced one request per update cycle, so it never stalls the
+aircraft display loop.
 
 ## Requirements
 

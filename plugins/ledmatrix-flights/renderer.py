@@ -114,6 +114,16 @@ class FlightRenderer:
         self.vr_unit = config.get("vr_unit", "ms" if legacy == "metric" else "fpm")
         self.units_legacy = legacy  # kept for area cards / distance
 
+        # Weather (METAR) display units — dedicated so aviation weather can follow US
+        # (inHg/statute miles) or international (hPa/metres) conventions independent
+        # of the aircraft unit settings above. Canonical stored values are inHg/degC/
+        # kt/SM; these choose how they are displayed.
+        _mcfg = config.get("metar", {}) or {}
+        self.wx_altim_unit = str(_mcfg.get("altimeter_unit", "inhg")).lower()
+        self.wx_temp_unit = str(_mcfg.get("temp_unit", "c")).lower()
+        self.wx_wind_unit = str(_mcfg.get("wind_unit", "kt")).lower()
+        self.wx_vis_unit = str(_mcfg.get("visibility_unit", "sm")).lower()
+
         # Colors
         self.header_color = tuple(config.get("header_color", [255, 255, 255]))
         self.airport_color = tuple(config.get("airport_color", [0, 120, 255]))
@@ -1100,13 +1110,27 @@ class FlightRenderer:
 
         # Header: ICAO (left) + a filled flight-category badge (right).
         y = 2
+        icao_w = self._tw(draw, icao, self.wx_font_head)
         self._draw(draw, icao, (2, y), self.wx_font_head, self.header_color)
+        badge_left = w
         if cat:
             cat_w = self._tw(draw, cat, self.wx_font_body)
             bx = w - cat_w - 4
+            badge_left = bx - 2
             fh = self._fh(self.wx_font_body)
             draw.rectangle([bx - 2, y - 1, w - 1, y + fh + 1], fill=cat_color)
             self._draw(draw, cat, (bx, y), self.wx_font_body, (0, 0, 0))
+
+        # Observation age (right-aligned before the badge), amber + '!' when stale so
+        # an old/missed report is never read as current.
+        age_str, stale = self._fmt_age(wx.get("obs_time"))
+        if age_str:
+            label = age_str + ("!" if stale else "")
+            age_w = self._tw(draw, label, self.wx_font_body)
+            ax = badge_left - age_w - 4
+            if ax > 2 + icao_w + 4:  # only if it fits without hitting the ICAO
+                age_color = (255, 180, 0) if stale else self.dim_color
+                self._draw(draw, label, (ax, y + 1), self.wx_font_body, age_color)
         y += self._lh(self.wx_font_head)
 
         # Decoded field tokens, packed across as many rows as fit.
@@ -1122,7 +1146,7 @@ class FlightRenderer:
 
         vis = wx.get("vis")
         if vis is not None and vis != "":
-            tokens.append(f"{self._fmt_vis(vis)}SM")
+            tokens.append(self._fmt_vis(vis))
 
         wxs = (wx.get("wx_string") or "").strip()
         if wxs:
@@ -1133,11 +1157,12 @@ class FlightRenderer:
         t = wx.get("temp_c")
         if t is not None:
             d = wx.get("dewp_c")
-            tokens.append(f"{self._fmt_c(t)}/{self._fmt_c(d) if d is not None else '--'}")
+            suffix = "F" if self.wx_temp_unit == "f" else ""
+            tokens.append(f"{self._fmt_c(t)}/{self._fmt_c(d) if d is not None else '--'}{suffix}")
 
         a = wx.get("altim_inhg")
         if isinstance(a, (int, float)):
-            tokens.append(f"A{a:.2f}")
+            tokens.append(self._fmt_altim(a))
 
         return [t for t in tokens if t]
 
@@ -1253,14 +1278,42 @@ class FlightRenderer:
             lines.append(cur)
         return lines
 
-    def _fmt_wind(self, wdir, wspd, wgst) -> str:
-        """Format wind as e.g. '090@8', '090@8G20', 'VRB@5' or 'CALM'."""
+    # canonical wind speed is knots; factor + suffix per display unit
+    _WIND_UNITS = {"kt": (1.0, ""), "mph": (1.15078, "MPH"),
+                   "kmh": (1.852, "KMH"), "ms": (0.514444, "MS")}
+
+    def _fmt_age(self, obs_time):
+        """Format observation age as e.g. '14m' or '1h48', plus a staleness flag
+        (True when older than ~75 min, i.e. a likely missed hourly report). Returns
+        ('', False) when the time is unknown."""
         try:
-            spd = int(round(float(wspd)))
+            ts = float(obs_time)
+        except (TypeError, ValueError):
+            return "", False
+        if ts <= 0:
+            return "", False
+        age = max(0.0, time.time() - ts)
+        mins = int(age // 60)
+        s = f"{mins}m" if mins < 60 else f"{mins // 60}h{mins % 60:02d}"
+        return s, age > 75 * 60
+
+    def _fmt_altim(self, inhg) -> str:
+        """Format altimeter in the configured unit: 'A30.01' (inHg) or 'Q1016' (hPa)."""
+        if self.wx_altim_unit == "hpa":
+            return f"Q{round(inhg * 33.8639)}"
+        return f"A{inhg:.2f}"
+
+    def _fmt_wind(self, wdir, wspd, wgst) -> str:
+        """Format wind (e.g. '090@8', '090@8G20', 'VRB@5', 'CALM') in the configured
+        speed unit; non-knot units get a suffix (e.g. '090@13MPH')."""
+        try:
+            spd_kt = float(wspd)
         except (TypeError, ValueError):
             return "WIND --"
-        if spd == 0:
+        if int(round(spd_kt)) == 0:
             return "CALM"
+        factor, suffix = self._WIND_UNITS.get(self.wx_wind_unit, (1.0, ""))
+        spd = int(round(spd_kt * factor))
         if wdir is None or wdir == "":
             d = ""
         elif isinstance(wdir, str) and not wdir.isdigit():
@@ -1270,28 +1323,47 @@ class FlightRenderer:
                 d = f"{int(round(float(wdir))):03d}"
             except (TypeError, ValueError):
                 d = str(wdir)
-        s = f"{d}@{spd}" if d else f"{spd}KT"
+        s = f"{d}@{spd}" if d else f"{spd}"
         try:
-            g = int(round(float(wgst)))
-            if g and g > spd:
-                s += f"G{g}"
+            g_kt = float(wgst)
+            if g_kt and g_kt > spd_kt:
+                s += f"G{int(round(g_kt * factor))}"
         except (TypeError, ValueError):
             pass
-        return s
+        return s + suffix
 
     def _fmt_vis(self, vis) -> str:
-        """Format visibility in statute miles (e.g. '10+', '2', '1.5')."""
+        """Format visibility in the configured unit, including the unit token
+        (e.g. '10+SM', '2SM', '9999m', '16km')."""
+        plus = False
         if isinstance(vis, str):
-            return vis.replace("statute miles", "").strip() or "?"
-        try:
-            v = float(vis)
-        except (TypeError, ValueError):
-            return str(vis)
-        if v >= 10:
-            return "10+"
-        if v == int(v):
-            return str(int(v))
-        return f"{v:.2f}".rstrip("0").rstrip(".")
+            txt = vis.replace("statute miles", "").strip()
+            plus = "+" in txt
+            try:
+                sm = float(txt.replace("+", ""))
+            except ValueError:
+                return (txt or "?") + ("SM" if self.wx_vis_unit == "sm" else "")
+        else:
+            try:
+                sm = float(vis)
+            except (TypeError, ValueError):
+                return str(vis)
+            plus = sm >= 10
+        unit = self.wx_vis_unit
+        if unit == "m":
+            if plus or sm >= 6.2:
+                return "9999m"
+            return f"{int(round(sm * 1609.34 / 50) * 50)}m"
+        if unit == "km":
+            if plus or sm >= 10:
+                return "10+km"
+            return f"{sm * 1.60934:.1f}".rstrip("0").rstrip(".") + "km"
+        # statute miles (default)
+        if plus or sm >= 10:
+            return "10+SM"
+        if sm == int(sm):
+            return f"{int(sm)}SM"
+        return f"{sm:.2f}".rstrip("0").rstrip(".") + "SM"
 
     def _fmt_sky(self, clouds) -> str:
         """Format the most significant cloud layer (ceiling if any) as e.g.
@@ -1316,8 +1388,12 @@ class FlightRenderer:
         return fmt_layer(cover, base)
 
     def _fmt_c(self, val) -> str:
-        """Format a temperature in whole degrees Celsius, or '--' if unavailable."""
+        """Format a temperature in whole degrees, in the configured unit (C or F),
+        or '--' if unavailable."""
         try:
-            return f"{int(round(float(val)))}"
+            c = float(val)
         except (TypeError, ValueError):
             return "--"
+        if self.wx_temp_unit == "f":
+            return f"{int(round(c * 9 / 5 + 32))}"
+        return f"{int(round(c))}"

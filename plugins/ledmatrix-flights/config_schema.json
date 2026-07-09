@@ -360,6 +360,34 @@
           "minimum": 3,
           "maximum": 60,
           "default": 8
+        },
+        "altimeter_unit": {
+          "type": "string",
+          "title": "Altimeter Unit",
+          "description": "Altimeter setting display: 'inhg' shows US style (A30.01), 'hpa' shows international style (Q1016).",
+          "enum": ["inhg", "hpa"],
+          "default": "inhg"
+        },
+        "temp_unit": {
+          "type": "string",
+          "title": "Temperature Unit",
+          "description": "Temperature/dewpoint unit on the decoded card.",
+          "enum": ["c", "f"],
+          "default": "c"
+        },
+        "wind_unit": {
+          "type": "string",
+          "title": "Wind Speed Unit",
+          "description": "Wind speed unit. Aviation standard is knots (kt).",
+          "enum": ["kt", "mph", "kmh", "ms"],
+          "default": "kt"
+        },
+        "visibility_unit": {
+          "type": "string",
+          "title": "Visibility Unit",
+          "description": "Visibility unit: statute miles (US), metres or kilometres (international).",
+          "enum": ["sm", "m", "km"],
+          "default": "sm"
         }
       },
       "additionalProperties": false
