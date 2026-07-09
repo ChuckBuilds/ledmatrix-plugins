@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-08",
+  "last_updated": "2026-07-09",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -20,10 +20,10 @@
       "plugin_path": "plugins/7-segment-clock",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-07",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "baseball-scoreboard",
@@ -526,7 +526,7 @@
       "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.1",
+      "latest_version": "1.2.2",
       "icon": "fa-circle-dot"
     },
     {
@@ -725,10 +725,10 @@
       "plugin_path": "plugins/static-image",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.3"
+      "latest_version": "1.0.4"
     },
     {
       "id": "stock-news",

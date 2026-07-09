@@ -1,7 +1,7 @@
 {
   "id": "on-air",
   "name": "On Air Light",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": "ChuckBuilds",
   "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live — stays on until you turn it off.",
   "entry_point": "manager.py",
@@ -11,6 +11,12 @@
   "display_modes": ["on_air"],
   "compatible_versions": [">=2.0.0"],
   "versions": [
+    {
+      "released": "2026-07-08",
+      "version": "1.2.2",
+      "notes": "Update the README to match the current config schema and behavior: replace the removed pulsing/glow/tally-dot options with the actual text color, background color, font, and Home Assistant discovery fields; fix the per-message color/bg payload docs; and drop the broken preview image reference.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-08",
       "version": "1.2.1",
