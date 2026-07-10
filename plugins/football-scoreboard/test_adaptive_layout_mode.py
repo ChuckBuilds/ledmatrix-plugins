@@ -166,16 +166,37 @@ class TestAdaptiveMode:
         assert fit.size_px == 16  # height/32 = 2 -> target 20 -> nearest rung 16
 
     def test_user_font_wins_over_ladder(self):
-        """An explicitly configured score font must be used verbatim."""
+        """An explicitly configured score font must be used verbatim — 14px
+        genuinely differs from the classic default (10px), so this must
+        register as a real user override."""
         cfg = {"layout_mode": "adaptive",
-               "customization": {"score_text": {"font_size": 10}}}
+               "customization": {"score_text": {"font_size": 14}}}
         r = _renderer(256, 128, cfg)
         from src.adaptive_layout import Region
         fit = r._fit_element("score", "17-21", Region(0, 0, 100, 100),
                              ladder=None)
         assert fit.family == "user"
-        # ladder on this panel would have picked something far larger than 10px
-        assert fit.height <= 12
+        # ladder on this panel would have picked something far larger than 14px
+        assert fit.height <= 16
+
+    def test_schema_default_is_not_mistaken_for_a_user_override(self):
+        """The web UI's save flow (schema_manager.merge_with_defaults)
+        writes the FULL schema default object into config.json on every
+        save — for every plugin, whether or not the user touched that
+        section. A config carrying only the schema's own declared defaults
+        must NOT be treated as a forced override, or adaptive sizing would
+        never engage on any config that's ever been saved once."""
+        cfg = {"layout_mode": "adaptive", "customization": {
+            "score_text": {"font": "PressStart2P-Regular.ttf", "font_size": 10},
+            "period_text": {"font": "PressStart2P-Regular.ttf", "font_size": 8},
+            "team_name": {"font": "PressStart2P-Regular.ttf", "font_size": 8},
+            "status_text": {"font": "4x6-font.ttf", "font_size": 6},
+            "detail_text": {"font": "4x6-font.ttf", "font_size": 6},
+            "rank_text": {"font": "PressStart2P-Regular.ttf", "font_size": 10},
+        }}
+        r = _renderer(256, 128, cfg)
+        for key in ("score", "time", "team", "status", "detail", "rank"):
+            assert not r._user_font_set(key), f"{key} incorrectly flagged as user-overridden"
 
     def test_user_offsets_translate_elements(self):
         """customization.layout offsets must shift the rendered element."""

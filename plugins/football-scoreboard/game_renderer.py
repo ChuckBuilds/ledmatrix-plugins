@@ -460,12 +460,40 @@ class GameRenderer:
         "rank": "rank_text",
     }
 
+    # (font filename, size) the config_schema.json declares as each
+    # element's default — matching these, not merely a key being *present*,
+    # is what "user set it" has to mean, because the web UI's save flow
+    # (schema_manager.merge_with_defaults) writes the FULL schema default
+    # object into config.json on every save, for every plugin, whether or
+    # not the user touched that section. Checking key presence alone would
+    # treat that untouched default as a forced override and adaptive mode
+    # would never engage on any config that's ever been saved once — these
+    # values are the same defaults _load_fonts() passes to _load_custom_font.
+    _CLASSIC_FONT_DEFAULTS = {
+        'score': ('PressStart2P-Regular.ttf', 10),
+        'time': ('PressStart2P-Regular.ttf', 8),
+        'team': ('PressStart2P-Regular.ttf', 8),
+        'status': ('4x6-font.ttf', 6),
+        'detail': ('4x6-font.ttf', 6),
+        'rank': ('PressStart2P-Regular.ttf', 10),
+    }
+
     def _user_font_set(self, font_key: str) -> bool:
-        """True when the user explicitly configured this element's font —
-        adaptive mode must respect it instead of ladder-fitting."""
+        """True when the user's configured font/font_size for this element
+        genuinely differs from the classic default — adaptive mode must
+        respect a real override, but not a schema default that merely
+        happens to be present in a saved config."""
         element = self._FONT_ELEMENT_KEYS.get(font_key, font_key)
         element_config = self.config.get('customization', {}).get(element, {})
-        return bool(element_config.get('font') or element_config.get('font_size'))
+        default_font, default_size = self._CLASSIC_FONT_DEFAULTS.get(font_key, (None, None))
+        configured_font = element_config.get('font')
+        configured_size = element_config.get('font_size')
+        font_differs = configured_font is not None and configured_font != default_font
+        try:
+            size_differs = configured_size is not None and int(configured_size) != default_size
+        except (TypeError, ValueError):
+            size_differs = False
+        return font_differs or size_differs
 
     def _region_for(self, region: "Region", element: str) -> "Region":
         """Apply the user's customization.layout.<element> x/y offsets as a
