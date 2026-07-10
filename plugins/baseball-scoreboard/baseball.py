@@ -1222,8 +1222,8 @@ class BaseballLive(Baseball, SportsLive):
                 if cached is not None:
                     self._player_bio_cache[player_id] = cached or None
                     return
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.debug(f"Player bio cache read failed for {player_id}: {e}")
 
         import threading
         import queue
@@ -1257,8 +1257,8 @@ class BaseballLive(Baseball, SportsLive):
                 self.cache_manager.set(
                     cache_key, result_data or {}, ttl=self.player_bio_update_interval
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.debug(f"Player bio cache write failed for {player_id}: {e}")
 
     # Sample data cycled through in test_mode so the at-bat info screen's
     # real draw path (font/color/dwell/interval config) gets exercised
