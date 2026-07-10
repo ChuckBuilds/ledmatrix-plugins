@@ -1,8 +1,6 @@
 # On Air Light
 
-A retro broadcast tally light for your LED matrix. Publish a single MQTT message to take over the display with a pulsing red "ON AIR" sign — it holds until you send the off command, so it works as a persistent do-not-disturb signal during calls, recordings, or livestreams.
-
-![On Air Light — pulsing red ON AIR tally light on a 192×48 LED matrix panel](preview.png)
+A retro broadcast tally light for your LED matrix. Publish a single MQTT message to take over the display with a bold "ON AIR" sign — it holds until you send the off command, so it works as a persistent do-not-disturb signal during calls, recordings, or livestreams. Text, text color, and background color are all customizable.
 
 ---
 
@@ -53,17 +51,21 @@ mosquitto_pub -h <your-broker-ip> -t ledmatrix/on-air/set -m OFF
 
 | Field | Default | Description |
 |---|---|---|
-| **MQTT Broker Host** | `localhost` | IP or hostname of your MQTT broker |
-| **MQTT Port** | `1883` | Broker port (use 8883 for TLS) |
-| **MQTT Username** | *(blank)* | Leave blank if no auth required |
-| **MQTT Password** | *(blank)* | Leave blank if no auth required |
-| **Command Topic** | `ledmatrix/on-air/set` | Topic the plugin **subscribes** to |
-| **State Topic** | `ledmatrix/on-air/state` | Topic the plugin **publishes** to after each state change |
-| **Default Label** | `ON AIR` | Text shown when activated without a label in the payload |
-| **Default Color** | `[255, 20, 20]` | RGB glow color — broadcast red by default |
-| **Enable Pulsing** | `true` | Animate the glow with a slow heartbeat pulse |
-| **Pulse Speed** | `1.2` Hz | How fast the glow breathes (1.2 ≈ one pulse per second) |
-| **Standby Rotation Duration** | `5` s | How long the dark standby screen sits in the normal rotation before cycling away |
+| **Sign Text** | `ON AIR` | Text shown when activated (max 32 chars). Overridable per-message via JSON. |
+| **Text Color** | `[255, 255, 255]` | RGB color of the sign text. |
+| **Background Color** | `[200, 10, 10]` | RGB background color — broadcast red by default. |
+| **Font** | *(blank)* | Path to a TTF font relative to the LEDMatrix root (e.g. `assets/fonts/PressStart2P-Regular.ttf`). Blank uses the default font, auto-sized to 80% of display height. |
+| **Font Size (px)** | `0` | Font height in pixels when a custom Font is set. `0` auto-sizes to 80% of display height. |
+| **MQTT Broker Host** | `localhost` | IP or hostname of your MQTT broker. |
+| **MQTT Port** | `1883` | Broker port (use 8883 for TLS). |
+| **MQTT Username** | *(blank)* | Leave blank if no auth required. |
+| **MQTT Password** | *(blank)* | Leave blank if no auth required. |
+| **Command Topic** | `ledmatrix/on-air/set` | Topic the plugin **subscribes** to (publish `ON`/`OFF` or JSON). |
+| **State Topic** | `ledmatrix/on-air/state` | Topic the plugin **publishes** to after each state change. |
+| **Enable Home Assistant Auto-Discovery** | `true` | Announce to HA via MQTT discovery so it auto-creates the device (switch, label sensor, connectivity) — no `configuration.yaml` needed. |
+| **HA Discovery Prefix** | `homeassistant` | MQTT topic prefix your HA MQTT integration listens on. |
+| **Device Name in Home Assistant** | `LED Matrix — On Air` | How the device appears under Settings → Devices & Services → MQTT. |
+| **Display Duration (seconds)** | `5` | How long the sign stays on screen each rotation cycle while active (1–60). |
 
 ---
 
@@ -98,16 +100,16 @@ The label (max 16 chars) replaces "ON AIR" on the display. On panels 128 px wide
 ### JSON — state + label + color
 
 ```json
-{"state": "on", "label": "IN MEETING", "color": [255, 140, 0]}
-{"state": "on", "label": "RECORDING",  "color": [255, 20, 20]}
-{"state": "on", "label": "LIVE",       "color": [255, 0, 80]}
+{"state": "on", "label": "IN MEETING", "bg": [255, 140, 0]}
+{"state": "on", "label": "RECORDING",  "bg": [200, 10, 10]}
+{"state": "on", "label": "LIVE",       "bg": [255, 0, 80], "color": [255, 255, 255]}
 ```
 
-Color is `[R, G, B]` and controls both the background glow and the tally dot. Good presets:
+`bg` (or `background_color`) sets the sign's background — the dominant color of the display — and `color` (or `text_color`) sets the text. Both are `[R, G, B]`. Good background presets:
 
-| Situation | Color |
+| Situation | Background |
 |---|---|
-| Recording / On Air | `[255, 20, 20]` — broadcast red |
+| Recording / On Air | `[200, 10, 10]` — broadcast red |
 | In a meeting / call | `[255, 140, 0]` — amber |
 | Livestreaming | `[255, 0, 80]` — hot pink |
 | Do Not Disturb | `[180, 0, 180]` — purple |

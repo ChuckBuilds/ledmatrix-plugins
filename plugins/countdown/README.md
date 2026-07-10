@@ -48,24 +48,40 @@ Display customizable countdowns with images on your LED matrix. Perfect for birt
 
 ### Configuration Options
 
-#### Per-Countdown Settings
-- **Name** (required): Display name, max 30 characters
-- **Target Date** (required): Date in YYYY-MM-DD format
-- **Image Path**: Local image path (optional)
-- **Enabled**: Toggle to enable/disable this countdown
-- **Display Order**: Controls rotation order (lower numbers first)
+The web UI form is generated from `config_schema.json` (the source of truth).
 
-#### Global Settings
-- **Display Duration**: How long to show each countdown (seconds)
-- **Font Family**: Choose from press_start, four_by_six, tom_thumb, tiny, picopixel
-- **Font Size**: Size for countdown value (6-16px)
-- **Font Color**: RGB color for countdown value
-- **Name Font Size**: Size for countdown name (6-16px)
-- **Name Font Color**: RGB color for countdown name
-- **Fit to Display**: Auto-scale images to fit
-- **Preserve Aspect Ratio**: Maintain image proportions when scaling
-- **Background Color**: RGB color for background
-- **Show Expired**: Display countdowns that have already passed
+#### Per-Countdown Settings
+
+Each entry in the **Countdowns** table supports:
+
+| Field | Default | Notes |
+|-------|---------|-------|
+| `name` (required) | — | Display name, max 30 chars |
+| `target_date` (required) | — | `YYYY-MM-DD` — the date to count to/from |
+| `target_time` | `00:00` | Optional `HH:MM` (24h) for sub-day precision; switches to hours/minutes as the event nears |
+| `mode` | `until` | `until` counts down to the date (Days Until); `since` counts up from it (Days Since) |
+| `layout_preset` | `image-left` | `image-left`, `image-right`, `text-only`, or `image-only` |
+| `text_align` | `center` | `left`, `center`, or `right` for the name/value text |
+| `image_path` | — | Optional image shown alongside the countdown |
+| `enabled` | `true` | Show/hide this countdown |
+| `display_order` | `0` | Rotation order (lower first) |
+| `layout.*` | auto | Optional pixel position/size overrides for the image and text |
+| `style.*` | inherit | Optional per-countdown font/size/color overrides (`null` inherits the global settings below) |
+
+#### Global Settings (defaults for all countdowns)
+
+| Key | Default | Notes |
+|-----|---------|-------|
+| `display_duration` | `15` | Seconds to show each countdown before rotating (5–300) |
+| `font_family` | `press_start` | One of `press_start`, `four_by_six`, `tom_thumb`, `tiny`, `picopixel` |
+| `font_size` | `8` | Countdown value font size (4–16px) |
+| `font_color` | `[255, 255, 255]` | RGB color for the countdown value |
+| `name_font_size` | `8` | Countdown name font size (4–16px) |
+| `name_font_color` | `[200, 200, 200]` | RGB color for the countdown name |
+| `background_color` | `[0, 0, 0]` | RGB background color |
+| `show_expired` | `false` | Show `until` countdowns that have passed (as "Nd ago") |
+| `fit_to_display` | `true` | Auto-scale images to their allocated area |
+| `preserve_aspect_ratio` | `true` | Keep image proportions when scaling |
 
 ## Display Layout
 
@@ -196,7 +212,7 @@ Feel free to submit issues, feature requests, or pull requests!
 
 ## License
 
-MIT License - See LICENSE file for details
+Released under the GNU General Public License v3.0 — see the LICENSE file for details.
 
 ## Credits
 

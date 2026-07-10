@@ -90,6 +90,10 @@ class StockNewsTickerPlugin(BasePlugin):
         self._configure_scroll_settings()
         self._register_fonts()
 
+        # Expose enable_scrolling so the core display loop uses its high-FPS
+        # (125 FPS) path instead of the 1 FPS default path used by static plugins
+        self.enable_scrolling = True
+
         stock_symbols = self.feeds_config.get('stock_symbols', [])
         custom_feeds = self._get_custom_feeds()
         self.logger.info(
@@ -177,10 +181,34 @@ class StockNewsTickerPlugin(BasePlugin):
         # Cross-plugin sync
         self.sync_with_stocks_plugin = gc.get('sync_with_stocks_plugin', False)
 
+        # Eager fill: fetch every never-seen symbol at update() cadence until
+        # each has data at least once, instead of waiting for the steady-state
+        # per-symbol spacing. See update().
+        self.eager_fetch_on_startup = gc.get('eager_fetch_on_startup', True)
+
+        # Independent publisher / age styling — 0 or '' falls back to the main
+        # headline font_size / font_path so existing configs render unchanged.
+        raw_pub_fs = gc.get('publisher_font_size', 0)
+        self.publisher_font_size = int(raw_pub_fs) if raw_pub_fs and int(raw_pub_fs) > 0 else self.font_size
+        self.publisher_font_path = gc.get('publisher_font_path') or gc.get(
+            'font_path', 'assets/fonts/PressStart2P-Regular.ttf')
+
+        raw_age_fs = gc.get('age_font_size', 0)
+        self.age_font_size = int(raw_age_fs) if raw_age_fs and int(raw_age_fs) > 0 else self.font_size
+        self.age_font_path = gc.get('age_font_path') or gc.get(
+            'font_path', 'assets/fonts/PressStart2P-Regular.ttf')
+
+        # Price coloring: 'fixed' always uses text_color; 'change' colors the
+        # price green/red based on movement since market open.
+        self.price_color_mode = gc.get('price_color_mode', 'fixed')
+
         # Colours
         self.text_color: Tuple = self._parse_color(fc.get('text_color'), [0, 255, 0])
         self.symbol_color: Tuple = self._parse_color(fc.get('symbol_color'), [255, 255, 0])
         self.publisher_color: Tuple = self._parse_color(fc.get('publisher_color'), [110, 110, 110])
+        self.age_color: Tuple = self._parse_color(fc.get('age_color'), [110, 110, 110])
+        self.price_up_color: Tuple = self._parse_color(fc.get('price_up_color'), [0, 255, 0])
+        self.price_down_color: Tuple = self._parse_color(fc.get('price_down_color'), [255, 59, 48])
 
         # Rate limiting
         self.update_interval = gc.get('update_interval_seconds', 900)
@@ -203,18 +231,31 @@ class StockNewsTickerPlugin(BasePlugin):
     # Font / scroll
     # -------------------------------------------------------------------------
 
-    def _load_fonts(self) -> dict:
-        """Three-level fallback: configured TTF → 4x6 bitmap → PIL default."""
-        configured = self.global_config.get('font_path', 'assets/fonts/PressStart2P-Regular.ttf')
-        for path in [configured, 'assets/fonts/4x6-font.ttf']:
+    def _load_font(self, path: str, size: int) -> Optional[ImageFont.FreeTypeFont]:
+        """Two-level fallback: given TTF → 4x6 bitmap. Returns None if neither loads."""
+        for p in [path, 'assets/fonts/4x6-font.ttf']:
             try:
-                font = ImageFont.truetype(path, self.font_size)
-                self.logger.debug("[Stock News] Font: %s @ %dpx", path, self.font_size)
-                return {'headline': font, 'symbol': font}
+                font = ImageFont.truetype(p, size)
+                self.logger.debug("[Stock News] Font: %s @ %dpx", p, size)
+                return font
             except IOError:
                 continue
-        self.logger.warning("[Stock News] No TTF font found, using PIL default")
-        return {}
+        return None
+
+    def _load_fonts(self) -> dict:
+        """Load the main headline/symbol font plus independently configurable
+        publisher and age fonts, each falling back to the main font on failure."""
+        main_path = self.global_config.get('font_path', 'assets/fonts/PressStart2P-Regular.ttf')
+        main_font = self._load_font(main_path, self.font_size)
+        if main_font is None:
+            self.logger.warning("[Stock News] No TTF font found, using PIL default")
+            return {}
+
+        publisher_font = self._load_font(self.publisher_font_path, self.publisher_font_size) or main_font
+        age_font = self._load_font(self.age_font_path, self.age_font_size) or main_font
+
+        return {'headline': main_font, 'symbol': main_font,
+                'publisher': publisher_font, 'age': age_font}
 
     def _configure_scroll_settings(self) -> None:
         """Apply scroll speed / FPS to ScrollHelper using frame-based scrolling."""
@@ -274,8 +315,10 @@ class StockNewsTickerPlugin(BasePlugin):
                                      "press_start", self.font_size, self.text_color)
             fm.register_manager_font(self.plugin_id, f"{self.plugin_id}.symbol",
                                      "press_start", self.font_size, self.symbol_color)
-            fm.register_manager_font(self.plugin_id, f"{self.plugin_id}.info",
-                                     "four_by_six", 6, self.publisher_color)
+            fm.register_manager_font(self.plugin_id, f"{self.plugin_id}.publisher",
+                                     "press_start", self.publisher_font_size, self.publisher_color)
+            fm.register_manager_font(self.plugin_id, f"{self.plugin_id}.age",
+                                     "press_start", self.age_font_size, self.age_color)
         except Exception as e:
             self.logger.warning("[Stock News] Font registration error: %s", e)
 
@@ -312,8 +355,26 @@ class StockNewsTickerPlugin(BasePlugin):
         if not self._is_market_hours():
             per_sym = per_sym * self.off_hours_multiplier
 
+        # Eager fill: on a fresh start (or after symbols are added via config
+        # change) every symbol starts with zero cached headlines, and the
+        # steady-state schedule below only fetches one symbol every `per_sym`
+        # seconds — with 3 symbols on a 900s interval that's a 5-minute wait
+        # per symbol, leaving the ticker sparse for a long time. Prioritize
+        # any never-fetched symbol at plain update() cadence (ignoring
+        # per_sym spacing, still budget-checked) until every symbol has data
+        # at least once, then fall back to the normal spread schedule.
+        unseen = [s for s in stock_symbols if s not in self._symbol_data] if self.eager_fetch_on_startup else []
+
+        if unseen:
+            symbol = unseen[0]
+            max_h = self._get_symbol_max_headlines(symbol)
+            items = self._fetch_stock_news(symbol, max_h)
+            self._symbol_data[symbol] = items
+            self._fetch_index = (stock_symbols.index(symbol) + 1) % len(stock_symbols)
+            self._last_symbol_fetch = now
+            fetched = True
         # Fetch exactly one symbol per call (rotating)
-        if stock_symbols and (now - self._last_symbol_fetch) >= per_sym:
+        elif stock_symbols and (now - self._last_symbol_fetch) >= per_sym:
             idx = self._fetch_index % len(stock_symbols)
             symbol = stock_symbols[idx]
             max_h = self._get_symbol_max_headlines(symbol)
@@ -441,12 +502,14 @@ class StockNewsTickerPlugin(BasePlugin):
 
             data = resp.json()
 
-            # Extract price from quote if requested
+            # Extract price (and change since open, for up/down coloring) from quote if requested
             price: Optional[float] = None
+            price_change: Optional[float] = None
             if self.show_price:
                 quotes = data.get('quotes', [])
                 if quotes:
                     price = quotes[0].get('regularMarketPrice') or quotes[0].get('price')
+                    price_change = quotes[0].get('regularMarketChange')
 
             items: List[Dict] = []
             for raw in data.get('news', [])[:max_h]:
@@ -462,6 +525,7 @@ class StockNewsTickerPlugin(BasePlugin):
                     'publisher': raw.get('publisher', ''),
                     'published_ts': pub_ts,   # unix float — cache-safe
                     'price': price,
+                    'price_change': price_change,
                 })
 
             self.cache_manager.set(cache_key, items, ttl=self.update_interval * 2)
@@ -744,6 +808,9 @@ class StockNewsTickerPlugin(BasePlugin):
 
         Segments drawn left-to-right:
           logo (optional) | symbol: | $price | headline | • publisher | • age
+
+        Publisher and age are independent segments (own colour/font/size each),
+        not a single combined suffix string.
         """
         try:
             symbol = news_item.get('symbol', news_item.get('feed_name', '?'))
@@ -751,9 +818,12 @@ class StockNewsTickerPlugin(BasePlugin):
             publisher = news_item.get('publisher', '')
             pub_ts = news_item.get('published_ts', 0)
             price = news_item.get('price')
+            price_change = news_item.get('price_change')
 
             font_sym = self._fonts.get('symbol')
             font_hl = self._fonts.get('headline')
+            font_pub = self._fonts.get('publisher', font_hl)
+            font_age = self._fonts.get('age', font_hl)
 
             logo = (self._get_symbol_logo(symbol)
                     if self.display_style in ('logo_and_ticker', 'logo_only') else None)
@@ -763,6 +833,16 @@ class StockNewsTickerPlugin(BasePlugin):
             sym_c = (80, 60, 0) if stale else self.symbol_color
             txt_c = (0, 80, 0) if stale else self.text_color
             pub_c = (60, 60, 60) if stale else self.publisher_color
+            age_c = (60, 60, 60) if stale else self.age_color
+            price_up_c = (0, 40, 0) if stale else self.price_up_color
+            price_down_c = (40, 0, 0) if stale else self.price_down_color
+
+            price_c = txt_c
+            if self.price_color_mode == 'change' and price_change is not None:
+                if price_change > 0:
+                    price_c = price_up_c
+                elif price_change < 0:
+                    price_c = price_down_c
 
             # Build text segments: (text, colour, font)
             segments: List[Tuple[str, tuple, Any]] = []
@@ -770,22 +850,21 @@ class StockNewsTickerPlugin(BasePlugin):
             if self.display_style == 'logo_only':
                 segments.append((f" {symbol}", sym_c, font_sym))
                 if self.show_price and price is not None:
-                    segments.append((f"  ${price:.2f}", txt_c, font_sym))
+                    segments.append((f"  ${price:.2f}", price_c, font_sym))
             else:
                 segments.append((f"{symbol}: ", sym_c, font_sym))
                 if self.show_price and price is not None:
-                    segments.append((f"${price:.2f}  ", txt_c, font_hl))
+                    segments.append((f"${price:.2f}  ", price_c, font_hl))
                 if title:
                     segments.append((title, txt_c, font_hl))
-                suffix: List[str] = []
+                # Publisher and age are independently styled (colour, font, size) —
+                # rendered as separate segments, each with its own bullet prefix.
                 if self.show_publisher and publisher:
-                    suffix.append(publisher)
+                    segments.append(("  •  " + publisher, pub_c, font_pub))
                 if self.show_age and pub_ts:
                     age = self._format_age(pub_ts)
                     if age:
-                        suffix.append(age)
-                if suffix:
-                    segments.append(("  •  " + "  •  ".join(suffix), pub_c, font_hl))
+                        segments.append(("  •  " + age, age_c, font_age))
 
             # Measure segments
             draw_tmp = ImageDraw.Draw(Image.new('RGB', (1, 1)))
@@ -894,6 +973,10 @@ class StockNewsTickerPlugin(BasePlugin):
         old_custom_map = self._get_custom_feeds().copy()
         old_font_size = self.font_size
         old_font_path = self.global_config.get('font_path', '')
+        old_publisher_font_size = getattr(self, 'publisher_font_size', 0)
+        old_publisher_font_path = getattr(self, 'publisher_font_path', '')
+        old_age_font_size = getattr(self, 'age_font_size', 0)
+        old_age_font_path = getattr(self, 'age_font_path', '')
 
         self.feeds_config = new_config.get('feeds', {})
         self.global_config = new_config.get('global', {})
@@ -901,7 +984,11 @@ class StockNewsTickerPlugin(BasePlugin):
         self._configure_scroll_settings()
 
         font_changed = (self.font_size != old_font_size or
-                        self.global_config.get('font_path', '') != old_font_path)
+                        self.global_config.get('font_path', '') != old_font_path or
+                        self.publisher_font_size != old_publisher_font_size or
+                        self.publisher_font_path != old_publisher_font_path or
+                        self.age_font_size != old_age_font_size or
+                        self.age_font_path != old_age_font_path)
         if font_changed:
             self._fonts = self._load_fonts()
             self._register_fonts()
@@ -956,10 +1043,16 @@ class StockNewsTickerPlugin(BasePlugin):
             'dynamic_duration': self.dynamic_duration,
             'display_style': self.display_style,
             'font_size': self.font_size,
+            'publisher_font_size': self.publisher_font_size,
+            'publisher_font_path': self.publisher_font_path,
+            'age_font_size': self.age_font_size,
+            'age_font_path': self.age_font_path,
             'item_gap': self.item_gap,
             'show_publisher': self.show_publisher,
             'show_age': self.show_age,
             'show_price': self.show_price,
+            'price_color_mode': self.price_color_mode,
+            'eager_fetch_on_startup': self.eager_fetch_on_startup,
             'shuffle_headlines': self.shuffle_headlines,
             'rotation_enabled': self.rotation_enabled,
             'rotation_threshold': self.rotation_threshold,
@@ -974,6 +1067,9 @@ class StockNewsTickerPlugin(BasePlugin):
             'text_color': self.text_color,
             'symbol_color': self.symbol_color,
             'publisher_color': self.publisher_color,
+            'age_color': self.age_color,
+            'price_up_color': self.price_up_color,
+            'price_down_color': self.price_down_color,
         })
         return info
 

@@ -182,7 +182,7 @@ class StockDisplayRenderer:
         is_crypto = data.get('is_crypto', False)
         
         # Draw large stock/crypto logo on the left
-        logo_x = 2  # Small margin from left edge (used for logo_right even if logo is missing)
+        logo_x = 4  # Margin from left edge (used for logo_right even if logo is missing)
         logo = self._get_stock_logo(symbol, is_crypto)
         if logo:
             # Position logo on the left side with minimal spacing - matching old stock_manager
@@ -259,7 +259,7 @@ class StockDisplayRenderer:
         
         # Position text column immediately after the logo's right edge
         logo_right = int(logo_x + logo.width) if logo else int(logo_x)
-        logo_gap = 4  # px between logo right edge and text start
+        logo_gap = 8  # px between logo right edge and text start
         symbol_width_tmp = int(symbol_bbox[2] - symbol_bbox[0])
         price_width_tmp = int(price_bbox[2] - price_bbox[0])
         change_width_tmp = int(change_bbox[2] - change_bbox[0]) if change_text else 0
