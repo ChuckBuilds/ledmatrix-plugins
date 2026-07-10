@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-09",
+  "last_updated": "2026-07-10",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -236,10 +236,10 @@
       "plugin_path": "plugins/geochron",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-10",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0",
+      "latest_version": "1.0.1",
       "icon": "fa-globe"
     },
     {
@@ -365,7 +365,7 @@
     {
       "id": "ledmatrix-flights",
       "name": "Flight Tracker",
-      "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
+      "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
       "author": "ChuckBuilds",
       "category": "custom",
       "tags": [
@@ -374,17 +374,20 @@
         "ads-b",
         "skyaware",
         "aviation",
-        "map"
+        "map",
+        "metar",
+        "taf",
+        "weather"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-08",
+      "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.10.1"
+      "latest_version": "1.12.3"
     },
     {
       "id": "march-madness",
@@ -405,10 +408,10 @@
       "plugin_path": "plugins/march-madness",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-19",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     },
     {
       "id": "masters-tournament",
@@ -523,10 +526,10 @@
       "plugin_path": "plugins/on-air",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-07",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.0",
+      "latest_version": "1.2.1",
       "icon": "fa-circle-dot"
     },
     {
@@ -547,10 +550,10 @@
       "plugin_path": "plugins/nfl-draft",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.11",
+      "latest_version": "1.3.12",
       "icon": "fas fa-football-ball"
     },
     {
@@ -822,10 +825,10 @@
       "plugin_path": "plugins/tide-display",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-07",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.0",
+      "latest_version": "1.1.1",
       "icon": "fa-water"
     },
     {
@@ -943,10 +946,10 @@
       "plugin_path": "plugins/ledmatrix-elections",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-15",
+      "last_updated": "2026-07-08",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.1.0"
+      "latest_version": "1.1.1"
     },
     {
       "id": "ledmatrix-dresden-departures",

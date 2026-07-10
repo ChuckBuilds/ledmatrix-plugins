@@ -1,8 +1,8 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.10.1",
-  "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
+  "version": "1.12.3",
+  "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
   "class_name": "FlightTrackerPlugin",
@@ -23,7 +23,10 @@
     "ads-b",
     "skyaware",
     "aviation",
-    "map"
+    "map",
+    "metar",
+    "taf",
+    "weather"
   ],
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-flights",
   "website": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-flights",
@@ -35,9 +38,45 @@
   "max_ledmatrix_version": "3.0.0",
   "versions": [
     {
-      "released": "2026-07-08",
-      "version": "1.10.1",
+      "released": "2026-07-09",
+      "version": "1.12.3",
       "notes": "Set the license to GPL-3.0 (project standard). The LICENSE file was already GPL; the manifest field previously said MIT.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-09",
+      "version": "1.12.2",
+      "notes": "Airport Weather now uses the crisp 6x10 bitmap font (bundled from the LEDMatrix font set) for the weather cards, replacing the soft anti-aliased 5x7 TTF. FreeType renders the .bdf pixel-exact at its native size, so the METAR/TAF/PIREP/SIGMET text is sharp on the LED grid. Falls back gracefully if a build lacks BDF support.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-09",
+      "version": "1.12.1",
+      "notes": "Airport Weather legibility: the 5x7 weather text is now drawn in 1-bit 'mono' mode (grid-snapped, no anti-aliasing) at a slightly larger size, so it stays crisp on the LED grid instead of looking soft/blurry. Other flight-tracker views are unchanged.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-09",
+      "version": "1.12.0",
+      "notes": "Airport Weather enhancements: the decoded METAR card now shows the observation age and flags stale reports (older than ~75 min) in amber; and new unit options let weather display in US (inHg/SM/kt/degC) or international style (hPa 'Q' code, metres/km, mph/kmh/ms, degF).",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-09",
+      "version": "1.11.2",
+      "notes": "Airport Weather robustness: the weather refresh now services one HTTP request per update cycle (incremental) so a slow or failed fetch can't stall the aircraft loop; METAR config init is guarded so a bad weather config only disables the feature instead of crashing the plugin; added config-value guards and docstrings.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-09",
+      "version": "1.11.1",
+      "notes": "Airport Weather view now renders in the cleaner, more legible 5x7 font (bundled) instead of the blocky PressStart2P/4x6, so METAR/TAF/PIREP/SIGMET text reads like text at small panel sizes.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-09",
+      "version": "1.11.0",
+      "notes": "Add optional Airport Weather add-on: a new 'metar' rotation view that shows METAR (color-coded decoded card plus raw page), TAF, PIREP, and SIGMET/AIRMET for airports you choose, using the free NOAA Aviation Weather Center API (no API key). Enable via the new 'metar' config section and add 'metar' to Rotation Views.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -140,5 +179,5 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-08"
+  "last_updated": "2026-07-10"
 }
