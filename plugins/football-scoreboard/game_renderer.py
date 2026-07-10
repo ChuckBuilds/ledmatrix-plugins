@@ -491,6 +491,13 @@ class GameRenderer:
         let it balloon out of proportion (even overlapping the logos) well
         past what fits the classic composition, even though the pick is
         individually "correct" for its own box.
+
+        Scaled by HEIGHT alone (not LayoutContext's conservative
+        min(width_ratio, height_ratio)) to match how the card's own logos
+        already scale (``logo_slot = min(height, width // 2)``) — a panel
+        that only grows taller (e.g. 128x32 -> 128x64) should still grow
+        the text, the same way it already grows the logos, or the text
+        reads as under-scaled next to them.
         """
         if self._user_font_set(font_key):
             font = self.fonts[font_key]
@@ -500,8 +507,9 @@ class GameRenderer:
                              fits=(width <= region.w and height <= region.h),
                              line_height=height)
         base_size_px = getattr(self.fonts[font_key], 'size', 10)
+        height_scale = self.display_height / self._ctx.design_size[1]
         return self._ctx.fit_text_proportional(text, region, base_size_px=base_size_px,
-                                               ladder=ladder)
+                                               ladder=ladder, scale=height_scale)
 
     def _draw_fit_outline(self, draw: ImageDraw.Draw, fit: "FitResult",
                           region: "Region", fill: Tuple[int, int, int] = (255, 255, 255),

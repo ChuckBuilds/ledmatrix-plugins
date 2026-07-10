@@ -101,14 +101,19 @@ class TestAdaptiveMode:
         assert _renderer(128, 32, {"layout_mode": "adaptive"})._adaptive
 
     def test_adaptive_text_scales_up_on_big_panels(self):
-        """Classic renders a fixed 10px score on every panel; on a 256x128
-        adaptive scales it proportionally (target = 10px * ctx.scale,
+        """Classic renders a fixed 10px score on every panel; adaptive scales
+        it proportionally to the panel HEIGHT (target = 10px * height/32,
         nearest crisp rung at or below that) rather than maximizing to
         whatever the region merely allows — maximizing let the score
         balloon large enough to visually overlap/obscure the team logos
-        next to it, which scale by a fixed geometry factor instead. 256x128
-        vs the 128x32 design size is scale=2, so target=20 -> nearest crisp
-        LADDER_ARCADE rung at-or-below is 16 (not the region-maximizing 32)."""
+        next to it. Height (not LayoutContext's conservative min-of-both-
+        axes scale) is the reference because the card's own logo_slot
+        already tracks height alone, and text should match that. 256x128
+        is 4x the design height, so target=40 -> capped at the largest
+        crisp rung, 32 (which also happens to match the region max here —
+        confirming it's a deliberate height-proportional pick, not an
+        accidental one, matters more on a panel like 128x64 where they
+        diverge — see the golden images)."""
         from src.adaptive_layout import Region, scoreboard_regions
         from game_renderer import ADAPTIVE_LADDER_HEADLINE
 
@@ -116,13 +121,29 @@ class TestAdaptiveMode:
         regs = scoreboard_regions(Region(0, 0, 256, 128), ctx=r._ctx)
         fit = r._fit_element('score', "17-21", regs.score_area,
                              ADAPTIVE_LADDER_HEADLINE)
-        assert fit.size_px == 16  # proportional target (20), not the region max (32)
+        assert fit.size_px == 32
         assert fit.family == "press_start"  # still a crisp rung
 
         game = _game()
         classic = _renderer(256, 128, {}).render_game_card(game, "live")
         adaptive = r.render_game_card(game, "live")
         assert _ink_ratio(adaptive) > _ink_ratio(classic)
+
+    def test_score_scales_with_height_not_width(self):
+        """128x64 (height doubled, width unchanged from the 128x32 design)
+        must still grow the score — logo_slot = min(height, width // 2)
+        already doubles the logos here, so text sized by the conservative
+        min(width_ratio, height_ratio) (which stays 1.0 since width didn't
+        grow) would look under-scaled next to them."""
+        from src.adaptive_layout import Region, scoreboard_regions
+        from game_renderer import ADAPTIVE_LADDER_HEADLINE
+
+        r = _renderer(128, 64, {"layout_mode": "adaptive"})
+        assert r._ctx.scale == 1.0  # the conservative default would pick 8px
+        regs = scoreboard_regions(Region(0, 0, 128, 64), ctx=r._ctx)
+        fit = r._fit_element('score', "17-21", regs.score_area,
+                             ADAPTIVE_LADDER_HEADLINE)
+        assert fit.size_px == 16  # height/32 = 2 -> target 20 -> nearest rung 16
 
     def test_user_font_wins_over_ladder(self):
         """An explicitly configured score font must be used verbatim."""
