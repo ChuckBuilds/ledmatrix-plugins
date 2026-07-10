@@ -29,6 +29,7 @@ Real-time aircraft tracking plugin for LEDMatrix with ADS-B data, map background
 - **Proximity Alerts**: Live priority mode when aircraft are nearby
 - **Trail Rendering**: Visual trails showing aircraft movement paths
 - **Altitude Color Coding**: Color-coded aircraft based on altitude (standard aviation scale)
+- **Airport Weather (optional)**: METAR/TAF/PIREP/SIGMET for airports you choose, from the free NOAA Aviation Weather Center API — no API key required
 
 ## Installation
 
@@ -139,6 +140,67 @@ Includes flight plan data (origin, destination, manufacturer, model, operator) w
 Automatically switches:
 - Uses **overhead** mode when proximity alert is triggered
 - Uses **stats** mode otherwise
+
+## Airport Weather (METAR/TAF/PIREP/SIGMET)
+
+An optional add-on for pilots: show aviation weather for airports you choose,
+using the **free NOAA Aviation Weather Center API** (`aviationweather.gov`) — no
+API key or account needed.
+
+It adds a new **`metar`** rotation view that cycles through, for each configured
+airport:
+
+- **Decoded METAR card** — airport identifier, a color-coded flight-category
+  badge (**VFR** green, **MVFR** blue, **IFR** red, **LIFR** magenta), plus wind,
+  visibility, present weather, ceiling/clouds, temperature/dewpoint, and altimeter.
+  It also shows the **observation age** (e.g. `14m`); if the report is stale
+  (older than ~75 min, i.e. a likely missed hourly update) the age turns amber
+  with a `!` so you never read old weather as current.
+- **Raw METAR page** — the raw observation as filed (toggle with `show_raw`).
+- **TAF page** — the terminal forecast (toggle with `show_taf`).
+- **PIREP page** — recent pilot reports near the airport (toggle with `show_pirep`).
+- **SIGMET/AIRMET page** — active advisories (toggle with `show_sigmet`; these are
+  region-based, not airport-specific).
+
+> NOTAMs are **not** included — they require separate FAA API credentials
+> (OAuth), unlike the key-free weather endpoints above.
+
+### Enabling it
+
+1. Set `metar.enabled` to `true` and list your airports in `metar.airports`
+   (ICAO like `KTPA`, or IATA like `TPA`).
+2. Add `"metar"` to **Rotation Views** so it appears in the rotation.
+
+```json
+{
+  "enabled": true,
+  "rotation_views": ["map", "stats", "metar"],
+  "metar": {
+    "enabled": true,
+    "airports": ["KTPA", "KJFK"],
+    "show_taf": true,
+    "show_raw": true,
+    "show_pirep": false,
+    "show_sigmet": false,
+    "update_interval_minutes": 10,
+    "page_duration_seconds": 8,
+    "altimeter_unit": "inhg",
+    "temp_unit": "c",
+    "wind_unit": "kt",
+    "visibility_unit": "sm"
+  }
+}
+```
+
+**Units** default to the US convention (`A30.01` inHg, statute miles, knots, °C).
+For international style set `altimeter_unit` to `hpa` (shows `Q1013`) and
+`visibility_unit` to `m` or `km`; `temp_unit` also accepts `f`, and `wind_unit`
+accepts `mph`, `kmh`, or `ms`.
+
+Weather is fetched on its own slow cadence (default every 10 minutes; METARs
+update roughly hourly), cached, and served stale on any network hiccup. The
+refresh is serviced one request per update cycle, so it never stalls the
+aircraft display loop.
 
 ## Requirements
 

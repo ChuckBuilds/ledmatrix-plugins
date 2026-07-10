@@ -114,6 +114,16 @@ class FlightRenderer:
         self.vr_unit = config.get("vr_unit", "ms" if legacy == "metric" else "fpm")
         self.units_legacy = legacy  # kept for area cards / distance
 
+        # Weather (METAR) display units — dedicated so aviation weather can follow US
+        # (inHg/statute miles) or international (hPa/metres) conventions independent
+        # of the aircraft unit settings above. Canonical stored values are inHg/degC/
+        # kt/SM; these choose how they are displayed.
+        _mcfg = config.get("metar", {}) or {}
+        self.wx_altim_unit = str(_mcfg.get("altimeter_unit", "inhg")).lower()
+        self.wx_temp_unit = str(_mcfg.get("temp_unit", "c")).lower()
+        self.wx_wind_unit = str(_mcfg.get("wind_unit", "kt")).lower()
+        self.wx_vis_unit = str(_mcfg.get("visibility_unit", "sm")).lower()
+
         # Colors
         self.header_color = tuple(config.get("header_color", [255, 255, 255]))
         self.airport_color = tuple(config.get("airport_color", [0, 120, 255]))
@@ -202,6 +212,24 @@ class FlightRenderer:
             self.font_small = _ttf("PressStart2P-Regular.ttf", small_sz)
         else:
             self.font_small = _ttf(small_face, small_sz)
+
+        # Weather (METAR) view uses the crisp 6x10 bitmap font (bundled) rather than
+        # the blocky PressStart2P or the soft, anti-aliased 5x7 TTF. FreeType renders
+        # a .bdf pixel-exact at its native pixel size only (here 10px), so the weather
+        # text is sharp on the LED grid with no anti-aliasing and no stretching blur.
+        try:
+            self.wx_font_head = _ttf("6x10.bdf", 10)
+        except Exception:
+            # Fall back if this Pillow/FreeType build can't load the .bdf bitmap.
+            logger.warning("[Flight Tracker] 6x10.bdf unavailable; using fallback weather font")
+            self.wx_font_head = self.font_small
+        self.wx_font_body = self.wx_font_head
+        # 6x10's cell is 10px but its inked glyphs are ~8px tall; textbbox reports the
+        # full cell, so use the known inked height and a tight row advance to fit a
+        # header + two field rows on a 32px-tall panel (wx_fh = fit-check height,
+        # wx_lh = row advance).
+        self.wx_fh = 8
+        self.wx_lh = 10
 
     # --- Row fitting helper ---
 
@@ -1027,3 +1055,355 @@ class FlightRenderer:
                             self.font_large, self.error_color)
         self.dm.image = img.copy()
         self.dm.update_display()
+
+    # =====================================================================
+    # Airport weather (METAR / TAF / PIREP / SIGMET)
+    # =====================================================================
+
+    # Flight-category colors (aviation standard: green/blue/red/magenta).
+    _FLT_CAT_COLORS = {
+        "VFR": (0, 200, 0),
+        "MVFR": (0, 120, 255),
+        "IFR": (255, 0, 0),
+        "LIFR": (255, 0, 255),
+    }
+
+    def render_metar_card(self, wx: Dict[str, Any]) -> None:
+        """Render a decoded METAR card (flight-category badge + key fields)."""
+        img = self._render_metar_card_to_image(wx)
+        self.dm.image = img.copy()
+        self.dm.update_display()
+
+    def render_metar_raw(self, icao: str, raw: str) -> None:
+        """Render the raw METAR string on its own page and push to display."""
+        img = self._render_labeled_page_to_image(icao, "METAR", self.dim_color, raw)
+        self.dm.image = img.copy()
+        self.dm.update_display()
+
+    def render_taf_card(self, icao: str, raw_taf: str) -> None:
+        """Render the raw TAF (terminal forecast) page and push to display."""
+        img = self._render_labeled_page_to_image(icao, "TAF", self.route_color, raw_taf)
+        self.dm.image = img.copy()
+        self.dm.update_display()
+
+    def render_pirep_card(self, icao: str, pireps: list) -> None:
+        """Render a pilot-report page (count + most recent report) and push to display."""
+        if pireps:
+            body = f"({len(pireps)}) {pireps[0].get('raw', '')}"
+        else:
+            body = "NO REPORTS"
+        img = self._render_labeled_page_to_image(icao, "PIREP", (255, 180, 0), body)
+        self.dm.image = img.copy()
+        self.dm.update_display()
+
+    def render_sigmet_card(self, sigmets: list) -> None:
+        """Render the active SIGMET/AIRMET advisories page and push to display."""
+        img = self._render_sigmet_to_image(sigmets or [])
+        self.dm.image = img.copy()
+        self.dm.update_display()
+
+    # --- weather rendering internals ---
+
+    def _render_metar_card_to_image(self, wx: Dict[str, Any]) -> Image.Image:
+        """Build the decoded METAR card image (ICAO header, flight-category badge,
+        and the packed decoded field tokens)."""
+        w, h = self.width, self.height
+        img = Image.new("RGB", (w, h), (0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # 1-bit, grid-snapped text: crisp on the LED grid, no AA blur
+
+        icao = (wx.get("icao") or "----")
+        cat = (wx.get("flt_cat") or "").upper()
+        cat_color = self._FLT_CAT_COLORS.get(cat, self.dim_color)
+
+        # Header: ICAO (left) + a filled flight-category badge (right).
+        y = 2
+        icao_w = self._tw(draw, icao, self.wx_font_head)
+        self._draw(draw, icao, (2, y), self.wx_font_head, self.header_color)
+        badge_left = w
+        if cat:
+            cat_w = self._tw(draw, cat, self.wx_font_body)
+            bx = w - cat_w - 4
+            badge_left = bx - 2
+            fh = self._fh(self.wx_font_body)
+            draw.rectangle([bx - 2, y - 1, w - 1, y + fh + 1], fill=cat_color)
+            self._draw(draw, cat, (bx, y), self.wx_font_body, (0, 0, 0))
+
+        # Observation age (right-aligned before the badge), amber + '!' when stale so
+        # an old/missed report is never read as current.
+        age_str, stale = self._fmt_age(wx.get("obs_time"))
+        if age_str:
+            label = age_str + ("!" if stale else "")
+            age_w = self._tw(draw, label, self.wx_font_body)
+            ax = badge_left - age_w - 4
+            if ax > 2 + icao_w + 4:  # only if it fits without hitting the ICAO
+                age_color = (255, 180, 0) if stale else self.dim_color
+                self._draw(draw, label, (ax, y + 1), self.wx_font_body, age_color)
+        y += self.wx_lh
+
+        # Decoded field tokens, packed across as many rows as fit.
+        tokens = self._metar_tokens(wx)
+        self._draw_token_rows(draw, tokens, x0=2, y0=y, font=self.wx_font_body,
+                              max_w=w - 1, max_y=h - 1, gap_x=5, color=self.metric_color)
+        return img
+
+    def _metar_tokens(self, wx: Dict[str, Any]) -> list:
+        """Build the compact decoded field tokens (e.g. '090@8', '10SM', 'BKN045',
+        '12/07', 'A30.01')."""
+        tokens = [self._fmt_wind(wx.get("wind_dir"), wx.get("wind_spd"), wx.get("wind_gust"))]
+
+        vis = wx.get("vis")
+        if vis is not None and vis != "":
+            tokens.append(self._fmt_vis(vis))
+
+        wxs = (wx.get("wx_string") or "").strip()
+        if wxs:
+            tokens.append(wxs)
+
+        tokens.append(self._fmt_sky(wx.get("clouds") or []))
+
+        t = wx.get("temp_c")
+        if t is not None:
+            d = wx.get("dewp_c")
+            suffix = "F" if self.wx_temp_unit == "f" else ""
+            tokens.append(f"{self._fmt_c(t)}/{self._fmt_c(d) if d is not None else '--'}{suffix}")
+
+        a = wx.get("altim_inhg")
+        if isinstance(a, (int, float)):
+            tokens.append(self._fmt_altim(a))
+
+        return [t for t in tokens if t]
+
+    def _draw_token_rows(self, draw, tokens, x0, y0, font, max_w, max_y, gap_x=5,
+                         color=(220, 220, 220)) -> None:
+        """Greedily pack space-separated tokens into rows, wrapping when a token
+        would overflow and stopping when vertical space runs out."""
+        lh = self.wx_lh
+        fh = self.wx_fh
+        x, y = x0, y0
+        for tok in tokens:
+            tw = self._tw(draw, tok, font)
+            if x > x0 and x + tw > max_w:
+                x = x0
+                y += lh
+            if y + fh > max_y:
+                break
+            self._draw(draw, tok, (x, y), font, color)
+            x += tw + gap_x
+
+    def _render_labeled_page_to_image(self, icao: str, tag: str, tag_color, body: str,
+                                      body_color=(210, 210, 210)) -> Image.Image:
+        """ICAO header + right-aligned tag (METAR/TAF/PIREP), then the raw body text
+        word-wrapped to fill the panel."""
+        w, h = self.width, self.height
+        img = Image.new("RGB", (w, h), (0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # crisp grid-snapped text (no anti-aliasing)
+
+        y = 2
+        self._draw(draw, icao or "----", (2, y), self.wx_font_head, self.header_color)
+        if tag:
+            tag_w = self._tw(draw, tag, self.wx_font_body)
+            self._draw(draw, tag, (w - tag_w - 2, y + 1), self.wx_font_body, tag_color)
+        y += self.wx_lh
+
+        lh = self.wx_lh
+        fh = self.wx_fh
+        for line in self._wrap_text(draw, body or "", self.wx_font_body, w - 4):
+            if y + fh > h - 1:
+                break
+            self._draw(draw, line, (2, y), self.wx_font_body, body_color)
+            y += lh
+        return img
+
+    def _render_sigmet_to_image(self, sigmets: list) -> Image.Image:
+        """Build the advisories image: a 'SIGMET' header with a count, then the
+        distinct active hazards (deduped by kind + hazard)."""
+        w, h = self.width, self.height
+        img = Image.new("RGB", (w, h), (0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # crisp grid-snapped text (no anti-aliasing)
+
+        y = 2
+        self._draw(draw, "SIGMET", (2, y), self.wx_font_head, (255, 140, 0))
+        cnt = str(len(sigmets))
+        cw = self._tw(draw, cnt, self.wx_font_body)
+        self._draw(draw, cnt, (w - cw - 2, y + 1), self.wx_font_body, self.dim_color)
+        y += self.wx_lh
+
+        if not sigmets:
+            self._draw(draw, "NONE ACTIVE", (2, y), self.wx_font_body, self.dim_color)
+            return img
+
+        # Dedupe by (advisory kind, hazard) so a nationwide feed collapses to the
+        # distinct active hazards rather than dozens of near-identical rows.
+        seen, rows = set(), []
+        for s in sigmets:
+            atype = (s.get("type") or "").upper()
+            abbr = "S" if atype.startswith("SIGMET") else ("A" if atype.startswith("AIRMET") else "-")
+            hazard = (s.get("hazard") or "WX").upper()
+            key = (abbr, hazard)
+            if key not in seen:
+                seen.add(key)
+                rows.append(f"{abbr} {hazard}")
+
+        lh = self.wx_lh
+        fh = self.wx_fh
+        for line in rows:
+            if y + fh > h - 1:
+                break
+            self._draw(draw, self._truncate(draw, line, self.wx_font_body, w - 4),
+                       (2, y), self.wx_font_body, (220, 220, 220))
+            y += lh
+        return img
+
+    # --- weather formatting helpers ---
+
+    def _wrap_text(self, draw, text: str, font, max_w: int) -> list:
+        """Word-wrap *text* to lines no wider than *max_w* px. Hard-splits any single
+        token wider than the panel so nothing runs off the edge."""
+        lines, cur = [], ""
+        for word in (text or "").split():
+            if self._tw(draw, word, font) > max_w:
+                # flush current, then hard-split the oversized token
+                if cur:
+                    lines.append(cur)
+                    cur = ""
+                chunk = ""
+                for ch in word:
+                    if self._tw(draw, chunk + ch, font) > max_w and chunk:
+                        lines.append(chunk)
+                        chunk = ch
+                    else:
+                        chunk += ch
+                cur = chunk
+                continue
+            trial = f"{cur} {word}".strip()
+            if not cur or self._tw(draw, trial, font) <= max_w:
+                cur = trial
+            else:
+                lines.append(cur)
+                cur = word
+        if cur:
+            lines.append(cur)
+        return lines
+
+    # canonical wind speed is knots; factor + suffix per display unit
+    _WIND_UNITS = {"kt": (1.0, ""), "mph": (1.15078, "MPH"),
+                   "kmh": (1.852, "KMH"), "ms": (0.514444, "MS")}
+
+    def _fmt_age(self, obs_time):
+        """Format observation age as e.g. '14m' or '1h48', plus a staleness flag
+        (True when older than ~75 min, i.e. a likely missed hourly report). Returns
+        ('', False) when the time is unknown."""
+        try:
+            ts = float(obs_time)
+        except (TypeError, ValueError):
+            return "", False
+        if ts <= 0:
+            return "", False
+        age = max(0.0, time.time() - ts)
+        mins = int(age // 60)
+        s = f"{mins}m" if mins < 60 else f"{mins // 60}h{mins % 60:02d}"
+        return s, age > 75 * 60
+
+    def _fmt_altim(self, inhg) -> str:
+        """Format altimeter in the configured unit: 'A30.01' (inHg) or 'Q1016' (hPa)."""
+        if self.wx_altim_unit == "hpa":
+            return f"Q{round(inhg * 33.8639)}"
+        return f"A{inhg:.2f}"
+
+    def _fmt_wind(self, wdir, wspd, wgst) -> str:
+        """Format wind (e.g. '090@8', '090@8G20', 'VRB@5', 'CALM') in the configured
+        speed unit; non-knot units get a suffix (e.g. '090@13MPH')."""
+        try:
+            spd_kt = float(wspd)
+        except (TypeError, ValueError):
+            return "WIND --"
+        if int(round(spd_kt)) == 0:
+            return "CALM"
+        factor, suffix = self._WIND_UNITS.get(self.wx_wind_unit, (1.0, ""))
+        spd = int(round(spd_kt * factor))
+        if wdir is None or wdir == "":
+            d = ""
+        elif isinstance(wdir, str) and not wdir.isdigit():
+            d = wdir.upper()  # e.g. VRB
+        else:
+            try:
+                d = f"{int(round(float(wdir))):03d}"
+            except (TypeError, ValueError):
+                d = str(wdir)
+        s = f"{d}@{spd}" if d else f"{spd}"
+        try:
+            g_kt = float(wgst)
+            if g_kt and g_kt > spd_kt:
+                s += f"G{int(round(g_kt * factor))}"
+        except (TypeError, ValueError):
+            pass
+        return s + suffix
+
+    def _fmt_vis(self, vis) -> str:
+        """Format visibility in the configured unit, including the unit token
+        (e.g. '10+SM', '2SM', '9999m', '16km')."""
+        plus = False
+        if isinstance(vis, str):
+            txt = vis.replace("statute miles", "").strip()
+            plus = "+" in txt
+            try:
+                sm = float(txt.replace("+", ""))
+            except ValueError:
+                return (txt or "?") + ("SM" if self.wx_vis_unit == "sm" else "")
+        else:
+            try:
+                sm = float(vis)
+            except (TypeError, ValueError):
+                return str(vis)
+            plus = sm >= 10
+        unit = self.wx_vis_unit
+        if unit == "m":
+            if plus or sm >= 6.2:
+                return "9999m"
+            return f"{int(round(sm * 1609.34 / 50) * 50)}m"
+        if unit == "km":
+            if plus or sm >= 10:
+                return "10+km"
+            return f"{sm * 1.60934:.1f}".rstrip("0").rstrip(".") + "km"
+        # statute miles (default)
+        if plus or sm >= 10:
+            return "10+SM"
+        if sm == int(sm):
+            return f"{int(sm)}SM"
+        return f"{sm:.2f}".rstrip("0").rstrip(".") + "SM"
+
+    def _fmt_sky(self, clouds) -> str:
+        """Format the most significant cloud layer (ceiling if any) as e.g.
+        'BKN045' or 'CLR'."""
+        if not clouds:
+            return "CLR"
+
+        def fmt_layer(cover, base):
+            if base is None:
+                return cover or "CLR"
+            try:
+                return f"{cover}{int(base) // 100:03d}"
+            except (TypeError, ValueError):
+                return cover or "CLR"
+
+        for cover, base in clouds:
+            if cover in ("BKN", "OVC", "OVX") and base is not None:
+                return fmt_layer(cover, base)
+        cover, base = clouds[0]
+        if cover in ("CLR", "SKC", "NSC", "CAVOK", ""):
+            return cover or "CLR"
+        return fmt_layer(cover, base)
+
+    def _fmt_c(self, val) -> str:
+        """Format a temperature in whole degrees, in the configured unit (C or F),
+        or '--' if unavailable."""
+        try:
+            c = float(val)
+        except (TypeError, ValueError):
+            return "--"
+        if self.wx_temp_unit == "f":
+            return f"{int(round(c * 9 / 5 + 32))}"
+        return f"{int(round(c))}"
