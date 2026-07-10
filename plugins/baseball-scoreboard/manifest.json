@@ -34,7 +34,7 @@
       "released": "2026-07-09",
       "version": "1.19.0",
       "notes": "Traditional scoreboard: subtle team-color row tint + left-edge accent strip (toggle show_team_color_backgrounds). Pitcher/Batter screen: labels spelled out ('Pitcher:'/'Batter:') so 'B' is no longer ambiguous. New Player Card screen (show_player_card, MLB & NCAA): rotates in a full card for the current batter/pitcher with headshot, jersey number, position, bat/throw, and season stats (AVG/HR/RBI for hitters, ERA/W-L/K for pitchers); headshot hides on tiny panels, degrades to text-only when unavailable.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-07-08",
