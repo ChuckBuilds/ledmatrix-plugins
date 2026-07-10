@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.8.0",
+  "version": "2.8.1",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "released": "2026-07-10",
+      "version": "2.8.1",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fix adaptive mode (beta): (1) two ladder rungs (press_start@10/12px, 5by7.regular at any size) rendered visibly antialiased/blurry text -- both dropped, 4x6-font corrected from 6px to 7px (its actual crisp size); (2) score/status/detail text was sized to maximize within its own region, which on large panels let the score balloon large enough to visually overlap the team logos -- now sized proportionally to the panel scale (matching classic's fixed-size look, just crisper and bigger) via the new core fit_text_proportional()."
+    },
     {
       "released": "2026-07-10",
       "version": "2.8.0",

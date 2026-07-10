@@ -101,11 +101,14 @@ class TestAdaptiveMode:
         assert _renderer(128, 32, {"layout_mode": "adaptive"})._adaptive
 
     def test_adaptive_text_scales_up_on_big_panels(self):
-        """The point of the feature: classic renders a fixed 10px score on
-        every panel; on a 256x128 the adaptive ladder picks a much larger
-        crisp size. (Classic logos already scale — the fixed text is what
-        adaptive fixes, so assert on the fitted font, plus a strictly
-        higher ink ratio as a sanity check.)"""
+        """Classic renders a fixed 10px score on every panel; on a 256x128
+        adaptive scales it proportionally (target = 10px * ctx.scale,
+        nearest crisp rung at or below that) rather than maximizing to
+        whatever the region merely allows — maximizing let the score
+        balloon large enough to visually overlap/obscure the team logos
+        next to it, which scale by a fixed geometry factor instead. 256x128
+        vs the 128x32 design size is scale=2, so target=20 -> nearest crisp
+        LADDER_ARCADE rung at-or-below is 16 (not the region-maximizing 32)."""
         from src.adaptive_layout import Region, scoreboard_regions
         from game_renderer import ADAPTIVE_LADDER_HEADLINE
 
@@ -113,7 +116,8 @@ class TestAdaptiveMode:
         regs = scoreboard_regions(Region(0, 0, 256, 128), ctx=r._ctx)
         fit = r._fit_element('score', "17-21", regs.score_area,
                              ADAPTIVE_LADDER_HEADLINE)
-        assert fit.size_px >= 24  # classic is fixed at 10px
+        assert fit.size_px == 16  # proportional target (20), not the region max (32)
+        assert fit.family == "press_start"  # still a crisp rung
 
         game = _game()
         classic = _renderer(256, 128, {}).render_game_card(game, "live")
@@ -177,6 +181,46 @@ class TestAdaptiveGoldens:
             assert ImageChops.difference(
                 img.convert("RGB"), golden.convert("RGB")).getbbox() is None, \
                 f"adaptive render drifted from {path}"
+
+
+class TestLadderCrispness:
+    """Every rung in the adaptive ladders must render with zero antialiasing.
+
+    PIL antialiases TTF outlines by default; PressStart2P only rasterizes
+    crisply at exact multiples of its 8px design grid, and not every
+    'pixel-style' font is crisp at any size at all. An earlier version of
+    these ladders included press_start@12/10 (not multiples of 8, added to
+    match classic's fixed 10px score) and '5by7.regular'@8 (never crisp at
+    any tested size) — both shipped visibly blurry text on small panels.
+    """
+
+    def test_headline_ladder_is_crisp(self):
+        from game_renderer import ADAPTIVE_LADDER_HEADLINE
+        from src.adaptive_layout import measure_font_crispness
+        from src.font_manager import FontManager
+
+        fm = FontManager({})
+        offenders = []
+        for step in ADAPTIVE_LADDER_HEADLINE:
+            font = fm.get_font(step.family, step.size_px)
+            c = measure_font_crispness(font, "17-21")
+            if c > 0.02:
+                offenders.append(f"{step.family}@{step.size_px}px: {c:.1%} antialiased")
+        assert not offenders, "Blurry rung(s):\n  " + "\n  ".join(offenders)
+
+    def test_text_ladder_is_crisp(self):
+        from game_renderer import ADAPTIVE_LADDER_TEXT
+        from src.adaptive_layout import measure_font_crispness
+        from src.font_manager import FontManager
+
+        fm = FontManager({})
+        offenders = []
+        for step in ADAPTIVE_LADDER_TEXT:
+            font = fm.get_font(step.family, step.size_px)
+            c = measure_font_crispness(font, "3rd & 7")
+            if c > 0.02:
+                offenders.append(f"{step.family}@{step.size_px}px: {c:.1%} antialiased")
+        assert not offenders, "Blurry rung(s):\n  " + "\n  ".join(offenders)
 
 
 if __name__ == "__main__":

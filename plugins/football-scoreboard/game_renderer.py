@@ -37,22 +37,22 @@ try:
     ADAPTIVE_AVAILABLE = True
     # TTF-only ladders: this renderer outlines text via ImageDraw.text(),
     # which can't take the freetype BDF faces of the core grid ladder.
-    # 12/10px rungs fill the gap between press_start 16 and 8 — the classic
-    # layout already ships PressStart2P at 10px, so these sizes are the
-    # look users have today (and keep the adaptive score >= classic's 10px
-    # on the 128x32 baseline).
-    ADAPTIVE_LADDER_HEADLINE = LADDER_ARCADE[:3] + (
-        FontStep("press_start", 12),
-        FontStep("press_start", 10),
-        FontStep("press_start", 8),
-        FontStep("5by7.regular", 8),
-        FontStep("4x6-font", 6),
+    #
+    # Every rung here is verified crisp (measure_font_crispness == 0.0, see
+    # test_adaptive_layout_mode.py::TestLadderCrispness): PressStart2P is a
+    # pixel-grid font that PIL only rasterizes without antialiasing at exact
+    # multiples of 8px — a 10px or 12px rung (tried in an earlier version,
+    # to match classic's fixed 10px score) is 18-30% antialiased and reads
+    # as blurry on an LED panel. "5by7.regular" never renders crisp at any
+    # size in this range and was dropped entirely; "4x6-font" is crisp only
+    # at 7px, not the 6px used previously.
+    ADAPTIVE_LADDER_HEADLINE = LADDER_ARCADE + (
+        FontStep("4x6-font", 7),
     )
     ADAPTIVE_LADDER_TEXT = (
         FontStep("press_start", 16),
         FontStep("press_start", 8),
-        FontStep("5by7.regular", 8),
-        FontStep("4x6-font", 6),
+        FontStep("4x6-font", 7),
     )
 except ImportError:
     ADAPTIVE_AVAILABLE = False
@@ -480,8 +480,18 @@ class GameRenderer:
 
     def _fit_element(self, font_key: str, text: str, region: "Region",
                      ladder) -> "FitResult":
-        """Largest crisp font that fits the region — unless the user forced
-        a font for this element, in which case use it as-is."""
+        """Crisp font sized proportionally to this element's classic fixed
+        size (self.fonts[font_key]'s configured size — the default, e.g.
+        score=10/time=8/detail=6, unless the user overrode it) — unless the
+        user forced a font, in which case use it as-is.
+
+        Proportional, not "largest that fits": on a big panel the score's
+        region has generous room, but the logos next to it scale by a fixed
+        geometry factor (px()) — maximizing the score independently would
+        let it balloon out of proportion (even overlapping the logos) well
+        past what fits the classic composition, even though the pick is
+        individually "correct" for its own box.
+        """
         if self._user_font_set(font_key):
             font = self.fonts[font_key]
             width, height, baseline, y_offset = measure_ink(text, font)
@@ -489,7 +499,9 @@ class GameRenderer:
                              width, height, baseline, y_offset,
                              fits=(width <= region.w and height <= region.h),
                              line_height=height)
-        return self._ctx.fit_text(text, region, ladder=ladder)
+        base_size_px = getattr(self.fonts[font_key], 'size', 10)
+        return self._ctx.fit_text_proportional(text, region, base_size_px=base_size_px,
+                                               ladder=ladder)
 
     def _draw_fit_outline(self, draw: ImageDraw.Draw, fit: "FitResult",
                           region: "Region", fill: Tuple[int, int, int] = (255, 255, 255),
