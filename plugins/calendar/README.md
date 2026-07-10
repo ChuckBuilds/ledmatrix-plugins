@@ -96,15 +96,23 @@ All authentication files (`credentials.json` and `token.pickle`) are stored in t
 
 ### Configuration Options
 
-- `enabled`: Enable/disable the plugin
-- `credentials_file`: Path to OAuth credentials JSON file
-- `token_file`: Path to store authentication token
-- `max_events`: Maximum number of events to fetch (1-10)
-- `calendars`: List of calendar IDs (use `"primary"` for default calendar)
-- `update_interval`: Seconds between API updates (minimum 60)
-- `show_all_day_events`: Include all-day events
-- `event_rotation_interval`: Seconds between rotating events (minimum 5)
-- `display_duration`: Total display duration in seconds
+The web UI form is generated from `config_schema.json` (the source of truth).
+`credentials_file` and `token_file` are handled by the setup flow above (the upload
+widget and first-time authentication) and rarely need editing by hand.
+
+| Key | Default | Notes |
+|-----|---------|-------|
+| `enabled` | `false` | Enable or disable the plugin |
+| `credentials_file` | `"credentials.json"` | Google OAuth credentials file (uploaded via the config UI) |
+| `token_file` | `"token.pickle"` | Where the OAuth token is stored after first-time auth (auto-created) |
+| `calendars` | `["primary"]` | Calendar IDs to display — use the calendar picker after authenticating, or `"primary"` for your default |
+| `max_events` | `3` | Maximum upcoming events to show (1–10) |
+| `show_all_day_events` | `true` | Include all-day events |
+| `event_rotation_interval` | `10` | Seconds between rotating displayed events (min 5) |
+| `display_duration` | `30` | Total seconds on screen before moving to the next plugin (min 5) |
+| `update_interval` | `3600` | Seconds between refreshes from Google (60–86400) |
+| `customization.datetime_text.font` / `.font_size` | `PressStart2P-Regular.ttf` / `8` | Font family + size (4–16px) for the event date/time line |
+| `customization.title_text.font` / `.font_size` | `PressStart2P-Regular.ttf` / `8` | Font family + size (4–16px) for the event title |
 
 ## Display Format
 
