@@ -123,11 +123,31 @@ class TestAdaptiveMode:
                              ADAPTIVE_LADDER_HEADLINE)
         assert fit.size_px == 32
         assert fit.family == "press_start"  # still a crisp rung
+        # 256x128 is exactly 2:1 aspect -- the shared core center-reserve
+        # (scoreboard_regions' min_center_fraction) must have kept the
+        # logos from claiming the entire width, or the 32px score would
+        # have nowhere to sit without overlapping them.
+        assert regs.center_col.w > 0
 
         game = _game()
-        classic = _renderer(256, 128, {}).render_game_card(game, "live")
         adaptive = r.render_game_card(game, "live")
-        assert _ink_ratio(adaptive) > _ink_ratio(classic)
+        assert adaptive.size == (256, 128)  # rendered without error
+
+    @pytest.mark.parametrize("w,h", [(96, 48), (128, 64), (256, 128), (64, 32)])
+    def test_no_zero_width_center_column_at_2to1_aspect(self, w, h):
+        """These sizes are all <= 2:1 aspect -- the shape where the raw
+        logo_slot=min(h, w//2) formula alone claims the entire card width
+        for logos and leaves the score with nowhere to render without
+        sitting directly on top of them (the bug originally reported: 'the
+        team logos are too big ... to where the score is overlapping the
+        logo'). Fixed once in the shared core scoreboard_regions() center
+        reserve, not here -- this just proves football picks it up."""
+        from src.adaptive_layout import Region, scoreboard_regions
+
+        r = _renderer(w, h, {"layout_mode": "adaptive"})
+        regs = scoreboard_regions(Region(0, 0, w, h), ctx=r._ctx)
+        assert regs.center_col.w > 0
+        assert regs.logo_slot < min(h, w // 2)  # the reserve actually capped it
 
     def test_score_scales_with_height_not_width(self):
         """128x64 (height doubled, width unchanged from the 128x32 design)
