@@ -22,7 +22,53 @@ try:
 except ImportError:
     FREETYPE_AVAILABLE = False
 
+# Adaptive layout system (opt-in via layout_mode: "adaptive"). Older LEDMatrix
+# cores don't ship it — fall back silently to the classic layout.
+try:
+    from src.adaptive_layout import (
+        FitResult,
+        FontStep,
+        LADDER_ARCADE,
+        LayoutContext,
+        Region,
+        measure_ink,
+        scoreboard_regions,
+    )
+    ADAPTIVE_AVAILABLE = True
+    # TTF-only ladders: this renderer outlines text via ImageDraw.text(),
+    # which can't take the freetype BDF faces of the core grid ladder.
+    # 12/10px rungs fill the gap between press_start 16 and 8 — the classic
+    # layout already ships PressStart2P at 10px, so these sizes are the
+    # look users have today (and keep the adaptive score >= classic's 10px
+    # on the 128x32 baseline).
+    ADAPTIVE_LADDER_HEADLINE = LADDER_ARCADE[:3] + (
+        FontStep("press_start", 12),
+        FontStep("press_start", 10),
+        FontStep("press_start", 8),
+        FontStep("5by7.regular", 8),
+        FontStep("4x6-font", 6),
+    )
+    ADAPTIVE_LADDER_TEXT = (
+        FontStep("press_start", 16),
+        FontStep("press_start", 8),
+        FontStep("5by7.regular", 8),
+        FontStep("4x6-font", 6),
+    )
+except ImportError:
+    ADAPTIVE_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
+
+_shared_font_manager = None
+
+
+def _get_font_manager():
+    """Shared FontManager for adaptive font ladders (scans assets/fonts)."""
+    global _shared_font_manager
+    if _shared_font_manager is None:
+        from src.font_manager import FontManager
+        _shared_font_manager = FontManager({})
+    return _shared_font_manager
 
 
 class GameRenderer:
@@ -55,12 +101,28 @@ class GameRenderer:
         self.display_height = display_height
         self.config = config
         self.logger = custom_logger or logger
-        
+
         # Shared logo cache for performance
         self._logo_cache = logo_cache if logo_cache is not None else {}
-        
+
         # Load fonts
         self.fonts = self._load_fonts()
+
+        # Adaptive layout (beta, opt-in): scales fonts/logos/regions to the
+        # card size instead of the classic fixed-pixel layout. Default
+        # "classic" renders byte-identically to previous releases.
+        self.layout_mode = config.get('layout_mode', 'classic')
+        self._adaptive = ADAPTIVE_AVAILABLE and self.layout_mode == 'adaptive'
+        if self.layout_mode == 'adaptive' and not ADAPTIVE_AVAILABLE:
+            self.logger.warning(
+                "layout_mode 'adaptive' requires a LEDMatrix core with the "
+                "adaptive layout system; falling back to classic layout"
+            )
+        if self._adaptive:
+            self._ctx = LayoutContext(display_width, display_height,
+                                      _get_font_manager(),
+                                      design_size=(128, 32))
+            self._raw_logo_cache: Dict[str, Image.Image] = {}
         
         # Display options are read dynamically per league (stored in config under league.display_options)
         # These defaults are kept for backward compatibility but should not be used
@@ -296,6 +358,9 @@ class GameRenderer:
         Returns:
             PIL Image of the rendered game card
         """
+        if self._adaptive:
+            return self._render_game_card_adaptive(game, game_type)
+
         # Create base image
         main_img = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 255))
         overlay = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 0))
@@ -375,6 +440,276 @@ class GameRenderer:
         main_img = Image.alpha_composite(main_img, overlay)
         return main_img.convert('RGB')
     
+    # ------------------------------------------------------------------
+    # Adaptive layout path (layout_mode: "adaptive", beta)
+    #
+    # Same card content as the classic path, but positions come from
+    # scoreboard_regions() and fonts/logos scale to the card size. User
+    # customization is preserved: an explicitly configured font/font_size
+    # wins over the ladder, and customization.layout.<element> x/y offsets
+    # translate the computed regions as a final step.
+    # ------------------------------------------------------------------
+
+    # fonts-dict key -> customization element key (for user-font detection)
+    _FONT_ELEMENT_KEYS = {
+        "score": "score_text",
+        "time": "period_text",
+        "team": "team_name",
+        "status": "status_text",
+        "detail": "detail_text",
+        "rank": "rank_text",
+    }
+
+    def _user_font_set(self, font_key: str) -> bool:
+        """True when the user explicitly configured this element's font —
+        adaptive mode must respect it instead of ladder-fitting."""
+        element = self._FONT_ELEMENT_KEYS.get(font_key, font_key)
+        element_config = self.config.get('customization', {}).get(element, {})
+        return bool(element_config.get('font') or element_config.get('font_size'))
+
+    def _region_for(self, region: "Region", element: str) -> "Region":
+        """Apply the user's customization.layout.<element> x/y offsets as a
+        final translation of the computed region."""
+        offsets = self.config.get('customization', {}).get('layout', {}).get(element, {})
+        try:
+            dx = int(offsets.get('x_offset', 0))
+            dy = int(offsets.get('y_offset', 0))
+        except (TypeError, ValueError):
+            dx = dy = 0
+        return region.offset(dx, dy) if (dx or dy) else region
+
+    def _fit_element(self, font_key: str, text: str, region: "Region",
+                     ladder) -> "FitResult":
+        """Largest crisp font that fits the region — unless the user forced
+        a font for this element, in which case use it as-is."""
+        if self._user_font_set(font_key):
+            font = self.fonts[font_key]
+            width, height, baseline, y_offset = measure_ink(text, font)
+            return FitResult(font, "user", getattr(font, 'size', 0), text,
+                             width, height, baseline, y_offset,
+                             fits=(width <= region.w and height <= region.h),
+                             line_height=height)
+        return self._ctx.fit_text(text, region, ladder=ladder)
+
+    def _draw_fit_outline(self, draw: ImageDraw.Draw, fit: "FitResult",
+                          region: "Region", fill: Tuple[int, int, int] = (255, 255, 255),
+                          align: str = "center", valign: str = "center") -> Tuple[int, int]:
+        """Draw a fitted text ink-aligned in a region, with the classic black
+        outline. Returns the ink's top-left position."""
+        x, y = region.align_xy(fit.width, fit.height, align, valign)
+        self._draw_text_with_outline(draw, fit.text, (x, y - fit.y_offset),
+                                     fit.font, fill=fill)
+        return (x, y)
+
+    def _load_raw_logo(self, team_abbrev: str, logo_path) -> Optional[Image.Image]:
+        """Load a logo unresized (the adaptive path fits it per region;
+        results are cached per size by the LayoutContext)."""
+        cached = self._raw_logo_cache.get(team_abbrev)
+        if cached is not None:
+            return cached
+        try:
+            if logo_path and os.path.exists(logo_path):
+                logo = Image.open(logo_path)
+                if logo.mode != "RGBA":
+                    logo = logo.convert("RGBA")
+                self._raw_logo_cache[team_abbrev] = logo
+                return logo
+        except Exception as e:
+            self.logger.error(f"Error loading logo for {team_abbrev}: {e}")
+        return None
+
+    def _render_game_card_adaptive(self, game: Dict[str, Any],
+                                   game_type: str) -> Image.Image:
+        width, height = self.display_width, self.display_height
+        main_img = Image.new('RGBA', (width, height), (0, 0, 0, 255))
+        overlay = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+        draw_overlay = ImageDraw.Draw(overlay)
+
+        regs = scoreboard_regions(Region(0, 0, width, height), ctx=self._ctx)
+
+        away_raw = self._load_raw_logo(game.get("away_abbr", ""), game.get("away_logo_path"))
+        home_raw = self._load_raw_logo(game.get("home_abbr", ""), game.get("home_logo_path"))
+        if not away_raw or not home_raw:
+            draw = ImageDraw.Draw(main_img)
+            self._draw_text_with_outline(
+                draw,
+                f"{game.get('away_abbr', '?')}@{game.get('home_abbr', '?')}",
+                (5, 5),
+                self.fonts['status']
+            )
+            return main_img.convert('RGB')
+
+        for raw, slot, element, abbr in (
+            (away_raw, regs.away_slot, 'away_logo', game.get("away_abbr", "")),
+            (home_raw, regs.home_slot, 'home_logo', game.get("home_abbr", "")),
+        ):
+            slot = self._region_for(slot, element)
+            ifit = self._ctx.fit_image(raw, slot, mode="fill_height",
+                                       crop_to_ink=True,
+                                       cache_key=f"logo:{abbr}")
+            if not ifit.is_empty:
+                x, y = slot.align_xy(ifit.width, ifit.height)
+                main_img.paste(ifit.image, (x, y), ifit.image)
+
+        # Score — largest crisp font that fits the center region
+        score_text = f"{game.get('away_score', '0')}-{game.get('home_score', '0')}"
+        score_region = self._region_for(regs.score_area, 'score')
+        score_fit = self._fit_element('score', score_text, score_region,
+                                      ADAPTIVE_LADDER_HEADLINE)
+        self._draw_fit_outline(draw_overlay, score_fit, score_region)
+
+        if game_type == "live":
+            self._draw_live_status_adaptive(draw_overlay, game, regs)
+        elif game_type == "recent":
+            top = game.get("period_text") or "Final"
+            fit = self._fit_element('time', top,
+                                    self._region_for(regs.status_band, 'status_text'),
+                                    ADAPTIVE_LADDER_TEXT)
+            self._draw_fit_outline(draw_overlay, fit,
+                                   self._region_for(regs.status_band, 'status_text'))
+            self._draw_bottom_center_adaptive(draw_overlay, game.get("game_date", ""),
+                                              regs, 'date')
+        elif game_type == "upcoming":
+            game_time = game.get("game_time", "")
+            if game_time:
+                region = self._region_for(regs.status_band, 'time')
+                fit = self._fit_element('time', game_time, region, ADAPTIVE_LADDER_TEXT)
+                self._draw_fit_outline(draw_overlay, fit, region)
+            self._draw_bottom_center_adaptive(draw_overlay, game.get("game_date", ""),
+                                              regs, 'date')
+
+        game_league = game.get("league", "nfl")
+        if self._get_display_option(game_league, "show_odds") and game.get('odds'):
+            self._draw_dynamic_odds(draw_overlay, game['odds'])
+        show_records = self._get_display_option(game_league, "show_records")
+        show_ranking = self._get_display_option(game_league, "show_ranking")
+        if show_records or show_ranking:
+            self._draw_records_adaptive(draw_overlay, game, regs,
+                                        show_records, show_ranking)
+
+        main_img = Image.alpha_composite(main_img, overlay)
+        return main_img.convert('RGB')
+
+    def _draw_bottom_center_adaptive(self, draw: ImageDraw.Draw, text: str,
+                                     regs, element: str,
+                                     fill: Tuple[int, int, int] = (255, 255, 255)):
+        """Fit text into the bottom detail band. Returns (x, y, fit) or None."""
+        if not text:
+            return None
+        region = self._region_for(regs.detail_band, element)
+        fit = self._fit_element('detail', text, region, ADAPTIVE_LADDER_TEXT)
+        x, y = self._draw_fit_outline(draw, fit, region, fill=fill)
+        return (x, y, fit)
+
+    def _draw_live_status_adaptive(self, draw: ImageDraw.Draw, game: Dict,
+                                   regs) -> None:
+        # Period/quarter + clock in the top status band
+        period_clock_text = f"{game.get('period_text', '')} {game.get('clock', '')}".strip()
+        if game.get("is_halftime"):
+            period_clock_text = "Halftime"
+        elif game.get("is_period_break"):
+            period_clock_text = game.get("status_text", "Period Break")
+        if period_clock_text:
+            region = self._region_for(regs.status_band, 'status_text')
+            fit = self._fit_element('time', period_clock_text, region,
+                                    ADAPTIVE_LADDER_TEXT)
+            self._draw_fit_outline(draw, fit, region)
+
+        # Scoring event or down & distance in the bottom detail band —
+        # semantic colors preserved from the classic layout
+        scoring_event = game.get("scoring_event", "")
+        down_distance = game.get("down_distance_text", "")
+        if self.display_width > 128:
+            down_distance = game.get("down_distance_text_long", down_distance)
+
+        if scoring_event and game.get("is_live"):
+            color = {
+                "TOUCHDOWN": (255, 215, 0),
+                "FIELD GOAL": (0, 255, 0),
+                "PAT": (255, 165, 0),
+            }.get(scoring_event, (255, 255, 255))
+            self._draw_bottom_center_adaptive(draw, scoring_event, regs,
+                                              'down_distance', fill=color)
+        elif down_distance and game.get("is_live"):
+            down_color = (255, 0, 0) if game.get("is_redzone", False) else (200, 200, 0)
+            drawn = self._draw_bottom_center_adaptive(draw, down_distance, regs,
+                                                      'down_distance', fill=down_color)
+            if drawn:
+                self._draw_possession_adaptive(draw, game, *drawn)
+
+        self._draw_timeouts_adaptive(draw, game, regs)
+
+    def _draw_possession_adaptive(self, draw: ImageDraw.Draw, game: Dict,
+                                  dd_x: int, dd_y: int, fit) -> None:
+        """Possession football anchored to the fitted down&distance text,
+        radii scaled with the card."""
+        possession = game.get("possession_indicator")
+        if not possession:
+            return
+        ball_radius_x = self._ctx.px(3, minimum=2)
+        ball_radius_y = self._ctx.px(2, minimum=1)
+        padding = self._ctx.px(3, minimum=2)
+        ball_y_center = dd_y + fit.height // 2
+        if possession == "away":
+            ball_x_center = dd_x - padding - ball_radius_x
+        elif possession == "home":
+            ball_x_center = dd_x + fit.width + padding + ball_radius_x
+        else:
+            return
+        if ball_x_center > 0:
+            draw.ellipse(
+                (ball_x_center - ball_radius_x, ball_y_center - ball_radius_y,
+                 ball_x_center + ball_radius_x, ball_y_center + ball_radius_y),
+                fill=(139, 69, 19), outline=(0, 0, 0)
+            )
+            draw.line(
+                (ball_x_center - 1, ball_y_center, ball_x_center + 1, ball_y_center),
+                fill=(255, 255, 255), width=1
+            )
+
+    def _draw_timeouts_adaptive(self, draw: ImageDraw.Draw, game: Dict,
+                                regs) -> None:
+        """Timeout bars in the bottom corners, sized with the card."""
+        bar_w = self._ctx.px(4, minimum=3)
+        bar_h = self._ctx.px(2, minimum=2)
+        spacing = self._ctx.px(1, minimum=1)
+        margin = self._ctx.px(2, minimum=2)
+        timeout_y = self.display_height - bar_h - 1
+
+        left = self._region_for(regs.bottom_left, 'timeouts')
+        away_timeouts = game.get("away_timeouts", 0)
+        for i in range(3):
+            to_x = left.x + margin + i * (bar_w + spacing)
+            color = (255, 255, 255) if i < away_timeouts else (80, 80, 80)
+            draw.rectangle([to_x, timeout_y, to_x + bar_w, timeout_y + bar_h],
+                           fill=color, outline=(0, 0, 0))
+
+        right = self._region_for(regs.bottom_right, 'timeouts')
+        home_timeouts = game.get("home_timeouts", 0)
+        for i in range(3):
+            to_x = right.right - margin - bar_w - (2 - i) * (bar_w + spacing)
+            color = (255, 255, 255) if i < home_timeouts else (80, 80, 80)
+            draw.rectangle([to_x, timeout_y, to_x + bar_w, timeout_y + bar_h],
+                           fill=color, outline=(0, 0, 0))
+
+    def _draw_records_adaptive(self, draw: ImageDraw.Draw, game: Dict, regs,
+                               show_records: bool, show_ranking: bool) -> None:
+        """Records/rankings in the bottom corners, ladder-fitted."""
+        for abbr_key, record_key, region, element, align in (
+            ('away_abbr', 'away_record', regs.bottom_left, 'records', 'left'),
+            ('home_abbr', 'home_record', regs.bottom_right, 'records', 'right'),
+        ):
+            abbr = game.get(abbr_key, '')
+            if not abbr:
+                continue
+            text = self._get_team_display_text(abbr, game.get(record_key, ''),
+                                               show_records, show_ranking)
+            if not text:
+                continue
+            region = self._region_for(region, element).inset(2, 0)
+            fit = self._fit_element('detail', text, region, ADAPTIVE_LADDER_TEXT)
+            self._draw_fit_outline(draw, fit, region, align=align, valign="bottom")
+
     def _draw_live_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw status elements for a live game."""
         # Period/Quarter and Clock (Top center)

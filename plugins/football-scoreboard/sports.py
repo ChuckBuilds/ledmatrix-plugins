@@ -19,6 +19,10 @@ from dynamic_team_resolver import DynamicTeamResolver
 from logo_downloader import LogoDownloader, download_missing_logo
 from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
+# Imported at module load time on purpose (see the monorepo module-naming
+# rules): a deferred bare-name import could bind another plugin's
+# game_renderer after namespace isolation.
+from game_renderer import GameRenderer
 
 
 class SportsCore(ABC):
@@ -186,6 +190,47 @@ class SportsCore(ABC):
             self.logger.error(
                 f"Error in base _draw_scorebug_layout: {e}", exc_info=True
             )
+
+    def _adaptive_scorebug(self, game: Dict, game_type: str,
+                           force_clear: bool = False) -> bool:
+        """Render the scorebug via the adaptive GameRenderer when
+        layout_mode is "adaptive" (beta, opt-in).
+
+        Returns True when the frame was rendered and displayed; False means
+        the caller should draw its classic layout (either classic mode or an
+        older core without the adaptive layout system).
+        """
+        if self.config.get('layout_mode', 'classic') != 'adaptive':
+            return False
+        try:
+            display_width = (self.display_manager.matrix.width
+                             if getattr(self.display_manager, 'matrix', None)
+                             else self.display_width)
+            display_height = (self.display_manager.matrix.height
+                              if getattr(self.display_manager, 'matrix', None)
+                              else self.display_height)
+
+            renderer = getattr(self, '_adaptive_renderer', None)
+            if renderer is None or (renderer.display_width, renderer.display_height) \
+                    != (display_width, display_height):
+                renderer = GameRenderer(display_width, display_height,
+                                        self.config, custom_logger=self.logger)
+                self._adaptive_renderer = renderer
+            if not renderer._adaptive:
+                # Core without adaptive support: let the classic layout run
+                return False
+            if getattr(self, '_team_rankings_cache', None):
+                renderer.set_rankings_cache(self._team_rankings_cache)
+
+            if force_clear:
+                self.display_manager.clear()
+            self.display_manager.image = renderer.render_game_card(game, game_type)
+            self.display_manager.update_display()
+            return True
+        except Exception as e:
+            self.logger.error(f"Adaptive scorebug failed, using classic layout: {e}",
+                              exc_info=True)
+            return False
 
     def display(self, force_clear: bool = False) -> bool:
         """Render the current game. Returns False when nothing can be shown."""
@@ -1220,6 +1265,10 @@ class SportsUpcoming(SportsCore):
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the layout for an upcoming NCAA FB game."""  # Updated docstring
         try:
+            # Adaptive layout (beta, opt-in) — classic below untouched when declined
+            if self._adaptive_scorebug(game, "upcoming", force_clear):
+                return
+
             # Clear the display first to ensure full coverage (like weather plugin does)
             if force_clear:
                 self.display_manager.clear()
@@ -1789,6 +1838,10 @@ class SportsRecent(SportsCore):
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the layout for a recently completed NCAA FB game."""  # Updated docstring
         try:
+            # Adaptive layout (beta, opt-in) — classic below untouched when declined
+            if self._adaptive_scorebug(game, "recent", force_clear):
+                return
+
             # Clear the display first to ensure full coverage (like weather plugin does)
             if force_clear:
                 self.display_manager.clear()

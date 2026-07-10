@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.8.0] - 2026-07-10
+
+### Added
+- **Adaptive layout (beta, opt-in)**: set `"layout_mode": "adaptive"` to scale
+  fonts, logos, and element regions to the panel size — score/status/detail
+  text grows on large panels (e.g. 32px score on a 256x128) instead of staying
+  at the fixed classic sizes, and layouts degrade gracefully on small panels.
+  Built on the LEDMatrix core adaptive layout system (`src/adaptive_layout.py`);
+  on older cores the plugin silently keeps the classic layout.
+  - **Default is `"classic"`** — rendering is byte-identical to 2.7.0 unless
+    you opt in (verified by the committed golden images).
+  - **Your customization still applies in adaptive mode**: explicitly
+    configured `customization.<element>.font`/`font_size` win over the
+    adaptive sizing, and `customization.layout.<element>` x/y offsets
+    translate elements from their computed positions. Note: adaptive mode
+    applies layout offsets in scroll mode too (classic scroll never did).
+  - **To revert**: set `"layout_mode": "classic"` in the plugin config — no
+    reinstall needed. (Or roll back to 2.7.0 in the plugin store.)
+- Manifest now declares `display.design_size` (128x32), enabling the harness
+  scale-up fill check. Adaptive-mode golden images live in
+  `test/golden-adaptive/` (`test_adaptive_layout_mode.py`).
+
 ## [2.4.0] - 2026-06-15
 
 ### Added
