@@ -4,7 +4,7 @@ Simplified LogoDownloader for plugin use
 
 import logging
 import requests
-from typing import List
+from typing import List, Optional
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from requests.adapters import HTTPAdapter
@@ -30,7 +30,6 @@ class LogoDownloader:
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("https://", adapter)
-        self.session.mount("http://", adapter)
 
         # Set up headers
         self.headers = {
@@ -62,7 +61,7 @@ class LogoDownloader:
 
 _downloader = LogoDownloader()
 
-def download_missing_logo(sport_key: str, team_id: str, team_abbr: str, logo_path: Path, logo_url: str = None) -> bool:
+def download_missing_logo(sport_key: str, team_id: str, team_abbr: str, logo_path: Path, logo_url: Optional[str] = None) -> bool:
     """
     Download missing logo for a team.
 
