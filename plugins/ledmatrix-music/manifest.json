@@ -70,18 +70,18 @@
       "released": "2026-07-09",
       "version": "1.0.8",
       "notes": "When text scrolling is disabled, truncate the title/artist/album to the text-area width and append an ellipsis, reserving room for it so the '...' indicator isn't clipped away at draw time.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-07-08",
       "version": "1.0.7",
       "notes": "Fix now-playing text overflowing the right edge on narrow (64px-wide) panels: clip the scrolling title/artist/album text to the text-area viewport so long text stays within bounds while it scrolls, instead of drawing past the panel edge. Also set the license to GPL-3.0 (project standard).",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-05-15",
       "version": "1.0.6",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.0.5",
