@@ -57,6 +57,16 @@ try:
 except ImportError:
     ADAPTIVE_AVAILABLE = False
 
+# Shared element-style resolver (newer cores): one implementation of font
+# loading and of the "did the user actually override this font?" check,
+# referenced against this plugin's own config_schema.json. Older cores fall
+# back to the local loader below.
+try:
+    from src.element_style import ElementStyleResolver, defaults_from_schema_file
+    STYLE_AVAILABLE = True
+except ImportError:
+    STYLE_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 _shared_font_manager = None
@@ -105,6 +115,16 @@ class GameRenderer:
         # Shared logo cache for performance
         self._logo_cache = logo_cache if logo_cache is not None else {}
 
+        # Element-style resolver: schema defaults come from this plugin's own
+        # config_schema.json so the user-override check works in every
+        # context (production, harness, dev server). None on older cores.
+        self._style_resolver = None
+        if STYLE_AVAILABLE:
+            schema_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                       'config_schema.json')
+            self._style_resolver = ElementStyleResolver(
+                config, defaults_from_schema_file(schema_path))
+
         # Load fonts
         self.fonts = self._load_fonts()
 
@@ -142,10 +162,19 @@ class GameRenderer:
             freetype.Face for BDF fonts)
         """
         fonts = {}
-        
+
+        if self._style_resolver is not None:
+            for font_key, (loader_font, loader_size) in self._LOADER_DEFAULTS.items():
+                element = self._FONT_ELEMENT_KEYS.get(font_key, font_key)
+                fonts[font_key] = self._style_resolver.style(
+                    element, classic_font=loader_font,
+                    classic_size=loader_size).font
+            return fonts
+
+        # Older cores (no src.element_style): the original local loader.
         # Get customization config
         customization = self.config.get('customization', {})
-        
+
         # Load fonts from config with defaults for backward compatibility
         score_config = customization.get('score_text', {})
         period_config = customization.get('period_text', {})
@@ -153,7 +182,7 @@ class GameRenderer:
         status_config = customization.get('status_text', {})
         detail_config = customization.get('detail_text', {})
         rank_config = customization.get('rank_text', {})
-        
+
         try:
             fonts["score"] = self._load_custom_font(score_config, default_size=10)
             fonts["time"] = self._load_custom_font(period_config, default_size=8)
@@ -460,15 +489,27 @@ class GameRenderer:
         "rank": "rank_text",
     }
 
+    # Per-element (font, size) the local loader falls back to when a config
+    # key is absent — mirrors the _load_custom_font call sites exactly
+    # (note status: PressStart, the loader's parameter default, even though
+    # the schema declares 4x6 — a long-standing quirk kept for byte-identical
+    # bare-config rendering).
+    _LOADER_DEFAULTS = {
+        'score': ('PressStart2P-Regular.ttf', 10),
+        'time': ('PressStart2P-Regular.ttf', 8),
+        'team': ('PressStart2P-Regular.ttf', 8),
+        'status': ('PressStart2P-Regular.ttf', 6),
+        'detail': ('4x6-font.ttf', 6),
+        'rank': ('PressStart2P-Regular.ttf', 10),
+    }
+
     # (font filename, size) the config_schema.json declares as each
     # element's default — matching these, not merely a key being *present*,
     # is what "user set it" has to mean, because the web UI's save flow
     # (schema_manager.merge_with_defaults) writes the FULL schema default
     # object into config.json on every save, for every plugin, whether or
-    # not the user touched that section. Checking key presence alone would
-    # treat that untouched default as a forced override and adaptive mode
-    # would never engage on any config that's ever been saved once — these
-    # values are the same defaults _load_fonts() passes to _load_custom_font.
+    # not the user touched that section. Only used on older cores — with
+    # src.element_style available, the resolver reads the schema file itself.
     _CLASSIC_FONT_DEFAULTS = {
         'score': ('PressStart2P-Regular.ttf', 10),
         'time': ('PressStart2P-Regular.ttf', 8),
@@ -480,9 +521,16 @@ class GameRenderer:
 
     def _user_font_set(self, font_key: str) -> bool:
         """True when the user's configured font/font_size for this element
-        genuinely differs from the classic default — adaptive mode must
+        genuinely differs from the schema default — adaptive mode must
         respect a real override, but not a schema default that merely
         happens to be present in a saved config."""
+        if self._style_resolver is not None:
+            element = self._FONT_ELEMENT_KEYS.get(font_key, font_key)
+            loader_font, loader_size = self._LOADER_DEFAULTS.get(
+                font_key, ('PressStart2P-Regular.ttf', 8))
+            return self._style_resolver.style(
+                element, classic_font=loader_font,
+                classic_size=loader_size).user_forced
         element = self._FONT_ELEMENT_KEYS.get(font_key, font_key)
         element_config = self.config.get('customization', {}).get(element, {})
         default_font, default_size = self._CLASSIC_FONT_DEFAULTS.get(font_key, (None, None))
@@ -498,12 +546,15 @@ class GameRenderer:
     def _region_for(self, region: "Region", element: str) -> "Region":
         """Apply the user's customization.layout.<element> x/y offsets as a
         final translation of the computed region."""
-        offsets = self.config.get('customization', {}).get('layout', {}).get(element, {})
-        try:
-            dx = int(offsets.get('x_offset', 0))
-            dy = int(offsets.get('y_offset', 0))
-        except (TypeError, ValueError):
-            dx = dy = 0
+        if self._style_resolver is not None:
+            dx, dy = self._style_resolver.offset(element)
+        else:
+            offsets = self.config.get('customization', {}).get('layout', {}).get(element, {})
+            try:
+                dx = int(offsets.get('x_offset', 0))
+                dy = int(offsets.get('y_offset', 0))
+            except (TypeError, ValueError):
+                dx = dy = 0
         return region.offset(dx, dy) if (dx or dy) else region
 
     def _fit_element(self, font_key: str, text: str, region: "Region",

@@ -245,6 +245,31 @@ class TestAdaptiveGoldens:
                 f"adaptive render drifted from {path}"
 
 
+class TestElementStyleResolver:
+    """The shared core resolver (src.element_style) must actually be wired
+    in — a silently failing import would fall back to the local loader and
+    quietly reintroduce the per-plugin drift this migration removed."""
+
+    def test_resolver_is_active(self):
+        from game_renderer import STYLE_AVAILABLE
+        assert STYLE_AVAILABLE, "src.element_style import failed on this core"
+        r = _renderer(128, 32, {})
+        assert r._style_resolver is not None
+
+    def test_resolver_reads_schema_defaults(self):
+        """The resolver's override reference must come from this plugin's
+        own config_schema.json (works in harness/dev-server contexts where
+        no schema manager exists) — a schema-populated saved config is not
+        a user override, a genuine change is."""
+        schema_populated = {"customization": {"status_text": {
+            "font": "4x6-font.ttf", "font_size": 6}}}
+        r = _renderer(128, 32, {"layout_mode": "adaptive", **schema_populated})
+        assert not r._user_font_set("status")
+        r2 = _renderer(128, 32, {"layout_mode": "adaptive", "customization": {
+            "status_text": {"font": "4x6-font.ttf", "font_size": 8}}})
+        assert r2._user_font_set("status")
+
+
 class TestLadderCrispness:
     """Every rung in the adaptive ladders must render with zero antialiasing.
 

@@ -24,6 +24,14 @@ from data_sources import ESPNDataSource
 # game_renderer after namespace isolation.
 from game_renderer import GameRenderer
 
+# Shared element-style resolver (newer cores); older cores use the local
+# offset-reading code below.
+try:
+    from src.element_style import ElementStyleResolver, defaults_from_schema_file
+    STYLE_AVAILABLE = True
+except ImportError:
+    STYLE_AVAILABLE = False
+
 
 class SportsCore(ABC):
     def __init__(
@@ -331,11 +339,22 @@ class SportsCore(ABC):
         Returns:
             Offset value from config or default (always returns int)
         """
+        if STYLE_AVAILABLE:
+            # Shared resolver (rebuilt if the config dict was swapped out,
+            # matching the old code's read-config-on-every-call semantics)
+            resolver = getattr(self, '_style_resolver_cached', None)
+            if resolver is None or resolver._config is not self.config:
+                schema_path = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), 'config_schema.json')
+                resolver = ElementStyleResolver(
+                    self.config, defaults_from_schema_file(schema_path))
+                self._style_resolver_cached = resolver
+            return resolver.offset_value(element, axis, default)
         try:
             layout_config = self.config.get('customization', {}).get('layout', {})
             element_config = layout_config.get(element, {})
             offset_value = element_config.get(axis, default)
-            
+
             # Ensure we return an integer (handle float/string from config)
             if isinstance(offset_value, (int, float)):
                 return int(offset_value)
