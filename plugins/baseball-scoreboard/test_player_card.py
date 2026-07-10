@@ -190,6 +190,44 @@ def test_safe_filename_strips_path_separators():
     print("test_safe_filename_strips_path_separators: PASS")
 
 
+def test_headshot_url_allowlist():
+    from logo_manager import BaseballLogoManager as B
+    assert B._is_allowed_headshot_url("https://a.espncdn.com/i/headshots/mlb/players/full/1.png")
+    assert B._is_allowed_headshot_url("https://secure.espn.com/x.png")
+    assert not B._is_allowed_headshot_url("https://evil.example.com/x.png")
+    # SSRF vectors: cloud-metadata IP, non-http scheme, and a look-alike host.
+    assert not B._is_allowed_headshot_url("http://169.254.169.254/latest/meta-data/")
+    assert not B._is_allowed_headshot_url("file:///etc/passwd")
+    assert not B._is_allowed_headshot_url("https://espncdn.com.evil.com/x.png")
+    print("test_headshot_url_allowlist: PASS")
+
+
+def test_load_headshot_render_path_never_downloads():
+    import logging
+    import logo_manager as lm
+    mgr = lm.BaseballLogoManager(None, logging.getLogger("t"))
+    orig_get = lm.requests.get
+
+    def boom(*a, **k):
+        raise AssertionError("network fetch must not happen here")
+
+    lm.requests.get = boom
+    try:
+        # Render path: download disabled -> cache miss returns None, no network.
+        assert mgr.load_headshot(
+            "no_such_id_xyz", "https://a.espncdn.com/x.png",
+            league="mlb", max_size=32, allow_download=False,
+        ) is None
+        # Even with download allowed, a non-ESPN host is refused before any GET.
+        assert mgr.load_headshot(
+            "no_such_id_xyz2", "https://evil.example.com/x.png",
+            league="mlb", max_size=32, allow_download=True,
+        ) is None
+    finally:
+        lm.requests.get = orig_get
+    print("test_load_headshot_render_path_never_downloads: PASS")
+
+
 # --- 4. _player_card_team_color ---------------------------------------------
 
 def test_player_card_team_color_from_roster_team_id():
@@ -356,6 +394,8 @@ if __name__ == "__main__":
         test_parse_player_details_tolerates_missing_overview,
         test_parse_player_details_none_on_garbage,
         test_safe_filename_strips_path_separators,
+        test_headshot_url_allowlist,
+        test_load_headshot_render_path_never_downloads,
         test_player_card_team_color_from_roster_team_id,
         test_gate_skips_milb_no_espn_league,
         test_gate_skips_when_no_bio_resolved,

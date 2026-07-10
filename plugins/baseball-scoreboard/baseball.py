@@ -1082,6 +1082,7 @@ class BaseballLive(Baseball, SportsLive):
         self._player_card_showing_until = 0.0
         self._player_bio_cache: Dict[str, Optional[Dict]] = {}
         self._player_bio_last_attempt: Dict[str, float] = {}
+        self._headshot_last_attempt: Dict[str, float] = {}
         self.player_bio_update_interval = self.mode_config.get(
             "player_bio_update_interval", 300
         )
@@ -1114,13 +1115,24 @@ class BaseballLive(Baseball, SportsLive):
         # throttled, so we never hammer the athlete API from the render loop.
         if self.show_player_card:
             pbp = self._play_by_play_cache.get(game_id) or {}
-            for pid in (pbp.get("batter_id"), pbp.get("pitcher_id")):
+            for pid, info in (
+                (pbp.get("batter_id"), pbp.get("batter_info")),
+                (pbp.get("pitcher_id"), pbp.get("pitcher_info")),
+            ):
                 if not pid:
                     continue
                 last = self._player_bio_last_attempt.get(pid, 0)
                 if now - last >= self.player_bio_update_interval:
                     self._player_bio_last_attempt[pid] = now
                     self._fetch_player_bio(pid)
+                # Warm the headshot disk cache off-thread so the render path
+                # (load_headshot with allow_download=False) never blocks on a
+                # network fetch when a new batter/pitcher rotates in.
+                bio = self._player_bio_cache.get(pid) or {}
+                url = bio.get("headshot_url") or (info or {}).get("headshot_url")
+                if url and now - self._headshot_last_attempt.get(pid, 0) >= self.player_bio_update_interval:
+                    self._headshot_last_attempt[pid] = now
+                    self._prefetch_headshot(pid, url)
 
         self._prune_stale_play_by_play()
 
@@ -1259,6 +1271,30 @@ class BaseballLive(Baseball, SportsLive):
                 )
             except Exception as e:
                 self.logger.debug(f"Player bio cache write failed for {player_id}: {e}")
+
+    def _prefetch_headshot(self, player_id: str, url: str) -> None:
+        """Warm the on-disk headshot cache in a daemon thread so the render
+        path only ever does synchronous cache reads (mirrors the non-blocking
+        background pattern used for play-by-play and bios). Fire-and-forget:
+        failures are swallowed inside load_headshot's own logging."""
+        mgr = self._get_headshot_manager()
+        if mgr is None or not self.espn_summary_sport_league:
+            return
+        _, league = self.espn_summary_sport_league
+        import threading
+
+        def warm():
+            try:
+                # max_size here only affects the (render-unused) in-memory entry;
+                # the download writes the full image to disk, which the render
+                # path then reads and crops at its own tier size.
+                mgr.load_headshot(
+                    str(player_id), url, league=league, max_size=48, allow_download=True
+                )
+            except Exception as e:
+                self.logger.debug(f"Headshot prefetch failed for {player_id}: {e}")
+
+        threading.Thread(target=warm, daemon=True).start()
 
     # Sample data cycled through in test_mode so the at-bat info screen's
     # real draw path (font/color/dwell/interval config) gets exercised
@@ -1715,12 +1751,17 @@ class BaseballLive(Baseball, SportsLive):
                 mgr = self._get_headshot_manager()
                 if mgr is not None:
                     _, league = self.espn_summary_sport_league
+                    # Cache-only on the render path (allow_download=False) so a
+                    # cache miss never blocks the display on a network fetch --
+                    # update() prefetches the bytes off-thread. A miss simply
+                    # renders text-only until the prefetch warms the cache.
                     headshot = mgr.load_headshot(
                         str(bio.get("player_id") or info.get("player_id") or "")
                         or str(info.get("id") or ""),
                         bio.get("headshot_url") or info.get("headshot_url"),
                         league=league,
                         max_size=headshot_size,
+                        allow_download=False,
                     )
 
             if headshot is not None:

@@ -9,6 +9,7 @@ import logging
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
 import requests
 from PIL import Image
@@ -189,6 +190,25 @@ class BaseballLogoManager:
     # league (MLB and NCAA athlete-id spaces differ), plus an in-memory cache
     # keyed by id+size. Mirrors the masters plugin's headshot loader.
     _HEADSHOT_DIR = Path(__file__).resolve().parent / "assets" / "headshots"
+    # Headshot URLs come from ESPN's athlete API; only fetch from ESPN's own
+    # domains (SSRF guard) and cap the download size (memory-exhaustion guard).
+    _ALLOWED_HEADSHOT_HOSTS = (".espncdn.com", ".espn.com")
+    _MAX_HEADSHOT_BYTES = 5 * 1024 * 1024  # 5 MB -- a headshot PNG is a few KB
+
+    @classmethod
+    def _is_allowed_headshot_url(cls, url: str) -> bool:
+        """True only for https(+http) URLs whose host is an ESPN domain."""
+        try:
+            parts = urlparse(url)
+        except Exception:
+            return False
+        if parts.scheme not in ("http", "https"):
+            return False
+        host = (parts.hostname or "").lower()
+        return any(
+            host == h.lstrip(".") or host.endswith(h)
+            for h in cls._ALLOWED_HEADSHOT_HOSTS
+        )
 
     @staticmethod
     def _safe_filename(value: str) -> str:
@@ -210,11 +230,18 @@ class BaseballLogoManager:
         return img.resize((size, size), RESAMPLE_FILTER)
 
     def load_headshot(
-        self, player_id: str, url: Optional[str], league: str = "mlb", max_size: int = 32
+        self, player_id: str, url: Optional[str], league: str = "mlb",
+        max_size: int = 32, allow_download: bool = True,
     ) -> Optional[Image.Image]:
         """Load a player's headshot, crop-to-fill a square, with in-memory +
-        on-disk caching and download-on-miss. Returns None on any failure so
-        callers can render a text-only card."""
+        on-disk caching. Returns None on any failure so callers can render a
+        text-only card.
+
+        allow_download gates the network fetch: the render path passes
+        allow_download=False so it only ever does fast memory/disk reads (a
+        cache miss returns None rather than blocking the display), while a
+        background prefetch passes allow_download=True to warm the disk cache.
+        """
         if not player_id and not url:
             return None
 
@@ -238,15 +265,13 @@ class BaseballLogoManager:
                 except Exception as e:
                     self.logger.debug(f"Failed to load cached headshot {player_id}: {e}")
 
-        # Only fetch over http(s); refuse file://, ftp://, etc. from an
-        # unexpected URL value.
-        if url and str(url).lower().startswith(("http://", "https://")):
+        # Network fetch only when explicitly allowed (never on the render path)
+        # and only from an ESPN host, with a bounded response size.
+        if allow_download and url and self._is_allowed_headshot_url(url):
             try:
-                resp = requests.get(
-                    url, timeout=5, headers={"User-Agent": "LEDMatrix Baseball Plugin/1.0"}
-                )
-                resp.raise_for_status()
-                full = Image.open(BytesIO(resp.content)).convert("RGBA")
+                full = self._download_headshot_image(url)
+                if full is None:
+                    return None
                 if disk_path is not None:
                     try:
                         disk_path.parent.mkdir(parents=True, exist_ok=True)
@@ -258,8 +283,34 @@ class BaseballLogoManager:
                 return img
             except Exception as e:
                 self.logger.debug(f"Failed to download headshot for {player_id}: {e}")
+        elif url and allow_download and not self._is_allowed_headshot_url(url):
+            self.logger.debug(f"Refusing non-ESPN headshot URL for {player_id}")
 
         return None
+
+    def _download_headshot_image(self, url: str) -> Optional[Image.Image]:
+        """Download a headshot with a hard size cap (memory-exhaustion guard),
+        returning an RGBA image or None. Assumes the URL host is already
+        allowlisted by the caller."""
+        resp = requests.get(
+            url, timeout=5, stream=True,
+            headers={"User-Agent": "LEDMatrix Baseball Plugin/1.0"},
+        )
+        try:
+            resp.raise_for_status()
+            declared = resp.headers.get("Content-Length")
+            if declared is not None and declared.isdigit() and int(declared) > self._MAX_HEADSHOT_BYTES:
+                self.logger.debug(f"Headshot exceeds size cap (Content-Length={declared})")
+                return None
+            content = bytearray()
+            for chunk in resp.iter_content(8192):
+                content.extend(chunk)
+                if len(content) > self._MAX_HEADSHOT_BYTES:
+                    self.logger.debug("Headshot exceeded size cap while streaming")
+                    return None
+        finally:
+            resp.close()
+        return Image.open(BytesIO(bytes(content))).convert("RGBA")
 
     def clear_cache(self) -> None:
         """Clear the logo cache."""
