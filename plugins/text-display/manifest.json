@@ -1,7 +1,7 @@
 {
   "id": "text-display",
   "name": "Text Display",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "ChuckBuilds",
   "description": "Display custom scrolling or static text with configurable fonts, colors, and scroll speed. Perfect for announcements, messages, or custom displays.",
   "category": "display",
@@ -25,6 +25,12 @@
   },
   "versions": [
     {
+      "released": "2026-07-10",
+      "version": "1.1.1",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Fix font_mode auto rendering visibly antialiased/blurry text on small panels: dropped 5by7.regular (never crisp at any tested size) and corrected 4x6-font from 6px to 7px (its actual crisp native size)."
+    },
+    {
       "released": "2026-07-09",
       "version": "1.1.0",
       "ledmatrix_min": "2.0.0"
@@ -45,7 +51,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-09",
+  "last_updated": "2026-07-10",
   "stars": 0,
   "downloads": 0,
   "verified": true,

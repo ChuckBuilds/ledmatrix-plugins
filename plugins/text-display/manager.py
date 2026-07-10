@@ -27,12 +27,19 @@ from src.common.scroll_helper import ScrollHelper
 try:
     from src.adaptive_layout import FontStep, LADDER_ARCADE
     # Prefer PressStart2P (the plugin's classic look) at its crisp integer
-    # sizes, then step to the narrower small TTF pixel fonts. TTF-only on
-    # purpose: this plugin renders with PIL draw.text(), which can't take
-    # the freetype BDF faces the grid ladder returns.
+    # sizes, then step down to 4x6-font for panels too small for even 8px.
+    # TTF-only on purpose: this plugin renders with PIL draw.text(), which
+    # can't take the freetype BDF faces the grid ladder returns.
+    #
+    # Both rungs are verified crisp (measure_font_crispness == 0.0, see
+    # test_font_mode_auto.py). PressStart2P only rasterizes without
+    # antialiasing at exact multiples of 8px. "5by7.regular" was dropped —
+    # it renders visibly antialiased at every size tested (never below
+    # ~30% gray pixels) — and "4x6-font" moved from 6px to 7px, its only
+    # crisp size; 6px is ~33% antialiased despite measuring the same ink
+    # height.
     AUTO_FONT_LADDER = LADDER_ARCADE + (
-        FontStep("5by7.regular", 8),
-        FontStep("4x6-font", 6),
+        FontStep("4x6-font", 7),
     )
 except ImportError:  # older LEDMatrix core without the adaptive layout system
     AUTO_FONT_LADDER = None

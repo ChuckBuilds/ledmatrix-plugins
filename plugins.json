@@ -243,6 +243,29 @@
       "icon": "fa-globe"
     },
     {
+      "id": "gif-player",
+      "name": "GIF Player",
+      "description": "Plays animated GIFs in the display rotation. Includes a web portal to upload, reorder, toggle, and delete animations.",
+      "author": "ant456",
+      "category": "media",
+      "tags": [
+        "gif",
+        "animation",
+        "upload",
+        "portal",
+        "display"
+      ],
+      "repo": "https://github.com/ant456/ledmatrix-gif-player",
+      "branch": "main",
+      "plugin_path": "",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-06-17",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.0.0"
+    },
+    {
       "id": "hello-world",
       "name": "Hello World",
       "description": "A simple test plugin that displays a customizable message",
@@ -632,6 +655,31 @@
       "latest_version": "1.4.8"
     },
     {
+      "id": "plex-marquee",
+      "name": "Plex Marquee",
+      "description": "Cinema marquee display powered by Fanart.tv — shows banner art for whatever is currently playing on Plex, with a web portal to browse and pick banners for your library.",
+      "author": "ant456",
+      "category": "media",
+      "tags": [
+        "plex",
+        "cinema",
+        "marquee",
+        "fanart",
+        "tmdb",
+        "banner",
+        "media"
+      ],
+      "repo": "https://github.com/ant456/ledmatrix-plex-marquee",
+      "branch": "main",
+      "plugin_path": "",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-06-22",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.0.0"
+    },
+    {
       "id": "soccer-scoreboard",
       "name": "Soccer Scoreboard",
       "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
@@ -753,10 +801,10 @@
       "plugin_path": "plugins/text-display",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-09",
+      "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.0"
+      "latest_version": "1.1.1"
     },
     {
       "id": "tide-display",
