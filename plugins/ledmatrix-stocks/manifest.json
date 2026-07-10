@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-stocks",
   "name": "Stock & Crypto Ticker",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Displays stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies. Supports scroll and switch display modes.",
   "author": "LEDMatrix Team",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",
@@ -40,14 +40,20 @@
   ],
   "versions": [
     {
+      "released": "2026-07-08",
+      "version": "2.3.1",
+      "notes": "Set the license to GPL-3.0 (project standard; the LICENSE file was already GPL, the manifest field said MIT). Guard the display_manager.process_deferred_updates() call with hasattr so the plugin renders under display managers that don't implement it (e.g. the plugin-safety harness).",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "released": "2026-05-28",
       "version": "2.3.0",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-05-15",
       "version": "2.2.1",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "2.2.0",
@@ -75,10 +81,10 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-05-28",
+  "last_updated": "2026-07-08",
   "stars": 0,
   "downloads": 0,
   "verified": true,
   "screenshot": "",
-  "license": "MIT"
+  "license": "GPL-3.0"
 }
