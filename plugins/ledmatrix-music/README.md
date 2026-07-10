@@ -125,6 +125,31 @@ The music display shows:
 - **Progress Bar**: White progress bar at the bottom
 - **Nothing Playing**: Centered message when no music is detected
 
+### Adaptive Layout (beta)
+
+Set `"layout_mode": "adaptive"` to scale the title/artist/album fonts to
+your panel height — the same way the album art already scales
+(`album_art_size = matrix_height`). On a tall panel the text grows right
+along with the artwork instead of staying at a fixed size.
+
+```json
+{
+  "layout_mode": "adaptive"
+}
+```
+
+- The default is `"classic"`: rendering is completely unchanged unless you
+  opt in. **To revert at any time, set it back to `"classic"`** — no
+  reinstall needed.
+- Your font and vertical-position (`y_percent`) customizations still apply
+  in adaptive mode: an explicitly configured font/font_size for
+  `title_text`/`artist_text`/`album_text` wins over the automatic sizing.
+- Since text still scrolls when it's too wide for the panel, fonts are
+  sized by height only (title/artist/album each get an equal share of the
+  vertical space above the progress bar) — width never forces the font
+  smaller the way it might on a scoreboard.
+- Requires a LEDMatrix core with the adaptive layout system
+  (`docs/ADAPTIVE_LAYOUT.md`); older cores silently keep the classic layout.
 
 ## Music Sources
 
@@ -286,6 +311,12 @@ This plugin is designed to work alongside other LEDMatrix plugins:
 - **LEDMatrix**: Base plugin system and display management
 
 ## Version History
+
+### v1.1.0
+- Adaptive layout (beta, opt-in): `layout_mode: "adaptive"` scales title/
+  artist/album fonts to the panel height, matching the album art's
+  existing height-based scaling. Default stays `"classic"`; revert anytime
+  by setting it back, no reinstall needed.
 
 ### v1.0.0
 - Initial plugin release

@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -67,6 +67,12 @@
   ],
   "versions": [
     {
+      "released": "2026-07-10",
+      "version": "1.1.0",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale title/artist/album fonts to the panel height, matching how the album art already scales. Default stays \"classic\" -- rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. User-configured fonts and y_percent offsets still apply in adaptive mode."
+    },
+    {
       "released": "2026-07-09",
       "version": "1.0.8",
       "notes": "When text scrolling is disabled, truncate the title/artist/album to the text-area width and append an ellipsis, reserving room for it so the '...' indicator isn't clipped away at draw time.",
@@ -104,9 +110,15 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-09",
+  "last_updated": "2026-07-10",
   "stars": 0,
   "downloads": 0,
   "verified": true,
-  "screenshot": ""
+  "screenshot": "",
+  "display": {
+    "design_size": {
+      "width": 128,
+      "height": 32
+    }
+  }
 }

@@ -25,6 +25,25 @@ from ytm_client import YTMClient
 # Import base plugin class
 from src.plugin_system.base_plugin import BasePlugin
 
+# Adaptive layout system (opt-in via layout_mode: "adaptive"). Older
+# LEDMatrix cores don't ship it — fall back silently to the classic layout.
+# MusicPlugin is itself a BasePlugin, so it gets self.layout for free —
+# unlike football-scoreboard's GameRenderer (a standalone helper class),
+# no separate LayoutContext/FontManager wiring is needed here.
+try:
+    from src.adaptive_layout import FontStep, LADDER_ARCADE, media_row
+    ADAPTIVE_AVAILABLE = True
+    # TTF-only, same verified-crisp rungs as the other adaptive plugins:
+    # PressStart2P only rasterizes without antialiasing at exact multiples
+    # of its 8px design grid; 4x6-font is crisp only at 7px (not 6, despite
+    # measuring the same ink height) — see measure_font_crispness.
+    ADAPTIVE_LADDER_TEXT = LADDER_ARCADE + (
+        FontStep("4x6-font", 7),
+    )
+except ImportError:
+    ADAPTIVE_AVAILABLE = False
+    ADAPTIVE_LADDER_TEXT = None
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -106,9 +125,20 @@ class MusicPlugin(BasePlugin):
         # Load configuration with flattened access
         self._load_config()
         self._initialize_clients()
-        
+
         # Load custom fonts from config
         self._load_custom_fonts()
+
+        # Adaptive layout (beta, opt-in): scales title/artist/album fonts to
+        # the panel instead of the classic fixed sizes. Default "classic"
+        # renders byte-identically to previous releases.
+        self.layout_mode = config.get('layout_mode', 'classic')
+        self._adaptive = ADAPTIVE_AVAILABLE and self.layout_mode == 'adaptive'
+        if self.layout_mode == 'adaptive' and not ADAPTIVE_AVAILABLE:
+            self.logger.warning(
+                "layout_mode 'adaptive' requires a LEDMatrix core with the "
+                "adaptive layout system; falling back to classic layout"
+            )
         
         self.logger.info(f"Music plugin initialized - Source: {self.preferred_source}, Enabled: {self.enabled}, Live Priority: {self.config.get('live_priority', False)}")
 
@@ -238,6 +268,59 @@ class MusicPlugin(BasePlugin):
             self.logger.info("Successfully loaded custom fonts from config")
         except Exception as e:
             self.logger.error(f"Error loading custom fonts: {e}, using display_manager fonts")
+
+    def _user_font_set(self, element_key: str) -> bool:
+        """True when the user explicitly configured this element's font in
+        customization.<element_key> — adaptive mode must respect it instead
+        of auto-sizing."""
+        element_config = self.config.get('customization', {}).get(element_key, {})
+        return bool(element_config.get('font') or element_config.get('font_size'))
+
+    def _adaptive_text_layout(self, font_title, font_artist, font_album,
+                              title_layout_config, artist_layout_config, album_layout_config,
+                              text_area_x_start, text_area_width, matrix_height,
+                              progress_bar_height, safe_y_percent):
+        """Adaptive font + Y-position pick for the title/artist/album rows.
+
+        Splits the vertical space above the progress bar into three equal
+        rows and sizes each row's font to the largest crisp ladder rung
+        whose LINE HEIGHT fits that row — height-only, not width, because
+        long titles/artists/albums scroll rather than shrink to fit, the
+        same way the album art already scales by height alone
+        (album_art_size = matrix_height). User-forced fonts (an explicit
+        customization.<element>.font/font_size) win over auto-sizing, and
+        an explicit y_percent still overrides the row position, exactly
+        like classic mode.
+        """
+        from src.adaptive_layout import Region
+
+        top_margin = self.layout.px(1, minimum=1)
+        gap = self.layout.px(1, minimum=1)
+        available_h = max(3, matrix_height - progress_bar_height - top_margin - 1)
+        rows = Region(text_area_x_start, top_margin, text_area_width, available_h).split_v(
+            1, 1, 1, gap=gap)
+        title_row, artist_row, album_row = rows
+
+        def pick(element_key, classic_font, row):
+            if self._user_font_set(element_key):
+                return classic_font
+            return self.layout.font_for_rows(1, row.h, ladder=ADAPTIVE_LADDER_TEXT).font
+
+        font_title = pick('title_text', font_title, title_row)
+        font_artist = pick('artist_text', font_artist, artist_row)
+        font_album = pick('album_text', font_album, album_row)
+
+        y_title = title_row.y
+        y_artist = artist_row.y
+        y_album = album_row.y
+        if 'y_percent' in title_layout_config:
+            y_title = int(matrix_height * safe_y_percent(title_layout_config['y_percent'], y_title / matrix_height))
+        if 'y_percent' in artist_layout_config:
+            y_artist = int(matrix_height * safe_y_percent(artist_layout_config['y_percent'], y_artist / matrix_height))
+        if 'y_percent' in album_layout_config:
+            y_album = int(matrix_height * safe_y_percent(album_layout_config['y_percent'], y_album / matrix_height))
+
+        return font_title, font_artist, font_album, y_title, y_artist, y_album
 
     def _initialize_clients(self):
         """Initialize music clients based on configuration."""
@@ -1012,30 +1095,44 @@ class MusicPlugin(BasePlugin):
             progress_bar_height = max(4, int(matrix_height * 0.06))
         progress_bar_y = matrix_height - progress_bar_height - 1
 
-        # Top-down stacking with proportional gaps
-        top_padding = max(1, matrix_height // 32)
-        line_gap = max(1, matrix_height // 16)
-
-        # Auto-compute positions from font metrics
-        auto_y_title = top_padding
-        auto_y_artist = auto_y_title + title_height + line_gap
-        auto_y_album = auto_y_artist + artist_height + line_gap
-
-        # Allow explicit y_percent override from user config
-        if 'y_percent' in title_layout_config:
-            y_pos_title_top = int(matrix_height * _safe_y_percent(title_layout_config['y_percent'], 0.03))
+        if self._adaptive:
+            # Adaptive layout (beta, opt-in): font sizes scale with the
+            # panel instead of the classic fixed sizes; classic branch
+            # below is untouched when declined.
+            (font_title, font_artist, font_album,
+             y_pos_title_top, y_pos_artist_top, y_pos_album_top) = self._adaptive_text_layout(
+                font_title, font_artist, font_album,
+                title_layout_config, artist_layout_config, album_layout_config,
+                text_area_x_start, text_area_width, matrix_height,
+                progress_bar_height, _safe_y_percent)
+            title_height = self.display_manager.get_font_height(font_title)
+            artist_height = self.display_manager.get_font_height(font_artist)
+            album_height = self.display_manager.get_font_height(font_album)
         else:
-            y_pos_title_top = auto_y_title
+            # Top-down stacking with proportional gaps
+            top_padding = max(1, matrix_height // 32)
+            line_gap = max(1, matrix_height // 16)
 
-        if 'y_percent' in artist_layout_config:
-            y_pos_artist_top = int(matrix_height * _safe_y_percent(artist_layout_config['y_percent'], 0.34))
-        else:
-            y_pos_artist_top = auto_y_artist
+            # Auto-compute positions from font metrics
+            auto_y_title = top_padding
+            auto_y_artist = auto_y_title + title_height + line_gap
+            auto_y_album = auto_y_artist + artist_height + line_gap
 
-        if 'y_percent' in album_layout_config:
-            y_pos_album_top = int(matrix_height * _safe_y_percent(album_layout_config['y_percent'], 0.60))
-        else:
-            y_pos_album_top = auto_y_album
+            # Allow explicit y_percent override from user config
+            if 'y_percent' in title_layout_config:
+                y_pos_title_top = int(matrix_height * _safe_y_percent(title_layout_config['y_percent'], 0.03))
+            else:
+                y_pos_title_top = auto_y_title
+
+            if 'y_percent' in artist_layout_config:
+                y_pos_artist_top = int(matrix_height * _safe_y_percent(artist_layout_config['y_percent'], 0.34))
+            else:
+                y_pos_artist_top = auto_y_artist
+
+            if 'y_percent' in album_layout_config:
+                y_pos_album_top = int(matrix_height * _safe_y_percent(album_layout_config['y_percent'], 0.60))
+            else:
+                y_pos_album_top = auto_y_album
 
         # Validate album doesn't overlap progress bar
         max_album_y = progress_bar_y - album_height - 1

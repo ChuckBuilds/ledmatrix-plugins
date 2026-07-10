@@ -16,6 +16,12 @@
       "maximum": 300,
       "default": 30
     },
+    "layout_mode": {
+      "type": "string",
+      "enum": ["classic", "adaptive"],
+      "default": "classic",
+      "description": "Layout engine. 'classic' is the original fixed-size layout (unchanged). 'adaptive' (beta) scales the title/artist/album fonts to the panel height, growing on large panels and shrinking gracefully on small ones — the album art already scales this way. Your customization fonts and y_percent offsets still apply in adaptive mode. Requires LEDMatrix core with the adaptive layout system; falls back to classic on older cores. Switch back to 'classic' at any time to restore the original rendering."
+    },
     "preferred_source": {
       "type": "string",
       "description": "Preferred music source",
