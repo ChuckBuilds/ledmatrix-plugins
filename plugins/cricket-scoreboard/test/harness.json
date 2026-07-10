@@ -1,0 +1,108 @@
+{
+  "_comment": "Deterministic harness config + mocked ESPN cricket responses for golden-image rendering. mock_matches is consumed directly by test_cricket_plugin.py (the plugin's live fetcher is bypassed) and covers every format branch: a live T20 chase, a live Test with a session, a completed match, and an upcoming fixture.",
+  "config": {
+    "enabled": true,
+    "favorite_teams": ["India", "Australia", "England"],
+    "favorite_competitions": ["international", "ipl", "bbl"],
+    "display_duration": 15,
+    "live_game_duration": 20,
+    "recent_game_duration": 15,
+    "upcoming_game_duration": 15,
+    "recent_games_to_show": 5,
+    "upcoming_games_to_show": 5,
+    "live_priority": true,
+    "show_venue": true,
+    "display_modes": {"live": true, "recent": true, "upcoming": true}
+  },
+  "freeze_time": "2026-05-31 15:30:00",
+  "mock_matches": [
+    {
+      "id": "live-t20",
+      "series_id": "8048",
+      "series_name": "Indian Premier League",
+      "competition_key": "ipl",
+      "name": "Royal Challengers Bengaluru v Gujarat Titans",
+      "short_name": "RCB v GT",
+      "format": "T20",
+      "is_test": false,
+      "state": "in",
+      "status_summary": "RCB need 34 runs from 42 balls",
+      "status_detail": "In Progress",
+      "status_short": "RCB 122/4",
+      "period": 2,
+      "date": "2026-05-31T14:00Z",
+      "venue": "Narendra Modi Stadium, Ahmedabad",
+      "target": 156,
+      "teams": [
+        {"order": 0, "home_away": "home", "id": "335970", "name": "Royal Challengers Bengaluru", "short_name": "RCB", "abbr": "RCB", "logo_url": null, "winner": false, "score_str": "122/4 (13/20 ov, target 156)", "innings": [{"period": 2, "runs": 122, "wickets": 4, "overs_raw": 13.0, "overs_decimal": 13.0, "balls": 78, "is_batting": true, "description": "batting"}], "records": ""},
+        {"order": 1, "home_away": "away", "id": "1298769", "name": "Gujarat Titans", "short_name": "GT", "abbr": "GT", "logo_url": null, "winner": false, "score_str": "155/8 (20 ov)", "innings": [{"period": 1, "runs": 155, "wickets": 8, "overs_raw": 20.0, "overs_decimal": 20.0, "balls": 120, "is_batting": false, "description": "complete"}], "records": ""}
+      ]
+    },
+    {
+      "id": "live-test",
+      "series_id": "9999",
+      "series_name": "Border-Gavaskar Trophy",
+      "competition_key": "international",
+      "name": "Australia v India",
+      "short_name": "AUS v IND",
+      "format": "Test",
+      "is_test": true,
+      "state": "in",
+      "status_summary": "India lead by 84 runs",
+      "status_detail": "Stumps - Day 3",
+      "status_short": "Stumps Day 3",
+      "period": 3,
+      "date": "2026-05-29T00:00Z",
+      "venue": "Melbourne Cricket Ground",
+      "target": null,
+      "teams": [
+        {"order": 0, "home_away": "home", "id": "aus", "name": "Australia", "short_name": "AUS", "abbr": "AUS", "logo_url": null, "winner": false, "score_str": "295 & 180/4", "innings": [{"period": 1, "runs": 295, "wickets": 10, "overs_raw": 88.2, "overs_decimal": 88.333, "balls": 530, "is_batting": false, "description": "all out"}, {"period": 3, "runs": 180, "wickets": 4, "overs_raw": 52.0, "overs_decimal": 52.0, "balls": 312, "is_batting": true, "description": "batting"}], "records": ""},
+        {"order": 1, "home_away": "away", "id": "ind", "name": "India", "short_name": "IND", "abbr": "IND", "logo_url": null, "winner": false, "score_str": "391", "innings": [{"period": 2, "runs": 391, "wickets": 10, "overs_raw": 120.4, "overs_decimal": 120.667, "balls": 724, "is_batting": false, "description": "all out"}], "records": ""}
+      ]
+    },
+    {
+      "id": "recent-t20",
+      "series_id": "8048",
+      "series_name": "Indian Premier League",
+      "competition_key": "ipl",
+      "name": "Royal Challengers Bengaluru v Gujarat Titans",
+      "short_name": "RCB v GT",
+      "format": "T20",
+      "is_test": false,
+      "state": "post",
+      "status_summary": "RCB won by 5 wkts (12b rem)",
+      "status_detail": "Final",
+      "status_short": "Final",
+      "period": 2,
+      "date": "2026-05-28T14:00Z",
+      "venue": "M Chinnaswamy Stadium, Bengaluru",
+      "target": 156,
+      "teams": [
+        {"order": 0, "home_away": "home", "id": "335970", "name": "Royal Challengers Bengaluru", "short_name": "RCB", "abbr": "RCB", "logo_url": null, "winner": true, "score_str": "161/5 (18/20 ov, target 156)", "innings": [{"period": 2, "runs": 161, "wickets": 5, "overs_raw": 18.0, "overs_decimal": 18.0, "balls": 108, "is_batting": false, "description": "target reached"}], "records": ""},
+        {"order": 1, "home_away": "away", "id": "1298769", "name": "Gujarat Titans", "short_name": "GT", "abbr": "GT", "logo_url": null, "winner": false, "score_str": "155/8 (20 ov)", "innings": [{"period": 1, "runs": 155, "wickets": 8, "overs_raw": 20.0, "overs_decimal": 20.0, "balls": 120, "is_batting": false, "description": "complete"}], "records": ""}
+      ]
+    },
+    {
+      "id": "upcoming-t20i",
+      "series_id": "7777",
+      "series_name": "India tour of England 2026",
+      "competition_key": "international",
+      "name": "England v India",
+      "short_name": "ENG v IND",
+      "format": "T20I",
+      "is_test": false,
+      "state": "pre",
+      "status_summary": "",
+      "status_detail": "Scheduled",
+      "status_short": "Scheduled",
+      "period": 0,
+      "date": "2026-06-05T17:30Z",
+      "venue": "Lord's, London",
+      "target": null,
+      "teams": [
+        {"order": 0, "home_away": "home", "id": "eng", "name": "England", "short_name": "ENG", "abbr": "ENG", "logo_url": null, "winner": false, "score_str": "", "innings": [], "records": ""},
+        {"order": 1, "home_away": "away", "id": "ind", "name": "India", "short_name": "IND", "abbr": "IND", "logo_url": null, "winner": false, "score_str": "", "innings": [], "records": ""}
+      ]
+    }
+  ]
+}

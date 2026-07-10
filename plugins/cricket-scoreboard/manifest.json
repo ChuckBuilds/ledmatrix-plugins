@@ -1,0 +1,43 @@
+{
+  "id": "cricket-scoreboard",
+  "name": "Cricket Scoreboard",
+  "version": "1.0.0",
+  "author": "ChuckBuilds",
+  "description": "Live, recent, and upcoming cricket matches across international tours (Test/ODI/T20I) and major domestic T20 leagues including the IPL, Big Bash League, The Hundred, PSL, CPL, SA20 and more. Shows runs/wickets/overs, run rates, targets, and match results.",
+  "category": "sports",
+  "tags": [
+    "cricket",
+    "ipl",
+    "big-bash",
+    "t20",
+    "test-cricket",
+    "odi",
+    "sports",
+    "scoreboard",
+    "live-scores"
+  ],
+  "display_modes": [
+    "cricket_live",
+    "cricket_recent",
+    "cricket_upcoming"
+  ],
+  "versions": [
+    {
+      "released": "2026-07-10",
+      "version": "1.0.0",
+      "notes": "Initial release. Series-ID discovery via the ESPN cricket header endpoint, favorite national teams + favorite domestic competitions dual filter, live limited-overs / live Test / recent / upcoming render views, base-6 overs-to-decimal run-rate math, franchise logo auto-download and bundled national-team flags.",
+      "ledmatrix_min": "2.0.0"
+    }
+  ],
+  "last_updated": "2026-07-10",
+  "stars": 0,
+  "downloads": 0,
+  "verified": true,
+  "screenshot": "",
+  "entry_point": "manager.py",
+  "class_name": "CricketScoreboardPlugin",
+  "config_schema": "config_schema.json",
+  "compatible_versions": [
+    ">=2.0.0"
+  ]
+}
