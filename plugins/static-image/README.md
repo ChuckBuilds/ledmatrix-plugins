@@ -75,9 +75,9 @@ from it. Key options:
 | Key | Default | Notes |
 |---|---|---|
 | `enabled` | `false` | Master switch |
-| `images` | `[]` | Array of image paths (relative to LEDMatrix root or absolute) |
-| `image_config.mode` | `"single"` | How images are presented |
-| `image_config.rotation_mode` | `"sequential"` | `"sequential"` or `"random"` when multiple images |
+| `images` | `[]` | Array of image entries (each an object with a `path` and an optional per-image `schedule`), managed via the file-upload widget. See **Per-Image Scheduling** below. |
+| `image_config.mode` | `"single"` | How images are presented: `"single"` or `"multiple"` |
+| `image_config.rotation_mode` | `"sequential"` | Order when showing multiple images: `"sequential"`, `"random"`, `"time_based"` (advance on a wall-clock interval), or `"date_based"` (one image per day) |
 | `rotation_settings.sequential_loop` | `true` | Loop back to the first image after the last |
 | `rotation_settings.random_seed` | `null` | Optional fixed seed for reproducible random order |
 | `rotation_settings.time_intervals.enabled` | `false` | Tie image changes to wall-clock intervals |
@@ -87,6 +87,21 @@ from it. Key options:
 | `preserve_aspect_ratio` | `true` | Don't stretch when scaling |
 | `background_color` | `[0, 0, 0]` | RGB fill behind transparent pixels |
 | `display_duration` | `10` | Seconds the plugin holds the screen each rotation |
+
+### Per-Image Scheduling
+
+Each entry in `images` can carry an optional `schedule` so an image only shows at
+certain times (e.g. a "good morning" board, or business-hours signage):
+
+| Schedule key | Default | Notes |
+|---|---|---|
+| `schedule.enabled` | `false` | Turn scheduling on for this image |
+| `schedule.mode` | `"always"` | `"always"` (any time), `"time_range"` (same window every day), or `"per_day"` (a different window per weekday) |
+| `schedule.start_time` / `schedule.end_time` | `"08:00"` / `"18:00"` | Window bounds (HH:MM, 24-hour) for `time_range` mode |
+| `schedule.days.<weekday>` | — | Per-weekday `enabled` + `start_time`/`end_time`, used when `mode` is `"per_day"` |
+
+When several images are eligible at the same time, they rotate per
+`image_config.rotation_mode`.
 
 ## Usage
 

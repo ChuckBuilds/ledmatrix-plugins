@@ -1,7 +1,7 @@
 {
   "id": "march-madness",
   "name": "March Madness",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "NCAA March Madness tournament bracket tracker with round branding, seeded matchups, live scores, and upset highlighting",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -16,7 +16,14 @@
   "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
   "branch": "main",
   "plugin_path": "plugins/march-madness",
+  "compatible_versions": [">=2.0.0"],
   "versions": [
+    {
+      "version": "1.0.1",
+      "ledmatrix_min": "2.0.0",
+      "released": "2026-07-08",
+      "notes": "Add README and LICENSE (GPL-3.0). Conform the manifest to the schema (add required compatible_versions; make dependencies an array). Mount the HTTP retry adapter on http:// as well as https:// so redirected ESPN requests keep the retry/backoff policy."
+    },
     {
       "version": "1.0.0",
       "ledmatrix_min": "2.0.0",
@@ -25,13 +32,14 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-02-16",
+  "last_updated": "2026-07-08",
   "verified": true,
   "screenshot": "",
   "display_modes": [
     "march_madness"
   ],
-  "dependencies": {},
+  "dependencies": [],
   "entry_point": "manager.py",
-  "class_name": "MarchMadnessPlugin"
+  "class_name": "MarchMadnessPlugin",
+  "license": "GPL-3.0"
 }

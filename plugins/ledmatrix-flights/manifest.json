@@ -1,8 +1,8 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.10.0",
-  "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
+  "version": "1.12.3",
+  "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
   "class_name": "FlightTrackerPlugin",
@@ -23,11 +23,14 @@
     "ads-b",
     "skyaware",
     "aviation",
-    "map"
+    "map",
+    "metar",
+    "taf",
+    "weather"
   ],
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-flights",
   "website": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-flights",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "compatible_versions": [
     ">=2.0.0"
   ],
@@ -35,63 +38,105 @@
   "max_ledmatrix_version": "3.0.0",
   "versions": [
     {
+      "released": "2026-07-09",
+      "version": "1.12.3",
+      "notes": "Set the license to GPL-3.0 (project standard). The LICENSE file was already GPL; the manifest field previously said MIT.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "released": "2026-07-09",
+      "version": "1.12.2",
+      "notes": "Airport Weather now uses the crisp 6x10 bitmap font (bundled from the LEDMatrix font set) for the weather cards, replacing the soft anti-aliased 5x7 TTF. FreeType renders the .bdf pixel-exact at its native size, so the METAR/TAF/PIREP/SIGMET text is sharp on the LED grid. Falls back gracefully if a build lacks BDF support.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "released": "2026-07-09",
+      "version": "1.12.1",
+      "notes": "Airport Weather legibility: the 5x7 weather text is now drawn in 1-bit 'mono' mode (grid-snapped, no anti-aliasing) at a slightly larger size, so it stays crisp on the LED grid instead of looking soft/blurry. Other flight-tracker views are unchanged.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "released": "2026-07-09",
+      "version": "1.12.0",
+      "notes": "Airport Weather enhancements: the decoded METAR card now shows the observation age and flags stale reports (older than ~75 min) in amber; and new unit options let weather display in US (inHg/SM/kt/degC) or international style (hPa 'Q' code, metres/km, mph/kmh/ms, degF).",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "released": "2026-07-09",
+      "version": "1.11.2",
+      "notes": "Airport Weather robustness: the weather refresh now services one HTTP request per update cycle (incremental) so a slow or failed fetch can't stall the aircraft loop; METAR config init is guarded so a bad weather config only disables the feature instead of crashing the plugin; added config-value guards and docstrings.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "released": "2026-07-09",
+      "version": "1.11.1",
+      "notes": "Airport Weather view now renders in the cleaner, more legible 5x7 font (bundled) instead of the blocky PressStart2P/4x6, so METAR/TAF/PIREP/SIGMET text reads like text at small panel sizes.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "released": "2026-07-09",
+      "version": "1.11.0",
+      "notes": "Add optional Airport Weather add-on: a new 'metar' rotation view that shows METAR (color-coded decoded card plus raw page), TAF, PIREP, and SIGMET/AIRMET for airports you choose, using the free NOAA Aviation Weather Center API (no API key). Enable via the new 'metar' config section and add 'metar' to Rotation Views.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "released": "2026-06-15",
       "version": "1.10.0",
       "notes": "Apply config changes live via on_config_change (data source, center/radius/zoom, units, filters, proximity); rebuilds the fetcher, route enrichment and renderer and invalidates the cached map so edits take effect without a display restart.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-06-14",
       "version": "1.9.2",
       "notes": "Expand bundled airline logo coverage: add 17 carriers (Horizon, Endeavor, Mesa, Jazz, Sun Country, Condor, Finnair, Icelandair, Asiana, China Airlines, EVA Air, Hainan, Philippine, Starlux, Zipair, Aeromexico, Volaris) so more overhead flights render with their operator logo instead of a fallback.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-06-08",
       "version": "1.9.1",
       "notes": "Fix: the overhead / live-priority view is now governed solely by proximity_distance_miles, independent of map_radius_miles. Previously a small map_radius_miles silently capped the overhead trigger radius (the candidate pool was filtered to the map radius before the proximity check), so aircraft inside proximity_distance_miles but outside the map view never triggered the live overhead card. The fetch radius now also covers proximity_distance_miles.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-06-05",
       "version": "1.9.0",
       "notes": "Overhead (live-priority) card now alternates its shared secondary row between the flight route (e.g. SEA>PHX) and the aircraft model instead of always showing the route. The model is rendered as a friendly name (e.g. 'Boeing 737-900') via a new bundled ICAO type-designator lookup, falling back to the raw type code when unknown. New 'overhead_alt_interval' config option controls the swap cadence (default 4s; 0 disables alternation).",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-06-02",
       "version": "1.8.2",
       "notes": "Redesign the overhead (plane-overhead / live-priority) view as a size-adaptive 'card' and move it into the shared renderer alongside area/stats. Compact 128x32: airline logo + colored callsign hero, altitude/speed value strip, route + progress, and a heading-arrow + distance badge. Narrow (<96px wide): drop the logo and badge, full-width text. Spacious (>=48px tall, e.g. 256x64): large font, tall logo, inline heading arrow, metric values justified across the width, and flight progress as a bar across the bottom with a triangle marker. Logo width is capped so wide wordmark logos (e.g. SkyWest) don't crowd the text; when there's no logo the friendly airline name is shown next to the callsign. Fixes the duplicate airline tag (the old 'UAL360 UAL') and the unrenderable degree glyph in the heading ('HDG:227deg').",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-06-01",
       "version": "1.7.0",
       "notes": "Overhead live-priority behavior: lock onto the specific flight that enters the radius (no longer hops to whatever is momentarily closest); duration_seconds is now a hard cap measured from lock-on (a lingering plane no longer overstays); add proximity_alert.cooldown_seconds to guarantee the normal rotation screen time after each flight; add live_update_interval for a faster fetch (default 2s) while a flight is locked on so altitude/distance update smoothly.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-06-01",
       "version": "1.6.0",
       "notes": "Add configurable rotation views (rotation_views: pick which of map/stats/area/flight_tracking cycle, or none) and overhead live-priority preempt (live_priority: a plane entering the proximity radius cuts in to the overhead view for the proximity_alert window, then releases). Empty rotation_views + live_priority gives a blank-until-overhead board. Fully backward compatible: unset rotation_views keeps the legacy single display_mode behavior.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-05-31",
       "version": "1.5.5",
       "notes": "Fix adsb.fi data source returning no aircraft: parse the 'aircraft' response key (adsb.fi opendata) in addition to 'ac' (adsb.lol)",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-05-19",
       "version": "1.5.4",
       "notes": "Reduce log spam and gate enrichment API calls (FR24 details, FlightAware) when plugin is not on screen",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-05-15",
       "version": "1.5.3",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-05-06",
@@ -134,5 +179,5 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-06-15"
+  "last_updated": "2026-07-10"
 }
