@@ -972,6 +972,28 @@
       "verified": false,
       "screenshot": "",
       "latest_version": "1.0.0"
+    },
+    {
+      "id": "afl-scoreboard",
+      "name": "AFL Scoreboard",
+      "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
+      "author": "ChuckBuilds",
+      "category": "sports",
+      "tags": [
+        "afl",
+        "australian-football",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/afl-scoreboard",
+      "stars": 0,
+      "downloads": 0,
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.0.0"
     }
   ]
 }
