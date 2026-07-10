@@ -144,3 +144,6 @@ Thumbs.db
 *.log
 config.json
 *.pem
+
+# Downloaded player headshots (cached at runtime, not committed)
+assets/headshots/
