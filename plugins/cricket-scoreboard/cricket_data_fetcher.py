@@ -108,6 +108,8 @@ def overs_to_balls(overs: float) -> int:
         overs = float(overs)
     except (TypeError, ValueError):
         return 0
+    if overs < 0:
+        return 0
     whole = int(math.floor(overs))
     balls = int(round((overs - whole) * 10))
     if balls >= 6:
@@ -202,7 +204,11 @@ class CricketDataFetcher:
         try:
             resp = self.session.get(url, headers=_HEADERS, timeout=self.request_timeout)
             if resp.status_code == 200:
-                return resp.json()
+                payload = resp.json()
+                if isinstance(payload, dict):
+                    return payload
+                logger.warning("Cricket API %s returned non-object JSON", url)
+                return None
             logger.warning("Cricket API %s returned HTTP %s", url, resp.status_code)
         except Exception as e:  # pragma: no cover - network failure path
             logger.warning("Cricket API request failed for %s: %s", url, e)
@@ -245,16 +251,17 @@ class CricketDataFetcher:
                 and now - self._last_discovery < self._discovery_interval):
             return self._resolved_series
 
-        cache_key = "cricket:series_ids"
+        enabled_keys = list(self.config.get("favorite_competitions",
+                                            ["international", "ipl", "bbl"]))
+        favorite_teams = [t.lower() for t in self.config.get("favorite_teams", [])]
+
+        cache_key = "cricket:series_ids:" + "|".join(
+            sorted(enabled_keys) + sorted(favorite_teams))
         cached = self._cache_get(cache_key, max_age=self._discovery_interval)
         if cached and not force:
             self._resolved_series = cached
             self._last_discovery = now
             return cached
-
-        enabled_keys = list(self.config.get("favorite_competitions",
-                                            ["international", "ipl", "bbl"]))
-        favorite_teams = [t.lower() for t in self.config.get("favorite_teams", [])]
         follow_international = "international" in enabled_keys
 
         data = self._get_json(HEADER_URL)

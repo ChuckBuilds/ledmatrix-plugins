@@ -100,6 +100,9 @@ def download_missing_logo(sport_key: str, team_id: str, team_abbr: str, logo_pat
             return False
 
         # If we have a logo URL, try to download it
+        if logo_url and not logo_url.lower().startswith("https://"):
+            logger.warning(f"Skipping non-HTTPS logo URL for {team_abbr}: {logo_url}")
+            logo_url = None
         if logo_url:
             try:
                 response = _downloader.session.get(logo_url, headers=_downloader.headers, timeout=_downloader.request_timeout)

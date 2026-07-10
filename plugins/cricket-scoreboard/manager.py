@@ -37,7 +37,7 @@ from cricket_data_fetcher import CricketDataFetcher
 from cricket_renderer import CricketRenderer
 
 try:
-    from logo_downloader import download_missing_logo
+    from cricket_logo_downloader import download_missing_logo
 except ImportError:  # pragma: no cover
     download_missing_logo = None
 
@@ -241,10 +241,13 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
             return
         for team in match.get("teams", []):
             abbr = (team.get("abbr") or "").upper()
+            abbr = "".join(c for c in abbr if c.isalnum() or c in ("&", "_"))
             url = team.get("logo_url")
             if not abbr or not url:
                 continue
             path = self.logos_dir / f"{abbr}.png"
+            if path.parent != self.logos_dir:
+                continue
             if path.exists():
                 continue
             try:
@@ -435,10 +438,15 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
             try:
                 super().on_config_change(new_config)
             except Exception:
-                pass
-        # Re-run __init__ derived state without recreating the object.
+                self.logger.debug("BasePlugin on_config_change failed", exc_info=True)
+        # Re-run __init__ derived state without recreating the object, but
+        # preserve the lock in place -- another thread may be holding it
+        # inside update()/display(), and replacing it would break mutual
+        # exclusion.
+        lock = self._lock
         self.__init__(self.plugin_id, new_config, self.display_manager,
                       self.cache_manager, self.plugin_manager)
+        self._lock = lock
         # Force a re-discovery + refetch on next update.
         self._last_update = 0.0
 

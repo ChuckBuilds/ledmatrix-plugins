@@ -1,7 +1,7 @@
 {
   "id": "cricket-scoreboard",
   "name": "Cricket Scoreboard",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming cricket matches across international tours (Test/ODI/T20I) and major domestic T20 leagues including the IPL, Big Bash League, The Hundred, PSL, CPL, SA20 and more. Shows runs/wickets/overs, run rates, targets, and match results.",
   "category": "sports",
@@ -22,6 +22,12 @@
     "cricket_upcoming"
   ],
   "versions": [
+    {
+      "released": "2026-07-10",
+      "version": "1.0.1",
+      "notes": "Fix CodeRabbit findings: reject empty favorite_teams entries, reject negative overs in overs_to_balls, validate ESPN JSON response shape, scope series discovery cache by configured filters, rename logo_downloader.py to cricket_logo_downloader.py to avoid cross-plugin module collisions, require HTTPS logo URLs and sanitize team abbreviations used in logo filenames, and preserve the update lock across on_config_change.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-10",
       "version": "1.0.0",
