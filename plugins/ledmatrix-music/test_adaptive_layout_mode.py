@@ -150,6 +150,44 @@ class TestAdaptiveMode:
         assert not p._adaptive
 
 
+class TestElementStyleResolver:
+    """The shared core resolver (src.element_style) must actually be wired
+    in — a silently failing import would fall back to the local loader and
+    quietly reintroduce the per-plugin drift this migration removed."""
+
+    def test_resolver_is_active(self):
+        import manager as music_manager
+        assert music_manager.STYLE_AVAILABLE, \
+            "src.element_style import failed on this core"
+        p = _plugin(128, 32, {"customization": {
+            "title_text": {"font": "PressStart2P-Regular.ttf", "font_size": 8}}})
+        assert p._get_element_style_resolver() is not None
+
+    def test_resolver_reads_schema_defaults(self):
+        """Schema-populated saved config is not a user override; a genuine
+        change is — resolved against this plugin's own config_schema.json,
+        which works even here where MockPluginManager has no schema
+        manager."""
+        p = _plugin(128, 32, {"customization": {
+            "artist_text": {"font": "5x7.bdf", "font_size": 7}}})
+        assert not p._user_font_set("artist_text")
+        p2 = _plugin(128, 32, {"customization": {
+            "artist_text": {"font": "5x7.bdf", "font_size": 9}}})
+        assert p2._user_font_set("artist_text")
+
+    def test_resolver_rebuilds_when_config_swapped(self):
+        """on_config_change replaces self.config with a new dict — the
+        cached resolver must not keep answering from the old one."""
+        p = _plugin(128, 32, {"customization": {
+            "artist_text": {"font": "5x7.bdf", "font_size": 7}}})
+        assert not p._user_font_set("artist_text")
+        new_config = dict(p.config)
+        new_config["customization"] = {
+            "artist_text": {"font": "5x7.bdf", "font_size": 9}}
+        p.on_config_change(new_config)
+        assert p._user_font_set("artist_text")
+
+
 class TestLadderCrispness:
     """Every rung in the adaptive ladder must render with zero antialiasing —
     see LEDMatrix core's measure_font_crispness for why this matters."""

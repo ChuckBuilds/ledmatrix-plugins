@@ -44,6 +44,15 @@ except ImportError:
     ADAPTIVE_AVAILABLE = False
     ADAPTIVE_LADDER_TEXT = None
 
+# Shared element-style resolver (newer cores): one implementation of font
+# loading and the user-font-override check, referenced against this
+# plugin's own config_schema.json. Older cores use the local code below.
+try:
+    from src.element_style import ElementStyleResolver, defaults_from_schema_file
+    STYLE_AVAILABLE = True
+except ImportError:
+    STYLE_AVAILABLE = False
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -256,11 +265,26 @@ class MusicPlugin(BasePlugin):
             self.logger.debug("No customization config found, using display_manager fonts")
             return
         
+        if STYLE_AVAILABLE:
+            resolver = self._get_element_style_resolver()
+            self.title_font = resolver.style(
+                'title_text', classic_font='PressStart2P-Regular.ttf',
+                classic_size=8).font
+            self.artist_font = resolver.style(
+                'artist_text', classic_font='PressStart2P-Regular.ttf',
+                classic_size=7).font
+            self.album_font = resolver.style(
+                'album_text', classic_font='PressStart2P-Regular.ttf',
+                classic_size=7).font
+            self.logger.info("Loaded custom fonts via element-style resolver")
+            return
+
+        # Older cores (no src.element_style): the original local loader.
         # Load fonts from config with defaults for backward compatibility
         title_config = customization.get('title_text', {})
         artist_config = customization.get('artist_text', {})
         album_config = customization.get('album_text', {})
-        
+
         try:
             self.title_font = self._load_custom_font_from_element_config(title_config, default_size=8)
             self.artist_font = self._load_custom_font_from_element_config(artist_config, default_size=7)
@@ -269,14 +293,33 @@ class MusicPlugin(BasePlugin):
         except Exception as e:
             self.logger.error(f"Error loading custom fonts: {e}, using display_manager fonts")
 
+    def _get_element_style_resolver(self):
+        """Shared resolver, referenced against this plugin's own
+        config_schema.json so the user-override check works in every context
+        (production, harness, dev server — no schema manager needed).
+
+        NOTE: deliberately NOT BasePlugin.style_resolver — that property
+        sources defaults from plugin_manager.schema_manager, which is absent
+        under the test harness's mocks, and it caches on _style_resolver,
+        which this must not collide with. Rebuilt when the config dict is
+        swapped (on_config_change replaces self.config).
+        """
+        resolver = getattr(self, '_element_style_resolver', None)
+        if resolver is None or resolver._config is not self.config:
+            schema_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), 'config_schema.json')
+            resolver = ElementStyleResolver(
+                self.config, defaults_from_schema_file(schema_path))
+            self._element_style_resolver = resolver
+        return resolver
+
     # (font filename, size) the config_schema.json declares as each
     # element's default — matching these, not merely a key being *present*,
     # is what "user set it" has to mean, because the web UI's save flow
     # (schema_manager.merge_with_defaults) writes the FULL schema default
     # object into config.json on every save, for every plugin, whether or
-    # not the user touched that section. Checking key presence alone would
-    # treat that untouched default as a forced override and adaptive mode
-    # would never engage on any config that's ever been saved once.
+    # not the user touched that section. Only used on older cores — with
+    # src.element_style available, the resolver reads the schema file itself.
     _CLASSIC_FONT_DEFAULTS = {
         'title_text': ('PressStart2P-Regular.ttf', 8),
         'artist_text': ('5x7.bdf', 7),
@@ -285,9 +328,15 @@ class MusicPlugin(BasePlugin):
 
     def _user_font_set(self, element_key: str) -> bool:
         """True when the user's configured font/font_size for this element
-        genuinely differs from the classic default — adaptive mode must
+        genuinely differs from the schema default — adaptive mode must
         respect a real override, but not a schema default that merely
         happens to be present in a saved config."""
+        if STYLE_AVAILABLE:
+            classic_font, classic_size = self._CLASSIC_FONT_DEFAULTS.get(
+                element_key, ('PressStart2P-Regular.ttf', 8))
+            return self._get_element_style_resolver().style(
+                element_key, classic_font=classic_font,
+                classic_size=classic_size).user_forced
         element_config = self.config.get('customization', {}).get(element_key, {})
         default_font, default_size = self._CLASSIC_FONT_DEFAULTS.get(element_key, (None, None))
         configured_font = element_config.get('font')
