@@ -21,23 +21,23 @@
     {
       "released": "2026-07-08",
       "version": "1.0.4",
-      "notes": "Correct the README config docs: document all rotation_mode values (sequential/random/time_based/date_based), describe images as scheduled image entries rather than plain paths, and add a Per-Image Scheduling section. Normalize the versions changelog key to ledmatrix_min.",
-      "ledmatrix_min": "2.0.0"
+      "notes": "Correct the README config docs: document all rotation_mode values (sequential/random/time_based/date_based), describe images as scheduled image entries rather than plain paths, and add a Per-Image Scheduling section. Normalize the versions changelog key to ledmatrix_min_version.",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-05-15",
       "version": "1.0.3",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.0.2",
       "released": "2025-11-05",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2025-10-19",
       "version": "1.0.1",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     }
   ],
   "last_updated": "2026-07-08",

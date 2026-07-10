@@ -15,31 +15,31 @@
       "released": "2026-07-08",
       "version": "1.2.2",
       "notes": "Update the README to match the current config schema and behavior: replace the removed pulsing/glow/tally-dot options with the actual text color, background color, font, and Home Assistant discovery fields; fix the per-message color/bg payload docs; and drop the broken preview image reference.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-07-08",
       "version": "1.2.1",
       "notes": "Add a GPL-3.0 LICENSE file (project-standard license). Remove the invalid update_interval:0 manifest field (this plugin is MQTT push-driven and does not poll, matching mqtt-notifications).",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-06-08",
       "version": "1.2.0",
       "notes": "Fully customisable display: text, font path, font size, text color, background color. Removed animation/glow/tally-dot. Font loaded via PIL ImageFont.truetype with auto fallback to built-in display fonts. Per-MQTT-message color and bg override via JSON payload.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-06-08",
       "version": "1.1.0",
       "notes": "Add HA MQTT Auto-Discovery: plugin publishes device + switch/sensor/binary_sensor configs on connect so HA creates the device automatically. Adds LWT for accurate offline detection. New config fields: ha_discovery, discovery_prefix, device_name.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-06-07",
       "version": "1.0.0",
       "notes": "Initial release. MQTT-driven ON AIR tally light with pulsing red glow, state feedback topic, and Home Assistant switch compatibility.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     }
   ],
   "default_duration": 5,

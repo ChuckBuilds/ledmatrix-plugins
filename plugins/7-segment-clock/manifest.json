@@ -27,23 +27,23 @@
     {
       "released": "2026-07-08",
       "version": "1.0.3",
-      "notes": "Rewrite the README to match the actual config schema: remove the documented-but-removed sunrise/sunset color-transition options and location lat/lng/locality keys, and document the real color and digit_spacing options. Normalize the versions changelog key to ledmatrix_min.",
-      "ledmatrix_min": "2.0.0"
+      "notes": "Rewrite the README to match the actual config schema: remove the documented-but-removed sunrise/sunset color-transition options and location lat/lng/locality keys, and document the real color and digit_spacing options. Normalize the versions changelog key to ledmatrix_min_version.",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-06-07",
       "version": "1.0.2",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-05-15",
       "version": "1.0.1",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.0.0",
       "released": "2026-04-07",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     }
   ],
   "last_updated": "2026-07-08"
