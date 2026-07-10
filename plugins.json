@@ -578,10 +578,10 @@
       "plugin_path": "plugins/odds-ticker",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.4"
+      "latest_version": "1.1.5"
     },
     {
       "id": "of-the-day",
@@ -777,10 +777,10 @@
       "plugin_path": "plugins/ledmatrix-stocks",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-08",
+      "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.3.1",
+      "latest_version": "2.3.2",
       "icon": "fas fa-chart-line"
     },
     {
