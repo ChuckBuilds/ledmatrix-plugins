@@ -118,12 +118,30 @@ class TestAdaptiveMode:
 
     def test_user_font_wins_over_ladder(self):
         """An explicitly configured title font must be used verbatim, even
-        in adaptive mode."""
+        in adaptive mode — 12px genuinely differs from the classic default
+        (8px), so this must register as a real user override."""
         cfg = {"layout_mode": "adaptive",
-               "customization": {"title_text": {"font_size": 8}}}
+               "customization": {"title_text": {"font_size": 12}}}
         p = _plugin(256, 128, cfg)
         assert p._user_font_set('title_text')
         p.display(force_clear=True)  # must not raise, must not crash
+
+    def test_schema_default_is_not_mistaken_for_a_user_override(self):
+        """The web UI's save flow (schema_manager.merge_with_defaults)
+        writes the FULL schema default object into config.json on every
+        save — for every plugin, whether or not the user touched that
+        section. A config carrying only the schema's own declared defaults
+        must NOT be treated as a forced override, or adaptive sizing would
+        never engage on any config that's ever been saved once."""
+        cfg = {"layout_mode": "adaptive", "customization": {
+            "title_text": {"font": "PressStart2P-Regular.ttf", "font_size": 8},
+            "artist_text": {"font": "5x7.bdf", "font_size": 7},
+            "album_text": {"font": "5x7.bdf", "font_size": 7},
+        }}
+        p = _plugin(256, 128, cfg)
+        assert not p._user_font_set('title_text')
+        assert not p._user_font_set('artist_text')
+        assert not p._user_font_set('album_text')
 
     def test_falls_back_to_classic_without_core_support(self, monkeypatch):
         import manager as music_manager
