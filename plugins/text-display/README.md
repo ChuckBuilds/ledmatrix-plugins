@@ -33,6 +33,7 @@ Display custom scrolling or static text messages on your LED matrix with configu
 {
   "enabled": true,
   "text": "Subscribe to ChuckBuilds!",
+  "font_mode": "manual",
   "font_path": "assets/fonts/PressStart2P-Regular.ttf",
   "font_size": 8,
   "scroll": true,
