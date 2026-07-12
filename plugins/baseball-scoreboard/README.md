@@ -218,6 +218,7 @@ screen):
 | `font` | `"9x15.bdf"` | Font for all text on this screen. The default is a clean, bold bitmap font sized to fit the display; a fixed-size `.bdf` font always renders at its own native pixel size (with an automatic fallback to a smaller sibling font if your display is too small to fit it) rather than scaling to `font_size`. Use a scalable `.ttf` font (e.g. `"press_start"` for a chunkier 8-bit retro look) if you want `font_size` to directly control the size. |
 | `font_size` | `24` | Maximum font size cap, for scalable `.ttf` fonts only (ignored by fixed-size `.bdf` fonts like the default). The screen auto-fits the largest text that still leaves room for the ball/strike/out column, so the default effectively means "as big as the display allows" — lower it to force a smaller, more consistent size. |
 | `use_team_colors` | `true` | Color each team's abbreviation with their real ESPN team colors (brightness-adjusted for legibility on black) instead of a flat `text_color`. |
+| `show_team_color_backgrounds` | `true` | Tint each team's row with a subtle (~12% brightness) wash of their real ESPN color, plus a solid team-color accent strip on the left edge — a colorful ballpark look. Requires `use_team_colors`; a team with no ESPN color simply gets no tint. Text stays legible because it's drawn with a black outline over the wash. |
 | `show_logos` | `true` | Show a small team logo beside each abbreviation when there's spare width (see "How it works" above). |
 | `show_dividers` | `true` | Draw thin 1px grid lines between innings, rows, and the R/H/E columns for readability. |
 | `highlight_winner` | `true` | On a final game, color the winning team's run total in `winner_color` so the winner is obvious at a glance instead of having to compare both R values yourself. Pairs naturally with `game_scope: "recent"`. No effect on live games. |
@@ -251,7 +252,9 @@ the game is final (a simple "check the final score" use case):
 A dedicated full-screen view showing the current at-bat's pitcher,
 batter, and a short code for the most recently completed play (`1B`,
 `HR`, `K`, `BB`, etc.), replacing the normal scorebug for a few
-seconds at a time. Available for **MLB and NCAA Baseball only**, and
+seconds at a time. The pitcher and batter lines are labeled in full —
+`Pitcher: G. Cole` / `Batter: J. Soto` — so there's no ambiguity with
+the grid's `B` (Balls) indicator. Available for **MLB and NCAA Baseball only**, and
 **live games only** — this data only exists during an actual live
 at-bat, so unlike the Traditional Scoreboard there's no `game_scope`
 option (nothing analogous exists for a final or upcoming game).
@@ -296,6 +299,63 @@ All of the following live under `customization.at_bat_info`:
 | `pitcher_color` | `[255, 255, 255]` | `[R, G, B]` for the pitcher line when `use_team_colors` is off or unavailable. |
 | `batter_color` | `[255, 255, 0]` | `[R, G, B]` for the batter line when `use_team_colors` is off or unavailable. |
 | `last_play_color` | `[0, 255, 255]` | `[R, G, B]` for the last-play code line (always this flat color — there's no "team" a play code belongs to). |
+
+## Player Card Screen
+
+A dedicated full-screen "baseball card" that rotates in for the current
+batter (and optionally the pitcher): a **headshot image**, **jersey
+number**, **position**, **bat/throw hand**, and **season stats** —
+`AVG` / `HR` / `RBI` for hitters, `ERA` / `W-L` / `K` for pitchers.
+The headshot and bio are fetched from ESPN's athlete API and cached
+(in memory and on disk under `assets/headshots/`, which is gitignored).
+Available for **MLB and NCAA Baseball only** and **live games only**
+(the pitcher/batter are only known during a live at-bat); MiLB is
+skipped because it has no ESPN player data.
+
+The layout adapts to your panel size: on larger displays the headshot
+sits on the left with a team-colored frame and the text stacks beside
+it; on tiny panels (e.g. 64×32) the headshot is hidden and a compact
+two-line text card is shown instead. If a headshot can't be loaded the
+card renders text-only, and if no bio is available yet the card is
+simply skipped that rotation (never shown blank).
+
+### Enabling it
+
+Turn it on per league under that league's `display_options`:
+
+```json
+{
+  "mlb": {
+    "display_options": {
+      "show_player_card": true
+    }
+  }
+}
+```
+
+The same flag exists under `ncaa_baseball.display_options`, off by
+default. Enabling it works alongside (and independently of) the
+Pitcher/Batter and Traditional Scoreboard screens — each rotates in on
+its own schedule.
+
+### Toggles and customization
+
+All of the following live under `customization.player_card`:
+
+| Option | Default | What it does |
+|---|---|---|
+| `show_batter` | `true` | Show a card for the current batter. |
+| `show_pitcher` | `false` | Also show a card for the current pitcher (the batter is preferred when both are available). |
+| `favorites_only` | `false` | Only rotate the card in for games involving one of this league's `favorite_teams`. Has no effect if `favorite_teams` is empty. |
+| `dwell_seconds` | `6` | How many seconds the card stays on screen each time it rotates in. |
+| `interval_seconds` | `40` | How often (in seconds) the card rotates in. |
+| `font` | `"9x15.bdf"` | Font for the card's text; auto-fits within the space beside the headshot. Use a scalable `.ttf` font (e.g. `"press_start"`) if you want `font_size` to directly control the size. |
+| `font_size` | `24` | Maximum font size cap, for scalable `.ttf` fonts only (ignored by fixed-size `.bdf` fonts like the default). |
+| `use_team_colors` | `true` | Color the player's name with their real ESPN team color instead of the flat `text_color`. |
+| `use_team_colors_border` | `true` | Draw the headshot's frame in the player's team color instead of the flat `border_color`. |
+| `border_color` | `[255, 200, 0]` | `[R, G, B]` for the headshot frame when `use_team_colors_border` is off or the team color is unavailable. |
+| `text_color` | `[255, 255, 255]` | `[R, G, B]` for the name (when team colors are off) and the jersey/position/bat-throw line. |
+| `stat_color` | `[0, 220, 255]` | `[R, G, B]` for the season-stats line. |
 
 ## Team Abbreviations
 

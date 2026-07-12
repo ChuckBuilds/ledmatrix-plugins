@@ -136,7 +136,9 @@ class MarchMadnessPlugin(BasePlugin):
         # HTTP session with retry
         self.session = requests.Session()
         retry = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
-        self.session.mount("https://", HTTPAdapter(max_retries=retry))
+        adapter = HTTPAdapter(max_retries=retry)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
         self.headers = {"User-Agent": "LEDMatrix/2.0"}
 
         # ScrollHelper

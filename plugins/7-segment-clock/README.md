@@ -1,16 +1,16 @@
 # 7-Segment Clock Plugin
 
-A retro-style 7-segment clock plugin for LEDMatrix that displays time using digit images with configurable formats and sunrise/sunset-based color transitions.
+A retro-style 7-segment clock plugin for LEDMatrix that displays the time using
+digit images with configurable format, spacing, and color.
 
 ## Features
 
-- **Retro 7-Segment Display**: Uses classic digit images (13x32px) with customizable colors
-- **Time Format Options**: Support for 12-hour and 24-hour time formats
-- **Leading Zero Control**: Optional leading zero for hours (e.g., "09:30" vs "9:30")
-- **Flashing Separator**: Optional blinking colon separator between hours and minutes
-- **Sunrise/Sunset Color Transitions**: Automatically transitions between daytime and nighttime colors based on sun elevation
-- **Location-Based**: Configure latitude/longitude for accurate sunrise/sunset calculations
-- **Timezone Support**: Display time in any timezone
+- **Retro 7-Segment Display**: Classic digit images (13×32px) with a customizable color
+- **Time Format Options**: 12-hour and 24-hour formats
+- **Leading Zero Control**: Optional leading zero for hours (e.g. "09:30" vs "9:30")
+- **Flashing Separator**: Optional blinking colon between hours and minutes
+- **Adjustable Digit Spacing**: Tune the pixel gap between digits for readability
+- **Timezone Support**: Display time in any timezone (or inherit the main LEDMatrix timezone)
 
 ## Installation
 
@@ -18,8 +18,7 @@ A retro-style 7-segment clock plugin for LEDMatrix that displays time using digi
 
 1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
 2. Open the **Plugin Manager** tab
-3. Find **7-Segment Clock** in the **Plugin Store** section and click
-   **Install**
+3. Find **7-Segment Clock** in the **Plugin Store** section and click **Install**
 
 ### Manual Installation
 
@@ -47,23 +46,11 @@ A retro-style 7-segment clock plugin for LEDMatrix that displays time using digi
 
 ## Configuration
 
-The plugin can be configured via the web interface or directly in `config/config.json`:
+The plugin can be configured via the web interface (the form is generated from
+`config_schema.json`, which is the source of truth) or directly in
+`config/config.json`.
 
-### Basic Configuration
-
-```json
-{
-  "7-segment-clock": {
-    "enabled": true,
-    "display_duration": 15,
-    "is_24_hour_format": true,
-    "has_leading_zero": false,
-    "has_flashing_separator": true
-  }
-}
-```
-
-### Full Configuration with Location and Colors
+### Example
 
 ```json
 {
@@ -71,88 +58,66 @@ The plugin can be configured via the web interface or directly in `config/config
     "enabled": true,
     "display_duration": 15,
     "location": {
-      "lat": 37.541290,
-      "lng": -77.434769,
-      "timezone": "US/Eastern",
-      "locality": "Richmond, VA"
+      "timezone": "US/Eastern"
     },
     "is_24_hour_format": true,
     "has_leading_zero": false,
     "has_flashing_separator": true,
-    "color_daytime": "#FFFFFF",
-    "color_nighttime": "#220000",
-    "min_fade_elevation": "-1"
+    "digit_spacing": 2,
+    "color": "#FFFFFF"
   }
 }
 ```
 
 ### Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
+| Option | Type | Default | Notes |
+|--------|------|---------|-------|
 | `enabled` | boolean | `true` | Enable or disable the plugin |
-| `display_duration` | number | `15` | How long to display the clock (seconds) |
-| `location.lat` | number | `37.541290` | Latitude for sunrise/sunset calculations |
-| `location.lng` | number | `-77.434769` | Longitude for sunrise/sunset calculations |
-| `location.timezone` | string | `"US/Eastern"` | Timezone string (e.g., "US/Eastern", "UTC") |
-| `location.locality` | string | `"Richmond, VA"` | Human-readable location name |
-| `is_24_hour_format` | boolean | `true` | Use 24-hour format (false for 12-hour) |
-| `has_leading_zero` | boolean | `false` | Show leading zero for hours |
-| `has_flashing_separator` | boolean | `true` | Enable blinking separator (colon) |
-| `color_daytime` | string | `"#FFFFFF"` | Hex color for daytime (white) |
-| `color_nighttime` | string | `"#FFFFFF"` | Hex color for nighttime (white) |
-| `min_fade_elevation` | string | `"-1"` | Sun elevation threshold for color mixing |
-
-### Color Transition Options
-
-The `min_fade_elevation` option controls when color transitions occur based on sun elevation:
-
-- **`"-1"`** (None): No fading, switches directly between day/night colors
-- **`"-6"`** (Civil twilight): Fades during civil twilight (sun 6° below horizon)
-- **`"-12"`** (Nautical twilight): Fades during nautical twilight (sun 12° below horizon)
-- **`"-18"`** (Astronomical twilight): Fades during astronomical twilight (sun 18° below horizon)
+| `display_duration` | number | `15` | How long to show the clock, in seconds (5–300) |
+| `location.timezone` | string | *(inherits)* | Timezone string (e.g. `US/Eastern`, `UTC`). If unset, inherits the main LEDMatrix timezone |
+| `is_24_hour_format` | boolean | `true` | Use 24-hour format (`false` for 12-hour) |
+| `has_leading_zero` | boolean | `false` | Show a leading zero for hours (e.g. `09:30` instead of `9:30`) |
+| `has_flashing_separator` | boolean | `true` | Blink the colon separator once per second |
+| `digit_spacing` | number | `2` | Pixels between digits, for readability (0–10) |
+| `color` | string | `"#FFFFFF"` | Hex color for the digits (e.g. `#FFFFFF` white, `#FF0000` red) |
 
 ## Usage
 
-Once installed and enabled, the plugin will automatically display the current time during the normal plugin rotation. The display updates every 60 seconds (configurable via `update_interval` in manifest).
+Once installed and enabled, the plugin displays the current time during the normal
+plugin rotation. The core refreshes the plugin on its own cadence (see
+`update_interval` in `manifest.json`, default 60s).
 
 ### Time Formats
 
-- **24-hour format** (`is_24_hour_format: true`): Displays time as "HH:MM" (e.g., "14:30")
-- **12-hour format** (`is_24_hour_format: false`): Displays time as "H:MM" or "HH:MM" (e.g., "2:30" or "02:30")
+- **24-hour** (`is_24_hour_format: true`): "HH:MM" (e.g. "14:30")
+- **12-hour** (`is_24_hour_format: false`): "H:MM" or "HH:MM" depending on `has_leading_zero` (e.g. "2:30" or "02:30")
 
 ### Separator Flashing
 
-When `has_flashing_separator` is enabled, the colon separator blinks every second (visible on even seconds, hidden on odd seconds), similar to traditional digital clocks.
+When `has_flashing_separator` is enabled, the colon blinks each second (visible on
+even seconds, hidden on odd), like a traditional digital clock.
 
 ## Technical Details
 
 ### Image Assets
 
-The plugin uses digit images (13x32 pixels) and a separator image (4x14 pixels) stored in `assets/images/`:
-- `number_0.png` through `number_9.png`: Digit images
-- `separator.png`: Colon separator image
+The plugin uses digit images (13×32px) and a separator image (4×14px) in
+`assets/images/`:
+- `number_0.png` through `number_9.png`: digit images
+- `separator.png`: the colon separator
 
-Images have transparent foreground on black background, allowing colors to be applied dynamically.
-
-### Sunrise/Sunset Calculations
-
-The plugin uses the `astral` library to calculate sun elevation based on:
-- Location (latitude/longitude)
-- Current date and time
-- Timezone
-
-Color mixing is calculated based on the sun's elevation relative to the configured fade thresholds.
+Images have a transparent foreground on a black background, so the configured
+`color` is applied dynamically.
 
 ### Display Dimensions
 
-The plugin automatically adapts to any display size configured in LEDMatrix. Display dimensions are read from `display_manager.width` and `display_manager.height`.
-
-Centering calculations ensure the clock is properly positioned regardless of display width (supports 64x32, 128x32, chained panels, etc.).
+The plugin adapts to any display size configured in LEDMatrix (dimensions are read
+from `display_manager`), and centers the clock regardless of panel width (64×32,
+128×32, chained panels, etc.).
 
 ## Dependencies
 
-- `astral>=3.2`: Sunrise/sunset and sun elevation calculations
 - `pytz>=2023.3`: Timezone support
 - `PIL` (Pillow): Image processing (provided by LEDMatrix core)
 
@@ -161,26 +126,19 @@ Centering calculations ensure the clock is properly positioned regardless of dis
 ### Clock Not Displaying
 
 1. Check that the plugin is enabled in `config/config.json`
-2. Verify images are present in `assets/images/` directory
-3. Check plugin logs for errors: `journalctl -u ledmatrix -f` (if running as service)
+2. Verify the images are present in the `assets/images/` directory
+3. Check plugin logs for errors: `journalctl -u ledmatrix -f` (if running as a service)
 
 ### Wrong Time Displayed
 
-1. Verify timezone is correct in configuration
-2. Check system time is correct
-3. Ensure location coordinates are accurate if using sunrise/sunset features
-
-### Colors Not Transitioning
-
-1. Verify location coordinates (lat/lng) are correct
-2. Check that `min_fade_elevation` is set appropriately
-3. Verify `color_daytime` and `color_nighttime` are different colors
+1. Verify `location.timezone` is correct (or that the inherited main timezone is right)
+2. Check that the system time is correct
 
 ### Images Not Loading
 
-1. Verify all image files exist in `assets/images/` directory
-2. Check file permissions on image files
-3. Verify image files are valid PNG files
+1. Verify all image files exist in `assets/images/`
+2. Check file permissions on the image files
+3. Verify the image files are valid PNGs
 
 ## Development
 
@@ -192,13 +150,14 @@ Centering calculations ensure the clock is properly positioned regardless of dis
 ├── manager.py             # Main plugin class
 ├── config_schema.json     # Configuration schema
 ├── requirements.txt       # Python dependencies
-├── README.md             # This file
+├── README.md              # This file
+├── LICENSE
 └── assets/
     └── images/
-        ├── number_0.png  # Digit images (0-9)
+        ├── number_0.png   # Digit images (0-9)
         ├── ...
         ├── number_9.png
-        └── separator.png # Colon separator
+        └── separator.png  # Colon separator
 ```
 
 ### Testing
@@ -210,15 +169,14 @@ python run.py --emulator
 
 ## License
 
-[Add your license here]
+Released under the GNU General Public License v3.0 — see [LICENSE](LICENSE).
 
 ## Credits
 
 - Original Big Clock applet: [TronbyT Apps](https://github.com/tronbyt/apps)
-- Digit images sourced from TronbyT repository
-- Adapted for LEDMatrix plugin system
+- Digit images sourced from the TronbyT repository
+- Adapted for the LEDMatrix plugin system
 
 ## Support
 
 For issues, questions, or contributions, please open an issue on the GitHub repository.
-

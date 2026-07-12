@@ -5,6 +5,7 @@
     "enabled": {
       "type": "boolean",
       "default": false,
+      "title": "Enabled",
       "description": "Enable or disable the calendar plugin"
     },
     "credentials_file": {
@@ -38,23 +39,27 @@
       "default": 3,
       "minimum": 1,
       "maximum": 10,
+      "title": "Max Events",
       "description": "Maximum number of upcoming events to show"
     },
     "show_all_day_events": {
       "type": "boolean",
       "default": true,
+      "title": "Show All-Day Events",
       "description": "Include all-day events in the display"
     },
     "event_rotation_interval": {
       "type": "number",
       "default": 10,
       "minimum": 5,
+      "title": "Event Rotation Interval (seconds)",
       "description": "Seconds between rotating displayed events"
     },
     "display_duration": {
       "type": "number",
       "default": 30,
       "minimum": 5,
+      "title": "Display Duration (seconds)",
       "description": "Total display duration in seconds before moving to next plugin"
     },
     "update_interval": {
@@ -62,6 +67,7 @@
       "default": 3600,
       "minimum": 60,
       "maximum": 86400,
+      "title": "Update Interval (seconds)",
       "description": "How often to refresh calendar data from Google (seconds)"
     },
     "customization": {

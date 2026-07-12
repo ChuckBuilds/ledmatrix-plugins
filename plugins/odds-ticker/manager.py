@@ -1991,24 +1991,29 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             elif over_under:
                 home_odds_text = f"O/U {over_under}"
         
-        away_odds_width = int(temp_draw.textlength(away_odds_text, font=odds_font))
-        home_odds_width = int(temp_draw.textlength(home_odds_text, font=odds_font))
-        odds_width = max(away_odds_width, home_odds_width)
-        
-        # For baseball live games, optimize width for graphical bases
+        # For baseball live games, the odds column draws a small graphical bases
+        # cluster instead of odds text (see is_baseball_live below) - detect that
+        # first so we can size the column to the graphic, not to the placeholder
+        # "Bases: ..." / "Count: ..." text that away_odds_text/home_odds_text hold
+        # but never actually get drawn.
         is_baseball_live = False
         if is_live and live_info and hasattr(self, '_bases_data'):
             sport = None
             league_key = game.get('league')
             if league_key and league_key in self.league_configs:
                 sport = self.league_configs[league_key].get('sport')
-            
             if sport == 'baseball':
                 is_baseball_live = True
-                # Use a more compact width for baseball games to minimize dead space
-                # The bases graphic only needs about 24px width, so we can be more efficient
-                min_bases_width = 24  # Reduced from 30 to minimize dead space
-                odds_width = max(odds_width, min_bases_width)
+
+        if is_baseball_live:
+            # The bases graphic only needs about 24px width - sizing the column
+            # to the (unused) placeholder text left a large gap before the next
+            # column, since that text is much wider than the graphic actually drawn.
+            odds_width = 24
+        else:
+            away_odds_width = int(temp_draw.textlength(away_odds_text, font=odds_font))
+            home_odds_width = int(temp_draw.textlength(home_odds_text, font=odds_font))
+            odds_width = max(away_odds_width, home_odds_width)
 
         # --- Calculate total width ---
         # Start with the sum of all visible components and consistent padding

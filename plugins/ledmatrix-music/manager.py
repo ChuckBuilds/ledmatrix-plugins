@@ -733,6 +733,51 @@ class MusicPlugin(BasePlugin):
         if not self.poll_thread or not self.poll_thread.is_alive():
             self.start_polling()
 
+    def _clip_text_to_width(self, text, font, max_width):
+        """Trim trailing characters so the rendered text fits within max_width px.
+
+        The scrolling marquee rotates which characters lead, but the drawn
+        string is still full-length; without this clip it overflows the right
+        edge of the panel. This keeps the text inside its viewport, which
+        matters most on narrow 64px-wide displays where the text area is only
+        ~29px wide.
+        """
+        if max_width <= 0:
+            # No horizontal room for text (e.g. a square panel where the album
+            # art fills the full width) — draw nothing rather than overflow.
+            return ""
+        if not text:
+            return text
+        if self.display_manager.get_text_width(text, font) <= max_width:
+            return text
+        clipped = text
+        while clipped and self.display_manager.get_text_width(clipped, font) > max_width:
+            clipped = clipped[:-1]
+        return clipped
+
+    def _truncate_text_with_ellipsis(self, text, font, max_width):
+        """Truncate text to fit max_width px, appending "..." when trimmed.
+
+        Used by the scrolling-disabled branches. Reserves room for the
+        ellipsis before clipping, so the result already fits the viewport and
+        survives the draw-time _clip_text_to_width pass unchanged — otherwise
+        that pass would trim the trailing "..." back off and drop the
+        truncation indicator.
+        """
+        if max_width <= 0:
+            return ""
+        if not text:
+            return text
+        if self.display_manager.get_text_width(text, font) <= max_width:
+            return text
+        ellipsis = "..."
+        ellipsis_width = self.display_manager.get_text_width(ellipsis, font)
+        if ellipsis_width >= max_width:
+            # Not even room for the ellipsis — clip the raw text instead.
+            return self._clip_text_to_width(text, font, max_width)
+        clipped = self._clip_text_to_width(text, font, max_width - ellipsis_width)
+        return clipped + ellipsis
+
     def display(self, force_clear: bool = False) -> None:
         """Display music information - called by plugin system."""
         perform_full_refresh_this_cycle = force_clear
@@ -825,10 +870,11 @@ class MusicPlugin(BasePlugin):
                 if perform_full_refresh_this_cycle or not self.is_currently_showing_nothing_playing:
                     self.display_manager.clear()
                 
-                text_width = self.display_manager.get_text_width("Nothing Playing", self.display_manager.regular_font)
-                x_pos = (self.display_manager.matrix.width - text_width) // 2
+                np_text = self._clip_text_to_width("Nothing Playing", self.display_manager.regular_font, self.display_manager.matrix.width)
+                text_width = self.display_manager.get_text_width(np_text, self.display_manager.regular_font)
+                x_pos = max(0, (self.display_manager.matrix.width - text_width) // 2)
                 y_pos = (self.display_manager.matrix.height // 2) - 4
-                self.display_manager.draw_text("Nothing Playing", x=x_pos, y=y_pos, font=self.display_manager.regular_font)
+                self.display_manager.draw_text(np_text, x=x_pos, y=y_pos, font=self.display_manager.regular_font)
                 self.display_manager.update_display()
                 self.is_currently_showing_nothing_playing = True
 
@@ -1044,8 +1090,8 @@ class MusicPlugin(BasePlugin):
                         self.scroll_position_title = (self.scroll_position_title + 1) % len(title)
                     self.title_scroll_tick = 0
         elif title_width > text_area_width and not title_config['enabled']:
-            # Scrolling disabled - truncate text
-            current_title_display_text = title[:text_area_width // 6] + "..."  # Rough truncation
+            # Scrolling disabled - truncate to the viewport with an ellipsis
+            current_title_display_text = self._truncate_text_with_ellipsis(title, font_title, text_area_width)
             self.scroll_position_title = 0
             self.title_scroll_tick = 0
         else:
@@ -1056,7 +1102,7 @@ class MusicPlugin(BasePlugin):
             self.title_end_pause_counter = 0
             self.title_at_end = False
         
-        self.display_manager.draw_text(current_title_display_text, 
+        self.display_manager.draw_text(self._clip_text_to_width(current_title_display_text, font_title, text_area_width),
                                      x=text_area_x_start, y=y_pos_title_top, color=(255, 255, 255), font=font_title)
 
         # Artist scrolling with configurable settings
@@ -1099,8 +1145,8 @@ class MusicPlugin(BasePlugin):
                         self.scroll_position_artist = (self.scroll_position_artist + 1) % len(artist)
                     self.artist_scroll_tick = 0
         elif artist_width > text_area_width and not artist_config['enabled']:
-            # Scrolling disabled - truncate text
-            current_artist_display_text = artist[:text_area_width // 5] + "..."  # Rough truncation
+            # Scrolling disabled - truncate to the viewport with an ellipsis
+            current_artist_display_text = self._truncate_text_with_ellipsis(artist, font_artist, text_area_width)
             self.scroll_position_artist = 0
             self.artist_scroll_tick = 0
         else:
@@ -1111,7 +1157,7 @@ class MusicPlugin(BasePlugin):
             self.artist_end_pause_counter = 0
             self.artist_at_end = False
 
-        self.display_manager.draw_text(current_artist_display_text, 
+        self.display_manager.draw_text(self._clip_text_to_width(current_artist_display_text, font_artist, text_area_width),
                                      x=text_area_x_start, y=y_pos_artist_top, color=(180, 180, 180), font=font_artist)
             
         # Album
@@ -1127,7 +1173,7 @@ class MusicPlugin(BasePlugin):
             if album_width <= text_area_width:
                 # Album fits without scrolling - display normally
                 self.logger.debug(f"MusicPlugin.display: Drawing album '{album}' at ({text_area_x_start}, {y_pos_album_top}) - fits without scrolling")
-                self.display_manager.draw_text(album, 
+                self.display_manager.draw_text(self._clip_text_to_width(album, font_album, text_area_width),
                                              x=text_area_x_start, y=y_pos_album_top, color=(150, 150, 150), font=font_album)
                 self.scroll_position_album = 0
                 self.album_scroll_tick = 0
@@ -1173,13 +1219,13 @@ class MusicPlugin(BasePlugin):
                                 self.scroll_position_album = (self.scroll_position_album + 1) % len(album)
                             self.album_scroll_tick = 0
                 else:
-                    # Scrolling disabled - truncate text
-                    current_album_display_text = album[:text_area_width // 5] + "..."  # Rough truncation
+                    # Scrolling disabled - truncate to the viewport with an ellipsis
+                    current_album_display_text = self._truncate_text_with_ellipsis(album, font_album, text_area_width)
                     self.scroll_position_album = 0
                     self.album_scroll_tick = 0
                 
                 self.logger.debug(f"MusicPlugin.display: Drawing scrolling album '{current_album_display_text}' at ({text_area_x_start}, {y_pos_album_top}) - position: {self.scroll_position_album}")
-                self.display_manager.draw_text(current_album_display_text, 
+                self.display_manager.draw_text(self._clip_text_to_width(current_album_display_text, font_album, text_area_width),
                                              x=text_area_x_start, y=y_pos_album_top, color=(150, 150, 150), font=font_album)
         else:
             self.logger.debug(f"MusicPlugin.display: Album '{album}' not displayed - insufficient height (available: {available_height_for_album}, needed: {album_height})")
@@ -1188,7 +1234,7 @@ class MusicPlugin(BasePlugin):
         duration_ms = current_track_info_snapshot.get('duration_ms', 0)
         progress_ms = current_track_info_snapshot.get('progress_ms', 0)
 
-        if duration_ms > 0:
+        if duration_ms > 0 and text_area_width > 0:
             bar_total_width = text_area_width
             filled_ratio = progress_ms / duration_ms
             filled_width = int(filled_ratio * bar_total_width)
