@@ -1,0 +1,493 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Cricket Scoreboard Plugin Configuration",
+  "description": "Configuration schema for the Cricket Scoreboard plugin. Covers international matches (Test/ODI/T20I) and major domestic T20 leagues (IPL, Big Bash, The Hundred, etc.).",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable or disable the cricket scoreboard plugin"
+    },
+    "favorite_teams": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "description": "National team name or abbreviation (e.g. 'India', 'IND', 'Australia', 'England')"
+      },
+      "uniqueItems": true,
+      "maxItems": 30,
+      "default": [],
+      "description": "Favorite national teams. Any international series (tour, World Cup, bilateral) featuring one of these teams is discovered and shown. Matches on team name appearing in the series/match name."
+    },
+    "favorite_competitions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "international",
+          "ipl",
+          "bbl",
+          "the-hundred",
+          "psl",
+          "cpl",
+          "t20-blast",
+          "sa20",
+          "ilt20",
+          "mlc",
+          "wbbl",
+          "wpl"
+        ]
+      },
+      "uniqueItems": true,
+      "default": ["international", "ipl", "bbl"],
+      "description": "Domestic competitions (keys from competitions.json) to follow. Include 'international' to follow Test/ODI/T20I tours for your favorite_teams."
+    },
+    "exclude_teams": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Team name or abbreviation to always hide (spoiler protection)"
+      },
+      "uniqueItems": true,
+      "maxItems": 30,
+      "default": [],
+      "description": "Teams to always hide from live rotation and recent/final scores (spoiler protection). Takes precedence over favorite_teams."
+    },
+    "show_favorite_teams_only": {
+      "type": "boolean",
+      "default": false,
+      "description": "Only show matches involving a favorite national team. Domestic-league matches are always governed by favorite_competitions."
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 15,
+      "minimum": 5,
+      "maximum": 60,
+      "description": "Duration in seconds to display each match"
+    },
+    "live_game_duration": {
+      "type": "integer",
+      "default": 20,
+      "minimum": 10,
+      "maximum": 120,
+      "description": "Duration in seconds to display each live match before rotating to the next"
+    },
+    "non_favorite_live_game_duration": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 120,
+      "description": "Duration in seconds for live matches that do NOT involve a favorite team. 0 (default) = use live_game_duration for every live match."
+    },
+    "recent_game_duration": {
+      "type": "integer",
+      "default": 15,
+      "minimum": 5,
+      "maximum": 60,
+      "description": "Duration in seconds to display each recent match"
+    },
+    "upcoming_game_duration": {
+      "type": "integer",
+      "default": 15,
+      "minimum": 5,
+      "maximum": 60,
+      "description": "Duration in seconds to display each upcoming match"
+    },
+    "update_interval_seconds": {
+      "type": "integer",
+      "default": 3600,
+      "minimum": 30,
+      "maximum": 86400,
+      "description": "How often to fetch new match data (seconds)"
+    },
+    "live_update_interval": {
+      "type": "integer",
+      "default": 30,
+      "minimum": 10,
+      "maximum": 300,
+      "description": "Update interval for live matches (seconds)"
+    },
+    "recent_update_interval": {
+      "type": "integer",
+      "default": 3600,
+      "minimum": 60,
+      "maximum": 86400,
+      "description": "Update interval for recent matches (seconds)"
+    },
+    "upcoming_update_interval": {
+      "type": "integer",
+      "default": 3600,
+      "minimum": 60,
+      "maximum": 86400,
+      "description": "Update interval for upcoming matches (seconds)"
+    },
+    "series_discovery_interval": {
+      "type": "integer",
+      "default": 86400,
+      "minimum": 3600,
+      "maximum": 604800,
+      "description": "How often to re-resolve numeric ESPN series IDs from the header endpoint (seconds). Series IDs change per tour/season, so they are re-discovered periodically rather than hardcoded. Default 24h."
+    },
+    "recent_games_to_show": {
+      "type": "integer",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 20,
+      "description": "Maximum number of recent (completed) matches to show"
+    },
+    "upcoming_games_to_show": {
+      "type": "integer",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 20,
+      "description": "Maximum number of upcoming (scheduled) matches to show"
+    },
+    "live_priority": {
+      "type": "boolean",
+      "default": true,
+      "description": "Give live matches priority over other modes. Live matches interrupt normal rotation and are displayed immediately when available."
+    },
+    "show_records": {
+      "type": "boolean",
+      "default": false,
+      "description": "Show team records (played-won) when available"
+    },
+    "show_venue": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show the venue/ground on upcoming match cards"
+    },
+    "celebration_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show a celebratory takeover screen when a favorite team wins a live match"
+    },
+    "celebration_duration": {
+      "type": "integer",
+      "default": 8,
+      "minimum": 3,
+      "maximum": 30,
+      "description": "How long the win celebration stays on screen (seconds)"
+    },
+    "dynamic_duration": {
+      "type": "object",
+      "title": "Dynamic Duration Settings",
+      "description": "Automatically size each mode's total on-screen time based on how many matches are available.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable dynamic duration (total_matches x per_match_duration)"
+        },
+        "min_duration_seconds": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 300,
+          "default": 30,
+          "description": "Minimum total duration in seconds for a mode, even if few matches are available"
+        },
+        "max_duration_seconds": {
+          "type": "number",
+          "minimum": 60,
+          "maximum": 600,
+          "default": 300,
+          "description": "Maximum total duration in seconds for a mode"
+        }
+      },
+      "additionalProperties": false
+    },
+    "mode_durations": {
+      "type": "object",
+      "title": "Mode-Level Durations",
+      "description": "Control total duration for each mode type. If null, uses dynamic calculation (total_matches x per_match_duration).",
+      "properties": {
+        "live_mode_duration": {
+          "type": ["number", "null"],
+          "default": null,
+          "minimum": 10,
+          "maximum": 600,
+          "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (dynamic)."
+        },
+        "recent_mode_duration": {
+          "type": ["number", "null"],
+          "default": null,
+          "minimum": 10,
+          "maximum": 600,
+          "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (dynamic)."
+        },
+        "upcoming_mode_duration": {
+          "type": ["number", "null"],
+          "default": null,
+          "minimum": 10,
+          "maximum": 600,
+          "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (dynamic)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "display_modes": {
+      "type": "object",
+      "title": "Display Modes",
+      "description": "Control which match types to show",
+      "properties": {
+        "live": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show live matches"
+        },
+        "recent": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show recently completed matches"
+        },
+        "upcoming": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show upcoming matches"
+        }
+      },
+      "additionalProperties": false
+    },
+    "background_service": {
+      "type": "object",
+      "title": "Background Service",
+      "description": "Settings for background data fetching",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable background service for data fetching"
+        },
+        "max_workers": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Maximum number of worker threads"
+        },
+        "request_timeout": {
+          "type": "integer",
+          "default": 30,
+          "minimum": 5,
+          "maximum": 120,
+          "description": "Request timeout in seconds"
+        },
+        "max_retries": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Maximum number of retries for failed requests"
+        },
+        "priority": {
+          "type": "integer",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Background service priority"
+        }
+      },
+      "additionalProperties": false
+    },
+    "customization": {
+      "type": "object",
+      "title": "Display Customization",
+      "description": "Customize fonts for different text elements on the scoreboard",
+      "properties": {
+        "score_text": {
+          "type": "object",
+          "title": "Match Score",
+          "description": "Font settings for the runs/wickets score display",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf"
+              ],
+              "default": "PressStart2P-Regular.ttf"
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 10
+            }
+          },
+          "additionalProperties": false
+        },
+        "period_text": {
+          "type": "object",
+          "title": "Overs / Session",
+          "description": "Font settings for overs, session and day text",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf"
+              ],
+              "default": "PressStart2P-Regular.ttf"
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 8
+            }
+          },
+          "additionalProperties": false
+        },
+        "team_name": {
+          "type": "object",
+          "title": "Team Names",
+          "description": "Font settings for team name abbreviations",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf"
+              ],
+              "default": "PressStart2P-Regular.ttf"
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 8
+            }
+          },
+          "additionalProperties": false
+        },
+        "status_text": {
+          "type": "object",
+          "title": "Status Messages",
+          "description": "Font settings for status text (e.g. result summary, 'Stumps', format badge)",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf"
+              ],
+              "default": "4x6-font.ttf"
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 6
+            }
+          },
+          "additionalProperties": false
+        },
+        "detail_text": {
+          "type": "object",
+          "title": "Details (Run Rate / Target)",
+          "description": "Font settings for run rate, required run rate and target text",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf"
+              ],
+              "default": "4x6-font.ttf"
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 6
+            }
+          },
+          "additionalProperties": false
+        },
+        "colors": {
+          "type": "object",
+          "title": "Colors",
+          "description": "RGB hex colors for text elements",
+          "properties": {
+            "score_color": {
+              "type": "string",
+              "pattern": "^#?[0-9A-Fa-f]{6}$",
+              "default": "#FFFFFF",
+              "description": "Color for the runs/wickets score"
+            },
+            "batting_color": {
+              "type": "string",
+              "pattern": "^#?[0-9A-Fa-f]{6}$",
+              "default": "#00FF66",
+              "description": "Highlight color for the team currently batting"
+            },
+            "detail_color": {
+              "type": "string",
+              "pattern": "^#?[0-9A-Fa-f]{6}$",
+              "default": "#FFD200",
+              "description": "Color for run rate / target detail text"
+            },
+            "status_color": {
+              "type": "string",
+              "pattern": "^#?[0-9A-Fa-f]{6}$",
+              "default": "#AAAAAA",
+              "description": "Color for status / result text"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "enabled"
+  ],
+  "x-propertyOrder": [
+    "enabled",
+    "favorite_teams",
+    "favorite_competitions",
+    "exclude_teams",
+    "show_favorite_teams_only",
+    "display_duration",
+    "live_game_duration",
+    "non_favorite_live_game_duration",
+    "recent_game_duration",
+    "upcoming_game_duration",
+    "update_interval_seconds",
+    "live_update_interval",
+    "recent_update_interval",
+    "upcoming_update_interval",
+    "series_discovery_interval",
+    "recent_games_to_show",
+    "upcoming_games_to_show",
+    "live_priority",
+    "show_records",
+    "show_venue",
+    "celebration_enabled",
+    "celebration_duration",
+    "dynamic_duration",
+    "mode_durations",
+    "display_modes",
+    "background_service",
+    "customization"
+  ]
+}
