@@ -9,7 +9,6 @@ Live/Recent/Upcoming managers.
 
 import logging
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Any, Dict, Optional
 import pytz
 

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-08",
+  "last_updated": "2026-07-12",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -507,7 +507,7 @@
     {
       "id": "on-air",
       "name": "On Air Light",
-      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u2014 stays on until you turn it off.",
+      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live — stays on until you turn it off.",
       "author": "ChuckBuilds",
       "category": "utility",
       "tags": [
@@ -654,7 +654,7 @@
     {
       "id": "plex-marquee",
       "name": "Plex Marquee",
-      "description": "Cinema marquee display powered by Fanart.tv \u2014 shows banner art for whatever is currently playing on Plex, with a web portal to browse and pick banners for your library.",
+      "description": "Cinema marquee display powered by Fanart.tv — shows banner art for whatever is currently playing on Plex, with a web portal to browse and pick banners for your library.",
       "author": "ant456",
       "category": "media",
       "tags": [
@@ -991,10 +991,10 @@
       "plugin_path": "plugins/nrl-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-10",
+      "last_updated": "2026-07-12",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     }
   ]
 }

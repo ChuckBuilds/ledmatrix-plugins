@@ -22,7 +22,6 @@ from data_sources import ESPNDataSource
 
 # Import main logo downloader (same as football plugin)
 import sys
-from pathlib import Path
 # Add parent directory to path to import from src
 plugin_dir = Path(__file__).resolve().parent
 project_root = plugin_dir.parent.parent
@@ -320,8 +319,8 @@ class SportsCore(ABC):
 
         try:
             fallbacks.append(Path.home() / ".ledmatrix" / "logos" / logo_subdir)
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.debug(f"Could not resolve home directory for logo fallback: {e}")
 
         fallbacks.append(Path(tempfile.gettempdir()) / "ledmatrix_logos" / logo_subdir)
 
