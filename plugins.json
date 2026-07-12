@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-08",
+  "last_updated": "2026-07-12",
   "plugins": [
     {
       "id": "7-segment-clock",
@@ -993,7 +993,8 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1",
+      "last_updated": "2026-07-12"
     }
   ]
 }

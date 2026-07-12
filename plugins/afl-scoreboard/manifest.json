@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -19,13 +19,19 @@
   ],
   "versions": [
     {
+      "released": "2026-07-12",
+      "version": "1.0.1",
+      "notes": "Fix Codacy-flagged issues: silent except/pass blocks now log at debug/warning level, removed an unused/duplicate pathlib.Path import, and dropped an unused exception variable.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
       "released": "2026-07-10",
       "version": "1.0.0",
       "notes": "Initial release: live, recent, and upcoming AFL games from ESPN with switch/scroll display modes, favorite-team filtering, dynamic duration, live priority, and Vegas scroll support.",
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-10",
+  "last_updated": "2026-07-12",
   "stars": 0,
   "downloads": 0,
   "verified": true,

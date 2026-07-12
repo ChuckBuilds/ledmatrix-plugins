@@ -128,9 +128,9 @@ class GameRenderer:
         try:
             if os.path.exists(default_font_path):
                 return ImageFont.truetype(default_font_path, font_size)
-        except Exception:
-            pass
-        
+        except Exception as e:
+            self.logger.warning(f"Could not load default font {default_font_path}: {e}")
+
         return ImageFont.load_default()
     
     def set_rankings_cache(self, rankings: Dict[str, int]) -> None:

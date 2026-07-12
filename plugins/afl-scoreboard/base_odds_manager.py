@@ -149,7 +149,7 @@ class BaseOddsManager:
 
             return odds_data
 
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException:
             self.logger.exception(f"Error fetching odds from ESPN API for {cache_key}")
         except json.JSONDecodeError:
             self.logger.exception(
