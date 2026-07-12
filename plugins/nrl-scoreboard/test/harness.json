@@ -3,7 +3,7 @@
   "config": {
     "enabled": true,
     "timezone": "UTC",
-    "favorite_teams": ["PEN", "BRI"],
+    "favorite_teams": ["18", "16"],
     "display_modes": {
       "live": true,
       "live_display_mode": "switch",

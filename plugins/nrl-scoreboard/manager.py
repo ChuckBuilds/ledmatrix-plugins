@@ -669,8 +669,8 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
         favorite_teams = getattr(live_manager, "favorite_teams", [])
         if favorite_teams:
             return any(
-                game.get("home_abbr") in favorite_teams
-                or game.get("away_abbr") in favorite_teams
+                str(game.get("home_id")) in favorite_teams
+                or str(game.get("away_id")) in favorite_teams
                 for game in live_games
             )
         return False

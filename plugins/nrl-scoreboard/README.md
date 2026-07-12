@@ -64,8 +64,8 @@ options (see `config_schema.json` for the full list, types, and defaults):
 | Key | Description |
 |---|---|
 | `enabled` | Master on/off switch |
-| `favorite_teams` | List of team names/abbreviations to prioritize |
-| `exclude_teams` | Teams to hide (spoiler protection) |
+| `favorite_teams` | List of favorite NRL teams to prioritize. Use the full team name (e.g. `"Newcastle Knights"`) or ESPN team ID, **not** the 3-letter abbreviation — some abbreviations are shared by two teams (`NEW` is both Newcastle Knights and New Zealand Warriors; `CAN` is both Canberra Raiders and Canterbury Bulldogs) and would match both |
+| `exclude_teams` | Teams to hide (spoiler protection). Same name/ID guidance as `favorite_teams` |
 | `display_modes` | Toggle `live`/`recent`/`upcoming` and set `*_display_mode` to `switch` or `scroll` |
 | `live_priority` | Interrupt the rotation to show live games immediately |
 | `live_game_duration` / `recent_game_duration` / `upcoming_game_duration` | Per-game on-screen time (seconds) |
@@ -85,7 +85,7 @@ options (see `config_schema.json` for the full list, types, and defaults):
 {
   "nrl-scoreboard": {
     "enabled": true,
-    "favorite_teams": ["PEN", "BRI"],
+    "favorite_teams": ["Penrith Panthers", "Brisbane Broncos"],
     "display_modes": {
       "live": true,
       "live_display_mode": "switch",

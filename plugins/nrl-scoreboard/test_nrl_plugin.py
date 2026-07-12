@@ -11,9 +11,14 @@ exist inside a full LEDMatrix checkout. Run with: python3 test_nrl_plugin.py
 
 import json
 import os
+import sys
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+
+from dynamic_team_resolver import DynamicTeamResolver  # noqa: E402
 
 
 def _load(name):
@@ -120,6 +125,93 @@ class TestPeriodMapping(unittest.TestCase):
         self.assertEqual(self.period_text("in", 2, name="STATUS_HALFTIME"), "HALF")
         # NRL uses halves, never quarters
         self.assertNotIn("Q", self.period_text("in", 1, clock="20'"))
+
+
+def _mock_teams_response():
+    """Minimal ESPN teams payload with a real collision: "NEW" is shared by
+    Newcastle Knights and New Zealand Warriors, "CAN" by Canberra Raiders and
+    Canterbury Bulldogs."""
+    def team(team_id, abbr, display_name):
+        return {
+            "team": {
+                "id": team_id,
+                "abbreviation": abbr,
+                "displayName": display_name,
+                "shortDisplayName": display_name.split()[-1],
+                "name": display_name.split()[-1],
+                "location": " ".join(display_name.split()[:-1]),
+            }
+        }
+
+    teams = [
+        team("1", "NEW", "Newcastle Knights"),
+        team("2", "NEW", "New Zealand Warriors"),
+        team("3", "CAN", "Canberra Raiders"),
+        team("4", "CAN", "Canterbury Bulldogs"),
+        team("5", "BRI", "Brisbane Broncos"),
+    ]
+    return {"sports": [{"leagues": [{"teams": teams}]}]}
+
+
+class TestDynamicTeamResolverAbbreviationCollisions(unittest.TestCase):
+    """Locks in the fix for the reported bug: NRL has duplicate abbreviations
+    ("NEW", "CAN") that must not be silently conflated. Favorite/exclude
+    matching must resolve to unique ESPN team IDs, not abbreviations."""
+
+    def setUp(self):
+        # Each test gets a clean class-level cache.
+        DynamicTeamResolver._teams_index_cache = {}
+        DynamicTeamResolver._teams_index_timestamp = {}
+        self.resolver = DynamicTeamResolver()
+        self.get_patcher = mock.patch(
+            "dynamic_team_resolver.requests.get",
+            return_value=mock.Mock(
+                status_code=200,
+                json=lambda: _mock_teams_response(),
+                raise_for_status=lambda: None,
+            ),
+        )
+        self.get_patcher.start()
+        self.addCleanup(self.get_patcher.stop)
+
+    def test_ambiguous_abbreviation_is_not_silently_resolved(self):
+        # "NEW" matches two teams - must not resolve to either one's ID.
+        resolved = self.resolver.resolve_teams(["NEW"], sport="nrl")
+        self.assertEqual(resolved, ["NEW"])
+        self.assertNotIn(resolved[0], {"1", "2"})
+
+        resolved = self.resolver.resolve_teams(["CAN"], sport="nrl")
+        self.assertEqual(resolved, ["CAN"])
+        self.assertNotIn(resolved[0], {"3", "4"})
+
+    def test_full_team_name_disambiguates(self):
+        self.assertEqual(
+            self.resolver.resolve_teams(["Newcastle Knights"], sport="nrl"), ["1"]
+        )
+        self.assertEqual(
+            self.resolver.resolve_teams(["New Zealand Warriors"], sport="nrl"), ["2"]
+        )
+        self.assertEqual(
+            self.resolver.resolve_teams(["Canberra Raiders"], sport="nrl"), ["3"]
+        )
+        self.assertEqual(
+            self.resolver.resolve_teams(["Canterbury Bulldogs"], sport="nrl"), ["4"]
+        )
+
+    def test_unique_abbreviation_still_resolves(self):
+        self.assertEqual(self.resolver.resolve_teams(["BRI"], sport="nrl"), ["5"])
+
+    def test_numeric_team_id_passes_through(self):
+        self.assertEqual(self.resolver.resolve_teams(["5"], sport="nrl"), ["5"])
+
+    def test_fetch_failure_falls_back_to_raw_value(self):
+        DynamicTeamResolver._teams_index_cache = {}
+        DynamicTeamResolver._teams_index_timestamp = {}
+        with mock.patch(
+            "dynamic_team_resolver.requests.get", side_effect=Exception("boom")
+        ):
+            resolved = self.resolver.resolve_teams(["Brisbane Broncos"], sport="nrl")
+        self.assertEqual(resolved, ["Brisbane Broncos"])
 
 
 if __name__ == "__main__":
