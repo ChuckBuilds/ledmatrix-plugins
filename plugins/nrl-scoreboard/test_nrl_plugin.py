@@ -90,11 +90,15 @@ class TestLeagueSlug(unittest.TestCase):
 class TestHarness(unittest.TestCase):
     def test_harness_has_live_recent_upcoming(self):
         h = _load("test/harness.json")
-        events = h["mock_data"]["events"]
+        # mock_data is a path (relative to the plugin dir) to the fixture
+        # file, per the plugin safety harness convention - not inline data.
+        self.assertIsInstance(h["mock_data"], str)
+        mock = _load(h["mock_data"])
+        events = mock["events"]
         states = {e["competitions"][0]["status"]["type"]["state"] for e in events}
         self.assertEqual(states, {"in", "post", "pre"})
         # league slug in mock must be "3"
-        self.assertEqual(h["mock_data"]["leagues"][0]["slug"], "3")
+        self.assertEqual(mock["leagues"][0]["slug"], "3")
 
 
 class TestPeriodMapping(unittest.TestCase):
