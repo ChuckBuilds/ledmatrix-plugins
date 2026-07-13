@@ -1,7 +1,7 @@
 {
   "id": "stock-news",
   "name": "Stock News Ticker",
-  "version": "2.4.4",
+  "version": "2.4.5",
   "author": "ChuckBuilds",
   "description": "Live stock headlines via Yahoo Finance search API with RSS fallback, company logos, configurable display styles (logo+ticker, ticker only, logo only), Vegas scroll integration, and per-day/hour request budgeting",
   "entry_point": "manager.py",
@@ -25,6 +25,12 @@
   "branch": "main",
   "plugin_path": "plugins/stock-news",
   "versions": [
+    {
+      "released": "2026-07-13",
+      "version": "2.4.5",
+      "notes": "Fix the \"No Stock News\" fallback overflowing off the right edge on the real 192x48 hardware panel: its font size was derived from display height alone (correct for the scrolling ticker, which can run wider than the panel, but not for this static centered message). It now shrinks just this one-off message to fit the actual panel width, and brightens the fallback text color for better contrast.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-07-08",
       "version": "2.4.4",
