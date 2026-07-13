@@ -31,7 +31,7 @@ from src.plugin_system.base_plugin import BasePlugin
 # unlike football-scoreboard's GameRenderer (a standalone helper class),
 # no separate LayoutContext/FontManager wiring is needed here.
 try:
-    from src.adaptive_layout import FontStep, LADDER_ARCADE, media_row
+    from src.adaptive_layout import FontStep, LADDER_ARCADE
     ADAPTIVE_AVAILABLE = True
     # TTF-only, same verified-crisp rungs as the other adaptive plugins:
     # PressStart2P only rasterizes without antialiasing at exact multiples
