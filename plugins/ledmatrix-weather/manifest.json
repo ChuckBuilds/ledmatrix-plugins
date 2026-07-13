@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), precipitation radar, weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
@@ -25,6 +25,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-07-13",
+      "version": "2.5.2",
+      "notes": "Fix the bottom metrics bar (UV/humidity/wind + optional feels-like/dew point/visibility/pressure) overlapping into unreadable, overlapping text on any panel narrower than the design width -- it divided the panel width evenly across however many items were enabled with no lower bound, so all 7 possible items got crammed into ~9px slices on a 64px-wide panel. Now sheds dew point, then visibility, then pressure (in that order) as available width drops below a legible per-item minimum; UV/humidity/wind and feels-like are never dropped.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-06-14",
       "version": "2.5.1",
