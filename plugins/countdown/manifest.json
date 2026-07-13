@@ -1,7 +1,7 @@
 {
   "id": "countdown",
   "name": "Countdown Display",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "author": "ChuckBuilds",
   "description": "Create and manage customizable countdowns with images. Perfect for birthdays, holidays, events, and special occasions.",
   "entry_point": "manager.py",
@@ -21,6 +21,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "released": "2026-07-13",
+      "version": "3.1.2",
+      "notes": "Fix a blank-screen bug: _resolve_font() returned None (silently skipping all text) whenever the core's font_manager was unavailable or a lookup failed, with no fallback. It now falls back to PIL's default font, so a countdown's name/value are always visible even if the configured font can't be resolved.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-07-08",
       "version": "3.1.1",
