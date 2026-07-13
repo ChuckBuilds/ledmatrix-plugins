@@ -277,6 +277,27 @@ If you have dynamic duration caps configured (e.g., `max_duration_seconds: 120`)
 - **Customizable Layout**: Adjust positioning of all elements via X/Y offsets
 - **Customizable Fonts**: Configure font family and size for each text element
 
+### Adaptive Layout (beta)
+
+Set `"layout_mode": "adaptive"` to scale fonts, logos, and element regions
+to your panel size — the score renders at up to 32px on a 256x128 instead of
+the fixed 10px, and layouts degrade gracefully on small panels.
+
+```json
+{
+  "layout_mode": "adaptive"
+}
+```
+
+- The default is `"classic"`: rendering is completely unchanged unless you
+  opt in. **To revert at any time, set it back to `"classic"`** — no
+  reinstall needed.
+- Your font and X/Y offset customizations still apply in adaptive mode:
+  an explicitly configured font wins over the adaptive sizing, and offsets
+  shift elements from their computed positions.
+- Requires a LEDMatrix core with the adaptive layout system
+  (`docs/ADAPTIVE_LAYOUT.md`); older cores silently keep the classic layout.
+
 ### Layout Customization
 
 The plugin supports fine-tuning element positioning for custom display sizes. All offsets are relative to the default calculated positions, allowing you to adjust elements without breaking the layout.
