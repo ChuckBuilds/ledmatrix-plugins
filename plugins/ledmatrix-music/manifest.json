@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -66,6 +66,12 @@
     }
   ],
   "versions": [
+    {
+      "released": "2026-07-13",
+      "version": "1.0.9",
+      "notes": "Fix the \"Nothing Playing\" fallback silently clipping to \"Nothing\" on narrow panels with no sign more text existed. It's a static, one-shot message (unlike the real now-playing title, which scrolls) so it now reuses the same ellipsis-truncation helper already used elsewhere in this file for scrolling-disabled text, showing \"Nothi...\" instead.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-07-09",
       "version": "1.0.8",
