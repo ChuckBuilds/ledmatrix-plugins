@@ -129,7 +129,18 @@ specific plugin later.
 Per-plugin tests live in the LEDMatrix repo at `test/plugins/`. If
 you're adding a test for your plugin, open a corresponding PR in
 LEDMatrix. The dev preview server (`scripts/dev_server.py` in
-LEDMatrix) is the fastest way to iterate visually.
+LEDMatrix) is the fastest way to iterate visually — its **All Sizes**
+button renders your plugin at every harness panel size side by side.
+
+Plugins should **scale up, not just avoid overflow**: content that stays
+tiny in the corner of a panel twice its design size passes the bounds
+check but fails users. Use the adaptive layout system
+(`docs/ADAPTIVE_LAYOUT.md` in LEDMatrix: `self.layout`, `draw_fit`,
+`draw_image`, `scoreboard_regions`) and check the harness's
+`fill warn` output in `check_plugin.py` reports. Declare your layout's
+design size in the manifest (`"display": {"design_size": ...}`) and, once
+your plugin is adaptive, opt into strict checking via
+`test/harness.json`: `{"fill_check": "strict"}`.
 
 ## Code of Conduct
 

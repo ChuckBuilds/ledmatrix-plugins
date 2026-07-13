@@ -1,0 +1,106 @@
+# NRL Scoreboard Plugin
+
+Live, recent, and upcoming **NRL (National Rugby League)** games on your
+LEDMatrix display, sourced from ESPN's public rugby-league API (no API key
+required).
+
+This plugin is a single-league fork of the `soccer-scoreboard` plugin and keeps
+full feature parity: switch or scroll display, live-game priority, goal/win
+celebrations, dynamic per-mode durations, and Vegas continuous-scroll support.
+
+## Display Modes
+
+The plugin exposes three display modes you can enable independently:
+
+- `nrl_live` — games currently in progress (running clock, 1H/2H/HALF/ET)
+- `nrl_recent` — recently completed games with final scores
+- `nrl_upcoming` — scheduled games with date/time
+
+Each mode can be shown as **switch** (one game at a time, timed) or **scroll**
+(all games scroll horizontally at high FPS).
+
+## Data Source & the `3` league-slug quirk
+
+Games come from:
+
+```
+https://site.api.espn.com/apis/site/v2/sports/rugby-league/3/scoreboard
+```
+
+Note the `3` in the path. That is **ESPN's internal numeric slug for the NRL**
+under the `rugby-league` sport — it is *not* a typo and must **not** be changed
+to `nrl`. The human-facing web path is `/nrl/`, but the API path segment is the
+literal string `3` (confirmed via
+`site.web.api.espn.com/apis/v2/scoreboard/header?sport=rugby-league`, which lists
+NRL as `id:8370, abbreviation:"NRL", slug:"3"`). Changing `3` to `nrl` makes the
+endpoint 404 and the plugin silently stops fetching games. The code marks every
+point where `3` is used with a comment to protect against this.
+
+## Scoring & period model
+
+NRL is played over two 40-minute halves (not quarters). ESPN reports
+`status.period` as `1` or `2` and a running `displayClock` that counts **up** in
+minutes (e.g. `40'`, `80'`), just like soccer. The plugin renders period text as:
+
+- `1H` / `2H` — first / second half (with the running clock, e.g. `2H 63'`)
+- `HALF` — half-time
+- `ET` — golden-point extra time (period ≥ 3)
+- `Final` — completed game
+- start time — upcoming games
+
+Each team has a single running integer score (the ESPN `score` field).
+
+## Team logos
+
+Team logos are downloaded automatically from ESPN's CDN and cached locally —
+there are no bundled logo assets to manage. If a download fails, a text
+placeholder is generated from the team abbreviation.
+
+## Configuration
+
+Configuration lives under the `nrl-scoreboard` key in `config/config.json`. Key
+options (see `config_schema.json` for the full list, types, and defaults):
+
+| Key | Description |
+|---|---|
+| `enabled` | Master on/off switch |
+| `favorite_teams` | List of team names/abbreviations to prioritize |
+| `exclude_teams` | Teams to hide (spoiler protection) |
+| `display_modes` | Toggle `live`/`recent`/`upcoming` and set `*_display_mode` to `switch` or `scroll` |
+| `live_priority` | Interrupt the rotation to show live games immediately |
+| `live_game_duration` / `recent_game_duration` / `upcoming_game_duration` | Per-game on-screen time (seconds) |
+| `non_favorite_live_game_duration` | Shorter turn for live games without a favorite team |
+| `recent_games_to_show` / `upcoming_games_to_show` | How many games per mode |
+| `show_records` / `show_odds` / `show_ranking` | Extra info overlays |
+| `celebration_enabled` / `celebration_duration` | Goal/win celebration takeover |
+| `dynamic_duration` | Auto-size mode duration from the number of games |
+| `mode_durations` | Fixed total time per mode |
+| `update_interval_seconds` / `live_update_interval` | Data refresh cadence |
+| `background_service` | Fetch timeout / retries / priority |
+| `customization` | Fonts, colors, and layout for the scorebug |
+
+### Example
+
+```json
+{
+  "nrl-scoreboard": {
+    "enabled": true,
+    "favorite_teams": ["PEN", "BRI"],
+    "display_modes": {
+      "live": true,
+      "live_display_mode": "switch",
+      "recent": true,
+      "recent_display_mode": "scroll",
+      "upcoming": true,
+      "upcoming_display_mode": "scroll"
+    },
+    "live_priority": true,
+    "recent_games_to_show": 3,
+    "upcoming_games_to_show": 5
+  }
+}
+```
+
+## License
+
+See `LICENSE`.

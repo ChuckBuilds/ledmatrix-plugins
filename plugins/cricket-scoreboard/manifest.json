@@ -1,0 +1,55 @@
+{
+  "id": "cricket-scoreboard",
+  "name": "Cricket Scoreboard",
+  "version": "1.0.2",
+  "author": "ChuckBuilds",
+  "description": "Live, recent, and upcoming cricket matches across international tours (Test/ODI/T20I) and major domestic T20 leagues including the IPL, Big Bash League, The Hundred, PSL, CPL, SA20 and more. Shows runs/wickets/overs, run rates, targets, and match results.",
+  "category": "sports",
+  "tags": [
+    "cricket",
+    "ipl",
+    "big-bash",
+    "t20",
+    "test-cricket",
+    "odi",
+    "sports",
+    "scoreboard",
+    "live-scores"
+  ],
+  "display_modes": [
+    "cricket_live",
+    "cricket_recent",
+    "cricket_upcoming"
+  ],
+  "versions": [
+    {
+      "released": "2026-07-10",
+      "version": "1.0.2",
+      "notes": "Address Codacy security/lint findings: drop the unused http:// adapter mount in the logo downloader now that only HTTPS logo URLs are ever requested, and fix an implicit-Optional type annotation on download_missing_logo's logo_url parameter.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-10",
+      "version": "1.0.1",
+      "notes": "Fix CodeRabbit findings: reject empty favorite_teams entries, reject negative overs in overs_to_balls, validate ESPN JSON response shape, scope series discovery cache by configured filters, rename logo_downloader.py to cricket_logo_downloader.py to avoid cross-plugin module collisions, require HTTPS logo URLs and sanitize team abbreviations used in logo filenames, and preserve the update lock across on_config_change.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-10",
+      "version": "1.0.0",
+      "notes": "Initial release. Series-ID discovery via the ESPN cricket header endpoint, favorite national teams + favorite domestic competitions dual filter, live limited-overs / live Test / recent / upcoming render views, base-6 overs-to-decimal run-rate math, franchise logo auto-download and bundled national-team flags.",
+      "ledmatrix_min": "2.0.0"
+    }
+  ],
+  "last_updated": "2026-07-10",
+  "stars": 0,
+  "downloads": 0,
+  "verified": true,
+  "screenshot": "",
+  "entry_point": "manager.py",
+  "class_name": "CricketScoreboardPlugin",
+  "config_schema": "config_schema.json",
+  "compatible_versions": [
+    ">=2.0.0"
+  ]
+}

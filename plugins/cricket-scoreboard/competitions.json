@@ -1,0 +1,63 @@
+[
+  {
+    "key": "international",
+    "name": "International (Test / ODI / T20I)",
+    "search_terms": null,
+    "description": "International tours and ICC events (Test, ODI, T20I). Matched by favorite national teams rather than a competition name."
+  },
+  {
+    "key": "ipl",
+    "name": "Indian Premier League",
+    "search_terms": ["Indian Premier League", "IPL"]
+  },
+  {
+    "key": "bbl",
+    "name": "Big Bash League",
+    "search_terms": ["Big Bash League", "KFC Big Bash", "BBL"]
+  },
+  {
+    "key": "the-hundred",
+    "name": "The Hundred",
+    "search_terms": ["The Hundred"]
+  },
+  {
+    "key": "psl",
+    "name": "Pakistan Super League",
+    "search_terms": ["Pakistan Super League", "PSL"]
+  },
+  {
+    "key": "cpl",
+    "name": "Caribbean Premier League",
+    "search_terms": ["Caribbean Premier League", "CPL"]
+  },
+  {
+    "key": "t20-blast",
+    "name": "T20 Blast (England)",
+    "search_terms": ["Twenty20 Cup", "Vitality Blast", "T20 Blast", "Blast"]
+  },
+  {
+    "key": "sa20",
+    "name": "SA20 (South Africa)",
+    "search_terms": ["SA20", "SA 20"]
+  },
+  {
+    "key": "ilt20",
+    "name": "International League T20 (UAE)",
+    "search_terms": ["International League T20", "ILT20", "DP World ILT20"]
+  },
+  {
+    "key": "mlc",
+    "name": "Major League Cricket (USA)",
+    "search_terms": ["Major League Cricket", "MLC"]
+  },
+  {
+    "key": "wbbl",
+    "name": "Women's Big Bash League",
+    "search_terms": ["Women's Big Bash League", "WBBL"]
+  },
+  {
+    "key": "wpl",
+    "name": "Women's Premier League",
+    "search_terms": ["Women's Premier League", "WPL"]
+  }
+]

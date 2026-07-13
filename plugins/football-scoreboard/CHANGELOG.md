@@ -1,5 +1,49 @@
 # Changelog
 
+## [2.8.1] - 2026-07-10
+
+### Fixed
+- **Adaptive layout (beta): blurry text on small panels.** Two of the ladder rungs
+  used for score/status/detail text rendered with visible antialiasing:
+  `press_start@10px`/`@12px` (PressStart2P only rasterizes crisply at exact
+  multiples of its 8px design grid) and `5by7.regular` (never crisp at any
+  size tested, in this or any other font's PIL rendering). Both dropped;
+  `4x6-font` corrected from 6px (33% antialiased) to 7px (its actual crisp
+  size). Every rung is now verified with `measure_font_crispness()` at 0%
+  antialiasing, with a regression test guarding it.
+- **Adaptive layout (beta): score text could overlap the team logos on
+  larger panels.** Score/status/detail text was sized to the largest crisp
+  font that fit its own region — on a big panel that region has generous
+  room, so the score could balloon large enough to visually overlap/obscure
+  the logos next to it (which scale by a fixed geometry factor instead).
+  Text now sizes proportionally to the panel's scale factor relative to the
+  classic fixed size for that element (score=10px, status=8px, detail=6px)
+  via the new core `LayoutContext.fit_text_proportional()`, matching
+  classic's visual balance at every size while still being crisp and
+  larger than classic's fixed size.
+
+## [2.8.0] - 2026-07-10
+
+### Added
+- **Adaptive layout (beta, opt-in)**: set `"layout_mode": "adaptive"` to scale
+  fonts, logos, and element regions to the panel size — score/status/detail
+  text grows on large panels (e.g. 32px score on a 256x128) instead of staying
+  at the fixed classic sizes, and layouts degrade gracefully on small panels.
+  Built on the LEDMatrix core adaptive layout system (`src/adaptive_layout.py`);
+  on older cores the plugin silently keeps the classic layout.
+  - **Default is `"classic"`** — rendering is byte-identical to 2.7.0 unless
+    you opt in (verified by the committed golden images).
+  - **Your customization still applies in adaptive mode**: explicitly
+    configured `customization.<element>.font`/`font_size` win over the
+    adaptive sizing, and `customization.layout.<element>` x/y offsets
+    translate elements from their computed positions. Note: adaptive mode
+    applies layout offsets in scroll mode too (classic scroll never did).
+  - **To revert**: set `"layout_mode": "classic"` in the plugin config — no
+    reinstall needed. (Or roll back to 2.7.0 in the plugin store.)
+- Manifest now declares `display.design_size` (128x32), enabling the harness
+  scale-up fill check. Adaptive-mode golden images live in
+  `test/golden-adaptive/` (`test_adaptive_layout_mode.py`).
+
 ## [2.4.0] - 2026-06-15
 
 ### Added

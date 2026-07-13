@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import secrets
 import threading
 import time
@@ -16,21 +17,17 @@ from urllib3.util.retry import Retry
 
 # Import simplified dependencies for plugin use
 from dynamic_team_resolver import DynamicTeamResolver
-from logo_downloader import LogoDownloader, download_missing_logo
 from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
-# Imported at module load time on purpose (see the monorepo module-naming
-# rules): a deferred bare-name import could bind another plugin's
-# game_renderer after namespace isolation.
-from game_renderer import GameRenderer
 
-# Shared element-style resolver (newer cores); older cores use the local
-# offset-reading code below.
-try:
-    from src.element_style import ElementStyleResolver, defaults_from_schema_file
-    STYLE_AVAILABLE = True
-except ImportError:
-    STYLE_AVAILABLE = False
+# Import main logo downloader (same as football plugin)
+import sys
+# Add parent directory to path to import from src
+plugin_dir = Path(__file__).resolve().parent
+project_root = plugin_dir.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+from src.logo_downloader import LogoDownloader, download_missing_logo
 
 
 class SportsCore(ABC):
@@ -72,10 +69,10 @@ class SportsCore(ABC):
         )  # Changed config key
         self.is_enabled: bool = self.mode_config.get("enabled", False)
         self.show_odds: bool = self.mode_config.get("show_odds", False)
-        # Use LogoDownloader to get the correct default logo directory for this sport
-        from src.logo_downloader import LogoDownloader
+        # Use LogoDownloader to get the correct default logo directory for this sport.
+        # sport_key is "nrl" (single-league plugin), so logos are cached under the nrl dir.
         default_logo_dir = Path(LogoDownloader().get_logo_directory(sport_key))
-        self.logo_dir = default_logo_dir
+        self.logo_dir = self._initialize_logo_dir(default_logo_dir)
         self.update_interval: int = self.mode_config.get("update_interval_seconds", 60)
         self.show_records: bool = self.mode_config.get("show_records", False)
         self.show_ranking: bool = self.mode_config.get("show_ranking", False)
@@ -96,12 +93,10 @@ class SportsCore(ABC):
             filtering_config.get("show_all_live", False),
         )
         try:
-            self.favorite_live_boost: int = max(1, min(5, int(
-                filtering_config.get(
-                    "favorite_live_boost",
-                    self.mode_config.get("favorite_live_boost", 2),
-                )
-            )))
+            self.favorite_live_boost: int = max(1, min(5, int(self.mode_config.get(
+                "favorite_live_boost",
+                filtering_config.get("favorite_live_boost", 2),
+            ))))
         except (TypeError, ValueError):
             self.favorite_live_boost = 2
 
@@ -129,12 +124,13 @@ class SportsCore(ABC):
         }
         self.last_update = 0
         self.current_game = None
+        self._last_rendered_game_id: Optional[str] = None  # Skip redundant redraws
         # Thread safety lock for shared game state
         self._games_lock = threading.RLock()
         self.fonts = self._load_fonts()
 
         # Initialize dynamic team resolver and resolve favorite teams
-        self.dynamic_resolver = DynamicTeamResolver(cache_manager=cache_manager)
+        self.dynamic_resolver = DynamicTeamResolver()
         raw_favorite_teams = self.mode_config.get("favorite_teams", [])
         self.favorite_teams = self.dynamic_resolver.resolve_teams(
             raw_favorite_teams, sport_key
@@ -151,6 +147,8 @@ class SportsCore(ABC):
             )
         else:
             self.logger.info(f"Favorite teams: {self.favorite_teams}")
+        if self.exclude_teams:
+            self.logger.info(f"Excluded teams: {self.exclude_teams}")
 
         self.logger.setLevel(logging.INFO)
 
@@ -158,6 +156,9 @@ class SportsCore(ABC):
         self._team_rankings_cache = {}
         self._rankings_cache_timestamp = 0
         self._rankings_cache_duration = 3600  # Cache rankings for 1 hour
+        
+        # Initialize warning tracking
+        self._last_warning_time = 0
 
         # Initialize background data service with optimized settings
         # Hardcoded for memory optimization: 1 worker, 30s timeout, 3 retries
@@ -181,6 +182,159 @@ class SportsCore(ABC):
                 "Background service not available - using synchronous fetching"
             )
 
+    def _is_favorite_game(self, game: Dict) -> bool:
+        return bool(self.favorite_teams) and (
+            game.get("home_abbr") in self.favorite_teams
+            or game.get("away_abbr") in self.favorite_teams
+        )
+
+    def _effective_live_duration(self, game):
+        """How long the given live game should stay on screen before rotating.
+
+        Non-favorite live games use non_favorite_live_game_duration, but only
+        when it is set (> 0) AND favorite teams are configured. With no favorites
+        (or the knob at 0) every live game uses game_display_duration - identical
+        to the prior single-duration behavior. When show_favorite_teams_only is
+        on, non-favorite games are never shown, so this naturally never fires."""
+        non_fav = getattr(self, "non_favorite_live_game_duration", 0) or 0
+        if (
+            non_fav > 0
+            and self.favorite_teams
+            and game is not None
+            and not self._is_favorite_game(game)
+        ):
+            return non_fav
+        return self.game_display_duration
+
+    def _classify_live_game(self, home_abbr, away_abbr) -> bool:
+        """Whether a live game should be included in the live rotation.
+
+        Priority: excluded team (never shown, overrides everything) >
+        show_all_live > show_favorite_teams_only disabled > no favorites
+        configured (fallback: show all) > favorite-teams-only membership.
+        """
+        if home_abbr in self.exclude_teams or away_abbr in self.exclude_teams:
+            return False
+        if self.show_all_live:
+            return True
+        if not self.show_favorite_teams_only:
+            return True
+        if not self.favorite_teams:
+            return True
+        return home_abbr in self.favorite_teams or away_abbr in self.favorite_teams
+
+    def _swrr_advance(self, games: List[Dict]) -> Optional[Dict]:
+        """Pick the next live game to display via Smooth Weighted Round-Robin.
+
+        Favorite-team games get weight ``favorite_live_boost`` (shown that many
+        turns for every 1 turn other live games get); everything else gets
+        weight 1. Per-game weight state (``self._swrr_weights``) persists
+        across calls so spacing stays even indefinitely - no fixed-length
+        cycle, so no clustering seam at a cycle boundary. A brand-new game
+        (including a favorite's game that just went live) starts at weight 0
+        and gets its full weight added on the very next call, so a live
+        favorite naturally wins the first pick after it appears ("queued
+        first" on refresh) without any special-cased branch.
+
+        With ``favorite_live_boost == 1`` (or no favorite live), every game
+        has weight 1, so this always just returns games in their existing
+        order - identical behavior to the plain round-robin it replaces.
+        """
+        if not games:
+            return None
+        weights = {}
+        for g in games:
+            gid = g.get("id")
+            if gid is None:
+                continue
+            weights[gid] = self.favorite_live_boost if self._is_favorite_game(g) else 1
+        if not weights:
+            return None
+
+        if not hasattr(self, "_swrr_weights"):
+            self._swrr_weights = {}
+        # Drop state for games no longer live; keep it for games still live.
+        self._swrr_weights = {gid: w for gid, w in self._swrr_weights.items() if gid in weights}
+
+        for gid, w in weights.items():
+            self._swrr_weights[gid] = self._swrr_weights.get(gid, 0) + w
+
+        total_weight = sum(weights.values())
+        ids_in_order = [g.get("id") for g in games if g.get("id") in weights]
+        best_gid = max(ids_in_order, key=lambda gid: self._swrr_weights[gid])
+        self._swrr_weights[best_gid] -= total_weight
+        return next(g for g in games if g.get("id") == best_gid)
+
+    def _initialize_logo_dir(self, configured_path: Path) -> Path:
+        """Resolve and ensure a writable logo directory, falling back when necessary."""
+        downloader = LogoDownloader()
+        resolved_configured = self._resolve_project_path(configured_path)
+        candidates = [resolved_configured] + self._get_logo_directory_fallbacks(resolved_configured)
+
+        for candidate in candidates:
+            candidate_path = self._resolve_project_path(candidate)
+            if downloader.ensure_logo_directory(str(candidate_path)):
+                if candidate_path != resolved_configured:
+                    self.logger.warning(
+                        "Configured logo directory '%s' is not writable; using fallback '%s'",
+                        resolved_configured,
+                        candidate_path,
+                    )
+                return candidate_path
+
+        self.logger.error(
+            "Unable to find a writable logo directory. Logos may fail to download (last attempted: %s)",
+            resolved_configured,
+        )
+        return resolved_configured
+
+    def _resolve_project_path(self, path: Path) -> Path:
+        """Convert relative paths to absolute ones rooted at the project directory."""
+        if path.is_absolute():
+            return path
+        # For plugin, go up 2 levels: plugin_dir -> plugins -> project_root
+        plugin_dir = Path(__file__).resolve().parent
+        project_root = plugin_dir.parent.parent
+        return (project_root / path).resolve()
+
+    def _get_logo_directory_fallbacks(self, configured_dir: Path) -> List[Path]:
+        """Return fallback directories to try when the configured directory is not writable."""
+        import tempfile
+        fallbacks: List[Path] = []
+
+        # Use a sport-specific subfolder name so different sport plugins don't
+        # collide when falling back to a shared cache/home/temp location.
+        logo_subdir = self.sport_key or "nrl"
+
+        env_override = os.environ.get("LEDMATRIX_LOGO_DIR")
+        if env_override:
+            env_path = Path(env_override)
+            if not env_path.is_absolute():
+                env_path = self._resolve_project_path(env_path)
+            fallbacks.append(env_path / f"{logo_subdir}_logos")
+
+        cache_dir = getattr(self.cache_manager, "cache_dir", None)
+        if cache_dir:
+            fallbacks.append(Path(cache_dir) / "logos" / logo_subdir)
+
+        try:
+            fallbacks.append(Path.home() / ".ledmatrix" / "logos" / logo_subdir)
+        except Exception as e:
+            self.logger.debug(f"Could not resolve home directory for logo fallback: {e}")
+
+        fallbacks.append(Path(tempfile.gettempdir()) / "ledmatrix_logos" / logo_subdir)
+
+        unique_fallbacks: List[Path] = []
+        seen = set()
+        for candidate in fallbacks:
+            if candidate == configured_dir:
+                continue
+            if candidate not in seen:
+                unique_fallbacks.append(candidate)
+                seen.add(candidate)
+
+        return unique_fallbacks
+
     def _get_season_schedule_dates(self) -> tuple[str, str]:
         return "", ""
 
@@ -199,57 +353,14 @@ class SportsCore(ABC):
                 f"Error in base _draw_scorebug_layout: {e}", exc_info=True
             )
 
-    def _adaptive_scorebug(self, game: Dict, game_type: str,
-                           force_clear: bool = False) -> bool:
-        """Render the scorebug via the adaptive GameRenderer when
-        layout_mode is "adaptive" (beta, opt-in).
-
-        Returns True when the frame was rendered and displayed; False means
-        the caller should draw its classic layout (either classic mode or an
-        older core without the adaptive layout system).
-        """
-        if self.config.get('layout_mode', 'classic') != 'adaptive':
-            return False
-        try:
-            display_width = (self.display_manager.matrix.width
-                             if getattr(self.display_manager, 'matrix', None)
-                             else self.display_width)
-            display_height = (self.display_manager.matrix.height
-                              if getattr(self.display_manager, 'matrix', None)
-                              else self.display_height)
-
-            renderer = getattr(self, '_adaptive_renderer', None)
-            if renderer is None or (renderer.display_width, renderer.display_height) \
-                    != (display_width, display_height):
-                renderer = GameRenderer(display_width, display_height,
-                                        self.config, custom_logger=self.logger)
-                self._adaptive_renderer = renderer
-            if not renderer._adaptive:
-                # Core without adaptive support: let the classic layout run
-                return False
-            if getattr(self, '_team_rankings_cache', None):
-                renderer.set_rankings_cache(self._team_rankings_cache)
-
-            if force_clear:
-                self.display_manager.clear()
-            self.display_manager.image = renderer.render_game_card(game, game_type)
-            self.display_manager.update_display()
-            return True
-        except Exception as e:
-            self.logger.error(f"Adaptive scorebug failed, using classic layout: {e}",
-                              exc_info=True)
-            return False
-
     def display(self, force_clear: bool = False) -> bool:
         """Render the current game. Returns False when nothing can be shown."""
         if not self.is_enabled:  # Check if module is enabled
             return False
 
         if not self.current_game:
-            # Clear the display so old content doesn't persist
-            if force_clear:
-                self.display_manager.clear()
-                self.display_manager.update_display()
+            # Don't clear the display when returning False - let the caller handle skipping
+            # Clearing here would show a blank screen before the next mode is displayed
             current_time = time.time()
             if not hasattr(self, "_last_warning_time"):
                 self._last_warning_time = 0
@@ -326,30 +437,19 @@ class SportsCore(ABC):
         except Exception as e:
             self.logger.error(f"Error loading default font: {e}")
             return ImageFont.load_default()
-    
+
     def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
         """
         Get layout offset for a specific element and axis.
-        
+
         Args:
             element: Element name (e.g., 'home_logo', 'score', 'status_text')
             axis: 'x_offset' or 'y_offset' (or 'away_x_offset', 'home_x_offset' for records)
             default: Default value if not configured (default: 0)
-        
+
         Returns:
             Offset value from config or default (always returns int)
         """
-        if STYLE_AVAILABLE:
-            # Shared resolver (rebuilt if the config dict was swapped out,
-            # matching the old code's read-config-on-every-call semantics)
-            resolver = getattr(self, '_style_resolver_cached', None)
-            if resolver is None or resolver._config is not self.config:
-                schema_path = os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)), 'config_schema.json')
-                resolver = ElementStyleResolver(
-                    self.config, defaults_from_schema_file(schema_path))
-                self._style_resolver_cached = resolver
-            return resolver.offset_value(element, axis, default)
         try:
             layout_config = self.config.get('customization', {}).get('layout', {})
             element_config = layout_config.get(element, {})
@@ -359,21 +459,16 @@ class SportsCore(ABC):
             if isinstance(offset_value, (int, float)):
                 return int(offset_value)
             elif isinstance(offset_value, str):
-                # Try to convert string to int
                 try:
                     return int(float(offset_value))
-                except (ValueError, TypeError):
-                    self.logger.warning(
-                        f"Invalid layout offset value for {element}.{axis}: '{offset_value}', using default {default}"
-                    )
+                except ValueError:
+                    self.logger.warning(f"Invalid offset value '{offset_value}' for {element}.{axis}, using default {default}")
                     return default
-            else:
-                return default
-        except Exception as e:
-            # Gracefully handle any config access errors
-            self.logger.debug(f"Error reading layout offset for {element}.{axis}: {e}, using default {default}")
             return default
-    
+        except Exception as e:
+            self.logger.debug(f"Error getting layout offset for {element}.{axis}: {e}, using default {default}")
+            return default
+
     def _load_fonts(self):
         """Load fonts used by the scoreboard from config or use defaults."""
         fonts = {}
@@ -571,29 +666,23 @@ class SportsCore(ABC):
         try:
             # Try different filename variations first (for cases like TA&M vs TAANDM)
             actual_logo_path = None
-            filename_variations = LogoDownloader.get_logo_filename_variations(
-                team_abbrev
-            )
-
+            filename_variations = LogoDownloader.get_logo_filename_variations(team_abbrev)
+            
             for filename in filename_variations:
                 test_path = logo_path.parent / filename
                 if test_path.exists():
                     actual_logo_path = test_path
-                    self.logger.debug(
-                        f"Found logo at alternative path: {actual_logo_path}"
-                    )
+                    self.logger.debug(f"Found logo at alternative path: {actual_logo_path}")
                     break
-
+            
             # If no variation found, try to download missing logo
             if not actual_logo_path and not logo_path.exists():
-                self.logger.info(
-                    f"Logo not found for {team_abbrev} at {logo_path}. Attempting to download."
-                )
-
-                # Try to download the logo from ESPN API (this will create placeholder if download fails)
-                download_missing_logo(
-                    self.sport_key, team_id, team_abbrev, logo_path, logo_url
-                )
+                self.logger.info(f"Logo not found for {team_abbrev} at {logo_path}. Attempting to download.")
+                
+                # The logo downloader keys its cache folders off sport_key ("nrl"),
+                # so pass it straight through. NRL is a single-league plugin, so there
+                # is no per-league logo directory split like soccer needs.
+                download_missing_logo(self.sport_key, team_id, team_abbrev, logo_path, logo_url)
                 actual_logo_path = logo_path
 
             # Use the original path if no alternative was found
@@ -604,12 +693,10 @@ class SportsCore(ABC):
             if os.path.exists(actual_logo_path):
                 logo = Image.open(actual_logo_path)
             else:
-                self.logger.error(
-                    f"Logo file still doesn't exist at {actual_logo_path} after download attempt"
-                )
+                self.logger.error(f"Logo file still doesn't exist at {actual_logo_path} after download attempt")
                 return None
-            if logo.mode != "RGBA":
-                logo = logo.convert("RGBA")
+            if logo.mode != 'RGBA':
+                logo = logo.convert('RGBA')
 
             max_width = int(self.display_width * 1.5)
             max_height = int(self.display_height * 1.5)
@@ -618,9 +705,7 @@ class SportsCore(ABC):
             return logo
 
         except Exception as e:
-            self.logger.error(
-                f"Error loading logo for {team_abbrev}: {e}", exc_info=True
-            )
+            self.logger.error(f"Error loading logo for {team_abbrev}: {e}", exc_info=True)
             return None
 
     def _fetch_odds(self, game: Dict) -> None:
@@ -713,7 +798,7 @@ class SportsCore(ABC):
         return False
 
     def _fetch_team_rankings(self) -> Dict[str, int]:
-        """Fetch team rankings using the new architecture components."""
+        """Fetch team rankings/standings using the new architecture components."""
         current_time = time.time()
 
         # Check if we have cached rankings that are still valid
@@ -728,52 +813,57 @@ class SportsCore(ABC):
             data = self.data_source.fetch_standings(self.sport, self.league)
 
             rankings = {}
-            rankings_data = data.get("rankings", [])
+            
+            # Check if this is standings data (professional leagues like NBA, WNBA)
+            # Standings structure: data['children'] -> child['standings']['entries'] -> entry['team']
+            if "children" in data:
+                # This is standings data (NBA, WNBA, etc.)
+                # Extract teams from all conferences/divisions
+                rank = 1
+                for child in data.get("children", []):
+                    standings = child.get("standings", {})
+                    entries = standings.get("entries", [])
+                    
+                    # Sort entries by win percentage or record (standings are already ordered)
+                    for entry in entries:
+                        team_info = entry.get("team", {})
+                        team_abbr = team_info.get("abbreviation", "")
+                        
+                        if team_abbr:
+                            rankings[team_abbr] = rank
+                            rank += 1
+                
+                self.logger.debug(f"Fetched standings for {len(rankings)} teams")
+            
+            # Check if this is rankings data (college sports)
+            # Rankings structure: data['rankings'] -> ranking['ranks'] -> rank['team']
+            elif "rankings" in data:
+                rankings_data = data.get("rankings", [])
+                
+                if rankings_data:
+                    # Use the first ranking (usually AP Top 25)
+                    first_ranking = rankings_data[0]
+                    teams = first_ranking.get("ranks", [])
 
-            if rankings_data:
-                # Use the first ranking (usually AP Top 25)
-                first_ranking = rankings_data[0]
-                teams = first_ranking.get("ranks", [])
+                    for team_data in teams:
+                        team_info = team_data.get("team", {})
+                        team_abbr = team_info.get("abbreviation", "")
+                        current_rank = team_data.get("current", 0)
 
-                for team_data in teams:
-                    team_info = team_data.get("team", {})
-                    team_abbr = team_info.get("abbreviation", "")
-                    current_rank = team_data.get("current", 0)
-
-                    if team_abbr and current_rank > 0:
-                        rankings[team_abbr] = current_rank
+                        if team_abbr and current_rank > 0:
+                            rankings[team_abbr] = current_rank
+                
+                self.logger.debug(f"Fetched rankings for {len(rankings)} teams")
 
             # Cache the results
             self._team_rankings_cache = rankings
             self._rankings_cache_timestamp = current_time
 
-            self.logger.debug(f"Fetched rankings for {len(rankings)} teams")
             return rankings
 
         except Exception as e:
-            self.logger.error(f"Error fetching team rankings: {e}")
+            self.logger.error(f"Error fetching team rankings/standings: {e}")
             return {}
-
-    @staticmethod
-    def _extract_team_record(team_data: Dict) -> str:
-        """Extract the overall record string from a competitor/team object.
-
-        The ESPN scoreboard API uses ``records`` (plural) with a ``summary``
-        field, while the team-schedule API uses ``record`` (singular) with a
-        ``displayValue`` field.  This helper handles both formats so that
-        records display correctly regardless of which API provided the data.
-        """
-        # Scoreboard API format: records[0].summary  (e.g. "10-2")
-        records = team_data.get("records")
-        if records and isinstance(records, list) and len(records) > 0:
-            return records[0].get("summary", "")
-
-        # Team-schedule API format: record[0].displayValue  (e.g. "7-0")
-        record = team_data.get("record")
-        if record and isinstance(record, list) and len(record) > 0:
-            return record[0].get("displayValue", record[0].get("summary", ""))
-
-        return ""
 
     def _extract_game_details_common(
         self, game_event: Dict
@@ -861,8 +951,16 @@ class SportsCore(ABC):
                     # Note: display_manager.format_date_with_ordinal will be handled by plugin wrapper
                     game_date = local_time.strftime("%m/%d")  # Simplified for plugin
 
-            home_record = self._extract_team_record(home_team)
-            away_record = self._extract_team_record(away_team)
+            home_record = (
+                home_team.get("records", [{}])[0].get("summary", "")
+                if home_team.get("records")
+                else ""
+            )
+            away_record = (
+                away_team.get("records", [{}])[0].get("summary", "")
+                if away_team.get("records")
+                else ""
+            )
 
             # Don't show "0-0" records - set to blank instead
             if home_record in {"0-0", "0-0-0"}:
@@ -870,6 +968,59 @@ class SportsCore(ABC):
             if away_record in {"0-0", "0-0-0"}:
                 away_record = ""
 
+            # Extract scores, handling both dict and direct value formats
+            def extract_score(team_data):
+                """Extract score from team data, handling dict or direct value."""
+                score = team_data.get("score")
+                if score is None:
+                    return "0"
+                
+                # If score is a dict (e.g., {"value": 75}), extract the value
+                if isinstance(score, dict):
+                    score_value = score.get("value", 0)
+                    # Also check for other possible keys
+                    if score_value == 0:
+                        score_value = score.get("displayValue", score.get("score", 0))
+                else:
+                    score_value = score
+                
+                # Convert to integer to remove decimal points, then to string
+                try:
+                    # Handle string scores - check if it's a string representation of a dict first
+                    if isinstance(score_value, str):
+                        # Try to parse as float/int first
+                        try:
+                            score_value = float(score_value)
+                        except ValueError:
+                            # If it's not a number, try to extract number from string
+                            numbers = re.findall(r'\d+', score_value)
+                            if numbers:
+                                score_value = float(numbers[0])
+                            else:
+                                self.logger.warning(f"Could not extract score from string: {score_value}")
+                                return "0"
+                    # Convert to int to remove decimals, then to string
+                    return str(int(float(score_value)))
+                except (ValueError, TypeError) as e:
+                    self.logger.warning(f"Error extracting score: {e}, score type: {type(score)}, score value: {score}")
+                    return "0"
+            
+            home_score = extract_score(home_team)
+            away_score = extract_score(away_team)
+
+            # Extract logo URLs from ESPN API structure (logos is an array)
+            def extract_logo_url(team_data):
+                """Extract logo URL from team data."""
+                team_info = team_data.get("team", {})
+                logos = team_info.get("logos", [])
+                if logos and len(logos) > 0:
+                    return logos[0].get("href")
+                # Fallback to direct logo field if logos array doesn't exist
+                return team_info.get("logo")
+            
+            home_logo_url = extract_logo_url(home_team)
+            away_logo_url = extract_logo_url(away_team)
+            
             details = {
                 "id": game_event.get("id"),
                 "game_time": game_time,
@@ -891,18 +1042,18 @@ class SportsCore(ABC):
                 == "STATUS_END_PERIOD",  # Added Period Break check
                 "home_abbr": home_abbr,
                 "home_id": home_team["id"],
-                "home_score": home_team.get("score", "0"),
+                "home_score": home_score,
                 "home_logo_path": self.logo_dir
                 / Path(f"{LogoDownloader.normalize_abbreviation(home_abbr)}.png"),
-                "home_logo_url": home_team["team"].get("logo"),
+                "home_logo_url": home_logo_url,
                 "home_record": home_record,
                 "away_record": away_record,
                 "away_abbr": away_abbr,
                 "away_id": away_team["id"],
-                "away_score": away_team.get("score", "0"),
+                "away_score": away_score,
                 "away_logo_path": self.logo_dir
                 / Path(f"{LogoDownloader.normalize_abbreviation(away_abbr)}.png"),
-                "away_logo_url": away_team["team"].get("logo"),
+                "away_logo_url": away_logo_url,
                 "is_within_window": True,  # Whether game is within display window
             }
             return details, home_team, away_team, status, situation
@@ -924,8 +1075,20 @@ class SportsCore(ABC):
         pass
 
     def _fetch_todays_games(self) -> Optional[Dict]:
-        """Fetch only today's games for live updates (not entire season)."""
+        """Fetch current/today's games for live updates (not entire season)."""
         try:
+            # For NCAA Basketball, use no dates parameter to get current games
+            # This works around the date range limitation
+            url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
+            
+            # Check cache first (short TTL for live data)
+            cache_key = f"{self.sport_key}_scoreboard_current"
+            cached_data = self.cache_manager.get(cache_key, max_age=30)   # 30s cache for live data
+            if cached_data:
+                if isinstance(cached_data, dict) and "events" in cached_data:
+                    self.logger.debug(f"Using cached current scoreboard for {self.sport}/{self.league}")
+                    return cached_data
+            
             # ESPN API anchors its schedule calendar to Eastern US time.
             # Always query using the Eastern date + 1-day lookback to catch
             # late-night games still in progress from the previous Eastern day.
@@ -934,15 +1097,12 @@ class SportsCore(ABC):
             yesterday = now - timedelta(days=1)
             formatted_date = now.strftime("%Y%m%d")
             formatted_date_yesterday = yesterday.strftime("%Y%m%d")
-            # Fetch todays games only
-            url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
-            self.logger.debug(
-                f"Fetching games for {self.sport}/{self.league} over date range "
-                f"{formatted_date_yesterday}-{formatted_date}"
-            )
+            params = {"dates": f"{formatted_date_yesterday}-{formatted_date}", "limit": 1000}
+            self.logger.debug(f"Fetching today's games for {self.sport}/{self.league} on date {formatted_date}")
+            
             response = self.session.get(
                 url,
-                params={"dates": f"{formatted_date_yesterday}-{formatted_date}", "limit": 1000},
+                params=params,
                 headers=self.headers,
                 timeout=10,
             )
@@ -951,7 +1111,7 @@ class SportsCore(ABC):
             events = data.get("events", [])
 
             self.logger.info(
-                f"Fetched {len(events)} todays games for {self.sport} - {self.league}"
+                f"Fetched {len(events)} current games for {self.sport} - {self.league}"
             )
             
             # Log status of each game for debugging
@@ -966,10 +1126,12 @@ class SportsCore(ABC):
                         f"shortDetail={status_type.get('shortDetail', 'N/A')}"
                     )
             
+            # Cache the result (short TTL for live data)
+            self.cache_manager.set(cache_key, data)
             return {"events": events}
         except requests.exceptions.RequestException as e:
             self.logger.error(
-                f"API error fetching todays games for {self.sport} - {self.league}: {e}"
+                f"API error fetching current games for {self.sport} - {self.league}: {e}"
             )
             return None
 
@@ -1010,6 +1172,20 @@ class SportsCore(ABC):
     def _custom_scorebug_layout(self, game: dict, draw_overlay: ImageDraw.ImageDraw):
         pass
 
+    def _get_team_record_text(self, abbr: str, record: str) -> str:
+        """Return the corner text for a team: ranking (if enabled/available) or record.
+
+        When rankings are enabled they take precedence; unranked teams show
+        nothing rather than falling back to a record, matching the behavior of
+        the recent/upcoming layouts.
+        """
+        if self.show_ranking:
+            rank = self._team_rankings_cache.get(abbr, 0)
+            return f"#{rank}" if rank > 0 else ""
+        if self.show_records:
+            return record
+        return ""
+
     def cleanup(self):
         """Clean up resources when plugin is unloaded."""
         # Close HTTP session
@@ -1048,7 +1224,7 @@ class SportsUpcoming(SportsCore):
         self.last_warning_time = 0
         self.warning_cooldown = 300
         self.last_game_switch = 0
-        self.game_display_duration = self.mode_config.get("upcoming_game_duration", 15)
+        self.game_display_duration = 15  # Display each upcoming game for 15 seconds
 
     def _select_games_for_display(
         self, processed_games: List[Dict], favorite_teams: List[str]
@@ -1059,7 +1235,6 @@ class SportsUpcoming(SportsCore):
         When a game involves two favorite teams, it counts toward BOTH teams' limits.
         This prevents unexpected game counts from the multi-pass algorithm.
         """
-        # Sort by start time for consistent priority
         sorted_games = sorted(
             processed_games,
             key=lambda g: g.get("start_time_utc")
@@ -1067,7 +1242,6 @@ class SportsUpcoming(SportsCore):
         )
 
         if not favorite_teams:
-            # No favorites: return all games (caller will apply limits)
             return sorted_games
 
         selected_games = []
@@ -1088,15 +1262,12 @@ class SportsUpcoming(SportsCore):
             if not home_fav and not away_fav:
                 continue
 
-            # Check if at least one favorite team still needs games
             home_needs = home_fav and team_counts[home] < self.upcoming_games_to_show
             away_needs = away_fav and team_counts[away] < self.upcoming_games_to_show
 
             if home_needs or away_needs:
                 selected_games.append(game)
                 selected_ids.add(game_id)
-                # Count game for ALL favorite teams involved
-                # This is key: one game counts toward limits of BOTH teams if both are favorites
                 if home_fav:
                     team_counts[home] += 1
                 if away_fav:
@@ -1106,7 +1277,6 @@ class SportsUpcoming(SportsCore):
                     f"Selected game {away}@{home}: team_counts={team_counts}"
                 )
 
-            # Check if all favorites are satisfied
             if all(c >= self.upcoming_games_to_show for c in team_counts.values()):
                 self.logger.debug("All favorite teams satisfied, stopping selection")
                 break
@@ -1157,8 +1327,7 @@ class SportsUpcoming(SportsCore):
                 # Filter criteria: must be upcoming ('pre' state)
                 if game and game["is_upcoming"]:
                     # Only fetch odds for games that will be displayed
-                    # If show_favorite_teams_only is True, filter by favorite teams
-                    # But if no favorite teams are configured, show all games (fallback)
+                    # If show_favorite_teams_only is True but no favorites configured, show all
                     if self.show_favorite_teams_only and self.favorite_teams:
                         if (
                             game["home_abbr"] not in self.favorite_teams
@@ -1221,7 +1390,7 @@ class SportsUpcoming(SportsCore):
                 or (not self.games_list and team_games)
             )
 
-            # Check if the list of games to display has changed (thread-safe)
+            # Check if the list of games to display has changed (protected by lock for thread safety)
             with self._games_lock:
                 new_game_ids = {g["id"] for g in team_games}
                 current_game_ids = {g["id"] for g in self.games_list}
@@ -1231,6 +1400,7 @@ class SportsUpcoming(SportsCore):
                         f"Found {len(team_games)} upcoming games within window for display."
                     )  # Changed log prefix
                     self.games_list = team_games
+                    self._last_rendered_game_id = None  # Force redraw with new data
                     if (
                         not self.current_game
                         or not self.games_list
@@ -1253,14 +1423,17 @@ class SportsUpcoming(SportsCore):
                             self.last_game_switch = current_time
 
                 elif self.games_list:
+                    # Same IDs but payload may have changed — update data and
+                    # force a redraw so corrected scores/times appear.
                     self.current_game = self.games_list[
                         self.current_game_index
-                    ]  # Update data
+                    ]
+                    self._last_rendered_game_id = None
 
                 if not self.games_list:
                     self.logger.info(
                         "No relevant upcoming games found to display."
-                    )  # Changed log prefix
+                    )
                     self.current_game = None
 
             if should_log and not self.games_list:
@@ -1284,10 +1457,6 @@ class SportsUpcoming(SportsCore):
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the layout for an upcoming NCAA FB game."""  # Updated docstring
         try:
-            # Adaptive layout (beta, opt-in) — classic below untouched when declined
-            if self._adaptive_scorebug(game, "upcoming", force_clear):
-                return
-
             # Clear the display first to ensure full coverage (like weather plugin does)
             if force_clear:
                 self.display_manager.clear()
@@ -1318,9 +1487,19 @@ class SportsUpcoming(SportsCore):
             )
 
             if not home_logo or not away_logo:
+                missing_logos = []
+                if not home_logo:
+                    missing_logos.append(f"home ({game.get('home_abbr', 'N/A')})")
+                if not away_logo:
+                    missing_logos.append(f"away ({game.get('away_abbr', 'N/A')})")
+                
                 self.logger.error(
-                    f"Failed to load logos for game: {game.get('id')}"
-                )  # Changed log prefix
+                    f"Failed to load logos for game {game.get('id')}: {', '.join(missing_logos)}. "
+                    f"Home logo path: {game.get('home_logo_path')}, "
+                    f"Away logo path: {game.get('away_logo_path')}, "
+                    f"Home logo URL: {game.get('home_logo_url')}, "
+                    f"Away logo URL: {game.get('away_logo_url')}"
+                )
                 draw_final = ImageDraw.Draw(main_img.convert("RGB"))
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
@@ -1346,14 +1525,16 @@ class SportsUpcoming(SportsCore):
 
             # Note: Rankings are now handled in the records/rankings section below
 
-            # "Next Game" at the top (use smaller status font) with layout offsets
+            # League name at the top so the competition is identifiable (falls back
+            # to "Next Game" when the manager didn't set one). The small status font
+            # keeps long names like "Scottish Premiership" on a single line.
             status_font = self.fonts["status"]
             if display_width > 128:
                 status_font = self.fonts["time"]
-            status_text = "Next Game"
+            status_text = getattr(self, "league_name", "") or "Next Game"
             status_width = draw_overlay.textlength(status_text, font=status_font)
             status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
-            status_y = 1 + self._get_layout_offset('status_text', 'y_offset')  # Changed from 2
+            status_y = 1 + self._get_layout_offset('status_text', 'y_offset')
             self._draw_text_with_outline(
                 draw_overlay, status_text, (status_x, status_y), status_font
             )
@@ -1362,7 +1543,7 @@ class SportsUpcoming(SportsCore):
             date_width = draw_overlay.textlength(game_date, font=self.fonts["time"])
             date_x = (display_width - date_width) // 2 + self._get_layout_offset('date', 'x_offset')
             # Adjust Y position to stack date and time nicely
-            date_y = center_y - 7 + self._get_layout_offset('date', 'y_offset')  # Raise date slightly
+            date_y = center_y - 7 + self._get_layout_offset('date', 'y_offset')
             self._draw_text_with_outline(
                 draw_overlay, game_date, (date_x, date_y), self.fonts["time"]
             )
@@ -1370,7 +1551,7 @@ class SportsUpcoming(SportsCore):
             # Time text (centered, below Date) with layout offsets
             time_width = draw_overlay.textlength(game_time, font=self.fonts["time"])
             time_x = (display_width - time_width) // 2 + self._get_layout_offset('time', 'x_offset')
-            time_y = date_y + 9 + self._get_layout_offset('time', 'y_offset')  # Place time below date
+            time_y = date_y + 9 + self._get_layout_offset('time', 'y_offset')
             self._draw_text_with_outline(
                 draw_overlay, game_time, (time_x, time_y), self.fonts["time"]
             )
@@ -1543,13 +1724,17 @@ class SportsUpcoming(SportsCore):
                         )
 
             if self.current_game:
+                # Skip redundant redraws when nothing changed
+                game_id = self.current_game.get("id")
+                if not force_clear and game_id == self._last_rendered_game_id:
+                    return True  # Already showing this game, no redraw needed
                 self._draw_scorebug_layout(self.current_game, force_clear)
-            # update_display() is called within _draw_scorebug_layout for upcoming
+                self._last_rendered_game_id = game_id
 
         except Exception as e:
             self.logger.error(
                 f"Error in display loop: {e}", exc_info=True
-            )  # Changed log prefix
+            )
             return False
 
         return True
@@ -1599,7 +1784,6 @@ class SportsRecent(SportsCore):
         When a game involves two favorite teams, it counts toward BOTH teams' limits.
         Games are sorted by most recent first.
         """
-        # Sort by start time, most recent first
         sorted_games = sorted(
             processed_games,
             key=lambda g: g.get("start_time_utc")
@@ -1608,7 +1792,6 @@ class SportsRecent(SportsCore):
         )
 
         if not favorite_teams:
-            # No favorites: return all games (caller will apply limits)
             return sorted_games
 
         selected_games = []
@@ -1629,14 +1812,12 @@ class SportsRecent(SportsCore):
             if not home_fav and not away_fav:
                 continue
 
-            # Check if at least one favorite team still needs games
             home_needs = home_fav and team_counts[home] < self.recent_games_to_show
             away_needs = away_fav and team_counts[away] < self.recent_games_to_show
 
             if home_needs or away_needs:
                 selected_games.append(game)
                 selected_ids.add(game_id)
-                # Count game for ALL favorite teams involved
                 if home_fav:
                     team_counts[home] += 1
                 if away_fav:
@@ -1646,11 +1827,14 @@ class SportsRecent(SportsCore):
                     f"Selected recent game {away}@{home}: team_counts={team_counts}"
                 )
 
-            # Check if all favorites are satisfied
             if all(c >= self.recent_games_to_show for c in team_counts.values()):
                 self.logger.debug("All favorite teams satisfied, stopping selection")
                 break
 
+        self.logger.info(
+            f"Selected {len(selected_games)} recent games for {len(favorite_teams)} "
+            f"favorite teams: {team_counts}"
+        )
         return selected_games
 
     def update(self):
@@ -1695,95 +1879,39 @@ class SportsRecent(SportsCore):
                 game = self._extract_game_details(event)
                 if not game:
                     continue
-                
+
                 # Check if game appears finished even if not marked as "post" yet
-                # This handles cases where API hasn't updated status yet
-                appears_finished = False
                 game_id = game.get("id")
+                appears_finished = False
                 if not game.get("is_final", False):
-                    # Check if game appears to be over based on clock/period
-                    clock = game.get("clock", "")
-                    period = game.get("period", 0)
-                    period_text = game.get("status_text", "").lower()
-
-                    if period >= 4:
-                        clock_normalized = clock.replace(":", "").strip()
-
-                        # Explicit "final" in status text is definitive
-                        if "final" in period_text:
-                            appears_finished = True
-                            self._clear_zero_clock_tracking(game_id)
-                            self.logger.debug(
-                                f"Game {game.get('away_abbr')}@{game.get('home_abbr')} "
-                                "appears finished (period_text contains 'final')"
-                            )
-                        elif clock_normalized in ["000", "00", ""] or clock == "0:00" or clock == ":00":
-                            # Clock at 0:00 but no explicit final - use grace period
-                            # This prevents premature transitions during potential OT or reviews
-                            zero_clock_duration = self._get_zero_clock_duration(game_id)
-
-                            # Only mark finished after 2 minute grace period (allows OT decisions)
-                            if zero_clock_duration >= 120:
-                                appears_finished = True
-                                self.logger.debug(
-                                    f"Game {game.get('away_abbr')}@{game.get('home_abbr')} "
-                                    f"appears finished after {zero_clock_duration:.0f}s at 0:00 "
-                                    f"(period={period}, clock={clock})"
-                                )
-                            else:
-                                self.logger.debug(
-                                    f"Game {game.get('away_abbr')}@{game.get('home_abbr')} "
-                                    f"at 0:00 but only for {zero_clock_duration:.0f}s - waiting for confirmation"
-                                )
-                        else:
-                            # Clock is not at 0:00, clear any tracking
-                            self._clear_zero_clock_tracking(game_id)
+                    period_text = game.get("period_text", "").lower()
+                    if "final" in period_text:
+                        appears_finished = True
+                        self._clear_zero_clock_tracking(game_id)
                 else:
-                    # Game is marked final, clear tracking
                     self._clear_zero_clock_tracking(game_id)
-                
+
                 # Filter criteria: must be final OR appear finished, AND within recent date range
                 is_eligible = game.get("is_final", False) or appears_finished
-                # Excluded teams are always hidden from recent/final scores too
-                # (spoiler protection), regardless of favorites settings — apply
-                # here so both the favorites-only and "show all" branches below
-                # inherit it, since only one of them re-filters by favorite_teams.
-                if (
-                    game.get("home_abbr") in self.exclude_teams
-                    or game.get("away_abbr") in self.exclude_teams
-                ):
-                    is_eligible = False
                 if is_eligible:
                     game_time = game.get("start_time_utc")
                     if game_time and game_time >= recent_cutoff:
+                        # Excluded teams are hidden from final/recent scores too
+                        # (spoiler protection), regardless of every other filter.
+                        if (
+                            game.get("home_abbr") in self.exclude_teams
+                            or game.get("away_abbr") in self.exclude_teams
+                        ):
+                            continue
                         processed_games.append(game)
-                        # Log when adding games, especially if they appear finished but aren't marked final
-                        final_status = "final" if game.get("is_final") else "appears finished"
-                        self.logger.info(
-                            f"Added {final_status} game to recent list: "
-                            f"{game.get('away_abbr')}@{game.get('home_abbr')} "
-                            f"({game.get('away_score')}-{game.get('home_score')}) "
-                            f"at {game_time.strftime('%Y-%m-%d %H:%M:%S UTC') if game_time else 'unknown time'}"
-                        )
-                    elif game_time:
-                        self.logger.debug(
-                            f"Game {game.get('away_abbr')}@{game.get('home_abbr')} "
-                            f"is final but outside date range (game_time={game_time}, cutoff={recent_cutoff})"
-                        )
-                else:
-                    # Log why game was filtered out (only for favorite teams to reduce noise)
-                    if self.favorite_teams and (game.get("home_abbr") in self.favorite_teams or game.get("away_abbr") in self.favorite_teams):
-                        self.logger.debug(
-                            f"Game {game.get('away_abbr')}@{game.get('home_abbr')} "
-                            f"not included: is_final={game.get('is_final')}, "
-                            f"period={game.get('period')}, clock={game.get('clock')}, "
-                            f"status={game.get('status_text')}"
-                        )
             # Use single-pass algorithm for game selection
             # This properly handles games between two favorite teams (counts for both)
             if self.show_favorite_teams_only and self.favorite_teams:
                 team_games = self._select_recent_games_for_display(
                     processed_games, self.favorite_teams
+                )
+                self.logger.info(
+                    f"Filtering to favorites: {len(team_games)} games for teams {self.favorite_teams}"
                 )
                 # Debug: Show which games are selected for display
                 for i, game in enumerate(team_games):
@@ -1791,18 +1919,19 @@ class SportsRecent(SportsCore):
                         f"Game {i+1} for display: {game['away_abbr']} @ {game['home_abbr']} - {game.get('start_time_utc')} - Score: {game['away_score']}-{game['home_score']}"
                     )
             else:
-                # No favorites or show_favorite_teams_only disabled: show N total games sorted by time
+                # show_favorite_teams_only disabled or no favorites: show N total games sorted by time
                 team_games = sorted(
                     processed_games,
                     key=lambda g: g.get("start_time_utc")
                     or datetime.min.replace(tzinfo=timezone.utc),
                     reverse=True,
                 )[:self.recent_games_to_show]
+                reason = "show_favorite_teams_only disabled" if not self.show_favorite_teams_only else "no favorites configured"
                 self.logger.info(
-                    f"No favorites configured: showing {len(team_games)} total recent games"
+                    f"Showing all games ({reason}): {len(team_games)} total recent games"
                 )
 
-            # Check if the list of games to display has changed (thread-safe)
+            # Check if the list of games to display has changed (protected by lock for thread safety)
             with self._games_lock:
                 new_game_ids = {g["id"] for g in team_games}
                 current_game_ids = {g["id"] for g in self.games_list}
@@ -1812,6 +1941,7 @@ class SportsRecent(SportsCore):
                         f"Found {len(team_games)} final games within window for display."
                     )  # Changed log prefix
                     self.games_list = team_games
+                    self._last_rendered_game_id = None  # Force redraw with new data
                     # Reset index if list changed or current game removed
                     if (
                         not self.current_game
@@ -1838,14 +1968,16 @@ class SportsRecent(SportsCore):
                             self.last_game_switch = current_time
 
                 elif self.games_list:
-                    # List content is same, just update data for current game
+                    # Same IDs but payload may have changed — update data and
+                    # force a redraw so corrected scores/times appear.
                     self.current_game = self.games_list[self.current_game_index]
+                    self._last_rendered_game_id = None
 
                 if not self.games_list:
                     self.logger.info(
                         "No relevant recent games found to display."
-                    )  # Changed log prefix
-                    self.current_game = None  # Ensure display clears if no games
+                    )
+                    self.current_game = None
 
         except Exception as e:
             self.logger.error(
@@ -1857,10 +1989,6 @@ class SportsRecent(SportsCore):
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the layout for a recently completed NCAA FB game."""  # Updated docstring
         try:
-            # Adaptive layout (beta, opt-in) — classic below untouched when declined
-            if self._adaptive_scorebug(game, "recent", force_clear):
-                return
-
             # Clear the display first to ensure full coverage (like weather plugin does)
             if force_clear:
                 self.display_manager.clear()
@@ -1917,28 +2045,56 @@ class SportsRecent(SportsCore):
             # Draw Text Elements on Overlay
             # Note: Rankings are now handled in the records/rankings section below
 
-            # Final Scores (Centered vertically, same position as live) with layout offsets
-            home_score = str(game.get("home_score", "0"))
-            away_score = str(game.get("away_score", "0"))
+            # Final Scores (Centered, same position as live) with layout offsets
+            # Convert scores to integers to remove decimal points
+            def format_score(score):
+                """Format score as integer string, removing decimals."""
+                try:
+                    # Handle None or empty values
+                    if score is None:
+                        return "0"
+
+                    # If it's already a string, try to parse it
+                    if isinstance(score, str):
+                        # Remove any whitespace
+                        score = score.strip()
+                        # If empty, return 0
+                        if not score:
+                            return "0"
+                        # Try to extract number from string (handles cases where score might be a string representation of something else)
+                        try:
+                            return str(int(float(score)))
+                        except ValueError:
+                            # Try to extract first number from string
+                            import re
+                            numbers = re.findall(r'\d+', score)
+                            if numbers:
+                                return str(int(numbers[0]))
+                            self.logger.warning(f"Could not parse score string: {score}")
+                            return "0"
+
+                    # Handle dict (shouldn't happen if extraction worked, but be safe)
+                    if isinstance(score, dict):
+                        score_value = score.get("value", score.get("displayValue", 0))
+                        return str(int(float(score_value)))
+
+                    # Handle numeric types
+                    return str(int(float(score)))
+                except (ValueError, TypeError) as e:
+                    self.logger.warning(f"Error formatting score: {e}, score type: {type(score)}, score value: {score}")
+                    return "0"
+
+            home_score = format_score(game.get("home_score", "0"))
+            away_score = format_score(game.get("away_score", "0"))
             score_text = f"{away_score}-{home_score}"
             score_width = draw_overlay.textlength(score_text, font=self.fonts["score"])
             score_x = (display_width - score_width) // 2 + self._get_layout_offset('score', 'x_offset')
-            score_y = (display_height // 2) - 3 + self._get_layout_offset('score', 'y_offset')  # Centered vertically, same as live games
+            # Centered vertically (matches the baseball recent layout) so the game
+            # date fits on the bottom line without colliding with the score.
+            score_y = (display_height // 2) - 3 + self._get_layout_offset('score', 'y_offset')
             self._draw_text_with_outline(
                 draw_overlay, score_text, (score_x, score_y), self.fonts["score"]
             )
-
-            # Game date (Bottom of display, one line above bottom edge, centered) with layout offsets
-            # Use same font as upcoming games (time font) for consistency
-            game_date = game.get("game_date", "")
-            if game_date:
-                date_width = draw_overlay.textlength(game_date, font=self.fonts["time"])
-                date_x = (display_width - date_width) // 2 + self._get_layout_offset('date', 'x_offset')
-                # Position date at bottom of display, one line above the bottom edge
-                date_y = display_height - 7 + self._get_layout_offset('date', 'y_offset')  # One line above bottom edge
-                self._draw_text_with_outline(
-                    draw_overlay, game_date, (date_x, date_y), self.fonts["time"]
-                )
 
             # "Final" text (Top center) with layout offsets
             status_text = game.get(
@@ -1950,6 +2106,17 @@ class SportsRecent(SportsCore):
             self._draw_text_with_outline(
                 draw_overlay, status_text, (status_x, status_y), self.fonts["time"]
             )
+
+            # Game date (bottom center, one line above the edge) — when the game was
+            # played. Matches the baseball recent layout.
+            game_date = game.get("game_date", "")
+            if game_date:
+                date_width = draw_overlay.textlength(game_date, font=self.fonts["time"])
+                date_x = (display_width - date_width) // 2 + self._get_layout_offset('date', 'x_offset')
+                date_y = display_height - 7 + self._get_layout_offset('date', 'y_offset')
+                self._draw_text_with_outline(
+                    draw_overlay, game_date, (date_x, date_y), self.fonts["time"]
+                )
 
             # Draw odds if available
             if "odds" in game and game["odds"]:
@@ -1974,7 +2141,7 @@ class SportsRecent(SportsCore):
 
                 record_bbox = draw_overlay.textbbox((0, 0), "0-0", font=record_font)
                 record_height = record_bbox[3] - record_bbox[1]
-                record_y = self.display_height - record_height
+                record_y = self.display_height - record_height + self._get_layout_offset('records', 'y_offset')
                 self.logger.debug(
                     f"Record positioning: height={record_height}, record_y={record_y}, display_height={self.display_height}"
                 )
@@ -2003,7 +2170,7 @@ class SportsRecent(SportsCore):
                         away_text = ""
 
                     if away_text:
-                        away_record_x = 0
+                        away_record_x = 0 + self._get_layout_offset('records', 'away_x_offset')
                         self.logger.debug(
                             f"Drawing away ranking '{away_text}' at ({away_record_x}, {record_y}) with font size {record_font.size if hasattr(record_font, 'size') else 'unknown'}"
                         )
@@ -2111,13 +2278,17 @@ class SportsRecent(SportsCore):
                         )
 
             if self.current_game:
+                # Skip redundant redraws when nothing changed
+                game_id = self.current_game.get("id")
+                if not force_clear and game_id == self._last_rendered_game_id:
+                    return True  # Already showing this game, no redraw needed
                 self._draw_scorebug_layout(self.current_game, force_clear)
-            # update_display() is called within _draw_scorebug_layout for recent
+                self._last_rendered_game_id = game_id
 
         except Exception as e:
             self.logger.error(
                 f"Error in display loop: {e}", exc_info=True
-            )  # Changed log prefix
+            )
             return False
 
         return True
@@ -2144,9 +2315,8 @@ class SportsLive(SportsCore):
         )
         self.last_update = 0
         self.live_games = []
-        self._rotation_schedule: List[str] = []  # game IDs, may repeat for favorite_live_boost
         self.current_game_index = 0
-        self.last_game_switch = 0  # Will be set to current_time when games are first loaded
+        self.last_game_switch = 0
         self.game_display_duration = self.mode_config.get("live_game_duration", 20)
         # Optional shorter dwell for live games that involve NO favorite team.
         # 0 (default) means "use game_display_duration for every live game" -
@@ -2166,23 +2336,39 @@ class SportsLive(SportsCore):
         # Initialize test_mode - defaults to False (live mode)
         self.test_mode = self.mode_config.get("test_mode", False)
         # Track game update timestamps for stale data detection
-        self.game_update_timestamps = {}  # {game_id: {"clock": timestamp, "score": timestamp, "last_seen": timestamp}}
+        self.game_update_timestamps = {}
         self.stale_game_timeout = self.mode_config.get("stale_game_timeout", 300)  # 5 minutes default
 
-        # Score/win celebration takeover
+        # Goal/win celebration takeover
         self.celebration_enabled = self.mode_config.get("celebration_enabled", True)
         self.celebration_duration = self.mode_config.get("celebration_duration", 8)
-        self.celebrate_opponent_scores = self.mode_config.get(
-            "celebrate_opponent_scores", False
+        self.celebrate_opponent_goals = self.mode_config.get(
+            "celebrate_opponent_goals", False
         )
-        # Per-game score baselines for scoring detection: {game_id: {"away": int, "home": int}}
+        # Per-game score baselines for goal detection: {game_id: {"away": int, "home": int}}
         self._score_baselines: Dict[str, Dict[str, int]] = {}
         # Active celebration dict (a snapshot, so a win survives the game leaving
         # live_games) or None. See _start_celebration for the shape.
         self.active_celebration: Optional[Dict[str, Any]] = None
 
+    def _get_live_status_text(self, game: Dict) -> str:
+        """Build the top status string for a live game (period + clock)."""
+        if game.get("is_halftime"):
+            return "HALF"
+        if game.get("is_period_break"):
+            return game.get("status_text", "BREAK")
+        # period_text already combines period + clock (e.g. "2H 75'") in the
+        # NRL managers; fall back to the raw clock, then a generic "LIVE".
+        period_text = game.get("period_text", "")
+        if period_text:
+            return period_text
+        clock = game.get("clock", "")
+        if clock:
+            return clock
+        return "LIVE"
+
     # ------------------------------------------------------------------
-    # Score / win celebration
+    # Goal / win celebration
     # ------------------------------------------------------------------
     @staticmethod
     def _score_to_int(score) -> Optional[int]:
@@ -2209,101 +2395,21 @@ class SportsLive(SportsCore):
     def _is_favorite(self, abbr: Optional[str]) -> bool:
         return bool(self.favorite_teams) and abbr in self.favorite_teams
 
-    def _is_favorite_game(self, game: Dict[str, Any]) -> bool:
-        return self._is_favorite(game.get("home_abbr")) or self._is_favorite(game.get("away_abbr"))
-
-    def _effective_live_duration(self, game: Optional[Dict[str, Any]]) -> float:
-        """How long the given live game should stay on screen before rotating.
-
-        Non-favorite live games use non_favorite_live_game_duration, but only
-        when it is set (> 0) AND favorite teams are configured. With no favorites
-        (or the knob at 0) every live game uses game_display_duration - identical
-        to the prior single-duration behavior. When show_favorite_teams_only is
-        on, non-favorite games are never shown, so this naturally never fires."""
-        non_fav = getattr(self, "non_favorite_live_game_duration", 0) or 0
-        if (
-            non_fav > 0
-            and self.favorite_teams
-            and game is not None
-            and not self._is_favorite_game(game)
-        ):
-            return non_fav
-        return self.game_display_duration
-
-    def _classify_live_game(self, home_abbr: Optional[str], away_abbr: Optional[str]) -> "tuple[bool, str]":
-        """Decide whether a live game should be included in the rotation.
-        Priority: exclude_teams > show_all_live > favorite_teams_only (if favorites exist) > show all."""
-        if home_abbr in self.exclude_teams or away_abbr in self.exclude_teams:
-            return False, "excluded team"
-        if self.show_all_live:
-            return True, "show_all_live=True"
-        if not self.show_favorite_teams_only:
-            return True, "show_favorite_teams_only=False"
-        if not self.favorite_teams:
-            return True, "favorite_teams is empty"
-        home_match = home_abbr in self.favorite_teams
-        away_match = away_abbr in self.favorite_teams
-        return (home_match or away_match), (
-            f"favorite_teams={self.favorite_teams}, "
-            f"home_abbr='{home_abbr}' in_favorites={home_match}, "
-            f"away_abbr='{away_abbr}' in_favorites={away_match}"
-        )
-
-    def _build_weighted_schedule(self, games: List[Dict[str, Any]]) -> List[str]:
-        """Build a rotation order (game IDs, may repeat) using Smooth Weighted
-        Round-Robin: a favorite team's game gets weight favorite_live_boost,
-        every other live game gets weight 1. Repeats are spaced evenly rather
-        than clumped, and the highest-weight item is scheduled first. When no
-        game is a favorite (or favorite_live_boost == 1) this degenerates to
-        the plain single-pass order of `games`."""
-        if not games:
-            return []
-        weights = {
-            g["id"]: (self.favorite_live_boost if self._is_favorite_game(g) else 1)
-            for g in games
-        }
-        total_weight = sum(weights.values())
-        if total_weight <= len(games):
-            # No boost in effect - plain order, one pass.
-            return [g["id"] for g in games]
-        current_weight = {gid: 0 for gid in weights}
-        schedule: List[str] = []
-        for _ in range(total_weight):
-            for gid in weights:
-                current_weight[gid] += weights[gid]
-            picked = max(current_weight, key=lambda gid: current_weight[gid])
-            current_weight[picked] -= total_weight
-            schedule.append(picked)
-        return schedule
-
-    def _should_celebrate_score_for(self, abbr: Optional[str]) -> bool:
-        """Whether a score by ``abbr`` should trigger a celebration."""
+    def _should_celebrate_goal_for(self, abbr: Optional[str]) -> bool:
+        """Whether a goal by ``abbr`` should trigger a celebration."""
         if self._is_favorite(abbr):
             return True
         if not self.favorite_teams:
             # No favorites configured: the user opted to show this game, so
-            # celebrate any score in it.
+            # celebrate any goal in it.
             return True
         # Favorites exist but this team isn't one -> it's the opponent.
-        return self.celebrate_opponent_scores
+        return self.celebrate_opponent_goals
 
     def has_active_celebration(self) -> bool:
         """True while a celebration is within its display window."""
         c = self.active_celebration
         return bool(c) and (time.time() - c["started_at"] < self.celebration_duration)
-
-    @staticmethod
-    def _score_phrase(points: int, team_abbr: str) -> str:
-        """Football-native phrase inferred from the points just scored. The
-        first increment of a touchdown drive is +6 (the extra point/2pt lands
-        as a separate, suppressed update), a field goal is +3, a safety +2."""
-        if points >= 6:
-            return secrets.choice(("TOUCHDOWN!", f"{team_abbr} TD!"))
-        if points == 3:
-            return f"{team_abbr} FIELD GOAL!"
-        if points == 2:
-            return f"{team_abbr} SAFETY!"
-        return f"{team_abbr} SCORES!"
 
     def _start_celebration(
         self,
@@ -2313,14 +2419,13 @@ class SportsLive(SportsCore):
         team_abbr: str,
         away_score: int,
         home_score: int,
-        points: int = 0,
     ) -> None:
-        """Arm a score or win celebration. ``scored_side`` is the side whose
+        """Arm a goal or win celebration. ``scored_side`` is the side whose
         score digit gets highlighted ('away' or 'home')."""
         if kind == "win":
             phrase = f"{team_abbr} WINS!"
         else:
-            phrase = self._score_phrase(points, team_abbr)
+            phrase = secrets.choice(("GOOOOAAALLL!", f"{team_abbr} SCORES!"))
 
         self.active_celebration = {
             "kind": kind,
@@ -2340,9 +2445,9 @@ class SportsLive(SportsCore):
             f"[{game.get('away_abbr')} {away_score}-{home_score} {game.get('home_abbr')}]"
         )
 
-    def _check_for_score(self, game: Dict) -> None:
+    def _check_for_goal(self, game: Dict) -> None:
         """Compare a live game's score against the stored baseline and arm a
-        celebration when a celebratable team's score increases."""
+        goal celebration when a celebratable team's score increments."""
         if not self.celebration_enabled:
             return
         game_id = game.get("id")
@@ -2355,43 +2460,34 @@ class SportsLive(SportsCore):
 
         baseline = self._score_baselines.get(game_id)
         # Always refresh the baseline; a first sighting must never celebrate
-        # (a game already in progress at boot would false-fire otherwise),
-        # and a decrement (correction) just re-bases silently.
+        # (a match already in progress at boot would false-fire otherwise),
+        # and a decrement (VAR / disallowed goal) just re-bases silently.
         self._score_baselines[game_id] = {"away": away, "home": home}
         if baseline is None:
             return
 
-        away_delta = away - baseline["away"]
-        home_delta = home - baseline["home"]
-        if away_delta <= 0 and home_delta <= 0:
-            return
-
-        # One takeover per scoring sequence: a touchdown lands as +6 then +1
-        # (the extra point) a few seconds later; suppress the follow-up while
-        # the first celebration is still on screen. The baseline above is still
-        # advanced, so nothing re-fires once the window closes.
-        if self.has_active_celebration():
+        away_scored = away > baseline["away"]
+        home_scored = home > baseline["home"]
+        if not (away_scored or home_scored):
             return
 
         scored_side = None
-        points = 0
-        if away_delta > 0 and self._should_celebrate_score_for(game.get("away_abbr")):
-            scored_side, points = "away", away_delta
-        if scored_side is None and home_delta > 0 and self._should_celebrate_score_for(
+        if away_scored and self._should_celebrate_goal_for(game.get("away_abbr")):
+            scored_side = "away"
+        if scored_side is None and home_scored and self._should_celebrate_goal_for(
             game.get("home_abbr")
         ):
-            scored_side, points = "home", home_delta
+            scored_side = "home"
         if scored_side is None:
             return
 
         self._start_celebration(
             game,
-            "score",
+            "goal",
             scored_side=scored_side,
             team_abbr=game.get(f"{scored_side}_abbr", ""),
             away_score=away,
             home_score=home,
-            points=points,
         )
 
     def _check_for_win(self, game: Dict) -> None:
@@ -2403,8 +2499,8 @@ class SportsLive(SportsCore):
         if not game_id:
             return
         # Only celebrate wins for games we actually watched go live; a game seen
-        # for the first time already-final (board started after the final
-        # whistle) has no baseline and must not fire.
+        # for the first time already-final (Pi started after full time) has no
+        # baseline and must not fire.
         if game_id not in self._score_baselines:
             return
         # Consume the baseline so this can only fire once.
@@ -2420,10 +2516,10 @@ class SportsLive(SportsCore):
         elif home > away:
             winner_side, winner_abbr = "home", game.get("home_abbr")
         else:
-            return  # tie -> no win celebration
+            return  # draw -> no win celebration
 
         # Wins are gated strictly on favorites (every game ends, so the
-        # "no favorites -> celebrate all" score fallback would be too noisy).
+        # "no favorites -> celebrate all" goal fallback would be too noisy).
         if not self._is_favorite(winner_abbr):
             return
 
@@ -2445,7 +2541,7 @@ class SportsLive(SportsCore):
         return fonts[-1]
 
     def _draw_celebration_layout(self, celebration: Dict, force_clear: bool = False) -> None:
-        """Render the full-screen score/win takeover."""
+        """Render the full-screen goal/win takeover."""
         if force_clear:
             self.display_manager.clear()
 
@@ -2551,60 +2647,182 @@ class SportsLive(SportsCore):
                 self.last_game_switch = time.time()
         return super().display(force_clear)
 
+    def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
+        """Draw the switch-mode scorebug for a live NRL game.
+
+        Mirrors the recent-game layout (logos at the edges, score centered low)
+        but shows the live period/clock at the top instead of "Final".
+        """
+        try:
+            if force_clear:
+                self.display_manager.clear()
+
+            display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_width
+            display_height = self.display_manager.matrix.height if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_height
+
+            main_img = Image.new("RGBA", (display_width, display_height), (0, 0, 0, 255))
+            overlay = Image.new("RGBA", (display_width, display_height), (0, 0, 0, 0))
+            draw_overlay = ImageDraw.Draw(overlay)
+
+            home_logo = self._load_and_resize_logo(
+                game["home_id"],
+                game["home_abbr"],
+                game["home_logo_path"],
+                game.get("home_logo_url"),
+            )
+            away_logo = self._load_and_resize_logo(
+                game["away_id"],
+                game["away_abbr"],
+                game["away_logo_path"],
+                game.get("away_logo_url"),
+            )
+
+            if not home_logo or not away_logo:
+                self.logger.error(f"Failed to load logos for live game: {game.get('id')}")
+                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                self._draw_text_with_outline(
+                    draw_final, "Logo Error", (5, 5), self.fonts["status"]
+                )
+                self.display_manager.image = main_img.convert("RGB")
+                self.display_manager.update_display()
+                return
+
+            center_y = display_height // 2
+
+            # Logos at the edges (matches recent/upcoming layouts)
+            home_x = display_width - home_logo.width + 2 + self._get_layout_offset('home_logo', 'x_offset')
+            home_y = center_y - (home_logo.height // 2) + self._get_layout_offset('home_logo', 'y_offset')
+            main_img.paste(home_logo, (home_x, home_y), home_logo)
+
+            away_x = -2 + self._get_layout_offset('away_logo', 'x_offset')
+            away_y = center_y - (away_logo.height // 2) + self._get_layout_offset('away_logo', 'y_offset')
+            main_img.paste(away_logo, (away_x, away_y), away_logo)
+
+            # Score (centered, low — same position as recent games)
+            def format_score(score):
+                try:
+                    if score is None:
+                        return "0"
+                    if isinstance(score, str):
+                        score = score.strip()
+                        if not score:
+                            return "0"
+                        try:
+                            return str(int(float(score)))
+                        except ValueError:
+                            import re
+                            numbers = re.findall(r'\d+', score)
+                            return str(int(numbers[0])) if numbers else "0"
+                    if isinstance(score, dict):
+                        score_value = score.get("value", score.get("displayValue", 0))
+                        return str(int(float(score_value)))
+                    return str(int(float(score)))
+                except (ValueError, TypeError):
+                    return "0"
+
+            home_score = format_score(game.get("home_score", "0"))
+            away_score = format_score(game.get("away_score", "0"))
+            score_text = f"{away_score}-{home_score}"
+            score_width = draw_overlay.textlength(score_text, font=self.fonts["score"])
+            score_x = (display_width - score_width) // 2 + self._get_layout_offset('score', 'x_offset')
+            score_y = display_height - 14 + self._get_layout_offset('score', 'y_offset')
+            self._draw_text_with_outline(
+                draw_overlay, score_text, (score_x, score_y), self.fonts["score"]
+            )
+
+            # Live status (period + clock) at the top center
+            status_text = self._get_live_status_text(game)
+            status_width = draw_overlay.textlength(status_text, font=self.fonts["time"])
+            status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
+            status_y = 1 + self._get_layout_offset('status_text', 'y_offset')
+            self._draw_text_with_outline(
+                draw_overlay, status_text, (status_x, status_y), self.fonts["time"]
+            )
+
+            # Draw odds if available
+            if "odds" in game and game["odds"]:
+                self._draw_dynamic_odds(
+                    draw_overlay, game["odds"], display_width, display_height
+                )
+
+            # Draw records or rankings if enabled
+            if self.show_records or self.show_ranking:
+                try:
+                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+                except IOError:
+                    record_font = ImageFont.load_default()
+
+                away_abbr = game.get("away_abbr", "")
+                home_abbr = game.get("home_abbr", "")
+
+                record_bbox = draw_overlay.textbbox((0, 0), "0-0", font=record_font)
+                record_height = record_bbox[3] - record_bbox[1]
+                record_y = self.display_height - record_height + self._get_layout_offset('records', 'y_offset')
+
+                if away_abbr:
+                    away_text = self._get_team_record_text(away_abbr, game.get("away_record", ""))
+                    if away_text:
+                        away_record_x = 0 + self._get_layout_offset('records', 'away_x_offset')
+                        self._draw_text_with_outline(
+                            draw_overlay, away_text, (away_record_x, record_y), record_font
+                        )
+
+                if home_abbr:
+                    home_text = self._get_team_record_text(home_abbr, game.get("home_record", ""))
+                    if home_text:
+                        home_record_bbox = draw_overlay.textbbox((0, 0), home_text, font=record_font)
+                        home_record_width = home_record_bbox[2] - home_record_bbox[0]
+                        home_record_x = display_width - home_record_width + self._get_layout_offset('records', 'home_x_offset')
+                        self._draw_text_with_outline(
+                            draw_overlay, home_text, (home_record_x, record_y), record_font
+                        )
+
+            self._custom_scorebug_layout(game, draw_overlay)
+            main_img = Image.alpha_composite(main_img, overlay)
+            main_img = main_img.convert("RGB")
+            self.display_manager.image = main_img
+            self.display_manager.update_display()
+
+        except Exception as e:
+            self.logger.error(f"Error displaying live game: {e}", exc_info=True)
+
     def _is_game_really_over(self, game: Dict) -> bool:
-        """Check if a game appears to be over even if API says it's live."""
+        """Check if a game appears to be over even if API says it's live.
+
+        NRL (like soccer): the clock counts UP (e.g., 40', 80'), so we check for
+        'final' in period_text. The 0:00 clock check used in countdown-clock
+        sports doesn't apply here.
+        """
         game_str = f"{game.get('away_abbr')}@{game.get('home_abbr')}"
 
         # Check if period_text indicates final
         period_text = game.get("period_text", "").lower()
         if "final" in period_text:
             self.logger.debug(
-                f"[LIVE_PRIORITY_DEBUG] _is_game_really_over({game_str}): "
+                f"_is_game_really_over({game_str}): "
                 f"returning True - 'final' in period_text='{period_text}'"
             )
             return True
 
-        # Check if clock is 0:00 in Q4 or OT
-        raw_clock = game.get("clock")
-        period = game.get("period", 0)
-
-        # Only check clock-based finish if we have a valid clock string
-        if isinstance(raw_clock, str) and raw_clock.strip() and period >= 4:
-            clock = raw_clock
-            clock_normalized = clock.replace(":", "").strip()
-
-            self.logger.debug(
-                f"[LIVE_PRIORITY_DEBUG] _is_game_really_over({game_str}): "
-                f"raw_clock={raw_clock!r}, clock='{clock}', clock_normalized='{clock_normalized}', period={period}, period_text='{period_text}'"
-            )
-
-            # Check for clock at 0:00 - various formats: "0:00", ":00", normalized "000"/"00"
-            # Note: Clocks like ":40", ":50" are legitimate (under 1 minute remaining)
-            if clock_normalized in ("000", "00") or clock in ("0:00", ":00"):
-                self.logger.debug(
-                    f"[LIVE_PRIORITY_DEBUG] _is_game_really_over({game_str}): "
-                    f"returning True - clock appears to be 0:00 (clock='{clock}', normalized='{clock_normalized}', period={period})"
-                )
-                return True
-
         self.logger.debug(
-            f"[LIVE_PRIORITY_DEBUG] _is_game_really_over({game_str}): returning False"
+            f"_is_game_really_over({game_str}): returning False "
+            f"(period_text='{period_text}', period={game.get('period', 0)})"
         )
         return False
 
     def _detect_stale_games(self, games: List[Dict]) -> None:
         """Remove games that appear stale or haven't updated."""
         current_time = time.time()
-        
+
         for game in games[:]:  # Copy list to iterate safely
             game_id = game.get("id")
             if not game_id:
                 continue
-            
+
             # Check if game data is stale
             timestamps = self.game_update_timestamps.get(game_id, {})
             last_seen = timestamps.get("last_seen", 0)
-            
+
             if last_seen > 0 and current_time - last_seen > self.stale_game_timeout:
                 self.logger.warning(
                     f"Removing stale game {game.get('away_abbr')}@{game.get('home_abbr')} "
@@ -2614,7 +2832,7 @@ class SportsLive(SportsCore):
                 if game_id in self.game_update_timestamps:
                     del self.game_update_timestamps[game_id]
                 continue
-            
+
             # Also check if game appears to be over
             if self._is_game_really_over(game):
                 self.logger.debug(
@@ -2635,12 +2853,9 @@ class SportsLive(SportsCore):
         current_time = time.time()
 
         # Define interval using a pattern similar to NFLLiveManager's update method.
-        # Uses getattr for robustness, assuming attributes for live_games, test_mode,
+        # Uses getattr for robustness, assuming attributes for live_games,
         # no_data_interval, and update_interval are available on self.
         _live_games_attr = self.live_games
-        _test_mode_attr = getattr(
-            self, 'test_mode', False
-        )  # test_mode is often from a base class or config - use getattr for safety
         _no_data_interval_attr = (
             self.no_data_interval
         )  # Default similar to NFLLiveManager
@@ -2655,8 +2870,8 @@ class SportsLive(SportsCore):
         time_since_last_update = current_time - self.last_update
         has_recently_checked = self.last_update > 0 and time_since_last_update < 300
         
-        if _live_games_attr or _test_mode_attr:
-            # We have live games or are in test mode, use the configured update interval
+        if _live_games_attr:
+            # We have live games, use the configured update interval
             interval = _update_interval_attr
         elif has_recently_checked:
             # We've checked recently and found no live games, use longer interval
@@ -2690,121 +2905,84 @@ class SportsLive(SportsCore):
                 for game in data["events"]:
                     details = self._extract_game_details(game)
                     if details:
-                        # Log game status for debugging - use INFO level to see what's happening
+                        # Log game status for debugging
                         status_state = game.get("competitions", [{}])[0].get("status", {}).get("type", {}).get("state", "unknown")
-                        status_name = game.get("competitions", [{}])[0].get("status", {}).get("type", {}).get("name", "unknown")
-                        self.logger.info(
-                            f"[{self.sport_key.upper()} Live] Game {details.get('away_abbr', '?')}@{details.get('home_abbr', '?')}: "
-                            f"state={status_state}, name={status_name}, is_live={details.get('is_live')}, "
-                            f"is_halftime={details.get('is_halftime')}, is_final={details.get('is_final')}, "
-                            f"clock={details.get('clock', 'N/A')}, period={details.get('period', 'N/A')}, "
-                            f"status_text={details.get('status_text', 'N/A')}"
+                        self.logger.debug(
+                            f"Game {details.get('away_abbr', '?')}@{details.get('home_abbr', '?')}: "
+                            f"state={status_state}, is_live={details.get('is_live')}, "
+                            f"is_halftime={details.get('is_halftime')}, is_final={details.get('is_final')}"
                         )
-                        
+
                         # Filter out final games and games that appear to be over.
                         # A game we were tracking live going final may earn a win
                         # celebration before it drops out of the live list.
                         if details.get("is_final", False):
                             self._check_for_win(details)
-                            self.logger.info(
-                                f"[{self.sport_key.upper()} Live] Filtered out final game: {details.get('away_abbr')}@{details.get('home_abbr')} "
-                                f"(is_final={details.get('is_final')}, clock={details.get('clock')}, period={details.get('period')})"
-                            )
                             continue
 
-                        # Additional validation: check if game appears to be over
                         if self._is_game_really_over(details):
                             self._check_for_win(details)
                             self.logger.info(
-                                f"[{self.sport_key.upper()} Live] Skipping game that appears final: {details.get('away_abbr')}@{details.get('home_abbr')} "
+                                f"Skipping game that appears final: {details.get('away_abbr')}@{details.get('home_abbr')} "
                                 f"(clock={details.get('clock')}, period={details.get('period')}, period_text={details.get('period_text')})"
                             )
                             continue
-                        
-                        # Check if game should be considered live
-                        # First check explicit flags
-                        is_explicitly_live = details["is_live"] or details["is_halftime"]
-                        
-                        # Also check if game appears to be live based on status even if not explicitly marked
-                        # Some APIs may mark games differently (e.g., "in progress" vs "in")
-                        status_text = details.get("status_text", "").upper()
-                        appears_live_by_status = (
-                            (status_state == "in" and not details.get("is_final", False))
-                            or (status_name and "in" in status_name.lower() and "progress" in status_name.lower())
-                            or (status_text and ("Q1" in status_text or "Q2" in status_text or "Q3" in status_text or "Q4" in status_text or "OT" in status_text))
-                            or (details.get("clock") and details.get("clock") != "" and details.get("clock") != "0:00" and details.get("clock") != ":00")
-                        )
-                        
-                        is_actually_live = is_explicitly_live or appears_live_by_status
-                        
-                        if is_actually_live:
-                            if appears_live_by_status and not is_explicitly_live:
-                                # Game appears to be live but wasn't explicitly marked as such - log this
-                                self.logger.warning(
-                                    f"[{self.sport_key.upper()} Live] Game {details.get('away_abbr')}@{details.get('home_abbr')} "
-                                    f"appears live (state={status_state}, name={status_name}, clock={details.get('clock')}) "
-                                    f"but is_live={details.get('is_live')}, is_halftime={details.get('is_halftime')} - treating as live"
-                                )
+
+                        if details["is_live"] or details["is_halftime"]:
                             live_or_halftime_count += 1
-                            self.logger.info(
-                                f"[{self.sport_key.upper()} Live] Found live/halftime game: {details.get('away_abbr')}@{details.get('home_abbr')} "
-                                f"(is_live={details.get('is_live')}, is_halftime={details.get('is_halftime')}, "
-                                f"state={status_state}, appears_live_by_status={appears_live_by_status})"
-                            )
                             
-                            # Track game timestamps for stale detection
-                            game_id = details.get("id")
-                            if game_id:
-                                current_clock = details.get("clock", "")
-                                current_score = f"{details.get('away_score', '0')}-{details.get('home_score', '0')}"
-                                
-                                if game_id not in self.game_update_timestamps:
-                                    self.game_update_timestamps[game_id] = {}
-                                
-                                timestamps = self.game_update_timestamps[game_id]
-                                timestamps["last_seen"] = time.time()
-                                
-                                # Track if clock/score changed
-                                if timestamps.get("last_clock") != current_clock:
-                                    timestamps["last_clock"] = current_clock
-                                    timestamps["clock_changed_at"] = time.time()
-                                if timestamps.get("last_score") != current_score:
-                                    timestamps["last_score"] = current_score
-                                    timestamps["score_changed_at"] = time.time()
-                            
-                            # Determine if this game should be included based on filtering settings
-                            game_str = f"{details.get('away_abbr')}@{details.get('home_abbr')}"
-                            home_abbr = details.get("home_abbr")
-                            away_abbr = details.get("away_abbr")
-
-                            should_include, include_reason = self._classify_live_game(
-                                home_abbr, away_abbr
-                            )
-
-                            self.logger.debug(
-                                f"[LIVE_PRIORITY_DEBUG] {self.sport_key.upper()} filter decision for {game_str}: "
-                                f"should_include={should_include}, reason: {include_reason}"
+                            # Filtering logic (see _classify_live_game for the
+                            # full precedence order: exclude > show_all_live >
+                            # favorites-only membership; matches SportsUpcoming).
+                            should_include = self._classify_live_game(
+                                details["home_abbr"], details["away_abbr"]
                             )
 
                             if not should_include:
                                 filtered_out_count += 1
-                                self.logger.info(
-                                    f"[{self.sport_key.upper()} Live] Filtered out live game {details.get('away_abbr')}@{details.get('home_abbr')}: "
+                                self.logger.debug(
+                                    f"Filtered out live game {details.get('away_abbr')}@{details.get('home_abbr')}: "
                                     f"show_all_live={self.show_all_live}, "
                                     f"show_favorite_teams_only={self.show_favorite_teams_only}, "
                                     f"favorite_teams={self.favorite_teams}"
                                 )
                             
                             if should_include:
-                                # Detect scores (per-side increments) and arm a
-                                # celebration when a celebratable team scores.
-                                self._check_for_score(details)
+                                # Track game timestamps for stale detection
+                                game_id = details.get("id")
+                                if game_id:
+                                    current_clock = details.get("clock", "")
+                                    current_score = f"{details.get('away_score', '0')}-{details.get('home_score', '0')}"
+
+                                    if game_id not in self.game_update_timestamps:
+                                        self.game_update_timestamps[game_id] = {}
+
+                                    timestamps = self.game_update_timestamps[game_id]
+                                    timestamps["last_seen"] = time.time()
+
+                                    if timestamps.get("last_clock") != current_clock:
+                                        timestamps["last_clock"] = current_clock
+                                        timestamps["clock_changed_at"] = time.time()
+                                    if timestamps.get("last_score") != current_score:
+                                        timestamps["last_score"] = current_score
+                                        timestamps["score_changed_at"] = time.time()
+
+                                # Detect goals (per-side score increments) and arm
+                                # a celebration when a celebratable team scores.
+                                self._check_for_goal(details)
+
                                 if self.show_odds:
                                     self._fetch_odds(details)
                                 new_live_games.append(details)
-                
+
+                # Detect and remove stale games from persisted list
+                # (new_live_games has fresh last_seen, so stale check must
+                # run against the previous self.live_games)
+                with self._games_lock:
+                    self._detect_stale_games(self.live_games)
+
                 self.logger.info(
-                    f"[{self.sport_key.upper()} Live] Live game filtering: {total_events} total events, "
+                    f"Live game filtering: {total_events} total events, "
                     f"{live_or_halftime_count} live/halftime, "
                     f"{filtered_out_count} filtered out, "
                     f"{len(new_live_games)} included | "
@@ -2812,13 +2990,6 @@ class SportsLive(SportsCore):
                     f"show_favorite_teams_only={self.show_favorite_teams_only}, "
                     f"favorite_teams={self.favorite_teams if self.favorite_teams else '[] (showing all)'}"
                 )
-                
-                # Detect and remove stale games from persisted list
-                # (new_live_games has fresh last_seen, so stale check must
-                # run against the previous self.live_games)
-                with self._games_lock:
-                    self._detect_stale_games(self.live_games)
-                
                 # Log changes or periodically
                 current_time_for_log = (
                     time.time()
@@ -2862,7 +3033,7 @@ class SportsLive(SportsCore):
                         )
                     self.last_log_time = current_time_for_log
 
-                # Update game list and current game (thread-safe)
+                # Update game list and current game (protected by lock for thread safety)
                 with self._games_lock:
                     if new_live_games:
                         # Check if the games themselves changed, not just scores/time
@@ -2875,36 +3046,39 @@ class SportsLive(SportsCore):
                                 key=lambda g: g.get("start_time_utc")
                                 or datetime.now(timezone.utc),
                             )  # Sort by start time
-                            self._rotation_schedule = self._build_weighted_schedule(self.live_games)
-                            games_by_id = {g["id"]: g for g in self.live_games}
-                            # Reset index if current game is gone or list is new
+                            # Reset index if current game is gone or list is new.
+                            # Pick via weighted round-robin so a live favorite is
+                            # queued first (see _swrr_advance).
                             if (
                                 not self.current_game
                                 or self.current_game["id"] not in new_game_ids
                             ):
-                                self.current_game_index = 0
                                 self.current_game = (
-                                    games_by_id.get(self._rotation_schedule[0])
-                                    if self._rotation_schedule else None
+                                    self._swrr_advance(self.live_games)
+                                    if self.live_games else None
+                                )
+                                self.current_game_index = next(
+                                    (i for i, g in enumerate(self.live_games)
+                                     if self.current_game and g["id"] == self.current_game["id"]),
+                                    0,
                                 )
                                 self.last_game_switch = current_time
                             else:
-                                # Find current game's new position if it still exists
+                                # Find current game's new index if it still exists
                                 try:
-                                    self.current_game_index = self._rotation_schedule.index(
-                                        self.current_game["id"]
+                                    self.current_game_index = next(
+                                        i
+                                        for i, g in enumerate(self.live_games)
+                                        if g["id"] == self.current_game["id"]
                                     )
-                                    self.current_game = games_by_id[
-                                        self.current_game["id"]
+                                    self.current_game = self.live_games[
+                                        self.current_game_index
                                     ]  # Update current_game with fresh data
-                                    # Fix: Set last_game_switch if it's still 0 (initialized) to prevent immediate switching
-                                    if self.last_game_switch == 0:
-                                        self.last_game_switch = current_time
                                 except (
-                                    ValueError
+                                    StopIteration
                                 ):  # Should not happen if check above passed, but safety first
                                     self.current_game_index = 0
-                                    self.current_game = games_by_id.get(self._rotation_schedule[0]) if self._rotation_schedule else None
+                                    self.current_game = self.live_games[0]
                                     self.last_game_switch = current_time
 
                         else:
@@ -2917,10 +3091,6 @@ class SportsLive(SportsCore):
                                 self.current_game = temp_game_dict.get(
                                     self.current_game["id"], self.current_game
                                 )
-                            # Fix: Set last_game_switch if it's still 0 (initialized) to prevent immediate switching
-                            # This handles the case where games were loaded previously but last_game_switch was never set
-                            if self.last_game_switch == 0:
-                                self.last_game_switch = current_time
 
                         # Display update handled by main loop based on interval
 
@@ -2931,7 +3101,6 @@ class SportsLive(SportsCore):
                                 "Live games previously showing have ended or are no longer live."
                             )  # Changed log prefix
                         self.live_games = []
-                        self._rotation_schedule = []
                         self.current_game = None
                         self.current_game_index = 0
 
@@ -2939,6 +3108,13 @@ class SportsLive(SportsCore):
                     active_ids = {g["id"] for g in self.live_games}
                     self.game_update_timestamps = {
                         gid: ts for gid, ts in self.game_update_timestamps.items()
+                        if gid in active_ids
+                    }
+                    # Prune goal baselines the same way. A game that vanishes
+                    # without going final is re-based on reappearance (treated as
+                    # a first sighting), which avoids a false goal.
+                    self._score_baselines = {
+                        gid: v for gid, v in self._score_baselines.items()
                         if gid in active_ids
                     }
 
@@ -2954,26 +3130,30 @@ class SportsLive(SportsCore):
                     )  # Changed log prefix
                     self.current_game = None  # Clear current game if fetch fails and no games were active
 
-            # Handle game switching (outside test mode check, thread-safe)
-            # Fix: Don't check for switching if last_game_switch is still 0 (games haven't been loaded yet)
-            # This prevents immediate switching when the system has been running for a while before games load
+            # Handle game switching (protected by lock for thread safety).
+            # Hold the current game while a celebration is pending so the view
+            # doesn't rotate away mid-celebration — or in the window between the
+            # duration expiring and display() clearing it (display() resets the
+            # dwell timer when it clears, so the scoring game resumes first).
             with self._games_lock:
                 if (
-                    not self.test_mode
-                    and len(self.live_games) > 1
-                    and self._rotation_schedule
-                    and self.last_game_switch > 0
+                    len(self.live_games) > 1
+                    and self.active_celebration is None
                     and (current_time - self.last_game_switch)
                     >= self._effective_live_duration(self.current_game)
                 ):
-                    self.current_game_index = (self.current_game_index + 1) % len(
-                        self._rotation_schedule
+                    # Weighted pick (see _swrr_advance) instead of plain +1 index -
+                    # gives a live favorite's game extra turns per
+                    # favorite_live_boost while everything else still rotates
+                    # fairly (boost==1 reproduces the old flat round robin).
+                    self.current_game = self._swrr_advance(self.live_games)
+                    self.current_game_index = next(
+                        (i for i, g in enumerate(self.live_games)
+                         if self.current_game and g["id"] == self.current_game["id"]),
+                        0,
                     )
-                    next_id = self._rotation_schedule[self.current_game_index]
-                    games_by_id = {g["id"]: g for g in self.live_games}
-                    self.current_game = games_by_id.get(next_id, self.current_game)
                     self.last_game_switch = current_time
                     self.logger.info(
                         f"Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}"
                     )  # Changed log prefix
-                # Force display update via flag or direct call if needed, but usually let main loop handle
+                    # Force display update via flag or direct call if needed, but usually let main loop handle

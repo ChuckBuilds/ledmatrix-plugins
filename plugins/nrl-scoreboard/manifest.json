@@ -1,0 +1,45 @@
+{
+  "id": "nrl-scoreboard",
+  "name": "NRL Scoreboard",
+  "version": "1.0.1",
+  "author": "ChuckBuilds",
+  "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
+  "category": "sports",
+  "tags": [
+    "nrl",
+    "rugby-league",
+    "sports",
+    "scoreboard",
+    "live-scores"
+  ],
+  "display_modes": [
+    "nrl_live",
+    "nrl_recent",
+    "nrl_upcoming"
+  ],
+  "versions": [
+    {
+      "released": "2026-07-12",
+      "version": "1.0.1",
+      "notes": "Fix Codacy-flagged issues: silent except/pass blocks now log at debug/warning level, removed an unused/duplicate pathlib.Path import, and dropped an unused exception variable.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-10",
+      "version": "1.0.0",
+      "notes": "Initial release: live, recent, and upcoming NRL games from ESPN's rugby-league API with switch/scroll display, live priority, goal/win celebrations, dynamic duration, and Vegas scroll support.",
+      "ledmatrix_min": "2.0.0"
+    }
+  ],
+  "last_updated": "2026-07-12",
+  "stars": 0,
+  "downloads": 0,
+  "verified": true,
+  "screenshot": "",
+  "entry_point": "manager.py",
+  "class_name": "NrlScoreboardPlugin",
+  "config_schema": "config_schema.json",
+  "compatible_versions": [
+    ">=2.0.0"
+  ]
+}
