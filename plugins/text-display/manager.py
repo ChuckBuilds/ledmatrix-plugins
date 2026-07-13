@@ -24,6 +24,26 @@ from pathlib import Path
 from src.plugin_system.base_plugin import BasePlugin
 from src.common.scroll_helper import ScrollHelper
 
+try:
+    from src.adaptive_layout import FontStep, LADDER_ARCADE
+    # Prefer PressStart2P (the plugin's classic look) at its crisp integer
+    # sizes, then step down to 4x6-font for panels too small for even 8px.
+    # TTF-only on purpose: this plugin renders with PIL draw.text(), which
+    # can't take the freetype BDF faces the grid ladder returns.
+    #
+    # Both rungs are verified crisp (measure_font_crispness == 0.0, see
+    # test_font_mode_auto.py). PressStart2P only rasterizes without
+    # antialiasing at exact multiples of 8px. "5by7.regular" was dropped —
+    # it renders visibly antialiased at every size tested (never below
+    # ~30% gray pixels) — and "4x6-font" moved from 6px to 7px, its only
+    # crisp size; 6px is ~33% antialiased despite measuring the same ink
+    # height.
+    AUTO_FONT_LADDER = LADDER_ARCADE + (
+        FontStep("4x6-font", 7),
+    )
+except ImportError:  # older LEDMatrix core without the adaptive layout system
+    AUTO_FONT_LADDER = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,8 +55,11 @@ class TextDisplayPlugin(BasePlugin):
     
     Configuration options:
         text (str): Message to display
-        font_path (str): Path to TTF or BDF font file
-        font_size (int): Font size in pixels
+        font_mode (str): "manual" uses font_path/font_size as-is (default);
+            "auto" picks the largest crisp font that fits the panel — static
+            text fits both dimensions, scrolling text fits height only
+        font_path (str): Path to TTF or BDF font file (manual mode)
+        font_size (int): Font size in pixels (manual mode)
         scroll (bool): Enable scrolling animation
         scroll_speed (float): Scroll speed in pixels per frame (default: 1, range: 0.1-10)
         scroll_delay (float): Delay in seconds per frame (default: 0.01, range: 0.001-0.1)
@@ -55,6 +78,13 @@ class TextDisplayPlugin(BasePlugin):
         # the auto-generated web UI form populates from, so the code default
         # must match what the form prefill shows.
         self.text = config.get('text', 'Subscribe to ChuckBuilds')
+        self.font_mode = config.get('font_mode', 'manual')
+        if self.font_mode == 'auto' and AUTO_FONT_LADDER is None:
+            self.logger.warning(
+                "font_mode 'auto' requires a LEDMatrix core with the adaptive "
+                "layout system; falling back to manual font settings"
+            )
+            self.font_mode = 'manual'
         self.font_path = config.get('font_path', 'assets/fonts/PressStart2P-Regular.ttf')
         self.font_size = config.get('font_size', 8)
         self.scroll_enabled = config.get('scroll', True)
@@ -87,7 +117,11 @@ class TextDisplayPlugin(BasePlugin):
             self.bg_color = (0, 0, 0)
         
         # State
-        self.font = self._load_font()
+        # render_text is what actually gets drawn/measured — same as text in
+        # manual mode; in auto static mode it may be ellipsized to fit.
+        self.render_text = self.text
+        self._auto_fit_dims = None  # (w, h) the auto font was fitted for
+        self.font = self._resolve_font()
         self.text_width = 0
         self.text_image_cache = None
         
@@ -171,6 +205,58 @@ class TextDisplayPlugin(BasePlugin):
         except Exception as e:
             self.logger.warning(f"Error registering fonts: {e}")
     
+    def _resolve_font(self):
+        """Pick the font per font_mode: auto-fit to the panel, or manual."""
+        if self.font_mode == 'auto':
+            font = self._resolve_auto_font()
+            if font is not None:
+                return font
+        self.render_text = self.text
+        return self._load_font()
+
+    def _resolve_auto_font(self):
+        """Largest crisp font that fits the panel (adaptive layout system).
+
+        Static text is fitted to both dimensions (ellipsized only if even the
+        smallest rung is too wide); scrolling text is fitted by height only,
+        since width is unconstrained by design.
+        """
+        if AUTO_FONT_LADDER is None:
+            return None
+        try:
+            ctx = self.layout
+            box = ctx.bounds.inset(1)
+            if self.scroll_enabled:
+                fit = ctx.fit_text(self.text, (10 ** 9, box.h),
+                                   ladder=AUTO_FONT_LADDER, ellipsis=False)
+            else:
+                fit = ctx.fit_text(self.text, box, ladder=AUTO_FONT_LADDER)
+            self.render_text = fit.text
+            self.font_size = fit.size_px
+            self._auto_fit_dims = (ctx.width, ctx.height)
+            self.logger.info(
+                f"Auto font: {fit.family} @ {fit.size_px}px on "
+                f"{ctx.width}x{ctx.height} (fits={fit.fits})"
+            )
+            return fit.font
+        except Exception as e:
+            self.logger.warning(f"Auto font sizing failed, using manual font: {e}")
+            return None
+
+    def _ensure_auto_font_current(self):
+        """Re-fit the auto font when the logical display size changes
+        (Vegas segments, double-sided logical screens, harness sizes)."""
+        if self.font_mode != 'auto' or self._auto_fit_dims is None:
+            return
+        dims = (self.display_manager.matrix.width, self.display_manager.matrix.height)
+        if dims == self._auto_fit_dims:
+            return
+        self.font = self._resolve_font()
+        self._calculate_text_dimensions()
+        self.text_image_cache = None
+        if self.scroll_helper:
+            self.scroll_helper.reset_scroll()
+
     def _load_font(self):
         """Load the specified font file (TTF or BDF)."""
         font_path = self.font_path
@@ -242,16 +328,16 @@ class TextDisplayPlugin(BasePlugin):
             temp_draw = ImageDraw.Draw(temp_img)
             
             if isinstance(self.font, ImageFont.FreeTypeFont) or isinstance(self.font, ImageFont.ImageFont):
-                bbox = temp_draw.textbbox((0, 0), self.text, font=self.font)
+                bbox = temp_draw.textbbox((0, 0), self.render_text, font=self.font)
                 self.text_width = bbox[2] - bbox[0]
             else:
                 # Default fallback
-                self.text_width = len(self.text) * 8
-            
-            self.logger.info(f"Text width calculated: {self.text_width}px for '{self.text[:30]}...'")
+                self.text_width = len(self.render_text) * 8
+
+            self.logger.info(f"Text width calculated: {self.text_width}px for '{self.render_text[:30]}...'")
         except Exception as e:
             self.logger.error(f"Error calculating text width: {e}")
-            self.text_width = len(self.text) * 8
+            self.text_width = len(self.render_text) * 8
     
     def _create_text_cache(self):
         """Pre-render the text onto an image for smooth scrolling using ScrollHelper."""
@@ -275,12 +361,12 @@ class TextDisplayPlugin(BasePlugin):
             # Calculate vertical centering
             temp_img = Image.new('RGB', (1, 1))
             temp_draw = ImageDraw.Draw(temp_img)
-            bbox = temp_draw.textbbox((0, 0), self.text, font=self.font)
+            bbox = temp_draw.textbbox((0, 0), self.render_text, font=self.font)
             text_height = bbox[3] - bbox[1]
             y_pos = (matrix_height - text_height) // 2 - bbox[1]
-            
+
             # Draw text starting after the initial display_width padding
-            draw.text((matrix_width, y_pos), self.text, font=self.font, fill=self.text_color)
+            draw.text((matrix_width, y_pos), self.render_text, font=self.font, fill=self.text_color)
             
             # Ensure image is in RGB mode (required for numpy conversion)
             if self.text_image_cache.mode != 'RGB':
@@ -340,8 +426,9 @@ class TextDisplayPlugin(BasePlugin):
         """
         if not self.text:
             return
-        
+
         try:
+            self._ensure_auto_font_current()
             matrix_width = self.display_manager.matrix.width
             matrix_height = self.display_manager.matrix.height
             
@@ -417,10 +504,10 @@ class TextDisplayPlugin(BasePlugin):
                         # Fallback: direct draw
                         img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                         draw = ImageDraw.Draw(img)
-                        bbox = draw.textbbox((0, 0), self.text, font=self.font)
+                        bbox = draw.textbbox((0, 0), self.render_text, font=self.font)
                         text_height = bbox[3] - bbox[1]
                         y_pos = (matrix_height - text_height) // 2 - bbox[1]
-                        draw.text((0, y_pos), self.text, font=self.font, fill=self.text_color)
+                        draw.text((0, y_pos), self.render_text, font=self.font, fill=self.text_color)
                         if not hasattr(self.display_manager, 'image') or self.display_manager.image is None:
                             self.display_manager.image = img
                         else:
@@ -430,24 +517,24 @@ class TextDisplayPlugin(BasePlugin):
                     # Fallback: static text if cache creation failed
                     img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                     draw = ImageDraw.Draw(img)
-                    bbox = draw.textbbox((0, 0), self.text, font=self.font)
+                    bbox = draw.textbbox((0, 0), self.render_text, font=self.font)
                     text_width = bbox[2] - bbox[0]
                     text_height = bbox[3] - bbox[1]
                     x_pos = (matrix_width - text_width) // 2
                     y_pos = (matrix_height - text_height) // 2 - bbox[1]
-                    draw.text((x_pos, y_pos), self.text, font=self.font, fill=self.text_color)
+                    draw.text((x_pos, y_pos), self.render_text, font=self.font, fill=self.text_color)
                     self.display_manager.image = img
                     self.display_manager.update_display()
             else:
                 # Static text (centered)
                 img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                 draw = ImageDraw.Draw(img)
-                bbox = draw.textbbox((0, 0), self.text, font=self.font)
+                bbox = draw.textbbox((0, 0), self.render_text, font=self.font)
                 text_width = bbox[2] - bbox[0]
                 text_height = bbox[3] - bbox[1]
                 x_pos = (matrix_width - text_width) // 2
                 y_pos = (matrix_height - text_height) // 2 - bbox[1]
-                draw.text((x_pos, y_pos), self.text, font=self.font, fill=self.text_color)
+                draw.text((x_pos, y_pos), self.render_text, font=self.font, fill=self.text_color)
                 self.display_manager.image = img
                 self.display_manager.update_display()
             
@@ -494,6 +581,10 @@ class TextDisplayPlugin(BasePlugin):
     def set_text(self, text: str):
         """Update the displayed text."""
         self.text = text
+        self.render_text = text
+        if self.font_mode == 'auto':
+            # New text may fit a different ladder rung
+            self.font = self._resolve_font()
         self._calculate_text_dimensions()
         self.text_image_cache = None
         if self.scroll_helper:
@@ -591,12 +682,28 @@ class TextDisplayPlugin(BasePlugin):
             self.logger.info(f"Scroll {'enabled' if self.scroll_enabled else 'disabled'}")
         
         # Update font settings if changed
+        new_font_mode = new_config.get('font_mode', self.font_mode)
+        if new_font_mode == 'auto' and AUTO_FONT_LADDER is None:
+            self.logger.warning(
+                "font_mode 'auto' requires a LEDMatrix core with the adaptive "
+                "layout system; staying on manual font settings"
+            )
+            new_font_mode = 'manual'
         new_font_path = new_config.get('font_path', self.font_path)
         new_font_size = new_config.get('font_size', self.font_size)
-        if new_font_path != self.font_path or new_font_size != self.font_size:
+        font_changed = (
+            new_font_mode != self.font_mode
+            or new_font_path != self.font_path
+            # In auto mode font_size holds the fitted size, not the config value
+            or (new_font_mode == 'manual' and new_font_size != self.font_size)
+            # Toggling scroll changes the auto-fit box (height-only vs both)
+            or (new_font_mode == 'auto' and old_scroll_enabled != self.scroll_enabled)
+        )
+        if font_changed:
+            self.font_mode = new_font_mode
             self.font_path = new_font_path
             self.font_size = new_font_size
-            self.font = self._load_font()
+            self.font = self._resolve_font()
             self._calculate_text_dimensions()
             self.text_image_cache = None  # Invalidate cache when font changes
             self._register_fonts()
@@ -628,6 +735,7 @@ class TextDisplayPlugin(BasePlugin):
             'target_fps': self.target_fps,
             'pixels_per_second': round(pixels_per_second, 1),  # calculated from frame-based settings
             'scroll_loop': self.scroll_loop,
+            'font_mode': self.font_mode,
             'font_path': self.font_path,
             'font_size': self.font_size
         })
