@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.19.0",
+  "version": "1.19.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-13",
+      "version": "1.19.1",
+      "notes": "Fix the Player Card's season-stat line ('AVG .312  HR 28  RBI 71') hard-truncating mid-pair on narrow panels (64x32 showed 'AVG .312  H', silently losing the HR/RBI values). Now drops whole trailing stat pairs -- 3 stats, then 2, then 1 -- until what's left fits, only truncating mid-string as a last resort if even a single stat overflows.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-07-09",
       "version": "1.19.0",
