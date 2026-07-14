@@ -1497,11 +1497,12 @@ class SportsUpcoming(SportsCore):
                     f"Home logo URL: {game.get('home_logo_url')}, "
                     f"Away logo URL: {game.get('away_logo_url')}"
                 )
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image = main_img.convert("RGB")
+                self.display_manager.image = error_img
                 self.display_manager.update_display()
                 return
 
@@ -2020,11 +2021,12 @@ class SportsRecent(SportsCore):
                     f"Failed to load logos for game: {game.get('id')}"
                 )  # Changed log prefix
                 # Draw placeholder text if logos fail (similar to live)
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image = main_img.convert("RGB")
+                self.display_manager.image = error_img
                 self.display_manager.update_display()
                 return
 
@@ -2234,7 +2236,7 @@ class SportsRecent(SportsCore):
         """Display recent games, handling switching."""
         if not self.is_enabled or not self.games_list:
             # If disabled or no games, clear the display so old content doesn't persist
-            if force_clear or not self.games_list:
+            if force_clear:
                 self.display_manager.clear()
                 self.display_manager.update_display()
             if not self.games_list and self.current_game:
@@ -2676,11 +2678,12 @@ class SportsLive(SportsCore):
 
             if not home_logo or not away_logo:
                 self.logger.error(f"Failed to load logos for live game: {game.get('id')}")
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image = main_img.convert("RGB")
+                self.display_manager.image = error_img
                 self.display_manager.update_display()
                 return
 

@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List
 import requests
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class DataSource(ABC):
     """Abstract base class for data sources."""
@@ -61,10 +61,14 @@ class ESPNDataSource(DataSource):
     def fetch_live_games(self, sport: str, league: str) -> List[Dict]:
         """Fetch live games from ESPN API."""
         try:
+            # Query a small range around the host's current local date, not
+            # just today -- AFL games are scheduled in Australian time zones,
+            # so a game already live can fall on a different calendar date
+            # than the host machine's "today" near a date boundary.
             now = datetime.now()
-            formatted_date = now.strftime("%Y%m%d")
+            date_range = f"{(now - timedelta(days=1)).strftime('%Y%m%d')}-{(now + timedelta(days=1)).strftime('%Y%m%d')}"
             url = f"{self.base_url}/{sport}/{league}/scoreboard"
-            response = self.session.get(url, params={"dates": formatted_date, "limit": 1000}, headers=self.get_headers(), timeout=15)
+            response = self.session.get(url, params={"dates": date_range, "limit": 1000}, headers=self.get_headers(), timeout=15)
             response.raise_for_status()
 
             data = response.json()
@@ -156,169 +160,6 @@ class ESPNDataSource(DataSource):
                 # Non-404 error - log at debug level since standings are optional
                 self.logger.debug(f"Error fetching standings from ESPN for {sport}/{league}: {e}")
                 return {}
-
-
-class MLBAPIDataSource(DataSource):
-    """MLB API data source."""
-
-    def __init__(self, logger: logging.Logger):
-        super().__init__(logger)
-        self.base_url = "https://statsapi.mlb.com/api/v1"
-
-    def fetch_live_games(self, sport: str, league: str) -> List[Dict]:
-        """Fetch live games from MLB API."""
-        try:
-            url = f"{self.base_url}/schedule"
-            params = {
-                'sportId': 1,  # MLB
-                'date': datetime.now().strftime('%Y-%m-%d'),
-                'hydrate': 'game,team,venue,weather'
-            }
-
-            response = self.session.get(url, headers=self.get_headers(), params=params, timeout=15)
-            response.raise_for_status()
-
-            data = response.json()
-            games = data.get('dates', [{}])[0].get('games', [])
-
-            # Filter for live games
-            live_games = [game for game in games
-                         if game.get('status', {}).get('abstractGameState') == 'Live']
-
-            self.logger.debug(f"Fetched {len(live_games)} live games from MLB API")
-            return live_games
-
-        except Exception as e:
-            self.logger.error(f"Error fetching live games from MLB API: {e}")
-            return []
-
-    def fetch_schedule(self, sport: str, league: str, date_range: tuple) -> List[Dict]:
-        """Fetch schedule from MLB API."""
-        try:
-            start_date, end_date = date_range
-            url = f"{self.base_url}/schedule"
-
-            params = {
-                'sportId': 1,  # MLB
-                'startDate': start_date.strftime('%Y-%m-%d'),
-                'endDate': end_date.strftime('%Y-%m-%d'),
-                'hydrate': 'game,team,venue'
-            }
-
-            response = self.session.get(url, headers=self.get_headers(), params=params, timeout=15)
-            response.raise_for_status()
-
-            data = response.json()
-            all_games = []
-            for date_data in data.get('dates', []):
-                all_games.extend(date_data.get('games', []))
-
-            self.logger.debug(f"Fetched {len(all_games)} scheduled games from MLB API")
-            return all_games
-
-        except Exception as e:
-            self.logger.error(f"Error fetching schedule from MLB API: {e}")
-            return []
-
-    def fetch_standings(self, sport: str, league: str) -> Dict:
-        """Fetch standings from MLB API."""
-        try:
-            url = f"{self.base_url}/standings"
-            params = {
-                'leagueId': 103,  # American League
-                'season': datetime.now().year,
-                'standingsType': 'regularSeason'
-            }
-
-            response = self.session.get(url, headers=self.get_headers(), params=params, timeout=15)
-            response.raise_for_status()
-
-            data = response.json()
-            self.logger.debug("Fetched standings from MLB API")
-            return data
-
-        except Exception as e:
-            self.logger.error(f"Error fetching standings from MLB API: {e}")
-            return {}
-
-
-class AFLAPIDataSource(DataSource):
-    """AFL API data source (generic structure)."""
-
-    def __init__(self, logger: logging.Logger, api_key: str = None):
-        super().__init__(logger)
-        self.api_key = api_key
-        self.base_url = "https://api.football-data.org/v4"  # Example API
-
-    def get_headers(self) -> Dict[str, str]:
-        """Get headers with API key for afl API."""
-        headers = super().get_headers()
-        if self.api_key:
-            headers['X-Auth-Token'] = self.api_key
-        return headers
-
-    def fetch_live_games(self, sport: str, league: str) -> List[Dict]:
-        """Fetch live games from afl API."""
-        try:
-            # This would need to be adapted based on the specific afl API
-            url = f"{self.base_url}/matches"
-            params = {
-                'status': 'LIVE',
-                'competition': league
-            }
-
-            response = self.session.get(url, headers=self.get_headers(), params=params, timeout=15)
-            response.raise_for_status()
-
-            data = response.json()
-            matches = data.get('matches', [])
-
-            self.logger.debug(f"Fetched {len(matches)} live games from afl API")
-            return matches
-
-        except Exception as e:
-            self.logger.error(f"Error fetching live games from afl API: {e}")
-            return []
-
-    def fetch_schedule(self, sport: str, league: str, date_range: tuple) -> List[Dict]:
-        """Fetch schedule from afl API."""
-        try:
-            start_date, end_date = date_range
-            url = f"{self.base_url}/matches"
-
-            params = {
-                'competition': league,
-                'dateFrom': start_date.strftime('%Y-%m-%d'),
-                'dateTo': end_date.strftime('%Y-%m-%d')
-            }
-
-            response = self.session.get(url, headers=self.get_headers(), params=params, timeout=15)
-            response.raise_for_status()
-
-            data = response.json()
-            matches = data.get('matches', [])
-
-            self.logger.debug(f"Fetched {len(matches)} scheduled games from afl API")
-            return matches
-
-        except Exception as e:
-            self.logger.error(f"Error fetching schedule from afl API: {e}")
-            return []
-
-    def fetch_standings(self, sport: str, league: str) -> Dict:
-        """Fetch standings from afl API."""
-        try:
-            url = f"{self.base_url}/competitions/{league}/standings"
-            response = self.session.get(url, headers=self.get_headers(), timeout=15)
-            response.raise_for_status()
-
-            data = response.json()
-            self.logger.debug("Fetched standings from afl API")
-            return data
-
-        except Exception as e:
-            self.logger.error(f"Error fetching standings from afl API: {e}")
-            return {}
 
 
 # Factory function removed - sport classes now instantiate data sources directly

@@ -164,7 +164,10 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         # Mode cycling
         self.current_mode_index = 0
-        self.last_mode_switch = 0
+        # Seed with the current time, not 0 -- otherwise the first internal-
+        # cycling display() call sees a huge elapsed time (current_time - 0),
+        # immediately satisfies the switch threshold, and skips mode 0.
+        self.last_mode_switch = time.time()
         self.modes = self._get_available_modes()
 
         self.logger.info(
@@ -392,13 +395,20 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.game_display_duration = float(self.config.get("game_display_duration", 15))
         self.live_priority = bool(self.config.get("live_priority", False))
 
+        # Snapshot and clear in-flight update threads under the lock (a fast,
+        # non-blocking dict operation), then join them WITHOUT holding the
+        # lock -- update()'s own thread-starting path (below) also needs
+        # _config_lock, and sequential thread.join(timeout=10.0) calls while
+        # holding it would block display()/update() for up to 10s per thread.
         with self._config_lock:
-            # Drain in-flight update threads before replacing managers
-            for name, thread in list(self._active_update_threads.items()):
-                if thread.is_alive():
-                    thread.join(timeout=10.0)
+            threads_to_drain = list(self._active_update_threads.items())
             self._active_update_threads.clear()
 
+        for name, thread in threads_to_drain:
+            if thread.is_alive():
+                thread.join(timeout=10.0)
+
+        with self._config_lock:
             self._scroll_prepared.clear()
             self._scroll_active.clear()
 
@@ -469,6 +479,20 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
     # ------------------------------------------------------------------
     # Display
     # ------------------------------------------------------------------
+    @staticmethod
+    def _normalize_games_for_scroll(games: List[Dict], mode_type: str) -> List[Dict]:
+        """Ensure each game has a league and a status dict with a state,
+        in place, so the scroll manager gets a consistent shape regardless
+        of which mode's manager produced it."""
+        state_map = {"live": "in", "recent": "post", "upcoming": "pre"}
+        for game in games:
+            game.setdefault("league", AFL_LEAGUE_KEY)
+            if not isinstance(game.get("status"), dict):
+                game["status"] = {}
+            if "state" not in game["status"]:
+                game["status"]["state"] = state_map.get(mode_type, "pre")
+        return games
+
     def _display_scroll_mode(self, display_mode: str, mode_type: str, force_clear: bool) -> bool:
         """Handle display for scroll mode."""
         if not self._scroll_manager:
@@ -485,14 +509,9 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
                 mode_type == "live" and self.live_priority and self.has_live_content()
             )
 
-            games = self._get_games_from_manager(manager, mode_type)
-            for game in games:
-                game.setdefault("league", AFL_LEAGUE_KEY)
-                if not isinstance(game.get("status"), dict):
-                    game["status"] = {}
-                if "state" not in game["status"]:
-                    state_map = {"live": "in", "recent": "post", "upcoming": "pre"}
-                    game["status"]["state"] = state_map.get(mode_type, "pre")
+            games = self._normalize_games_for_scroll(
+                self._get_games_from_manager(manager, mode_type), mode_type
+            )
 
             if live_priority_active:
                 games = [g for g in games if g.get("is_live", False) and not g.get("is_final", False)]
@@ -732,11 +751,12 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
             return False
         return self.supports_dynamic_duration()
 
-    def supports_dynamic_duration(self) -> bool:
-        """Whether dynamic duration is enabled for the current display context."""
-        if not self.is_enabled or not self._current_display_mode_type:
+    def supports_dynamic_duration(self, mode_type: Optional[str] = None) -> bool:
+        """Whether dynamic duration is enabled for the given (or current) display context."""
+        if mode_type is None:
+            mode_type = self._current_display_mode_type
+        if not self.is_enabled or not mode_type:
             return False
-        mode_type = self._current_display_mode_type
         dynamic = self.config.get("dynamic_duration", {})
         mode_config = dynamic.get("modes", {}).get(mode_type, {})
         if "enabled" in mode_config:
@@ -745,15 +765,16 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
             return bool(dynamic.get("enabled", False))
         return False
 
-    def get_dynamic_duration_cap(self) -> Optional[float]:
-        """Dynamic duration cap for the current display context."""
+    def get_dynamic_duration_cap(self, mode_type: Optional[str] = None) -> Optional[float]:
+        """Dynamic duration cap for the given (or current) display context."""
         if not self.is_enabled:
             return None
-        if not self._current_display_mode_type:
+        if mode_type is None:
+            mode_type = self._current_display_mode_type
+        if not mode_type:
             if BasePlugin:
                 return super().get_dynamic_duration_cap()
             return None
-        mode_type = self._current_display_mode_type
         dynamic = self.config.get("dynamic_duration", {})
         mode_config = dynamic.get("modes", {}).get(mode_type, {})
         for source in (mode_config, dynamic):
@@ -794,8 +815,8 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         effective_duration = self._get_mode_duration(mode_type)
         if effective_duration is not None:
-            if self._dynamic_feature_enabled():
-                cap = self.get_dynamic_duration_cap()
+            if self.is_enabled and self.supports_dynamic_duration(mode_type):
+                cap = self.get_dynamic_duration_cap(mode_type)
                 if cap is not None:
                     effective_duration = min(effective_duration, cap)
             return effective_duration
@@ -806,8 +827,8 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
             return None
         total_duration = len(games) * self._get_game_duration(mode_type, manager)
 
-        if self._dynamic_feature_enabled():
-            cap = self.get_dynamic_duration_cap()
+        if self.is_enabled and self.supports_dynamic_duration(mode_type):
+            cap = self.get_dynamic_duration_cap(mode_type)
             if cap is not None:
                 total_duration = min(total_duration, cap)
         return total_duration
@@ -930,14 +951,10 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
         games: List[Dict] = []
         for mode_type in MODE_TYPES:
             manager = self._get_manager(mode_type)
-            for game in self._get_games_from_manager(manager, mode_type):
-                game.setdefault("league", AFL_LEAGUE_KEY)
-                if not isinstance(game.get("status"), dict):
-                    game["status"] = {}
-                if "state" not in game["status"]:
-                    state_map = {"live": "in", "recent": "post", "upcoming": "pre"}
-                    game["status"]["state"] = state_map.get(mode_type, "pre")
-                games.append(game)
+            mode_games = self._normalize_games_for_scroll(
+                self._get_games_from_manager(manager, mode_type), mode_type
+            )
+            games.extend(mode_games)
 
         if not games:
             self.logger.debug("[AFL Vegas] No games available")

@@ -222,6 +222,12 @@ def test_period_text_mapping() -> None:
     assert pt("in", "STATUS_IN_PROGRESS", 3, "05:00") == "Q3 05:00"
     assert pt("in", "STATUS_IN_PROGRESS", 4, "00:30") == "Q4 00:30"
     assert pt("halftime", "STATUS_HALFTIME", 2) == "HALF"
+    # ESPN can report halftime as state="in" + name="STATUS_HALFTIME" (not
+    # state="halftime") with a non-empty displayClock -- this must not
+    # corrupt "HALF" into "HALF <clock>" (regression: the clock-append
+    # branch used to key only on status_state == "in", which is also true
+    # during this form of halftime).
+    assert pt("in", "STATUS_HALFTIME", 2, "0:00") == "HALF"
     assert pt("post", "STATUS_FINAL", 4) == "Final"
     assert pt("pre", "STATUS_SCHEDULED", 0, game_time="Sat 7:40 PM") == "Sat 7:40 PM"
     print("  [ok] AFL quarter period_text mapping (Q1-Q4 / HALF / Final / pre-game)")

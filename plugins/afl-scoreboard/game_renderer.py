@@ -13,9 +13,18 @@ This module provides:
 
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 from PIL import Image, ImageDraw, ImageFont
+
+# Add project root to path to import the shared logo downloader (same
+# mechanism sports.py already uses for its own logo loading).
+_plugin_dir = Path(__file__).resolve().parent
+_project_root = _plugin_dir.parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+from src.logo_downloader import download_missing_logo
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +94,12 @@ class GameRenderer:
             fonts["time"] = self._load_custom_font(period_config, default_size=8)
             fonts["team"] = self._load_custom_font(team_config, default_size=8)
             fonts["status"] = self._load_custom_font(status_config, default_size=6)
-            fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6.ttf')
+            fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6-font.ttf')
             fonts["rank"] = self._load_custom_font(rank_config, default_size=10)
+            # Not user-customizable (no config_schema.json entry) -- fixed
+            # size, loaded once here instead of per-render in
+            # _draw_records_or_rankings.
+            fonts["record"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
             self.logger.debug("Successfully loaded fonts from config")
         except Exception as e:
             self.logger.error(f"Error loading fonts: {e}, using defaults")
@@ -98,10 +111,11 @@ class GameRenderer:
                 fonts["status"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
                 fonts["detail"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
                 fonts["rank"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
+                fonts["record"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
             except IOError:
                 self.logger.warning("Fonts not found, using default PIL font.")
                 default_font = ImageFont.load_default()
-                fonts = {k: default_font for k in ["score", "time", "team", "status", "detail", "rank"]}
+                fonts = {k: default_font for k in ["score", "time", "team", "status", "detail", "rank", "record"]}
         
         return fonts
     
@@ -174,12 +188,23 @@ class GameRenderer:
             return self._logo_cache[team_abbrev]
         
         try:
+            # If the local copy is missing, try downloading it before giving
+            # up -- same mechanism sports.py already uses for its own logo
+            # loading (AFL is a single league, so logos share one directory).
+            if not os.path.exists(logo_path):
+                if logo_url:
+                    self.logger.info(f"Logo not found for {team_abbrev} at {logo_path}. Attempting to download.")
+                    download_missing_logo("afl", team_id, team_abbrev, logo_path, logo_url)
+                else:
+                    self.logger.debug(f"Logo not found at {logo_path} and no logo_url to download from")
+                    return None
+
             # Try to load from path
             if os.path.exists(logo_path):
                 logo = Image.open(logo_path)
                 if logo.mode != "RGBA":
                     logo = logo.convert("RGBA")
-                
+
                 # Crop transparent padding then scale so ink fills display_height.
                 # thumbnail into a display_height square box preserves aspect ratio
                 # and prevents wide logos from exceeding their half-card slot.
@@ -191,9 +216,9 @@ class GameRenderer:
                 self._logo_cache[team_abbrev] = logo
                 return logo
             else:
-                self.logger.debug(f"Logo not found at {logo_path}")
+                self.logger.error(f"Logo file still doesn't exist at {logo_path} after download attempt")
                 return None
-                
+
         except Exception as e:
             self.logger.error(f"Error loading logo for {team_abbrev}: {e}")
             return None
@@ -504,11 +529,8 @@ class GameRenderer:
     
     def _draw_records_or_rankings(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw team records or rankings."""
-        try:
-            record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-        except IOError:
-            record_font = ImageFont.load_default()
-        
+        record_font = self.fonts["record"]
+
         away_abbr = game.get('away_abbr', '')
         home_abbr = game.get('home_abbr', '')
         

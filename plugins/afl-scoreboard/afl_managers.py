@@ -209,7 +209,8 @@ class BaseAflManager(SportsCore):
             status_state = status["type"]["state"]
             status_name = status["type"]["name"]
 
-            if status_state == "halftime" or status_name == "STATUS_HALFTIME":
+            is_halftime = status_state == "halftime" or status_name == "STATUS_HALFTIME"
+            if is_halftime:
                 # ESPN can set state="in" AND name="STATUS_HALFTIME" together, so
                 # this guard precedes the generic "in" branch. AFL halftime is the
                 # break after Q2.
@@ -229,9 +230,11 @@ class BaseAflManager(SportsCore):
             elif status_state == "pre":
                 period_text = details.get("game_time", "")
 
-            # Append the running clock for live games (e.g. "Q3 12:34")
+            # Append the running clock for live games (e.g. "Q3 12:34") --
+            # but not at halftime, which stays exactly "HALF" (status_state
+            # is "in" during halftime too, per the comment above).
             clock = status.get("displayClock", "")
-            if clock and status_state == "in":
+            if clock and status_state == "in" and not is_halftime:
                 period_text = f"{period_text} {clock}" if period_text else clock
 
             details.update({

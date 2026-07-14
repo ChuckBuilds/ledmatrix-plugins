@@ -27,38 +27,12 @@ from game_renderer import GameRenderer
 
 logger = logging.getLogger(__name__)
 
-# League names for display (matches manager.py LEAGUE_NAMES)
+# League names for display (matches afl_managers.py LEAGUE_NAMES). AFL is a
+# single-league sport, so separators between "different leagues" never
+# actually fire in practice -- this exists only as a fallback display name
+# and to keep the separator-loading code below uniform with other forks.
 LEAGUE_NAMES = {
-    'eng.1': 'Premier League',
-    'esp.1': 'La Liga',
-    'ger.1': 'Bundesliga',
-    'ita.1': 'Serie A',
-    'fra.1': 'Ligue 1',
-    'usa.1': 'MLS',
-    'mex.1': 'Liga MX',
-    'ned.1': 'Eredivisie',
-    'por.1': 'Primeira Liga',
-    'sco.1': 'Scottish Premiership',
-    'bel.1': 'Belgian Pro League',
-    'tur.super_lig': 'Turkish Super Lig',
-    'eng.2': 'Championship',
-    'eng.league_cup': 'EFL Cup',
-    'eng.fa': 'FA Cup',
-    'uefa.champions': 'Champions League',
-    'uefa.europa': 'Europa League',
-    'uefa.europa.conf': 'Conference League',
-    'fifa.friendly': 'International Friendly',
-    'conmebol.libertadores': 'Copa Libertadores',
-    'fifa.worldq.uefa': 'World Cup Qualifying (UEFA)',
-    'uefa.nations': 'UEFA Nations League',
-    'fifa.world': 'FIFA World Cup',
-    'fifa.world.u20': 'FIFA U-20 World Cup',
-    'concacaf.nations.league': 'CONCACAF Nations League',
-    'concacaf.gold': 'CONCACAF Gold Cup',
-    'concacaf.champions': 'CONCACAF Champions Cup',
-    'conmebol.copa.america': 'Copa America',
-    'uefa.euro': 'UEFA Euro',
-    'club.friendly': 'Club Friendly',
+    'afl': 'AFL',
 }
 
 
@@ -123,6 +97,14 @@ class ScrollDisplay:
         # League separator icons cache
         self._separator_icons: Dict[str, Image.Image] = {}
         self._load_separator_icons()
+
+        # GameRenderer is expensive to construct (loads fonts from disk) --
+        # cache one and reuse it across prepare_scroll_content() calls
+        # instead of rebuilding it (and reloading fonts) on every call.
+        # Keyed by the card width it was built for, since that's read from
+        # config and can change.
+        self._game_renderer: Optional[GameRenderer] = None
+        self._game_renderer_card_width: Optional[int] = None
 
     def _get_scroll_speed(self) -> float:
         """Get scroll speed from config with fallback."""
@@ -193,38 +175,13 @@ class ScrollDisplay:
         """Load league separator icons from assets directory."""
         separator_dir = Path(self.plugin_dir) / "assets" / "separators"
 
-        # Map league keys to separator icon filenames
+        # Map league keys to separator icon filenames. AFL is single-league,
+        # so this never has more than one entry to look up -- if this plugin
+        # ships an afl.png under assets/separators/ it'll load below;
+        # otherwise the existence check just skips it, same as any other
+        # missing icon.
         separator_files = {
-            'eng.1': 'premier_league.png',
-            'esp.1': 'la_liga.png',
-            'ger.1': 'bundesliga.png',
-            'ita.1': 'serie_a.png',
-            'fra.1': 'ligue_1.png',
-            'usa.1': 'mls.png',
-            'mex.1': 'liga_mx.png',
-            'ned.1': 'eredivisie.png',
-            'por.1': 'primeira_liga.png',
-            'sco.1': 'scottish_premiership.png',
-            'bel.1': 'belgian_pro_league.png',
-            'tur.super_lig': 'turkish_super_lig.png',
-            'eng.2': 'championship.png',
-            'eng.league_cup': 'efl_cup.png',
-            'eng.fa': 'fa_cup.png',
-            'uefa.champions': 'champions_league.png',
-            'uefa.europa': 'europa_league.png',
-            'uefa.europa.conf': 'conference_league.png',
-            'fifa.friendly': 'international_friendly.png',
-            'conmebol.libertadores': 'copa_libertadores.png',
-            'fifa.worldq.uefa': 'world_cup_qualifying.png',
-            'uefa.nations': 'nations_league.png',
-            'fifa.world': 'world_cup.png',
-            'fifa.world.u20': 'world_cup_u20.png',
-            'concacaf.nations.league': 'concacaf_nations.png',
-            'concacaf.gold': 'gold_cup.png',
-            'concacaf.champions': 'concacaf_champions.png',
-            'conmebol.copa.america': 'copa_america.png',
-            'uefa.euro': 'euro.png',
-            'club.friendly': 'club_friendly.png',
+            'afl': 'afl.png',
         }
 
         for league_key, filename in separator_files.items():
@@ -328,15 +285,19 @@ class ScrollDisplay:
         show_separators = scroll_settings.get("show_league_separators", True)
         game_card_width = scroll_settings.get("game_card_width", 128)
 
-        # Create game renderer using game_card_width so cards are a fixed size
-        # regardless of the full chain width (display_width may span multiple panels)
-        renderer = GameRenderer(
-            game_card_width,
-            self.display_height,
-            self.config,
-            logo_cache=self._logo_cache,
-            custom_logger=self.logger
-        )
+        # Reuse the cached renderer (rebuilding it -- and reloading its
+        # fonts from disk -- on every call is wasteful); only rebuild if the
+        # card width changed, since GameRenderer bakes it in at construction.
+        if self._game_renderer is None or self._game_renderer_card_width != game_card_width:
+            self._game_renderer = GameRenderer(
+                game_card_width,
+                self.display_height,
+                self.config,
+                logo_cache=self._logo_cache,
+                custom_logger=self.logger
+            )
+            self._game_renderer_card_width = game_card_width
+        renderer = self._game_renderer
         if rankings_cache:
             renderer.set_rankings_cache(rankings_cache)
 
@@ -347,7 +308,7 @@ class ScrollDisplay:
         league_counts: Dict[str, int] = {}
 
         for game in games:
-            game_league = game.get("league", "eng.1")  # Default to Premier League if not specified
+            game_league = game.get("league", "afl")  # Default to AFL if not specified
 
             # Add league separator if switching leagues OR if this is the first league
             if show_separators:
