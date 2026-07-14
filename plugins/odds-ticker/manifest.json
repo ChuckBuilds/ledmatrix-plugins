@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "released": "2026-07-10",
+      "version": "1.1.5",
+      "notes": "Size the odds column to the actual 24px bases-diamond graphic for live baseball games instead of the unused away/home odds text width (up to 104px), removing up to ~80px of dead space before the inning info column.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-05-15",
       "version": "1.1.4",
@@ -58,16 +64,13 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-07-10",
   "verified": true,
   "screenshot": "",
   "display_modes": [
     "odds_ticker"
   ],
   "class_name": "OddsTickerPlugin",
-  "dependencies": {
-    "managers": []
-  },
   "compatible_versions": [
     ">=2.0.0"
   ],

@@ -136,7 +136,10 @@ class StockTickerPlugin(BasePlugin):
         
         # Signal scrolling state
         self.display_manager.set_scrolling_state(True)
-        self.display_manager.process_deferred_updates()
+        # Guard for display managers that don't implement deferred updates
+        # (e.g. the plugin-safety harness's bounds-checking display manager).
+        if hasattr(self.display_manager, "process_deferred_updates"):
+            self.display_manager.process_deferred_updates()
         
         # Update scroll position using the scroll helper
         self.scroll_helper.update_scroll_position()

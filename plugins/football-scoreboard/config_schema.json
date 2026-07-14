@@ -692,6 +692,12 @@
         }
       }
     },
+    "layout_mode": {
+      "type": "string",
+      "enum": ["classic", "adaptive"],
+      "default": "classic",
+      "description": "Layout engine. 'classic' is the original fixed layout (unchanged). 'adaptive' (beta) scales fonts, logos, and element regions to the panel size — content grows on large panels and degrades gracefully on small ones. Your customization fonts and x/y offsets still apply in adaptive mode. Requires LEDMatrix core with the adaptive layout system; falls back to classic on older cores. Switch back to 'classic' at any time to restore the original rendering."
+    },
     "customization": {
     "type": "object",
     "title": "Display Customization",

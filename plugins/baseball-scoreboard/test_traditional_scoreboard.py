@@ -210,6 +210,7 @@ def _make_live(width, height):
     live.display_manager = _DisplayManager(width, height)
     live.config = {}
     live.show_traditional_scoreboard = True
+    live.show_player_card = False
     live._trad_scoreboard_last_shown = 0.0
     live._trad_scoreboard_showing_until = 0.0
     live.favorite_teams = []
@@ -334,6 +335,50 @@ def test_team_colors_fall_back_to_text_color_when_disabled():
     assert not _image_contains_color(img, (38, 82, 150)), "team color should not appear when disabled"
     assert _image_contains_color(img, text_color), "expected flat text_color fallback to be drawn"
     print("test_team_colors_fall_back_to_text_color_when_disabled: PASS")
+
+
+_TINT_GAME = {
+    "away_abbr": "STL", "home_abbr": "MIL",
+    "away_score": "2", "home_score": "3",
+    "away_hits": "3", "home_hits": "3",
+    "away_errors": "0", "home_errors": "0",
+    "away_linescore": ["0", "0", "2"], "home_linescore": ["2", "0", "1"],
+    "inning": 4, "inning_half": "top",
+    "balls": 1, "strikes": 2, "outs": 2,
+    "is_live": True, "is_final": False, "has_count_data": True,
+    "away_team_color": (233, 12, 24), "home_team_color": (38, 82, 150),
+}
+# The row wash is each team color scaled to ~12% brightness (see
+# _draw_traditional_scoreboard_screen). int() truncates toward zero.
+_AWAY_TINT = (int(233 * 0.12), int(12 * 0.12), int(24 * 0.12))  # (27, 1, 2)
+_HOME_TINT = (int(38 * 0.12), int(82 * 0.12), int(150 * 0.12))  # (4, 9, 18)
+
+
+def test_team_color_backgrounds_draw_row_tint_when_enabled():
+    live = _make_live(128, 64)
+    live.config = {"customization": {"traditional_scoreboard": {
+        "use_team_colors": True, "show_team_color_backgrounds": True,
+    }}}
+    live._draw_traditional_scoreboard_screen(dict(_TINT_GAME))
+    img = live.display_manager.image
+    assert _image_contains_color(img, _AWAY_TINT), f"expected away row tint {_AWAY_TINT}"
+    assert _image_contains_color(img, _HOME_TINT), f"expected home row tint {_HOME_TINT}"
+    print("test_team_color_backgrounds_draw_row_tint_when_enabled: PASS")
+
+
+def test_team_color_backgrounds_absent_when_disabled():
+    live = _make_live(128, 64)
+    live.config = {"customization": {"traditional_scoreboard": {
+        "use_team_colors": True, "show_team_color_backgrounds": False,
+    }}}
+    live._draw_traditional_scoreboard_screen(dict(_TINT_GAME))
+    img = live.display_manager.image
+    # No wash tint, but the solid team colors (abbreviation text) still appear
+    # because use_team_colors is on.
+    assert not _image_contains_color(img, _AWAY_TINT), "row tint should be absent when disabled"
+    assert not _image_contains_color(img, _HOME_TINT), "row tint should be absent when disabled"
+    assert _image_contains_color(img, (233, 12, 24)), "solid team color (abbr) should still appear"
+    print("test_team_color_backgrounds_absent_when_disabled: PASS")
 
 
 def test_at_bat_panel_fits_alongside_bigger_font_at_medium_size():
@@ -725,6 +770,8 @@ if __name__ == "__main__":
         test_draws_without_crashing_at_small_size,
         test_team_colors_used_when_enabled_and_available,
         test_team_colors_fall_back_to_text_color_when_disabled,
+        test_team_color_backgrounds_draw_row_tint_when_enabled,
+        test_team_color_backgrounds_absent_when_disabled,
         test_at_bat_panel_fits_alongside_bigger_font_at_medium_size,
         test_at_bat_column_appears_on_the_right_not_below,
         test_at_bat_column_at_max_counts_does_not_clip_off_either_edge,

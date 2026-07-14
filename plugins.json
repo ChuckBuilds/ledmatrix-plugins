@@ -3,6 +3,33 @@
   "last_updated": "2026-07-12",
   "plugins": [
     {
+      "id": "cricket-scoreboard",
+      "name": "Cricket Scoreboard",
+      "description": "Live, recent, and upcoming cricket matches across international tours (Test/ODI/T20I) and major domestic T20 leagues including the IPL, Big Bash League, The Hundred, PSL, CPL, SA20 and more. Shows runs/wickets/overs, run rates, targets, and match results.",
+      "author": "ChuckBuilds",
+      "category": "sports",
+      "tags": [
+        "cricket",
+        "ipl",
+        "big-bash",
+        "t20",
+        "test-cricket",
+        "odi",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/cricket-scoreboard",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-07-10",
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.0.2"
+    },
+    {
       "id": "7-segment-clock",
       "name": "7-Segment Clock",
       "description": "Display a retro-style 7-segment clock with customizable colors",
@@ -20,10 +47,10 @@
       "plugin_path": "plugins/7-segment-clock",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-07",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "baseball-scoreboard",
@@ -46,10 +73,10 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-08",
+      "last_updated": "2026-07-09",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.18.0"
+      "latest_version": "1.19.0"
     },
     {
       "id": "basketball-scoreboard",
@@ -94,10 +121,10 @@
       "plugin_path": "plugins/calendar",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.2"
+      "latest_version": "1.1.3"
     },
     {
       "id": "christmas-countdown",
@@ -160,10 +187,10 @@
       "plugin_path": "plugins/countdown",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-30",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.1.0",
+      "latest_version": "3.1.1",
       "icon": "fa-clock"
     },
     {
@@ -210,10 +237,10 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-08",
+      "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.7.0"
+      "latest_version": "2.8.2"
     },
     {
       "id": "geochron",
@@ -236,10 +263,10 @@
       "plugin_path": "plugins/geochron",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-10",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0",
+      "latest_version": "1.0.1",
       "icon": "fa-globe"
     },
     {
@@ -365,7 +392,7 @@
     {
       "id": "ledmatrix-flights",
       "name": "Flight Tracker",
-      "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, and flight records",
+      "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
       "author": "ChuckBuilds",
       "category": "custom",
       "tags": [
@@ -374,17 +401,20 @@
         "ads-b",
         "skyaware",
         "aviation",
-        "map"
+        "map",
+        "metar",
+        "taf",
+        "weather"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-15",
+      "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.10.0"
+      "latest_version": "1.12.3"
     },
     {
       "id": "march-madness",
@@ -405,10 +435,10 @@
       "plugin_path": "plugins/march-madness",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-19",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     },
     {
       "id": "masters-tournament",
@@ -475,10 +505,10 @@
       "plugin_path": "plugins/ledmatrix-music",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-09",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.6"
+      "latest_version": "1.0.8"
     },
     {
       "id": "news",
@@ -507,7 +537,7 @@
     {
       "id": "on-air",
       "name": "On Air Light",
-      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live — stays on until you turn it off.",
+      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u2014 stays on until you turn it off.",
       "author": "ChuckBuilds",
       "category": "utility",
       "tags": [
@@ -523,10 +553,10 @@
       "plugin_path": "plugins/on-air",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-07",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.0",
+      "latest_version": "1.2.2",
       "icon": "fa-circle-dot"
     },
     {
@@ -547,10 +577,10 @@
       "plugin_path": "plugins/nfl-draft",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.11",
+      "latest_version": "1.3.12",
       "icon": "fas fa-football-ball"
     },
     {
@@ -575,10 +605,10 @@
       "plugin_path": "plugins/odds-ticker",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.4"
+      "latest_version": "1.1.5"
     },
     {
       "id": "of-the-day",
@@ -654,7 +684,7 @@
     {
       "id": "plex-marquee",
       "name": "Plex Marquee",
-      "description": "Cinema marquee display powered by Fanart.tv — shows banner art for whatever is currently playing on Plex, with a web portal to browse and pick banners for your library.",
+      "description": "Cinema marquee display powered by Fanart.tv \u2014 shows banner art for whatever is currently playing on Plex, with a web portal to browse and pick banners for your library.",
       "author": "ant456",
       "category": "media",
       "tags": [
@@ -725,10 +755,10 @@
       "plugin_path": "plugins/static-image",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.3"
+      "latest_version": "1.0.4"
     },
     {
       "id": "stock-news",
@@ -751,10 +781,10 @@
       "plugin_path": "plugins/stock-news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-22",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.4.1"
+      "latest_version": "2.4.4"
     },
     {
       "id": "stocks",
@@ -774,10 +804,10 @@
       "plugin_path": "plugins/ledmatrix-stocks",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-28",
+      "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.3.0",
+      "latest_version": "2.3.2",
       "icon": "fas fa-chart-line"
     },
     {
@@ -798,10 +828,10 @@
       "plugin_path": "plugins/text-display",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.3"
+      "latest_version": "1.1.1"
     },
     {
       "id": "tide-display",
@@ -822,10 +852,10 @@
       "plugin_path": "plugins/tide-display",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-07",
+      "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.0",
+      "latest_version": "1.1.1",
       "icon": "fa-water"
     },
     {
@@ -943,10 +973,10 @@
       "plugin_path": "plugins/ledmatrix-elections",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-06-15",
+      "last_updated": "2026-07-08",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.1.0"
+      "latest_version": "1.1.1"
     },
     {
       "id": "ledmatrix-dresden-departures",
@@ -995,6 +1025,29 @@
       "screenshot": "",
       "latest_version": "1.0.1",
       "last_updated": "2026-07-12"
+    },
+    {
+      "id": "nrl-scoreboard",
+      "name": "NRL Scoreboard",
+      "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
+      "author": "ChuckBuilds",
+      "category": "sports",
+      "tags": [
+        "nrl",
+        "rugby-league",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/nrl-scoreboard",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-07-12",
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.0.1"
     }
   ]
 }
