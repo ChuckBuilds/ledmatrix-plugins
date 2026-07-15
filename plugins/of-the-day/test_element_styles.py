@@ -22,7 +22,6 @@ Run from the core LEDMatrix tree (needs src.* and assets/fonts):
 
 import os
 import sys
-from datetime import date
 
 import pytest
 from PIL import ImageChops
@@ -89,7 +88,6 @@ class TestUntouchedIsUnchanged:
         plugin's classic colors (they're identical here, but the render
         must go through the classic path, not a forced override)."""
         p = _plugin(128, 32, SCHEMA_POPULATED)
-        style = p._element_style_resolver if hasattr(p, '_element_style_resolver') else None
         p._display_title({}, ITEM)  # builds the resolver
         title = p._element_style_resolver.style(
             'title_text', classic_font='PressStart2P-Regular.ttf',
