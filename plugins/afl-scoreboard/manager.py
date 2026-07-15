@@ -395,20 +395,27 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.game_display_duration = float(self.config.get("game_display_duration", 15))
         self.live_priority = bool(self.config.get("live_priority", False))
 
-        # Snapshot and clear in-flight update threads under the lock (a fast,
-        # non-blocking dict operation), then join them WITHOUT holding the
-        # lock -- update()'s own thread-starting path (below) also needs
+        # Snapshot in-flight update threads under the lock (a fast,
+        # non-blocking dict read), then join them WITHOUT holding the lock --
+        # update()'s own thread-starting path (below) also needs
         # _config_lock, and sequential thread.join(timeout=10.0) calls while
         # holding it would block display()/update() for up to 10s per thread.
+        # Deliberately NOT cleared here: update() checks
+        # _active_update_threads[name].is_alive() to avoid starting a
+        # duplicate thread for a manager whose update is still running --
+        # clearing before the join loop completes would blind that check to
+        # threads we're still in the middle of draining, on a call for a
+        # manager that hasn't actually finished yet. Cleared below instead,
+        # after every drained thread has been joined (or timed out).
         with self._config_lock:
             threads_to_drain = list(self._active_update_threads.items())
-            self._active_update_threads.clear()
 
         for name, thread in threads_to_drain:
             if thread.is_alive():
                 thread.join(timeout=10.0)
 
         with self._config_lock:
+            self._active_update_threads.clear()
             self._scroll_prepared.clear()
             self._scroll_active.clear()
 
