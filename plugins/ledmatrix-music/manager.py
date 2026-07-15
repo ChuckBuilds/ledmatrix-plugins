@@ -25,6 +25,34 @@ from ytm_client import YTMClient
 # Import base plugin class
 from src.plugin_system.base_plugin import BasePlugin
 
+# Adaptive layout system (opt-in via layout_mode: "adaptive"). Older
+# LEDMatrix cores don't ship it — fall back silently to the classic layout.
+# MusicPlugin is itself a BasePlugin, so it gets self.layout for free —
+# unlike football-scoreboard's GameRenderer (a standalone helper class),
+# no separate LayoutContext/FontManager wiring is needed here.
+try:
+    from src.adaptive_layout import FontStep, LADDER_ARCADE
+    ADAPTIVE_AVAILABLE = True
+    # TTF-only, same verified-crisp rungs as the other adaptive plugins:
+    # PressStart2P only rasterizes without antialiasing at exact multiples
+    # of its 8px design grid; 4x6-font is crisp only at 7px (not 6, despite
+    # measuring the same ink height) — see measure_font_crispness.
+    ADAPTIVE_LADDER_TEXT = LADDER_ARCADE + (
+        FontStep("4x6-font", 7),
+    )
+except ImportError:
+    ADAPTIVE_AVAILABLE = False
+    ADAPTIVE_LADDER_TEXT = None
+
+# Shared element-style resolver (newer cores): one implementation of font
+# loading and the user-font-override check, referenced against this
+# plugin's own config_schema.json. Older cores use the local code below.
+try:
+    from src.element_style import ElementStyleResolver, defaults_from_schema_file
+    STYLE_AVAILABLE = True
+except ImportError:
+    STYLE_AVAILABLE = False
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -106,11 +134,35 @@ class MusicPlugin(BasePlugin):
         # Load configuration with flattened access
         self._load_config()
         self._initialize_clients()
-        
+
         # Load custom fonts from config
         self._load_custom_fonts()
-        
+
+        # Adaptive layout (beta, opt-in): scales title/artist/album fonts to
+        # the panel instead of the classic fixed sizes. Default "classic"
+        # renders byte-identically to previous releases.
+        self._apply_layout_mode()
+
         self.logger.info(f"Music plugin initialized - Source: {self.preferred_source}, Enabled: {self.enabled}, Live Priority: {self.config.get('live_priority', False)}")
+
+    def _apply_layout_mode(self) -> None:
+        """(Re)compute layout_mode/_adaptive from self.config. Called from
+        __init__ and on_config_change so a runtime layout_mode change via
+        the web UI takes effect without requiring a restart."""
+        self.layout_mode = self.config.get('layout_mode', 'classic')
+        self._adaptive = ADAPTIVE_AVAILABLE and self.layout_mode == 'adaptive'
+        if self.layout_mode == 'adaptive' and not ADAPTIVE_AVAILABLE:
+            self.logger.warning(
+                "layout_mode 'adaptive' requires a LEDMatrix core with the "
+                "adaptive layout system; falling back to classic layout"
+            )
+
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Refresh layout_mode/_adaptive -- otherwise only ever computed in
+        __init__, so a runtime layout_mode change would be silently ignored
+        until the plugin is restarted."""
+        super().on_config_change(new_config)
+        self._apply_layout_mode()
 
     def _load_config(self):
         """Load configuration with flattened access (no nested 'music' key)."""
@@ -226,11 +278,34 @@ class MusicPlugin(BasePlugin):
             self.logger.debug("No customization config found, using display_manager fonts")
             return
         
+        if STYLE_AVAILABLE:
+            try:
+                resolver = self._get_element_style_resolver()
+                self.title_font = resolver.style(
+                    'title_text', classic_font='PressStart2P-Regular.ttf',
+                    classic_size=8).font
+                self.artist_font = resolver.style(
+                    'artist_text', classic_font='PressStart2P-Regular.ttf',
+                    classic_size=7).font
+                self.album_font = resolver.style(
+                    'album_text', classic_font='PressStart2P-Regular.ttf',
+                    classic_size=7).font
+                self.logger.info("Loaded custom fonts via element-style resolver")
+                return
+            except Exception as e:
+                self.logger.error(
+                    f"Error loading fonts via element-style resolver: {e}, "
+                    f"falling back to legacy font loading"
+                )
+                # Fall through to the legacy branch below rather than
+                # abort plugin construction.
+
+        # Older cores (no src.element_style): the original local loader.
         # Load fonts from config with defaults for backward compatibility
         title_config = customization.get('title_text', {})
         artist_config = customization.get('artist_text', {})
         album_config = customization.get('album_text', {})
-        
+
         try:
             self.title_font = self._load_custom_font_from_element_config(title_config, default_size=8)
             self.artist_font = self._load_custom_font_from_element_config(artist_config, default_size=7)
@@ -238,6 +313,107 @@ class MusicPlugin(BasePlugin):
             self.logger.info("Successfully loaded custom fonts from config")
         except Exception as e:
             self.logger.error(f"Error loading custom fonts: {e}, using display_manager fonts")
+
+    def _get_element_style_resolver(self):
+        """Shared resolver, referenced against this plugin's own
+        config_schema.json so the user-override check works in every context
+        (production, harness, dev server — no schema manager needed).
+
+        NOTE: deliberately NOT BasePlugin.style_resolver — that property
+        sources defaults from plugin_manager.schema_manager, which is absent
+        under the test harness's mocks, and it caches on _style_resolver,
+        which this must not collide with. Rebuilt when the config dict is
+        swapped (on_config_change replaces self.config).
+        """
+        resolver = getattr(self, '_element_style_resolver', None)
+        if resolver is None or resolver._config is not self.config:
+            schema_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), 'config_schema.json')
+            resolver = ElementStyleResolver(
+                self.config, defaults_from_schema_file(schema_path))
+            self._element_style_resolver = resolver
+        return resolver
+
+    # (font filename, size) the config_schema.json declares as each
+    # element's default — matching these, not merely a key being *present*,
+    # is what "user set it" has to mean, because the web UI's save flow
+    # (schema_manager.merge_with_defaults) writes the FULL schema default
+    # object into config.json on every save, for every plugin, whether or
+    # not the user touched that section. Only used on older cores — with
+    # src.element_style available, the resolver reads the schema file itself.
+    _CLASSIC_FONT_DEFAULTS = {
+        'title_text': ('PressStart2P-Regular.ttf', 8),
+        'artist_text': ('5x7.bdf', 7),
+        'album_text': ('5x7.bdf', 7),
+    }
+
+    def _user_font_set(self, element_key: str) -> bool:
+        """True when the user's configured font/font_size for this element
+        genuinely differs from the schema default — adaptive mode must
+        respect a real override, but not a schema default that merely
+        happens to be present in a saved config."""
+        if STYLE_AVAILABLE:
+            classic_font, classic_size = self._CLASSIC_FONT_DEFAULTS.get(
+                element_key, ('PressStart2P-Regular.ttf', 8))
+            return self._get_element_style_resolver().style(
+                element_key, classic_font=classic_font,
+                classic_size=classic_size).user_forced
+        element_config = self.config.get('customization', {}).get(element_key, {})
+        default_font, default_size = self._CLASSIC_FONT_DEFAULTS.get(element_key, (None, None))
+        configured_font = element_config.get('font')
+        configured_size = element_config.get('font_size')
+        font_differs = configured_font is not None and configured_font != default_font
+        try:
+            size_differs = configured_size is not None and int(configured_size) != default_size
+        except (TypeError, ValueError):
+            size_differs = False
+        return font_differs or size_differs
+
+    def _adaptive_text_layout(self, font_title, font_artist, font_album,
+                              title_layout_config, artist_layout_config, album_layout_config,
+                              text_area_x_start, text_area_width, matrix_height,
+                              progress_bar_height, safe_y_percent):
+        """Adaptive font + Y-position pick for the title/artist/album rows.
+
+        Splits the vertical space above the progress bar into three equal
+        rows and sizes each row's font to the largest crisp ladder rung
+        whose LINE HEIGHT fits that row — height-only, not width, because
+        long titles/artists/albums scroll rather than shrink to fit, the
+        same way the album art already scales by height alone
+        (album_art_size = matrix_height). User-forced fonts (an explicit
+        customization.<element>.font/font_size) win over auto-sizing, and
+        an explicit y_percent still overrides the row position, exactly
+        like classic mode.
+        """
+        from src.adaptive_layout import Region
+
+        top_margin = self.layout.px(1, minimum=1)
+        gap = self.layout.px(1, minimum=1)
+        available_h = max(3, matrix_height - progress_bar_height - top_margin - 1)
+        rows = Region(text_area_x_start, top_margin, text_area_width, available_h).split_v(
+            1, 1, 1, gap=gap)
+        title_row, artist_row, album_row = rows
+
+        def pick(element_key, classic_font, row):
+            if self._user_font_set(element_key):
+                return classic_font
+            return self.layout.font_for_rows(1, row.h, ladder=ADAPTIVE_LADDER_TEXT).font
+
+        font_title = pick('title_text', font_title, title_row)
+        font_artist = pick('artist_text', font_artist, artist_row)
+        font_album = pick('album_text', font_album, album_row)
+
+        y_title = title_row.y
+        y_artist = artist_row.y
+        y_album = album_row.y
+        if 'y_percent' in title_layout_config:
+            y_title = int(matrix_height * safe_y_percent(title_layout_config['y_percent'], y_title / matrix_height))
+        if 'y_percent' in artist_layout_config:
+            y_artist = int(matrix_height * safe_y_percent(artist_layout_config['y_percent'], y_artist / matrix_height))
+        if 'y_percent' in album_layout_config:
+            y_album = int(matrix_height * safe_y_percent(album_layout_config['y_percent'], y_album / matrix_height))
+
+        return font_title, font_artist, font_album, y_title, y_artist, y_album
 
     def _initialize_clients(self):
         """Initialize music clients based on configuration."""
@@ -1012,30 +1188,44 @@ class MusicPlugin(BasePlugin):
             progress_bar_height = max(4, int(matrix_height * 0.06))
         progress_bar_y = matrix_height - progress_bar_height - 1
 
-        # Top-down stacking with proportional gaps
-        top_padding = max(1, matrix_height // 32)
-        line_gap = max(1, matrix_height // 16)
-
-        # Auto-compute positions from font metrics
-        auto_y_title = top_padding
-        auto_y_artist = auto_y_title + title_height + line_gap
-        auto_y_album = auto_y_artist + artist_height + line_gap
-
-        # Allow explicit y_percent override from user config
-        if 'y_percent' in title_layout_config:
-            y_pos_title_top = int(matrix_height * _safe_y_percent(title_layout_config['y_percent'], 0.03))
+        if self._adaptive:
+            # Adaptive layout (beta, opt-in): font sizes scale with the
+            # panel instead of the classic fixed sizes; classic branch
+            # below is untouched when declined.
+            (font_title, font_artist, font_album,
+             y_pos_title_top, y_pos_artist_top, y_pos_album_top) = self._adaptive_text_layout(
+                font_title, font_artist, font_album,
+                title_layout_config, artist_layout_config, album_layout_config,
+                text_area_x_start, text_area_width, matrix_height,
+                progress_bar_height, _safe_y_percent)
+            title_height = self.display_manager.get_font_height(font_title)
+            artist_height = self.display_manager.get_font_height(font_artist)
+            album_height = self.display_manager.get_font_height(font_album)
         else:
-            y_pos_title_top = auto_y_title
+            # Top-down stacking with proportional gaps
+            top_padding = max(1, matrix_height // 32)
+            line_gap = max(1, matrix_height // 16)
 
-        if 'y_percent' in artist_layout_config:
-            y_pos_artist_top = int(matrix_height * _safe_y_percent(artist_layout_config['y_percent'], 0.34))
-        else:
-            y_pos_artist_top = auto_y_artist
+            # Auto-compute positions from font metrics
+            auto_y_title = top_padding
+            auto_y_artist = auto_y_title + title_height + line_gap
+            auto_y_album = auto_y_artist + artist_height + line_gap
 
-        if 'y_percent' in album_layout_config:
-            y_pos_album_top = int(matrix_height * _safe_y_percent(album_layout_config['y_percent'], 0.60))
-        else:
-            y_pos_album_top = auto_y_album
+            # Allow explicit y_percent override from user config
+            if 'y_percent' in title_layout_config:
+                y_pos_title_top = int(matrix_height * _safe_y_percent(title_layout_config['y_percent'], 0.03))
+            else:
+                y_pos_title_top = auto_y_title
+
+            if 'y_percent' in artist_layout_config:
+                y_pos_artist_top = int(matrix_height * _safe_y_percent(artist_layout_config['y_percent'], 0.34))
+            else:
+                y_pos_artist_top = auto_y_artist
+
+            if 'y_percent' in album_layout_config:
+                y_pos_album_top = int(matrix_height * _safe_y_percent(album_layout_config['y_percent'], 0.60))
+            else:
+                y_pos_album_top = auto_y_album
 
         # Validate album doesn't overlap progress bar
         max_album_y = progress_bar_y - album_height - 1
