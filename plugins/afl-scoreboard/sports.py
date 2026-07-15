@@ -1038,7 +1038,7 @@ class SportsCore(ABC):
                 "is_period_break": status["type"]["name"]
                 == "STATUS_END_PERIOD",  # Added Period Break check
                 "home_abbr": home_abbr,
-                "home_id": home_team["id"],
+                "home_id": home_team.get("team", {}).get("id"),
                 "home_score": home_score,
                 "home_logo_path": self.logo_dir
                 / Path(f"{LogoDownloader.normalize_abbreviation(home_abbr)}.png"),
@@ -1046,7 +1046,7 @@ class SportsCore(ABC):
                 "home_record": home_record,
                 "away_record": away_record,
                 "away_abbr": away_abbr,
-                "away_id": away_team["id"],
+                "away_id": away_team.get("team", {}).get("id"),
                 "away_score": away_score,
                 "away_logo_path": self.logo_dir
                 / Path(f"{LogoDownloader.normalize_abbreviation(away_abbr)}.png"),
