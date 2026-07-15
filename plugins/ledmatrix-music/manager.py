@@ -141,15 +141,28 @@ class MusicPlugin(BasePlugin):
         # Adaptive layout (beta, opt-in): scales title/artist/album fonts to
         # the panel instead of the classic fixed sizes. Default "classic"
         # renders byte-identically to previous releases.
-        self.layout_mode = config.get('layout_mode', 'classic')
+        self._apply_layout_mode()
+
+        self.logger.info(f"Music plugin initialized - Source: {self.preferred_source}, Enabled: {self.enabled}, Live Priority: {self.config.get('live_priority', False)}")
+
+    def _apply_layout_mode(self) -> None:
+        """(Re)compute layout_mode/_adaptive from self.config. Called from
+        __init__ and on_config_change so a runtime layout_mode change via
+        the web UI takes effect without requiring a restart."""
+        self.layout_mode = self.config.get('layout_mode', 'classic')
         self._adaptive = ADAPTIVE_AVAILABLE and self.layout_mode == 'adaptive'
         if self.layout_mode == 'adaptive' and not ADAPTIVE_AVAILABLE:
             self.logger.warning(
                 "layout_mode 'adaptive' requires a LEDMatrix core with the "
                 "adaptive layout system; falling back to classic layout"
             )
-        
-        self.logger.info(f"Music plugin initialized - Source: {self.preferred_source}, Enabled: {self.enabled}, Live Priority: {self.config.get('live_priority', False)}")
+
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Refresh layout_mode/_adaptive -- otherwise only ever computed in
+        __init__, so a runtime layout_mode change would be silently ignored
+        until the plugin is restarted."""
+        super().on_config_change(new_config)
+        self._apply_layout_mode()
 
     def _load_config(self):
         """Load configuration with flattened access (no nested 'music' key)."""
@@ -266,18 +279,26 @@ class MusicPlugin(BasePlugin):
             return
         
         if STYLE_AVAILABLE:
-            resolver = self._get_element_style_resolver()
-            self.title_font = resolver.style(
-                'title_text', classic_font='PressStart2P-Regular.ttf',
-                classic_size=8).font
-            self.artist_font = resolver.style(
-                'artist_text', classic_font='PressStart2P-Regular.ttf',
-                classic_size=7).font
-            self.album_font = resolver.style(
-                'album_text', classic_font='PressStart2P-Regular.ttf',
-                classic_size=7).font
-            self.logger.info("Loaded custom fonts via element-style resolver")
-            return
+            try:
+                resolver = self._get_element_style_resolver()
+                self.title_font = resolver.style(
+                    'title_text', classic_font='PressStart2P-Regular.ttf',
+                    classic_size=8).font
+                self.artist_font = resolver.style(
+                    'artist_text', classic_font='PressStart2P-Regular.ttf',
+                    classic_size=7).font
+                self.album_font = resolver.style(
+                    'album_text', classic_font='PressStart2P-Regular.ttf',
+                    classic_size=7).font
+                self.logger.info("Loaded custom fonts via element-style resolver")
+                return
+            except Exception as e:
+                self.logger.error(
+                    f"Error loading fonts via element-style resolver: {e}, "
+                    f"falling back to legacy font loading"
+                )
+                # Fall through to the legacy branch below rather than
+                # abort plugin construction.
 
         # Older cores (no src.element_style): the original local loader.
         # Load fonts from config with defaults for backward compatibility

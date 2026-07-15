@@ -29,7 +29,7 @@ if PLUGIN_DIR not in sys.path:
 
 from manager import ADAPTIVE_AVAILABLE, ADAPTIVE_LADDER_TEXT, MusicPlugin  # noqa: E402
 
-pytestmark = pytest.mark.skipif(
+_requires_adaptive_core = pytest.mark.skipif(
     not ADAPTIVE_AVAILABLE,
     reason="core without src.adaptive_layout — adaptive mode falls back to classic",
 )
@@ -78,9 +78,11 @@ class TestClassicUntouched:
 
 
 class TestAdaptiveMode:
+    @_requires_adaptive_core
     def test_adaptive_flag(self):
         assert _plugin(128, 32, {"layout_mode": "adaptive"})._adaptive
 
+    @_requires_adaptive_core
     @pytest.mark.parametrize("w,h", SIZES)
     def test_renders_without_error(self, w, h):
         p = _plugin(w, h, {"layout_mode": "adaptive"})
@@ -100,6 +102,7 @@ class TestAdaptiveMode:
         bbox = lit.getbbox()
         return (bbox[3] - bbox[1]) if bbox else 0
 
+    @_requires_adaptive_core
     def test_title_font_grows_with_height(self):
         """128x64 and 256x128 (height 2x/4x the 128x32 design size) must
         render a visibly taller title than 128x32 — the same height-driven
@@ -116,6 +119,7 @@ class TestAdaptiveMode:
         assert heights[64] > heights[32]
         assert heights[128] > heights[64]
 
+    @_requires_adaptive_core
     def test_user_font_wins_over_ladder(self):
         """An explicitly configured title font must be used verbatim, even
         in adaptive mode — 12px genuinely differs from the classic default
@@ -126,6 +130,7 @@ class TestAdaptiveMode:
         assert p._user_font_set('title_text')
         p.display(force_clear=True)  # must not raise, must not crash
 
+    @_requires_adaptive_core
     def test_schema_default_is_not_mistaken_for_a_user_override(self):
         """The web UI's save flow (schema_manager.merge_with_defaults)
         writes the FULL schema default object into config.json on every
@@ -188,6 +193,7 @@ class TestElementStyleResolver:
         assert p._user_font_set("artist_text")
 
 
+@_requires_adaptive_core
 class TestLadderCrispness:
     """Every rung in the adaptive ladder must render with zero antialiasing —
     see LEDMatrix core's measure_font_crispness for why this matters."""
