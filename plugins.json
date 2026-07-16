@@ -1027,6 +1027,29 @@
       "last_updated": "2026-07-12"
     },
     {
+      "id": "tidbyt-baseball-scoreboard",
+      "name": "MLB Scoreboard for LEDMatrix",
+      "description": "Custom MLB live-game scoreboard: split team-color panel on the left, diamond/inning/count/outs on the right, with live pitcher/batter info and last-play descriptions. Designed for 128x32 panels only -- shows a clear message on other sizes rather than a broken layout.",
+      "author": "trsadler",
+      "category": "sports",
+      "tags": [
+        "baseball",
+        "mlb",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/trsadler/MLB-Scoreboard-LEDMatrix",
+      "branch": "main",
+      "plugin_path": "",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-07-16",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.1.0"
+    },
+    {
       "id": "nrl-scoreboard",
       "name": "NRL Scoreboard",
       "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
