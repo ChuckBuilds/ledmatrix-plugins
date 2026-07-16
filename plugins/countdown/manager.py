@@ -21,7 +21,7 @@ import time
 import uuid
 from typing import Dict, Any, Tuple, Optional, List
 from datetime import datetime, date, time as dtime
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 
 from src.plugin_system.base_plugin import BasePlugin
@@ -284,27 +284,37 @@ class CountdownPlugin(BasePlugin):
             self.logger.warning(f"Error registering fonts: {e}")
 
     def _resolve_font(self, countdown_id: str, role: str, family: str, size_px: int, color: Tuple):
-        """Resolve a font. color is used only for registration, not resolution."""
+        """Resolve a font. color is used only for registration, not resolution.
+
+        Always returns a usable font -- never None. A missing/failing
+        font_manager (e.g. under the plugin safety harness, or an
+        unexpected runtime issue) used to leave name/value text silently
+        undrawn (display() skips drawing when the font is None), producing
+        a blank screen for an otherwise perfectly valid countdown. Falling
+        back to ImageFont.load_default() means the text is always visible,
+        even if not in the configured font/size.
+        """
         try:
-            if not hasattr(self.plugin_manager, 'font_manager'):
-                return None
-            fm = self.plugin_manager.font_manager
-            # Register per-countdown key so it carries the right color, then resolve it.
-            fm.register_manager_font(
-                manager_id=self.plugin_id,
-                element_key=f"{self.plugin_id}.{countdown_id}.{role}",
-                family=family,
-                size_px=size_px,
-                color=color
-            )
-            return fm.resolve_font(
-                element_key=f"{self.plugin_id}.{countdown_id}.{role}",
-                family=family,
-                size_px=size_px
-            )
+            if hasattr(self.plugin_manager, 'font_manager') and self.plugin_manager.font_manager:
+                fm = self.plugin_manager.font_manager
+                # Register per-countdown key so it carries the right color, then resolve it.
+                fm.register_manager_font(
+                    manager_id=self.plugin_id,
+                    element_key=f"{self.plugin_id}.{countdown_id}.{role}",
+                    family=family,
+                    size_px=size_px,
+                    color=color
+                )
+                font = fm.resolve_font(
+                    element_key=f"{self.plugin_id}.{countdown_id}.{role}",
+                    family=family,
+                    size_px=size_px
+                )
+                if font is not None:
+                    return font
         except Exception as e:
             self.logger.warning(f"Error resolving font for {countdown_id}.{role}: {e}")
-            return None
+        return ImageFont.load_default()
 
     # ─── Image loading ────────────────────────────────────────────────────────
 
