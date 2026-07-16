@@ -668,9 +668,12 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
             return True
         favorite_teams = getattr(live_manager, "favorite_teams", [])
         if favorite_teams:
+            # live_manager is a SportsLive (SportsCore) instance - reuse its
+            # canonical ID-membership check instead of re-deriving it here.
+            team_in = live_manager._team_in
             return any(
-                str(game.get("home_id")) in favorite_teams
-                or str(game.get("away_id")) in favorite_teams
+                team_in(game.get("home_id"), favorite_teams)
+                or team_in(game.get("away_id"), favorite_teams)
                 for game in live_games
             )
         return False

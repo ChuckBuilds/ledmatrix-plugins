@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-12",
+  "last_updated": "2026-07-16",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -1044,10 +1044,10 @@
       "plugin_path": "plugins/nrl-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-12",
+      "last_updated": "2026-07-16",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     }
   ]
 }

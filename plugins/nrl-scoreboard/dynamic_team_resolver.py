@@ -67,14 +67,7 @@ class DynamicTeamResolver:
         resolved_teams = [self._resolve_one(team, index) for team in team_list]
 
         # Remove duplicates while preserving order
-        seen = set()
-        unique_teams = []
-        for team in resolved_teams:
-            if team not in seen:
-                seen.add(team)
-                unique_teams.append(team)
-
-        return unique_teams
+        return list(dict.fromkeys(resolved_teams))
 
     def _resolve_one(self, team: str, index: Optional[dict]) -> str:
         raw = (team or "").strip()
@@ -173,6 +166,7 @@ class DynamicTeamResolver:
             team_id = t.get("id")
             if not team_id:
                 continue
+            team_id = str(team_id)
             display_name = t.get("displayName") or t.get("name") or ""
 
             for name in (

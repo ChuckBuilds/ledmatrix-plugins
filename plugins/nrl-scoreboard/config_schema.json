@@ -13,7 +13,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "description": "NRL full team name (e.g. 'Newcastle Knights') or ESPN team ID. Avoid 3-letter abbreviations - some are shared by two teams (e.g. 'NEW' is both Newcastle Knights and New Zealand Warriors, 'CAN' is both Canberra Raiders and Canterbury Bulldogs) and will match both."
+        "description": "NRL full team name (e.g. 'Newcastle Knights') or ESPN team ID. Avoid 3-letter abbreviations - some are shared by two teams (e.g. 'NEW' is both Newcastle Knights and New Zealand Warriors, 'CAN' is both Canberra Raiders and Canterbury Bulldogs). A shared abbreviation is left unresolved and logged as an error rather than being matched to either team."
       },
       "uniqueItems": true,
       "maxItems": 20,
@@ -23,7 +23,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "description": "NRL full team name (e.g. 'Newcastle Knights') or ESPN team ID. Avoid 3-letter abbreviations - some are shared by two teams (e.g. 'NEW' is both Newcastle Knights and New Zealand Warriors, 'CAN' is both Canberra Raiders and Canterbury Bulldogs) and will match both."
+        "description": "NRL full team name (e.g. 'Newcastle Knights') or ESPN team ID. Avoid 3-letter abbreviations - some are shared by two teams (e.g. 'NEW' is both Newcastle Knights and New Zealand Warriors, 'CAN' is both Canberra Raiders and Canterbury Bulldogs). A shared abbreviation is left unresolved and logged as an error rather than being matched to either team."
       },
       "uniqueItems": true,
       "maxItems": 20,
