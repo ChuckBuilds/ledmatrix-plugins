@@ -26,6 +26,12 @@ class StockDisplayRenderer:
         # Display configuration
         self.toggle_chart = config.get('display', {}).get('toggle_chart', True)
         self.stock_gap = int(config.get('display', {}).get('stock_gap', 32))
+
+        # Chart size as a fraction of the per-stock canvas width/height.
+        # Defaults match the previous hardcoded chart_width = width/2.5, chart_height = height/1.5.
+        display_cfg = config.get('display', {})
+        self.chart_width_percent = min(max(float(display_cfg.get('chart_width_percent', 0.4)), 0.1), 0.7)
+        self.chart_height_percent = min(max(float(display_cfg.get('chart_height_percent', 0.667)), 0.2), 1.0)
         
         # Load colors from customization structure (organized by element: symbol, price, price_delta)
         # Support both new format (customization.stocks.*) and old format (top-level) for backwards compatibility
@@ -173,8 +179,10 @@ class StockDisplayRenderer:
         """Create a display image for a single stock or crypto - matching old stock manager layout exactly."""
         # Create a wider image for scrolling - adjust width based on chart toggle
         # Match old stock_manager: width = int(self.display_manager.matrix.width * (2 if self.toggle_chart else 1.5))
+        # Canvas grows with chart_width_percent so a larger chart still has room next to the text.
         # Ensure dimensions are integers
-        width = int(self.display_width * (2 if self.toggle_chart else 1.5))
+        width_multiplier = (1.5 + self.chart_width_percent * 1.25) if self.toggle_chart else 1.5
+        width = int(self.display_width * width_multiplier)
         height = int(self.display_height)
         image = Image.new('RGB', (width, height), (0, 0, 0))
         draw = ImageDraw.Draw(image)
@@ -267,7 +275,8 @@ class StockDisplayRenderer:
         column_x = logo_right + logo_gap + (max_text_width // 2)
         if self.toggle_chart:
             # Clamp so text does not overlap the mini chart area
-            chart_start = width // 2
+            chart_width_px = int(width * self.chart_width_percent)
+            chart_start = width - chart_width_px - 4
             column_x = min(column_x, chart_start - (max_text_width // 2) - logo_gap)
         
         # Draw symbol
@@ -454,17 +463,18 @@ class StockDisplayRenderer:
             return (255, 0, 0)  # Red for negative
         return (255, 255, 0)  # Yellow for no change
     
-    def _draw_mini_chart(self, draw: ImageDraw.Draw, price_history: List[Dict], 
+    def _draw_mini_chart(self, draw: ImageDraw.Draw, price_history: List[Dict],
                         width: int, height: int, color: Tuple[int, int, int]) -> None:
-        """Draw a mini price chart on the right side of the display - matching old stock_manager exactly."""
+        """Draw a mini price chart on the right side of the display."""
         if len(price_history) < 2:
             return
-        
-        # Chart dimensions - match old stock_manager exactly
-        # Old code: chart_width = int(width // 2.5), chart_height = height // 1.5
+
+        # Chart dimensions - sized as a configurable fraction of the item canvas
+        # (self.chart_width_percent / self.chart_height_percent), matching the
+        # clamp used in create_stock_display so text never overlaps the chart.
         # Ensure all dimensions are integers
-        chart_width = int(width / 2.5)  # Reduced from width//2.5 to prevent overlap
-        chart_height = int(height / 1.5)
+        chart_width = int(width * self.chart_width_percent)
+        chart_height = int(height * self.chart_height_percent)
         chart_x = int(width - chart_width - 4)  # 4px margin from right edge
         chart_y = int((height - chart_height) / 2)
         
