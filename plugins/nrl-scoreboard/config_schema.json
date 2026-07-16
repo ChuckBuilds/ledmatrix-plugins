@@ -13,22 +13,22 @@
       "type": "array",
       "items": {
         "type": "string",
-        "description": "NRL team name or abbreviation"
+        "description": "NRL full team name (e.g. 'Newcastle Knights') or ESPN team ID. Avoid 3-letter abbreviations - some are shared by two teams (e.g. 'NEW' is both Newcastle Knights and New Zealand Warriors, 'CAN' is both Canberra Raiders and Canterbury Bulldogs). A shared abbreviation is left unresolved and logged as an error rather than being matched to either team."
       },
       "uniqueItems": true,
       "maxItems": 20,
-      "description": "List of favorite NRL teams to prioritize"
+      "description": "List of favorite NRL teams to prioritize. Use the full team name or ESPN team ID - some abbreviations (e.g. NEW, CAN) are shared by two different NRL teams."
     },
     "exclude_teams": {
       "type": "array",
       "items": {
         "type": "string",
-        "description": "NRL team name or abbreviation"
+        "description": "NRL full team name (e.g. 'Newcastle Knights') or ESPN team ID. Avoid 3-letter abbreviations - some are shared by two teams (e.g. 'NEW' is both Newcastle Knights and New Zealand Warriors, 'CAN' is both Canberra Raiders and Canterbury Bulldogs). A shared abbreviation is left unresolved and logged as an error rather than being matched to either team."
       },
       "uniqueItems": true,
       "maxItems": 20,
       "default": [],
-      "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+      "description": "Teams to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live. Use the full team name or ESPN team ID - some abbreviations (e.g. NEW, CAN) are shared by two different NRL teams."
     },
     "display_modes": {
       "type": "object",

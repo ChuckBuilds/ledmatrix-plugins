@@ -182,10 +182,20 @@ class SportsCore(ABC):
                 "Background service not available - using synchronous fetching"
             )
 
+    @staticmethod
+    def _team_in(team_id, team_list) -> bool:
+        """Whether ``team_id`` (an ESPN team ID) is in ``team_list``.
+
+        Centralizes ID-based favorite/exclude matching - NRL abbreviations
+        are not unique (e.g. "NEW" is both Newcastle Knights and New Zealand
+        Warriors, "CAN" is both Canberra Raiders and Canterbury Bulldogs), so
+        every membership check compares team IDs instead.
+        """
+        return bool(team_list) and str(team_id) in team_list
+
     def _is_favorite_game(self, game: Dict) -> bool:
-        return bool(self.favorite_teams) and (
-            game.get("home_abbr") in self.favorite_teams
-            or game.get("away_abbr") in self.favorite_teams
+        return self._team_in(game.get("home_id"), self.favorite_teams) or self._team_in(
+            game.get("away_id"), self.favorite_teams
         )
 
     def _effective_live_duration(self, game):
@@ -206,14 +216,18 @@ class SportsCore(ABC):
             return non_fav
         return self.game_display_duration
 
-    def _classify_live_game(self, home_abbr, away_abbr) -> bool:
+    def _classify_live_game(self, home_id, away_id) -> bool:
         """Whether a live game should be included in the live rotation.
 
         Priority: excluded team (never shown, overrides everything) >
         show_all_live > show_favorite_teams_only disabled > no favorites
         configured (fallback: show all) > favorite-teams-only membership.
+
+        Matched by ESPN team ID (not abbreviation) - NRL abbreviations are
+        not unique (e.g. "NEW" is both Newcastle Knights and New Zealand
+        Warriors, "CAN" is both Canberra Raiders and Canterbury Bulldogs).
         """
-        if home_abbr in self.exclude_teams or away_abbr in self.exclude_teams:
+        if self._team_in(home_id, self.exclude_teams) or self._team_in(away_id, self.exclude_teams):
             return False
         if self.show_all_live:
             return True
@@ -221,7 +235,7 @@ class SportsCore(ABC):
             return True
         if not self.favorite_teams:
             return True
-        return home_abbr in self.favorite_teams or away_abbr in self.favorite_teams
+        return self._team_in(home_id, self.favorite_teams) or self._team_in(away_id, self.favorite_teams)
 
     def _swrr_advance(self, games: List[Dict]) -> Optional[Dict]:
         """Pick the next live game to display via Smooth Weighted Round-Robin.
@@ -923,9 +937,10 @@ class SportsCore(ABC):
                 away_abbr = away_team["team"]["name"][:3]
 
             # Check if this is a favorite team game BEFORE doing expensive logging
-            is_favorite_game = self.favorite_teams and (
-                home_abbr in self.favorite_teams or away_abbr in self.favorite_teams
-            )
+            # (matched by team ID - NRL abbreviations like "NEW"/"CAN" aren't unique).
+            is_favorite_game = self._team_in(
+                home_team["id"], self.favorite_teams
+            ) or self._team_in(away_team["id"], self.favorite_teams)
 
             # Only log debug info for favorite team games
             if is_favorite_game:
@@ -1253,8 +1268,8 @@ class SportsUpcoming(SportsCore):
             if game_id in selected_ids:
                 continue
 
-            home = game.get("home_abbr")
-            away = game.get("away_abbr")
+            home = str(game.get("home_id"))
+            away = str(game.get("away_id"))
 
             home_fav = home in favorite_teams
             away_fav = away in favorite_teams
@@ -1274,7 +1289,7 @@ class SportsUpcoming(SportsCore):
                     team_counts[away] += 1
 
                 self.logger.debug(
-                    f"Selected game {away}@{home}: team_counts={team_counts}"
+                    f"Selected game {game.get('away_abbr')}@{game.get('home_abbr')}: team_counts={team_counts}"
                 )
 
             if all(c >= self.upcoming_games_to_show for c in team_counts.values()):
@@ -1329,17 +1344,16 @@ class SportsUpcoming(SportsCore):
                     # Only fetch odds for games that will be displayed
                     # If show_favorite_teams_only is True but no favorites configured, show all
                     if self.show_favorite_teams_only and self.favorite_teams:
-                        if (
-                            game["home_abbr"] not in self.favorite_teams
-                            and game["away_abbr"] not in self.favorite_teams
+                        if not (
+                            self._team_in(game["home_id"], self.favorite_teams)
+                            or self._team_in(game["away_id"], self.favorite_teams)
                         ):
                             continue
                     processed_games.append(game)
                     # Count favorite team games for logging
-                    if self.favorite_teams and (
-                        game["home_abbr"] in self.favorite_teams
-                        or game["away_abbr"] in self.favorite_teams
-                    ):
+                    if self._team_in(
+                        game["home_id"], self.favorite_teams
+                    ) or self._team_in(game["away_id"], self.favorite_teams):
                         favorite_games_found += 1
                     if self.show_odds:
                         self._fetch_odds(game)
@@ -1803,8 +1817,8 @@ class SportsRecent(SportsCore):
             if game_id in selected_ids:
                 continue
 
-            home = game.get("home_abbr")
-            away = game.get("away_abbr")
+            home = str(game.get("home_id"))
+            away = str(game.get("away_id"))
 
             home_fav = home in favorite_teams
             away_fav = away in favorite_teams
@@ -1824,7 +1838,7 @@ class SportsRecent(SportsCore):
                     team_counts[away] += 1
 
                 self.logger.debug(
-                    f"Selected recent game {away}@{home}: team_counts={team_counts}"
+                    f"Selected recent game {game.get('away_abbr')}@{game.get('home_abbr')}: team_counts={team_counts}"
                 )
 
             if all(c >= self.recent_games_to_show for c in team_counts.values()):
@@ -1898,10 +1912,9 @@ class SportsRecent(SportsCore):
                     if game_time and game_time >= recent_cutoff:
                         # Excluded teams are hidden from final/recent scores too
                         # (spoiler protection), regardless of every other filter.
-                        if (
-                            game.get("home_abbr") in self.exclude_teams
-                            or game.get("away_abbr") in self.exclude_teams
-                        ):
+                        if self._team_in(
+                            game.get("home_id"), self.exclude_teams
+                        ) or self._team_in(game.get("away_id"), self.exclude_teams):
                             continue
                         processed_games.append(game)
             # Use single-pass algorithm for game selection
@@ -2392,12 +2405,12 @@ class SportsLive(SportsCore):
         except (ValueError, TypeError):
             return None
 
-    def _is_favorite(self, abbr: Optional[str]) -> bool:
-        return bool(self.favorite_teams) and abbr in self.favorite_teams
+    def _is_favorite(self, team_id: Optional[str]) -> bool:
+        return self._team_in(team_id, self.favorite_teams)
 
-    def _should_celebrate_goal_for(self, abbr: Optional[str]) -> bool:
-        """Whether a goal by ``abbr`` should trigger a celebration."""
-        if self._is_favorite(abbr):
+    def _should_celebrate_goal_for(self, team_id: Optional[str]) -> bool:
+        """Whether a goal by ``team_id`` should trigger a celebration."""
+        if self._is_favorite(team_id):
             return True
         if not self.favorite_teams:
             # No favorites configured: the user opted to show this game, so
@@ -2472,10 +2485,10 @@ class SportsLive(SportsCore):
             return
 
         scored_side = None
-        if away_scored and self._should_celebrate_goal_for(game.get("away_abbr")):
+        if away_scored and self._should_celebrate_goal_for(game.get("away_id")):
             scored_side = "away"
         if scored_side is None and home_scored and self._should_celebrate_goal_for(
-            game.get("home_abbr")
+            game.get("home_id")
         ):
             scored_side = "home"
         if scored_side is None:
@@ -2512,22 +2525,22 @@ class SportsLive(SportsCore):
             return
 
         if away > home:
-            winner_side, winner_abbr = "away", game.get("away_abbr")
+            winner_side, winner_id = "away", game.get("away_id")
         elif home > away:
-            winner_side, winner_abbr = "home", game.get("home_abbr")
+            winner_side, winner_id = "home", game.get("home_id")
         else:
             return  # draw -> no win celebration
 
         # Wins are gated strictly on favorites (every game ends, so the
         # "no favorites -> celebrate all" goal fallback would be too noisy).
-        if not self._is_favorite(winner_abbr):
+        if not self._is_favorite(winner_id):
             return
 
         self._start_celebration(
             game,
             "win",
             scored_side=winner_side,
-            team_abbr=winner_abbr,
+            team_abbr=game.get(f"{winner_side}_abbr", ""),
             away_score=away,
             home_score=home,
         )
@@ -2935,7 +2948,7 @@ class SportsLive(SportsCore):
                             # full precedence order: exclude > show_all_live >
                             # favorites-only membership; matches SportsUpcoming).
                             should_include = self._classify_live_game(
-                                details["home_abbr"], details["away_abbr"]
+                                details["home_id"], details["away_id"]
                             )
 
                             if not should_include:
