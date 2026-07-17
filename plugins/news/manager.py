@@ -1039,21 +1039,46 @@ class NewsTickerPlugin(BasePlugin):
         """Display message when no headlines are available."""
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
-        
+
         # Determine the reason for no headlines
         enabled_feeds = self.feeds_config.get('enabled_feeds', [])
         custom_feeds = self.feeds_config.get('custom_feeds', {})
         total_feeds = len(enabled_feeds) + len(custom_feeds)
-        
+
         if total_feeds == 0:
             message = "No Feeds Enabled"
         else:
             message = "No Headlines Available"
-        
-        draw.text((5, 12), message, font=self.fonts.get('headline', ImageFont.load_default()), fill=(150, 150, 150))
+
+        font = self.fonts.get('headline', ImageFont.load_default())
+        # Previously a fixed (5, 12) with no width check at all -- on a 64px
+        # panel "No Feeds Enabled" ran straight off the right edge. Truncate
+        # to the actual panel width (with an ellipsis, so it's visibly cut
+        # rather than silently dropped) and center it, matching the pattern
+        # used for similar fallback messages elsewhere in this plugin
+        # family. No extra margin subtracted from display_width -- on the
+        # real 192x48 panel this message happens to measure exactly 192px,
+        # and reserving even a few px of margin would truncate text that
+        # actually already fits edge-to-edge.
+        message = self._truncate_to_width(draw, message, font, self.display_width)
+        bbox = draw.textbbox((0, 0), message, font=font)
+        x = max(0, (self.display_width - (bbox[2] - bbox[0])) // 2)
+        y = max(0, (self.display_height - (bbox[3] - bbox[1])) // 2)
+        draw.text((x, y), message, font=font, fill=(220, 220, 220))
 
         self.display_manager.image = img
         self.display_manager.update_display()
+
+    @staticmethod
+    def _truncate_to_width(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> str:
+        """Trim text and append '..' so it fits max_width pixels."""
+        if draw.textbbox((0, 0), text, font=font)[2] <= max_width:
+            return text
+        ellipsis = ".."
+        trimmed = text
+        while trimmed and draw.textbbox((0, 0), trimmed + ellipsis, font=font)[2] > max_width:
+            trimmed = trimmed[:-1]
+        return (trimmed.rstrip() + ellipsis) if trimmed else ellipsis
 
     def _display_error(self, message: str):
         """Display error message."""

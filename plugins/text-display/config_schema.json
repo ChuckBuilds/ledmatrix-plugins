@@ -27,17 +27,23 @@
       "default": "Subscribe to ChuckBuilds",
       "description": "The text message to display on the LED matrix"
     },
+    "font_mode": {
+      "type": "string",
+      "enum": ["manual", "auto"],
+      "default": "manual",
+      "description": "Font sizing mode. 'manual' uses font_path/font_size as configured. 'auto' picks the largest crisp font that fits the display: static text is sized to fit the panel, scrolling text is sized to the panel height."
+    },
     "font_path": {
       "type": "string",
       "default": "assets/fonts/PressStart2P-Regular.ttf",
-      "description": "Path to font file (TTF or BDF format). Relative to project root or absolute path."
+      "description": "Path to font file (TTF or BDF format). Relative to project root or absolute path. Used in manual font mode."
     },
     "font_size": {
       "type": "number",
       "default": 8,
       "minimum": 4,
       "maximum": 32,
-      "description": "Font size in pixels"
+      "description": "Font size in pixels. Used in manual font mode."
     },
     "scroll": {
       "type": "boolean",

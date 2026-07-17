@@ -1,0 +1,57 @@
+{
+  "id": "nrl-scoreboard",
+  "name": "NRL Scoreboard",
+  "version": "1.0.3",
+  "author": "ChuckBuilds",
+  "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
+  "category": "sports",
+  "tags": [
+    "nrl",
+    "rugby-league",
+    "sports",
+    "scoreboard",
+    "live-scores"
+  ],
+  "display_modes": [
+    "nrl_live",
+    "nrl_recent",
+    "nrl_upcoming"
+  ],
+  "versions": [
+    {
+      "released": "2026-07-16",
+      "version": "1.0.3",
+      "notes": "Address CodeRabbit review feedback on the team-ID matching fix: simplify list dedup with dict.fromkeys(), stringify ESPN team IDs when building the resolver's lookup index, extract a shared _team_in() ID-membership helper to remove ~9 duplicated checks across sports.py/manager.py, and clarify README/schema wording (ambiguous abbreviations are left unresolved, not matched to both teams).",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-12",
+      "version": "1.0.2",
+      "notes": "Fix favorite_teams/exclude_teams matching: NRL abbreviations aren't unique (\"NEW\" is both Newcastle Knights and New Zealand Warriors, \"CAN\" is both Canberra Raiders and Canterbury Bulldogs). Team matching now resolves to unique ESPN team IDs instead of relying on the ambiguous abbreviation.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-12",
+      "version": "1.0.1",
+      "notes": "Fix Codacy-flagged issues: silent except/pass blocks now log at debug/warning level, removed an unused/duplicate pathlib.Path import, and dropped an unused exception variable.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-10",
+      "version": "1.0.0",
+      "notes": "Initial release: live, recent, and upcoming NRL games from ESPN's rugby-league API with switch/scroll display, live priority, goal/win celebrations, dynamic duration, and Vegas scroll support.",
+      "ledmatrix_min": "2.0.0"
+    }
+  ],
+  "last_updated": "2026-07-16",
+  "stars": 0,
+  "downloads": 0,
+  "verified": true,
+  "screenshot": "",
+  "entry_point": "manager.py",
+  "class_name": "NrlScoreboardPlugin",
+  "config_schema": "config_schema.json",
+  "compatible_versions": [
+    ">=2.0.0"
+  ]
+}

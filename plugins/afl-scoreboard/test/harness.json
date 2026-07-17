@@ -1,0 +1,21 @@
+{
+  "_comment": "Deterministic fixture for the plugin safety harness. Mocks an ESPN australian-football/afl scoreboard response with one live, one recent, and one upcoming game so live/recent/upcoming modes each render without a network call.",
+  "config": {
+    "enabled": true,
+    "timezone": "UTC",
+    "favorite_teams": [],
+    "display_duration": 15,
+    "display_modes": {
+      "live": true,
+      "recent": true,
+      "upcoming": true,
+      "live_display_mode": "switch",
+      "recent_display_mode": "switch",
+      "upcoming_display_mode": "switch"
+    },
+    "recent_games_to_show": 5,
+    "upcoming_games_to_show": 10
+  },
+  "mock_data": "test/fixtures/mock.json",
+  "freeze_time": "2026-07-10 12:00:00"
+}

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-10",
+  "last_updated": "2026-07-17",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -76,7 +76,7 @@
       "last_updated": "2026-07-09",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.19.0"
+      "latest_version": "1.19.1"
     },
     {
       "id": "basketball-scoreboard",
@@ -124,7 +124,7 @@
       "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.3"
+      "latest_version": "1.1.4"
     },
     {
       "id": "christmas-countdown",
@@ -190,7 +190,7 @@
       "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.1.1",
+      "latest_version": "3.1.2",
       "icon": "fa-clock"
     },
     {
@@ -237,10 +237,10 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-08",
+      "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.7.0"
+      "latest_version": "2.8.2"
     },
     {
       "id": "geochron",
@@ -414,7 +414,7 @@
       "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.12.3"
+      "latest_version": "1.12.4"
     },
     {
       "id": "march-madness",
@@ -505,10 +505,10 @@
       "plugin_path": "plugins/ledmatrix-music",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-09",
+      "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.8"
+      "latest_version": "1.1.0"
     },
     {
       "id": "news",
@@ -532,7 +532,7 @@
       "last_updated": "2026-06-01",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.8"
+      "latest_version": "1.0.9"
     },
     {
       "id": "on-air",
@@ -628,10 +628,10 @@
       "plugin_path": "plugins/of-the-day",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-26",
+      "last_updated": "2026-05-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.0"
+      "latest_version": "1.3.0"
     },
     {
       "id": "olympics",
@@ -784,7 +784,7 @@
       "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.4.4"
+      "latest_version": "2.4.5"
     },
     {
       "id": "stocks",
@@ -807,7 +807,7 @@
       "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.3.2",
+      "latest_version": "2.4.0",
       "icon": "fas fa-chart-line"
     },
     {
@@ -828,10 +828,10 @@
       "plugin_path": "plugins/text-display",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-10",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.3"
+      "latest_version": "1.1.1"
     },
     {
       "id": "tide-display",
@@ -903,7 +903,7 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.5.1",
+      "latest_version": "2.5.2",
       "stars": 0,
       "downloads": 0,
       "last_updated": "2026-06-14",
@@ -953,7 +953,7 @@
       "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "ledmatrix-elections",
@@ -1002,6 +1002,75 @@
       "verified": false,
       "screenshot": "",
       "latest_version": "1.0.0"
+    },
+    {
+      "id": "afl-scoreboard",
+      "name": "AFL Scoreboard",
+      "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
+      "author": "ChuckBuilds",
+      "category": "sports",
+      "tags": [
+        "afl",
+        "australian-football",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/afl-scoreboard",
+      "stars": 0,
+      "downloads": 0,
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.0.1",
+      "last_updated": "2026-07-12"
+    },
+    {
+      "id": "tidbyt-baseball-scoreboard",
+      "name": "MLB Scoreboard for LEDMatrix",
+      "description": "Custom MLB live-game scoreboard: split team-color panel on the left, diamond/inning/count/outs on the right, with live pitcher/batter info and last-play descriptions. Designed for 128x32 panels only -- shows a clear message on other sizes rather than a broken layout.",
+      "author": "trsadler",
+      "category": "sports",
+      "tags": [
+        "baseball",
+        "mlb",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/trsadler/MLB-Scoreboard-LEDMatrix",
+      "branch": "main",
+      "plugin_path": "",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-07-16",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.1.0"
+    },
+    {
+      "id": "nrl-scoreboard",
+      "name": "NRL Scoreboard",
+      "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
+      "author": "ChuckBuilds",
+      "category": "sports",
+      "tags": [
+        "nrl",
+        "rugby-league",
+        "sports",
+        "scoreboard",
+        "live-scores"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/nrl-scoreboard",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-07-16",
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.0.3"
     }
   ]
 }

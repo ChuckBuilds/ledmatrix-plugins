@@ -245,8 +245,8 @@ class StockNewsTickerPlugin(BasePlugin):
     def _load_fonts(self) -> dict:
         """Load the main headline/symbol font plus independently configurable
         publisher and age fonts, each falling back to the main font on failure."""
-        main_path = self.global_config.get('font_path', 'assets/fonts/PressStart2P-Regular.ttf')
-        main_font = self._load_font(main_path, self.font_size)
+        self._main_font_path = self.global_config.get('font_path', 'assets/fonts/PressStart2P-Regular.ttf')
+        main_font = self._load_font(self._main_font_path, self.font_size)
         if main_font is None:
             self.logger.warning("[Stock News] No TTF font found, using PIL default")
             return {}
@@ -944,16 +944,42 @@ class StockNewsTickerPlugin(BasePlugin):
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
         text = "No Stock News"
-        font = self._fonts.get('headline')
+        font = self._fit_fallback_font(draw, text)
         try:
             bb = draw.textbbox((0, 0), text, font=font)
             x = max(0, (self.display_width - (bb[2] - bb[0])) // 2)
             y = max(0, (self.display_height - (bb[3] - bb[1])) // 2)
-            draw.text((x, y), text, fill=(100, 100, 100), font=font)
+            draw.text((x, y), text, fill=(180, 180, 180), font=font)
         except Exception:
-            draw.text((4, self.display_height // 2 - 4), text, fill=(100, 100, 100))
+            draw.text((4, self.display_height // 2 - 4), text, fill=(180, 180, 180))
         self.display_manager.image = img.copy()
         self.display_manager.update_display()
+
+    def _fit_fallback_font(self, draw: ImageDraw.ImageDraw, text: str) -> Optional[ImageFont.FreeTypeFont]:
+        """Pick the largest size <= self.font_size that fits `text` within
+        display_width, for one-off fallback/error text.
+
+        self.font_size is derived from display *height* only
+        (_apply_config, "height // 3") -- correct for the scrolling
+        headline ticker, which is free to run wider than the panel. A
+        static, centered fallback message doesn't have that luxury: on the
+        real 192x48 hardware panel (a taller panel, so a bigger derived
+        font) "No Stock News" was wide enough to clip its trailing
+        character against the canvas edge. This shrinks just for this
+        message, leaving the scrolling ticker's own sizing untouched.
+        """
+        font = self._fonts.get('headline')
+        if font is None or not hasattr(self, '_main_font_path'):
+            return font
+        for size in range(self.font_size, 5, -1):
+            candidate = self._load_font(self._main_font_path, size)
+            if candidate is None:
+                break  # font file itself unavailable at this size; give up shrinking
+            bb = draw.textbbox((0, 0), text, font=candidate)
+            if (bb[2] - bb[0]) <= self.display_width:
+                return candidate
+            font = candidate  # smallest-so-far, in case we hit the floor without fitting
+        return font
 
     def _display_error(self, message: str) -> None:
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))

@@ -52,6 +52,20 @@
           "description": "Enable chart display toggle",
           "default": true
         },
+        "chart_width_percent": {
+          "type": "number",
+          "description": "Width of the mini price chart as a fraction of each stock/crypto entry's canvas width",
+          "minimum": 0.1,
+          "maximum": 0.7,
+          "default": 0.4
+        },
+        "chart_height_percent": {
+          "type": "number",
+          "description": "Height of the mini price chart as a fraction of the display height",
+          "minimum": 0.2,
+          "maximum": 1.0,
+          "default": 0.667
+        },
         "dynamic_duration": {
           "type": "boolean",
           "description": "Enable dynamic duration based on content width",

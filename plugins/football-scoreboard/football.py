@@ -160,6 +160,11 @@ class FootballLive(Football, SportsLive):
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live NCAA FB game.""" # Updated docstring
         try:
+            # Adaptive layout (beta, opt-in via layout_mode: "adaptive") —
+            # classic layout below is untouched when it declines.
+            if self._adaptive_scorebug(game, "live", force_clear):
+                return
+
             # Clear the display first to ensure full coverage (like weather plugin does)
             if force_clear:
                 self.display_manager.clear()

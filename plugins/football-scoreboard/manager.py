@@ -694,6 +694,8 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "timezone": timezone_str,
                 "display": display_config,
                 "customization": customization_config,
+                # Adaptive layout (beta): shared across leagues like customization
+                "layout_mode": self.config.get("layout_mode", "classic"),
             }
         )
         

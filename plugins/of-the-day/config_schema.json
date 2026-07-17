@@ -9,7 +9,8 @@
     "category_order",
     "file_manager",
     "categories",
-    "display_duration"
+    "display_duration",
+    "customization"
   ],
   "properties": {
     "enabled": {
@@ -40,7 +41,10 @@
       "items": {
         "type": "string"
       },
-      "default": ["word_of_the_day", "slovenian_word_of_the_day"],
+      "default": [
+        "word_of_the_day",
+        "slovenian_word_of_the_day"
+      ],
       "description": "Order to display categories"
     },
     "categories": {
@@ -64,7 +68,11 @@
             "description": "Display name shown in configuration"
           }
         },
-        "required": ["enabled", "data_file", "display_name"]
+        "required": [
+          "enabled",
+          "data_file",
+          "display_name"
+        ]
       }
     },
     "display_duration": {
@@ -80,35 +88,81 @@
       "x-widget": "plugin-file-manager",
       "x-widget-config": {
         "actions": {
-          "list":   "list-files",
-          "get":    "get-file",
-          "save":   "save-file",
+          "list": "list-files",
+          "get": "get-file",
+          "save": "save-file",
           "upload": "upload-file",
           "delete": "delete-file",
           "create": "create-file",
           "toggle": "toggle-category"
         },
-        "upload_hint":    "JSON files with day numbers 1–365 as keys",
+        "upload_hint": "JSON files with day numbers 1\u2013365 as keys",
         "directory_label": "of_the_day/",
         "create_fields": [
           {
-            "key":         "category_name",
-            "label":       "Category Name",
+            "key": "category_name",
+            "label": "Category Name",
             "placeholder": "e.g., my_words",
-            "pattern":     "^[a-z0-9_]+$",
-            "hint":        "Lowercase letters, numbers, underscores — used as filename"
+            "pattern": "^[a-z0-9_]+$",
+            "hint": "Lowercase letters, numbers, underscores \u2014 used as filename"
           },
           {
-            "key":         "display_name",
-            "label":       "Display Name",
+            "key": "display_name",
+            "label": "Display Name",
             "placeholder": "e.g., My Words",
-            "hint":        "Shown in plugin configuration (leave blank to auto-generate)"
+            "hint": "Shown in plugin configuration (leave blank to auto-generate)"
           }
         ],
         "toggle_key": "category_name"
       }
+    },
+    "customization": {
+      "type": "object",
+      "title": "Display Customization",
+      "description": "Customize fonts, sizes, colors and positioning for the display text. Requires a LEDMatrix core with the element-style system; on older cores this section is not shown and the classic styling is used.",
+      "x-style-elements": {
+        "title_text": {
+          "title": "Title",
+          "font": {
+            "default": "PressStart2P-Regular.ttf"
+          },
+          "size": {
+            "default": 8,
+            "min": 4,
+            "max": 16
+          },
+          "color": {
+            "default": [
+              255,
+              255,
+              255
+            ]
+          },
+          "offsets": true
+        },
+        "body_text": {
+          "title": "Body Text",
+          "font": {
+            "default": "4x6-font.ttf"
+          },
+          "size": {
+            "default": 6,
+            "min": 4,
+            "max": 12
+          },
+          "color": {
+            "default": [
+              200,
+              200,
+              200
+            ]
+          },
+          "offsets": true
+        }
+      }
     }
   },
-  "required": ["enabled"]
+  "required": [
+    "enabled"
+  ]
 }
-

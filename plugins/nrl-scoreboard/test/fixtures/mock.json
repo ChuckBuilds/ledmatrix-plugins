@@ -1,0 +1,265 @@
+{
+  "leagues": [
+    {
+      "id": "8370",
+      "name": "Rugby League",
+      "abbreviation": "NRL",
+      "slug": "3"
+    }
+  ],
+  "season": {
+    "type": 1,
+    "year": 2026
+  },
+  "events": [
+    {
+      "id": "401700001",
+      "date": "2026-07-10T09:00Z",
+      "name": "Penrith Panthers at Brisbane Broncos",
+      "shortName": "PEN @ BRI",
+      "season": {
+        "year": 2026,
+        "type": 1
+      },
+      "competitions": [
+        {
+          "id": "401700001",
+          "date": "2026-07-10T09:00Z",
+          "status": {
+            "clock": 3120.0,
+            "displayClock": "52'",
+            "period": 2,
+            "type": {
+              "id": "2",
+              "name": "STATUS_IN_PROGRESS",
+              "state": "in",
+              "completed": false,
+              "description": "In Progress",
+              "detail": "2nd Half",
+              "shortDetail": "2H"
+            }
+          },
+          "competitors": [
+            {
+              "id": "1",
+              "homeAway": "home",
+              "winner": false,
+              "score": "18",
+              "team": {
+                "id": "16",
+                "abbreviation": "BRI",
+                "displayName": "Brisbane Broncos",
+                "shortDisplayName": "Broncos",
+                "logo": "https://a.espncdn.com/i/teamlogos/rugby/teams/500/16.png"
+              },
+              "records": [
+                {
+                  "name": "overall",
+                  "type": "total",
+                  "summary": "WWLWW"
+                }
+              ]
+            },
+            {
+              "id": "2",
+              "homeAway": "away",
+              "winner": false,
+              "score": "12",
+              "team": {
+                "id": "18",
+                "abbreviation": "PEN",
+                "displayName": "Penrith Panthers",
+                "shortDisplayName": "Panthers",
+                "logo": "https://a.espncdn.com/i/teamlogos/rugby/teams/500/18.png"
+              },
+              "records": [
+                {
+                  "name": "overall",
+                  "type": "total",
+                  "summary": "WWWLW"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "status": {
+        "clock": 3120.0,
+        "displayClock": "52'",
+        "period": 2,
+        "type": {
+          "id": "2",
+          "name": "STATUS_IN_PROGRESS",
+          "state": "in",
+          "completed": false
+        }
+      }
+    },
+    {
+      "id": "401700002",
+      "date": "2026-07-09T09:00Z",
+      "name": "Sydney Roosters at Melbourne Storm",
+      "shortName": "SYD @ MEL",
+      "season": {
+        "year": 2026,
+        "type": 1
+      },
+      "competitions": [
+        {
+          "id": "401700002",
+          "date": "2026-07-09T09:00Z",
+          "status": {
+            "clock": 4800.0,
+            "displayClock": "80'",
+            "period": 2,
+            "type": {
+              "id": "3",
+              "name": "STATUS_FINAL",
+              "state": "post",
+              "completed": true,
+              "description": "Final",
+              "detail": "Final",
+              "shortDetail": "Final"
+            }
+          },
+          "competitors": [
+            {
+              "id": "3",
+              "homeAway": "home",
+              "winner": true,
+              "score": "24",
+              "team": {
+                "id": "12",
+                "abbreviation": "MEL",
+                "displayName": "Melbourne Storm",
+                "shortDisplayName": "Storm",
+                "logo": "https://a.espncdn.com/i/teamlogos/rugby/teams/500/12.png"
+              },
+              "records": [
+                {
+                  "name": "overall",
+                  "type": "total",
+                  "summary": "WWWWL"
+                }
+              ]
+            },
+            {
+              "id": "4",
+              "homeAway": "away",
+              "winner": false,
+              "score": "10",
+              "team": {
+                "id": "20",
+                "abbreviation": "SYD",
+                "displayName": "Sydney Roosters",
+                "shortDisplayName": "Roosters",
+                "logo": "https://a.espncdn.com/i/teamlogos/rugby/teams/500/20.png"
+              },
+              "records": [
+                {
+                  "name": "overall",
+                  "type": "total",
+                  "summary": "LWLWL"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "status": {
+        "clock": 4800.0,
+        "displayClock": "80'",
+        "period": 2,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true
+        }
+      }
+    },
+    {
+      "id": "401700003",
+      "date": "2026-07-12T09:00Z",
+      "name": "Penrith Panthers at Parramatta Eels",
+      "shortName": "PEN @ PAR",
+      "season": {
+        "year": 2026,
+        "type": 1
+      },
+      "competitions": [
+        {
+          "id": "401700003",
+          "date": "2026-07-12T09:00Z",
+          "status": {
+            "clock": 0.0,
+            "displayClock": "0'",
+            "period": 0,
+            "type": {
+              "id": "1",
+              "name": "STATUS_SCHEDULED",
+              "state": "pre",
+              "completed": false,
+              "description": "Scheduled",
+              "detail": "Sun, July 12th at 9:00 AM UTC",
+              "shortDetail": "7/12 - 9:00 AM UTC"
+            }
+          },
+          "competitors": [
+            {
+              "id": "5",
+              "homeAway": "home",
+              "winner": false,
+              "score": "0",
+              "team": {
+                "id": "14",
+                "abbreviation": "PAR",
+                "displayName": "Parramatta Eels",
+                "shortDisplayName": "Eels",
+                "logo": "https://a.espncdn.com/i/teamlogos/rugby/teams/500/14.png"
+              },
+              "records": [
+                {
+                  "name": "overall",
+                  "type": "total",
+                  "summary": "LLWLW"
+                }
+              ]
+            },
+            {
+              "id": "6",
+              "homeAway": "away",
+              "winner": false,
+              "score": "0",
+              "team": {
+                "id": "18",
+                "abbreviation": "PEN",
+                "displayName": "Penrith Panthers",
+                "shortDisplayName": "Panthers",
+                "logo": "https://a.espncdn.com/i/teamlogos/rugby/teams/500/18.png"
+              },
+              "records": [
+                {
+                  "name": "overall",
+                  "type": "total",
+                  "summary": "WWWLW"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0'",
+        "period": 0,
+        "type": {
+          "id": "1",
+          "name": "STATUS_SCHEDULED",
+          "state": "pre",
+          "completed": false
+        }
+      }
+    }
+  ]
+}

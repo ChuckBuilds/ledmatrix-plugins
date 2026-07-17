@@ -379,6 +379,32 @@ def test_render_missing_stats_is_text_only_no_crash():
     print("test_render_missing_stats_is_text_only_no_crash: PASS")
 
 
+def test_render_narrow_panel_trims_stats_instead_of_truncating_mid_pair():
+    """Regression for the narrow-panel stat line ("AVG .312  HR 28  RBI 71")
+    truncating mid-pair (e.g. "AVG .312  H", silently losing HR/RBI). At
+    64x32 the fix should drop whole trailing stat pairs -- still crash-free,
+    still draws something, still respects the panel margins -- rather than
+    hard-cut the joined string. (Content-level verification, i.e. that the
+    drawn text is a whole prefix and not a mid-word cut, is done visually
+    against a real render -- see the PR description -- since this harness
+    has no OCR/text-extraction, only pixel checks.)"""
+    for w, h in ((64, 32), (96, 32)):
+        live = _make_render_live(w, h)
+        live._draw_player_card_screen(_GAME, "batter", _INFO, _BIO)  # must not raise
+        img = live.display_manager.image
+        margin = 1
+        clipped = any(
+            img.getpixel((x, y)) != (0, 0, 0)
+            for edge in (range(0, margin), range(w - margin, w))
+            for x in edge
+            for y in range(h)
+        )
+        assert not clipped, f"content drawn into a margin column at {w}x{h}"
+        lit = any(img.getpixel((x, y)) != (0, 0, 0) for x in range(w) for y in range(h))
+        assert lit, f"expected some content drawn at {w}x{h}"
+    print("test_render_narrow_panel_trims_stats_instead_of_truncating_mid_pair: PASS")
+
+
 if __name__ == "__main__":
     print("player-card tests")
     print("=" * 60)
@@ -403,6 +429,7 @@ if __name__ == "__main__":
         test_gate_favorites_only_skips_non_favorite,
         test_render_all_sizes_no_overflow,
         test_render_missing_stats_is_text_only_no_crash,
+        test_render_narrow_panel_trims_stats_instead_of_truncating_mid_pair,
     ]
     failures = 0
     for t in tests:
