@@ -65,7 +65,8 @@
       "default": 15,
       "minimum": 5,
       "maximum": 60,
-      "description": "Duration in seconds to display each match"
+      "description": "Duration in seconds to display each match",
+      "x-advanced": true
     },
     "live_game_duration": {
       "type": "integer",
@@ -79,85 +80,98 @@
       "default": 0,
       "minimum": 0,
       "maximum": 120,
-      "description": "Duration in seconds for live matches that do NOT involve a favorite team. 0 (default) = use live_game_duration for every live match."
+      "description": "Duration in seconds for live matches that do NOT involve a favorite team. 0 (default) = use live_game_duration for every live match.",
+      "x-advanced": true
     },
     "recent_game_duration": {
       "type": "integer",
       "default": 15,
       "minimum": 5,
       "maximum": 60,
-      "description": "Duration in seconds to display each recent match"
+      "description": "Duration in seconds to display each recent match",
+      "x-advanced": true
     },
     "upcoming_game_duration": {
       "type": "integer",
       "default": 15,
       "minimum": 5,
       "maximum": 60,
-      "description": "Duration in seconds to display each upcoming match"
+      "description": "Duration in seconds to display each upcoming match",
+      "x-advanced": true
     },
     "update_interval_seconds": {
       "type": "integer",
       "default": 3600,
       "minimum": 30,
       "maximum": 86400,
-      "description": "How often to fetch new match data (seconds)"
+      "description": "How often to fetch new match data (seconds)",
+      "x-advanced": true
     },
     "live_update_interval": {
       "type": "integer",
       "default": 30,
       "minimum": 10,
       "maximum": 300,
-      "description": "Update interval for live matches (seconds)"
+      "description": "Update interval for live matches (seconds)",
+      "x-advanced": true
     },
     "recent_update_interval": {
       "type": "integer",
       "default": 3600,
       "minimum": 60,
       "maximum": 86400,
-      "description": "Update interval for recent matches (seconds)"
+      "description": "Update interval for recent matches (seconds)",
+      "x-advanced": true
     },
     "upcoming_update_interval": {
       "type": "integer",
       "default": 3600,
       "minimum": 60,
       "maximum": 86400,
-      "description": "Update interval for upcoming matches (seconds)"
+      "description": "Update interval for upcoming matches (seconds)",
+      "x-advanced": true
     },
     "series_discovery_interval": {
       "type": "integer",
       "default": 86400,
       "minimum": 3600,
       "maximum": 604800,
-      "description": "How often to re-resolve numeric ESPN series IDs from the header endpoint (seconds). Series IDs change per tour/season, so they are re-discovered periodically rather than hardcoded. Default 24h."
+      "description": "How often to re-resolve numeric ESPN series IDs from the header endpoint (seconds). Series IDs change per tour/season, so they are re-discovered periodically rather than hardcoded. Default 24h.",
+      "x-advanced": true
     },
     "recent_games_to_show": {
       "type": "integer",
       "default": 5,
       "minimum": 1,
       "maximum": 20,
-      "description": "Maximum number of recent (completed) matches to show"
+      "description": "Maximum number of recent (completed) matches to show",
+      "x-advanced": true
     },
     "upcoming_games_to_show": {
       "type": "integer",
       "default": 5,
       "minimum": 1,
       "maximum": 20,
-      "description": "Maximum number of upcoming (scheduled) matches to show"
+      "description": "Maximum number of upcoming (scheduled) matches to show",
+      "x-advanced": true
     },
     "live_priority": {
       "type": "boolean",
       "default": true,
-      "description": "Give live matches priority over other modes. Live matches interrupt normal rotation and are displayed immediately when available."
+      "description": "Give live matches priority over other modes. Live matches interrupt normal rotation and are displayed immediately when available.",
+      "x-advanced": true
     },
     "show_records": {
       "type": "boolean",
       "default": false,
-      "description": "Show team records (played-won) when available"
+      "description": "Show team records (played-won) when available",
+      "x-advanced": true
     },
     "show_venue": {
       "type": "boolean",
       "default": true,
-      "description": "Show the venue/ground on upcoming match cards"
+      "description": "Show the venue/ground on upcoming match cards",
+      "x-advanced": true
     },
     "celebration_enabled": {
       "type": "boolean",
@@ -169,7 +183,8 @@
       "default": 8,
       "minimum": 3,
       "maximum": 30,
-      "description": "How long the win celebration stays on screen (seconds)"
+      "description": "How long the win celebration stays on screen (seconds)",
+      "x-advanced": true
     },
     "dynamic_duration": {
       "type": "object",
@@ -179,21 +194,24 @@
         "enabled": {
           "type": "boolean",
           "default": false,
-          "description": "Enable dynamic duration (total_matches x per_match_duration)"
+          "description": "Enable dynamic duration (total_matches x per_match_duration)",
+          "x-advanced": true
         },
         "min_duration_seconds": {
           "type": "number",
           "minimum": 10,
           "maximum": 300,
           "default": 30,
-          "description": "Minimum total duration in seconds for a mode, even if few matches are available"
+          "description": "Minimum total duration in seconds for a mode, even if few matches are available",
+          "x-advanced": true
         },
         "max_duration_seconds": {
           "type": "number",
           "minimum": 60,
           "maximum": 600,
           "default": 300,
-          "description": "Maximum total duration in seconds for a mode"
+          "description": "Maximum total duration in seconds for a mode",
+          "x-advanced": true
         }
       },
       "additionalProperties": false
@@ -208,21 +226,24 @@
           "default": null,
           "minimum": 10,
           "maximum": 600,
-          "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (dynamic)."
+          "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (dynamic).",
+          "x-advanced": true
         },
         "recent_mode_duration": {
           "type": ["number", "null"],
           "default": null,
           "minimum": 10,
           "maximum": 600,
-          "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (dynamic)."
+          "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (dynamic).",
+          "x-advanced": true
         },
         "upcoming_mode_duration": {
           "type": ["number", "null"],
           "default": null,
           "minimum": 10,
           "maximum": 600,
-          "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (dynamic)."
+          "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (dynamic).",
+          "x-advanced": true
         }
       },
       "additionalProperties": false
@@ -258,35 +279,40 @@
         "enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable background service for data fetching"
+          "description": "Enable background service for data fetching",
+          "x-advanced": true
         },
         "max_workers": {
           "type": "integer",
           "default": 3,
           "minimum": 1,
           "maximum": 10,
-          "description": "Maximum number of worker threads"
+          "description": "Maximum number of worker threads",
+          "x-advanced": true
         },
         "request_timeout": {
           "type": "integer",
           "default": 30,
           "minimum": 5,
           "maximum": 120,
-          "description": "Request timeout in seconds"
+          "description": "Request timeout in seconds",
+          "x-advanced": true
         },
         "max_retries": {
           "type": "integer",
           "default": 3,
           "minimum": 1,
           "maximum": 10,
-          "description": "Maximum number of retries for failed requests"
+          "description": "Maximum number of retries for failed requests",
+          "x-advanced": true
         },
         "priority": {
           "type": "integer",
           "default": 2,
           "minimum": 1,
           "maximum": 5,
-          "description": "Background service priority"
+          "description": "Background service priority",
+          "x-advanced": true
         }
       },
       "additionalProperties": false
@@ -309,14 +335,16 @@
                 "4x6-font.ttf",
                 "5by7.regular.ttf"
               ],
-              "default": "PressStart2P-Regular.ttf"
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
               "title": "Font Size",
               "minimum": 4,
               "maximum": 16,
-              "default": 10
+              "default": 10,
+              "x-advanced": true
             }
           },
           "additionalProperties": false
@@ -334,14 +362,16 @@
                 "4x6-font.ttf",
                 "5by7.regular.ttf"
               ],
-              "default": "PressStart2P-Regular.ttf"
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
               "title": "Font Size",
               "minimum": 4,
               "maximum": 16,
-              "default": 8
+              "default": 8,
+              "x-advanced": true
             }
           },
           "additionalProperties": false
@@ -359,14 +389,16 @@
                 "4x6-font.ttf",
                 "5by7.regular.ttf"
               ],
-              "default": "PressStart2P-Regular.ttf"
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
               "title": "Font Size",
               "minimum": 4,
               "maximum": 16,
-              "default": 8
+              "default": 8,
+              "x-advanced": true
             }
           },
           "additionalProperties": false
@@ -384,14 +416,16 @@
                 "4x6-font.ttf",
                 "5by7.regular.ttf"
               ],
-              "default": "4x6-font.ttf"
+              "default": "4x6-font.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
               "title": "Font Size",
               "minimum": 4,
               "maximum": 16,
-              "default": 6
+              "default": 6,
+              "x-advanced": true
             }
           },
           "additionalProperties": false
@@ -409,14 +443,16 @@
                 "4x6-font.ttf",
                 "5by7.regular.ttf"
               ],
-              "default": "4x6-font.ttf"
+              "default": "4x6-font.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
               "title": "Font Size",
               "minimum": 4,
               "maximum": 16,
-              "default": 6
+              "default": 6,
+              "x-advanced": true
             }
           },
           "additionalProperties": false
@@ -430,25 +466,29 @@
               "type": "string",
               "pattern": "^#?[0-9A-Fa-f]{6}$",
               "default": "#FFFFFF",
-              "description": "Color for the runs/wickets score"
+              "description": "Color for the runs/wickets score",
+              "x-advanced": true
             },
             "batting_color": {
               "type": "string",
               "pattern": "^#?[0-9A-Fa-f]{6}$",
               "default": "#00FF66",
-              "description": "Highlight color for the team currently batting"
+              "description": "Highlight color for the team currently batting",
+              "x-advanced": true
             },
             "detail_color": {
               "type": "string",
               "pattern": "^#?[0-9A-Fa-f]{6}$",
               "default": "#FFD200",
-              "description": "Color for run rate / target detail text"
+              "description": "Color for run rate / target detail text",
+              "x-advanced": true
             },
             "status_color": {
               "type": "string",
               "pattern": "^#?[0-9A-Fa-f]{6}$",
               "default": "#AAAAAA",
-              "description": "Color for status / result text"
+              "description": "Color for status / result text",
+              "x-advanced": true
             }
           },
           "additionalProperties": false
