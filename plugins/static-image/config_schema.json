@@ -162,11 +162,13 @@
       "properties": {
         "sequential_loop": {
           "type": "boolean",
+          "x-advanced": true,
           "default": true,
           "description": "Loop back to first image after last (sequential mode)"
         },
         "random_seed": {
           "type": ["integer", "null"],
+          "x-advanced": true,
           "default": null,
           "description": "Random seed for reproducible rotation (null = use current time)"
         },
@@ -175,11 +177,13 @@
           "properties": {
             "enabled": {
               "type": "boolean",
+              "x-advanced": true,
               "default": false,
               "description": "Enable time-based rotation"
             },
             "interval_seconds": {
               "type": "integer",
+              "x-advanced": true,
               "default": 3600,
               "minimum": 60,
               "description": "Change image every N seconds"
@@ -195,11 +199,13 @@
     },
     "preserve_aspect_ratio": {
       "type": "boolean",
+      "x-advanced": true,
       "default": true,
       "description": "Preserve the image aspect ratio when scaling"
     },
     "background_color": {
       "type": "array",
+      "x-advanced": true,
       "items": {
         "type": "integer",
         "minimum": 0,
@@ -218,6 +224,7 @@
     },
     "image_rotation_interval": {
       "type": "number",
+      "x-advanced": true,
       "default": 15,
       "minimum": 1,
       "description": "How long to display each image before rotating to the next one (in seconds). Only applies when multiple images are configured."
