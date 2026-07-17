@@ -1705,7 +1705,9 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
                 return True
             else:
+                self._scroll_prepared[mode_type] = False
                 self._scroll_active[mode_type] = False
+                self._scroll_active_league.pop(mode_type, None)
                 return False
 
         return False
@@ -2620,8 +2622,16 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             elif display_mode.startswith("mlb_"):
                 league = "mlb"
         
-        # Check if scroll mode is active for this mode type
-        if self._should_use_scroll_mode(mode_type) and self._scroll_manager:
+        # Check if scroll mode is active for this mode type. For a granular
+        # per-league mode, only that league's display_mode setting counts --
+        # otherwise a league set to 'switch' could inherit another league's
+        # scroll duration just because that other league is set to 'scroll'.
+        is_scroll_mode = (
+            self._get_display_mode(league, mode_type) == 'scroll'
+            if league
+            else self._should_use_scroll_mode(mode_type)
+        )
+        if is_scroll_mode and self._scroll_manager:
             # Get dynamic duration from scroll manager
             scroll_duration = self._scroll_manager.get_dynamic_duration(mode_type)
             if scroll_duration > 0:
@@ -2909,7 +2919,28 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Check if scroll mode is active for the current display mode
         if self._current_active_display_mode:
             mode_type = self._extract_mode_type(self._current_active_display_mode)
-            if mode_type and self._should_use_scroll_mode(mode_type) and self._scroll_manager:
+
+            # Parse granular mode name if applicable (e.g., "mlb_recent", "ncaa_baseball_upcoming")
+            league = None
+            display_mode = self._current_active_display_mode
+            if "_" in display_mode and not display_mode.startswith("baseball_"):
+                # Use startswith checks to correctly handle multi-underscore league IDs
+                if display_mode.startswith("ncaa_baseball_"):
+                    league = "ncaa_baseball"
+                elif display_mode.startswith("milb_"):
+                    league = "milb"
+                elif display_mode.startswith("mlb_"):
+                    league = "mlb"
+
+            # For a granular per-league mode, only that league's display_mode
+            # setting counts -- otherwise a league set to 'switch' could report
+            # completion based on another league's scroll state.
+            is_scroll_mode = (
+                self._get_display_mode(league, mode_type) == 'scroll'
+                if league
+                else self._should_use_scroll_mode(mode_type)
+            )
+            if mode_type and is_scroll_mode and self._scroll_manager:
                 # For scroll mode, check ScrollHelper's completion status
                 is_complete = self._scroll_manager.is_complete(mode_type)
                 self.logger.info(f"is_cycle_complete() [scroll mode]: display_mode={self._current_active_display_mode}, returning {is_complete}")
