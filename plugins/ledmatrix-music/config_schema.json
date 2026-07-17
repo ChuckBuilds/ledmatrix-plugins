@@ -17,6 +17,7 @@
       "default": 30
     },
     "layout_mode": {
+      "x-advanced": true,
       "type": "string",
       "enum": ["classic", "adaptive"],
       "default": "classic",
@@ -31,6 +32,7 @@
       "x-widget": "select"
     },
     "polling_interval_seconds": {
+      "x-advanced": true,
       "type": "number",
       "description": "Polling interval for Spotify in seconds",
       "minimum": 1,
@@ -67,11 +69,13 @@
           "description": "Title scrolling settings",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "description": "Enable scrolling for track title",
               "default": true
             },
             "speed": {
+              "x-advanced": true,
               "type": "integer",
               "description": "Scroll speed divisor (higher = slower, lower = faster). Controls how many frames between each character scroll. Range: 1-20",
               "minimum": 1,
@@ -79,12 +83,14 @@
               "default": 5
             },
             "separator": {
+              "x-advanced": true,
               "type": "string",
               "description": "Text separator between wrapped text (e.g., '   ' for 3 spaces, ' | ' for pipe)",
               "default": "   ",
               "maxLength": 10
             },
             "initial_pause_frames": {
+              "x-advanced": true,
               "type": "integer",
               "description": "Number of frames to pause before starting scroll (0 = no pause)",
               "minimum": 0,
@@ -92,6 +98,7 @@
               "default": 0
             },
             "end_pause_frames": {
+              "x-advanced": true,
               "type": "integer",
               "description": "Number of frames to pause at end before wrapping (0 = no pause)",
               "minimum": 0,
@@ -106,11 +113,13 @@
           "description": "Artist scrolling settings",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "description": "Enable scrolling for artist name",
               "default": true
             },
             "speed": {
+              "x-advanced": true,
               "type": "integer",
               "description": "Scroll speed divisor (higher = slower, lower = faster). Controls how many frames between each character scroll. Range: 1-20",
               "minimum": 1,
@@ -118,12 +127,14 @@
               "default": 5
             },
             "separator": {
+              "x-advanced": true,
               "type": "string",
               "description": "Text separator between wrapped text (e.g., '   ' for 3 spaces, ' | ' for pipe)",
               "default": "   ",
               "maxLength": 10
             },
             "initial_pause_frames": {
+              "x-advanced": true,
               "type": "integer",
               "description": "Number of frames to pause before starting scroll (0 = no pause)",
               "minimum": 0,
@@ -131,6 +142,7 @@
               "default": 0
             },
             "end_pause_frames": {
+              "x-advanced": true,
               "type": "integer",
               "description": "Number of frames to pause at end before wrapping (0 = no pause)",
               "minimum": 0,
@@ -145,11 +157,13 @@
           "description": "Album scrolling settings",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "description": "Enable scrolling for album name",
               "default": true
             },
             "speed": {
+              "x-advanced": true,
               "type": "integer",
               "description": "Scroll speed divisor (higher = slower, lower = faster). Controls how many frames between each character scroll. Range: 1-20",
               "minimum": 1,
@@ -157,12 +171,14 @@
               "default": 5
             },
             "separator": {
+              "x-advanced": true,
               "type": "string",
               "description": "Text separator between wrapped text (e.g., '   ' for 3 spaces, ' | ' for pipe)",
               "default": "   ",
               "maxLength": 10
             },
             "initial_pause_frames": {
+              "x-advanced": true,
               "type": "integer",
               "description": "Number of frames to pause before starting scroll (0 = no pause)",
               "minimum": 0,
@@ -170,6 +186,7 @@
               "default": 0
             },
             "end_pause_frames": {
+              "x-advanced": true,
               "type": "integer",
               "description": "Number of frames to pause at end before wrapping (0 = no pause)",
               "minimum": 0,
@@ -193,6 +210,7 @@
           "description": "Font and layout settings for the track title",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font Family",
               "description": "Select the font to use",
@@ -207,6 +225,7 @@
               "default": "PressStart2P-Regular.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "description": "Font size in pixels",
@@ -215,6 +234,7 @@
               "default": 8
             },
             "y_percent": {
+              "x-advanced": true,
               "type": "number",
               "title": "Vertical Position",
               "description": "Vertical position override as fraction of display height (0.0=top, 1.0=bottom). Leave empty for automatic positioning based on font size.",
@@ -232,6 +252,7 @@
           "description": "Font and layout settings for the artist name",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font Family",
               "description": "Select the font to use (default matches the display manager 5x7 font)",
@@ -246,6 +267,7 @@
               "default": "5x7.bdf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "description": "Font size in pixels",
@@ -254,6 +276,7 @@
               "default": 7
             },
             "y_percent": {
+              "x-advanced": true,
               "type": "number",
               "title": "Vertical Position",
               "description": "Vertical position override as fraction of display height (0.0=top, 1.0=bottom). Leave empty for automatic positioning based on font size.",
@@ -271,6 +294,7 @@
           "description": "Font and layout settings for the album name",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font Family",
               "description": "Select the font to use (default matches the display manager 5x7 font)",
@@ -285,6 +309,7 @@
               "default": "5x7.bdf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "description": "Font size in pixels",
@@ -293,6 +318,7 @@
               "default": 7
             },
             "y_percent": {
+              "x-advanced": true,
               "type": "number",
               "title": "Vertical Position",
               "description": "Vertical position override as fraction of display height (0.0=top, 1.0=bottom). Leave empty for automatic positioning based on font size.",

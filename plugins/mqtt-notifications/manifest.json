@@ -1,7 +1,7 @@
 {
   "id": "mqtt-notifications",
   "name": "MQTT Notifications",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "ChuckBuilds",
   "description": "Display text or images from HomeAssistant via MQTT. Supports dynamic MQTT topics with wildcard support for flexible notification handling that interrupts the normal display rotation.",
   "category": "integration",
@@ -19,6 +19,12 @@
   "class_name": "MQTTNotificationsPlugin",
   "versions": [
     {
+      "released": "2026-07-17",
+      "version": "1.0.2",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed."
+    },
+    {
       "released": "2026-05-15",
       "version": "1.0.1",
       "ledmatrix_min": "2.0.0"
@@ -29,7 +35,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-07-17",
   "stars": 0,
   "downloads": 0,
   "verified": true,

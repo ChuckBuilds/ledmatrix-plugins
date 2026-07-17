@@ -1,7 +1,7 @@
 {
   "id": "calendar",
   "name": "Google Calendar",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "author": "ChuckBuilds",
   "description": "Display upcoming events from Google Calendar with date, time, and event details. Shows next 1-3 events with automatic rotation and timezone support.",
   "category": "productivity",
@@ -36,6 +36,12 @@
   ],
   "versions": [
     {
+      "released": "2026-07-17",
+      "version": "1.1.5",
+      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
       "released": "2026-07-13",
       "version": "1.1.4",
       "notes": "Fix event titles silently dropping trailing wrapped lines on narrow panels (e.g. 'Team Standup Meeting' showed only 'Team'/'Standup' at 64x32, with no sign 'Meeting' ever existed) -- the last visible line now ellipsizes ('Stan...') instead. Also brightened the 'No Events' fallback text from a dim (150,150,150) to (220,220,220) for better contrast.",
@@ -68,7 +74,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-08",
+  "last_updated": "2026-07-17",
   "stars": 0,
   "downloads": 0,
   "verified": true,

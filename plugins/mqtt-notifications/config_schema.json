@@ -14,13 +14,15 @@
       "default": 10,
       "minimum": 1,
       "maximum": 300,
-      "description": "Default display duration in seconds when not specified in message"
+      "description": "Default display duration in seconds when not specified in message",
+      "x-advanced": true
     },
     "update_interval": {
       "type": "integer",
       "default": 60,
       "minimum": 1,
-      "description": "How often to check MQTT connection health in seconds"
+      "description": "How often to check MQTT connection health in seconds",
+      "x-advanced": true
     },
     "mqtt": {
       "type": "object",
@@ -50,14 +52,16 @@
         "client_id": {
           "type": "string",
           "default": "ledmatrix-mqtt-notifications",
-          "description": "MQTT client ID"
+          "description": "MQTT client ID",
+          "x-advanced": true
         },
         "keepalive": {
           "type": "integer",
           "default": 60,
           "minimum": 10,
           "maximum": 300,
-          "description": "MQTT keepalive interval in seconds"
+          "description": "MQTT keepalive interval in seconds",
+          "x-advanced": true
         },
         "topics": {
           "type": "array",
@@ -90,14 +94,16 @@
         "font_path": {
           "type": "string",
           "default": "assets/fonts/PressStart2P-Regular.ttf",
-          "description": "Path to font file (TTF or BDF format). Relative to project root or absolute path."
+          "description": "Path to font file (TTF or BDF format). Relative to project root or absolute path.",
+          "x-advanced": true
         },
         "font_size": {
           "type": "number",
           "default": 8,
           "minimum": 4,
           "maximum": 32,
-          "description": "Font size in pixels"
+          "description": "Font size in pixels",
+          "x-advanced": true
         },
         "text_color": {
           "type": "array",
@@ -109,7 +115,8 @@
           "minItems": 3,
           "maxItems": 3,
           "default": [255, 255, 255],
-          "description": "RGB text color [R, G, B]"
+          "description": "RGB text color [R, G, B]",
+          "x-advanced": true
         },
         "background_color": {
           "type": "array",
@@ -121,7 +128,8 @@
           "minItems": 3,
           "maxItems": 3,
           "default": [0, 0, 0],
-          "description": "RGB background color [R, G, B]"
+          "description": "RGB background color [R, G, B]",
+          "x-advanced": true
         },
         "scroll": {
           "type": "boolean",
@@ -133,13 +141,15 @@
           "default": 30,
           "minimum": 1,
           "maximum": 200,
-          "description": "Scroll speed in pixels per second. Higher values = faster scrolling."
+          "description": "Scroll speed in pixels per second. Higher values = faster scrolling.",
+          "x-advanced": true
         },
         "scroll_gap_width": {
           "type": "number",
           "default": 32,
           "minimum": 0,
-          "description": "Gap width in pixels between scroll loops"
+          "description": "Gap width in pixels between scroll loops",
+          "x-advanced": true
         }
       },
       "additionalProperties": false

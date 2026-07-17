@@ -60,20 +60,24 @@ class F1ScoreboardPlugin(BasePlugin):
         self._card_width = scroll_cfg.get("game_card_width", 128)
 
         # Resolve timezone: plugin config → global config → UTC.
-        # Inject into config so the renderer can convert UTC API times to local.
-        config["timezone"] = self._resolve_timezone(config, cache_manager)
+        # Re-resolved on every config change so global timezone updates take
+        # effect immediately. Kept in a shallow copy (never written back into
+        # `config`) so the resolved value never gets persisted as a stale
+        # plugin-level override that would shadow future global changes.
+        self.timezone = self._resolve_timezone(config, cache_manager)
+        render_config = {**config, "timezone": self.timezone}
 
         # Initialize components
         self.logo_loader = F1LogoLoader()
-        self.data_source = F1DataSource(cache_manager, config)
+        self.data_source = F1DataSource(cache_manager, render_config)
         # Full-width renderer for static single-card display
         self.renderer = F1Renderer(
             self.display_width, self.display_height,
-            config, self.logo_loader, self.logger)
+            render_config, self.logo_loader, self.logger)
         # Card-width renderer for scroll/Vegas mode
         self._scroll_renderer = F1Renderer(
             self._card_width, self.display_height,
-            config, self.logo_loader, self.logger)
+            render_config, self.logo_loader, self.logger)
         self._scroll_manager = ScrollDisplayManager(
             display_manager, config, self.logger)
         self.enable_scrolling = self._scroll_manager is not None
@@ -908,20 +912,23 @@ class F1ScoreboardPlugin(BasePlugin):
         self.display_duration = new_config.get("display_duration", 30)
         self.modes = self._build_enabled_modes()
 
-        # Re-resolve timezone in case global config changed.
-        new_config["timezone"] = self._resolve_timezone(new_config, self.cache_manager)
+        # Re-resolve timezone in case global config changed. Kept in a shallow
+        # copy (never written back into `new_config`) so it never gets
+        # persisted as a stale plugin-level override.
+        self.timezone = self._resolve_timezone(new_config, self.cache_manager)
+        render_config = {**new_config, "timezone": self.timezone}
 
         # Force re-render with new settings
-        scroll_cfg = new_config.get("scroll", {}) if isinstance(new_config.get("scroll"), dict) else {}
+        scroll_cfg = render_config.get("scroll", {}) if isinstance(render_config.get("scroll"), dict) else {}
         self._card_width = scroll_cfg.get("game_card_width", 128)
         self.renderer = F1Renderer(
             self.display_width, self.display_height,
-            new_config, self.logo_loader, self.logger)
+            render_config, self.logo_loader, self.logger)
         self._scroll_renderer = F1Renderer(
             self._card_width, self.display_height,
-            new_config, self.logo_loader, self.logger)
+            render_config, self.logo_loader, self.logger)
         self._scroll_manager = ScrollDisplayManager(
-            self.display_manager, new_config, self.logger)
+            self.display_manager, render_config, self.logger)
         self.enable_scrolling = self._scroll_manager is not None
 
         # Force data refresh

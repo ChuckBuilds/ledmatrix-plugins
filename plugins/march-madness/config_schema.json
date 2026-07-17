@@ -49,7 +49,8 @@
         "show_round_logos": {
           "type": "boolean",
           "default": true,
-          "description": "Show round logo separators between game groups"
+          "description": "Show round logo separators between game groups",
+          "x-advanced": true
         },
         "highlight_upsets": {
           "type": "boolean",
@@ -59,7 +60,8 @@
         "show_bracket_progress": {
           "type": "boolean",
           "default": true,
-          "description": "Show which teams are still alive in each region"
+          "description": "Show which teams are still alive in each region",
+          "x-advanced": true
         },
         "scroll_speed": {
           "type": "number",
@@ -73,38 +75,44 @@
           "default": 0.02,
           "minimum": 0.001,
           "maximum": 0.1,
-          "description": "Delay between scroll frames (seconds)"
+          "description": "Delay between scroll frames (seconds)",
+          "x-advanced": true
         },
         "target_fps": {
           "type": "integer",
           "default": 120,
           "minimum": 30,
           "maximum": 200,
-          "description": "Target frames per second"
+          "description": "Target frames per second",
+          "x-advanced": true
         },
         "loop": {
           "type": "boolean",
           "default": true,
-          "description": "Loop the scroll continuously"
+          "description": "Loop the scroll continuously",
+          "x-advanced": true
         },
         "dynamic_duration": {
           "type": "boolean",
           "default": true,
-          "description": "Automatically adjust display duration based on content width"
+          "description": "Automatically adjust display duration based on content width",
+          "x-advanced": true
         },
         "min_duration": {
           "type": "integer",
           "default": 30,
           "minimum": 10,
           "maximum": 300,
-          "description": "Minimum display duration in seconds"
+          "description": "Minimum display duration in seconds",
+          "x-advanced": true
         },
         "max_duration": {
           "type": "integer",
           "default": 300,
           "minimum": 30,
           "maximum": 600,
-          "description": "Maximum display duration in seconds"
+          "description": "Maximum display duration in seconds",
+          "x-advanced": true
         }
       },
       "additionalProperties": false
@@ -119,14 +127,16 @@
           "default": 300,
           "minimum": 60,
           "maximum": 3600,
-          "description": "How often to refresh tournament data (seconds). Automatically shortens to 60s when live games are detected."
+          "description": "How often to refresh tournament data (seconds). Automatically shortens to 60s when live games are detected.",
+          "x-advanced": true
         },
         "request_timeout": {
           "type": "integer",
           "default": 30,
           "minimum": 5,
           "maximum": 60,
-          "description": "API request timeout in seconds"
+          "description": "API request timeout in seconds",
+          "x-advanced": true
         }
       },
       "additionalProperties": false

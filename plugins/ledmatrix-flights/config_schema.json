@@ -21,12 +21,14 @@
       "default": "skyaware"
     },
     "fr24_enrichment": {
+      "x-advanced": true,
       "type": "boolean",
       "title": "Free Route Data (FR24 Enrichment)",
       "description": "Fetch origin/destination and aircraft type for free in the background using FlightRadar24 data. Works with all data sources. This is the recommended free alternative to a paid FlightAware API key — leave enabled unless you have a specific reason to turn it off.",
       "default": true
     },
     "fr24_enrichment_interval": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Route Data Refresh Interval (seconds)",
       "description": "How often to refresh free FR24 route data in the background. Applies when fr24_enrichment is enabled.",
@@ -49,6 +51,7 @@
       "default": 5
     },
     "live_update_interval": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Live Fetch Interval",
       "description": "Faster fetch interval (seconds) used while a flight is locked on for the overhead view, so altitude/distance update smoothly. The ADS-B source is ~1Hz, so a low value is safe. Idle fetches use update_interval.",
@@ -57,6 +60,7 @@
       "default": 2
     },
     "live_priority": {
+      "x-advanced": true,
       "type": "boolean",
       "default": false,
       "title": "Overhead Live Priority",
@@ -105,6 +109,7 @@
       "default": 10
     },
     "zoom_factor": {
+      "x-advanced": true,
       "type": "number",
       "description": "Zoom factor to use more of the display (1.0 = normal, higher = more zoomed in)",
       "minimum": 0.5,
@@ -112,11 +117,13 @@
       "default": 1.0
     },
     "show_trails": {
+      "x-advanced": true,
       "type": "boolean",
       "description": "Show aircraft movement trails",
       "default": true
     },
     "trail_length": {
+      "x-advanced": true,
       "type": "integer",
       "description": "Number of trail points to display per aircraft",
       "minimum": 0,
@@ -145,11 +152,13 @@
           "default": "carto_dark"
         },
         "tile_size": {
+          "x-advanced": true,
           "type": "integer",
           "description": "Tile size in pixels",
           "default": 256
         },
         "cache_ttl_hours": {
+          "x-advanced": true,
           "type": "integer",
           "description": "Tile cache time-to-live in hours",
           "minimum": 1,
@@ -157,6 +166,7 @@
           "default": 8760
         },
         "fade_intensity": {
+          "x-advanced": true,
           "type": "number",
           "description": "Fade intensity for map background (0.0-1.0)",
           "minimum": 0.0,
@@ -164,6 +174,7 @@
           "default": 0.4
         },
         "brightness": {
+          "x-advanced": true,
           "type": "number",
           "description": "Brightness adjustment for map (0.0-2.0)",
           "minimum": 0.0,
@@ -171,6 +182,7 @@
           "default": 1.0
         },
         "contrast": {
+          "x-advanced": true,
           "type": "number",
           "description": "Contrast adjustment for map (0.0-2.0)",
           "minimum": 0.0,
@@ -178,6 +190,7 @@
           "default": 1.0
         },
         "saturation": {
+          "x-advanced": true,
           "type": "number",
           "description": "Saturation adjustment for map (0.0-2.0)",
           "minimum": 0.0,
@@ -185,11 +198,13 @@
           "default": 1.0
         },
         "disable_on_cache_error": {
+          "x-advanced": true,
           "type": "boolean",
           "description": "Disable map background if cache errors occur",
           "default": false
         },
         "custom_tile_server": {
+          "x-advanced": true,
           "type": "string",
           "description": "Custom tile server URL (optional, for self-hosted OSM servers). When set, this overrides the tile_provider setting. Leave empty to use the tile_provider setting instead.",
           "pattern": "^(https?://.*)?$",
@@ -218,6 +233,7 @@
           "default": 0.1
         },
         "duration_seconds": {
+          "x-advanced": true,
           "type": "integer",
           "description": "Hard cap (seconds) on how long a single overhead flight holds the screen, measured from when it is locked on. The flight shows for this long even if it leaves the radius sooner, and is released after this even if it lingers.",
           "minimum": 5,
@@ -225,6 +241,7 @@
           "default": 30
         },
         "cooldown_seconds": {
+          "x-advanced": true,
           "type": "integer",
           "description": "After a flight's window ends, suppress the overhead preempt for this many seconds so the normal rotation (weather/clock/sports) gets guaranteed screen time, even if planes remain overhead. Set to 0 to disable the cooldown.",
           "minimum": 0,
@@ -326,18 +343,21 @@
           "default": true
         },
         "show_pirep": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show PIREPs",
           "description": "Show recent pilot reports near each airport.",
           "default": false
         },
         "show_sigmet": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show SIGMETs/AIRMETs",
           "description": "Show active domestic SIGMET/AIRMET advisories (region-based, not airport-specific).",
           "default": false
         },
         "pirep_distance_nm": {
+          "x-advanced": true,
           "type": "integer",
           "title": "PIREP Search Radius (nm)",
           "description": "How far from each airport to search for pilot reports.",
@@ -346,6 +366,7 @@
           "default": 200
         },
         "update_interval_minutes": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Weather Refresh Interval (minutes)",
           "description": "How often to refresh weather from NOAA. METARs update roughly hourly, so 10 minutes is plenty.",
@@ -354,6 +375,7 @@
           "default": 10
         },
         "page_duration_seconds": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Seconds per Page",
           "description": "How long each weather page (decoded METAR, raw, TAF, etc.) is shown before advancing.",
@@ -362,6 +384,7 @@
           "default": 8
         },
         "altimeter_unit": {
+          "x-advanced": true,
           "type": "string",
           "title": "Altimeter Unit",
           "description": "Altimeter setting display: 'inhg' shows US style (A30.01), 'hpa' shows international style (Q1016).",
@@ -369,6 +392,7 @@
           "default": "inhg"
         },
         "temp_unit": {
+          "x-advanced": true,
           "type": "string",
           "title": "Temperature Unit",
           "description": "Temperature/dewpoint unit on the decoded card.",
@@ -376,6 +400,7 @@
           "default": "c"
         },
         "wind_unit": {
+          "x-advanced": true,
           "type": "string",
           "title": "Wind Speed Unit",
           "description": "Wind speed unit. Aviation standard is knots (kt).",
@@ -383,6 +408,7 @@
           "default": "kt"
         },
         "visibility_unit": {
+          "x-advanced": true,
           "type": "string",
           "title": "Visibility Unit",
           "description": "Visibility unit: statute miles (US), metres or kilometres (international).",
@@ -403,6 +429,7 @@
       "default": "imperial"
     },
     "altitude_unit": {
+      "x-advanced": true,
       "type": "string",
       "title": "Altitude Unit",
       "description": "Altitude display unit.",
@@ -415,6 +442,7 @@
       "default": "ft"
     },
     "speed_unit": {
+      "x-advanced": true,
       "type": "string",
       "title": "Speed Unit",
       "description": "Speed display unit.",
@@ -428,6 +456,7 @@
       "default": "kn"
     },
     "track_format": {
+      "x-advanced": true,
       "type": "string",
       "title": "Track Format",
       "description": "Track/heading display format. 'deg' = numeric degrees (090deg), 'cardinal' = compass point (E).",
@@ -438,6 +467,7 @@
       "default": "deg"
     },
     "vr_unit": {
+      "x-advanced": true,
       "type": "string",
       "title": "Vertical Rate Unit",
       "description": "Vertical rate display unit.",
@@ -451,6 +481,7 @@
       "default": "fpm"
     },
     "layout": {
+      "x-advanced": true,
       "type": "string",
       "title": "Flight Detail Layout",
       "description": "Force a specific flight detail layout. Leave empty for auto-selection based on display width.",
@@ -462,6 +493,7 @@
       "default": ""
     },
     "widescreen_threshold": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Widescreen Threshold (px)",
       "description": "Minimum canvas width in pixels to use the widescreen flight detail layout.",
@@ -475,6 +507,7 @@
       "description": "Optional overrides for the three font tiers. Leave values at 0 to use the auto-sized defaults based on display height.",
       "properties": {
         "large_size": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Large Font Size (px)",
           "description": "Override size for the large font tier. 0 = auto.",
@@ -483,6 +516,7 @@
           "default": 0
         },
         "medium_size": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Medium Font Size (px)",
           "description": "Override size for the medium font tier. 0 = auto.",
@@ -491,6 +525,7 @@
           "default": 0
         },
         "small_size": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Small Font Size (px)",
           "description": "Override size for the small font tier. 0 = auto.",
@@ -502,6 +537,7 @@
       "additionalProperties": false
     },
     "airport_color": {
+      "x-advanced": true,
       "type": "array",
       "title": "Airport Name Color",
       "description": "RGB color for airport full names in widescreen layout.",
@@ -519,6 +555,7 @@
       ]
     },
     "max_aircraft": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Max Aircraft per Page",
       "description": "Maximum aircraft to display per page in area mode.",
@@ -527,6 +564,7 @@
       "default": 5
     },
     "min_altitude_ft": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Min Altitude Filter (ft)",
       "description": "Minimum altitude in feet for area mode filtering. Set to 0 to disable.",
@@ -534,6 +572,7 @@
       "default": 0
     },
     "max_altitude_ft": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Max Altitude Filter (ft)",
       "description": "Maximum altitude in feet for area mode filtering. Set to 0 to disable.",
@@ -541,6 +580,7 @@
       "default": 0
     },
     "aircraft_categories": {
+      "x-advanced": true,
       "type": "array",
       "title": "Aircraft Category Filter",
       "description": "ICAO aircraft categories to display (e.g. A1, A2, A3). Empty list shows all.",
@@ -566,6 +606,7 @@
       "default": ""
     },
     "route_cache_ttl": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Route Cache TTL (seconds)",
       "description": "How long to cache flight route enrichment data.",
@@ -574,6 +615,7 @@
       "default": 300
     },
     "enrichment_provider": {
+      "x-advanced": true,
       "type": "string",
       "title": "Route Enrichment Provider",
       "description": "Fallback source for origin/destination data not covered by FR24 enrichment. 'adsbnet': free route lookups via adsb.lol — good coverage for major airlines, no account needed (recommended). 'flightaware': paid FlightAware AeroAPI — highest coverage but requires a paid subscription configured in the FlightAware section below.",
@@ -584,6 +626,7 @@
       "default": "adsbnet"
     },
     "header_color": {
+      "x-advanced": true,
       "type": "array",
       "title": "Header Color",
       "description": "RGB color for headers/callsigns in area and flight tracking modes.",
@@ -601,6 +644,7 @@
       ]
     },
     "metric_color": {
+      "x-advanced": true,
       "type": "array",
       "title": "Metric Color",
       "description": "RGB color for metric values (alt, speed, etc.) in area and flight tracking modes.",
@@ -618,6 +662,7 @@
       ]
     },
     "error_color": {
+      "x-advanced": true,
       "type": "array",
       "title": "Error Color",
       "description": "RGB color for error/no-data messages.",
@@ -635,18 +680,21 @@
       ]
     },
     "show_banner": {
+      "x-advanced": true,
       "type": "boolean",
       "title": "Show Title Banner",
       "description": "Show a 'FLIGHTS' banner for 2 seconds at the start of each display slot.",
       "default": false
     },
     "show_aircraft_icon": {
+      "x-advanced": true,
       "type": "boolean",
       "title": "Show Airline Logos",
       "description": "Show airline logos in area mode (8\u00d78 pixel sprites next to callsigns). Flight detail layouts always show logos in the logo zone when available (52 airlines included as PNG assets).",
       "default": true
     },
     "scroll_speed": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Scroll Speed",
       "description": "Scroll speed in pixels per frame for long text.",
@@ -655,6 +703,7 @@
       "default": 2
     },
     "overhead_alt_interval": {
+      "x-advanced": true,
       "type": "number",
       "title": "Route/Model Swap Interval",
       "description": "On the overhead (live-priority) card, the route (e.g. SEA>PHX) and the aircraft model share one text row and alternate. This is how many seconds each stays up before swapping. Set to 0 to disable alternation (route always wins). The model is shown as a friendly name (e.g. 'Boeing 737-900') when the type is known.",
@@ -663,6 +712,7 @@
       "default": 4
     },
     "opensky_username": {
+      "x-advanced": true,
       "type": "string",
       "title": "OpenSky Username (Advanced)",
       "description": "OpenSky Network username. Only needed if you have manually set enrichment_provider to 'opensky' via direct config edit. Leave blank for the standard free setup.",
@@ -670,6 +720,7 @@
       "default": ""
     },
     "opensky_password": {
+      "x-advanced": true,
       "type": "string",
       "title": "OpenSky Password (Advanced)",
       "description": "OpenSky Network password. Only needed alongside opensky_username above.",
@@ -693,6 +744,7 @@
           "default": false
         },
         "max_api_calls_per_hour": {
+          "x-advanced": true,
           "type": "integer",
           "description": "Maximum FlightAware API calls per hour",
           "minimum": 1,
@@ -700,6 +752,7 @@
           "default": 25
         },
         "daily_api_budget": {
+          "x-advanced": true,
           "type": "integer",
           "description": "Maximum FlightAware API calls per day",
           "minimum": 1,
@@ -707,6 +760,7 @@
           "default": 60
         },
         "cache_ttl_hours": {
+          "x-advanced": true,
           "type": "integer",
           "description": "Flight plan cache time-to-live in hours",
           "minimum": 1,
@@ -714,6 +768,7 @@
           "default": 12
         },
         "min_callsign_length": {
+          "x-advanced": true,
           "type": "integer",
           "description": "Minimum callsign length to fetch flight plan data",
           "minimum": 3,
@@ -721,6 +776,7 @@
           "default": 4
         },
         "airline_callsign_prefixes": {
+          "x-advanced": true,
           "type": "array",
           "description": "List of airline callsign prefixes to prioritize for flight plan fetching",
           "items": {
@@ -755,6 +811,7 @@
               "default": true
             },
             "fetch_interval_hours": {
+              "x-advanced": true,
               "type": "integer",
               "description": "Interval in hours between background fetch runs",
               "minimum": 1,
@@ -762,6 +819,7 @@
               "default": 4
             },
             "max_calls_per_run": {
+              "x-advanced": true,
               "type": "integer",
               "description": "Maximum number of flight plan calls fetched per background run",
               "minimum": 1,
@@ -778,6 +836,7 @@
       "additionalProperties": false
     },
     "flightaware_api_key": {
+      "x-advanced": true,
       "type": "string",
       "title": "FlightAware API Key (deprecated)",
       "description": "Deprecated — use the FlightAware section above instead. Kept only for backward compatibility with older configs.",
@@ -785,36 +844,42 @@
       "x-secret": true
     },
     "flight_plan_enabled": {
+      "x-advanced": true,
       "type": "boolean",
       "title": "Enable Flight Plans (deprecated - use FlightAware section)",
       "description": "Deprecated: moved to FlightAware section.",
       "default": false
     },
     "max_api_calls_per_hour": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Max API Calls/Hour (deprecated)",
       "description": "Deprecated: moved to FlightAware section.",
       "default": 25
     },
     "daily_api_budget": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Daily API Budget (deprecated)",
       "description": "Deprecated: moved to FlightAware section.",
       "default": 60
     },
     "flight_plan_cache_ttl_hours": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Cache TTL Hours (deprecated)",
       "description": "Deprecated: moved to FlightAware section.",
       "default": 12
     },
     "min_callsign_length": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Min Callsign Length (deprecated)",
       "description": "Deprecated: moved to FlightAware section.",
       "default": 4
     },
     "airline_callsign_prefixes": {
+      "x-advanced": true,
       "type": "array",
       "title": "Airline Prefixes (deprecated)",
       "description": "Deprecated: moved to FlightAware section.",
@@ -833,10 +898,12 @@
           "default": true
         },
         "fetch_interval_hours": {
+          "x-advanced": true,
           "type": "integer",
           "default": 4
         },
         "max_calls_per_run": {
+          "x-advanced": true,
           "type": "integer",
           "default": 10
         }

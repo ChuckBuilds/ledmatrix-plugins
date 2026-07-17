@@ -17,6 +17,7 @@
       "description": "Duration in seconds to display each mode before rotating"
     },
     "update_interval": {
+      "x-advanced": true,
       "type": "integer",
       "default": 30,
       "minimum": 10,
@@ -24,6 +25,7 @@
       "description": "How often to fetch new data in seconds (30s during tournament, 3600s off-season)"
     },
     "player_card_duration": {
+      "x-advanced": true,
       "type": "integer",
       "default": 8,
       "minimum": 1,
@@ -31,6 +33,7 @@
       "description": "Seconds each player card is shown before rotating to the next player in the player card display mode"
     },
     "hole_display_duration": {
+      "x-advanced": true,
       "type": "integer",
       "default": 15,
       "minimum": 1,
@@ -38,6 +41,7 @@
       "description": "Seconds between hole advances in course tour and hole-by-hole display modes"
     },
     "page_display_duration": {
+      "x-advanced": true,
       "type": "integer",
       "default": 15,
       "minimum": 1,
@@ -45,6 +49,7 @@
       "description": "Seconds between page advances in paginated modes (leaderboard, champions, tournament stats, schedule, course overview)"
     },
     "scroll_card_width": {
+      "x-advanced": true,
       "type": "integer",
       "default": 128,
       "minimum": 32,
@@ -52,6 +57,7 @@
       "description": "Width in pixels of each card when rendered in Vegas scroll mode (the horizontally-scrolling ticker). Set lower to pack more cards into a long panel; set higher for more detail per card. Card height always matches the display height."
     },
     "post_tournament_display_days": {
+      "x-advanced": true,
       "type": "integer",
       "default": 1,
       "minimum": 0,
@@ -59,6 +65,7 @@
       "description": "Number of days after the final round to continue showing tournament results (leaderboard, player cards, etc.) before switching to countdown mode. Set to 0 to switch immediately after the tournament ends, or higher to extend the post-tournament display window."
     },
     "mock_data": {
+      "x-advanced": true,
       "type": "boolean",
       "default": false,
       "description": "Use mock tournament data for testing (useful when Masters isn't live)"
@@ -86,6 +93,7 @@
               "description": "Show live leaderboard"
             },
             "top_n": {
+              "x-advanced": true,
               "type": "integer",
               "default": 10,
               "minimum": 1,
@@ -93,11 +101,13 @@
               "description": "Number of players to show on leaderboard"
             },
             "show_favorites_always": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Always include favorite players even if outside top N"
             },
             "duration": {
+              "x-advanced": true,
               "type": "number",
               "default": 25,
               "minimum": 5,
@@ -116,11 +126,13 @@
               "description": "Show individual player spotlight cards"
             },
             "show_headshots": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Display player headshot photos"
             },
             "duration_per_player": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -139,11 +151,13 @@
               "description": "Show rotating hole maps with course imagery"
             },
             "show_animations": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Enable transitions and animations"
             },
             "duration_per_hole": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -151,11 +165,13 @@
               "description": "Time to show each hole (seconds)"
             },
             "show_divider": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show the vertical divider line between the hole info and map columns. Set to false for a cleaner single-cell look."
             },
             "featured_holes": {
+              "x-advanced": true,
               "type": "array",
               "items": {
                 "type": "integer",
@@ -177,6 +193,7 @@
               "description": "Show hole-by-hole scores for favorite players"
             },
             "duration": {
+              "x-advanced": true,
               "type": "number",
               "default": 20,
               "minimum": 5,
@@ -195,6 +212,7 @@
               "description": "Show real-time birdie/eagle notifications"
             },
             "duration": {
+              "x-advanced": true,
               "type": "number",
               "default": 10,
               "minimum": 3,
@@ -213,6 +231,7 @@
               "description": "Dedicated display for holes 11-13 (Amen Corner)"
             },
             "duration": {
+              "x-advanced": true,
               "type": "number",
               "default": 20,
               "minimum": 5,
@@ -231,6 +250,7 @@
               "description": "Show scoring on signature holes (12, 16)"
             },
             "duration": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -249,6 +269,7 @@
               "description": "Show tee times and pairings"
             },
             "duration": {
+              "x-advanced": true,
               "type": "number",
               "default": 20,
               "minimum": 5,
@@ -267,6 +288,7 @@
               "description": "Show historical Masters winners"
             },
             "duration": {
+              "x-advanced": true,
               "type": "number",
               "default": 20,
               "minimum": 5,
@@ -346,11 +368,13 @@
               "description": "Alert when practice rounds start"
             },
             "interrupt_display": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Interrupt current mode to show alert"
             },
             "duration": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 3,
@@ -368,11 +392,13 @@
               "description": "Alert on favorite player eagles/birdies"
             },
             "interrupt_display": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Interrupt current mode to show alert"
             },
             "duration": {
+              "x-advanced": true,
               "type": "number",
               "default": 10,
               "minimum": 3,
@@ -390,6 +416,7 @@
               "description": "Alert when tournament begins"
             },
             "interrupt_display": {
+              "x-advanced": true,
               "type": "boolean",
               "default": false,
               "description": "Interrupt current mode to show alert"
@@ -404,21 +431,25 @@
       "description": "Control Masters visual branding elements",
       "properties": {
         "show_masters_logo": {
+          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Display Masters logo on screens"
         },
         "show_green_jacket": {
+          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Show green jacket icon for leaders"
         },
         "show_azaleas": {
+          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Display azalea flower accents"
         },
         "color_scheme": {
+          "x-advanced": true,
           "type": "string",
           "enum": ["classic", "bright", "subdued"],
           "default": "classic",
