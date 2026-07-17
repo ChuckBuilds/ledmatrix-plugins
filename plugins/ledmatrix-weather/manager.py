@@ -148,6 +148,11 @@ class WeatherPlugin(BasePlugin):
         
         # Layout constants
         self.PADDING = 1
+        # Narrowest a single bottom-metrics-bar item can get before its text
+        # starts overlapping its neighbors -- derived from the 192px design
+        # reference fitting all 7 possible items (192 // 7 ~= 27px) without
+        # crowding.
+        self.MIN_METRIC_ITEM_WIDTH_PX = 27
         self.COLORS = {
             'text': (255, 255, 255),
             'highlight': (255, 200, 0),
@@ -1034,37 +1039,51 @@ class WeatherPlugin(BasePlugin):
             wind_dir = self._get_wind_direction(wind_deg)
             wind_gust = self.weather_data['wind'].get('gust')
 
-            all_items = []  # list of (text, color)
-
-            # Core items (always shown)
+            # Core items (always shown) plus a droppable tag for width-aware
+            # thinning below — None means "never drop" (UV/H/W and, once
+            # enabled, feels-like are always kept; only dew point/visibility/
+            # pressure are shed as the panel gets too narrow to fit them all
+            # legibly, least-useful first).
             uv_color = self._get_uv_color(uv_index)
-            all_items.append((f"UV:{uv_index:.0f}", uv_color))
-            all_items.append((f"H:{humidity}%", self.COLORS['dim']))
+            all_items = []  # list of (text, color, drop_tag)
+            all_items.append((f"UV:{uv_index:.0f}", uv_color, None))
+            all_items.append((f"H:{humidity}%", self.COLORS['dim'], None))
             if wind_gust and wind_gust > wind_speed * 1.3:
-                all_items.append((f"W:{wind_speed:.0f}g{wind_gust:.0f}{wind_dir}", self.COLORS['dim']))
+                all_items.append((f"W:{wind_speed:.0f}g{wind_gust:.0f}{wind_dir}", self.COLORS['dim'], None))
             else:
-                all_items.append((f"W:{wind_speed:.0f}{wind_dir}", self.COLORS['dim']))
+                all_items.append((f"W:{wind_speed:.0f}{wind_dir}", self.COLORS['dim'], None))
 
             # Extra items — merged into same row (no degree symbol, font can't render it)
             if self.show_feels_like and feels_like is not None:
-                all_items.append((f"FL:{int(feels_like)}", self.COLORS['dim']))
+                all_items.append((f"FL:{int(feels_like)}", self.COLORS['dim'], None))
             if self.show_dew_point and dew_point is not None:
-                all_items.append((f"Dew:{int(dew_point)}", self.COLORS['dim']))
+                all_items.append((f"Dew:{int(dew_point)}", self.COLORS['dim'], 'dew_point'))
             if self.show_visibility and visibility_m is not None:
                 vis_val = visibility_m / 1609.34 if self.units == 'imperial' else visibility_m / 1000
                 vis_u = "mi" if self.units == 'imperial' else "km"
-                all_items.append((f"Vis:{vis_val:.0f}{vis_u}", self.COLORS['dim']))
+                all_items.append((f"Vis:{vis_val:.0f}{vis_u}", self.COLORS['dim'], 'visibility'))
             if self.show_pressure and pressure is not None:
                 if self.units == 'imperial':
                     pv = pressure * 0.02953
-                    all_items.append((f"P:{pv:.2f}\"", self.COLORS['dim']))
+                    all_items.append((f"P:{pv:.2f}\"", self.COLORS['dim'], 'pressure'))
                 else:
-                    all_items.append((f"P:{int(pressure)}hPa", self.COLORS['dim']))
+                    all_items.append((f"P:{int(pressure)}hPa", self.COLORS['dim'], 'pressure'))
 
-            # Single bottom bar with all items
+            # Drop least-useful optional items, in this order, while an equal
+            # split still leaves each item too cramped to read (below
+            # MIN_METRIC_ITEM_WIDTH_PX) -- dividing the panel width evenly by
+            # item count with no lower bound used to pack up to 7 items into
+            # ~9px slices on a 64px panel, producing overlapping, illegible
+            # text. UV/H/W and (once enabled) feels-like are never dropped.
+            for drop_tag in ('dew_point', 'visibility', 'pressure'):
+                if len(all_items) == 0 or width // len(all_items) >= self.MIN_METRIC_ITEM_WIDTH_PX:
+                    break
+                all_items = [item for item in all_items if item[2] != drop_tag]
+
+            # Single bottom bar with all (remaining) items
             if all_items:
                 sec_w = width // len(all_items)
-                for i, (text, color) in enumerate(all_items):
+                for i, (text, color, _drop_tag) in enumerate(all_items):
                     tw = draw.textlength(text, font=font)
                     x = i * sec_w + (sec_w - tw) // 2
                     draw.text((max(0, x), layout['bottom_bar_y']), text, font=font, fill=color)
