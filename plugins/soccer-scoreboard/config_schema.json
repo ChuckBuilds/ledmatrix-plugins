@@ -4299,12 +4299,14 @@
             "uniqueItems": true,
             "maxItems": 20,
             "default": [],
-            "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+            "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+            "x-advanced": true
           },
           "live_priority": {
             "type": "boolean",
             "default": false,
-            "description": "Give live games from this league priority over other modes"
+            "description": "Give live games from this league priority over other modes",
+            "x-advanced": true
           },
           "display_modes": {
             "type": "object",
@@ -4323,7 +4325,8 @@
                   "scroll"
                 ],
                 "default": "switch",
-                "description": "Display mode for live games"
+                "description": "Display mode for live games",
+                "x-advanced": true
               },
               "recent": {
                 "type": "boolean",
@@ -4337,7 +4340,8 @@
                   "scroll"
                 ],
                 "default": "switch",
-                "description": "Display mode for recent games"
+                "description": "Display mode for recent games",
+                "x-advanced": true
               },
               "upcoming": {
                 "type": "boolean",
@@ -4351,7 +4355,8 @@
                   "scroll"
                 ],
                 "default": "switch",
-                "description": "Display mode for upcoming games"
+                "description": "Display mode for upcoming games",
+                "x-advanced": true
               }
             },
             "additionalProperties": false
@@ -4361,28 +4366,32 @@
             "default": 20,
             "minimum": 10,
             "maximum": 120,
-            "description": "Duration in seconds to display each live game"
+            "description": "Duration in seconds to display each live game",
+            "x-advanced": true
           },
           "non_favorite_live_game_duration": {
             "type": "integer",
             "default": 0,
             "minimum": 0,
             "maximum": 120,
-            "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+            "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+            "x-advanced": true
           },
           "recent_game_duration": {
             "type": "integer",
             "default": 15,
             "minimum": 5,
             "maximum": 60,
-            "description": "Duration in seconds to display each recent game"
+            "description": "Duration in seconds to display each recent game",
+            "x-advanced": true
           },
           "upcoming_game_duration": {
             "type": "integer",
             "default": 15,
             "minimum": 5,
             "maximum": 60,
-            "description": "Duration in seconds to display each upcoming game"
+            "description": "Duration in seconds to display each upcoming game",
+            "x-advanced": true
           },
           "game_limits": {
             "type": "object",
@@ -4426,7 +4435,8 @@
                 "minimum": 1,
                 "maximum": 5,
                 "default": 2,
-                "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+                "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+                "x-advanced": true
               }
             },
             "additionalProperties": false
@@ -4439,20 +4449,23 @@
               "enabled": {
                 "type": "boolean",
                 "default": false,
-                "description": "Enable dynamic duration for this league"
+                "description": "Enable dynamic duration for this league",
+                "x-advanced": true
               },
               "min_duration_seconds": {
                 "type": "number",
                 "minimum": 10,
                 "maximum": 300,
                 "default": 30,
-                "description": "Minimum total duration in seconds"
+                "description": "Minimum total duration in seconds",
+                "x-advanced": true
               },
               "max_duration_seconds": {
                 "type": "number",
                 "minimum": 60,
                 "maximum": 600,
-                "description": "Maximum total duration in seconds"
+                "description": "Maximum total duration in seconds",
+                "x-advanced": true
               },
               "modes": {
                 "type": "object",
@@ -4465,17 +4478,20 @@
                       "enabled": {
                         "type": "boolean",
                         "default": false,
-                        "description": "Enable dynamic duration for live games"
+                        "description": "Enable dynamic duration for live games",
+                        "x-advanced": true
                       },
                       "min_duration_seconds": {
                         "type": "number",
                         "minimum": 10,
-                        "maximum": 300
+                        "maximum": 300,
+                        "x-advanced": true
                       },
                       "max_duration_seconds": {
                         "type": "number",
                         "minimum": 60,
-                        "maximum": 600
+                        "maximum": 600,
+                        "x-advanced": true
                       }
                     },
                     "additionalProperties": false
@@ -4486,17 +4502,20 @@
                       "enabled": {
                         "type": "boolean",
                         "default": false,
-                        "description": "Enable dynamic duration for recent games"
+                        "description": "Enable dynamic duration for recent games",
+                        "x-advanced": true
                       },
                       "min_duration_seconds": {
                         "type": "number",
                         "minimum": 10,
-                        "maximum": 300
+                        "maximum": 300,
+                        "x-advanced": true
                       },
                       "max_duration_seconds": {
                         "type": "number",
                         "minimum": 60,
-                        "maximum": 600
+                        "maximum": 600,
+                        "x-advanced": true
                       }
                     },
                     "additionalProperties": false
@@ -4507,17 +4526,20 @@
                       "enabled": {
                         "type": "boolean",
                         "default": false,
-                        "description": "Enable dynamic duration for upcoming games"
+                        "description": "Enable dynamic duration for upcoming games",
+                        "x-advanced": true
                       },
                       "min_duration_seconds": {
                         "type": "number",
                         "minimum": 10,
-                        "maximum": 300
+                        "maximum": 300,
+                        "x-advanced": true
                       },
                       "max_duration_seconds": {
                         "type": "number",
                         "minimum": 60,
-                        "maximum": 600
+                        "maximum": 600,
+                        "x-advanced": true
                       }
                     },
                     "additionalProperties": false

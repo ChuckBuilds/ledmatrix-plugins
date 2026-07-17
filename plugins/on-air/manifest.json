@@ -15,7 +15,7 @@
       "released": "2026-07-17",
       "version": "1.2.3",
       "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed.",
-      "ledmatrix_min_version": "2.0.0"
+      "ledmatrix_min": "2.0.0"
     },
     {
       "released": "2026-07-08",
