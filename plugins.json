@@ -459,10 +459,10 @@
       "plugin_path": "plugins/masters-tournament",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.5.2"
+      "latest_version": "2.5.3"
     },
     {
       "id": "mqtt-notifications",

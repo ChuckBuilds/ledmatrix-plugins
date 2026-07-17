@@ -1,7 +1,7 @@
 {
   "id": "masters-tournament",
   "name": "Masters Tournament",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "description": "Broadcast-quality Masters Tournament display with real ESPN player headshots, accurate Augusta National hole layouts, fun facts, past champions, live leaderboards, and pixel-perfect LED matrix rendering",
   "author": "ChuckBuilds",
   "class_name": "MastersTournamentPlugin",
@@ -43,6 +43,12 @@
     "height": 64
   },
   "versions": [
+    {
+      "released": "2026-07-17",
+      "version": "2.5.3",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed."
+    },
     {
       "released": "2026-05-15",
       "version": "2.5.2",
@@ -154,7 +160,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-07-17",
   "compatible_versions": [
     ">=2.0.0"
   ]
