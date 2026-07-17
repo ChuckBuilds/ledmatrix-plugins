@@ -21,11 +21,13 @@
           "description": "What to render per story: logo + full text, text only, or logo + symbol only"
         },
         "font_path": {
+          "x-advanced": true,
           "type": "string",
           "default": "assets/fonts/PressStart2P-Regular.ttf",
           "description": "Path to a TTF font. Falls back to 4x6-font.ttf then PIL default if missing."
         },
         "font_size": {
+          "x-advanced": true,
           "type": "integer",
           "default": 0,
           "minimum": 0,
@@ -48,6 +50,7 @@
           "description": "Show current market price (e.g. '$189.42') before the headline"
         },
         "price_color_mode": {
+          "x-advanced": true,
           "type": "string",
           "enum": ["fixed", "change"],
           "default": "fixed",
@@ -55,6 +58,7 @@
           "description": "Price colour: 'fixed' always uses text_color; 'change' colours it price_up_color / price_down_color based on movement since market open"
         },
         "publisher_font_size": {
+          "x-advanced": true,
           "type": "integer",
           "default": 0,
           "minimum": 0,
@@ -62,11 +66,13 @@
           "description": "Font size for the publisher segment (e.g. 'Reuters'). Set to 0 to match the main font_size."
         },
         "publisher_font_path": {
+          "x-advanced": true,
           "type": "string",
           "default": "",
           "description": "Optional separate TTF for the publisher segment. Empty = use the main font_path."
         },
         "age_font_size": {
+          "x-advanced": true,
           "type": "integer",
           "default": 0,
           "minimum": 0,
@@ -74,11 +80,13 @@
           "description": "Font size for the relative-age segment (e.g. '2h ago'). Set to 0 to match the main font_size."
         },
         "age_font_path": {
+          "x-advanced": true,
           "type": "string",
           "default": "",
           "description": "Optional separate TTF for the relative-age segment. Empty = use the main font_path."
         },
         "eager_fetch_on_startup": {
+          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Fetch every configured symbol once immediately (ignoring the normal per-symbol spacing) so the ticker isn't left showing just 1-2 headlines for several minutes after a restart or config change. Falls back to the spread schedule once every symbol has data."
@@ -89,6 +97,7 @@
           "description": "Automatically track the same stocks watched in the Stock Ticker plugin (ledmatrix-stocks). Synced symbols are merged with any symbols configured above."
         },
         "item_gap": {
+          "x-advanced": true,
           "type": "integer",
           "default": 0,
           "minimum": 0,
@@ -103,6 +112,7 @@
           "description": "Scroll speed in pixels per second"
         },
         "scroll_target_fps": {
+          "x-advanced": true,
           "type": "number",
           "default": 100.0,
           "minimum": 30.0,
@@ -110,12 +120,14 @@
           "description": "Target frames per second for scroll animation"
         },
         "scroll_direction": {
+          "x-advanced": true,
           "type": "string",
           "enum": ["left", "right"],
           "default": "left",
           "description": "Direction the ticker scrolls"
         },
         "scroll_speed": {
+          "x-advanced": true,
           "type": "number",
           "default": 1,
           "minimum": 0.1,
@@ -123,6 +135,7 @@
           "description": "Legacy speed multiplier (used when scroll_pixels_per_second is absent)"
         },
         "scroll_delay": {
+          "x-advanced": true,
           "type": "number",
           "default": 0.01,
           "minimum": 0.001,
@@ -130,11 +143,13 @@
           "description": "Legacy frame delay in seconds (used when scroll_target_fps is absent)"
         },
         "dynamic_duration": {
+          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Let display time match actual scroll time (recommended)"
         },
         "display_duration": {
+          "x-advanced": true,
           "type": "number",
           "default": 30,
           "minimum": 10,
@@ -142,6 +157,7 @@
           "description": "Fallback display duration in seconds when dynamic_duration is off"
         },
         "min_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 30,
           "minimum": 10,
@@ -149,6 +165,7 @@
           "description": "Minimum display duration when dynamic duration is enabled (seconds)"
         },
         "max_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 300,
           "minimum": 30,
@@ -156,11 +173,13 @@
           "description": "Maximum display duration when dynamic duration is enabled (seconds)"
         },
         "rotation_enabled": {
+          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Rotate through headlines after each scroll cycle"
         },
         "rotation_threshold": {
+          "x-advanced": true,
           "type": "integer",
           "default": 1,
           "minimum": 1,
@@ -168,11 +187,13 @@
           "description": "Scroll cycles before advancing to the next headline"
         },
         "shuffle_headlines": {
+          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Randomise headline order on fetch and after each full rotation cycle"
         },
         "max_headline_length": {
+          "x-advanced": true,
           "type": "integer",
           "default": 120,
           "minimum": 40,
@@ -180,6 +201,7 @@
           "description": "Maximum headline length in characters before truncating with '...'. Default 120 shows most headlines in full."
         },
         "max_headlines_per_symbol": {
+          "x-advanced": true,
           "type": "integer",
           "default": 1,
           "minimum": 1,
@@ -187,6 +209,7 @@
           "description": "Max headlines shown per stock symbol (1–5)."
         },
         "headlines_per_rotation": {
+          "x-advanced": true,
           "type": "integer",
           "default": 2,
           "minimum": 1,
@@ -194,6 +217,7 @@
           "description": "Max headlines pulled from each custom RSS feed"
         },
         "update_interval_seconds": {
+          "x-advanced": true,
           "type": "integer",
           "default": 900,
           "minimum": 60,
@@ -201,6 +225,7 @@
           "description": "Full refresh cycle length in seconds. Symbol fetches are spread evenly within this window."
         },
         "max_daily_requests": {
+          "x-advanced": true,
           "type": "integer",
           "default": 200,
           "minimum": 10,
@@ -208,6 +233,7 @@
           "description": "Hard cap on total HTTP requests per day"
         },
         "max_requests_per_hour": {
+          "x-advanced": true,
           "type": "integer",
           "default": 50,
           "minimum": 5,
@@ -215,11 +241,13 @@
           "description": "Rolling hourly request limit"
         },
         "respect_market_hours": {
+          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Slow down fetching outside US equity market hours (Mon–Fri ~9am–4:30pm ET)"
         },
         "off_hours_multiplier": {
+          "x-advanced": true,
           "type": "integer",
           "default": 4,
           "minimum": 1,
@@ -227,6 +255,7 @@
           "description": "Multiply per-symbol fetch interval by this amount during off-hours"
         },
         "stale_threshold_multiplier": {
+          "x-advanced": true,
           "type": "integer",
           "default": 2,
           "minimum": 1,
@@ -234,11 +263,13 @@
           "description": "Data older than update_interval_seconds × this factor dims the ticker colours"
         },
         "logo_fetch_enabled": {
+          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Download company logos on first use and cache them to disk"
         },
         "logo_size": {
+          "x-advanced": true,
           "type": "integer",
           "default": 0,
           "minimum": 0,
@@ -246,6 +277,7 @@
           "description": "Logo height in pixels. Set to 0 for auto (= display height). Width scales freely to maintain aspect ratio."
         },
         "logo_url_template": {
+          "x-advanced": true,
           "type": "string",
           "default": "https://financialmodelingprep.com/image-stock/{symbol}.png",
           "description": "URL template for logo downloads. {symbol} is replaced with the ticker."
@@ -255,11 +287,11 @@
           "title": "Background Service",
           "properties": {
             "enabled": {"type": "boolean", "default": true},
-            "request_timeout": {"type": "integer", "default": 30, "minimum": 5, "maximum": 120,
+            "request_timeout": {"x-advanced": true, "type": "integer", "default": 30, "minimum": 5, "maximum": 120,
                                 "description": "HTTP timeout in seconds"},
-            "max_retries": {"type": "integer", "default": 3, "minimum": 1, "maximum": 10,
+            "max_retries": {"x-advanced": true, "type": "integer", "default": 3, "minimum": 1, "maximum": 10,
                             "description": "Retries with exponential backoff on failure"},
-            "priority": {"type": "integer", "default": 2, "minimum": 1, "maximum": 5,
+            "priority": {"x-advanced": true, "type": "integer", "default": 2, "minimum": 1, "maximum": 5,
                          "description": "Background priority (1 = highest)"}
           },
           "additionalProperties": false
@@ -320,24 +352,28 @@
           "description": "Color for stock symbol labels (e.g. 'AAPL:')"
         },
         "publisher_color": {
+          "x-advanced": true,
           "type": "string",
           "x-widget": "color-picker",
           "default": "#6e6e6e",
           "description": "Color for the publisher segment (e.g. '• Reuters')"
         },
         "age_color": {
+          "x-advanced": true,
           "type": "string",
           "x-widget": "color-picker",
           "default": "#6e6e6e",
           "description": "Color for the relative-age segment (e.g. '• 2h ago'), independent of publisher_color"
         },
         "price_up_color": {
+          "x-advanced": true,
           "type": "string",
           "x-widget": "color-picker",
           "default": "#00ff00",
           "description": "Price color when up since market open. Only used when price_color_mode is 'change'."
         },
         "price_down_color": {
+          "x-advanced": true,
           "type": "string",
           "x-widget": "color-picker",
           "default": "#ff3b30",
