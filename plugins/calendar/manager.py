@@ -604,15 +604,46 @@ class CalendarPlugin(BasePlugin):
         summary = event.get('summary', 'No Title')
         lines = self._wrap_text(summary, draw, self.title_font, width - 4)
 
-        # Draw wrapped lines
+        # Draw wrapped lines. If the title wrapped to more lines than fit
+        # vertically, ellipsize the last visible one instead of silently
+        # dropping the rest -- e.g. "Team Standup Meeting" on a panel that
+        # only fits 2 lines used to just show "Team" / "Standup" with no
+        # sign "Meeting" ever existed.
+        shown_lines = list(lines[:max_title_lines])
+        if len(lines) > max_title_lines and shown_lines:
+            shown_lines[-1] = self._ellipsize(draw, shown_lines[-1], self.title_font,
+                                              width - 4, force=True)
+
         y_pos = title_y
         line_spacing = title_font_height + 1
-        for line in lines[:max_title_lines]:
+        for line in shown_lines:
             bbox = draw.textbbox((0, 0), line, font=self.title_font)
             text_width = bbox[2] - bbox[0]
             x_pos = (width - text_width) // 2
             draw.text((x_pos, y_pos), line, font=self.title_font, fill=self.text_color)
             y_pos += line_spacing
+
+    @staticmethod
+    def _ellipsize(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont,
+                   max_width: int, force: bool = False) -> str:
+        """Trim text and append '...' so it fits max_width -- unlike a hard
+        cut, this leaves a visible sign more text existed.
+
+        force=True always appends the ellipsis (trimming characters to make
+        room if needed), even when `text` alone already fits max_width --
+        for the case where `text` is itself only one of several wrapped
+        lines and the caller knows lines *after* it are being dropped, so
+        the sign-something-was-cut needs to show regardless of whether this
+        particular line happens to fit on its own.
+        """
+        fits = draw.textbbox((0, 0), text, font=font)[2] <= max_width
+        if fits and not force:
+            return text
+        ellipsis = '...'
+        trimmed = text
+        while trimmed and draw.textbbox((0, 0), trimmed + ellipsis, font=font)[2] > max_width:
+            trimmed = trimmed[:-1]
+        return (trimmed.rstrip() + ellipsis) if trimmed else ellipsis
 
     def _wrap_text(self, text: str, draw: ImageDraw.ImageDraw,
                    font: ImageFont.ImageFont, max_width: int) -> List[str]:
@@ -703,7 +734,7 @@ class CalendarPlugin(BasePlugin):
         x_pos = (width - text_width) // 2
         y_pos = (height - text_height) // 2
 
-        draw.text((x_pos, y_pos), message, font=self.datetime_font, fill=(150, 150, 150))
+        draw.text((x_pos, y_pos), message, font=self.datetime_font, fill=(220, 220, 220))
         self.display_manager.update_display()
 
     def _display_error(self):
