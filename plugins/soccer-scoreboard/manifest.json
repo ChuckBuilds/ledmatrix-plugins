@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "released": "2026-07-17",
+      "version": "2.3.1",
+      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-08",
       "version": "2.3.0",
@@ -124,7 +130,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-08",
+  "last_updated": "2026-07-17",
   "stars": 0,
   "downloads": 0,
   "verified": true,
