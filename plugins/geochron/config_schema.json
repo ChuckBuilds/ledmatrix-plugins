@@ -36,6 +36,7 @@
       "description": "How long to show the Geochron before rotating to the next plugin"
     },
     "update_interval": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Update Interval (seconds)",
       "default": 45,
@@ -50,6 +51,7 @@
       "description": "IANA timezone name (e.g. 'America/New_York') used for the local time readout and to auto-derive the map center longitude on square/tall panels. Leave null to inherit the LEDMatrix global timezone."
     },
     "map_center_longitude": {
+      "x-advanced": true,
       "type": ["number", "null"],
       "title": "Map Center Longitude",
       "default": null,
@@ -58,12 +60,14 @@
       "description": "Longitude to center the map on for square/tall panels that can't show the full 360 degrees. Leave null to auto-derive from the local timezone's UTC offset."
     },
     "show_terminator_bands": {
+      "x-advanced": true,
       "type": "boolean",
       "title": "Show Twilight Bands",
       "default": true,
       "description": "Show smooth civil/nautical/astronomical twilight gradient bands at the day/night terminator. When off, the terminator is a hard day/night line."
     },
     "night_brightness": {
+      "x-advanced": true,
       "type": "number",
       "title": "Night Side Brightness",
       "default": 0.20,
@@ -72,12 +76,14 @@
       "description": "Brightness multiplier applied to the map on the night side (1.0 = no darkening)"
     },
     "show_grid": {
+      "x-advanced": true,
       "type": "boolean",
       "title": "Show Lat/Lon Grid",
       "default": true,
       "description": "Draw a latitude/longitude graticule over the map"
     },
     "graticule_step_deg": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Grid Spacing (degrees)",
       "enum": [15, 30, 45, 90],
@@ -85,6 +91,7 @@
       "description": "Spacing between graticule lines, in degrees of latitude/longitude"
     },
     "show_sun_marker": {
+      "x-advanced": true,
       "type": "boolean",
       "title": "Show Sun Marker",
       "default": true,
@@ -155,6 +162,7 @@
       "description": "12-hour (with AM/PM) or 24-hour time format"
     },
     "show_seconds": {
+      "x-advanced": true,
       "type": "boolean",
       "title": "Show Seconds",
       "default": true,
@@ -177,6 +185,7 @@
       ],
       "properties": {
         "ocean_color": {
+          "x-advanced": true,
           "type": "array",
           "title": "Ocean Color",
           "x-widget": "color-picker",
@@ -187,6 +196,7 @@
           "description": "RGB color for ocean/water [R, G, B]"
         },
         "land_color": {
+          "x-advanced": true,
           "type": "array",
           "title": "Land Color",
           "x-widget": "color-picker",
@@ -197,6 +207,7 @@
           "description": "RGB color for land masses [R, G, B]"
         },
         "coastline_color": {
+          "x-advanced": true,
           "type": "array",
           "title": "Coastline Color",
           "x-widget": "color-picker",
@@ -207,6 +218,7 @@
           "description": "RGB color for coastlines and country borders [R, G, B]"
         },
         "night_tint_color": {
+          "x-advanced": true,
           "type": "array",
           "title": "Night Tint Color",
           "x-widget": "color-picker",
@@ -217,6 +229,7 @@
           "description": "Color the night side of the map is tinted toward [R, G, B]"
         },
         "sun_marker_color": {
+          "x-advanced": true,
           "type": "array",
           "title": "Sun Marker Color",
           "x-widget": "color-picker",
@@ -227,6 +240,7 @@
           "description": "RGB color for the subsolar point marker [R, G, B]"
         },
         "city_marker_color": {
+          "x-advanced": true,
           "type": "array",
           "title": "City Marker Color",
           "x-widget": "color-picker",
@@ -237,6 +251,7 @@
           "description": "RGB color for city marker dots [R, G, B]"
         },
         "grid_color": {
+          "x-advanced": true,
           "type": "array",
           "title": "Grid Color",
           "x-widget": "color-picker",
@@ -247,6 +262,7 @@
           "description": "RGB color for the lat/lon graticule [R, G, B]"
         },
         "text_primary_color": {
+          "x-advanced": true,
           "type": "array",
           "title": "Primary Text Color",
           "x-widget": "color-picker",
@@ -257,6 +273,7 @@
           "description": "RGB color for primary text (clock, headings) [R, G, B]"
         },
         "text_secondary_color": {
+          "x-advanced": true,
           "type": "array",
           "title": "Secondary Text Color",
           "x-widget": "color-picker",
