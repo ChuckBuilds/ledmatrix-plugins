@@ -21,18 +21,21 @@
       "type": "integer",
       "default": 3600,
       "minimum": 60,
+      "x-advanced": true,
       "description": "Update interval in seconds (checks for new day)"
     },
     "display_rotate_interval": {
       "type": "number",
       "default": 20,
       "minimum": 5,
+      "x-advanced": true,
       "description": "Seconds between rotating different display elements (title/definition/example)"
     },
     "subtitle_rotate_interval": {
       "type": "number",
       "default": 10,
       "minimum": 5,
+      "x-advanced": true,
       "description": "Seconds between rotating subtitle information"
     },
     "category_order": {
