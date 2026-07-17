@@ -1,7 +1,7 @@
 {
   "id": "christmas-countdown",
   "name": "Christmas Countdown",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "ChuckBuilds",
   "description": "Display a countdown to Christmas with a stylized Christmas tree logo and festive text",
   "category": "holiday",
@@ -18,6 +18,12 @@
   ],
   "versions": [
     {
+      "released": "2026-07-17",
+      "version": "1.0.2",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed."
+    },
+    {
       "released": "2026-05-15",
       "version": "1.0.1",
       "ledmatrix_min": "2.0.0"
@@ -28,7 +34,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-07-17",
   "stars": 0,
   "downloads": 0,
   "verified": true,
