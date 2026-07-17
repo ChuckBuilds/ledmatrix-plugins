@@ -24,6 +24,17 @@ from PIL import Image, ImageDraw, ImageFont
 
 from src.plugin_system.base_plugin import BasePlugin
 
+# Shared element-style resolver (newer cores): user-customizable per-element
+# fonts/sizes/colors/offsets, declared once in config_schema.json via
+# x-style-elements. Older cores don't expand the declaration (no
+# customization UI is shown) and this import guard keeps the classic
+# styling path untouched there.
+try:
+    from src.element_style import ElementStyleResolver, defaults_from_schema_file
+    STYLE_AVAILABLE = True
+except ImportError:
+    STYLE_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -116,6 +127,50 @@ class OfTheDayPlugin(BasePlugin):
             self.logger.info("Of The Day fonts registered")
         except Exception as e:
             self.logger.warning(f"Error registering fonts: {e}")
+
+    def _element_styles(self):
+        """Resolved (title, body) styles from customization config.
+
+        Returns (title_font, title_color, title_offset,
+                 body_font, body_color, body_offset).
+
+        With an untouched config this resolves to exactly the classic fonts
+        and colors (PressStart2P@8 white / 4x6@6 gray), so rendering is
+        unchanged; a genuine user override in customization.title_text /
+        body_text wins. On older cores (no src.element_style) the classic
+        values are returned directly.
+        """
+        if STYLE_AVAILABLE:
+            resolver = getattr(self, '_element_style_resolver', None)
+            if resolver is None or resolver._config is not self.config:
+                schema_path = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), 'config_schema.json')
+                resolver = ElementStyleResolver(
+                    self.config, defaults_from_schema_file(schema_path))
+                self._element_style_resolver = resolver
+            title = resolver.style('title_text',
+                                   classic_font='PressStart2P-Regular.ttf',
+                                   classic_size=8,
+                                   classic_color=self.title_color)
+            body = resolver.style('body_text',
+                                  classic_font='4x6-font.ttf',
+                                  classic_size=6,
+                                  classic_color=self.subtitle_color)
+            return (title.font, title.color, title.offset,
+                    body.font, body.color, body.offset)
+
+        try:
+            title_font = ImageFont.truetype('assets/fonts/PressStart2P-Regular.ttf', 8)
+        except Exception as e:
+            self.logger.warning(f"Failed to load PressStart2P font: {e}, using fallback")
+            title_font = self.display_manager.small_font if hasattr(self.display_manager, 'small_font') else ImageFont.load_default()
+        try:
+            body_font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 6)
+        except Exception as e:
+            self.logger.warning(f"Failed to load 4x6 font: {e}, using fallback")
+            body_font = self.display_manager.extra_small_font if hasattr(self.display_manager, 'extra_small_font') else ImageFont.load_default()
+        return (title_font, self.title_color, (0, 0),
+                body_font, self.subtitle_color, (0, 0))
     
     def _load_data_files(self):
         """Load all data files for enabled categories."""
@@ -400,23 +455,15 @@ class OfTheDayPlugin(BasePlugin):
         """Display the title/word with subtitle, matching old manager layout."""
         # Clear display first
         self.display_manager.clear()
-        
+
         # Use display_manager's image and draw directly
         draw = self.display_manager.draw
-        
-        # Load fonts - match old manager font usage
-        try:
-            title_font = ImageFont.truetype('assets/fonts/PressStart2P-Regular.ttf', 8)
-        except Exception as e:
-            self.logger.warning(f"Failed to load PressStart2P font: {e}, using fallback")
-            title_font = self.display_manager.small_font if hasattr(self.display_manager, 'small_font') else ImageFont.load_default()
-        
-        try:
-            body_font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 6)
-        except Exception as e:
-            self.logger.warning(f"Failed to load 4x6 font: {e}, using fallback")
-            body_font = self.display_manager.extra_small_font if hasattr(self.display_manager, 'extra_small_font') else ImageFont.load_default()
-        
+
+        # Fonts/colors/offsets honor customization.<element> (classic
+        # PressStart2P@8 / 4x6@6 when untouched)
+        (title_font, title_color, (title_dx, title_dy),
+         body_font, body_color, (body_dx, body_dy)) = self._element_styles()
+
         # Get font heights
         try:
             title_height = self.display_manager.get_font_height(title_font)
@@ -451,10 +498,10 @@ class OfTheDayPlugin(BasePlugin):
             else:
                 title_width = len(title) * 6
         
-        # Center the title horizontally
-        title_x = (self.display_manager.width - title_width) // 2
-        title_y = margin_top
-        
+        # Center the title horizontally (+ user layout offset)
+        title_x = (self.display_manager.width - title_width) // 2 + title_dx
+        title_y = margin_top + title_dy
+
         # Draw title using display_manager.draw_text (proper method)
         self.logger.info(f"Drawing title '{title}' at ({title_x}, {title_y}) with font type {type(title_font).__name__}")
         try:
@@ -462,19 +509,19 @@ class OfTheDayPlugin(BasePlugin):
                 title,
                 x=title_x,
                 y=title_y,
-                color=self.title_color,
+                color=title_color,
                 font=title_font
             )
             self.logger.debug(f"Title '{title}' drawn using display_manager.draw_text")
         except Exception as e:
             self.logger.error(f"Error drawing title '{title}': {e}", exc_info=True)
-        
+
         # Draw underline below title (like old manager)
         underline_y = title_y + title_height + 1
         underline_x_start = title_x
         underline_x_end = title_x + title_width
-        draw.line([(underline_x_start, underline_y), (underline_x_end, underline_y)], 
-                 fill=self.title_color, width=1)
+        draw.line([(underline_x_start, underline_y), (underline_x_end, underline_y)],
+                 fill=title_color, width=1)
         
         # Draw subtitle below underline (centered, like old manager)
         if subtitle:
@@ -503,39 +550,33 @@ class OfTheDayPlugin(BasePlugin):
                                 line_width = bbox[2] - bbox[0]
                             else:
                                 line_width = len(line) * 6
-                        line_x = (self.display_manager.width - line_width) // 2
-                        
+                        line_x = (self.display_manager.width - line_width) // 2 + body_dx
+
                         # Use display_manager.draw_text for subtitle
                         self.display_manager.draw_text(
                             line,
                             x=line_x,
-                            y=current_y,
-                            color=self.subtitle_color,
+                            y=current_y + body_dy,
+                            color=body_color,
                             font=body_font
                         )
                         current_y += body_height + 1
-        
+
         self.display_manager.update_display()
-    
+
     def _display_content(self, category_config: Dict, item_data: Dict):
         """Display the definition/content, matching old manager layout."""
         # Clear display first
         self.display_manager.clear()
-        
+
         # Use display_manager's image and draw directly
         draw = self.display_manager.draw
-        
-        # Load fonts - match old manager
-        try:
-            title_font = ImageFont.truetype('assets/fonts/PressStart2P-Regular.ttf', 8)
-        except Exception:
-            title_font = self.display_manager.small_font if hasattr(self.display_manager, 'small_font') else ImageFont.load_default()
-        
-        try:
-            body_font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 6)
-        except Exception:
-            body_font = self.display_manager.extra_small_font if hasattr(self.display_manager, 'extra_small_font') else ImageFont.load_default()
-        
+
+        # Fonts/colors/offsets honor customization.<element> (classic
+        # PressStart2P@8 / 4x6@6 when untouched)
+        (title_font, title_color, (title_dx, title_dy),
+         body_font, body_color, (body_dx, body_dy)) = self._element_styles()
+
         # Get font heights
         try:
             title_height = self.display_manager.get_font_height(title_font)
@@ -569,24 +610,24 @@ class OfTheDayPlugin(BasePlugin):
                 title_width = len(title) * 6
         
         # Center the title horizontally (same position as in _display_title)
-        title_x = (self.display_manager.width - title_width) // 2
-        title_y = margin_top
-        
+        title_x = (self.display_manager.width - title_width) // 2 + title_dx
+        title_y = margin_top + title_dy
+
         # Draw title using display_manager.draw_text (same as title screen)
         self.display_manager.draw_text(
             title,
             x=title_x,
             y=title_y,
-            color=self.title_color,
+            color=title_color,
             font=title_font
         )
-        
+
         # Draw underline below title (same as title screen)
         underline_y = title_y + title_height + 1
         underline_x_start = title_x
         underline_x_end = title_x + title_width
-        draw.line([(underline_x_start, underline_y), (underline_x_end, underline_y)], 
-                 fill=self.title_color, width=1)
+        draw.line([(underline_x_start, underline_y), (underline_x_end, underline_y)],
+                 fill=title_color, width=1)
         
         # Wrap description text
         available_width = self.display_manager.width - 4
@@ -625,14 +666,14 @@ class OfTheDayPlugin(BasePlugin):
                             line_width = bbox[2] - bbox[0]
                         else:
                             line_width = len(line) * 6
-                    line_x = (self.display_manager.width - line_width) // 2
-                    
+                    line_x = (self.display_manager.width - line_width) // 2 + body_dx
+
                     # Use display_manager.draw_text for description
                     self.display_manager.draw_text(
                         line,
                         x=line_x,
-                        y=current_y,
-                        color=self.subtitle_color,
+                        y=current_y + body_dy,
+                        color=body_color,
                         font=body_font
                     )
                     
