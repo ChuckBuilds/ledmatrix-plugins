@@ -1810,6 +1810,30 @@ class BaseballLive(Baseball, SportsLive):
                 font_cfg, line_texts, max(8, avail_w), available_height
             )
 
+            # The stat line ("AVG .312  HR 28  RBI 71") is the longest line
+            # and the one most likely to overflow avail_w on narrow panels,
+            # since its font size was fit alongside the shorter name/jersey
+            # lines. Rather than let the _truncate_to_width call below
+            # hard-cut it mid-pair (e.g. "AVG .312  H", silently losing the
+            # HR/RBI values with no indication anything's missing), drop
+            # whole trailing (label, value) pairs -- 3 stats, then 2, then
+            # 1 -- until what's left actually fits; only truncate
+            # mid-string as a last resort if even a single stat overflows.
+            if stat_str and stats:
+                fit_w = max(8, avail_w)
+                trimmed_stats = list(stats)
+                while len(trimmed_stats) > 1:
+                    candidate = "  ".join(f"{lbl} {val}" for lbl, val in trimmed_stats)
+                    if draw.textbbox((0, 0), candidate, font=font)[2] <= fit_w:
+                        break
+                    trimmed_stats = trimmed_stats[:-1]
+                trimmed_stat_str = "  ".join(f"{lbl} {val}" for lbl, val in trimmed_stats)
+                if trimmed_stat_str != stat_str:
+                    for idx, (line_text, line_color) in enumerate(lines):
+                        if line_text == stat_str:
+                            lines[idx] = (trimmed_stat_str, line_color)
+                            break
+
             total_height = row_h * len(lines)
             y = max(margin, (h - total_height) // 2)
             for text, color in lines:
