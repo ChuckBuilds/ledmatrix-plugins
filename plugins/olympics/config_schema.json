@@ -22,7 +22,6 @@
       "description": "Timezone for event times (IANA format, e.g., 'America/New_York')"
     },
     "update_interval": {
-      "x-advanced": true,
       "type": "integer",
       "default": 300,
       "minimum": 60,
@@ -30,7 +29,6 @@
       "description": "How often to fetch fresh data in seconds (default: 5 minutes)"
     },
     "section_duration": {
-      "x-advanced": true,
       "type": "integer",
       "default": 10,
       "minimum": 3,
@@ -54,7 +52,6 @@
       "description": "Country codes to always show (ISO 3166-1 alpha-3, e.g., ['USA', 'CAN'])"
     },
     "rival_countries": {
-      "x-advanced": true,
       "type": "array",
       "items": {
         "type": "string",
@@ -64,7 +61,6 @@
       "description": "Rival countries for medal race comparison"
     },
     "sport_filters": {
-      "x-advanced": true,
       "type": "array",
       "items": {
         "type": "string"
@@ -88,7 +84,6 @@
       "description": "Show recent results section"
     },
     "upcoming_events_count": {
-      "x-advanced": true,
       "type": "integer",
       "default": 5,
       "minimum": 1,
@@ -96,7 +91,6 @@
       "description": "Maximum number of upcoming events to display"
     },
     "recent_results_count": {
-      "x-advanced": true,
       "type": "integer",
       "default": 5,
       "minimum": 1,
@@ -104,25 +98,21 @@
       "description": "Maximum number of recent results to display"
     },
     "live_alerts_enabled": {
-      "x-advanced": true,
       "type": "boolean",
       "default": true,
       "description": "Enable priority alerts for live medal events"
     },
     "medal_race_enabled": {
-      "x-advanced": true,
       "type": "boolean",
       "default": true,
       "description": "Enable medal race comparison between countries"
     },
     "notifications_enabled": {
-      "x-advanced": true,
       "type": "boolean",
       "default": false,
       "description": "Enable webhook notifications for medal wins, records, and live finals"
     },
     "favorite_countries": {
-      "x-advanced": true,
       "type": "array",
       "items": {
         "type": "string",
@@ -132,7 +122,6 @@
       "description": "Countries to receive notifications for (ISO 3166-1 alpha-3, e.g., ['USA', 'CAN'])"
     },
     "webhooks": {
-      "x-advanced": true,
       "type": "array",
       "items": {
         "type": "object",
@@ -156,14 +145,12 @@
       "description": "Webhook endpoints for notifications"
     },
     "vegas_mode": {
-      "x-advanced": true,
       "type": "string",
       "enum": ["scroll", "fixed", "static"],
       "default": "scroll",
       "description": "Vegas display mode: scroll (continuous), fixed (static block), static (pauses scroll)"
     },
     "text_color": {
-      "x-advanced": true,
       "type": "array",
       "items": {
         "type": "integer",
@@ -176,7 +163,6 @@
       "description": "RGB color for text [R, G, B] (default: white)"
     },
     "high_performance_transitions": {
-      "x-advanced": true,
       "type": "boolean",
       "default": false,
       "description": "Use high-performance transitions (120 FPS) instead of standard (30 FPS)"
@@ -186,14 +172,12 @@
       "description": "Transition configuration for this plugin",
       "properties": {
         "type": {
-          "x-advanced": true,
           "type": "string",
           "enum": ["redraw", "fade", "slide", "wipe", "dissolve", "pixelate"],
           "default": "redraw",
           "description": "Type of transition to use"
         },
         "speed": {
-          "x-advanced": true,
           "type": "integer",
           "default": 2,
           "minimum": 1,
@@ -201,7 +185,6 @@
           "description": "Transition speed (1=slow, 10=fast)"
         },
         "enabled": {
-          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Enable or disable transitions"

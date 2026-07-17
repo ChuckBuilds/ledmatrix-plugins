@@ -53,7 +53,7 @@
     {
       "released": "2026-07-17",
       "version": "1.4.1",
-      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed.",
+      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed. Also enables the NCAA Men's league block by default so a fresh install shows games immediately (matching the other scoreboards).",
       "ledmatrix_min": "2.0.0"
     },
     {

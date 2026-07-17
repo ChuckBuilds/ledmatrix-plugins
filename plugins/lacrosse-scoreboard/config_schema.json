@@ -67,7 +67,7 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Enable NCAA Men's Lacrosse games"
         },
         "display_modes": {
