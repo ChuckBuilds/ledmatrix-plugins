@@ -17,6 +17,7 @@
       "description": "How long to display the leaderboard in seconds"
     },
     "update_interval": {
+      "x-advanced": true,
       "type": "integer",
       "default": 3600,
       "minimum": 300,
@@ -41,6 +42,7 @@
           "description": "Scrolling speed multiplier"
         },
         "target_fps": {
+          "x-advanced": true,
           "type": "integer",
           "default": 100,
           "minimum": 30,
@@ -48,6 +50,7 @@
           "description": "Target frames per second for scrolling"
         },
         "scroll_speed_scale": {
+          "x-advanced": true,
           "type": "number",
           "default": 8,
           "minimum": 1,
@@ -55,6 +58,7 @@
           "description": "Scroll speed scale factor"
         },
         "request_timeout": {
+          "x-advanced": true,
           "type": "integer",
           "default": 30,
           "minimum": 5,
@@ -73,11 +77,13 @@
           },
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Enable dynamic duration based on content width"
             },
             "min_duration_seconds": {
+              "x-advanced": true,
               "type": "integer",
               "default": 45,
               "minimum": 10,
@@ -85,6 +91,7 @@
               "description": "Minimum display duration when dynamic duration is enabled"
             },
             "max_duration_seconds": {
+              "x-advanced": true,
               "type": "integer",
               "default": 600,
               "minimum": 30,
@@ -92,6 +99,7 @@
               "description": "Maximum display duration when dynamic duration is enabled"
             },
             "buffer_ratio": {
+              "x-advanced": true,
               "type": "number",
               "default": 0.1,
               "minimum": 0.01,
@@ -99,6 +107,7 @@
               "description": "Extra buffer applied to the calculated duration (percentage expressed as 0-1)"
             },
             "controller_cap_seconds": {
+              "x-advanced": true,
               "type": "integer",
               "default": 600,
               "minimum": 60,
@@ -109,6 +118,7 @@
           "additionalProperties": false
         },
         "min_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 45,
           "minimum": 10,
@@ -116,6 +126,7 @@
           "description": "[Deprecated] Use dynamic_duration.min_duration_seconds instead."
         },
         "max_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 600,
           "minimum": 30,
@@ -123,6 +134,7 @@
           "description": "[Deprecated] Use dynamic_duration.max_duration_seconds instead."
         },
         "duration_buffer": {
+          "x-advanced": true,
           "type": "number",
           "default": 0.1,
           "minimum": 0.01,
@@ -130,6 +142,7 @@
           "description": "[Deprecated] Use dynamic_duration.buffer_ratio instead."
         },
         "max_display_time": {
+          "x-advanced": true,
           "type": "integer",
           "default": 600,
           "minimum": 60,
@@ -137,6 +150,7 @@
           "description": "[Deprecated] Use dynamic_duration.controller_cap_seconds instead."
         },
         "scroll_pixels_per_second": {
+          "x-advanced": true,
           "type": "number",
           "default": 15.0,
           "minimum": 5.0,
@@ -148,6 +162,7 @@
           "description": "Display and scrolling settings",
           "properties": {
             "scroll_speed": {
+              "x-advanced": true,
               "type": "number",
               "description": "Scrolling speed in pixels per frame",
               "minimum": 0.5,
@@ -155,6 +170,7 @@
               "default": 1.0
             },
             "scroll_delay": {
+              "x-advanced": true,
               "type": "number",
               "description": "Delay between scroll steps in seconds",
               "minimum": 0.001,
@@ -165,6 +181,7 @@
           "additionalProperties": false
         },
         "scroll_target_fps": {
+          "x-advanced": true,
           "type": "number",
           "default": 100.0,
           "minimum": 30.0,
@@ -172,6 +189,7 @@
           "description": "Target FPS for scrolling"
         },
         "scroll_mode": {
+          "x-advanced": true,
           "type": "string",
           "enum": [
             "one_shot",
@@ -181,6 +199,7 @@
           "description": "Scrolling mode"
         },
         "scroll_direction": {
+          "x-advanced": true,
           "type": "string",
           "enum": [
             "left",
@@ -190,11 +209,13 @@
           "description": "Scroll direction"
         },
         "enable_scroll_metrics": {
+          "x-advanced": true,
           "type": "boolean",
           "default": false,
           "description": "Enable scroll performance metrics"
         },
         "scroll_delay": {
+          "x-advanced": true,
           "type": "number",
           "default": 0.01,
           "minimum": 0.001,
@@ -202,6 +223,7 @@
           "description": "Delay between scroll steps in seconds"
         },
         "loop": {
+          "x-advanced": true,
           "type": "boolean",
           "default": false,
           "description": "Continuously loop the leaderboard"
@@ -392,10 +414,12 @@
               "description": "Number of top NCAA Baseball teams to display"
             },
             "season": {
+              "x-advanced": true,
               "type": "string",
               "description": "Season identifier (e.g. '2026'). Omit to use the current ESPN season."
             },
             "level": {
+              "x-advanced": true,
               "type": "integer",
               "default": 1,
               "minimum": 1,
@@ -403,6 +427,7 @@
               "description": "Competition level (1 = Division I, 2 = Division II, 3 = Division III)"
             },
             "sort": {
+              "x-advanced": true,
               "type": "string",
               "default": "winpercent:desc,gamesbehind:asc",
               "description": "Sort key and order for standings"

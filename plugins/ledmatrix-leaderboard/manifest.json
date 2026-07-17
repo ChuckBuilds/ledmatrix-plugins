@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -31,6 +31,12 @@
   "requirements_file": "requirements.txt",
   "min_ledmatrix_version": "2.0.0",
   "versions": [
+    {
+      "released": "2026-07-17",
+      "version": "1.2.2",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed."
+    },
     {
       "released": "2026-05-15",
       "version": "1.2.1",
@@ -62,7 +68,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-07-17",
   "compatible_versions": [
     ">=2.0.0"
   ]
