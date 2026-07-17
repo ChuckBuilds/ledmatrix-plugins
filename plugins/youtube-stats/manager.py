@@ -46,7 +46,9 @@ class YouTubeStatsPlugin(BasePlugin):
         self.font = None
         self.youtube_logo = None
         self.last_displayed_stats: Optional[Dict[str, Any]] = None  # Track last displayed to prevent unnecessary redraws
-        self._api_key_error: Optional[str] = None  # Set when API key is bad/expired
+        self._api_key_error: Optional[str] = None  # Set on any config/auth problem that
+        # prevents fetching stats (missing/invalid API key, missing channel ID) -- display()
+        # shows this on-screen instead of leaving a blank canvas when it's set.
         
         # Initialize display components
         if self.enabled:
@@ -120,11 +122,13 @@ class YouTubeStatsPlugin(BasePlugin):
     def _get_channel_stats(self) -> Optional[Dict[str, Any]]:
         """Fetch channel statistics from YouTube API."""
         if not self.api_key:
-            self.logger.error("YouTube API key not configured")
+            self._api_key_error = "YouTube API key not configured. Set it in Settings > Secrets."
+            self.logger.error(self._api_key_error)
             return None
-        
+
         if not self.channel_id:
-            self.logger.error("YouTube channel ID not configured")
+            self._api_key_error = "YouTube channel ID not configured. Set it in the plugin's Settings."
+            self.logger.error(self._api_key_error)
             return None
         
         # Try cache first
