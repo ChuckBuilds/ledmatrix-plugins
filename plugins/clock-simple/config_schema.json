@@ -21,7 +21,8 @@
       "default": 1,
       "minimum": 1,
       "maximum": 60,
-      "description": "How often to update the clock display in seconds"
+      "description": "How often to update the clock display in seconds",
+      "x-advanced": true
     },
     "timezone": {
       "type": ["string", "null"],
@@ -37,7 +38,8 @@
     "center_time_with_ampm": {
       "type": "boolean",
       "default": false,
-      "description": "When true, centers the time and AM/PM together as one block. When false (default), centers the time first, then adds AM/PM to the right."
+      "description": "When true, centers the time and AM/PM together as one block. When false (default), centers the time first, then adds AM/PM to the right.",
+      "x-advanced": true
     },
     "show_seconds": {
       "type": "boolean",
@@ -58,12 +60,14 @@
     "position_x": {
       "type": "integer",
       "default": 0,
-      "description": "X position offset for clock display (pixels)"
+      "description": "X position offset for clock display (pixels)",
+      "x-advanced": true
     },
     "position_y": {
       "type": "integer",
       "default": 0,
-      "description": "Y position offset for clock display (pixels)"
+      "description": "Y position offset for clock display (pixels)",
+      "x-advanced": true
     },
     "customization": {
       "type": "object",
@@ -87,7 +91,8 @@
                 "4x6.bdf",
                 "cozette.bdf"
               ],
-              "default": "PressStart2P-Regular.ttf"
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
@@ -95,7 +100,8 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 8
+              "default": 8,
+              "x-advanced": true
             },
             "text_color": {
               "type": "array",
@@ -131,7 +137,8 @@
                 "4x6.bdf",
                 "cozette.bdf"
               ],
-              "default": "PressStart2P-Regular.ttf"
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
@@ -139,7 +146,8 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 8
+              "default": 8,
+              "x-advanced": true
             },
             "text_color": {
               "type": "array",
@@ -175,7 +183,8 @@
                 "4x6.bdf",
                 "cozette.bdf"
               ],
-              "default": "PressStart2P-Regular.ttf"
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
@@ -183,7 +192,8 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 8
+              "default": 8,
+              "x-advanced": true
             },
             "text_color": {
               "type": "array",
