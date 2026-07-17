@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-16",
+  "last_updated": "2026-07-17",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -784,7 +784,7 @@
       "last_updated": "2026-07-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.4.4"
+      "latest_version": "2.4.5"
     },
     {
       "id": "stocks",
@@ -903,7 +903,7 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.5.1",
+      "latest_version": "2.5.2",
       "stars": 0,
       "downloads": 0,
       "last_updated": "2026-06-14",
@@ -953,7 +953,7 @@
       "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "ledmatrix-elections",
