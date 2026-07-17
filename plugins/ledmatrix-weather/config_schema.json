@@ -17,12 +17,14 @@
       "description": "How long to display each weather mode in seconds"
     },
     "update_interval": {
+      "x-advanced": true,
       "type": "integer",
       "default": 1800,
       "minimum": 300,
       "description": "How often to fetch new weather data in seconds (minimum 300 = 5 minutes)"
     },
     "api_key": {
+      "x-advanced": true,
       "type": "string",
       "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs.",
       "title": "API Key (deprecated)"
@@ -46,11 +48,13 @@
       "title": "Country Code"
     },
     "location_latitude": {
+      "x-advanced": true,
       "type": "number",
       "description": "Optional. Exact latitude (-90 to 90). When both latitude and longitude are set, geocoding is skipped entirely.",
       "title": "Latitude (optional)"
     },
     "location_longitude": {
+      "x-advanced": true,
       "type": "number",
       "description": "Optional. Exact longitude (-180 to 180). When both latitude and longitude are set, geocoding is skipped entirely.",
       "title": "Longitude (optional)"
@@ -66,6 +70,7 @@
       "title": "Temperature Units"
     },
     "display_format": {
+      "x-advanced": true,
       "type": "string",
       "default": "{temp}\u00b0F\n{condition}",
       "description": "Display format for current weather. Supports placeholders: {temp}, {condition}, {humidity}, {wind}",
@@ -108,30 +113,35 @@
       "title": "Show Weather Alerts"
     },
     "show_feels_like": {
+      "x-advanced": true,
       "type": "boolean",
       "default": true,
       "description": "Show feels-like temperature on current conditions (requires display height ≥48px)",
       "title": "Show Feels Like"
     },
     "show_dew_point": {
+      "x-advanced": true,
       "type": "boolean",
       "default": true,
       "description": "Show dew point on current conditions (requires display height ≥48px)",
       "title": "Show Dew Point"
     },
     "show_visibility": {
+      "x-advanced": true,
       "type": "boolean",
       "default": true,
       "description": "Show visibility distance on current conditions (requires display height ≥48px)",
       "title": "Show Visibility"
     },
     "show_pressure": {
+      "x-advanced": true,
       "type": "boolean",
       "default": true,
       "description": "Show barometric pressure on current conditions (requires display height ≥48px)",
       "title": "Show Pressure"
     },
     "radar_zoom": {
+      "x-advanced": true,
       "type": "integer",
       "default": 6,
       "minimum": 4,
@@ -140,6 +150,7 @@
       "title": "Radar Zoom Level"
     },
     "radar_line_color": {
+      "x-advanced": true,
       "type": "array",
       "items": { "type": "integer", "minimum": 0, "maximum": 255 },
       "minItems": 3,
@@ -149,6 +160,7 @@
       "title": "Radar Map Line Color"
     },
     "radar_fill_color": {
+      "x-advanced": true,
       "type": "array",
       "items": { "type": "integer", "minimum": 0, "maximum": 255 },
       "minItems": 3,
@@ -158,6 +170,7 @@
       "title": "Radar Map Land Color"
     },
     "radar_update_interval": {
+      "x-advanced": true,
       "type": "integer",
       "default": 600,
       "minimum": 300,
