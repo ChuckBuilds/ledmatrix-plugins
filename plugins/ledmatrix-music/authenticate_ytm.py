@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import logging
+import secrets
 
 # Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -21,9 +22,58 @@ CONFIG_PATH = os.path.abspath(CONFIG_PATH)
 YTM_AUTH_CONFIG_PATH = os.path.abspath(YTM_AUTH_CONFIG_PATH)
 
 # YTM Companion App Constants (copied from ytm_client.py)
-YTM_APP_ID = "ledmatrixcontroller"
-YTM_APP_NAME = "LEDMatrixController"
+YTM_APP_ID_BASE = "ledmatrixcontroller"
+YTM_APP_NAME_BASE = "LEDMatrixController"
 YTM_APP_VERSION = "1.0.0"
+
+def load_or_create_app_id_suffix():
+    """Loads this installation's persisted hex suffix from ytm_auth.json, generating
+    and saving one if it doesn't exist yet.
+
+    YTM Desktop App's companion server keys authorized apps by appId. Without a
+    per-installation suffix, every LEDMatrix display would register the same appId,
+    so authenticating a second display would overwrite the first display's
+    authorization in YTMD instead of adding a new entry.
+    """
+    if os.path.exists(YTM_AUTH_CONFIG_PATH):
+        try:
+            with open(YTM_AUTH_CONFIG_PATH, 'r') as f:
+                auth_data = json.load(f)
+                suffix = auth_data.get("YTM_APP_ID_SUFFIX")
+                if suffix:
+                    return suffix
+        except (json.JSONDecodeError, OSError) as e:
+            logging.warning(f"Could not read existing YTM auth file to load app ID suffix: {e}")
+
+    suffix = secrets.token_hex(3)
+    logging.info(f"Generated new YTM companion app ID suffix for this installation: {suffix}")
+    _save_app_id_suffix(suffix)
+    return suffix
+
+def _save_app_id_suffix(suffix):
+    """Persists the app ID suffix to ytm_auth.json, preserving any existing token."""
+    if not os.path.exists(CONFIG_DIR):
+        try:
+            os.makedirs(CONFIG_DIR)
+        except OSError as e:
+            logging.error(f"Could not create config directory {CONFIG_DIR}: {e}")
+            return
+
+    auth_data = {}
+    if os.path.exists(YTM_AUTH_CONFIG_PATH):
+        try:
+            with open(YTM_AUTH_CONFIG_PATH, 'r') as f:
+                auth_data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            auth_data = {}
+
+    auth_data["YTM_APP_ID_SUFFIX"] = suffix
+
+    try:
+        with open(YTM_AUTH_CONFIG_PATH, 'w') as f:
+            json.dump(auth_data, f, indent=4)
+    except Exception as e:
+        logging.error(f"Error saving YTM app ID suffix to {YTM_AUTH_CONFIG_PATH}: {e}")
 
 def load_ytm_companion_url():
     """Loads ytm_companion_url from ledmatrix-music section of config.json"""
@@ -57,16 +107,16 @@ def load_ytm_companion_url():
         base_url = "https://" + base_url[6:]
     return base_url
 
-def _request_auth_code(base_url):
+def _request_auth_code(base_url, app_id, app_name):
     """Requests an authentication code from the YTM Companion server."""
     url = f"{base_url}/api/v1/auth/requestcode"
     payload = {
-        "appId": YTM_APP_ID,
-        "appName": YTM_APP_NAME,
+        "appId": app_id,
+        "appName": app_name,
         "appVersion": YTM_APP_VERSION
     }
     try:
-        logging.info(f"Requesting auth code from {url} with appId: {YTM_APP_ID}")
+        logging.info(f"Requesting auth code from {url} with appId: {app_id}")
         response = requests.post(url, json=payload, timeout=10)
         response.raise_for_status()
         data = response.json()
@@ -83,13 +133,13 @@ def _request_auth_code(base_url):
         logging.error("Error decoding JSON response when requesting auth code.")
         return None
 
-def _request_auth_token(base_url, code):
+def _request_auth_token(base_url, code, app_id):
     """Requests an authentication token using the provided code."""
     if not code:
         return None
     url = f"{base_url}/api/v1/auth/request"
     payload = {
-        "appId": YTM_APP_ID,
+        "appId": app_id,
         "code": code
     }
     try:
@@ -128,11 +178,19 @@ def save_ytm_token(token):
             logging.error(f"Could not create config directory {CONFIG_DIR}: {e}")
             return False
 
-    token_data = {"YTM_COMPANION_TOKEN": token}
+    auth_data = {}
+    if os.path.exists(YTM_AUTH_CONFIG_PATH):
+        try:
+            with open(YTM_AUTH_CONFIG_PATH, 'r') as f:
+                auth_data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            auth_data = {}
+
+    auth_data["YTM_COMPANION_TOKEN"] = token
 
     try:
         with open(YTM_AUTH_CONFIG_PATH, 'w') as f:
-            json.dump(token_data, f, indent=4)
+            json.dump(auth_data, f, indent=4)
         logging.info(f"YTM Companion token saved to {YTM_AUTH_CONFIG_PATH}")
         return True
     except Exception as e:
@@ -159,12 +217,16 @@ if __name__ == "__main__":
         logging.error("Could not determine YTM Companion URL. Exiting.")
         exit(1)
 
-    auth_code = _request_auth_code(ytm_url)
+    app_id_suffix = load_or_create_app_id_suffix()
+    app_id = f"{YTM_APP_ID_BASE}-{app_id_suffix}"
+    app_name = f"{YTM_APP_NAME_BASE}-{app_id_suffix}"
+
+    auth_code = _request_auth_code(ytm_url, app_id, app_name)
     if not auth_code:
         logging.error("Failed to get YTM auth code. Cannot proceed with authentication. Exiting.")
         exit(1)
-    
-    auth_token = _request_auth_token(ytm_url, auth_code)
+
+    auth_token = _request_auth_token(ytm_url, auth_code, app_id)
     if auth_token:
         if save_ytm_token(auth_token):
             logging.info("YTM authentication successful and token saved.")

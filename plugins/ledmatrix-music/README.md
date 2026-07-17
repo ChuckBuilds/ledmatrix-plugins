@@ -113,6 +113,9 @@ Use Web Ui to configure
    - The script will request an auth code
    - Approve the request in YTM Desktop App within 30 seconds
    - Token will be saved to `config/ytm_auth.json`
+   - Each installation registers with a unique app ID (a random hex code appended to
+     `LEDMatrixController`), so authenticating multiple LEDMatrix displays against the
+     same YTM Desktop App won't overwrite each other's authorization
 
 ## Display Format
 

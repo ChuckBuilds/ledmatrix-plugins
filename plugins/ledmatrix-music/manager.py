@@ -1046,7 +1046,13 @@ class MusicPlugin(BasePlugin):
                 if perform_full_refresh_this_cycle or not self.is_currently_showing_nothing_playing:
                     self.display_manager.clear()
                 
-                np_text = self._clip_text_to_width("Nothing Playing", self.display_manager.regular_font, self.display_manager.matrix.width)
+                # Static, one-shot message (not scrolled like the real
+                # now-playing title) -- ellipsize instead of hard-clipping,
+                # so a narrow panel shows "Nothing..." rather than silently
+                # settling on "Nothing" forever with no sign more was cut.
+                np_text = self._truncate_text_with_ellipsis(
+                    "Nothing Playing", self.display_manager.regular_font, self.display_manager.matrix.width
+                )
                 text_width = self.display_manager.get_text_width(np_text, self.display_manager.regular_font)
                 x_pos = max(0, (self.display_manager.matrix.width - text_width) // 2)
                 y_pos = (self.display_manager.matrix.height // 2) - 4

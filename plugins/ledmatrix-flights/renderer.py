@@ -285,8 +285,16 @@ class FlightRenderer:
 
     def _draw_centered(self, draw, text, y, font, color, zone_x=0, zone_w=None):
         zw = zone_w or self.width
+        # Truncate first so text wider than the zone degrades to a clean
+        # "No Aircra.." instead of centering math going negative and
+        # bleeding the raw string off both edges (e.g. "No Aircraft" at
+        # 64px wide used to render as "...o Aircraf...", illegible on
+        # either side) -- this is a general hardening of the shared
+        # centering helper, not just the one caller that surfaced it.
+        text = self._truncate(draw, text, font, zw)
         tw = self._tw(draw, text, font)
-        draw.text((zone_x + (zw - tw) // 2, y), text, font=font, fill=color)
+        x = max(zone_x, zone_x + (zw - tw) // 2)
+        draw.text((x, y), text, font=font, fill=color)
 
     def _draw_sep(self, draw, y, color=(40, 40, 40)):
         draw.line([(0, y), (self.width, y)], fill=color, width=1)
