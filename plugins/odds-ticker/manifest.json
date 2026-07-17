@@ -23,7 +23,7 @@
     {
       "released": "2026-07-17",
       "version": "1.1.6",
-      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed.",
+      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed. Also enables the NFL, NBA, MLB, and NHL leagues by default so a fresh install shows odds immediately (college and MiLB remain opt-in).",
       "ledmatrix_min": "2.0.0"
     },
     {

@@ -239,7 +239,7 @@
           "properties": {
             "enabled": {
               "type": "boolean",
-              "default": false,
+              "default": true,
               "description": "Enable NFL standings"
             },
             "top_teams": {
@@ -257,7 +257,7 @@
           "properties": {
             "enabled": {
               "type": "boolean",
-              "default": false,
+              "default": true,
               "description": "Enable NBA standings"
             },
             "top_teams": {
@@ -275,7 +275,7 @@
           "properties": {
             "enabled": {
               "type": "boolean",
-              "default": false,
+              "default": true,
               "description": "Enable MLB standings"
             },
             "top_teams": {
@@ -316,7 +316,7 @@
           "properties": {
             "enabled": {
               "type": "boolean",
-              "default": false,
+              "default": true,
               "description": "Enable NHL standings"
             },
             "top_teams": {

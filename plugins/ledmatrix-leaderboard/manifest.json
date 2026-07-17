@@ -35,7 +35,7 @@
       "released": "2026-07-17",
       "version": "1.2.2",
       "ledmatrix_min": "2.0.0",
-      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed."
+      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed. Also enables the NFL, NBA, MLB, and NHL standings by default so a fresh install shows content immediately (college sports remain opt-in)."
     },
     {
       "released": "2026-05-15",
