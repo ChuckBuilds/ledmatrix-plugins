@@ -17,6 +17,7 @@
       "description": "Duration in seconds for the display controller to show this plugin mode before rotating to next plugin"
     },
     "update_interval": {
+      "x-advanced": true,
       "type": "integer",
       "default": 3600,
       "minimum": 30,
@@ -24,6 +25,7 @@
       "description": "How often to fetch new data in seconds"
     },
     "game_display_duration": {
+      "x-advanced": true,
       "type": "number",
       "default": 15,
       "minimum": 3,
@@ -36,6 +38,7 @@
       "description": "Configuration for background data fetching service",
       "properties": {
         "request_timeout": {
+          "x-advanced": true,
           "type": "number",
           "default": 30,
           "minimum": 1,
@@ -43,6 +46,7 @@
           "description": "Request timeout in seconds for API calls"
         },
         "max_retries": {
+          "x-advanced": true,
           "type": "integer",
           "default": 3,
           "minimum": 0,
@@ -50,6 +54,7 @@
           "description": "Maximum number of retries for failed requests"
         },
         "priority": {
+          "x-advanced": true,
           "type": "integer",
           "default": 2,
           "minimum": 1,
@@ -77,6 +82,7 @@
           "description": "List of favorite NBA team abbreviations (e.g., LAL, BOS, GSW). Use 2-3 letter codes."
         },
         "exclude_teams": {
+          "x-advanced": true,
           "type": "array",
           "items": {
             "type": "string"
@@ -105,18 +111,21 @@
               "description": "Show upcoming NBA games"
             },
             "live_display_mode": {
+              "x-advanced": true,
               "type": "string",
               "enum": ["switch", "scroll"],
               "default": "switch",
               "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
             },
             "recent_display_mode": {
+              "x-advanced": true,
               "type": "string",
               "enum": ["switch", "scroll"],
               "default": "switch",
               "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
             },
             "upcoming_display_mode": {
+              "x-advanced": true,
               "type": "string",
               "enum": ["switch", "scroll"],
               "default": "switch",
@@ -130,6 +139,7 @@
           "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
           "properties": {
             "scroll_speed": {
+              "x-advanced": true,
               "type": "number",
               "default": 50.0,
               "minimum": 1.0,
@@ -137,6 +147,7 @@
               "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
             },
             "scroll_delay": {
+              "x-advanced": true,
               "type": "number",
               "default": 0.01,
               "minimum": 0.001,
@@ -144,6 +155,7 @@
               "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
             },
             "gap_between_games": {
+              "x-advanced": true,
               "type": "integer",
               "default": 48,
               "minimum": 8,
@@ -151,16 +163,19 @@
               "description": "Gap in pixels between game cards when scrolling"
             },
             "show_league_separators": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show league icons between different leagues"
             },
             "dynamic_duration": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Automatically calculate display duration based on content width"
             },
             "game_card_width": {
+              "x-advanced": true,
               "type": "integer",
               "default": 128,
               "minimum": 32,
@@ -175,6 +190,7 @@
           "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
         },
         "live_game_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 20,
           "minimum": 10,
@@ -182,6 +198,7 @@
           "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
         },
         "non_favorite_live_game_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 0,
           "minimum": 0,
@@ -189,6 +206,7 @@
           "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
         },
         "live_update_interval": {
+          "x-advanced": true,
           "type": "integer",
           "default": 30,
           "minimum": 5,
@@ -196,6 +214,7 @@
           "description": "How often to update live game data (seconds)"
         },
         "update_interval_seconds": {
+          "x-advanced": true,
           "type": "integer",
           "default": 3600,
           "minimum": 30,
@@ -208,6 +227,7 @@
           "description": "Control how many games to show",
           "properties": {
             "recent_games_to_show": {
+              "x-advanced": true,
               "type": "integer",
               "default": 1,
               "minimum": 1,
@@ -215,6 +235,7 @@
               "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
             },
             "upcoming_games_to_show": {
+              "x-advanced": true,
               "type": "integer",
               "default": 1,
               "minimum": 1,
@@ -261,6 +282,7 @@
               "description": "Show all live games, not just favorites"
             },
             "favorite_live_boost": {
+              "x-advanced": true,
               "type": "integer",
               "default": 2,
               "minimum": 1,
@@ -274,6 +296,7 @@
           "description": "How long to display games on screen (in seconds)",
           "properties": {
             "base": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 1,
@@ -281,6 +304,7 @@
               "description": "Base display duration for NBA games"
             },
             "live": {
+              "x-advanced": true,
               "type": "number",
               "default": 20,
               "minimum": 1,
@@ -288,6 +312,7 @@
               "description": "Display duration for live NBA games"
             },
             "recent": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 1,
@@ -295,6 +320,7 @@
               "description": "Display duration for recent NBA games"
             },
             "upcoming": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 1,
@@ -309,11 +335,13 @@
           "description": "Configure dynamic duration settings for NBA games.",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "default": false,
               "description": "Enable dynamic duration for NBA games"
             },
             "max_duration_seconds": {
+              "x-advanced": true,
               "type": "number",
               "minimum": 60,
               "maximum": 600,
@@ -328,11 +356,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NBA live games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -344,11 +374,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NBA recent games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -360,11 +392,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NBA upcoming games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -382,6 +416,7 @@
           "description": "Control total duration for each mode type for NBA. If not set, uses dynamic calculation (total_games × per_game_duration).",
           "properties": {
             "recent_mode_duration": {
+              "x-advanced": true,
               "type": ["number", "null"],
               "default": null,
               "minimum": 10,
@@ -389,6 +424,7 @@
               "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
             },
             "upcoming_mode_duration": {
+              "x-advanced": true,
               "type": ["number", "null"],
               "default": null,
               "minimum": 10,
@@ -418,6 +454,7 @@
           "description": "List of favorite WNBA team abbreviations (e.g., NYL, LAS, SEA). Use 2-3 letter codes."
         },
         "exclude_teams": {
+          "x-advanced": true,
           "type": "array",
           "items": {
             "type": "string"
@@ -446,18 +483,21 @@
               "description": "Show upcoming WNBA games"
             },
             "live_display_mode": {
+              "x-advanced": true,
               "type": "string",
               "enum": ["switch", "scroll"],
               "default": "switch",
               "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
             },
             "recent_display_mode": {
+              "x-advanced": true,
               "type": "string",
               "enum": ["switch", "scroll"],
               "default": "switch",
               "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
             },
             "upcoming_display_mode": {
+              "x-advanced": true,
               "type": "string",
               "enum": ["switch", "scroll"],
               "default": "switch",
@@ -471,6 +511,7 @@
           "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
           "properties": {
             "scroll_speed": {
+              "x-advanced": true,
               "type": "number",
               "default": 50.0,
               "minimum": 1.0,
@@ -478,6 +519,7 @@
               "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
             },
             "scroll_delay": {
+              "x-advanced": true,
               "type": "number",
               "default": 0.01,
               "minimum": 0.001,
@@ -485,6 +527,7 @@
               "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
             },
             "gap_between_games": {
+              "x-advanced": true,
               "type": "integer",
               "default": 48,
               "minimum": 8,
@@ -492,16 +535,19 @@
               "description": "Gap in pixels between game cards when scrolling"
             },
             "show_league_separators": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show league icons between different leagues"
             },
             "dynamic_duration": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Automatically calculate display duration based on content width"
             },
             "game_card_width": {
+              "x-advanced": true,
               "type": "integer",
               "default": 128,
               "minimum": 32,
@@ -516,6 +562,7 @@
           "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
         },
         "live_game_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 20,
           "minimum": 10,
@@ -523,6 +570,7 @@
           "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
         },
         "non_favorite_live_game_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 0,
           "minimum": 0,
@@ -530,6 +578,7 @@
           "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
         },
         "live_update_interval": {
+          "x-advanced": true,
           "type": "integer",
           "default": 30,
           "minimum": 5,
@@ -537,6 +586,7 @@
           "description": "How often to update live game data (seconds)"
         },
         "update_interval_seconds": {
+          "x-advanced": true,
           "type": "integer",
           "default": 3600,
           "minimum": 30,
@@ -549,6 +599,7 @@
           "description": "Control how many games to show",
           "properties": {
             "recent_games_to_show": {
+              "x-advanced": true,
               "type": "integer",
               "default": 1,
               "minimum": 1,
@@ -556,6 +607,7 @@
               "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
             },
             "upcoming_games_to_show": {
+              "x-advanced": true,
               "type": "integer",
               "default": 1,
               "minimum": 1,
@@ -602,6 +654,7 @@
               "description": "Show all live games, not just favorites"
             },
             "favorite_live_boost": {
+              "x-advanced": true,
               "type": "integer",
               "default": 2,
               "minimum": 1,
@@ -615,6 +668,7 @@
           "description": "How long to display games on screen (in seconds)",
           "properties": {
             "base": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -622,6 +676,7 @@
               "description": "Base display duration for WNBA games"
             },
             "live": {
+              "x-advanced": true,
               "type": "number",
               "default": 20,
               "minimum": 5,
@@ -629,6 +684,7 @@
               "description": "Display duration for live WNBA games"
             },
             "recent": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -636,6 +692,7 @@
               "description": "Display duration for recent WNBA games"
             },
             "upcoming": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -650,11 +707,13 @@
           "description": "Override global dynamic duration settings for WNBA games. If not set, uses global settings.",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "default": false,
               "description": "Enable dynamic duration for WNBA games (overrides global setting)"
             },
             "max_duration_seconds": {
+              "x-advanced": true,
               "type": "number",
               "minimum": 60,
               "maximum": 600,
@@ -669,11 +728,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for WNBA live games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -685,11 +746,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for WNBA recent games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -701,11 +764,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for WNBA upcoming games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -723,6 +788,7 @@
           "description": "Control total duration for each mode type for WNBA. If not set, uses dynamic calculation (total_games × per_game_duration).",
           "properties": {
             "recent_mode_duration": {
+              "x-advanced": true,
               "type": ["number", "null"],
               "default": null,
               "minimum": 10,
@@ -730,6 +796,7 @@
               "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
             },
             "upcoming_mode_duration": {
+              "x-advanced": true,
               "type": ["number", "null"],
               "default": null,
               "minimum": 10,
@@ -759,6 +826,7 @@
           "description": "List of favorite NCAA Men's Basketball team abbreviations (e.g., DUKE, UNC, UK). Use 2-4 letter codes."
         },
         "exclude_teams": {
+          "x-advanced": true,
           "type": "array",
           "items": {
             "type": "string"
@@ -787,18 +855,21 @@
               "description": "Show upcoming NCAA Men's Basketball games"
             },
             "live_display_mode": {
+              "x-advanced": true,
               "type": "string",
               "enum": ["switch", "scroll"],
               "default": "switch",
               "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
             },
             "recent_display_mode": {
+              "x-advanced": true,
               "type": "string",
               "enum": ["switch", "scroll"],
               "default": "switch",
               "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
             },
             "upcoming_display_mode": {
+              "x-advanced": true,
               "type": "string",
               "enum": ["switch", "scroll"],
               "default": "switch",
@@ -812,6 +883,7 @@
           "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
           "properties": {
             "scroll_speed": {
+              "x-advanced": true,
               "type": "number",
               "default": 50.0,
               "minimum": 1.0,
@@ -819,6 +891,7 @@
               "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
             },
             "scroll_delay": {
+              "x-advanced": true,
               "type": "number",
               "default": 0.01,
               "minimum": 0.001,
@@ -826,6 +899,7 @@
               "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
             },
             "gap_between_games": {
+              "x-advanced": true,
               "type": "integer",
               "default": 48,
               "minimum": 8,
@@ -833,16 +907,19 @@
               "description": "Gap in pixels between game cards when scrolling"
             },
             "show_league_separators": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show league icons between different leagues"
             },
             "dynamic_duration": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Automatically calculate display duration based on content width"
             },
             "game_card_width": {
+              "x-advanced": true,
               "type": "integer",
               "default": 128,
               "minimum": 32,
@@ -857,6 +934,7 @@
           "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
         },
         "live_game_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 20,
           "minimum": 10,
@@ -864,6 +942,7 @@
           "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
         },
         "non_favorite_live_game_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 0,
           "minimum": 0,
@@ -871,6 +950,7 @@
           "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
         },
         "live_update_interval": {
+          "x-advanced": true,
           "type": "integer",
           "default": 30,
           "minimum": 5,
@@ -878,6 +958,7 @@
           "description": "How often to update live game data (seconds)"
         },
         "update_interval_seconds": {
+          "x-advanced": true,
           "type": "integer",
           "default": 3600,
           "minimum": 30,
@@ -890,6 +971,7 @@
           "description": "Control how many games to show",
           "properties": {
             "recent_games_to_show": {
+              "x-advanced": true,
               "type": "integer",
               "default": 1,
               "minimum": 1,
@@ -897,6 +979,7 @@
               "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
             },
             "upcoming_games_to_show": {
+              "x-advanced": true,
               "type": "integer",
               "default": 1,
               "minimum": 1,
@@ -943,6 +1026,7 @@
               "description": "Show all live games, not just favorites"
             },
             "favorite_live_boost": {
+              "x-advanced": true,
               "type": "integer",
               "default": 2,
               "minimum": 1,
@@ -957,25 +1041,30 @@
           "description": "Settings for NCAA Tournament (March Madness) display behavior",
           "properties": {
             "tournament_mode": {
+              "x-advanced": true,
               "type": "boolean",
               "description": "Show ALL tournament games regardless of favorite teams. If not set, automatically enabled during the tournament window (March 10 - April 10)"
             },
             "show_seeds": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show tournament seeds (1-16) instead of AP rankings for tournament games"
             },
             "show_round": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show tournament round abbreviation (R64, R32, S16, E8, F4, NCG) in the status area"
             },
             "show_region": {
+              "x-advanced": true,
               "type": "boolean",
               "default": false,
               "description": "Show bracket region (E, W, S, MW) alongside round info"
             },
             "tournament_games_limit": {
+              "x-advanced": true,
               "type": "integer",
               "default": 10,
               "minimum": 1,
@@ -989,6 +1078,7 @@
           "description": "How long to display games on screen (in seconds)",
           "properties": {
             "base": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -996,6 +1086,7 @@
               "description": "Base display duration for NCAA Men's Basketball games"
             },
             "live": {
+              "x-advanced": true,
               "type": "number",
               "default": 20,
               "minimum": 5,
@@ -1003,6 +1094,7 @@
               "description": "Display duration for live NCAA Men's Basketball games"
             },
             "recent": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -1010,6 +1102,7 @@
               "description": "Display duration for recent NCAA Men's Basketball games"
             },
             "upcoming": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -1024,11 +1117,13 @@
           "description": "Override global dynamic duration settings for NCAA Men's games. If not set, uses global settings.",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "default": false,
               "description": "Enable dynamic duration for NCAA Men's games (overrides global setting)"
             },
             "max_duration_seconds": {
+              "x-advanced": true,
               "type": "number",
               "minimum": 60,
               "maximum": 600,
@@ -1043,11 +1138,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NCAA Men's live games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -1059,11 +1156,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NCAA Men's recent games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -1075,11 +1174,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NCAA Men's upcoming games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -1097,6 +1198,7 @@
           "description": "Control total duration for each mode type for NCAA Men's Basketball. If not set, uses dynamic calculation (total_games × per_game_duration).",
           "properties": {
             "recent_mode_duration": {
+              "x-advanced": true,
               "type": ["number", "null"],
               "default": null,
               "minimum": 10,
@@ -1104,6 +1206,7 @@
               "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
             },
             "upcoming_mode_duration": {
+              "x-advanced": true,
               "type": ["number", "null"],
               "default": null,
               "minimum": 10,
@@ -1133,6 +1236,7 @@
           "description": "List of favorite NCAA Women's Basketball team abbreviations (e.g., UCONN, SCAR, STAN). Use 2-4 letter codes."
         },
         "exclude_teams": {
+          "x-advanced": true,
           "type": "array",
           "items": {
             "type": "string"
@@ -1161,18 +1265,21 @@
               "description": "Show upcoming NCAA Women's Basketball games"
             },
             "live_display_mode": {
+              "x-advanced": true,
               "type": "string",
               "enum": ["switch", "scroll"],
               "default": "switch",
               "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
             },
             "recent_display_mode": {
+              "x-advanced": true,
               "type": "string",
               "enum": ["switch", "scroll"],
               "default": "switch",
               "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
             },
             "upcoming_display_mode": {
+              "x-advanced": true,
               "type": "string",
               "enum": ["switch", "scroll"],
               "default": "switch",
@@ -1186,6 +1293,7 @@
           "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
           "properties": {
             "scroll_speed": {
+              "x-advanced": true,
               "type": "number",
               "default": 50.0,
               "minimum": 1.0,
@@ -1193,6 +1301,7 @@
               "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
             },
             "scroll_delay": {
+              "x-advanced": true,
               "type": "number",
               "default": 0.01,
               "minimum": 0.001,
@@ -1200,6 +1309,7 @@
               "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
             },
             "gap_between_games": {
+              "x-advanced": true,
               "type": "integer",
               "default": 48,
               "minimum": 8,
@@ -1207,16 +1317,19 @@
               "description": "Gap in pixels between game cards when scrolling"
             },
             "show_league_separators": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show league icons between different leagues"
             },
             "dynamic_duration": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Automatically calculate display duration based on content width"
             },
             "game_card_width": {
+              "x-advanced": true,
               "type": "integer",
               "default": 128,
               "minimum": 32,
@@ -1231,6 +1344,7 @@
           "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
         },
         "live_game_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 20,
           "minimum": 10,
@@ -1238,6 +1352,7 @@
           "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
         },
         "non_favorite_live_game_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 0,
           "minimum": 0,
@@ -1245,6 +1360,7 @@
           "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
         },
         "live_update_interval": {
+          "x-advanced": true,
           "type": "integer",
           "default": 30,
           "minimum": 5,
@@ -1252,6 +1368,7 @@
           "description": "How often to update live game data (seconds)"
         },
         "update_interval_seconds": {
+          "x-advanced": true,
           "type": "integer",
           "default": 3600,
           "minimum": 30,
@@ -1264,6 +1381,7 @@
           "description": "Control how many games to show",
           "properties": {
             "recent_games_to_show": {
+              "x-advanced": true,
               "type": "integer",
               "default": 1,
               "minimum": 1,
@@ -1271,6 +1389,7 @@
               "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
             },
             "upcoming_games_to_show": {
+              "x-advanced": true,
               "type": "integer",
               "default": 1,
               "minimum": 1,
@@ -1317,6 +1436,7 @@
               "description": "Show all live games, not just favorites"
             },
             "favorite_live_boost": {
+              "x-advanced": true,
               "type": "integer",
               "default": 2,
               "minimum": 1,
@@ -1331,25 +1451,30 @@
           "description": "Settings for NCAA Women's Tournament display behavior",
           "properties": {
             "tournament_mode": {
+              "x-advanced": true,
               "type": "boolean",
               "description": "Show ALL tournament games regardless of favorite teams. If not set, automatically enabled during the tournament window (March 10 - April 10)"
             },
             "show_seeds": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show tournament seeds (1-16) instead of AP rankings for tournament games"
             },
             "show_round": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show tournament round abbreviation (R64, R32, S16, E8, F4, NCG) in the status area"
             },
             "show_region": {
+              "x-advanced": true,
               "type": "boolean",
               "default": false,
               "description": "Show bracket region alongside round info"
             },
             "tournament_games_limit": {
+              "x-advanced": true,
               "type": "integer",
               "default": 10,
               "minimum": 1,
@@ -1363,6 +1488,7 @@
           "description": "How long to display games on screen (in seconds)",
           "properties": {
             "base": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -1370,6 +1496,7 @@
               "description": "Base display duration for NCAA Women's Basketball games"
             },
             "live": {
+              "x-advanced": true,
               "type": "number",
               "default": 20,
               "minimum": 5,
@@ -1377,6 +1504,7 @@
               "description": "Display duration for live NCAA Women's Basketball games"
             },
             "recent": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -1384,6 +1512,7 @@
               "description": "Display duration for recent NCAA Women's Basketball games"
             },
             "upcoming": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -1398,11 +1527,13 @@
           "description": "Override global dynamic duration settings for NCAA Women's games. If not set, uses global settings.",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "default": false,
               "description": "Enable dynamic duration for NCAA Women's games (overrides global setting)"
             },
             "max_duration_seconds": {
+              "x-advanced": true,
               "type": "number",
               "minimum": 60,
               "maximum": 600,
@@ -1417,11 +1548,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NCAA Women's live games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -1433,11 +1566,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NCAA Women's recent games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -1449,11 +1584,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NCAA Women's upcoming games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -1471,6 +1608,7 @@
           "description": "Control total duration for each mode type for NCAA Women's Basketball. If not set, uses dynamic calculation (total_games × per_game_duration).",
           "properties": {
             "recent_mode_duration": {
+              "x-advanced": true,
               "type": ["number", "null"],
               "default": null,
               "minimum": 10,
@@ -1478,6 +1616,7 @@
               "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
             },
             "upcoming_mode_duration": {
+              "x-advanced": true,
               "type": ["number", "null"],
               "default": null,
               "minimum": 10,
@@ -1499,6 +1638,7 @@
         "description": "Font settings for the game score display",
         "properties": {
           "font": {
+            "x-advanced": true,
             "type": "string",
             "title": "Font Family",
             "description": "Select the font to use for scores",
@@ -1513,6 +1653,7 @@
             "default": "PressStart2P-Regular.ttf"
           },
           "font_size": {
+            "x-advanced": true,
             "type": "integer",
             "title": "Font Size",
             "description": "Font size in pixels",
@@ -1530,6 +1671,7 @@
         "description": "Font settings for period, quarter, and clock text",
         "properties": {
           "font": {
+            "x-advanced": true,
             "type": "string",
             "title": "Font Family",
             "description": "Select the font to use",
@@ -1544,6 +1686,7 @@
             "default": "PressStart2P-Regular.ttf"
           },
           "font_size": {
+            "x-advanced": true,
             "type": "integer",
             "title": "Font Size",
             "description": "Font size in pixels",
@@ -1561,6 +1704,7 @@
         "description": "Font settings for team name abbreviations",
         "properties": {
           "font": {
+            "x-advanced": true,
             "type": "string",
             "title": "Font Family",
             "description": "Select the font to use",
@@ -1575,6 +1719,7 @@
             "default": "PressStart2P-Regular.ttf"
           },
           "font_size": {
+            "x-advanced": true,
             "type": "integer",
             "title": "Font Size",
             "description": "Font size in pixels",
@@ -1592,6 +1737,7 @@
         "description": "Font settings for status text (e.g., 'Next Game', 'Final')",
         "properties": {
           "font": {
+            "x-advanced": true,
             "type": "string",
             "title": "Font Family",
             "description": "Select the font to use",
@@ -1606,6 +1752,7 @@
             "default": "4x6-font.ttf"
           },
           "font_size": {
+            "x-advanced": true,
             "type": "integer",
             "title": "Font Size",
             "description": "Font size in pixels",
@@ -1623,6 +1770,7 @@
         "description": "Font settings for odds and other detail information",
         "properties": {
           "font": {
+            "x-advanced": true,
             "type": "string",
             "title": "Font Family",
             "description": "Select the font to use",
@@ -1637,6 +1785,7 @@
             "default": "4x6-font.ttf"
           },
           "font_size": {
+            "x-advanced": true,
             "type": "integer",
             "title": "Font Size",
             "description": "Font size in pixels",
@@ -1654,6 +1803,7 @@
         "description": "Font settings for ranking displays",
         "properties": {
           "font": {
+            "x-advanced": true,
             "type": "string",
             "title": "Font Family",
             "description": "Select the font to use",
@@ -1668,6 +1818,7 @@
             "default": "PressStart2P-Regular.ttf"
           },
           "font_size": {
+            "x-advanced": true,
             "type": "integer",
             "title": "Font Size",
             "description": "Font size in pixels",
@@ -1689,11 +1840,13 @@
             "title": "Home Team Logo",
             "properties": {
               "x_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Horizontal offset from default position (default: 0)"
               },
               "y_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Vertical offset from default position (default: 0)"
@@ -1706,11 +1859,13 @@
             "title": "Away Team Logo",
             "properties": {
               "x_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Horizontal offset from default position (default: 0)"
               },
               "y_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Vertical offset from default position (default: 0)"
@@ -1723,11 +1878,13 @@
             "title": "Game Score",
             "properties": {
               "x_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Horizontal offset from center (default: 0)"
               },
               "y_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Vertical offset from center (default: 0)"
@@ -1740,11 +1897,13 @@
             "title": "Game Status",
             "properties": {
               "x_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Horizontal offset from default position (default: 0)"
               },
               "y_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Vertical offset from default position (default: 0)"
@@ -1757,11 +1916,13 @@
             "title": "Team Records",
             "properties": {
               "x_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Horizontal offset from default position (default: 0)"
               },
               "y_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Vertical offset from default position (default: 0)"
@@ -1774,11 +1935,13 @@
             "title": "Team Rankings",
             "properties": {
               "x_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Horizontal offset from default position (default: 0)"
               },
               "y_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Vertical offset from default position (default: 0)"
@@ -1791,11 +1954,13 @@
             "title": "Betting Odds",
             "properties": {
               "x_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Horizontal offset from default position (default: 0)"
               },
               "y_offset": {
+                "x-advanced": true,
                 "type": "integer",
                 "default": 0,
                 "description": "Vertical offset from default position (default: 0)"
