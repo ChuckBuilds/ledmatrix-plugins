@@ -19,14 +19,16 @@
     "high_performance_transitions": {
       "type": "boolean",
       "default": false,
-      "description": "Use high-performance transitions (120 FPS) instead of standard (30 FPS)"
+      "description": "Use high-performance transitions (120 FPS) instead of standard (30 FPS)",
+      "x-advanced": true
     },
     "update_interval": {
       "type": "integer",
       "default": 3600,
       "minimum": 60,
       "maximum": 86400,
-      "description": "How often to update the countdown in seconds (default: 1 hour, since countdown changes daily)"
+      "description": "How often to update the countdown in seconds (default: 1 hour, since countdown changes daily)",
+      "x-advanced": true
     },
     "transition": {
       "type": "object",
@@ -43,19 +45,22 @@
             "pixelate"
           ],
           "default": "redraw",
-          "description": "Type of transition to use"
+          "description": "Type of transition to use",
+          "x-advanced": true
         },
         "speed": {
           "type": "integer",
           "default": 2,
           "minimum": 1,
           "maximum": 10,
-          "description": "Transition speed (1=slow, 10=fast)"
+          "description": "Transition speed (1=slow, 10=fast)",
+          "x-advanced": true
         },
         "enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable or disable transitions"
+          "description": "Enable or disable transitions",
+          "x-advanced": true
         }
       },
       "additionalProperties": false
@@ -90,13 +95,15 @@
         128,
         0
       ],
-      "description": "RGB color for the Christmas tree [R, G, B] (default: green). Only used if tree image is not available."
+      "description": "RGB color for the Christmas tree [R, G, B] (default: green). Only used if tree image is not available.",
+      "x-advanced": true
     },
     "tree_size": {
       "type": "integer",
       "minimum": 8,
       "maximum": 64,
-      "description": "Size of the Christmas tree logo in pixels. If not specified, size is auto-calculated based on display height."
+      "description": "Size of the Christmas tree logo in pixels. If not specified, size is auto-calculated based on display height.",
+      "x-advanced": true
     }
   },
   "required": [

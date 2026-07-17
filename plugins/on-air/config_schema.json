@@ -57,7 +57,8 @@
       "type": "string",
       "default": "",
       "title": "Font",
-      "description": "Path to a TTF font file relative to the LEDMatrix root, e.g. assets/fonts/PressStart2P-Regular.ttf. Leave blank to use the default font (auto-sized to 80% of display height)."
+      "description": "Path to a TTF font file relative to the LEDMatrix root, e.g. assets/fonts/PressStart2P-Regular.ttf. Leave blank to use the default font (auto-sized to 80% of display height).",
+      "x-advanced": true
     },
     "font_size": {
       "type": "integer",
@@ -65,7 +66,8 @@
       "minimum": 0,
       "maximum": 64,
       "title": "Font Size (px)",
-      "description": "Font height in pixels when a custom Font path is set. Set to 0 to auto-size to 80% of the display height."
+      "description": "Font height in pixels when a custom Font path is set. Set to 0 to auto-size to 80% of the display height.",
+      "x-advanced": true
     },
 
     "mqtt_host": {
@@ -105,7 +107,8 @@
       "type": "string",
       "default": "ledmatrix/on-air/state",
       "title": "State Topic",
-      "description": "The plugin publishes ON or OFF here after each state change. Use this as the state_topic in your Home Assistant MQTT switch to keep the HA toggle in sync."
+      "description": "The plugin publishes ON or OFF here after each state change. Use this as the state_topic in your Home Assistant MQTT switch to keep the HA toggle in sync.",
+      "x-advanced": true
     },
 
     "ha_discovery": {
@@ -118,13 +121,15 @@
       "type": "string",
       "default": "homeassistant",
       "title": "HA Discovery Prefix",
-      "description": "The MQTT topic prefix your HA MQTT integration listens on. Leave as 'homeassistant' unless you changed it in HA."
+      "description": "The MQTT topic prefix your HA MQTT integration listens on. Leave as 'homeassistant' unless you changed it in HA.",
+      "x-advanced": true
     },
     "device_name": {
       "type": "string",
       "default": "LED Matrix — On Air",
       "title": "Device Name in Home Assistant",
-      "description": "How this device appears under Settings → Devices & Services → MQTT in Home Assistant."
+      "description": "How this device appears under Settings → Devices & Services → MQTT in Home Assistant.",
+      "x-advanced": true
     },
 
     "display_duration": {
@@ -133,7 +138,8 @@
       "minimum": 1,
       "maximum": 60,
       "title": "Display Duration (seconds)",
-      "description": "How long the sign stays on screen each rotation cycle while active."
+      "description": "How long the sign stays on screen each rotation cycle while active.",
+      "x-advanced": true
     }
   },
   "required": ["enabled", "mqtt_host", "mqtt_port", "command_topic", "ha_discovery"],

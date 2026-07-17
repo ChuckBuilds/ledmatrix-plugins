@@ -98,38 +98,44 @@
           "default": 1.0,
           "minimum": 0.01,
           "maximum": 200.0,
-          "description": "Scroll speed in pixels per second"
+          "description": "Scroll speed in pixels per second",
+          "x-advanced": true
         },
         "scroll_delay": {
           "type": "number",
           "default": 0.01,
           "minimum": 0.001,
           "maximum": 0.1,
-          "description": "Delay between scroll frames in seconds (lower = smoother)"
+          "description": "Delay between scroll frames in seconds (lower = smoother)",
+          "x-advanced": true
         },
         "gap_between_games": {
           "type": "integer",
           "default": 48,
           "minimum": 8,
           "maximum": 128,
-          "description": "Gap in pixels between game cards when scrolling"
+          "description": "Gap in pixels between game cards when scrolling",
+          "x-advanced": true
         },
         "show_league_separators": {
           "type": "boolean",
           "default": true,
-          "description": "Show league icons between different leagues"
+          "description": "Show league icons between different leagues",
+          "x-advanced": true
         },
         "dynamic_duration": {
           "type": "boolean",
           "default": true,
-          "description": "Automatically calculate display duration based on content width"
+          "description": "Automatically calculate display duration based on content width",
+          "x-advanced": true
         },
         "game_card_width": {
           "type": "integer",
           "default": 128,
           "minimum": 32,
           "maximum": 512,
-          "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+          "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
+          "x-advanced": true
         }
       }
     },
@@ -150,7 +156,8 @@
       "default": 15,
       "minimum": 3,
       "maximum": 60,
-      "description": "Duration in seconds to show each individual game before rotating to the next game within the same mode"
+      "description": "Duration in seconds to show each individual game before rotating to the next game within the same mode",
+      "x-advanced": true
     },
     "live_game_duration": {
       "type": "integer",
@@ -164,49 +171,56 @@
       "default": 0,
       "minimum": 0,
       "maximum": 120,
-      "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+      "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+      "x-advanced": true
     },
     "recent_game_duration": {
       "type": "integer",
       "default": 15,
       "minimum": 5,
       "maximum": 60,
-      "description": "Duration in seconds to display each recent game before rotating to the next game"
+      "description": "Duration in seconds to display each recent game before rotating to the next game",
+      "x-advanced": true
     },
     "upcoming_game_duration": {
       "type": "integer",
       "default": 15,
       "minimum": 5,
       "maximum": 60,
-      "description": "Duration in seconds to display each upcoming game before rotating to the next game"
+      "description": "Duration in seconds to display each upcoming game before rotating to the next game",
+      "x-advanced": true
     },
     "update_interval_seconds": {
       "type": "integer",
       "default": 3600,
       "minimum": 30,
       "maximum": 86400,
-      "description": "How often to fetch new data (seconds)"
+      "description": "How often to fetch new data (seconds)",
+      "x-advanced": true
     },
     "live_update_interval": {
       "type": "integer",
       "default": 30,
       "minimum": 10,
       "maximum": 300,
-      "description": "Update interval for live games (seconds)"
+      "description": "Update interval for live games (seconds)",
+      "x-advanced": true
     },
     "recent_update_interval": {
       "type": "integer",
       "default": 3600,
       "minimum": 60,
       "maximum": 86400,
-      "description": "Update interval for recent games (seconds)"
+      "description": "Update interval for recent games (seconds)",
+      "x-advanced": true
     },
     "upcoming_update_interval": {
       "type": "integer",
       "default": 3600,
       "minimum": 60,
       "maximum": 86400,
-      "description": "Update interval for upcoming games (seconds)"
+      "description": "Update interval for upcoming games (seconds)",
+      "x-advanced": true
     },
     "recent_games_to_show": {
       "type": "integer",
@@ -225,12 +239,14 @@
     "show_records": {
       "type": "boolean",
       "default": false,
-      "description": "Show team records (wins-losses)"
+      "description": "Show team records (wins-losses)",
+      "x-advanced": true
     },
     "show_ranking": {
       "type": "boolean",
       "default": false,
-      "description": "Show team rankings (when available)"
+      "description": "Show team rankings (when available)",
+      "x-advanced": true
     },
     "show_odds": {
       "type": "boolean",
@@ -247,12 +263,14 @@
       "default": 8,
       "minimum": 3,
       "maximum": 30,
-      "description": "How long the goal/win celebration stays on screen (seconds)"
+      "description": "How long the goal/win celebration stays on screen (seconds)",
+      "x-advanced": true
     },
     "celebrate_opponent_goals": {
       "type": "boolean",
       "default": false,
-      "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+      "description": "Also celebrate when the opponent scores, not just favorites (off by default)",
+      "x-advanced": true
     },
     "game_limits": {
       "type": "object",
@@ -264,14 +282,16 @@
           "default": 1,
           "minimum": 1,
           "maximum": 20,
-          "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+          "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time.",
+          "x-advanced": true
         },
         "upcoming_games_to_show": {
           "type": "integer",
           "default": 1,
           "minimum": 1,
           "maximum": 20,
-          "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+          "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time.",
+          "x-advanced": true
         }
       }
     },
@@ -283,17 +303,20 @@
         "show_records": {
           "type": "boolean",
           "default": false,
-          "description": "Show team records (wins-losses)"
+          "description": "Show team records (wins-losses)",
+          "x-advanced": true
         },
         "show_ranking": {
           "type": "boolean",
           "default": false,
-          "description": "Show team rankings (when available)"
+          "description": "Show team rankings (when available)",
+          "x-advanced": true
         },
         "show_odds": {
           "type": "boolean",
           "default": true,
-          "description": "Show betting odds"
+          "description": "Show betting odds",
+          "x-advanced": true
         }
       }
     },
@@ -317,7 +340,8 @@
           "minimum": 1,
           "maximum": 5,
           "default": 2,
-          "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+          "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+          "x-advanced": true
         }
       }
     },
@@ -329,20 +353,23 @@
         "enabled": {
           "type": "boolean",
           "default": false,
-          "description": "Enable dynamic duration for AFL games"
+          "description": "Enable dynamic duration for AFL games",
+          "x-advanced": true
         },
         "min_duration_seconds": {
           "type": "number",
           "minimum": 10,
           "maximum": 300,
           "default": 30,
-          "description": "Minimum total duration in seconds for this mode, even if few games are available"
+          "description": "Minimum total duration in seconds for this mode, even if few games are available",
+          "x-advanced": true
         },
         "max_duration_seconds": {
           "type": "number",
           "minimum": 60,
           "maximum": 600,
-          "description": "Max duration for AFL games"
+          "description": "Max duration for AFL games",
+          "x-advanced": true
         },
         "modes": {
           "type": "object",
@@ -355,13 +382,15 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for AFL live games"
+                  "description": "Enable dynamic duration for AFL live games",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for AFL live games"
+                  "description": "Max duration for AFL live games",
+                  "x-advanced": true
                 }
               }
             },
@@ -371,13 +400,15 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for AFL recent games"
+                  "description": "Enable dynamic duration for AFL recent games",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for AFL recent games"
+                  "description": "Max duration for AFL recent games",
+                  "x-advanced": true
                 }
               }
             },
@@ -387,13 +418,15 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for AFL upcoming games"
+                  "description": "Enable dynamic duration for AFL upcoming games",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for AFL upcoming games"
+                  "description": "Max duration for AFL upcoming games",
+                  "x-advanced": true
                 }
               }
             }
@@ -414,7 +447,8 @@
           "default": null,
           "minimum": 10,
           "maximum": 600,
-          "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+          "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation).",
+          "x-advanced": true
         },
         "upcoming_mode_duration": {
           "type": [
@@ -424,7 +458,8 @@
           "default": null,
           "minimum": 10,
           "maximum": 600,
-          "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+          "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation).",
+          "x-advanced": true
         },
         "live_mode_duration": {
           "type": [
@@ -434,7 +469,8 @@
           "default": null,
           "minimum": 10,
           "maximum": 600,
-          "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+          "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation).",
+          "x-advanced": true
         }
       }
     },
@@ -444,35 +480,40 @@
         "enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable background service for data fetching"
+          "description": "Enable background service for data fetching",
+          "x-advanced": true
         },
         "max_workers": {
           "type": "integer",
           "default": 3,
           "minimum": 1,
           "maximum": 10,
-          "description": "Maximum number of worker threads"
+          "description": "Maximum number of worker threads",
+          "x-advanced": true
         },
         "request_timeout": {
           "type": "integer",
           "default": 30,
           "minimum": 5,
           "maximum": 120,
-          "description": "Request timeout in seconds"
+          "description": "Request timeout in seconds",
+          "x-advanced": true
         },
         "max_retries": {
           "type": "integer",
           "default": 3,
           "minimum": 1,
           "maximum": 10,
-          "description": "Maximum number of retries for failed requests"
+          "description": "Maximum number of retries for failed requests",
+          "x-advanced": true
         },
         "priority": {
           "type": "integer",
           "default": 2,
           "minimum": 1,
           "maximum": 5,
-          "description": "Background service priority"
+          "description": "Background service priority",
+          "x-advanced": true
         }
       },
       "additionalProperties": false
@@ -499,7 +540,8 @@
                 "4x6.bdf",
                 "cozette.bdf"
               ],
-              "default": "PressStart2P-Regular.ttf"
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
@@ -507,7 +549,8 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 10
+              "default": 10,
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
@@ -533,7 +576,8 @@
                 "4x6.bdf",
                 "cozette.bdf"
               ],
-              "default": "PressStart2P-Regular.ttf"
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
@@ -541,7 +585,8 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 8
+              "default": 8,
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
@@ -567,7 +612,8 @@
                 "4x6.bdf",
                 "cozette.bdf"
               ],
-              "default": "PressStart2P-Regular.ttf"
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
@@ -575,7 +621,8 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 8
+              "default": 8,
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
@@ -601,7 +648,8 @@
                 "4x6.bdf",
                 "cozette.bdf"
               ],
-              "default": "4x6-font.ttf"
+              "default": "4x6-font.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
@@ -609,7 +657,8 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 6
+              "default": 6,
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
@@ -635,7 +684,8 @@
                 "4x6.bdf",
                 "cozette.bdf"
               ],
-              "default": "4x6-font.ttf"
+              "default": "4x6-font.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
@@ -643,7 +693,8 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 6
+              "default": 6,
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
@@ -669,7 +720,8 @@
                 "4x6.bdf",
                 "cozette.bdf"
               ],
-              "default": "PressStart2P-Regular.ttf"
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
@@ -677,7 +729,8 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 10
+              "default": 10,
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
@@ -698,12 +751,14 @@
                 "x_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Horizontal offset from default position (default: 0)"
+                  "description": "Horizontal offset from default position (default: 0)",
+                  "x-advanced": true
                 },
                 "y_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Vertical offset from default position (default: 0)"
+                  "description": "Vertical offset from default position (default: 0)",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -715,12 +770,14 @@
                 "x_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Horizontal offset from default position (default: 0)"
+                  "description": "Horizontal offset from default position (default: 0)",
+                  "x-advanced": true
                 },
                 "y_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Vertical offset from default position (default: 0)"
+                  "description": "Vertical offset from default position (default: 0)",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -732,12 +789,14 @@
                 "x_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Horizontal offset from center (default: 0)"
+                  "description": "Horizontal offset from center (default: 0)",
+                  "x-advanced": true
                 },
                 "y_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Vertical offset from center (default: 0)"
+                  "description": "Vertical offset from center (default: 0)",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -749,12 +808,14 @@
                 "x_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Horizontal offset from center (default: 0)"
+                  "description": "Horizontal offset from center (default: 0)",
+                  "x-advanced": true
                 },
                 "y_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Vertical offset from top (default: 0)"
+                  "description": "Vertical offset from top (default: 0)",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -766,12 +827,14 @@
                 "x_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Horizontal offset from center (default: 0)"
+                  "description": "Horizontal offset from center (default: 0)",
+                  "x-advanced": true
                 },
                 "y_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Vertical offset from default position (default: 0)"
+                  "description": "Vertical offset from default position (default: 0)",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -783,12 +846,14 @@
                 "x_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Horizontal offset from center (default: 0)"
+                  "description": "Horizontal offset from center (default: 0)",
+                  "x-advanced": true
                 },
                 "y_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Vertical offset from date position (default: 0)"
+                  "description": "Vertical offset from date position (default: 0)",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -800,17 +865,20 @@
                 "away_x_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Away team record horizontal offset from left (default: 0)"
+                  "description": "Away team record horizontal offset from left (default: 0)",
+                  "x-advanced": true
                 },
                 "home_x_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Home team record horizontal offset from right (default: 0)"
+                  "description": "Home team record horizontal offset from right (default: 0)",
+                  "x-advanced": true
                 },
                 "y_offset": {
                   "type": "integer",
                   "default": 0,
-                  "description": "Vertical offset from bottom (default: 0)"
+                  "description": "Vertical offset from bottom (default: 0)",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false

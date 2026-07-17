@@ -31,11 +31,13 @@
           "description": "Default setting to show team rankings (when available)"
         },
         "show_odds": {
+          "x-advanced": true,
           "type": "boolean",
           "default": false,
           "description": "Default setting to show betting odds for games"
         },
         "update_interval_seconds": {
+          "x-advanced": true,
           "type": "integer",
           "default": 3600,
           "minimum": 30,
@@ -43,6 +45,7 @@
           "description": "Default base update interval in seconds for fetching game data"
         },
         "season_cache_duration_seconds": {
+          "x-advanced": true,
           "type": "integer",
           "default": 86400,
           "minimum": 3600,
@@ -50,6 +53,7 @@
           "description": "How long to cache season data (seconds)"
         },
         "show_shots": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show shot totals",
           "description": "Display shot totals when available from ESPN",
@@ -63,7 +67,7 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Enable NCAA Men's Lacrosse games"
         },
         "display_modes": {
@@ -121,6 +125,7 @@
           "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
           "properties": {
             "scroll_speed": {
+              "x-advanced": true,
               "type": "number",
               "default": 50.0,
               "minimum": 1.0,
@@ -128,6 +133,7 @@
               "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
             },
             "scroll_delay": {
+              "x-advanced": true,
               "type": "number",
               "default": 0.01,
               "minimum": 0.001,
@@ -135,6 +141,7 @@
               "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
             },
             "gap_between_games": {
+              "x-advanced": true,
               "type": "integer",
               "default": 48,
               "minimum": 8,
@@ -142,16 +149,19 @@
               "description": "Gap in pixels between game cards when scrolling"
             },
             "show_league_separators": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show league icons ( shield, NCAA logos) between different leagues"
             },
             "dynamic_duration": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Automatically calculate display duration based on content width"
             },
             "game_card_width": {
+              "x-advanced": true,
               "type": "integer",
               "default": 128,
               "minimum": 32,
@@ -183,6 +193,7 @@
               "description": "Show all live NCAA Men's Lacrosse games, not just favorites"
             },
             "exclude_teams": {
+              "x-advanced": true,
               "type": "array",
               "items": {
                 "type": "string"
@@ -191,6 +202,7 @@
               "description": "NCAA Men's Lacrosse team abbreviations to always hide from the live rotation and recent/final scores (e.g. to avoid spoilers when watching delayed). Takes precedence over favorite_teams and show_all_live."
             },
             "favorite_live_boost": {
+              "x-advanced": true,
               "type": "integer",
               "minimum": 1,
               "maximum": 5,
@@ -224,6 +236,7 @@
           "description": "Data update frequency settings (in seconds)",
           "properties": {
             "base": {
+              "x-advanced": true,
               "type": "integer",
               "default": 300,
               "minimum": 60,
@@ -231,6 +244,7 @@
               "description": "Base update interval for NCAA Men's Lacrosse data"
             },
             "live": {
+              "x-advanced": true,
               "type": "integer",
               "default": 60,
               "minimum": 10,
@@ -238,6 +252,7 @@
               "description": "Update interval for live NCAA Men's Lacrosse games"
             },
             "recent": {
+              "x-advanced": true,
               "type": "integer",
               "default": 3600,
               "minimum": 60,
@@ -245,6 +260,7 @@
               "description": "Update interval for recent NCAA Men's Lacrosse games"
             },
             "upcoming": {
+              "x-advanced": true,
               "type": "integer",
               "default": 3600,
               "minimum": 60,
@@ -252,6 +268,7 @@
               "description": "Update interval for upcoming NCAA Men's Lacrosse games"
             },
             "odds": {
+              "x-advanced": true,
               "type": "integer",
               "default": 3600,
               "minimum": 60,
@@ -265,6 +282,7 @@
           "description": "How long to display games on screen (in seconds)",
           "properties": {
             "base": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -272,6 +290,7 @@
               "description": "Base display duration for NCAA Men's Lacrosse games"
             },
             "live": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -279,6 +298,7 @@
               "description": "Display duration for live NCAA Men's Lacrosse games (games with a favorite team when a non-favorite duration is set)"
             },
             "non_favorite_live": {
+              "x-advanced": true,
               "type": "number",
               "default": 0,
               "minimum": 0,
@@ -286,6 +306,7 @@
               "description": "Display duration for live NCAA Men's Lacrosse games with NO favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use the live duration for every game (no change)."
             },
             "recent": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -293,6 +314,7 @@
               "description": "Display duration for recent NCAA Men's Lacrosse games"
             },
             "upcoming": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -316,11 +338,13 @@
               "description": "Show NCAA Men's Lacrosse team rankings/standings"
             },
             "show_odds": {
+              "x-advanced": true,
               "type": "boolean",
               "default": false,
               "description": "Show betting odds for NCAA Men's Lacrosse games"
             },
             "show_shots": {
+              "x-advanced": true,
               "type": "boolean",
               "title": "Show shot totals",
               "description": "Display shot totals when available from ESPN",
@@ -334,6 +358,7 @@
           "description": "Control total duration for each mode type for NCAA Men's Lacrosse. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
           "properties": {
             "recent_mode_duration": {
+              "x-advanced": true,
               "type": [
                 "number",
                 "null"
@@ -344,6 +369,7 @@
               "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
             },
             "upcoming_mode_duration": {
+              "x-advanced": true,
               "type": [
                 "number",
                 "null"
@@ -354,6 +380,7 @@
               "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
             },
             "live_mode_duration": {
+              "x-advanced": true,
               "type": [
                 "number",
                 "null"
@@ -375,11 +402,13 @@
           "description": "Dynamic duration settings - automatically adjust display time based on content",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "default": false,
               "description": "Enable dynamic duration for NCAA Men's Lacrosse games"
             },
             "max_duration_seconds": {
+              "x-advanced": true,
               "type": "number",
               "minimum": 60,
               "maximum": 600,
@@ -393,11 +422,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NCAA Men's Lacrosse live games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -409,11 +440,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NCAA Men's Lacrosse recent games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -425,11 +458,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NCAA Men's Lacrosse upcoming games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -507,6 +542,7 @@
           "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
           "properties": {
             "scroll_speed": {
+              "x-advanced": true,
               "type": "number",
               "default": 50.0,
               "minimum": 1.0,
@@ -514,6 +550,7 @@
               "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
             },
             "scroll_delay": {
+              "x-advanced": true,
               "type": "number",
               "default": 0.01,
               "minimum": 0.001,
@@ -521,6 +558,7 @@
               "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
             },
             "gap_between_games": {
+              "x-advanced": true,
               "type": "integer",
               "default": 48,
               "minimum": 8,
@@ -528,16 +566,19 @@
               "description": "Gap in pixels between game cards when scrolling"
             },
             "show_league_separators": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show league icons ( shield, NCAA logos) between different leagues"
             },
             "dynamic_duration": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Automatically calculate display duration based on content width"
             },
             "game_card_width": {
+              "x-advanced": true,
               "type": "integer",
               "default": 128,
               "minimum": 32,
@@ -569,6 +610,7 @@
               "description": "Show all live NCAA Women's Lacrosse games, not just favorites"
             },
             "exclude_teams": {
+              "x-advanced": true,
               "type": "array",
               "items": {
                 "type": "string"
@@ -577,6 +619,7 @@
               "description": "NCAA Women's Lacrosse team abbreviations to always hide from the live rotation and recent/final scores (e.g. to avoid spoilers when watching delayed). Takes precedence over favorite_teams and show_all_live."
             },
             "favorite_live_boost": {
+              "x-advanced": true,
               "type": "integer",
               "minimum": 1,
               "maximum": 5,
@@ -610,6 +653,7 @@
           "description": "Data update frequency settings (in seconds)",
           "properties": {
             "base": {
+              "x-advanced": true,
               "type": "integer",
               "default": 300,
               "minimum": 60,
@@ -617,6 +661,7 @@
               "description": "Base update interval for NCAA Women's Lacrosse data"
             },
             "live": {
+              "x-advanced": true,
               "type": "integer",
               "default": 60,
               "minimum": 10,
@@ -624,6 +669,7 @@
               "description": "Update interval for live NCAA Women's Lacrosse games"
             },
             "recent": {
+              "x-advanced": true,
               "type": "integer",
               "default": 3600,
               "minimum": 60,
@@ -631,6 +677,7 @@
               "description": "Update interval for recent NCAA Women's Lacrosse games"
             },
             "upcoming": {
+              "x-advanced": true,
               "type": "integer",
               "default": 3600,
               "minimum": 60,
@@ -638,6 +685,7 @@
               "description": "Update interval for upcoming NCAA Women's Lacrosse games"
             },
             "odds": {
+              "x-advanced": true,
               "type": "integer",
               "default": 3600,
               "minimum": 60,
@@ -651,6 +699,7 @@
           "description": "How long to display games on screen (in seconds)",
           "properties": {
             "base": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -658,6 +707,7 @@
               "description": "Base display duration for NCAA Women's Lacrosse games"
             },
             "live": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -665,6 +715,7 @@
               "description": "Display duration for live NCAA Women's Lacrosse games (games with a favorite team when a non-favorite duration is set)"
             },
             "non_favorite_live": {
+              "x-advanced": true,
               "type": "number",
               "default": 0,
               "minimum": 0,
@@ -672,6 +723,7 @@
               "description": "Display duration for live NCAA Women's Lacrosse games with NO favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use the live duration for every game (no change)."
             },
             "recent": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -679,6 +731,7 @@
               "description": "Display duration for recent NCAA Women's Lacrosse games"
             },
             "upcoming": {
+              "x-advanced": true,
               "type": "number",
               "default": 15,
               "minimum": 5,
@@ -702,11 +755,13 @@
               "description": "Show NCAA Women's Lacrosse team rankings/standings"
             },
             "show_odds": {
+              "x-advanced": true,
               "type": "boolean",
               "default": false,
               "description": "Show betting odds for NCAA Women's Lacrosse games"
             },
             "show_shots": {
+              "x-advanced": true,
               "type": "boolean",
               "title": "Show shot totals",
               "description": "Display shot totals when available from ESPN",
@@ -720,6 +775,7 @@
           "description": "Control total duration for each mode type for NCAA Women's Lacrosse. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
           "properties": {
             "recent_mode_duration": {
+              "x-advanced": true,
               "type": [
                 "number",
                 "null"
@@ -730,6 +786,7 @@
               "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
             },
             "upcoming_mode_duration": {
+              "x-advanced": true,
               "type": [
                 "number",
                 "null"
@@ -740,6 +797,7 @@
               "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
             },
             "live_mode_duration": {
+              "x-advanced": true,
               "type": [
                 "number",
                 "null"
@@ -761,11 +819,13 @@
           "description": "Dynamic duration settings - automatically adjust display time based on content",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "default": false,
               "description": "Enable dynamic duration for NCAA Women's Lacrosse games"
             },
             "max_duration_seconds": {
+              "x-advanced": true,
               "type": "number",
               "minimum": 60,
               "maximum": 600,
@@ -779,11 +839,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NCAA Women's Lacrosse live games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -795,11 +857,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NCAA Women's Lacrosse recent games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -811,11 +875,13 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "x-advanced": true,
                       "type": "boolean",
                       "default": false,
                       "description": "Enable dynamic duration for NCAA Women's Lacrosse upcoming games"
                     },
                     "max_duration_seconds": {
+                      "x-advanced": true,
                       "type": "number",
                       "minimum": 60,
                       "maximum": 600,
@@ -840,6 +906,7 @@
           "description": "Font settings for the game score display",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font Family",
               "description": "Select the font to use for scores (only TTF fonts supported)",
@@ -851,6 +918,7 @@
               "default": "PressStart2P-Regular.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "description": "Font size in pixels",
@@ -871,6 +939,7 @@
           "description": "Font settings for period, clock, and time remaining text",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font Family",
               "description": "Select the font to use (only TTF fonts supported)",
@@ -882,6 +951,7 @@
               "default": "PressStart2P-Regular.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "description": "Font size in pixels",
@@ -902,6 +972,7 @@
           "description": "Font settings for team name abbreviations",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font Family",
               "description": "Select the font to use (only TTF fonts supported)",
@@ -913,6 +984,7 @@
               "default": "PressStart2P-Regular.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "description": "Font size in pixels",
@@ -933,6 +1005,7 @@
           "description": "Font settings for status text (e.g., 'Next Game', 'Final')",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font Family",
               "description": "Select the font to use (only TTF fonts supported)",
@@ -944,6 +1017,7 @@
               "default": "4x6-font.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "description": "Font size in pixels",
@@ -964,6 +1038,7 @@
           "description": "Font settings for odds and other detail information",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font Family",
               "description": "Select the font to use (only TTF fonts supported)",
@@ -975,6 +1050,7 @@
               "default": "4x6-font.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "description": "Font size in pixels",
@@ -995,6 +1071,7 @@
           "description": "Font settings for ranking displays",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font Family",
               "description": "Select the font to use (only TTF fonts supported)",
@@ -1006,6 +1083,7 @@
               "default": "PressStart2P-Regular.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "description": "Font size in pixels",
@@ -1030,11 +1108,13 @@
               "title": "Home Team Logo",
               "properties": {
                 "x_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Horizontal offset from default position (default: 0)"
                 },
                 "y_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Vertical offset from default position (default: 0)"
@@ -1047,11 +1127,13 @@
               "title": "Away Team Logo",
               "properties": {
                 "x_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Horizontal offset from default position (default: 0)"
                 },
                 "y_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Vertical offset from default position (default: 0)"
@@ -1064,11 +1146,13 @@
               "title": "Game Score",
               "properties": {
                 "x_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Horizontal offset from center (default: 0)"
                 },
                 "y_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Vertical offset from center (default: 0)"
@@ -1081,11 +1165,13 @@
               "title": "Status/Period Text",
               "properties": {
                 "x_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Horizontal offset from center (default: 0)"
                 },
                 "y_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Vertical offset from top (default: 0)"
@@ -1098,11 +1184,13 @@
               "title": "Game Date",
               "properties": {
                 "x_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Horizontal offset from center (default: 0)"
                 },
                 "y_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Vertical offset from default position (default: 0)"
@@ -1115,11 +1203,13 @@
               "title": "Game Time",
               "properties": {
                 "x_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Horizontal offset from center (default: 0)"
                 },
                 "y_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Vertical offset from date position (default: 0)"
@@ -1132,16 +1222,19 @@
               "title": "Records/Rankings",
               "properties": {
                 "away_x_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Away team record horizontal offset from left (default: 0)"
                 },
                 "home_x_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Home team record horizontal offset from right (default: 0)"
                 },
                 "y_offset": {
+                  "x-advanced": true,
                   "type": "integer",
                   "default": 0,
                   "description": "Vertical offset from bottom (default: 0)"

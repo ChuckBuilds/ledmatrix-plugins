@@ -16,6 +16,7 @@
       "x-collapsed": true,
       "properties": {
         "display_duration": {
+          "x-advanced": true,
           "type": "number",
           "default": 30,
           "minimum": 10,
@@ -23,11 +24,13 @@
           "description": "Duration in seconds to display the odds ticker (used when dynamic_duration is disabled)"
         },
         "dynamic_duration": {
+          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Enable dynamic duration based on content width. Automatically adjusts display time based on how much content there is"
         },
         "min_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 30,
           "minimum": 10,
@@ -35,6 +38,7 @@
           "description": "Minimum display duration in seconds when dynamic duration is enabled"
         },
         "max_duration": {
+          "x-advanced": true,
           "type": "integer",
           "default": 300,
           "minimum": 30,
@@ -42,6 +46,7 @@
           "description": "Maximum display duration in seconds when dynamic duration is enabled"
         },
         "duration_buffer": {
+          "x-advanced": true,
           "type": "number",
           "default": 0.1,
           "minimum": 0.01,
@@ -56,6 +61,7 @@
           "default": 1.0
         },
         "scroll_delay": {
+          "x-advanced": true,
           "type": "number",
           "description": "Delay between scroll steps in seconds (lower = faster scrolling)",
           "minimum": 0.001,
@@ -63,6 +69,7 @@
           "default": 0.02
         },
         "scroll_pixels_per_second": {
+          "x-advanced": true,
           "type": "number",
           "default": 50.0,
           "minimum": 5.0,
@@ -70,6 +77,7 @@
           "description": "Scroll speed in pixels per second (used for dynamic duration calculation). Set to match your actual scroll rate: scroll_speed / scroll_delay"
         },
         "target_fps": {
+          "x-advanced": true,
           "type": "integer",
           "default": 120,
           "minimum": 30,
@@ -77,6 +85,7 @@
           "description": "Target frames per second for smooth scrolling. Higher values = smoother animation (120 recommended)"
         },
         "loop": {
+          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Continuously loop the ticker. If false, stops at the end"
@@ -87,6 +96,7 @@
           "description": "Show broadcast channel logos"
         },
         "broadcast_logo_height_ratio": {
+          "x-advanced": true,
           "type": "number",
           "default": 0.8,
           "minimum": 0.1,
@@ -94,6 +104,7 @@
           "description": "Height ratio for broadcast channel logos (0.8 = 80% of display height)"
         },
         "broadcast_logo_max_width_ratio": {
+          "x-advanced": true,
           "type": "number",
           "default": 0.8,
           "minimum": 0.1,
@@ -110,6 +121,7 @@
       "x-collapsed": true,
       "properties": {
         "update_interval": {
+          "x-advanced": true,
           "type": "integer",
           "default": 3600,
           "minimum": 300,
@@ -117,6 +129,7 @@
           "description": "How often to fetch new odds data in seconds when there are no live games"
         },
         "live_game_update_interval": {
+          "x-advanced": true,
           "type": "integer",
           "default": 60,
           "minimum": 30,
@@ -124,6 +137,7 @@
           "description": "How often to fetch new odds data in seconds when there are live games being displayed"
         },
         "future_fetch_days": {
+          "x-advanced": true,
           "type": "integer",
           "default": 7,
           "minimum": 1,
@@ -131,6 +145,7 @@
           "description": "Days ahead to fetch upcoming games"
         },
         "request_timeout": {
+          "x-advanced": true,
           "type": "integer",
           "default": 30,
           "minimum": 5,
@@ -138,6 +153,7 @@
           "description": "Request timeout in seconds for API calls"
         },
         "fetch_odds": {
+          "x-advanced": true,
           "type": "boolean",
           "default": true,
           "description": "Enable fetching of betting odds"
@@ -157,6 +173,7 @@
           "description": "Only show odds for favorite teams across all leagues"
         },
         "games_per_favorite_team": {
+          "x-advanced": true,
           "type": "integer",
           "default": 1,
           "minimum": 1,
@@ -164,6 +181,7 @@
           "description": "Number of games to show per favorite team"
         },
         "max_games_per_league": {
+          "x-advanced": true,
           "type": "integer",
           "default": 5,
           "minimum": 1,
@@ -171,11 +189,13 @@
           "description": "Maximum number of games to show per league"
         },
         "show_odds_only": {
+          "x-advanced": true,
           "type": "boolean",
           "default": false,
           "description": "Include only games that have odds data; games without odds will be excluded from the ticker"
         },
         "sort_order": {
+          "x-advanced": true,
           "type": "string",
           "enum": ["soonest", "league", "team"],
           "default": "soonest",
@@ -197,7 +217,7 @@
           "properties": {
             "enabled": {
               "type": "boolean",
-              "default": false,
+              "default": true,
               "description": "Enable NFL odds"
             },
             "favorite_teams": {
@@ -263,7 +283,7 @@
           "properties": {
             "enabled": {
               "type": "boolean",
-              "default": false,
+              "default": true,
               "description": "Enable NBA odds"
             },
             "favorite_teams": {
@@ -327,7 +347,7 @@
           "properties": {
             "enabled": {
               "type": "boolean",
-              "default": false,
+              "default": true,
               "description": "Enable MLB odds"
             },
             "favorite_teams": {
@@ -391,7 +411,7 @@
           "properties": {
             "enabled": {
               "type": "boolean",
-              "default": false,
+              "default": true,
               "description": "Enable NHL odds"
             },
             "favorite_teams": {
@@ -521,6 +541,7 @@
               "maxItems": 350
             },
             "show_seeds_in_tournament": {
+              "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show tournament seeds next to team names during March Madness (e.g., (5) DUKE)"
@@ -568,6 +589,7 @@
           "description": "Font settings for team names in the ticker",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font Family",
               "description": "Select the font to use",
@@ -582,6 +604,7 @@
               "default": "PressStart2P-Regular.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "description": "Font size in pixels",
@@ -599,6 +622,7 @@
           "description": "Font settings for odds, spread, and over/under information",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font Family",
               "description": "Select the font to use",
@@ -613,6 +637,7 @@
               "default": "PressStart2P-Regular.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "description": "Font size in pixels",
@@ -630,6 +655,7 @@
           "description": "Font settings for game date and time",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font Family",
               "description": "Select the font to use",
@@ -644,6 +670,7 @@
               "default": "PressStart2P-Regular.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "description": "Font size in pixels",

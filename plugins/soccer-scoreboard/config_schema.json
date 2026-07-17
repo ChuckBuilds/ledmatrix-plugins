@@ -31,7 +31,8 @@
       "default": 30,
       "minimum": 10,
       "maximum": 120,
-      "description": "Duration in seconds to display live games"
+      "description": "Duration in seconds to display live games",
+      "x-advanced": true
     },
     "show_odds": {
       "type": "boolean",
@@ -43,28 +44,32 @@
       "default": 3600,
       "minimum": 30,
       "maximum": 86400,
-      "description": "How often to fetch new data (seconds)"
+      "description": "How often to fetch new data (seconds)",
+      "x-advanced": true
     },
     "live_update_interval": {
       "type": "integer",
       "default": 30,
       "minimum": 10,
       "maximum": 300,
-      "description": "Update interval for live games (seconds)"
+      "description": "Update interval for live games (seconds)",
+      "x-advanced": true
     },
     "recent_update_interval": {
       "type": "integer",
       "default": 3600,
       "minimum": 60,
       "maximum": 86400,
-      "description": "Update interval for recent games (seconds)"
+      "description": "Update interval for recent games (seconds)",
+      "x-advanced": true
     },
     "upcoming_update_interval": {
       "type": "integer",
       "default": 3600,
       "minimum": 60,
       "maximum": 86400,
-      "description": "Update interval for upcoming games (seconds)"
+      "description": "Update interval for upcoming games (seconds)",
+      "x-advanced": true
     },
     "recent_games_to_show": {
       "type": "integer",
@@ -90,7 +95,8 @@
       "default": 15,
       "minimum": 3,
       "maximum": 60,
-      "description": "Duration in seconds to show each individual game before rotating to the next game within the same mode"
+      "description": "Duration in seconds to show each individual game before rotating to the next game within the same mode",
+      "x-advanced": true
     },
     "background_service": {
       "type": "object",
@@ -98,35 +104,40 @@
         "enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable background service for data fetching"
+          "description": "Enable background service for data fetching",
+          "x-advanced": true
         },
         "max_workers": {
           "type": "integer",
           "default": 3,
           "minimum": 1,
           "maximum": 10,
-          "description": "Maximum number of worker threads"
+          "description": "Maximum number of worker threads",
+          "x-advanced": true
         },
         "request_timeout": {
           "type": "integer",
           "default": 30,
           "minimum": 5,
           "maximum": 120,
-          "description": "Request timeout in seconds"
+          "description": "Request timeout in seconds",
+          "x-advanced": true
         },
         "max_retries": {
           "type": "integer",
           "default": 3,
           "minimum": 1,
           "maximum": 10,
-          "description": "Maximum number of retries for failed requests"
+          "description": "Maximum number of retries for failed requests",
+          "x-advanced": true
         },
         "priority": {
           "type": "integer",
           "default": 2,
           "minimum": 1,
           "maximum": 5,
-          "description": "Background service priority"
+          "description": "Background service priority",
+          "x-advanced": true
         }
       },
       "additionalProperties": false
@@ -161,7 +172,8 @@
               "uniqueItems": true,
               "maxItems": 20,
               "default": [],
-              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+              "x-advanced": true
             },
             "display_modes": {
               "type": "object",
@@ -180,7 +192,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "recent": {
                   "type": "boolean",
@@ -194,7 +207,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "upcoming": {
                   "type": "boolean",
@@ -208,7 +222,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -223,80 +238,92 @@
                   "default": 1.0,
                   "minimum": 0.01,
                   "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second"
+                  "description": "Scroll speed in pixels per second",
+                  "x-advanced": true
                 },
                 "scroll_delay": {
                   "type": "number",
                   "default": 0.01,
                   "minimum": 0.001,
                   "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)"
+                  "description": "Delay between scroll frames in seconds (lower = smoother)",
+                  "x-advanced": true
                 },
                 "gap_between_games": {
                   "type": "integer",
                   "default": 48,
                   "minimum": 8,
                   "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling"
+                  "description": "Gap in pixels between game cards when scrolling",
+                  "x-advanced": true
                 },
                 "show_league_separators": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show league icons between different leagues"
+                  "description": "Show league icons between different leagues",
+                  "x-advanced": true
                 },
                 "dynamic_duration": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Automatically calculate display duration based on content width"
+                  "description": "Automatically calculate display duration based on content width",
+                  "x-advanced": true
                 },
                 "game_card_width": {
                   "type": "integer",
                   "default": 128,
                   "minimum": 32,
                   "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
+                  "x-advanced": true
                 }
               }
             },
             "live_priority": {
               "type": "boolean",
               "default": true,
-              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available.",
+              "x-advanced": true
             },
             "live_game_duration": {
               "type": "integer",
               "default": 20,
               "minimum": 10,
               "maximum": 120,
-              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured.",
+              "x-advanced": true
             },
             "non_favorite_live_game_duration": {
               "type": "integer",
               "default": 0,
               "minimum": 0,
               "maximum": 120,
-              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+              "x-advanced": true
             },
             "recent_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each recent game before rotating to the next game"
+              "description": "Duration in seconds to display each recent game before rotating to the next game",
+              "x-advanced": true
             },
             "upcoming_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each upcoming game before rotating to the next game"
+              "description": "Duration in seconds to display each upcoming game before rotating to the next game",
+              "x-advanced": true
             },
             "live_update_interval": {
               "type": "integer",
               "default": 30,
               "minimum": 5,
               "maximum": 300,
-              "description": "How often to update live game data (seconds)"
+              "description": "How often to update live game data (seconds)",
+              "x-advanced": true
             },
             "celebration_enabled": {
               "type": "boolean",
@@ -308,19 +335,22 @@
               "default": 8,
               "minimum": 3,
               "maximum": 30,
-              "description": "How long the goal/win celebration stays on screen (seconds)"
+              "description": "How long the goal/win celebration stays on screen (seconds)",
+              "x-advanced": true
             },
             "celebrate_opponent_goals": {
               "type": "boolean",
               "default": false,
-              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)",
+              "x-advanced": true
             },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
               "minimum": 30,
               "maximum": 86400,
-              "description": "How often to fetch new data (seconds)"
+              "description": "How often to fetch new data (seconds)",
+              "x-advanced": true
             },
             "game_limits": {
               "type": "object",
@@ -385,7 +415,8 @@
                   "minimum": 1,
                   "maximum": 5,
                   "default": 2,
-                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+                  "x-advanced": true
                 }
               }
             },
@@ -397,20 +428,23 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for Premier League games"
+                  "description": "Enable dynamic duration for Premier League games",
+                  "x-advanced": true
                 },
                 "min_duration_seconds": {
                   "type": "number",
                   "minimum": 10,
                   "maximum": 300,
                   "default": 30,
-                  "description": "Minimum total duration in seconds for this mode, even if few games are available"
+                  "description": "Minimum total duration in seconds for this mode, even if few games are available",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for Premier League games"
+                  "description": "Max duration for Premier League games",
+                  "x-advanced": true
                 },
                 "modes": {
                   "type": "object",
@@ -423,13 +457,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Premier League live games"
+                          "description": "Enable dynamic duration for Premier League live games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Premier League live games"
+                          "description": "Max duration for Premier League live games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -439,13 +475,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Premier League recent games"
+                          "description": "Enable dynamic duration for Premier League recent games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Premier League recent games"
+                          "description": "Max duration for Premier League recent games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -455,13 +493,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Premier League upcoming games"
+                          "description": "Enable dynamic duration for Premier League upcoming games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Premier League upcoming games"
+                          "description": "Max duration for Premier League upcoming games",
+                          "x-advanced": true
                         }
                       }
                     }
@@ -482,7 +522,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "upcoming_mode_duration": {
                   "type": [
@@ -492,7 +533,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "live_mode_duration": {
                   "type": [
@@ -502,7 +544,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 }
               }
             }
@@ -538,7 +581,8 @@
               "uniqueItems": true,
               "maxItems": 20,
               "default": [],
-              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+              "x-advanced": true
             },
             "display_modes": {
               "type": "object",
@@ -557,7 +601,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "recent": {
                   "type": "boolean",
@@ -571,7 +616,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "upcoming": {
                   "type": "boolean",
@@ -585,7 +631,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -600,80 +647,92 @@
                   "default": 1.0,
                   "minimum": 0.01,
                   "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second"
+                  "description": "Scroll speed in pixels per second",
+                  "x-advanced": true
                 },
                 "scroll_delay": {
                   "type": "number",
                   "default": 0.01,
                   "minimum": 0.001,
                   "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)"
+                  "description": "Delay between scroll frames in seconds (lower = smoother)",
+                  "x-advanced": true
                 },
                 "gap_between_games": {
                   "type": "integer",
                   "default": 48,
                   "minimum": 8,
                   "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling"
+                  "description": "Gap in pixels between game cards when scrolling",
+                  "x-advanced": true
                 },
                 "show_league_separators": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show league icons between different leagues"
+                  "description": "Show league icons between different leagues",
+                  "x-advanced": true
                 },
                 "dynamic_duration": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Automatically calculate display duration based on content width"
+                  "description": "Automatically calculate display duration based on content width",
+                  "x-advanced": true
                 },
                 "game_card_width": {
                   "type": "integer",
                   "default": 128,
                   "minimum": 32,
                   "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
+                  "x-advanced": true
                 }
               }
             },
             "live_priority": {
               "type": "boolean",
               "default": true,
-              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available.",
+              "x-advanced": true
             },
             "live_game_duration": {
               "type": "integer",
               "default": 20,
               "minimum": 10,
               "maximum": 120,
-              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured.",
+              "x-advanced": true
             },
             "non_favorite_live_game_duration": {
               "type": "integer",
               "default": 0,
               "minimum": 0,
               "maximum": 120,
-              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+              "x-advanced": true
             },
             "recent_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each recent game before rotating to the next game"
+              "description": "Duration in seconds to display each recent game before rotating to the next game",
+              "x-advanced": true
             },
             "upcoming_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each upcoming game before rotating to the next game"
+              "description": "Duration in seconds to display each upcoming game before rotating to the next game",
+              "x-advanced": true
             },
             "live_update_interval": {
               "type": "integer",
               "default": 30,
               "minimum": 5,
               "maximum": 300,
-              "description": "How often to update live game data (seconds)"
+              "description": "How often to update live game data (seconds)",
+              "x-advanced": true
             },
             "celebration_enabled": {
               "type": "boolean",
@@ -685,19 +744,22 @@
               "default": 8,
               "minimum": 3,
               "maximum": 30,
-              "description": "How long the goal/win celebration stays on screen (seconds)"
+              "description": "How long the goal/win celebration stays on screen (seconds)",
+              "x-advanced": true
             },
             "celebrate_opponent_goals": {
               "type": "boolean",
               "default": false,
-              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)",
+              "x-advanced": true
             },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
               "minimum": 30,
               "maximum": 86400,
-              "description": "How often to fetch new data (seconds)"
+              "description": "How often to fetch new data (seconds)",
+              "x-advanced": true
             },
             "game_limits": {
               "type": "object",
@@ -762,7 +824,8 @@
                   "minimum": 1,
                   "maximum": 5,
                   "default": 2,
-                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+                  "x-advanced": true
                 }
               }
             },
@@ -774,20 +837,23 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for La Liga games (overrides global setting)"
+                  "description": "Enable dynamic duration for La Liga games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "min_duration_seconds": {
                   "type": "number",
                   "minimum": 10,
                   "maximum": 300,
                   "default": 30,
-                  "description": "Minimum total duration in seconds for this mode, even if few games are available"
+                  "description": "Minimum total duration in seconds for this mode, even if few games are available",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for La Liga games (overrides global setting)"
+                  "description": "Max duration for La Liga games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "modes": {
                   "type": "object",
@@ -800,13 +866,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for La Liga live games"
+                          "description": "Enable dynamic duration for La Liga live games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for La Liga live games"
+                          "description": "Max duration for La Liga live games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -816,13 +884,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for La Liga recent games"
+                          "description": "Enable dynamic duration for La Liga recent games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for La Liga recent games"
+                          "description": "Max duration for La Liga recent games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -832,13 +902,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for La Liga upcoming games"
+                          "description": "Enable dynamic duration for La Liga upcoming games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for La Liga upcoming games"
+                          "description": "Max duration for La Liga upcoming games",
+                          "x-advanced": true
                         }
                       }
                     }
@@ -859,7 +931,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "upcoming_mode_duration": {
                   "type": [
@@ -869,7 +942,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "live_mode_duration": {
                   "type": [
@@ -879,7 +953,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 }
               }
             }
@@ -915,7 +990,8 @@
               "uniqueItems": true,
               "maxItems": 20,
               "default": [],
-              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+              "x-advanced": true
             },
             "display_modes": {
               "type": "object",
@@ -934,7 +1010,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "recent": {
                   "type": "boolean",
@@ -948,7 +1025,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "upcoming": {
                   "type": "boolean",
@@ -962,7 +1040,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -977,80 +1056,92 @@
                   "default": 1.0,
                   "minimum": 0.01,
                   "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second"
+                  "description": "Scroll speed in pixels per second",
+                  "x-advanced": true
                 },
                 "scroll_delay": {
                   "type": "number",
                   "default": 0.01,
                   "minimum": 0.001,
                   "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)"
+                  "description": "Delay between scroll frames in seconds (lower = smoother)",
+                  "x-advanced": true
                 },
                 "gap_between_games": {
                   "type": "integer",
                   "default": 48,
                   "minimum": 8,
                   "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling"
+                  "description": "Gap in pixels between game cards when scrolling",
+                  "x-advanced": true
                 },
                 "show_league_separators": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show league icons between different leagues"
+                  "description": "Show league icons between different leagues",
+                  "x-advanced": true
                 },
                 "dynamic_duration": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Automatically calculate display duration based on content width"
+                  "description": "Automatically calculate display duration based on content width",
+                  "x-advanced": true
                 },
                 "game_card_width": {
                   "type": "integer",
                   "default": 128,
                   "minimum": 32,
                   "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
+                  "x-advanced": true
                 }
               }
             },
             "live_priority": {
               "type": "boolean",
               "default": true,
-              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available.",
+              "x-advanced": true
             },
             "live_game_duration": {
               "type": "integer",
               "default": 20,
               "minimum": 10,
               "maximum": 120,
-              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured.",
+              "x-advanced": true
             },
             "non_favorite_live_game_duration": {
               "type": "integer",
               "default": 0,
               "minimum": 0,
               "maximum": 120,
-              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+              "x-advanced": true
             },
             "recent_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each recent game before rotating to the next game"
+              "description": "Duration in seconds to display each recent game before rotating to the next game",
+              "x-advanced": true
             },
             "upcoming_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each upcoming game before rotating to the next game"
+              "description": "Duration in seconds to display each upcoming game before rotating to the next game",
+              "x-advanced": true
             },
             "live_update_interval": {
               "type": "integer",
               "default": 30,
               "minimum": 5,
               "maximum": 300,
-              "description": "How often to update live game data (seconds)"
+              "description": "How often to update live game data (seconds)",
+              "x-advanced": true
             },
             "celebration_enabled": {
               "type": "boolean",
@@ -1062,19 +1153,22 @@
               "default": 8,
               "minimum": 3,
               "maximum": 30,
-              "description": "How long the goal/win celebration stays on screen (seconds)"
+              "description": "How long the goal/win celebration stays on screen (seconds)",
+              "x-advanced": true
             },
             "celebrate_opponent_goals": {
               "type": "boolean",
               "default": false,
-              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)",
+              "x-advanced": true
             },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
               "minimum": 30,
               "maximum": 86400,
-              "description": "How often to fetch new data (seconds)"
+              "description": "How often to fetch new data (seconds)",
+              "x-advanced": true
             },
             "game_limits": {
               "type": "object",
@@ -1139,7 +1233,8 @@
                   "minimum": 1,
                   "maximum": 5,
                   "default": 2,
-                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+                  "x-advanced": true
                 }
               }
             },
@@ -1151,20 +1246,23 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for Bundesliga games (overrides global setting)"
+                  "description": "Enable dynamic duration for Bundesliga games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "min_duration_seconds": {
                   "type": "number",
                   "minimum": 10,
                   "maximum": 300,
                   "default": 30,
-                  "description": "Minimum total duration in seconds for this mode, even if few games are available"
+                  "description": "Minimum total duration in seconds for this mode, even if few games are available",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for Bundesliga games (overrides global setting)"
+                  "description": "Max duration for Bundesliga games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "modes": {
                   "type": "object",
@@ -1177,13 +1275,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Bundesliga live games"
+                          "description": "Enable dynamic duration for Bundesliga live games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Bundesliga live games"
+                          "description": "Max duration for Bundesliga live games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -1193,13 +1293,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Bundesliga recent games"
+                          "description": "Enable dynamic duration for Bundesliga recent games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Bundesliga recent games"
+                          "description": "Max duration for Bundesliga recent games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -1209,13 +1311,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Bundesliga upcoming games"
+                          "description": "Enable dynamic duration for Bundesliga upcoming games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Bundesliga upcoming games"
+                          "description": "Max duration for Bundesliga upcoming games",
+                          "x-advanced": true
                         }
                       }
                     }
@@ -1236,7 +1340,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "upcoming_mode_duration": {
                   "type": [
@@ -1246,7 +1351,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "live_mode_duration": {
                   "type": [
@@ -1256,7 +1362,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 }
               }
             }
@@ -1292,7 +1399,8 @@
               "uniqueItems": true,
               "maxItems": 20,
               "default": [],
-              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+              "x-advanced": true
             },
             "display_modes": {
               "type": "object",
@@ -1311,7 +1419,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "recent": {
                   "type": "boolean",
@@ -1325,7 +1434,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "upcoming": {
                   "type": "boolean",
@@ -1339,7 +1449,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -1354,80 +1465,92 @@
                   "default": 1.0,
                   "minimum": 0.01,
                   "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second"
+                  "description": "Scroll speed in pixels per second",
+                  "x-advanced": true
                 },
                 "scroll_delay": {
                   "type": "number",
                   "default": 0.01,
                   "minimum": 0.001,
                   "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)"
+                  "description": "Delay between scroll frames in seconds (lower = smoother)",
+                  "x-advanced": true
                 },
                 "gap_between_games": {
                   "type": "integer",
                   "default": 48,
                   "minimum": 8,
                   "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling"
+                  "description": "Gap in pixels between game cards when scrolling",
+                  "x-advanced": true
                 },
                 "show_league_separators": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show league icons between different leagues"
+                  "description": "Show league icons between different leagues",
+                  "x-advanced": true
                 },
                 "dynamic_duration": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Automatically calculate display duration based on content width"
+                  "description": "Automatically calculate display duration based on content width",
+                  "x-advanced": true
                 },
                 "game_card_width": {
                   "type": "integer",
                   "default": 128,
                   "minimum": 32,
                   "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
+                  "x-advanced": true
                 }
               }
             },
             "live_priority": {
               "type": "boolean",
               "default": true,
-              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available.",
+              "x-advanced": true
             },
             "live_game_duration": {
               "type": "integer",
               "default": 20,
               "minimum": 10,
               "maximum": 120,
-              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured.",
+              "x-advanced": true
             },
             "non_favorite_live_game_duration": {
               "type": "integer",
               "default": 0,
               "minimum": 0,
               "maximum": 120,
-              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+              "x-advanced": true
             },
             "recent_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each recent game before rotating to the next game"
+              "description": "Duration in seconds to display each recent game before rotating to the next game",
+              "x-advanced": true
             },
             "upcoming_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each upcoming game before rotating to the next game"
+              "description": "Duration in seconds to display each upcoming game before rotating to the next game",
+              "x-advanced": true
             },
             "live_update_interval": {
               "type": "integer",
               "default": 30,
               "minimum": 5,
               "maximum": 300,
-              "description": "How often to update live game data (seconds)"
+              "description": "How often to update live game data (seconds)",
+              "x-advanced": true
             },
             "celebration_enabled": {
               "type": "boolean",
@@ -1439,19 +1562,22 @@
               "default": 8,
               "minimum": 3,
               "maximum": 30,
-              "description": "How long the goal/win celebration stays on screen (seconds)"
+              "description": "How long the goal/win celebration stays on screen (seconds)",
+              "x-advanced": true
             },
             "celebrate_opponent_goals": {
               "type": "boolean",
               "default": false,
-              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)",
+              "x-advanced": true
             },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
               "minimum": 30,
               "maximum": 86400,
-              "description": "How often to fetch new data (seconds)"
+              "description": "How often to fetch new data (seconds)",
+              "x-advanced": true
             },
             "game_limits": {
               "type": "object",
@@ -1516,7 +1642,8 @@
                   "minimum": 1,
                   "maximum": 5,
                   "default": 2,
-                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+                  "x-advanced": true
                 }
               }
             },
@@ -1528,20 +1655,23 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for Serie A games (overrides global setting)"
+                  "description": "Enable dynamic duration for Serie A games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "min_duration_seconds": {
                   "type": "number",
                   "minimum": 10,
                   "maximum": 300,
                   "default": 30,
-                  "description": "Minimum total duration in seconds for this mode, even if few games are available"
+                  "description": "Minimum total duration in seconds for this mode, even if few games are available",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for Serie A games (overrides global setting)"
+                  "description": "Max duration for Serie A games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "modes": {
                   "type": "object",
@@ -1554,13 +1684,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Serie A live games"
+                          "description": "Enable dynamic duration for Serie A live games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Serie A live games"
+                          "description": "Max duration for Serie A live games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -1570,13 +1702,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Serie A recent games"
+                          "description": "Enable dynamic duration for Serie A recent games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Serie A recent games"
+                          "description": "Max duration for Serie A recent games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -1586,13 +1720,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Serie A upcoming games"
+                          "description": "Enable dynamic duration for Serie A upcoming games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Serie A upcoming games"
+                          "description": "Max duration for Serie A upcoming games",
+                          "x-advanced": true
                         }
                       }
                     }
@@ -1613,7 +1749,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "upcoming_mode_duration": {
                   "type": [
@@ -1623,7 +1760,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "live_mode_duration": {
                   "type": [
@@ -1633,7 +1771,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 }
               }
             }
@@ -1669,7 +1808,8 @@
               "uniqueItems": true,
               "maxItems": 20,
               "default": [],
-              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+              "x-advanced": true
             },
             "display_modes": {
               "type": "object",
@@ -1688,7 +1828,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "recent": {
                   "type": "boolean",
@@ -1702,7 +1843,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "upcoming": {
                   "type": "boolean",
@@ -1716,7 +1858,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -1731,80 +1874,92 @@
                   "default": 1.0,
                   "minimum": 0.01,
                   "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second"
+                  "description": "Scroll speed in pixels per second",
+                  "x-advanced": true
                 },
                 "scroll_delay": {
                   "type": "number",
                   "default": 0.01,
                   "minimum": 0.001,
                   "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)"
+                  "description": "Delay between scroll frames in seconds (lower = smoother)",
+                  "x-advanced": true
                 },
                 "gap_between_games": {
                   "type": "integer",
                   "default": 48,
                   "minimum": 8,
                   "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling"
+                  "description": "Gap in pixels between game cards when scrolling",
+                  "x-advanced": true
                 },
                 "show_league_separators": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show league icons between different leagues"
+                  "description": "Show league icons between different leagues",
+                  "x-advanced": true
                 },
                 "dynamic_duration": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Automatically calculate display duration based on content width"
+                  "description": "Automatically calculate display duration based on content width",
+                  "x-advanced": true
                 },
                 "game_card_width": {
                   "type": "integer",
                   "default": 128,
                   "minimum": 32,
                   "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
+                  "x-advanced": true
                 }
               }
             },
             "live_priority": {
               "type": "boolean",
               "default": true,
-              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available.",
+              "x-advanced": true
             },
             "live_game_duration": {
               "type": "integer",
               "default": 20,
               "minimum": 10,
               "maximum": 120,
-              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured.",
+              "x-advanced": true
             },
             "non_favorite_live_game_duration": {
               "type": "integer",
               "default": 0,
               "minimum": 0,
               "maximum": 120,
-              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+              "x-advanced": true
             },
             "recent_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each recent game before rotating to the next game"
+              "description": "Duration in seconds to display each recent game before rotating to the next game",
+              "x-advanced": true
             },
             "upcoming_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each upcoming game before rotating to the next game"
+              "description": "Duration in seconds to display each upcoming game before rotating to the next game",
+              "x-advanced": true
             },
             "live_update_interval": {
               "type": "integer",
               "default": 30,
               "minimum": 5,
               "maximum": 300,
-              "description": "How often to update live game data (seconds)"
+              "description": "How often to update live game data (seconds)",
+              "x-advanced": true
             },
             "celebration_enabled": {
               "type": "boolean",
@@ -1816,19 +1971,22 @@
               "default": 8,
               "minimum": 3,
               "maximum": 30,
-              "description": "How long the goal/win celebration stays on screen (seconds)"
+              "description": "How long the goal/win celebration stays on screen (seconds)",
+              "x-advanced": true
             },
             "celebrate_opponent_goals": {
               "type": "boolean",
               "default": false,
-              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)",
+              "x-advanced": true
             },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
               "minimum": 30,
               "maximum": 86400,
-              "description": "How often to fetch new data (seconds)"
+              "description": "How often to fetch new data (seconds)",
+              "x-advanced": true
             },
             "game_limits": {
               "type": "object",
@@ -1893,7 +2051,8 @@
                   "minimum": 1,
                   "maximum": 5,
                   "default": 2,
-                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+                  "x-advanced": true
                 }
               }
             },
@@ -1905,20 +2064,23 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for Ligue 1 games (overrides global setting)"
+                  "description": "Enable dynamic duration for Ligue 1 games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "min_duration_seconds": {
                   "type": "number",
                   "minimum": 10,
                   "maximum": 300,
                   "default": 30,
-                  "description": "Minimum total duration in seconds for this mode, even if few games are available"
+                  "description": "Minimum total duration in seconds for this mode, even if few games are available",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for Ligue 1 games (overrides global setting)"
+                  "description": "Max duration for Ligue 1 games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "modes": {
                   "type": "object",
@@ -1931,13 +2093,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Ligue 1 live games"
+                          "description": "Enable dynamic duration for Ligue 1 live games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Ligue 1 live games"
+                          "description": "Max duration for Ligue 1 live games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -1947,13 +2111,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Ligue 1 recent games"
+                          "description": "Enable dynamic duration for Ligue 1 recent games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Ligue 1 recent games"
+                          "description": "Max duration for Ligue 1 recent games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -1963,13 +2129,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Ligue 1 upcoming games"
+                          "description": "Enable dynamic duration for Ligue 1 upcoming games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Ligue 1 upcoming games"
+                          "description": "Max duration for Ligue 1 upcoming games",
+                          "x-advanced": true
                         }
                       }
                     }
@@ -1990,7 +2158,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "upcoming_mode_duration": {
                   "type": [
@@ -2000,7 +2169,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "live_mode_duration": {
                   "type": [
@@ -2010,7 +2180,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 }
               }
             }
@@ -2046,7 +2217,8 @@
               "uniqueItems": true,
               "maxItems": 20,
               "default": [],
-              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+              "x-advanced": true
             },
             "display_modes": {
               "type": "object",
@@ -2065,7 +2237,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "recent": {
                   "type": "boolean",
@@ -2079,7 +2252,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "upcoming": {
                   "type": "boolean",
@@ -2093,7 +2267,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -2108,80 +2283,92 @@
                   "default": 1.0,
                   "minimum": 0.01,
                   "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second"
+                  "description": "Scroll speed in pixels per second",
+                  "x-advanced": true
                 },
                 "scroll_delay": {
                   "type": "number",
                   "default": 0.01,
                   "minimum": 0.001,
                   "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)"
+                  "description": "Delay between scroll frames in seconds (lower = smoother)",
+                  "x-advanced": true
                 },
                 "gap_between_games": {
                   "type": "integer",
                   "default": 48,
                   "minimum": 8,
                   "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling"
+                  "description": "Gap in pixels between game cards when scrolling",
+                  "x-advanced": true
                 },
                 "show_league_separators": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show league icons between different leagues"
+                  "description": "Show league icons between different leagues",
+                  "x-advanced": true
                 },
                 "dynamic_duration": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Automatically calculate display duration based on content width"
+                  "description": "Automatically calculate display duration based on content width",
+                  "x-advanced": true
                 },
                 "game_card_width": {
                   "type": "integer",
                   "default": 128,
                   "minimum": 32,
                   "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
+                  "x-advanced": true
                 }
               }
             },
             "live_priority": {
               "type": "boolean",
               "default": true,
-              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available.",
+              "x-advanced": true
             },
             "live_game_duration": {
               "type": "integer",
               "default": 20,
               "minimum": 10,
               "maximum": 120,
-              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured.",
+              "x-advanced": true
             },
             "non_favorite_live_game_duration": {
               "type": "integer",
               "default": 0,
               "minimum": 0,
               "maximum": 120,
-              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+              "x-advanced": true
             },
             "recent_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each recent game before rotating to the next game"
+              "description": "Duration in seconds to display each recent game before rotating to the next game",
+              "x-advanced": true
             },
             "upcoming_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each upcoming game before rotating to the next game"
+              "description": "Duration in seconds to display each upcoming game before rotating to the next game",
+              "x-advanced": true
             },
             "live_update_interval": {
               "type": "integer",
               "default": 30,
               "minimum": 5,
               "maximum": 300,
-              "description": "How often to update live game data (seconds)"
+              "description": "How often to update live game data (seconds)",
+              "x-advanced": true
             },
             "celebration_enabled": {
               "type": "boolean",
@@ -2193,19 +2380,22 @@
               "default": 8,
               "minimum": 3,
               "maximum": 30,
-              "description": "How long the goal/win celebration stays on screen (seconds)"
+              "description": "How long the goal/win celebration stays on screen (seconds)",
+              "x-advanced": true
             },
             "celebrate_opponent_goals": {
               "type": "boolean",
               "default": false,
-              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)",
+              "x-advanced": true
             },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
               "minimum": 30,
               "maximum": 86400,
-              "description": "How often to fetch new data (seconds)"
+              "description": "How often to fetch new data (seconds)",
+              "x-advanced": true
             },
             "game_limits": {
               "type": "object",
@@ -2270,7 +2460,8 @@
                   "minimum": 1,
                   "maximum": 5,
                   "default": 2,
-                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+                  "x-advanced": true
                 }
               }
             },
@@ -2282,20 +2473,23 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for MLS games (overrides global setting)"
+                  "description": "Enable dynamic duration for MLS games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "min_duration_seconds": {
                   "type": "number",
                   "minimum": 10,
                   "maximum": 300,
                   "default": 30,
-                  "description": "Minimum total duration in seconds for this mode, even if few games are available"
+                  "description": "Minimum total duration in seconds for this mode, even if few games are available",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for MLS games (overrides global setting)"
+                  "description": "Max duration for MLS games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "modes": {
                   "type": "object",
@@ -2308,13 +2502,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for MLS live games"
+                          "description": "Enable dynamic duration for MLS live games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for MLS live games"
+                          "description": "Max duration for MLS live games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -2324,13 +2520,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for MLS recent games"
+                          "description": "Enable dynamic duration for MLS recent games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for MLS recent games"
+                          "description": "Max duration for MLS recent games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -2340,13 +2538,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for MLS upcoming games"
+                          "description": "Enable dynamic duration for MLS upcoming games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for MLS upcoming games"
+                          "description": "Max duration for MLS upcoming games",
+                          "x-advanced": true
                         }
                       }
                     }
@@ -2367,7 +2567,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "upcoming_mode_duration": {
                   "type": [
@@ -2377,7 +2578,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "live_mode_duration": {
                   "type": [
@@ -2387,7 +2589,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 }
               }
             }
@@ -2423,7 +2626,8 @@
               "uniqueItems": true,
               "maxItems": 20,
               "default": [],
-              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+              "x-advanced": true
             },
             "display_modes": {
               "type": "object",
@@ -2442,7 +2646,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "recent": {
                   "type": "boolean",
@@ -2456,7 +2661,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "upcoming": {
                   "type": "boolean",
@@ -2470,7 +2676,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -2485,80 +2692,92 @@
                   "default": 1.0,
                   "minimum": 0.01,
                   "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second"
+                  "description": "Scroll speed in pixels per second",
+                  "x-advanced": true
                 },
                 "scroll_delay": {
                   "type": "number",
                   "default": 0.01,
                   "minimum": 0.001,
                   "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)"
+                  "description": "Delay between scroll frames in seconds (lower = smoother)",
+                  "x-advanced": true
                 },
                 "gap_between_games": {
                   "type": "integer",
                   "default": 48,
                   "minimum": 8,
                   "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling"
+                  "description": "Gap in pixels between game cards when scrolling",
+                  "x-advanced": true
                 },
                 "show_league_separators": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show league icons between different leagues"
+                  "description": "Show league icons between different leagues",
+                  "x-advanced": true
                 },
                 "dynamic_duration": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Automatically calculate display duration based on content width"
+                  "description": "Automatically calculate display duration based on content width",
+                  "x-advanced": true
                 },
                 "game_card_width": {
                   "type": "integer",
                   "default": 128,
                   "minimum": 32,
                   "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
+                  "x-advanced": true
                 }
               }
             },
             "live_priority": {
               "type": "boolean",
               "default": true,
-              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available.",
+              "x-advanced": true
             },
             "live_game_duration": {
               "type": "integer",
               "default": 20,
               "minimum": 10,
               "maximum": 120,
-              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured.",
+              "x-advanced": true
             },
             "non_favorite_live_game_duration": {
               "type": "integer",
               "default": 0,
               "minimum": 0,
               "maximum": 120,
-              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+              "x-advanced": true
             },
             "recent_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each recent game before rotating to the next game"
+              "description": "Duration in seconds to display each recent game before rotating to the next game",
+              "x-advanced": true
             },
             "upcoming_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each upcoming game before rotating to the next game"
+              "description": "Duration in seconds to display each upcoming game before rotating to the next game",
+              "x-advanced": true
             },
             "live_update_interval": {
               "type": "integer",
               "default": 30,
               "minimum": 5,
               "maximum": 300,
-              "description": "How often to update live game data (seconds)"
+              "description": "How often to update live game data (seconds)",
+              "x-advanced": true
             },
             "celebration_enabled": {
               "type": "boolean",
@@ -2570,19 +2789,22 @@
               "default": 8,
               "minimum": 3,
               "maximum": 30,
-              "description": "How long the goal/win celebration stays on screen (seconds)"
+              "description": "How long the goal/win celebration stays on screen (seconds)",
+              "x-advanced": true
             },
             "celebrate_opponent_goals": {
               "type": "boolean",
               "default": false,
-              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)",
+              "x-advanced": true
             },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
               "minimum": 30,
               "maximum": 86400,
-              "description": "How often to fetch new data (seconds)"
+              "description": "How often to fetch new data (seconds)",
+              "x-advanced": true
             },
             "game_limits": {
               "type": "object",
@@ -2647,7 +2869,8 @@
                   "minimum": 1,
                   "maximum": 5,
                   "default": 2,
-                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+                  "x-advanced": true
                 }
               }
             },
@@ -2659,20 +2882,23 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for Champions League games (overrides global setting)"
+                  "description": "Enable dynamic duration for Champions League games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "min_duration_seconds": {
                   "type": "number",
                   "minimum": 10,
                   "maximum": 300,
                   "default": 30,
-                  "description": "Minimum total duration in seconds for this mode, even if few games are available"
+                  "description": "Minimum total duration in seconds for this mode, even if few games are available",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for Champions League games (overrides global setting)"
+                  "description": "Max duration for Champions League games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "modes": {
                   "type": "object",
@@ -2685,13 +2911,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Champions League live games"
+                          "description": "Enable dynamic duration for Champions League live games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Champions League live games"
+                          "description": "Max duration for Champions League live games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -2701,13 +2929,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Champions League recent games"
+                          "description": "Enable dynamic duration for Champions League recent games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Champions League recent games"
+                          "description": "Max duration for Champions League recent games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -2717,13 +2947,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Champions League upcoming games"
+                          "description": "Enable dynamic duration for Champions League upcoming games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Champions League upcoming games"
+                          "description": "Max duration for Champions League upcoming games",
+                          "x-advanced": true
                         }
                       }
                     }
@@ -2744,7 +2976,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "upcoming_mode_duration": {
                   "type": [
@@ -2754,7 +2987,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "live_mode_duration": {
                   "type": [
@@ -2764,7 +2998,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 }
               }
             }
@@ -2800,7 +3035,8 @@
               "uniqueItems": true,
               "maxItems": 20,
               "default": [],
-              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+              "x-advanced": true
             },
             "display_modes": {
               "type": "object",
@@ -2819,7 +3055,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "recent": {
                   "type": "boolean",
@@ -2833,7 +3070,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "upcoming": {
                   "type": "boolean",
@@ -2847,7 +3085,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -2862,80 +3101,92 @@
                   "default": 1.0,
                   "minimum": 0.01,
                   "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second"
+                  "description": "Scroll speed in pixels per second",
+                  "x-advanced": true
                 },
                 "scroll_delay": {
                   "type": "number",
                   "default": 0.01,
                   "minimum": 0.001,
                   "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)"
+                  "description": "Delay between scroll frames in seconds (lower = smoother)",
+                  "x-advanced": true
                 },
                 "gap_between_games": {
                   "type": "integer",
                   "default": 48,
                   "minimum": 8,
                   "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling"
+                  "description": "Gap in pixels between game cards when scrolling",
+                  "x-advanced": true
                 },
                 "show_league_separators": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show league icons between different leagues"
+                  "description": "Show league icons between different leagues",
+                  "x-advanced": true
                 },
                 "dynamic_duration": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Automatically calculate display duration based on content width"
+                  "description": "Automatically calculate display duration based on content width",
+                  "x-advanced": true
                 },
                 "game_card_width": {
                   "type": "integer",
                   "default": 128,
                   "minimum": 32,
                   "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
+                  "x-advanced": true
                 }
               }
             },
             "live_priority": {
               "type": "boolean",
               "default": true,
-              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available.",
+              "x-advanced": true
             },
             "live_game_duration": {
               "type": "integer",
               "default": 20,
               "minimum": 10,
               "maximum": 120,
-              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured.",
+              "x-advanced": true
             },
             "non_favorite_live_game_duration": {
               "type": "integer",
               "default": 0,
               "minimum": 0,
               "maximum": 120,
-              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+              "x-advanced": true
             },
             "recent_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each recent game before rotating to the next game"
+              "description": "Duration in seconds to display each recent game before rotating to the next game",
+              "x-advanced": true
             },
             "upcoming_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each upcoming game before rotating to the next game"
+              "description": "Duration in seconds to display each upcoming game before rotating to the next game",
+              "x-advanced": true
             },
             "live_update_interval": {
               "type": "integer",
               "default": 30,
               "minimum": 5,
               "maximum": 300,
-              "description": "How often to update live game data (seconds)"
+              "description": "How often to update live game data (seconds)",
+              "x-advanced": true
             },
             "celebration_enabled": {
               "type": "boolean",
@@ -2947,19 +3198,22 @@
               "default": 8,
               "minimum": 3,
               "maximum": 30,
-              "description": "How long the goal/win celebration stays on screen (seconds)"
+              "description": "How long the goal/win celebration stays on screen (seconds)",
+              "x-advanced": true
             },
             "celebrate_opponent_goals": {
               "type": "boolean",
               "default": false,
-              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)",
+              "x-advanced": true
             },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
               "minimum": 30,
               "maximum": 86400,
-              "description": "How often to fetch new data (seconds)"
+              "description": "How often to fetch new data (seconds)",
+              "x-advanced": true
             },
             "game_limits": {
               "type": "object",
@@ -3024,7 +3278,8 @@
                   "minimum": 1,
                   "maximum": 5,
                   "default": 2,
-                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+                  "x-advanced": true
                 }
               }
             },
@@ -3036,20 +3291,23 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for Europa League games (overrides global setting)"
+                  "description": "Enable dynamic duration for Europa League games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "min_duration_seconds": {
                   "type": "number",
                   "minimum": 10,
                   "maximum": 300,
                   "default": 30,
-                  "description": "Minimum total duration in seconds for this mode, even if few games are available"
+                  "description": "Minimum total duration in seconds for this mode, even if few games are available",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for Europa League games (overrides global setting)"
+                  "description": "Max duration for Europa League games (overrides global setting)",
+                  "x-advanced": true
                 },
                 "modes": {
                   "type": "object",
@@ -3062,13 +3320,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Europa League live games"
+                          "description": "Enable dynamic duration for Europa League live games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Europa League live games"
+                          "description": "Max duration for Europa League live games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -3078,13 +3338,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Europa League recent games"
+                          "description": "Enable dynamic duration for Europa League recent games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Europa League recent games"
+                          "description": "Max duration for Europa League recent games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -3094,13 +3356,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Europa League upcoming games"
+                          "description": "Enable dynamic duration for Europa League upcoming games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Europa League upcoming games"
+                          "description": "Max duration for Europa League upcoming games",
+                          "x-advanced": true
                         }
                       }
                     }
@@ -3121,7 +3385,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "upcoming_mode_duration": {
                   "type": [
@@ -3131,7 +3396,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "live_mode_duration": {
                   "type": [
@@ -3141,7 +3407,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 }
               }
             }
@@ -3177,7 +3444,8 @@
               "uniqueItems": true,
               "maxItems": 20,
               "default": [],
-              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+              "x-advanced": true
             },
             "display_modes": {
               "type": "object",
@@ -3196,7 +3464,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "recent": {
                   "type": "boolean",
@@ -3210,7 +3479,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "upcoming": {
                   "type": "boolean",
@@ -3224,7 +3494,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -3239,80 +3510,92 @@
                   "default": 1.0,
                   "minimum": 0.01,
                   "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second"
+                  "description": "Scroll speed in pixels per second",
+                  "x-advanced": true
                 },
                 "scroll_delay": {
                   "type": "number",
                   "default": 0.01,
                   "minimum": 0.001,
                   "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)"
+                  "description": "Delay between scroll frames in seconds (lower = smoother)",
+                  "x-advanced": true
                 },
                 "gap_between_games": {
                   "type": "integer",
                   "default": 48,
                   "minimum": 8,
                   "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling"
+                  "description": "Gap in pixels between game cards when scrolling",
+                  "x-advanced": true
                 },
                 "show_league_separators": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show league icons between different leagues"
+                  "description": "Show league icons between different leagues",
+                  "x-advanced": true
                 },
                 "dynamic_duration": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Automatically calculate display duration based on content width"
+                  "description": "Automatically calculate display duration based on content width",
+                  "x-advanced": true
                 },
                 "game_card_width": {
                   "type": "integer",
                   "default": 128,
                   "minimum": 32,
                   "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
+                  "x-advanced": true
                 }
               }
             },
             "live_priority": {
               "type": "boolean",
               "default": true,
-              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available.",
+              "x-advanced": true
             },
             "live_game_duration": {
               "type": "integer",
               "default": 20,
               "minimum": 10,
               "maximum": 120,
-              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured.",
+              "x-advanced": true
             },
             "non_favorite_live_game_duration": {
               "type": "integer",
               "default": 0,
               "minimum": 0,
               "maximum": 120,
-              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+              "x-advanced": true
             },
             "recent_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each recent game before rotating to the next game"
+              "description": "Duration in seconds to display each recent game before rotating to the next game",
+              "x-advanced": true
             },
             "upcoming_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each upcoming game before rotating to the next game"
+              "description": "Duration in seconds to display each upcoming game before rotating to the next game",
+              "x-advanced": true
             },
             "live_update_interval": {
               "type": "integer",
               "default": 30,
               "minimum": 5,
               "maximum": 300,
-              "description": "How often to update live game data (seconds)"
+              "description": "How often to update live game data (seconds)",
+              "x-advanced": true
             },
             "celebration_enabled": {
               "type": "boolean",
@@ -3324,19 +3607,22 @@
               "default": 8,
               "minimum": 3,
               "maximum": 30,
-              "description": "How long the goal/win celebration stays on screen (seconds)"
+              "description": "How long the goal/win celebration stays on screen (seconds)",
+              "x-advanced": true
             },
             "celebrate_opponent_goals": {
               "type": "boolean",
               "default": false,
-              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)",
+              "x-advanced": true
             },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
               "minimum": 30,
               "maximum": 86400,
-              "description": "How often to fetch new data (seconds)"
+              "description": "How often to fetch new data (seconds)",
+              "x-advanced": true
             },
             "game_limits": {
               "type": "object",
@@ -3401,7 +3687,8 @@
                   "minimum": 1,
                   "maximum": 5,
                   "default": 2,
-                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+                  "x-advanced": true
                 }
               }
             },
@@ -3413,20 +3700,23 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for Liga Portugal games"
+                  "description": "Enable dynamic duration for Liga Portugal games",
+                  "x-advanced": true
                 },
                 "min_duration_seconds": {
                   "type": "number",
                   "minimum": 10,
                   "maximum": 300,
                   "default": 30,
-                  "description": "Minimum total duration in seconds for this mode, even if few games are available"
+                  "description": "Minimum total duration in seconds for this mode, even if few games are available",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for Liga Portugal games"
+                  "description": "Max duration for Liga Portugal games",
+                  "x-advanced": true
                 },
                 "modes": {
                   "type": "object",
@@ -3439,13 +3729,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Liga Portugal live games"
+                          "description": "Enable dynamic duration for Liga Portugal live games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Liga Portugal live games"
+                          "description": "Max duration for Liga Portugal live games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -3455,13 +3747,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Liga Portugal recent games"
+                          "description": "Enable dynamic duration for Liga Portugal recent games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Liga Portugal recent games"
+                          "description": "Max duration for Liga Portugal recent games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -3471,13 +3765,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for Liga Portugal upcoming games"
+                          "description": "Enable dynamic duration for Liga Portugal upcoming games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for Liga Portugal upcoming games"
+                          "description": "Max duration for Liga Portugal upcoming games",
+                          "x-advanced": true
                         }
                       }
                     }
@@ -3498,7 +3794,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "upcoming_mode_duration": {
                   "type": [
@@ -3508,7 +3805,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "live_mode_duration": {
                   "type": [
@@ -3518,7 +3816,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 }
               }
             }
@@ -3554,7 +3853,8 @@
               "uniqueItems": true,
               "maxItems": 20,
               "default": [],
-              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+              "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+              "x-advanced": true
             },
             "display_modes": {
               "type": "object",
@@ -3573,7 +3873,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "recent": {
                   "type": "boolean",
@@ -3587,7 +3888,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 },
                 "upcoming": {
                   "type": "boolean",
@@ -3601,7 +3903,8 @@
                     "scroll"
                   ],
                   "default": "switch",
-                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+                  "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -3616,80 +3919,92 @@
                   "default": 1.0,
                   "minimum": 0.01,
                   "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second"
+                  "description": "Scroll speed in pixels per second",
+                  "x-advanced": true
                 },
                 "scroll_delay": {
                   "type": "number",
                   "default": 0.01,
                   "minimum": 0.001,
                   "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)"
+                  "description": "Delay between scroll frames in seconds (lower = smoother)",
+                  "x-advanced": true
                 },
                 "gap_between_games": {
                   "type": "integer",
                   "default": 48,
                   "minimum": 8,
                   "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling"
+                  "description": "Gap in pixels between game cards when scrolling",
+                  "x-advanced": true
                 },
                 "show_league_separators": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Show league icons between different leagues"
+                  "description": "Show league icons between different leagues",
+                  "x-advanced": true
                 },
                 "dynamic_duration": {
                   "type": "boolean",
                   "default": true,
-                  "description": "Automatically calculate display duration based on content width"
+                  "description": "Automatically calculate display duration based on content width",
+                  "x-advanced": true
                 },
                 "game_card_width": {
                   "type": "integer",
                   "default": 128,
                   "minimum": 32,
                   "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
+                  "x-advanced": true
                 }
               }
             },
             "live_priority": {
               "type": "boolean",
               "default": true,
-              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+              "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available.",
+              "x-advanced": true
             },
             "live_game_duration": {
               "type": "integer",
               "default": 20,
               "minimum": 10,
               "maximum": 120,
-              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
+              "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured.",
+              "x-advanced": true
             },
             "non_favorite_live_game_duration": {
               "type": "integer",
               "default": 0,
               "minimum": 0,
               "maximum": 120,
-              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+              "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+              "x-advanced": true
             },
             "recent_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each recent game before rotating to the next game"
+              "description": "Duration in seconds to display each recent game before rotating to the next game",
+              "x-advanced": true
             },
             "upcoming_game_duration": {
               "type": "integer",
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Duration in seconds to display each upcoming game before rotating to the next game"
+              "description": "Duration in seconds to display each upcoming game before rotating to the next game",
+              "x-advanced": true
             },
             "live_update_interval": {
               "type": "integer",
               "default": 30,
               "minimum": 5,
               "maximum": 300,
-              "description": "How often to update live game data (seconds)"
+              "description": "How often to update live game data (seconds)",
+              "x-advanced": true
             },
             "celebration_enabled": {
               "type": "boolean",
@@ -3701,19 +4016,22 @@
               "default": 8,
               "minimum": 3,
               "maximum": 30,
-              "description": "How long the goal/win celebration stays on screen (seconds)"
+              "description": "How long the goal/win celebration stays on screen (seconds)",
+              "x-advanced": true
             },
             "celebrate_opponent_goals": {
               "type": "boolean",
               "default": false,
-              "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+              "description": "Also celebrate when the opponent scores, not just favorites (off by default)",
+              "x-advanced": true
             },
             "update_interval_seconds": {
               "type": "integer",
               "default": 3600,
               "minimum": 30,
               "maximum": 86400,
-              "description": "How often to fetch new data (seconds)"
+              "description": "How often to fetch new data (seconds)",
+              "x-advanced": true
             },
             "game_limits": {
               "type": "object",
@@ -3778,7 +4096,8 @@
                   "minimum": 1,
                   "maximum": 5,
                   "default": 2,
-                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+                  "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+                  "x-advanced": true
                 }
               }
             },
@@ -3790,20 +4109,23 @@
                 "enabled": {
                   "type": "boolean",
                   "default": false,
-                  "description": "Enable dynamic duration for FIFA World Cup games"
+                  "description": "Enable dynamic duration for FIFA World Cup games",
+                  "x-advanced": true
                 },
                 "min_duration_seconds": {
                   "type": "number",
                   "minimum": 10,
                   "maximum": 300,
                   "default": 30,
-                  "description": "Minimum total duration in seconds for this mode, even if few games are available"
+                  "description": "Minimum total duration in seconds for this mode, even if few games are available",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "number",
                   "minimum": 60,
                   "maximum": 600,
-                  "description": "Max duration for FIFA World Cup games"
+                  "description": "Max duration for FIFA World Cup games",
+                  "x-advanced": true
                 },
                 "modes": {
                   "type": "object",
@@ -3816,13 +4138,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for FIFA World Cup live games"
+                          "description": "Enable dynamic duration for FIFA World Cup live games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for FIFA World Cup live games"
+                          "description": "Max duration for FIFA World Cup live games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -3832,13 +4156,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for FIFA World Cup recent games"
+                          "description": "Enable dynamic duration for FIFA World Cup recent games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for FIFA World Cup recent games"
+                          "description": "Max duration for FIFA World Cup recent games",
+                          "x-advanced": true
                         }
                       }
                     },
@@ -3848,13 +4174,15 @@
                         "enabled": {
                           "type": "boolean",
                           "default": false,
-                          "description": "Enable dynamic duration for FIFA World Cup upcoming games"
+                          "description": "Enable dynamic duration for FIFA World Cup upcoming games",
+                          "x-advanced": true
                         },
                         "max_duration_seconds": {
                           "type": "number",
                           "minimum": 60,
                           "maximum": 600,
-                          "description": "Max duration for FIFA World Cup upcoming games"
+                          "description": "Max duration for FIFA World Cup upcoming games",
+                          "x-advanced": true
                         }
                       }
                     }
@@ -3875,7 +4203,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "upcoming_mode_duration": {
                   "type": [
@@ -3885,7 +4214,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 },
                 "live_mode_duration": {
                   "type": [
@@ -3895,7 +4225,8 @@
                   "default": null,
                   "minimum": 10,
                   "maximum": 600,
-                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation)."
+                  "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation).",
+                  "x-advanced": true
                 }
               }
             }
@@ -3968,12 +4299,14 @@
             "uniqueItems": true,
             "maxItems": 20,
             "default": [],
-            "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live."
+            "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+            "x-advanced": true
           },
           "live_priority": {
             "type": "boolean",
             "default": false,
-            "description": "Give live games from this league priority over other modes"
+            "description": "Give live games from this league priority over other modes",
+            "x-advanced": true
           },
           "display_modes": {
             "type": "object",
@@ -3992,7 +4325,8 @@
                   "scroll"
                 ],
                 "default": "switch",
-                "description": "Display mode for live games"
+                "description": "Display mode for live games",
+                "x-advanced": true
               },
               "recent": {
                 "type": "boolean",
@@ -4006,7 +4340,8 @@
                   "scroll"
                 ],
                 "default": "switch",
-                "description": "Display mode for recent games"
+                "description": "Display mode for recent games",
+                "x-advanced": true
               },
               "upcoming": {
                 "type": "boolean",
@@ -4020,7 +4355,8 @@
                   "scroll"
                 ],
                 "default": "switch",
-                "description": "Display mode for upcoming games"
+                "description": "Display mode for upcoming games",
+                "x-advanced": true
               }
             },
             "additionalProperties": false
@@ -4030,28 +4366,32 @@
             "default": 20,
             "minimum": 10,
             "maximum": 120,
-            "description": "Duration in seconds to display each live game"
+            "description": "Duration in seconds to display each live game",
+            "x-advanced": true
           },
           "non_favorite_live_game_duration": {
             "type": "integer",
             "default": 0,
             "minimum": 0,
             "maximum": 120,
-            "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
+            "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change).",
+            "x-advanced": true
           },
           "recent_game_duration": {
             "type": "integer",
             "default": 15,
             "minimum": 5,
             "maximum": 60,
-            "description": "Duration in seconds to display each recent game"
+            "description": "Duration in seconds to display each recent game",
+            "x-advanced": true
           },
           "upcoming_game_duration": {
             "type": "integer",
             "default": 15,
             "minimum": 5,
             "maximum": 60,
-            "description": "Duration in seconds to display each upcoming game"
+            "description": "Duration in seconds to display each upcoming game",
+            "x-advanced": true
           },
           "game_limits": {
             "type": "object",
@@ -4095,7 +4435,8 @@
                 "minimum": 1,
                 "maximum": 5,
                 "default": 2,
-                "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+                "description": "How many turns your favorite team's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation.",
+                "x-advanced": true
               }
             },
             "additionalProperties": false
@@ -4108,20 +4449,23 @@
               "enabled": {
                 "type": "boolean",
                 "default": false,
-                "description": "Enable dynamic duration for this league"
+                "description": "Enable dynamic duration for this league",
+                "x-advanced": true
               },
               "min_duration_seconds": {
                 "type": "number",
                 "minimum": 10,
                 "maximum": 300,
                 "default": 30,
-                "description": "Minimum total duration in seconds"
+                "description": "Minimum total duration in seconds",
+                "x-advanced": true
               },
               "max_duration_seconds": {
                 "type": "number",
                 "minimum": 60,
                 "maximum": 600,
-                "description": "Maximum total duration in seconds"
+                "description": "Maximum total duration in seconds",
+                "x-advanced": true
               },
               "modes": {
                 "type": "object",
@@ -4134,17 +4478,20 @@
                       "enabled": {
                         "type": "boolean",
                         "default": false,
-                        "description": "Enable dynamic duration for live games"
+                        "description": "Enable dynamic duration for live games",
+                        "x-advanced": true
                       },
                       "min_duration_seconds": {
                         "type": "number",
                         "minimum": 10,
-                        "maximum": 300
+                        "maximum": 300,
+                        "x-advanced": true
                       },
                       "max_duration_seconds": {
                         "type": "number",
                         "minimum": 60,
-                        "maximum": 600
+                        "maximum": 600,
+                        "x-advanced": true
                       }
                     },
                     "additionalProperties": false
@@ -4155,17 +4502,20 @@
                       "enabled": {
                         "type": "boolean",
                         "default": false,
-                        "description": "Enable dynamic duration for recent games"
+                        "description": "Enable dynamic duration for recent games",
+                        "x-advanced": true
                       },
                       "min_duration_seconds": {
                         "type": "number",
                         "minimum": 10,
-                        "maximum": 300
+                        "maximum": 300,
+                        "x-advanced": true
                       },
                       "max_duration_seconds": {
                         "type": "number",
                         "minimum": 60,
-                        "maximum": 600
+                        "maximum": 600,
+                        "x-advanced": true
                       }
                     },
                     "additionalProperties": false
@@ -4176,17 +4526,20 @@
                       "enabled": {
                         "type": "boolean",
                         "default": false,
-                        "description": "Enable dynamic duration for upcoming games"
+                        "description": "Enable dynamic duration for upcoming games",
+                        "x-advanced": true
                       },
                       "min_duration_seconds": {
                         "type": "number",
                         "minimum": 10,
-                        "maximum": 300
+                        "maximum": 300,
+                        "x-advanced": true
                       },
                       "max_duration_seconds": {
                         "type": "number",
                         "minimum": 60,
-                        "maximum": 600
+                        "maximum": 600,
+                        "x-advanced": true
                       }
                     },
                     "additionalProperties": false

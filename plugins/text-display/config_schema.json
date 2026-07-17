@@ -18,6 +18,7 @@
     },
     "update_interval": {
       "type": "integer",
+      "x-advanced": true,
       "default": 60,
       "minimum": 1,
       "description": "How often to refresh the text display in seconds"
@@ -59,6 +60,7 @@
     },
     "scroll_delay": {
       "type": "number",
+      "x-advanced": true,
       "default": 0.01,
       "minimum": 0.001,
       "maximum": 0.1,
@@ -66,6 +68,7 @@
     },
     "target_fps": {
       "type": "number",
+      "x-advanced": true,
       "default": 120,
       "minimum": 30,
       "maximum": 240,
@@ -73,11 +76,13 @@
     },
     "scroll_loop": {
       "type": "boolean",
+      "x-advanced": true,
       "default": true,
       "description": "If true, text loops continuously. If false, scrolls once and stops (one-shot mode)."
     },
     "scroll_gap_width": {
       "type": "number",
+      "x-advanced": true,
       "default": 32,
       "minimum": 0,
       "description": "Gap width in pixels between scroll loops (space between end and start of text when looping)"

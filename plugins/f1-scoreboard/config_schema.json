@@ -19,6 +19,7 @@
       "description": "Duration in seconds for the display controller to show each plugin mode before rotating"
     },
     "update_interval": {
+      "x-advanced": true,
       "type": "integer",
       "title": "Update Interval",
       "default": 3600,
@@ -50,6 +51,7 @@
           "description": "Show driver standings display mode"
         },
         "top_n": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Top Drivers",
           "default": 10,
@@ -58,6 +60,7 @@
           "description": "Number of top drivers to show in standings"
         },
         "always_show_favorite": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Always Show Favorite",
           "default": true,
@@ -79,6 +82,7 @@
           "description": "Show constructor standings display mode"
         },
         "top_n": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Top Constructors",
           "default": 10,
@@ -87,12 +91,14 @@
           "description": "Number of top constructors to show"
         },
         "always_show_favorite": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Always Show Favorite",
           "default": true,
           "description": "Always include favorite team even if outside top N"
         },
         "show_driver_split": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Driver Points Split",
           "default": true,
@@ -114,6 +120,7 @@
           "description": "Show recent race results display mode"
         },
         "number_of_races": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Number of Races",
           "default": 3,
@@ -122,6 +129,7 @@
           "description": "Number of recent races to show"
         },
         "top_finishers": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Top Finishers",
           "default": 3,
@@ -130,30 +138,35 @@
           "description": "Number of top finishers to display per race"
         },
         "always_show_favorite": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Always Show Favorite",
           "default": true,
           "description": "Always include favorite driver in results even if outside top N finishers"
         },
         "show_position_delta": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Position Delta",
           "default": true,
           "description": "Show positions gained (+N green) or lost (-N red) compared to grid starting position"
         },
         "show_dnf_status": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show DNF/Retirement",
           "default": true,
           "description": "Show RET for retired drivers or +NL for lapped drivers instead of gap time"
         },
         "show_points_haul": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Points Haul Card",
           "default": true,
           "description": "Show a bar-chart card after each race result displaying championship points scored per driver"
         },
         "points_haul_drivers": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Points Haul Drivers",
           "default": 5,
@@ -162,18 +175,21 @@
           "description": "Number of point-scoring drivers to show on the points haul bar chart (max 10 drivers score in F1)"
         },
         "show_winners_summary": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Winners Summary Card",
           "default": true,
           "description": "Show a compact summary card listing the winner of each recent race (team accent color, race name, winner code)"
         },
         "show_gap_chart": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Race Gap Chart",
           "default": true,
           "description": "Show a horizontal bar chart visualizing each finisher's time gap from the race winner using team-colored bars"
         },
         "gap_chart_drivers": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Gap Chart Drivers",
           "default": 5,
@@ -197,18 +213,21 @@
           "description": "Show upcoming race display mode"
         },
         "show_session_times": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Session Times",
           "default": true,
           "description": "Show qualifying and sprint session times in addition to race time"
         },
         "countdown_enabled": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Countdown Timer",
           "default": true,
           "description": "Show live countdown timer to next session"
         },
         "show_circuit_info": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Circuit Stats Card",
           "default": true,
@@ -230,30 +249,35 @@
           "description": "Show qualifying results display mode"
         },
         "show_q1": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Q1",
           "default": true,
           "description": "Show Q1 results (all 20 drivers, bottom 5 eliminated)"
         },
         "show_q2": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Q2",
           "default": true,
           "description": "Show Q2 results (top 15 drivers, bottom 5 eliminated)"
         },
         "show_q3": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Q3",
           "default": true,
           "description": "Show Q3 results (top 10 drivers, determines pole position)"
         },
         "show_gaps": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Gaps",
           "default": true,
           "description": "Show time differential to session leader"
         },
         "show_team_duel": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Team H2H Card",
           "default": true,
@@ -286,6 +310,7 @@
           "description": "Which free practice sessions to display"
         },
         "top_n": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Top Drivers",
           "default": 10,
@@ -309,6 +334,7 @@
           "description": "Show sprint race results display mode"
         },
         "top_finishers": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Top Finishers",
           "default": 10,
@@ -332,24 +358,28 @@
           "description": "Show race calendar display mode"
         },
         "show_practice": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Practice",
           "default": false,
           "description": "Include practice sessions in calendar"
         },
         "show_qualifying": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Qualifying",
           "default": true,
           "description": "Include qualifying sessions in calendar"
         },
         "show_sprint": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Show Sprint",
           "default": true,
           "description": "Include sprint sessions in calendar"
         },
         "max_events": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Max Events",
           "default": 5,
@@ -367,12 +397,14 @@
       "description": "Allow scrolling modes to run until their scroll cycle completes instead of using a fixed timer",
       "properties": {
         "enabled": {
+          "x-advanced": true,
           "type": "boolean",
           "title": "Enabled",
           "default": true,
           "description": "Enable dynamic duration for scrolling display modes"
         },
         "max_duration_seconds": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Max Duration",
           "default": 120,
@@ -390,6 +422,7 @@
       "description": "Settings for scroll display mode",
       "properties": {
         "game_card_width": {
+          "x-advanced": true,
           "type": "integer",
           "title": "Card Width",
           "default": 128,
@@ -398,6 +431,7 @@
           "description": "Width of each card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more cards simultaneously."
         },
         "scroll_speed": {
+          "x-advanced": true,
           "type": "number",
           "title": "Scroll Speed",
           "default": 1,
@@ -406,6 +440,7 @@
           "description": "Pixels per frame to scroll (frame-based mode)"
         },
         "scroll_delay": {
+          "x-advanced": true,
           "type": "number",
           "title": "Scroll Delay",
           "default": 0.03,
@@ -427,12 +462,14 @@
           "description": "Small colored dot shown on the driver who set the fastest lap in a race result",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "title": "Enabled",
               "default": true,
               "description": "Show a dot on the driver with the fastest lap"
             },
             "color": {
+              "x-advanced": true,
               "type": "array",
               "title": "Color (RGB)",
               "items": { "type": "integer", "minimum": 0, "maximum": 255 },
@@ -451,6 +488,7 @@
           "description": "Horizontal bar showing championship points gap to leader in standings",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "title": "Enabled",
               "default": true,
@@ -466,12 +504,14 @@
           "description": "Intro card shown before driver and constructor standings with F1 logo and season progress",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "title": "Enabled",
               "default": true,
               "description": "Show the standings header card before scrolling through standings"
             },
             "show_round": {
+              "x-advanced": true,
               "type": "boolean",
               "title": "Show Round Info",
               "default": true,
@@ -487,6 +527,7 @@
           "description": "Circuit layout image shown on the upcoming race card",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "title": "Enabled",
               "default": true,
@@ -502,6 +543,7 @@
           "description": "Split card showing current driver and constructor championship leaders at the start of the scroll",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "title": "Enabled",
               "default": true,
@@ -517,6 +559,7 @@
           "description": "Split card showing P1 vs P2 driver title fight with gap bar and ALIVE/NEAR/WON status",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "title": "Enabled",
               "default": true,
@@ -532,6 +575,7 @@
           "description": "Split card showing P1 vs P2 constructor title fight with team logos, gap bar, and ALIVE/NEAR/WON status",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "title": "Enabled",
               "default": true,
@@ -547,6 +591,7 @@
           "description": "Compact 2-column grid showing recent race positions per driver as colored boxes (gold=P1, silver=P2, bronze=P3, green=points, red=DNF)",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "title": "Enabled",
               "default": true,
@@ -562,6 +607,7 @@
           "description": "Shows +N points scored in the most recent race on each standings card (gold=podium points, green=solid haul, grey=small haul)",
           "properties": {
             "enabled": {
+              "x-advanced": true,
               "type": "boolean",
               "title": "Enabled",
               "default": true,
@@ -586,12 +632,14 @@
           "description": "Font for section headers (GP names, session labels)",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font",
               "enum": ["PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
               "default": "PressStart2P-Regular.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "minimum": 4,
@@ -608,12 +656,14 @@
           "description": "Font for standings position numbers and driver codes",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font",
               "enum": ["PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
               "default": "PressStart2P-Regular.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "minimum": 4,
@@ -630,12 +680,14 @@
           "description": "Font for points, times, gaps, and other details",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font",
               "enum": ["PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
               "default": "4x6-font.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "minimum": 4,
@@ -652,12 +704,14 @@
           "description": "Font for secondary information (circuit name, location)",
           "properties": {
             "font": {
+              "x-advanced": true,
               "type": "string",
               "title": "Font",
               "enum": ["PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
               "default": "4x6-font.ttf"
             },
             "font_size": {
+              "x-advanced": true,
               "type": "integer",
               "title": "Font Size",
               "minimum": 4,

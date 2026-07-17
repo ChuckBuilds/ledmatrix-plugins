@@ -38,7 +38,8 @@
       "description": "Display name override — leave blank to use the station ID",
       "default": "",
       "maxLength": 20,
-      "x-placeholder": "e.g. Seattle"
+      "x-placeholder": "e.g. Seattle",
+      "x-advanced": true
     },
     "units": {
       "type": "string",
@@ -54,7 +55,8 @@
       "default": 12,
       "minimum": 5,
       "maximum": 60,
-      "description": "How many seconds to show each display mode before rotating to the next"
+      "description": "How many seconds to show each display mode before rotating to the next",
+      "x-advanced": true
     },
     "show_current": {
       "type": "boolean",
@@ -84,7 +86,8 @@
       "type": "boolean",
       "title": "Show Moon Phase",
       "default": true,
-      "description": "Show moon phase icon and name on the stats screen"
+      "description": "Show moon phase icon and name on the stats screen",
+      "x-advanced": true
     },
     "tide_color": {
       "type": "array",
@@ -94,7 +97,8 @@
       "minItems": 3,
       "maxItems": 3,
       "default": [0, 100, 200],
-      "description": "RGB color for tide water fill [R, G, B]"
+      "description": "RGB color for tide water fill [R, G, B]",
+      "x-advanced": true
     },
     "highlight_color": {
       "type": "array",
@@ -104,7 +108,8 @@
       "minItems": 3,
       "maxItems": 3,
       "default": [0, 220, 255],
-      "description": "RGB color for wave crests and chart line [R, G, B]"
+      "description": "RGB color for wave crests and chart line [R, G, B]",
+      "x-advanced": true
     }
   },
   "required": ["enabled"]

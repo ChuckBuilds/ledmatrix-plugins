@@ -1,7 +1,7 @@
 {
   "id": "countdown",
   "name": "Countdown Display",
-  "version": "3.1.2",
+  "version": "3.1.3",
   "author": "ChuckBuilds",
   "description": "Create and manage customizable countdowns with images. Perfect for birthdays, holidays, events, and special occasions.",
   "entry_point": "manager.py",
@@ -21,6 +21,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "released": "2026-07-17",
+      "version": "3.1.3",
+      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-13",
       "version": "3.1.2",
@@ -70,5 +76,5 @@
   "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/countdown",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-07-08"
+  "last_updated": "2026-07-17"
 }

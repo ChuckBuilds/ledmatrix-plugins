@@ -24,7 +24,8 @@
           "default": 300,
           "minimum": 60,
           "maximum": 3600,
-          "description": "How often to fetch new headlines (seconds)"
+          "description": "How often to fetch new headlines (seconds)",
+          "x-advanced": true
         },
         "display": {
           "type": "object",
@@ -42,7 +43,8 @@
               "description": "Delay between scroll steps in seconds",
               "minimum": 0.001,
               "maximum": 0.1,
-              "default": 0.01
+              "default": 0.01,
+              "x-advanced": true
             }
           },
           "additionalProperties": false
@@ -52,19 +54,22 @@
           "default": 100,
           "minimum": 30,
           "maximum": 200,
-          "description": "Target frames per second for scrolling"
+          "description": "Target frames per second for scrolling",
+          "x-advanced": true
         },
         "font_size": {
           "type": "integer",
           "default": 12,
           "minimum": 8,
           "maximum": 20,
-          "description": "Font size for headlines"
+          "description": "Font size for headlines",
+          "x-advanced": true
         },
         "font_path": {
           "type": "string",
           "default": "assets/fonts/PressStart2P-Regular.ttf",
-          "description": "Font path for headlines"
+          "description": "Font path for headlines",
+          "x-advanced": true
         },
         "dynamic_duration": {
           "type": ["boolean", "object"],
@@ -93,21 +98,24 @@
                   "default": 30,
                   "minimum": 10,
                   "maximum": 300,
-                  "description": "Minimum display duration when dynamic duration is enabled"
+                  "description": "Minimum display duration when dynamic duration is enabled",
+                  "x-advanced": true
                 },
                 "max_duration_seconds": {
                   "type": "integer",
                   "default": 300,
                   "minimum": 30,
                   "maximum": 600,
-                  "description": "Maximum display duration when dynamic duration is enabled"
+                  "description": "Maximum display duration when dynamic duration is enabled",
+                  "x-advanced": true
                 },
                 "buffer_ratio": {
                   "type": "number",
                   "default": 0.1,
                   "minimum": 0.01,
                   "maximum": 1.0,
-                  "description": "Extra buffer applied to the calculated duration (percentage expressed as 0-1)"
+                  "description": "Extra buffer applied to the calculated duration (percentage expressed as 0-1)",
+                  "x-advanced": true
                 }
               },
               "additionalProperties": false
@@ -117,21 +125,24 @@
         "rotation_enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable headline rotation after multiple cycles"
+          "description": "Enable headline rotation after multiple cycles",
+          "x-advanced": true
         },
         "rotation_threshold": {
           "type": "integer",
           "default": 3,
           "minimum": 1,
           "maximum": 10,
-          "description": "Number of cycles before rotating headlines"
+          "description": "Number of cycles before rotating headlines",
+          "x-advanced": true
         },
         "headlines_per_feed": {
           "type": "integer",
           "default": 2,
           "minimum": 1,
           "maximum": 10,
-          "description": "Number of headlines to fetch per feed"
+          "description": "Number of headlines to fetch per feed",
+          "x-advanced": true
         },
         "background_service": {
           "type": "object",
@@ -139,28 +150,32 @@
             "enabled": {
               "type": "boolean",
               "default": true,
-              "description": "Enable background data fetching"
+              "description": "Enable background data fetching",
+              "x-advanced": true
             },
             "request_timeout": {
               "type": "integer",
               "default": 30,
               "minimum": 10,
               "maximum": 120,
-              "description": "Request timeout in seconds"
+              "description": "Request timeout in seconds",
+              "x-advanced": true
             },
             "max_retries": {
               "type": "integer",
               "default": 3,
               "minimum": 1,
               "maximum": 10,
-              "description": "Maximum number of retries for failed requests"
+              "description": "Maximum number of retries for failed requests",
+              "x-advanced": true
             },
             "priority": {
               "type": "integer",
               "default": 2,
               "minimum": 1,
               "maximum": 5,
-              "description": "Priority for background requests (1=highest, 5=lowest)"
+              "description": "Priority for background requests (1=highest, 5=lowest)",
+              "x-advanced": true
             }
           },
           "additionalProperties": false
@@ -283,7 +298,8 @@
           "minItems": 3,
           "maxItems": 3,
           "default": [255, 0, 0],
-          "description": "RGB color for separators between headlines"
+          "description": "RGB color for separators between headlines",
+          "x-advanced": true
         },
         "show_logos": {
           "type": "boolean",
@@ -295,7 +311,8 @@
           "default": 28,
           "minimum": 8,
           "maximum": 64,
-          "description": "Logo size in pixels (height). Defaults to display height minus 4 pixels for margin."
+          "description": "Logo size in pixels (height). Defaults to display height minus 4 pixels for margin.",
+          "x-advanced": true
         }
       },
       "additionalProperties": false

@@ -1,7 +1,7 @@
 {
   "id": "news",
   "name": "News Ticker",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
   "author": "ChuckBuilds",
   "category": "content",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/news",
   "versions": [
+    {
+      "version": "1.0.10",
+      "released": "2026-07-17",
+      "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "version": "1.0.9",
       "released": "2026-07-13",
@@ -59,7 +65,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-06-01",
+  "last_updated": "2026-07-17",
   "verified": true,
   "screenshot": "",
   "display_modes": [

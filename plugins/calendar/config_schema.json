@@ -53,6 +53,7 @@
       "default": 10,
       "minimum": 5,
       "title": "Event Rotation Interval (seconds)",
+      "x-advanced": true,
       "description": "Seconds between rotating displayed events"
     },
     "display_duration": {
@@ -60,6 +61,7 @@
       "default": 30,
       "minimum": 5,
       "title": "Display Duration (seconds)",
+      "x-advanced": true,
       "description": "Total display duration in seconds before moving to next plugin"
     },
     "update_interval": {
@@ -68,6 +70,7 @@
       "minimum": 60,
       "maximum": 86400,
       "title": "Update Interval (seconds)",
+      "x-advanced": true,
       "description": "How often to refresh calendar data from Google (seconds)"
     },
     "customization": {
@@ -92,7 +95,8 @@
                 "4x6.bdf",
                 "cozette.bdf"
               ],
-              "default": "PressStart2P-Regular.ttf"
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
@@ -100,7 +104,8 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 8
+              "default": 8,
+              "x-advanced": true
             }
           },
           "x-propertyOrder": ["font", "font_size"],
@@ -123,7 +128,8 @@
                 "4x6.bdf",
                 "cozette.bdf"
               ],
-              "default": "PressStart2P-Regular.ttf"
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
             },
             "font_size": {
               "type": "integer",
@@ -131,7 +137,8 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 8
+              "default": 8,
+              "x-advanced": true
             }
           },
           "x-propertyOrder": ["font", "font_size"],

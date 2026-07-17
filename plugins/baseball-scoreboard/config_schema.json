@@ -17,6 +17,7 @@
             "description": "Duration in seconds for the display controller to show this plugin mode before rotating to next plugin"
         },
         "update_interval": {
+            "x-advanced": true,
             "type": "integer",
             "default": 3600,
             "minimum": 30,
@@ -51,6 +52,7 @@
                     "description": "List of favorite MLB team abbreviations (e.g., NYY, BOS, LAD). Use 2-3 letter codes."
                 },
                 "exclude_teams": {
+                    "x-advanced": true,
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -81,6 +83,7 @@
                             "description": "Show upcoming MLB games"
                         },
                         "live_display_mode": {
+                            "x-advanced": true,
                             "type": "string",
                             "enum": [
                                 "switch",
@@ -90,6 +93,7 @@
                             "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                         },
                         "recent_display_mode": {
+                            "x-advanced": true,
                             "type": "string",
                             "enum": [
                                 "switch",
@@ -99,6 +103,7 @@
                             "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                         },
                         "upcoming_display_mode": {
+                            "x-advanced": true,
                             "type": "string",
                             "enum": [
                                 "switch",
@@ -115,6 +120,7 @@
                     "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
                     "properties": {
                         "scroll_speed": {
+                            "x-advanced": true,
                             "type": "number",
                             "default": 50.0,
                             "minimum": 1.0,
@@ -122,6 +128,7 @@
                             "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
                         },
                         "scroll_delay": {
+                            "x-advanced": true,
                             "type": "number",
                             "default": 0.01,
                             "minimum": 0.001,
@@ -129,6 +136,7 @@
                             "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
                         },
                         "gap_between_games": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 48,
                             "minimum": 8,
@@ -136,16 +144,19 @@
                             "description": "Gap in pixels between game cards when scrolling"
                         },
                         "show_league_separators": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": true,
                             "description": "Show league icons (MLB shield, NCAA logos) between different leagues"
                         },
                         "dynamic_duration": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": true,
                             "description": "Automatically calculate display duration based on content width"
                         },
                         "game_card_width": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 128,
                             "minimum": 32,
@@ -155,11 +166,13 @@
                     }
                 },
                 "live_priority": {
+                    "x-advanced": true,
                     "type": "boolean",
                     "default": false,
                     "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
                 },
                 "live_game_duration": {
+                    "x-advanced": true,
                     "type": "integer",
                     "default": 30,
                     "minimum": 10,
@@ -167,6 +180,7 @@
                     "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
                 },
                 "non_favorite_live_game_duration": {
+                    "x-advanced": true,
                     "type": "integer",
                     "default": 0,
                     "minimum": 0,
@@ -174,6 +188,7 @@
                     "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
                 },
                 "recent_game_duration": {
+                    "x-advanced": true,
                     "type": "number",
                     "default": 15,
                     "minimum": 10,
@@ -181,6 +196,7 @@
                     "description": "Duration in seconds to show each recent game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
                 },
                 "upcoming_game_duration": {
+                    "x-advanced": true,
                     "type": "number",
                     "default": 15,
                     "minimum": 10,
@@ -188,6 +204,7 @@
                     "description": "Duration in seconds to show each upcoming game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
                 },
                 "live_update_interval": {
+                    "x-advanced": true,
                     "type": "integer",
                     "default": 30,
                     "minimum": 5,
@@ -195,6 +212,7 @@
                     "description": "How often to update live game data (seconds)"
                 },
                 "update_interval_seconds": {
+                    "x-advanced": true,
                     "type": "integer",
                     "default": 3600,
                     "minimum": 30,
@@ -228,41 +246,49 @@
                     "description": "Additional information to show",
                     "properties": {
                         "show_records": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Show team records (wins-losses)"
                         },
                         "show_ranking": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Show team rankings (when available)"
                         },
                         "show_odds": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": true,
                             "description": "Show betting odds"
                         },
                         "show_series_summary": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Show series summary information"
                         },
                         "show_pitcher_batter": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Periodically show a dedicated screen with the current pitcher and batter during a live at-bat (requires an extra per-game data fetch)"
                         },
                         "show_last_play": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Show a short code for the most recently completed play (1B, HR, K, BB, etc.) on the pitcher/batter screen"
                         },
                         "show_player_card": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Periodically show a full player card for the current batter (and optionally pitcher): headshot, jersey number, position, bat/throw, and season stats (AVG/HR/RBI for hitters, ERA/W-L/K for pitchers). Requires an extra ESPN athlete lookup; not available for MiLB. Configure look/timing under Customization > Player Card"
                         },
                         "show_traditional_scoreboard": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Periodically show a full-screen traditional ballpark scoreboard: inning-by-inning line score, R/H/E, and an At Bat panel with ball/strike/out indicators"
@@ -285,6 +311,7 @@
                             "description": "Show all live games, not just favorites"
                         },
                         "favorite_live_boost": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 2,
                             "minimum": 1,
@@ -299,6 +326,7 @@
                     "description": "Override how long each mode displays before rotating",
                     "properties": {
                         "recent_mode_duration": {
+                            "x-advanced": true,
                             "type": [
                                 "number",
                                 "null"
@@ -309,6 +337,7 @@
                             "description": "Override display duration for recent games mode (seconds). Null uses default."
                         },
                         "upcoming_mode_duration": {
+                            "x-advanced": true,
                             "type": [
                                 "number",
                                 "null"
@@ -319,6 +348,7 @@
                             "description": "Override display duration for upcoming games mode (seconds). Null uses default."
                         },
                         "live_mode_duration": {
+                            "x-advanced": true,
                             "type": [
                                 "number",
                                 "null"
@@ -336,11 +366,13 @@
                     "description": "Configure dynamic duration settings for MLB games.",
                     "properties": {
                         "enabled": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Enable dynamic duration for MLB games"
                         },
                         "min_duration_seconds": {
+                            "x-advanced": true,
                             "type": "number",
                             "minimum": 10,
                             "maximum": 300,
@@ -348,6 +380,7 @@
                             "description": "Minimum total duration in seconds for this mode, even if few games are available. Ensures the mode stays visible long enough."
                         },
                         "max_duration_seconds": {
+                            "x-advanced": true,
                             "type": "number",
                             "minimum": 60,
                             "maximum": 600,
@@ -362,17 +395,20 @@
                                     "type": "object",
                                     "properties": {
                                         "enabled": {
+                                            "x-advanced": true,
                                             "type": "boolean",
                                             "default": false,
                                             "description": "Enable dynamic duration for MLB live games"
                                         },
                                         "min_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 10,
                                             "maximum": 300,
                                             "description": "Minimum duration for MLB live mode"
                                         },
                                         "max_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 60,
                                             "maximum": 600,
@@ -384,17 +420,20 @@
                                     "type": "object",
                                     "properties": {
                                         "enabled": {
+                                            "x-advanced": true,
                                             "type": "boolean",
                                             "default": false,
                                             "description": "Enable dynamic duration for MLB recent games"
                                         },
                                         "min_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 10,
                                             "maximum": 300,
                                             "description": "Minimum duration for MLB recent mode"
                                         },
                                         "max_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 60,
                                             "maximum": 600,
@@ -406,17 +445,20 @@
                                     "type": "object",
                                     "properties": {
                                         "enabled": {
+                                            "x-advanced": true,
                                             "type": "boolean",
                                             "default": false,
                                             "description": "Enable dynamic duration for MLB upcoming games"
                                         },
                                         "min_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 10,
                                             "maximum": 300,
                                             "description": "Minimum duration for MLB upcoming mode"
                                         },
                                         "max_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 60,
                                             "maximum": 600,
@@ -451,6 +493,7 @@
                     "description": "List of favorite MiLB team abbreviations (e.g., DUR, SWB). Use 2-4 letter codes."
                 },
                 "exclude_teams": {
+                    "x-advanced": true,
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -481,6 +524,7 @@
                             "description": "Show upcoming MiLB games"
                         },
                         "live_display_mode": {
+                            "x-advanced": true,
                             "type": "string",
                             "enum": [
                                 "switch",
@@ -490,6 +534,7 @@
                             "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                         },
                         "recent_display_mode": {
+                            "x-advanced": true,
                             "type": "string",
                             "enum": [
                                 "switch",
@@ -499,6 +544,7 @@
                             "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                         },
                         "upcoming_display_mode": {
+                            "x-advanced": true,
                             "type": "string",
                             "enum": [
                                 "switch",
@@ -515,6 +561,7 @@
                     "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
                     "properties": {
                         "scroll_speed": {
+                            "x-advanced": true,
                             "type": "number",
                             "default": 50.0,
                             "minimum": 1.0,
@@ -522,6 +569,7 @@
                             "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
                         },
                         "scroll_delay": {
+                            "x-advanced": true,
                             "type": "number",
                             "default": 0.01,
                             "minimum": 0.001,
@@ -529,6 +577,7 @@
                             "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
                         },
                         "gap_between_games": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 48,
                             "minimum": 8,
@@ -536,16 +585,19 @@
                             "description": "Gap in pixels between game cards when scrolling"
                         },
                         "show_league_separators": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": true,
                             "description": "Show league icons between different leagues"
                         },
                         "dynamic_duration": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": true,
                             "description": "Automatically calculate display duration based on content width"
                         },
                         "game_card_width": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 128,
                             "minimum": 32,
@@ -555,11 +607,13 @@
                     }
                 },
                 "live_priority": {
+                    "x-advanced": true,
                     "type": "boolean",
                     "default": false,
                     "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
                 },
                 "live_game_duration": {
+                    "x-advanced": true,
                     "type": "integer",
                     "default": 30,
                     "minimum": 10,
@@ -567,6 +621,7 @@
                     "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
                 },
                 "non_favorite_live_game_duration": {
+                    "x-advanced": true,
                     "type": "integer",
                     "default": 0,
                     "minimum": 0,
@@ -574,6 +629,7 @@
                     "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
                 },
                 "recent_game_duration": {
+                    "x-advanced": true,
                     "type": "number",
                     "default": 15,
                     "minimum": 10,
@@ -581,6 +637,7 @@
                     "description": "Duration in seconds to show each recent game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
                 },
                 "upcoming_game_duration": {
+                    "x-advanced": true,
                     "type": "number",
                     "default": 15,
                     "minimum": 10,
@@ -588,6 +645,7 @@
                     "description": "Duration in seconds to show each upcoming game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
                 },
                 "live_update_interval": {
+                    "x-advanced": true,
                     "type": "integer",
                     "default": 30,
                     "minimum": 5,
@@ -595,6 +653,7 @@
                     "description": "How often to update live game data (seconds)"
                 },
                 "update_interval_seconds": {
+                    "x-advanced": true,
                     "type": "integer",
                     "default": 3600,
                     "minimum": 30,
@@ -628,21 +687,25 @@
                     "description": "Additional information to show",
                     "properties": {
                         "show_records": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Show team records (wins-losses)"
                         },
                         "show_ranking": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Show team rankings (when available)"
                         },
                         "show_odds": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Show betting odds"
                         },
                         "show_series_summary": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Show series summary information"
@@ -665,6 +728,7 @@
                             "description": "Show all live games, not just favorites"
                         },
                         "favorite_live_boost": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 2,
                             "minimum": 1,
@@ -679,6 +743,7 @@
                     "description": "Override how long each mode displays before rotating",
                     "properties": {
                         "recent_mode_duration": {
+                            "x-advanced": true,
                             "type": [
                                 "number",
                                 "null"
@@ -689,6 +754,7 @@
                             "description": "Override display duration for recent games mode (seconds). Null uses default."
                         },
                         "upcoming_mode_duration": {
+                            "x-advanced": true,
                             "type": [
                                 "number",
                                 "null"
@@ -699,6 +765,7 @@
                             "description": "Override display duration for upcoming games mode (seconds). Null uses default."
                         },
                         "live_mode_duration": {
+                            "x-advanced": true,
                             "type": [
                                 "number",
                                 "null"
@@ -716,11 +783,13 @@
                     "description": "Configure dynamic duration settings for MiLB games.",
                     "properties": {
                         "enabled": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Enable dynamic duration for MiLB games"
                         },
                         "min_duration_seconds": {
+                            "x-advanced": true,
                             "type": "number",
                             "minimum": 10,
                             "maximum": 300,
@@ -728,6 +797,7 @@
                             "description": "Minimum total duration in seconds for this mode, even if few games are available. Ensures the mode stays visible long enough."
                         },
                         "max_duration_seconds": {
+                            "x-advanced": true,
                             "type": "number",
                             "minimum": 60,
                             "maximum": 600,
@@ -742,17 +812,20 @@
                                     "type": "object",
                                     "properties": {
                                         "enabled": {
+                                            "x-advanced": true,
                                             "type": "boolean",
                                             "default": false,
                                             "description": "Enable dynamic duration for MiLB live games"
                                         },
                                         "min_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 10,
                                             "maximum": 300,
                                             "description": "Minimum duration for MiLB live mode"
                                         },
                                         "max_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 60,
                                             "maximum": 600,
@@ -764,17 +837,20 @@
                                     "type": "object",
                                     "properties": {
                                         "enabled": {
+                                            "x-advanced": true,
                                             "type": "boolean",
                                             "default": false,
                                             "description": "Enable dynamic duration for MiLB recent games"
                                         },
                                         "min_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 10,
                                             "maximum": 300,
                                             "description": "Minimum duration for MiLB recent mode"
                                         },
                                         "max_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 60,
                                             "maximum": 600,
@@ -786,17 +862,20 @@
                                     "type": "object",
                                     "properties": {
                                         "enabled": {
+                                            "x-advanced": true,
                                             "type": "boolean",
                                             "default": false,
                                             "description": "Enable dynamic duration for MiLB upcoming games"
                                         },
                                         "min_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 10,
                                             "maximum": 300,
                                             "description": "Minimum duration for MiLB upcoming mode"
                                         },
                                         "max_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 60,
                                             "maximum": 600,
@@ -831,6 +910,7 @@
                     "description": "List of favorite NCAA Baseball team abbreviations (e.g., LSU, FLA). Use 2-4 letter codes."
                 },
                 "exclude_teams": {
+                    "x-advanced": true,
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -861,6 +941,7 @@
                             "description": "Show upcoming NCAA Baseball games"
                         },
                         "live_display_mode": {
+                            "x-advanced": true,
                             "type": "string",
                             "enum": [
                                 "switch",
@@ -870,6 +951,7 @@
                             "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                         },
                         "recent_display_mode": {
+                            "x-advanced": true,
                             "type": "string",
                             "enum": [
                                 "switch",
@@ -879,6 +961,7 @@
                             "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
                         },
                         "upcoming_display_mode": {
+                            "x-advanced": true,
                             "type": "string",
                             "enum": [
                                 "switch",
@@ -895,6 +978,7 @@
                     "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
                     "properties": {
                         "scroll_speed": {
+                            "x-advanced": true,
                             "type": "number",
                             "default": 50.0,
                             "minimum": 1.0,
@@ -902,6 +986,7 @@
                             "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
                         },
                         "scroll_delay": {
+                            "x-advanced": true,
                             "type": "number",
                             "default": 0.01,
                             "minimum": 0.001,
@@ -909,6 +994,7 @@
                             "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
                         },
                         "gap_between_games": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 48,
                             "minimum": 8,
@@ -916,16 +1002,19 @@
                             "description": "Gap in pixels between game cards when scrolling"
                         },
                         "show_league_separators": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": true,
                             "description": "Show league icons between different leagues"
                         },
                         "dynamic_duration": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": true,
                             "description": "Automatically calculate display duration based on content width"
                         },
                         "game_card_width": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 128,
                             "minimum": 32,
@@ -935,11 +1024,13 @@
                     }
                 },
                 "live_priority": {
+                    "x-advanced": true,
                     "type": "boolean",
                     "default": true,
                     "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
                 },
                 "live_game_duration": {
+                    "x-advanced": true,
                     "type": "integer",
                     "default": 30,
                     "minimum": 10,
@@ -947,6 +1038,7 @@
                     "description": "Duration in seconds to display each live game before rotating to the next. When a separate non-favorite duration is set, this applies to games with a favorite team; it applies to ALL live games when no favorite teams are configured."
                 },
                 "non_favorite_live_game_duration": {
+                    "x-advanced": true,
                     "type": "integer",
                     "default": 0,
                     "minimum": 0,
@@ -954,6 +1046,7 @@
                     "description": "Duration in seconds for live games that do NOT involve a favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use live_game_duration for every live game (no change)."
                 },
                 "recent_game_duration": {
+                    "x-advanced": true,
                     "type": "number",
                     "default": 15,
                     "minimum": 10,
@@ -961,6 +1054,7 @@
                     "description": "Duration in seconds to show each recent game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
                 },
                 "upcoming_game_duration": {
+                    "x-advanced": true,
                     "type": "number",
                     "default": 15,
                     "minimum": 10,
@@ -968,6 +1062,7 @@
                     "description": "Duration in seconds to show each upcoming game before rotating to the next game. If not set, uses the top-level game_display_duration setting (default: 15 seconds)."
                 },
                 "live_update_interval": {
+                    "x-advanced": true,
                     "type": "integer",
                     "default": 30,
                     "minimum": 5,
@@ -975,6 +1070,7 @@
                     "description": "How often to update live game data (seconds)"
                 },
                 "update_interval_seconds": {
+                    "x-advanced": true,
                     "type": "integer",
                     "default": 3600,
                     "minimum": 30,
@@ -1008,41 +1104,49 @@
                     "description": "Additional information to show",
                     "properties": {
                         "show_records": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Show team records (wins-losses)"
                         },
                         "show_ranking": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Show team rankings (rankings can be important in college baseball)"
                         },
                         "show_odds": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": true,
                             "description": "Show betting odds"
                         },
                         "show_series_summary": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Show series summary information"
                         },
                         "show_pitcher_batter": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Periodically show a dedicated screen with the current pitcher and batter during a live at-bat (requires an extra per-game data fetch)"
                         },
                         "show_last_play": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Show a short code for the most recently completed play (1B, HR, K, BB, etc.) on the pitcher/batter screen"
                         },
                         "show_player_card": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Periodically show a full player card for the current batter (and optionally pitcher): headshot, jersey number, position, bat/throw, and season stats (AVG/HR/RBI for hitters, ERA/W-L/K for pitchers). Requires an extra ESPN athlete lookup; not available for MiLB. Configure look/timing under Customization > Player Card"
                         },
                         "show_traditional_scoreboard": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Periodically show a full-screen traditional ballpark scoreboard: inning-by-inning line score, R/H/E, and an At Bat panel with ball/strike/out indicators"
@@ -1065,6 +1169,7 @@
                             "description": "Show all live games, not just favorites"
                         },
                         "favorite_live_boost": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 2,
                             "minimum": 1,
@@ -1079,6 +1184,7 @@
                     "description": "Override how long each mode displays before rotating",
                     "properties": {
                         "recent_mode_duration": {
+                            "x-advanced": true,
                             "type": [
                                 "number",
                                 "null"
@@ -1089,6 +1195,7 @@
                             "description": "Override display duration for recent games mode (seconds). Null uses default."
                         },
                         "upcoming_mode_duration": {
+                            "x-advanced": true,
                             "type": [
                                 "number",
                                 "null"
@@ -1099,6 +1206,7 @@
                             "description": "Override display duration for upcoming games mode (seconds). Null uses default."
                         },
                         "live_mode_duration": {
+                            "x-advanced": true,
                             "type": [
                                 "number",
                                 "null"
@@ -1116,11 +1224,13 @@
                     "description": "Configure dynamic duration settings for NCAA Baseball games.",
                     "properties": {
                         "enabled": {
+                            "x-advanced": true,
                             "type": "boolean",
                             "default": false,
                             "description": "Enable dynamic duration for NCAA Baseball games"
                         },
                         "min_duration_seconds": {
+                            "x-advanced": true,
                             "type": "number",
                             "minimum": 10,
                             "maximum": 300,
@@ -1128,6 +1238,7 @@
                             "description": "Minimum total duration in seconds for this mode, even if few games are available. Ensures the mode stays visible long enough."
                         },
                         "max_duration_seconds": {
+                            "x-advanced": true,
                             "type": "number",
                             "minimum": 60,
                             "maximum": 600,
@@ -1142,17 +1253,20 @@
                                     "type": "object",
                                     "properties": {
                                         "enabled": {
+                                            "x-advanced": true,
                                             "type": "boolean",
                                             "default": false,
                                             "description": "Enable dynamic duration for NCAA Baseball live games"
                                         },
                                         "min_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 10,
                                             "maximum": 300,
                                             "description": "Minimum duration for NCAA Baseball live mode"
                                         },
                                         "max_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 60,
                                             "maximum": 600,
@@ -1164,17 +1278,20 @@
                                     "type": "object",
                                     "properties": {
                                         "enabled": {
+                                            "x-advanced": true,
                                             "type": "boolean",
                                             "default": false,
                                             "description": "Enable dynamic duration for NCAA Baseball recent games"
                                         },
                                         "min_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 10,
                                             "maximum": 300,
                                             "description": "Minimum duration for NCAA Baseball recent mode"
                                         },
                                         "max_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 60,
                                             "maximum": 600,
@@ -1186,17 +1303,20 @@
                                     "type": "object",
                                     "properties": {
                                         "enabled": {
+                                            "x-advanced": true,
                                             "type": "boolean",
                                             "default": false,
                                             "description": "Enable dynamic duration for NCAA Baseball upcoming games"
                                         },
                                         "min_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 10,
                                             "maximum": 300,
                                             "description": "Minimum duration for NCAA Baseball upcoming mode"
                                         },
                                         "max_duration_seconds": {
+                                            "x-advanced": true,
                                             "type": "number",
                                             "minimum": 60,
                                             "maximum": 600,
@@ -1221,11 +1341,13 @@
                     "description": "Customize the score display",
                     "properties": {
                         "font": {
+                            "x-advanced": true,
                             "type": "string",
                             "default": "press_start",
                             "description": "Font family for score text"
                         },
                         "font_size": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 10,
                             "description": "Font size for score text"
@@ -1239,11 +1361,13 @@
                     "description": "Customize the status/inning display",
                     "properties": {
                         "font": {
+                            "x-advanced": true,
                             "type": "string",
                             "default": "press_start",
                             "description": "Font family for status text"
                         },
                         "font_size": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 8,
                             "description": "Font size for status text"
@@ -1257,11 +1381,13 @@
                     "description": "Customize detail text (records, etc.)",
                     "properties": {
                         "font": {
+                            "x-advanced": true,
                             "type": "string",
                             "default": "four_by_six",
                             "description": "Font family for detail text"
                         },
                         "font_size": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 6,
                             "description": "Font size for detail text"
@@ -1279,11 +1405,13 @@
                             "title": "Home Team Logo",
                             "properties": {
                                 "x_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Horizontal offset from default position (default: 0)"
                                 },
                                 "y_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Vertical offset from default position (default: 0)"
@@ -1296,11 +1424,13 @@
                             "title": "Away Team Logo",
                             "properties": {
                                 "x_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Horizontal offset from default position (default: 0)"
                                 },
                                 "y_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Vertical offset from default position (default: 0)"
@@ -1313,11 +1443,13 @@
                             "title": "Game Score",
                             "properties": {
                                 "x_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Horizontal offset from center (default: 0)"
                                 },
                                 "y_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Vertical offset from center (default: 0)"
@@ -1330,11 +1462,13 @@
                             "title": "Game Status/Inning",
                             "properties": {
                                 "x_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Horizontal offset from default position (default: 0)"
                                 },
                                 "y_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Vertical offset from default position (default: 0)"
@@ -1347,21 +1481,25 @@
                             "title": "Team Records",
                             "properties": {
                                 "x_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Horizontal offset from default position (default: 0)"
                                 },
                                 "y_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Vertical offset from default position (default: 0)"
                                 },
                                 "away_x_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Additional horizontal offset for away team record (default: 0)"
                                 },
                                 "home_x_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Additional horizontal offset for home team record (default: 0)"
@@ -1374,11 +1512,13 @@
                             "title": "Team Rankings",
                             "properties": {
                                 "x_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Horizontal offset from default position (default: 0)"
                                 },
                                 "y_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Vertical offset from default position (default: 0)"
@@ -1391,11 +1531,13 @@
                             "title": "Betting Odds",
                             "properties": {
                                 "x_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Horizontal offset from default position (default: 0)"
                                 },
                                 "y_offset": {
+                                    "x-advanced": true,
                                     "type": "integer",
                                     "default": 0,
                                     "description": "Vertical offset from default position (default: 0)"
@@ -1421,11 +1563,13 @@
                     "description": "Customize the period/inning display font",
                     "properties": {
                         "font": {
+                            "x-advanced": true,
                             "type": "string",
                             "default": "press_start",
                             "description": "Font family for period/inning text"
                         },
                         "font_size": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 8,
                             "description": "Font size for period/inning text"
@@ -1439,11 +1583,13 @@
                     "description": "Customize the team name/abbreviation display",
                     "properties": {
                         "font": {
+                            "x-advanced": true,
                             "type": "string",
                             "default": "press_start",
                             "description": "Font family for team name text"
                         },
                         "font_size": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 8,
                             "description": "Font size for team name text"
@@ -1457,11 +1603,13 @@
                     "description": "Customize the ranking display font",
                     "properties": {
                         "font": {
+                            "x-advanced": true,
                             "type": "string",
                             "default": "press_start",
                             "description": "Font family for ranking text"
                         },
                         "font_size": {
+                            "x-advanced": true,
                             "type": "integer",
                             "default": 10,
                             "description": "Font size for ranking text"
@@ -1475,6 +1623,7 @@
                 "description": "Customize the base diamond indicators",
                 "properties": {
                     "diamond_size": {
+                        "x-advanced": true,
                         "type": "integer",
                         "default": 7,
                         "minimum": 3,
@@ -1482,6 +1631,7 @@
                         "description": "Size of each base diamond in pixels"
                     },
                     "occupied_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
                         "default": [255, 255, 255],
@@ -1490,6 +1640,7 @@
                         "description": "Color when a base is occupied (RGB)"
                     },
                     "empty_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
                         "default": [255, 255, 255],
@@ -1498,6 +1649,7 @@
                         "description": "Outline color when a base is empty (RGB)"
                     },
                     "x_offset": {
+                        "x-advanced": true,
                         "type": "integer",
                         "default": 0,
                         "minimum": -50,
@@ -1505,6 +1657,7 @@
                         "description": "Horizontal offset for the bases cluster (positive = right)"
                     },
                     "y_offset": {
+                        "x-advanced": true,
                         "type": "integer",
                         "default": 0,
                         "minimum": -50,
@@ -1520,6 +1673,7 @@
                 "description": "Customize the outs indicator circles",
                 "properties": {
                     "circle_diameter": {
+                        "x-advanced": true,
                         "type": "integer",
                         "default": 3,
                         "minimum": 2,
@@ -1527,6 +1681,7 @@
                         "description": "Diameter of each out circle in pixels"
                     },
                     "counted_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
                         "default": [255, 255, 255],
@@ -1535,6 +1690,7 @@
                         "description": "Fill color for counted outs (RGB)"
                     },
                     "empty_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
                         "default": [100, 100, 100],
@@ -1543,6 +1699,7 @@
                         "description": "Outline color for remaining outs (RGB)"
                     },
                     "spacing": {
+                        "x-advanced": true,
                         "type": "integer",
                         "default": 2,
                         "minimum": 0,
@@ -1550,6 +1707,7 @@
                         "description": "Vertical spacing between out circles in pixels"
                     },
                     "distance_from_bases": {
+                        "x-advanced": true,
                         "type": "integer",
                         "default": 3,
                         "minimum": 0,
@@ -1565,6 +1723,7 @@
                 "description": "Customize the balls-strikes count text",
                 "properties": {
                     "text_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
                         "default": [255, 255, 255],
@@ -1573,6 +1732,7 @@
                         "description": "Color for the count text (RGB)"
                     },
                     "y_offset": {
+                        "x-advanced": true,
                         "type": "integer",
                         "default": 2,
                         "minimum": 0,
@@ -1588,11 +1748,13 @@
                 "description": "A dedicated full-screen view (not an overlay on the scorebug -- there is not enough room there) that periodically rotates into the live display, showing the current pitcher, batter, and a short code for the last completed play. Enable per-league via Display Options > Show Pitcher/Batter and Show Last Play (MLB and NCAA Baseball only).",
                 "properties": {
                     "font": {
+                        "x-advanced": true,
                         "type": "string",
                         "default": "9x15.bdf",
                         "description": "Font for this screen's text -- a clean, bold bitmap font that auto-fits as large as the display and each line's actual text allows (falling back to a smaller same-family font, e.g. on a narrow display or with a long player name, down to as small as '4x6-font.ttf' -- ('four_by_six') was previously the flat default here, but it renders 'B' and '8' almost identically, making last-play codes like 'BB' misreadable as '88'; the fallback ladder never steps down to it for this reason). A fixed-size .bdf font always renders at its own native pixel size regardless of font_size below; use a scalable .ttf font (e.g. 'press_start') if you want font_size to directly control the size."
                     },
                     "font_size": {
+                        "x-advanced": true,
                         "type": "integer",
                         "default": 24,
                         "minimum": 6,
@@ -1600,11 +1762,13 @@
                         "description": "Maximum font size cap, for scalable .ttf fonts only (ignored by fixed-size .bdf fonts like the default). This screen auto-fits the largest text that still fits every line, so the default effectively means 'as big as the display and text allow' -- lower it to force a smaller, more consistent size."
                     },
                     "use_team_colors": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": true,
                         "description": "Color the pitcher's name with the fielding team's real ESPN color and the batter's name with the batting team's color, instead of the flat pitcher_color/batter_color below. Falls back to those flat colors when off, or when a team's color isn't available."
                     },
                     "pitcher_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "x-widget": "color-picker",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
@@ -1614,6 +1778,7 @@
                         "description": "Text color [R, G, B] for the pitcher line when use_team_colors is off or the fielding team's color is unavailable"
                     },
                     "batter_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "x-widget": "color-picker",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
@@ -1623,6 +1788,7 @@
                         "description": "Text color [R, G, B] for the batter line when use_team_colors is off or the batting team's color is unavailable"
                     },
                     "last_play_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "x-widget": "color-picker",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
@@ -1632,6 +1798,7 @@
                         "description": "Text color [R, G, B] for the last-play code line"
                     },
                     "dwell_seconds": {
+                        "x-advanced": true,
                         "type": "number",
                         "default": 4,
                         "minimum": 2,
@@ -1639,6 +1806,7 @@
                         "description": "How many seconds to show this screen each time it rotates in"
                     },
                     "interval_seconds": {
+                        "x-advanced": true,
                         "type": "number",
                         "default": 25,
                         "minimum": 10,
@@ -1646,6 +1814,7 @@
                         "description": "How often (in seconds) this screen rotates into the normal live view"
                     },
                     "favorites_only": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": false,
                         "description": "Only rotate this screen in for games involving one of this league's favorite_teams. Useful if show_all_live is on (so every team's live game rotates through) but you only want the pitcher/batter/last-play treatment for your own team -- other teams still get the normal compact scorebug. Has no effect if favorite_teams is empty."
@@ -1659,11 +1828,13 @@
                 "description": "A dedicated full-screen player card that periodically rotates into the live display for the current batter (and optionally pitcher): headshot image, jersey number, position, bat/throw hand, and season stats (AVG/HR/RBI for hitters, ERA/W-L/K for pitchers). Enable per-league via Display Options > Show Player Card (MLB and NCAA Baseball only -- MiLB has no ESPN player data). On tiny panels (e.g. 64x32) the headshot is hidden and the card shows compact text.",
                 "properties": {
                     "font": {
+                        "x-advanced": true,
                         "type": "string",
                         "default": "9x15.bdf",
                         "description": "Font for the card's text -- a clean, bold bitmap font that auto-fits the largest size the panel and text allow. A fixed-size .bdf font renders at its native pixel size regardless of font_size; use a scalable .ttf font (e.g. 'press_start') if you want font_size to control the size."
                     },
                     "font_size": {
+                        "x-advanced": true,
                         "type": "integer",
                         "default": 24,
                         "minimum": 6,
@@ -1671,26 +1842,31 @@
                         "description": "Maximum font size cap, for scalable .ttf fonts only (ignored by fixed-size .bdf fonts like the default). The card auto-fits within the space beside the headshot, so the default effectively means 'as big as fits' -- lower it to force a smaller size."
                     },
                     "show_batter": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": true,
                         "description": "Show a card for the current batter"
                     },
                     "show_pitcher": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": false,
                         "description": "Also show a card for the current pitcher (the batter is preferred when both are available)"
                     },
                     "use_team_colors": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": true,
                         "description": "Color the player's name with their real ESPN team color instead of the flat text_color"
                     },
                     "use_team_colors_border": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": true,
                         "description": "Draw the headshot's frame in the player's team color instead of the flat border_color below"
                     },
                     "border_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "x-widget": "color-picker",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
@@ -1700,6 +1876,7 @@
                         "description": "Headshot frame color [R, G, B] when use_team_colors_border is off or the team color is unavailable"
                     },
                     "text_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "x-widget": "color-picker",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
@@ -1709,6 +1886,7 @@
                         "description": "Text color [R, G, B] for the name (when team colors are off) and the jersey/position/bat-throw line"
                     },
                     "stat_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "x-widget": "color-picker",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
@@ -1718,6 +1896,7 @@
                         "description": "Text color [R, G, B] for the season-stats line"
                     },
                     "dwell_seconds": {
+                        "x-advanced": true,
                         "type": "number",
                         "default": 6,
                         "minimum": 2,
@@ -1725,6 +1904,7 @@
                         "description": "How many seconds to show the card each time it rotates in"
                     },
                     "interval_seconds": {
+                        "x-advanced": true,
                         "type": "number",
                         "default": 40,
                         "minimum": 10,
@@ -1732,6 +1912,7 @@
                         "description": "How often (in seconds) the card rotates into the normal live view"
                     },
                     "favorites_only": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": false,
                         "description": "Only rotate the card in for games involving one of this league's favorite_teams. Has no effect if favorite_teams is empty."
@@ -1745,11 +1926,13 @@
                 "description": "A dedicated full-screen view (like an outfield ballpark scoreboard) that periodically rotates into the live display: an inning-by-inning line score with R/H/E, and an At Bat panel with ball/strike/out indicators. Enable per-league via Display Options > Show Traditional Scoreboard (MLB and NCAA Baseball only).",
                 "properties": {
                     "font": {
+                        "x-advanced": true,
                         "type": "string",
                         "default": "9x15.bdf",
                         "description": "Font for this screen's text. '9x15.bdf' is a clean, bold, highly legible bitmap font. Fixed-size bitmap (.bdf) fonts always render at their own native pixel size regardless of font_size below; use a scalable .ttf font (e.g. 'press_start' for PressStart2P, a chunkier 8-bit retro look) if you want font_size to control the size"
                     },
                     "font_size": {
+                        "x-advanced": true,
                         "type": "integer",
                         "default": 24,
                         "minimum": 6,
@@ -1757,21 +1940,25 @@
                         "description": "Maximum font size cap, for scalable .ttf fonts only (ignored by fixed-size .bdf fonts like the default). This screen auto-fits the largest text that still leaves room for the At Bat panel (when applicable), so the default (24) effectively means 'as big as the display allows' -- lower this to force a smaller, more consistent size instead"
                     },
                     "use_team_colors": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": true,
                         "description": "Color each team's abbreviation using their real team colors (from ESPN) instead of a single flat text color"
                     },
                     "show_team_color_backgrounds": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": true,
                         "description": "Tint each team's row with a subtle (~12% brightness) wash of their real ESPN team color, plus a solid team-color accent strip on the left edge -- a colorful ballpark look. Requires use_team_colors; a team with no ESPN color gets no tint. Text stays legible (it is drawn with a black outline over the wash)."
                     },
                     "show_logos": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": true,
                         "description": "Show a small team logo beside each abbreviation, but only when there's leftover width to spare -- never at the cost of a displayed inning or the At Bat side panel"
                     },
                     "text_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "x-widget": "color-picker",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
@@ -1781,6 +1968,7 @@
                         "description": "Text color [R, G, B] for score digits, and for team abbreviations when team colors are off or unavailable"
                     },
                     "header_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "x-widget": "color-picker",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
@@ -1790,6 +1978,7 @@
                         "description": "Text color [R, G, B] for the inning-number and R/H/E header row"
                     },
                     "highlight_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "x-widget": "color-picker",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
@@ -1799,22 +1988,26 @@
                         "description": "Accent color [R, G, B] for the current-inning highlight, the At Bat label, and lit ball/strike/out indicators"
                     },
                     "show_dividers": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": true,
                         "description": "Draw thin 1px grid lines between innings, rows, and the R/H/E columns for readability"
                     },
                     "game_scope": {
+                        "x-advanced": true,
                         "type": "string",
                         "enum": ["live", "recent", "both"],
                         "default": "both",
                         "description": "Which games this screen rotates in for: 'live' only during live action, 'recent' only for final/completed games (handy for seeing the winner and full line score at a glance), or 'both'"
                     },
                     "favorites_only": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": false,
                         "description": "Only rotate this screen in for games involving one of this league's favorite_teams. Useful if show_all_live is on (so every team's live game rotates through) but you only want the full-screen treatment for your own team -- other teams still get the normal compact scorebug. Has no effect if favorite_teams is empty."
                     },
                     "divider_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "x-widget": "color-picker",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
@@ -1824,11 +2017,13 @@
                         "description": "Color [R, G, B] for the grid divider lines"
                     },
                     "highlight_winner": {
+                        "x-advanced": true,
                         "type": "boolean",
                         "default": true,
                         "description": "On a final game, color the winning team's run total in winner_color so the winner is obvious at a glance instead of having to compare both R values yourself"
                     },
                     "winner_color": {
+                        "x-advanced": true,
                         "type": "array",
                         "x-widget": "color-picker",
                         "items": { "type": "integer", "minimum": 0, "maximum": 255 },
@@ -1838,6 +2033,7 @@
                         "description": "Color [R, G, B] for the winning team's run total on a final game"
                     },
                     "dwell_seconds": {
+                        "x-advanced": true,
                         "type": "number",
                         "default": 6,
                         "minimum": 2,
@@ -1845,6 +2041,7 @@
                         "description": "How many seconds to show this screen each time it rotates in"
                     },
                     "interval_seconds": {
+                        "x-advanced": true,
                         "type": "number",
                         "default": 30,
                         "minimum": 10,
