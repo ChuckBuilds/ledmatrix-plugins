@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -67,6 +67,12 @@
   ],
   "versions": [
     {
+      "released": "2026-07-17",
+      "version": "1.1.1",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "YTM Desktop App authentication now registers each installation with a unique app ID (a random hex code appended to LEDMatrixController), so authenticating multiple LEDMatrix displays against the same YTMD instance no longer overwrites each other's authorization."
+    },
+    {
       "released": "2026-07-10",
       "version": "1.1.0",
       "ledmatrix_min_version": "2.0.0",
@@ -110,7 +116,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-10",
+  "last_updated": "2026-07-17",
   "stars": 0,
   "downloads": 0,
   "verified": true,
