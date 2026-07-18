@@ -206,8 +206,10 @@ class TidePlugin(BasePlugin):
         for m in ('delete', 'clear_cache'):
             fn = getattr(self.cache_manager, m, None)
             if callable(fn):
-                try: fn(key)
-                except Exception: pass
+                try:
+                    fn(key)
+                except Exception as _e:
+                    self.logger.debug("cache delete %s failed: %s", key, _e)
                 return
 
     def _prune_legacy_daily_keys(self):
