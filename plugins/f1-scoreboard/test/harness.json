@@ -1,0 +1,11 @@
+{
+  "_comment": "Deterministic render settings for the plugin safety harness. mock.json is a real ESPN snapshot (2026 season, rounds 5-9 completed) plus synthetic practice/poles/latest-round seeds, so every screen renders offline with no network. freeze_time sits just after round 9 (Barcelona, race 2026-06-12); latest-round resolves to 9 (seeded), matching the cached qualifying/sprint/results keys, and no session window is open so no live badge appears. sizes covers narrow, wide, and the two tall panels (128x64, 256x64) plus the 192x48 wide-short rig, exercising the adaptive font-grid snapping and vertical centering. Golden images exist only for f1_upcoming: it renders a full static frame, whereas the seven scroll modes (standings/results/qualifying/practice/sprint/calendar) start with a blank scroll-in buffer so a single-frame capture is empty and not worth committing. Those modes are still covered by this harness's crash + overflow checks at every size; missing goldens are skipped, not failed.",
+  "config": {
+    "timezone": "America/New_York",
+    "favorite_driver": "NOR",
+    "favorite_team": "mclaren"
+  },
+  "mock_data": "test/fixtures/mock.json",
+  "freeze_time": "2026-06-16 12:00:00",
+  "sizes": [[64, 32], [128, 32], [128, 64], [192, 48], [256, 32], [256, 64]]
+}

@@ -24,7 +24,39 @@ logger = logging.getLogger(__name__)
 
 ACCENT_BAR_RATIO = 0.025  # ~3px on 128-wide display
 
-# Short display names that fit in 4x6-font at 6px without truncation
+# Bitmap-font grid sizes: these fonts only render crisply at integer multiples
+# of their native pixel grid (PressStart2P at 8/16/24…, 4x6 at 6/12…). Font
+# targets are snapped down to the nearest multiple so scaled sizes stay sharp.
+_FONT_GRID = {
+    "PressStart2P-Regular.ttf": 8,
+    "4x6-font.ttf": 6,
+    "5by7.regular.ttf": 7,
+}
+
+
+def _snap_font_size(font_name: str, target: int) -> int:
+    """Snap a target pixel size down to the font's crisp grid multiple."""
+    grid = _FONT_GRID.get(font_name)
+    if not grid:
+        return max(4, target)
+    return max(grid, (target // grid) * grid)
+
+
+# Native pixel heights of the bundled bitmap (BDF) fonts. These render crisply
+# only at this exact size, so the loader always requests it. The renderer picks
+# a size-appropriate font per panel via _font_tier rather than scaling one font.
+_BDF_NATIVE_SIZE = {
+    "4x6.bdf": 6,
+    "5x8.bdf": 8,
+    "6x10.bdf": 10,
+    "7x13.bdf": 13,
+    "9x15.bdf": 15,
+    "10x20.bdf": 20,
+}
+
+
+# Compact display names for narrow panels (fit 4x6-font at 6px). On wider panels
+# the full name in _TEAM_FULL is preferred; _fit_team_name picks whichever fits.
 _TEAM_SHORT = {
     "mclaren":      "McLaren",
     "red_bull":     "Red Bull",
@@ -39,9 +71,39 @@ _TEAM_SHORT = {
     "cadillac":     "Cadillac",
 }
 
+# Full constructor names — used on wide panels where they fit.
+_TEAM_FULL = {
+    "mclaren":      "McLaren",
+    "red_bull":     "Red Bull",
+    "ferrari":      "Ferrari",
+    "mercedes":     "Mercedes",
+    "aston_martin": "Aston Martin",
+    "alpine":       "Alpine",
+    "haas":         "Haas",
+    "sauber":       "Sauber",
+    "williams":     "Williams",
+    "rb":           "RB",
+    "cadillac":     "Cadillac",
+}
+
+# Short headline forms for countries whose full name is too wide for a headline.
+_COUNTRY_DISPLAY = {
+    "United Kingdom": "BRITAIN",
+    "United States": "USA",
+    "Saudi Arabia": "SAUDI",
+    "United Arab Emirates": "ABU DHABI",
+    "UAE": "ABU DHABI",
+    "Netherlands": "DUTCH",
+    "Azerbaijan": "BAKU",
+}
+
 
 def _team_short(constructor_id: str) -> str:
     return _TEAM_SHORT.get(constructor_id, constructor_id.replace("_", " ").title())
+
+
+def _team_full(constructor_id: str) -> str:
+    return _TEAM_FULL.get(constructor_id, constructor_id.replace("_", " ").title())
 
 
 def _team_color_bright(constructor_id: str, min_max: int = 150) -> tuple:
@@ -66,14 +128,11 @@ class F1Renderer:
         self.config = config or {}
         self.logger = custom_logger or logger
         self.logo_loader = logo_loader or F1LogoLoader()
-        self.accent_bar_width = max(2, int(display_width * ACCENT_BAR_RATIO))
 
-        # Logo sizes: up to 85% of content height
-        self.logo_max = int(display_height * 0.85)
-
-        # Fixed right-side stat zone (points + W/P column)
-        # ~30% of display width, minimum 34px, maximum 48px
-        self.stat_zone_w = max(34, min(48, int(display_width * 0.30)))
+        # Aspect/tier hints used by _configure_layout for size-adaptive metrics.
+        self.aspect = display_width / max(1, display_height)
+        self.is_tall = display_height >= 48
+        self.is_wide_short = display_width >= 160 and display_height <= 48
 
         # ── Visual feature flags (from config["visual"]) ──────────────
         vis = self.config.get("visual", {})
@@ -119,23 +178,102 @@ class F1Renderer:
         self.show_last_race_pts = lrp.get("enabled", True)
 
         self.fonts = self._load_fonts()
+        # Persistent 1x1 canvas for text measurement during layout config.
+        self._mdraw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+        self._configure_layout()
+
+    def _configure_layout(self) -> None:
+        """Derive all size-adaptive layout metrics from the panel dimensions
+        and the loaded fonts. Every render_* function consumes these — this is
+        the single place that reasons about display size."""
+        w, h = self.display_width, self.display_height
+        draw = self._mdraw
+        detail, small = self.fonts["detail"], self.fonts["small"]
+
+        self.accent_bar_width = max(2, int(w * ACCENT_BAR_RATIO))
+
+        # Logo sizes: up to 85% of content height.
+        self.logo_max = int(h * 0.85)
+
+        # Right-side stat zone (points + W/P column). Width the column to what
+        # the stat text actually needs at the current font size, clamped to a
+        # sane fraction of the panel — no fixed 34/48 island that dominates
+        # narrow panels or strands space on wide ones.
+        stat_needed = max(
+            self._tw(draw, "999pt", detail),
+            self._tw(draw, "88W 88P", small),
+            self._tw(draw, "+25", small),
+        ) + 3
+        self.stat_zone_w = min(max(stat_needed, int(w * 0.22)), int(w * 0.34))
+
+        # Header date column reservation (e.g. "SEP 28") — replaces fixed -40/-42.
+        self.header_date_reserve = self._tw(draw, "SEP 28", small) + 4
+
+        # F1 brand logo in card headers — scale with height, cap at a crisp size.
+        self.f1_logo_h = min(16, max(8, h // 3))
+        self.f1_logo_w = max(10, int(w * 0.12))
+
+        # Constructor-standings logo width — grows with panel width instead of
+        # the old flat 15px cap that left a sliver on tall/wide panels.
+        self.constructor_logo_w = max(15, int(w * 0.13))
+
+        # Spacing: tighter on small panels, a touch more air on larger ones.
+        self.pad_x = 2 if w <= 128 else 3
+        self.gap_y = 2 if h <= 32 else 3
+
+        # Fraction of the content height a team logo fills. Tall panels use a
+        # larger logo so the card doesn't look sparse; short panels stay at 0.85.
+        self.logo_fill = 0.95 if self.is_tall else 0.85
+        # Width ceiling for row/standings logos so a big logo on a narrow-tall
+        # panel (128x64) doesn't crowd out the name/stat columns.
+        self.logo_box_max = max(12, int(w * 0.28))
+
+    def _logo_box(self, content_h: int) -> int:
+        """Square logo size for standings/row cards: fills the content height
+        (per logo_fill) but never wider than logo_box_max."""
+        return max(8, min(int(content_h * self.logo_fill), self.logo_box_max))
+
+    def _font_tier(self) -> Tuple[str, str]:
+        """Pick (big, small) bitmap fonts for this panel size.
+
+        BDF fonts are pixel-perfect at their native size, so instead of scaling
+        one font we choose a size-appropriate font per panel. The tier is
+        width-aware (min of the height and width ratios) so a tall-but-narrow
+        panel like 128x64 gets the small tier its width can host, not oversized
+        type that would truncate every name."""
+        s = min(self.display_height / 32.0, max(1.0, self.display_width / 128.0))
+        if s >= 1.75:
+            return ("10x20.bdf", "7x13.bdf")     # big panels (e.g. 256x64)
+        if s >= 1.25:
+            return ("7x13.bdf", "5x8.bdf")       # medium (e.g. 192x48)
+        return ("6x10.bdf", "4x6.bdf")           # small / narrow (e.g. 128x32)
 
     def _load_fonts(self) -> Dict[str, Any]:
-        height_scale = self.display_height / 32.0
         cfg = self.config.get("customization", {})
+        auto_scale = cfg.get("auto_scale", True)
+        big, small = self._font_tier()
+        defaults = {"header": big, "position": big, "detail": small, "small": small}
+
+        # Legacy TTF fallback: if a user overrides a role with a scalable TTF and
+        # gives no explicit size, scale it by the same width-aware factor and snap
+        # it to the font's pixel grid so it stays crisp.
+        type_scale = min(self.display_height / 32.0, max(1.0, self.display_width / 128.0))
 
         fonts = {}
-        # header / position: PressStart2P blocky pixel font
-        for key, default_size in [("header", 8), ("position", 8)]:
-            fonts[key] = self._load_font(
-                cfg.get(key + "_text", {}).get("font", "PressStart2P-Regular.ttf"),
-                int(cfg.get(key + "_text", {}).get("font_size", max(6, int(default_size * height_scale)))))
-        # detail / small: compact 4x6 font
-        for key, default_size in [("detail", 6), ("small", 6)]:
-            fonts[key] = self._load_font(
-                cfg.get(key + "_text", {}).get("font", "4x6-font.ttf"),
-                int(cfg.get(key + "_text", {}).get("font_size", max(5, int(default_size * height_scale)))))
-
+        for key in ("header", "position", "detail", "small"):
+            c = cfg.get(key + "_text", {})
+            font_name = c.get("font") or defaults[key]
+            user_size = c.get("font_size")
+            if font_name in _BDF_NATIVE_SIZE:
+                size = _BDF_NATIVE_SIZE[font_name]      # bitmap: always native px
+            elif user_size:
+                size = int(user_size)
+            else:
+                base = 8 if key in ("header", "position") else 6
+                floor = 6 if key in ("header", "position") else 5
+                target = max(floor, int(base * type_scale))
+                size = _snap_font_size(font_name, target) if auto_scale else target
+            fonts[key] = self._load_font(font_name, int(size))
         return fonts
 
     def _load_font(self, font_name: str, size: int) -> Union[ImageFont.FreeTypeFont, Any]:
@@ -188,6 +326,64 @@ class F1Renderer:
             if self._tw(draw, text + "..", font) <= max_w:
                 return text + ".."
         return text
+
+    def _fit_text(self, draw: ImageDraw.ImageDraw, candidates: List[str],
+                  font, max_w: int) -> str:
+        """Return the first candidate that fits max_w; else truncate the last.
+        Lets wide panels show the full form and narrow ones a short form,
+        driven by actual measured width rather than a font-specific table."""
+        last = ""
+        for c in candidates:
+            if not c:
+                continue
+            last = c
+            if self._tw(draw, c, font) <= max_w:
+                return c
+        return self._truncate(draw, last, font, max_w)
+
+    def _fit_team_name(self, draw: ImageDraw.ImageDraw, constructor_id: str,
+                       font, max_w: int) -> str:
+        """Full team name if it fits, else the compact short form, else truncated."""
+        return self._fit_text(draw, [_team_full(constructor_id),
+                                     _team_short(constructor_id)], font, max_w)
+
+    def _body_top(self, content_h: int, block_h: int, min_top: int = 2) -> int:
+        """Top y for a content block of block_h within content_h. On tall panels
+        the block is vertically centered so cards don't cluster at the top and
+        leave the lower half empty; on short (<=32px) panels it stays top-aligned
+        so those layouts render exactly as before."""
+        if not self.is_tall:
+            return min_top
+        return max(min_top, (content_h - block_h) // 2)
+
+    def _spread_ys(self, content_h: int, row_heights: List[int],
+                   top_pad: int = 2) -> List[int]:
+        """Y positions for a vertical stack of rows.
+
+        On tall panels (>=48px) the rows are spread to fill content_h — the first
+        sits near the top, the last near the bottom, gaps equalized — so cards use
+        the whole height instead of clustering. On short panels they pack from the
+        top with the compact gap, i.e. the pre-existing layout is unchanged.
+        Callers that share one set of ys across two columns (e.g. a 2-row name
+        column beside a 3-row stat column) keep their rows aligned."""
+        n = len(row_heights)
+        if n == 0:
+            return []
+        if not self.is_tall:
+            ys, y = [], top_pad
+            for h in row_heights:
+                ys.append(y)
+                y += h + self.gap_y
+            return ys
+        if n == 1:
+            return [max(top_pad, (content_h - row_heights[0]) // 2)]
+        total = sum(row_heights)
+        gap = max(self.gap_y, (content_h - 2 * top_pad - total) / (n - 1))
+        ys, y = [], float(top_pad)
+        for h in row_heights:
+            ys.append(int(round(y)))
+            y += h + gap
+        return ys
 
     # ─── Accent Bar ───────────────────────────────────────────────────
 
@@ -266,8 +462,7 @@ class F1Renderer:
         y = 2
 
         # F1 logo
-        logo_h = min(10, self.display_height // 3)
-        f1_logo = self.logo_loader.get_f1_logo(max_height=logo_h, max_width=int(self.display_width * 0.12))
+        f1_logo = self.logo_loader.get_f1_logo(max_height=self.f1_logo_h, max_width=self.f1_logo_w)
         if f1_logo:
             img.paste(f1_logo, (x, y), f1_logo)
             x += f1_logo.width + 3
@@ -277,21 +472,28 @@ class F1Renderer:
         self._draw_text_outlined(draw, (x, y), title_trunc, self.fonts["detail"], fill=(220, 220, 220))
         y += self._th(draw, "A", self.fonts["detail"]) + 2
 
-        # Season year + round info
-        if round_num > 0 and self.standings_header_show_round:
-            year_text = str(season)
-            rd_text = f"Rd {round_num}/{total_rounds}"
-            self._draw_text_outlined(draw, (4, y), year_text, self.fonts["small"], fill=(100, 100, 100))
-            rd_x = self.display_width - self._tw(draw, rd_text, self.fonts["small"]) - 3
-            self._draw_text_outlined(draw, (rd_x, y), rd_text, self.fonts["small"], fill=(255, 180, 0))
-            y += self._th(draw, "A", self.fonts["small"]) + 2
+        # Season year/round row + progress bar. On tall panels the bar drops to
+        # the bottom (with the year/round row just above it) so the header fills
+        # the height instead of clustering under the title.
+        if round_num > 0 and total_rounds > 0:
+            sh = self._th(draw, "A", self.fonts["small"])
+            if self.is_tall:
+                bar_y = self.display_height - 4
+                row_y = bar_y - sh - 3
+            else:
+                bar_y = min(y + sh + 2, self.display_height - 3)
+                row_y = y
 
-        # Season progress bar
-        if round_num > 0 and total_rounds > 0 and y + 3 < self.display_height:
+            if self.standings_header_show_round and row_y + sh <= self.display_height:
+                year_text = str(season)
+                rd_text = f"Rd {round_num}/{total_rounds}"
+                self._draw_text_outlined(draw, (4, row_y), year_text, self.fonts["small"], fill=(100, 100, 100))
+                rd_x = self.display_width - self._tw(draw, rd_text, self.fonts["small"]) - 3
+                self._draw_text_outlined(draw, (rd_x, row_y), rd_text, self.fonts["small"], fill=(255, 180, 0))
+
             bar_x0 = 4
             bar_x1 = self.display_width - 4
             bar_w = bar_x1 - bar_x0
-            bar_y = y
             draw.rectangle([bar_x0, bar_y, bar_x1, bar_y + 2], fill=(30, 30, 30))
             fill_w = int(bar_w * min(1.0, round_num / total_rounds))
             if fill_w > 0:
@@ -333,8 +535,9 @@ class F1Renderer:
         self._draw_accent_bar(draw, cid, extra=1 if is_fav else 0)
         x = self.accent_bar_width + (1 if is_fav else 0) + 2
 
-        # Team logo
-        logo = self.logo_loader.get_team_logo(cid, max(8, int(content_h * 0.85)), max(8, int(content_h * 0.85)))
+        # Team logo (larger on tall panels so the card fills the height)
+        lsz = self._logo_box(content_h)
+        logo = self.logo_loader.get_team_logo(cid, lsz, lsz)
         if logo:
             ly = (content_h - logo.height) // 2
             img.paste(logo, (x, ly), logo)
@@ -344,52 +547,50 @@ class F1Renderer:
         content_max_x = self.display_width - self.stat_zone_w
         stat_x = self.display_width - self.stat_zone_w + 1
 
-        # ── Row 1: Position + Code ──────────────────────────────────
+        # Rows: left column is [P#+CODE, team]; stat column is [pts, W/P, +last].
+        # Spread them to fill the height on tall panels (shared ys keep the two
+        # columns aligned); packed from the top on 32-high panels (unchanged).
         pos_text = f"P{entry.get('position', '?')}"
+        ph = self._th(draw, pos_text, self.fonts["position"])
+        sh = self._th(draw, "A", self.fonts["small"])
+        wins = entry.get("wins", 0)
+        poles = entry.get("poles", 0)
+        wp_text = f"{wins}W {poles}P"
+        pts_text = f"{int(entry.get('points', 0))}pt"
+        last_race_pts = int(entry.get("last_race_pts", 0)) if self.show_last_race_pts else 0
+        n_rows = 3 if last_race_pts > 0 else 2
+        ys = self._spread_ys(content_h, [ph] + [sh] * (n_rows - 1))
+
+        # ── Row 1: Position + Code (left) ────────────────────────────
         pos_color = (255, 215, 0) if is_fav else (200, 200, 200)
-        self._draw_text_outlined(draw, (x, 2), pos_text, self.fonts["position"], fill=pos_color)
+        self._draw_text_outlined(draw, (x, ys[0]), pos_text, self.fonts["position"], fill=pos_color)
         px = x + self._tw(draw, pos_text, self.fonts["position"]) + 3
 
         code = entry.get("code", "???")
         code_color = (255, 215, 0) if is_fav else (255, 255, 255)
         code_text = self._truncate(draw, code, self.fonts["position"], content_max_x - px)
-        self._draw_text_outlined(draw, (px, 2), code_text, self.fonts["position"], fill=code_color)
+        self._draw_text_outlined(draw, (px, ys[0]), code_text, self.fonts["position"], fill=code_color)
 
-        # ── Row 2: Team name ──────────────────────────────────────
-        row2_y = 2 + self._th(draw, pos_text, self.fonts["position"]) + 2
-        if row2_y + 5 < content_h:
-            team_disp = _team_short(cid)
-            team_disp = self._truncate(draw, team_disp, self.fonts["small"], content_max_x - x)
-            self._draw_text_outlined(draw, (x, row2_y), team_disp, self.fonts["small"],
+        # ── Row 2: Team name (left) ──────────────────────────────────
+        if ys[1] + 5 < content_h:
+            team_disp = self._fit_team_name(draw, cid, self.fonts["small"], content_max_x - x)
+            self._draw_text_outlined(draw, (x, ys[1]), team_disp, self.fonts["small"],
                                      fill=_team_color_bright(cid), outline=(0, 0, 0))
 
-        # ── Stat zone: Points (row 1) + Wins/Poles (row 2) ────────
-        pts_text = f"{int(entry.get('points', 0))}pt"
-        self._draw_text_outlined(draw, (stat_x, 2), pts_text, self.fonts["detail"], fill=(255, 220, 50))
-
-        row2_stat_y = 2 + self._th(draw, pts_text, self.fonts["detail"]) + 2
-        wins = entry.get("wins", 0)
-        poles = entry.get("poles", 0)
-        wp_text = f"{wins}W {poles}P"
-        if row2_stat_y + 5 < content_h:
-            self._draw_text_outlined(draw, (stat_x, row2_stat_y), wp_text,
+        # ── Stat column: points / wins·poles / last-race points ──────
+        self._draw_text_outlined(draw, (stat_x, ys[0]), pts_text, self.fonts["detail"], fill=(255, 220, 50))
+        if ys[1] + 5 < content_h:
+            self._draw_text_outlined(draw, (stat_x, ys[1]), wp_text,
                                      self.fonts["small"], fill=(160, 160, 160))
-
-        # ── Stat zone row 3: Last race points ─────────────────────
-        if self.show_last_race_pts:
-            last_race_pts = int(entry.get("last_race_pts", 0))
-            if last_race_pts > 0:
-                lrp_str = f"+{last_race_pts}"
-                if last_race_pts >= 18:
-                    lrp_color = (255, 200, 50)   # gold — podium/win points
-                elif last_race_pts >= 10:
-                    lrp_color = (100, 210, 100)  # green — solid points
-                else:
-                    lrp_color = (120, 120, 120)  # grey — small haul
-                row3_stat_y = row2_stat_y + self._th(draw, wp_text, self.fonts["small"]) + 2
-                if row3_stat_y + 4 < content_h:
-                    draw.text((stat_x, row3_stat_y), lrp_str,
-                              font=self.fonts["small"], fill=lrp_color)
+        if last_race_pts > 0 and len(ys) > 2 and ys[2] + 4 < content_h:
+            lrp_str = f"+{last_race_pts}"
+            if last_race_pts >= 18:
+                lrp_color = (255, 200, 50)   # gold — podium/win points
+            elif last_race_pts >= 10:
+                lrp_color = (100, 210, 100)  # green — solid points
+            else:
+                lrp_color = (120, 120, 120)  # grey — small haul
+            draw.text((stat_x, ys[2]), lrp_str, font=self.fonts["small"], fill=lrp_color)
 
         if is_live and live_session:
             self._draw_live_badge(draw, live_session)
@@ -426,9 +627,10 @@ class F1Renderer:
         self._draw_accent_bar(draw, cid, extra=1 if is_fav else 0)
         x = self.accent_bar_width + (1 if is_fav else 0) + 2
 
-        # Logo: height capped at 85% of content, width capped at 15px to leave room for name
-        logo_h = max(8, int(content_h * 0.85))
-        logo_w = min(15, logo_h)
+        # Logo: fills the content height (bigger on tall panels), width capped so
+        # the team name still has room on narrow panels.
+        logo_h = self._logo_box(content_h)
+        logo_w = logo_h if self.is_tall else min(logo_h, self.constructor_logo_w)
         logo = self.logo_loader.get_team_logo(cid, logo_h, logo_w)
         if logo:
             ly = (content_h - logo.height) // 2
@@ -439,75 +641,72 @@ class F1Renderer:
         stat_x = self.display_width - self.stat_zone_w + 1
         content_max_x = stat_x - 2
 
-        # ── Row 1: TEAM NAME — use position font if it fits, else detail ──
-        team_name = _team_short(cid)
+        # Team name: prefer the FULL name over a shortened one. Use the big
+        # (position) font if the full name fits its width, else drop to the
+        # smaller detail font if the full name fits that, else fall back to the
+        # short form / truncation.
         avail = content_max_x - x
-        name_font = self.fonts["position"] if self._tw(draw, team_name, self.fonts["position"]) <= avail else self.fonts["detail"]
-        team_name = self._truncate(draw, team_name, name_font, avail)
-        name_y = 1 if name_font is self.fonts["position"] else 4
-        self._draw_text_outlined(draw, (x, name_y), team_name, name_font,
-                                 fill=_team_color_bright(cid), outline=(0, 0, 0))
+        full_name = _team_full(cid)
+        if self._tw(draw, full_name, self.fonts["position"]) <= avail:
+            name_font, team_name = self.fonts["position"], full_name
+        elif self._tw(draw, full_name, self.fonts["detail"]) <= avail:
+            name_font, team_name = self.fonts["detail"], full_name
+        else:
+            name_font = (self.fonts["position"]
+                         if self._tw(draw, _team_short(cid), self.fonts["position"]) <= avail
+                         else self.fonts["detail"])
+            team_name = self._fit_team_name(draw, cid, name_font, avail)
 
-        # ── Row 1 stat: Points (right-aligned) ───────────────────
+        # Rows: left [name, P#, driver-split]; right [pts, wins, +last]. Spread to
+        # fill height on tall panels, packed from top on 32-high (unchanged).
+        sh = self._th(draw, "A", self.fonts["small"])
+        name_h = self._th(draw, "Ay", name_font)
+        pos_text = f"P{entry.get('position', '?')}"
+        last_race_pts = int(entry.get("last_race_pts", 0)) if self.show_last_race_pts else 0
+        team_drivers = entry.get("team_drivers", [])[:2] if self.show_driver_split else []
+        has_row3 = bool(team_drivers) or last_race_pts > 0
+        ys = self._spread_ys(content_h, [name_h] + [sh] * (2 if has_row3 else 1), top_pad=1)
+
+        # ── Row 1: team name (left) + points (right) ─────────────────
+        self._draw_text_outlined(draw, (x, ys[0]), team_name, name_font,
+                                 fill=_team_color_bright(cid), outline=(0, 0, 0))
         pts_text = f"{int(entry.get('points', 0))}pt"
-        self._draw_text_outlined(draw, (stat_x, 2), pts_text, self.fonts["detail"],
+        self._draw_text_outlined(draw, (stat_x, ys[0] + 1), pts_text, self.fonts["detail"],
                                  fill=(255, 220, 50))
 
-        # ── Row 2: P# (left) + Wins (right stat) ─────────────────
-        row2_y = name_y + self._th(draw, team_name, name_font) + 2
-        if row2_y + 5 < content_h:
-            pos_text = f"P{entry.get('position', '?')}"
+        # ── Row 2: P# (left) + wins (right) ──────────────────────────
+        if ys[1] + 5 < content_h:
             pos_color = (255, 215, 0) if is_fav else (150, 150, 150)
-            self._draw_text_outlined(draw, (x, row2_y), pos_text, self.fonts["small"],
+            self._draw_text_outlined(draw, (x, ys[1]), pos_text, self.fonts["small"],
                                      fill=pos_color)
-
             wins = entry.get("wins", 0)
-            wins_y = 2 + self._th(draw, pts_text, self.fonts["detail"]) + 2
-            if wins_y + 4 < content_h:
-                self._draw_text_outlined(draw, (stat_x, wins_y), f"{wins}W",
-                                         self.fonts["small"], fill=(160, 160, 160))
+            self._draw_text_outlined(draw, (stat_x, ys[1]), f"{wins}W",
+                                     self.fonts["small"], fill=(160, 160, 160))
 
-            # Last race points for this constructor (sum of both drivers)
-            if self.show_last_race_pts:
-                last_race_pts = int(entry.get("last_race_pts", 0))
-                if last_race_pts > 0:
-                    lrp_str = f"+{last_race_pts}"
-                    lrp_color = (255, 200, 50) if last_race_pts >= 30 else (
-                                 (100, 210, 100) if last_race_pts >= 15 else (120, 120, 120))
-                    lrp_y = wins_y + self._th(draw, "A", self.fonts["small"]) + 2
-                    if lrp_y + 4 < content_h:
-                        draw.text((stat_x, lrp_y), lrp_str,
-                                  font=self.fonts["small"], fill=lrp_color)
-
-            # ── Row 3: Driver points split ────────────────────────────
-            if self.show_driver_split:
-                team_drivers = entry.get("team_drivers", [])[:2]
-                if team_drivers:
-                    row3_y = row2_y + self._th(draw, pos_text, self.fonts["small"]) + 2
-                    if row3_y + 4 < content_h:
-                        tc_bright = _team_color_bright(cid, min_max=120)
-                        parts = []
-                        for d in team_drivers:
-                            code = d.get("code", "???")
-                            pts_d = int(d.get("points", 0))
-                            parts.append((code, str(pts_d)))
-
-                        # Left-align first driver, right-align second driver
-                        if len(parts) >= 1:
-                            d1_code, d1_pts = parts[0]
-                            d1_str = f"{d1_code} {d1_pts}"
-                            draw.text((x, row3_y), d1_str,
-                                      font=self.fonts["small"], fill=tc_bright)
-                        if len(parts) >= 2:
-                            d2_code, d2_pts = parts[1]
-                            d2_str = f"{d2_code} {d2_pts}"
-                            d2_w = self._tw(draw, d2_str, self.fonts["small"])
-                            d2_x = content_max_x - d2_w
-                            d1_right = x + self._tw(draw, d1_str, self.fonts["small"]) + 2
-                            if d2_x > d1_right:
-                                dim_color = tuple(max(0, int(c * 0.80)) for c in tc_bright)
-                                draw.text((d2_x, row3_y), d2_str,
-                                          font=self.fonts["small"], fill=dim_color)
+        # ── Row 3: driver split, OR last-race points ─────────────────
+        # The driver split spans the full width (it already shows recent form);
+        # only fall back to the "+N" last-race stat when there's no split, so the
+        # two never collide at the content/stat-zone boundary.
+        if has_row3 and len(ys) > 2 and ys[2] + 4 < content_h:
+            if team_drivers:
+                tc_bright = _team_color_bright(cid, min_max=120)
+                parts = [(d.get("code", "???"), str(int(d.get("points", 0)))) for d in team_drivers]
+                d1_str = f"{parts[0][0]} {parts[0][1]}"
+                draw.text((x, ys[2]), d1_str, font=self.fonts["small"], fill=tc_bright)
+                if len(parts) >= 2:
+                    d2_str = f"{parts[1][0]} {parts[1][1]}"
+                    # Right-align to the panel edge (not the stat-zone boundary)
+                    # so the second driver has the full width and never abuts.
+                    d2_x = self.display_width - self.pad_x - self._tw(draw, d2_str, self.fonts["small"])
+                    d1_right = x + self._tw(draw, d1_str, self.fonts["small"]) + 4
+                    if d2_x > d1_right:
+                        dim_color = tuple(max(0, int(c * 0.80)) for c in tc_bright)
+                        draw.text((d2_x, ys[2]), d2_str, font=self.fonts["small"], fill=dim_color)
+            elif last_race_pts > 0:
+                lrp_str = f"+{last_race_pts}"
+                lrp_color = (255, 200, 50) if last_race_pts >= 30 else (
+                             (100, 210, 100) if last_race_pts >= 15 else (120, 120, 120))
+                draw.text((stat_x, ys[2]), lrp_str, font=self.fonts["small"], fill=lrp_color)
 
         if is_live and live_session:
             self._draw_live_badge(draw, live_session)
@@ -535,7 +734,7 @@ class F1Renderer:
         draw.rectangle([0, 0, self.display_width - 1, header_h + 1], fill=(20, 0, 0))
 
         short_name_trunc = self._truncate(draw, short_name, self.fonts["detail"],
-                                          self.display_width - 40)
+                                          self.display_width - self.header_date_reserve)
         self._draw_text_outlined(draw, (3, 1), short_name_trunc, self.fonts["detail"], fill=F1_RED)
 
         # Date right-aligned in header
@@ -560,6 +759,12 @@ class F1Renderer:
         section_w = self.display_width // top_n
         divider_color = (40, 40, 40)
 
+        # Row positions within a podium column: [P# , CODE , gap/time]. Spread to
+        # fill the column height on tall panels, packed on 32-high (unchanged).
+        sh = self._th(draw, "A", self.fonts["small"])
+        dh = self._th(draw, "A", self.fonts["detail"])
+        row_ys = self._spread_ys(content_h, [sh, dh, sh], top_pad=3)
+
         for i in range(top_n):
             r = results[i]
             pos = r.get("position", i + 1)
@@ -583,14 +788,15 @@ class F1Renderer:
 
             # Position label (medal colored)
             pos_label = f"P{pos}"
-            py2 = podium_y + 3
+            py2 = podium_y + row_ys[0]
             self._draw_text_outlined(draw, (x0 + 2, py2), pos_label,
                                      self.fonts["small"], fill=medal)
             label_w = self._tw(draw, pos_label, self.fonts["small"])
 
-            # Mini logo (top-right of section)
+            # Mini logo (top-right of section) — larger on tall panels
+            logo_frac = 0.6 if self.is_tall else 0.45
             mini_logo = self.logo_loader.get_team_logo(
-                cid, max_height=int(content_h * 0.45), max_width=int(section_w * 0.35))
+                cid, max_height=int(content_h * logo_frac), max_width=int(section_w * 0.42))
             logo_x = x1 - (mini_logo.width + 1) if mini_logo else x1
             logo_y_pos = podium_y + 2
             if mini_logo and logo_y_pos + mini_logo.height <= self.display_height:
@@ -618,7 +824,7 @@ class F1Renderer:
                                   font=self.fonts["small"], fill=delta_color)
 
             # Driver code on second row
-            code_y = py2 + self._th(draw, pos_label, self.fonts["small"]) + 1
+            code_y = podium_y + row_ys[1]
             code_max_w = section_w - 4 - (mini_logo.width + 2 if mini_logo else 0)
             code_trunc = self._truncate(draw, code, self.fonts["detail"], code_max_w)
             self._draw_text_outlined(draw, (x0 + 2, code_y), code_trunc,
@@ -626,7 +832,7 @@ class F1Renderer:
 
             # Gap/time or retirement status on third row
             status = r.get("status", "")
-            gap_y = code_y + self._th(draw, "A", self.fonts["detail"]) + 1
+            gap_y = podium_y + row_ys[2]
             if gap_y + 5 < self.display_height:
                 if self.show_dnf_status and status and status not in ("Finished", ""):
                     # Retired / lapped
@@ -689,7 +895,7 @@ class F1Renderer:
         draw.rectangle([0, 0, self.display_width - 1, header_h + 1], fill=(20, 0, 0))
         race_name = race.get("race_name", "Grand Prix").replace("Grand Prix", "GP")
         name_trunc = self._truncate(draw, race_name, self.fonts["detail"],
-                                    self.display_width - 42)
+                                    self.display_width - self.header_date_reserve)
         self._draw_text_outlined(draw, (3, 1), name_trunc, self.fonts["detail"], fill=F1_RED)
         if race.get("date"):
             try:
@@ -727,7 +933,7 @@ class F1Renderer:
 
         code_x = x + pos_w + 4
         code_trunc = self._truncate(draw, code, self.fonts["position"],
-                                    logo_left - code_x - 40)
+                                    logo_left - code_x - self.header_date_reserve)
         self._draw_text_outlined(draw, (code_x, content_y), code_trunc,
                                  self.fonts["position"], fill=tc_bright)
 
@@ -989,16 +1195,26 @@ class F1Renderer:
         x = self.accent_bar_width + 2
 
         content_h = self.display_height
-        content_max_x = self.display_width - (self.logo_max + 4)
+        # Team logo on the right — bigger on tall panels. Reserve exactly the
+        # width it occupies (it's drawn at the same fraction below).
+        row_logo_frac = 0.8 if self.is_tall else 0.65
+        row_logo_w = min(int(content_h * row_logo_frac), self.logo_box_max)
+        content_max_x = self.display_width - (row_logo_w + 4)
 
-        # Row 1: pos + code
+        # Rows: [P#+CODE (+time)] and [gap], spread to fill height on tall panels,
+        # packed from the top on 32-high panels (unchanged).
         pos_text = f"P{entry.get('position', '?')}"
-        self._draw_text_outlined(draw, (x, 2), pos_text, self.fonts["position"],
+        ph = self._th(draw, pos_text, self.fonts["position"])
+        sh = self._th(draw, "A", self.fonts["small"])
+        ys = self._spread_ys(content_h, [ph, sh])
+        top = ys[0]
+
+        self._draw_text_outlined(draw, (x, top), pos_text, self.fonts["position"],
                                  fill=(200, 200, 200))
         px = x + self._tw(draw, pos_text, self.fonts["position"]) + 3
 
         code = entry.get("code", "???")
-        self._draw_text_outlined(draw, (px, 2), code, self.fonts["position"],
+        self._draw_text_outlined(draw, (px, top), code, self.fonts["position"],
                                  fill=(255, 255, 255))
         cx = px + self._tw(draw, code, self.fonts["position"]) + 4
 
@@ -1009,17 +1225,17 @@ class F1Renderer:
         if time_str:
             time_trunc = self._truncate(draw, time_str, self.fonts["detail"],
                                         content_max_x - cx)
-            self._draw_text_outlined(draw, (cx, 3), time_trunc, self.fonts["detail"],
+            self._draw_text_outlined(draw, (cx, top + 1), time_trunc, self.fonts["detail"],
                                      fill=(200, 200, 200))
         elif show_eliminated:
             elim = entry.get("eliminated_in", "")
             if elim:
-                self._draw_text_outlined(draw, (cx, 3), "OUT", self.fonts["detail"],
+                self._draw_text_outlined(draw, (cx, top + 1), "OUT", self.fonts["detail"],
                                          fill=(220, 60, 60))
 
         # Gap below time
         gap_str = entry.get(gap_key, "") if gap_key else ""
-        row2_y = 2 + self._th(draw, pos_text, self.fonts["position"]) + 2
+        row2_y = ys[1]
         if gap_str and row2_y + 5 < content_h:
             gap_trunc = self._truncate(draw, gap_str, self.fonts["small"],
                                        content_max_x - x)
@@ -1043,7 +1259,7 @@ class F1Renderer:
 
         # Team logo right-aligned
         logo = self.logo_loader.get_team_logo(
-            cid, max_height=int(content_h * 0.65), max_width=int(content_h * 0.65))
+            cid, max_height=row_logo_w, max_width=row_logo_w)
         if logo:
             lx = self.display_width - logo.width - 2
             ly = (content_h - logo.height) // 2
@@ -1133,9 +1349,9 @@ class F1Renderer:
 
             # Layout: [acc][team_abbr][winner_code][>][loser_code][delta]
             x = 3
-            team_abbr = _team_short(cid)[:5]  # up to 5 chars to keep it compact
+            # Compact fixed column — fit the short name to it (measured, no [:5] guess).
             team_max = self._tw(draw, "RSTM.", self.fonts["small"]) + 2
-            team_trunc = self._truncate(draw, team_abbr, self.fonts["small"], team_max)
+            team_trunc = self._truncate(draw, _team_short(cid), self.fonts["small"], team_max)
             draw.text((x, cy), team_trunc, font=self.fonts["small"], fill=tc_dim)
             x += team_max + 2
 
@@ -1172,31 +1388,46 @@ class F1Renderer:
                                        gap_key=f"{session_key}_gap",
                                        show_eliminated=True, session_label=session_label)
 
-    def render_qualifying_header(self, session_label: str = "Q3", race_name: str = "") -> Image.Image:
+    def _render_session_header(self, title: str, subtitle: str,
+                               title_color: tuple, bar_color: tuple) -> Image.Image:
+        """Shared layout for the qualifying/practice/sprint intro headers:
+        colored top bar + F1 logo + title (+ optional subtitle). On tall panels
+        the content group is vertically centered and the bar grows to contain it
+        so the header fills the height instead of clustering at the top."""
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
-        # Top bar
-        draw.rectangle([0, 0, self.display_width - 1, self.display_height // 2], fill=(15, 0, 30))
 
-        f1_logo = self.logo_loader.get_f1_logo(
-            max_height=int(self.display_height * 0.4),
-            max_width=int(self.display_width * 0.12))
+        title_h = self._th(draw, "Ay", self.fonts["detail"])
+        sub_h = self._th(draw, "Ay", self.fonts["small"]) if subtitle else 0
+        group_h = title_h + (self.gap_y + sub_h if subtitle else 0)
+        top = self._body_top(self.display_height, group_h)
+        bar_bottom = self.display_height // 2
+        if self.is_tall:
+            bar_bottom = max(bar_bottom, top + group_h + 1)
+        draw.rectangle([0, 0, self.display_width - 1, bar_bottom], fill=bar_color)
+
+        f1_logo = self.logo_loader.get_f1_logo(max_height=self.f1_logo_h, max_width=self.f1_logo_w)
         hx = 2
         if f1_logo:
-            img.paste(f1_logo, (2, 2), f1_logo)
+            ly = top + max(0, (title_h - f1_logo.height) // 2)
+            img.paste(f1_logo, (2, ly), f1_logo)
             hx = f1_logo.width + 5
 
-        txt = f"QUALIFYING - {session_label}"
-        self._draw_text_outlined(draw, (hx, 2), txt, self.fonts["detail"], fill=(255, 215, 0))
+        title_trunc = self._truncate(draw, title, self.fonts["detail"], self.display_width - hx - 2)
+        self._draw_text_outlined(draw, (hx, top), title_trunc, self.fonts["detail"], fill=title_color)
 
-        if race_name:
-            ry = 2 + self._th(draw, txt, self.fonts["detail"]) + 2
-            short = race_name.replace("Grand Prix", "GP")
-            short = self._truncate(draw, short, self.fonts["small"], self.display_width - 4)
+        if subtitle:
+            ry = top + title_h + self.gap_y
+            sub = self._truncate(draw, subtitle, self.fonts["small"], self.display_width - 4)
             if ry + 5 < self.display_height:
-                self._draw_text_outlined(draw, (2, ry), short, self.fonts["small"],
+                self._draw_text_outlined(draw, (2, ry), sub, self.fonts["small"],
                                          fill=(160, 160, 160))
         return img
+
+    def render_qualifying_header(self, session_label: str = "Q3", race_name: str = "") -> Image.Image:
+        subtitle = race_name.replace("Grand Prix", "GP") if race_name else ""
+        return self._render_session_header(f"QUALIFYING - {session_label}", subtitle,
+                                           (255, 215, 0), (15, 0, 30))
 
     # ─── Practice Card ─────────────────────────────────────────────────
 
@@ -1204,28 +1435,8 @@ class F1Renderer:
         return self._render_driver_row(entry, time_key="best_lap", gap_key="gap")
 
     def render_practice_header(self, session_name: str = "FP3", circuit: str = "") -> Image.Image:
-        img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
-        draw = ImageDraw.Draw(img)
-        draw.rectangle([0, 0, self.display_width - 1, self.display_height // 2], fill=(0, 20, 10))
-
-        f1_logo = self.logo_loader.get_f1_logo(
-            max_height=int(self.display_height * 0.4),
-            max_width=int(self.display_width * 0.12))
-        hx = 2
-        if f1_logo:
-            img.paste(f1_logo, (2, 2), f1_logo)
-            hx = f1_logo.width + 5
-
         label = f"FREE PRACTICE {session_name[-1]}" if len(session_name) == 3 else session_name
-        self._draw_text_outlined(draw, (hx, 2), label, self.fonts["detail"], fill=(80, 220, 120))
-
-        if circuit:
-            cy = 2 + self._th(draw, label, self.fonts["detail"]) + 2
-            c_trunc = self._truncate(draw, circuit, self.fonts["small"], self.display_width - 4)
-            if cy + 5 < self.display_height:
-                self._draw_text_outlined(draw, (2, cy), c_trunc, self.fonts["small"],
-                                         fill=(160, 160, 160))
-        return img
+        return self._render_session_header(label, circuit or "", (80, 220, 120), (0, 20, 10))
 
     # ─── Sprint Card ───────────────────────────────────────────────────
 
@@ -1233,29 +1444,8 @@ class F1Renderer:
         return self._render_driver_row(entry, time_key="time")
 
     def render_sprint_header(self, race_name: str = "") -> Image.Image:
-        img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
-        draw = ImageDraw.Draw(img)
-        draw.rectangle([0, 0, self.display_width - 1, self.display_height // 2], fill=(30, 10, 0))
-
-        f1_logo = self.logo_loader.get_f1_logo(
-            max_height=int(self.display_height * 0.4),
-            max_width=int(self.display_width * 0.12))
-        hx = 2
-        if f1_logo:
-            img.paste(f1_logo, (2, 2), f1_logo)
-            hx = f1_logo.width + 5
-
-        self._draw_text_outlined(draw, (hx, 2), "SPRINT RACE", self.fonts["detail"],
-                                 fill=(255, 120, 0))
-
-        if race_name:
-            ry = 2 + self._th(draw, "A", self.fonts["detail"]) + 2
-            short = race_name.replace("Grand Prix", "GP")
-            short = self._truncate(draw, short, self.fonts["small"], self.display_width - 4)
-            if ry + 5 < self.display_height:
-                self._draw_text_outlined(draw, (2, ry), short, self.fonts["small"],
-                                         fill=(160, 160, 160))
-        return img
+        subtitle = race_name.replace("Grand Prix", "GP") if race_name else ""
+        return self._render_session_header("SPRINT RACE", subtitle, (255, 120, 0), (30, 10, 0))
 
     # ─── Upcoming Race Card ────────────────────────────────────────────
 
@@ -1268,14 +1458,16 @@ class F1Renderer:
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
 
-        # Circuit image on RIGHT
+        # Circuit map on the RIGHT — a bigger outline that fills the height, so
+        # the course is the visual anchor rather than a small side thumbnail.
         circuit_img = None
         if self.show_circuit_map:
+            map_w = int(self.display_width * (0.46 if self.is_tall else 0.40))
             circuit_img = self.logo_loader.get_circuit_image(
                 circuit_name=race.get("circuit_name", ""),
                 city=race.get("city", ""),
-                max_height=self.display_height - 4,
-                max_width=int(self.display_width * 0.38))
+                max_height=self.display_height - 2,
+                max_width=map_w)
 
         if circuit_img:
             cx = self.display_width - circuit_img.width - 2
@@ -1288,53 +1480,31 @@ class F1Renderer:
         # Red left accent stripe
         draw.rectangle([0, 0, 2, self.display_height - 1], fill=F1_RED)
         x = 4
-        y = 1
+        text_w = text_max_x - x
 
-        # Headline: short country/location name that fits in PressStart2P at 8px
-        _COUNTRY_DISPLAY = {
-            "United Kingdom": "BRITAIN",
-            "United States": "USA",
-            "Saudi Arabia": "SAUDI",
-            "United Arab Emirates": "ABU DHABI",
-            "UAE": "ABU DHABI",
-            "Netherlands": "DUTCH",
-            "Azerbaijan": "BAKU",
-        }
+        # ── Build the stacked info rows (headline, GP name, next session) ──
         country = race.get("country", "")
         city = race.get("city", "")
         race_name = race.get("short_name", race.get("name", ""))
 
         if country:
-            headline = _COUNTRY_DISPLAY.get(country, country).upper()
+            short_form = _COUNTRY_DISPLAY.get(country, "")
+            headline = self._fit_text(draw, [country.upper(), short_form.upper()],
+                                      self.fonts["header"], text_w)
         else:
-            # Strip "Grand Prix" — gives "Canadian", "Monaco", etc.
             headline = race_name.replace("Grand Prix", "").replace("GP", "").strip().upper()
+            headline = self._truncate(draw, headline, self.fonts["header"], text_w)
+        rows = [(headline, self.fonts["header"], (255, 255, 255))]
 
-        headline = self._truncate(draw, headline, self.fonts["header"], text_max_x - x)
-        self._draw_text_outlined(draw, (x, y), headline, self.fonts["header"],
-                                 fill=(255, 255, 255))
-        y += self._th(draw, headline, self.fonts["header"]) + 2
-
-        # GP name + city on row 2 (compact, detail font)
         gp_short = race_name.replace("Grand Prix", "GP")
-        if city and city.lower() not in gp_short.lower():
-            gp_short = f"{gp_short}"
-        if gp_short and y + 5 < self.display_height - 12:
-            loc_trunc = self._truncate(draw, gp_short, self.fonts["small"], text_max_x - x)
-            self._draw_text_outlined(draw, (x, y), loc_trunc, self.fonts["small"],
-                                     fill=(120, 120, 120))
-            y += self._th(draw, "A", self.fonts["small"]) + 1
+        if gp_short:
+            rows.append((self._truncate(draw, gp_short, self.fonts["small"], text_w),
+                         self.fonts["small"], (120, 120, 120)))
 
-        # Next session time
         next_type = race.get("next_session_type", "")
-        sessions = race.get("sessions", [])
-        next_date = ""
-        for sess in sessions:
-            if sess.get("type_abbr") == next_type and sess.get("date"):
-                next_date = sess["date"]
-                break
-
-        if next_type and next_date and y + 5 < self.display_height - 8:
+        next_date = next((s["date"] for s in race.get("sessions", [])
+                          if s.get("type_abbr") == next_type and s.get("date")), "")
+        if next_type and next_date:
             abbrs = {"FP1": "FP1", "FP2": "FP2", "FP3": "FP3",
                      "Qual": "QUALI", "Race": "RACE", "SS": "S.Q", "SR": "SPR"}
             sess_label = abbrs.get(next_type, next_type)
@@ -1344,14 +1514,24 @@ class F1Renderer:
                 next_line = f"{sess_label}: {time_str}"
             except (ValueError, TypeError):
                 next_line = f"NEXT: {sess_label}"
+            rows.append((self._truncate(draw, next_line, self.fonts["small"], text_w),
+                         self.fonts["small"], (80, 200, 255)))
 
-            next_line = self._truncate(draw, next_line, self.fonts["small"], text_max_x - x)
-            self._draw_text_outlined(draw, (x, y), next_line, self.fonts["small"],
-                                     fill=(80, 200, 255))
-            y += self._th(draw, "A", self.fonts["small"]) + 1
+        # Reserve a bottom strip for the countdown, then spread the info rows to
+        # fill the remaining height on tall panels (packed from top on 32-high).
+        countdown = race.get("countdown_seconds")
+        has_countdown = countdown is not None and countdown >= 0
+        bottom_reserve = (self._th(draw, "A", self.fonts["detail"]) + 4) if has_countdown else 0
+        avail_h = self.display_height - bottom_reserve
+        row_heights = [self._th(draw, t, f) for t, f, _ in rows]
+        ys = self._spread_ys(avail_h, row_heights, top_pad=1)
+        for (text, font, fill), ry, rh in zip(rows, ys, row_heights):
+            # Drop a row that would run into the reserved countdown strip
+            # (happens when packed on a short panel with no room to spare).
+            if ry + rh <= avail_h:
+                self._draw_text_outlined(draw, (x, ry), text, font, fill=fill)
 
         # Countdown (bottom, green)
-        countdown = race.get("countdown_seconds")
         if countdown is not None and countdown >= 0:
             cnt_y = self.display_height - self._th(draw, "A", self.fonts["detail"]) - 2
             if countdown < 3600:
@@ -1617,8 +1797,7 @@ class F1Renderer:
             draw.text((gap_x, row2_y), gap_text, font=self.fonts["small"],
                       fill=(255, 100, 100) if gap > 0 else (100, 255, 100))
 
-            team_disp = _team_short(cid)
-            team_disp = self._truncate(draw, team_disp, self.fonts["small"], gap_x - x - 2)
+            team_disp = self._fit_team_name(draw, cid, self.fonts["small"], gap_x - x - 2)
             self._draw_text_outlined(draw, (x, row2_y), team_disp, self.fonts["small"],
                                      fill=_team_color_bright(cid))
 
@@ -1733,9 +1912,7 @@ class F1Renderer:
         pts_w = self._tw(draw, pts_text, self.fonts["detail"]) + 2
         pts_x = self.display_width - pts_w
 
-        team_name = _team_short(cid)
-        team_name = self._truncate(draw, team_name, self.fonts["position"],
-                                   pts_x - x - 2)
+        team_name = self._fit_team_name(draw, cid, self.fonts["position"], pts_x - x - 2)
         self._draw_text_outlined(draw, (x, 1), team_name, self.fonts["position"],
                                  fill=_team_color_bright(cid), outline=(0, 0, 0))
         self._draw_text_outlined(draw, (pts_x, 2), pts_text, self.fonts["detail"],
@@ -1954,14 +2131,13 @@ class F1Renderer:
             cx2 += con_logo.width + 2
 
         # Constructor name + pts
-        con_name = _team_short(con_id)
         con_pts  = int(constructor_leader.get("points", 0))
         con_wins = int(constructor_leader.get("wins", 0))
         max_con_w = self.display_width - cx2 - 5
         con_name_font = (self.fonts["position"]
-                         if self._tw(draw, con_name, self.fonts["position"]) <= max_con_w
+                         if self._tw(draw, _team_short(con_id), self.fonts["position"]) <= max_con_w
                          else self.fonts["detail"])
-        con_name = self._truncate(draw, con_name, con_name_font, max_con_w)
+        con_name = self._fit_team_name(draw, con_id, con_name_font, max_con_w)
         self._draw_text_outlined(draw, (cx2, content_y), con_name, con_name_font,
                                  fill=_team_color_bright(con_id))
         con_pts_y = content_y + self._th(draw, con_name, con_name_font) + 1
@@ -2211,9 +2387,8 @@ class F1Renderer:
             img.paste(p1_logo, (p1_dx, ly), p1_logo)
             p1_dx += p1_logo.width + 2
 
-        p1_name = _team_short(p1_cid)
         p1_max_w = half_w - p1_dx - 3
-        name1_trunc = self._truncate(draw, p1_name, self.fonts["small"], p1_max_w)
+        name1_trunc = self._fit_team_name(draw, p1_cid, self.fonts["small"], p1_max_w)
         self._draw_text_outlined(draw, (p1_dx, content_y), name1_trunc,
                                  self.fonts["small"], fill=_team_color_bright(p1_cid))
         pts_y1 = content_y + self._th(draw, name1_trunc, self.fonts["small"]) + 1
@@ -2230,9 +2405,8 @@ class F1Renderer:
             ly = content_y + (content_h - p2_logo.height) // 2
             img.paste(p2_logo, (p2_logo_x, ly), p2_logo)
 
-        p2_name = _team_short(p2_cid)
         p2_max_w = p2_logo_x - half_w - 4
-        name2_trunc = self._truncate(draw, p2_name, self.fonts["small"], p2_max_w)
+        name2_trunc = self._fit_team_name(draw, p2_cid, self.fonts["small"], p2_max_w)
         name2_w = self._tw(draw, name2_trunc, self.fonts["small"])
         name2_x = p2_logo_x - name2_w - 2
         if name2_x < half_w + 3:

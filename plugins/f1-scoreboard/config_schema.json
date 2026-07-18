@@ -626,6 +626,12 @@
       "title": "Display Customization",
       "description": "Customize fonts for different text elements",
       "properties": {
+        "auto_scale": {
+          "type": "boolean",
+          "title": "Auto-scale fonts to display size",
+          "description": "Leave the font fields below blank to auto-pick a crisp pixel (bitmap) font sized for your panel. This toggle only affects a scalable TTF you choose manually: on, it scales that TTF with panel size and snaps it to its pixel grid; off, it uses the exact size below.",
+          "default": true
+        },
         "header_text": {
           "type": "object",
           "title": "Header Text",
@@ -635,8 +641,8 @@
               "x-advanced": true,
               "type": "string",
               "title": "Font",
-              "enum": ["PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
-              "default": "PressStart2P-Regular.ttf"
+              "enum": ["", "4x6.bdf", "5x8.bdf", "6x10.bdf", "7x13.bdf", "9x15.bdf", "10x20.bdf", "PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
+              "default": ""
             },
             "font_size": {
               "x-advanced": true,
@@ -659,8 +665,8 @@
               "x-advanced": true,
               "type": "string",
               "title": "Font",
-              "enum": ["PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
-              "default": "PressStart2P-Regular.ttf"
+              "enum": ["", "4x6.bdf", "5x8.bdf", "6x10.bdf", "7x13.bdf", "9x15.bdf", "10x20.bdf", "PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
+              "default": ""
             },
             "font_size": {
               "x-advanced": true,
@@ -683,8 +689,8 @@
               "x-advanced": true,
               "type": "string",
               "title": "Font",
-              "enum": ["PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
-              "default": "4x6-font.ttf"
+              "enum": ["", "4x6.bdf", "5x8.bdf", "6x10.bdf", "7x13.bdf", "9x15.bdf", "10x20.bdf", "PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
+              "default": ""
             },
             "font_size": {
               "x-advanced": true,
@@ -707,8 +713,8 @@
               "x-advanced": true,
               "type": "string",
               "title": "Font",
-              "enum": ["PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
-              "default": "4x6-font.ttf"
+              "enum": ["", "4x6.bdf", "5x8.bdf", "6x10.bdf", "7x13.bdf", "9x15.bdf", "10x20.bdf", "PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
+              "default": ""
             },
             "font_size": {
               "x-advanced": true,

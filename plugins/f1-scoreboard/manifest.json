@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.3.26",
+  "version": "1.5.1",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,24 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "released": "2026-07-18",
+      "version": "1.5.1",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Readability fixes: bigger font on 256x64+ panels; constructor cards show full team names (drop to a smaller pixel font before shortening); fixed driver-split/last-race-points overlap on the constructor card."
+    },
+    {
+      "released": "2026-07-18",
+      "version": "1.5.0",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Crisp per-size bitmap (BDF) fonts chosen by panel size; vertical-fill layout on tall panels (bigger logos, rows spread to fill height); larger circuit map on the upcoming card. Offline-deterministic golden tests added."
+    },
+    {
+      "released": "2026-07-17",
+      "version": "1.4.0",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Size-adaptive renderer: one central layout-metrics pass; width-aware font sizing with pixel-grid snapping; measured stat zone / header reservations; logos scale with the panel; full team/country names on wide panels."
+    },
     {
       "released": "2026-07-17",
       "version": "1.3.26",
