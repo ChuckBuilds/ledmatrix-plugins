@@ -1,7 +1,7 @@
 {
   "id": "tide-display",
   "name": "Tide Display",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "author": "ChuckBuilds",
   "description": "Coastal tide display with animated wave level, tide schedule, 24-hour chart, and tidal statistics. Powered by the free NOAA Tides & Currents API (US stations, no API key required).",
   "entry_point": "manager.py",
@@ -11,6 +11,12 @@
   "display_modes": ["current", "schedule", "chart", "stats"],
   "compatible_versions": [">=2.0.0"],
   "versions": [
+    {
+      "released": "2026-07-18",
+      "version": "1.1.3",
+      "notes": "Reliability: serve recent cached tides (up to 2 days) when a NOAA fetch fails instead of a stuck 'Loading' screen, and log NOAA error responses that were previously swallowed silently. Cache keys are no longer date-stamped, so entries overwrite in place instead of leaking one per day; old per-day keys are pruned automatically.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-17",
       "version": "1.1.2",
@@ -58,7 +64,7 @@
   "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/tide-display",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-07-17",
+  "last_updated": "2026-07-18",
   "stars": 0,
   "downloads": 0,
   "verified": true,

@@ -13,7 +13,7 @@ Find your station: tidesandcurrents.noaa.gov/stations.html
 """
 
 import math, time, logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Dict, List, Optional, Tuple
 
 import requests
@@ -140,29 +140,87 @@ class TidePlugin(BasePlugin):
         modes = [m for m in self.MODES if self.show_mode.get(m, True)]
         return modes or list(self.MODES)
 
+    # Serve tide predictions this many days stale (max) when NOAA is unreachable,
+    # rather than falling back to the "Loading" screen. Beyond this we'd be showing
+    # confidently-wrong times (tides shift ~50 min/day), so a placeholder is safer.
+    STALE_MAX_DAYS = 2
+
     def update(self):
         if not self.station_id: return
+        self._prune_legacy_daily_keys()
         today   = date.today().strftime('%Y%m%d')
         u       = 'english' if self.units == 'imperial' else 'metric'
 
-        hilo_key    = f"{self.plugin_id}:hilo:{self.station_id}:{today}"
-        hourly_key  = f"{self.plugin_id}:hourly:{self.station_id}:{today}"
+        # Stable, station-scoped keys (no date suffix) so each overwrites in place
+        # instead of leaking one cache entry per day. The date the data is *for* is
+        # stored inside the payload and drives the daily refresh.
+        hilo_key    = f"{self.plugin_id}:hilo:{self.station_id}"
+        hourly_key  = f"{self.plugin_id}:hourly:{self.station_id}"
         live_key    = f"{self.plugin_id}:live:{self.station_id}"
 
-        c = self.cache_manager.get(hilo_key, max_age=86400)
-        if not c: c = self._fetch_hilo(u)
-        if c: self.cache_manager.set(hilo_key, c)
-        self.hilo = c or []
-
-        ch = self.cache_manager.get(hourly_key, max_age=21600)
-        if not ch: ch = self._fetch_hourly(u)
-        if ch: self.cache_manager.set(hourly_key, ch)
-        self.hourly = ch or []
+        self.hilo   = self._load_daily(hilo_key,   today, 'hilo',   self._fetch_hilo,   u) or []
+        self.hourly = self._load_daily(hourly_key, today, 'hourly', self._fetch_hourly, u) or []
 
         lv = self.cache_manager.get(live_key, max_age=360)
         if lv is None: lv = self._fetch_live(u)
         if lv is not None: self.cache_manager.set(live_key, lv)
         self.live = lv
+
+    def _load_daily(self, key, today, label, fetch, u):
+        """Cache-first daily fetch under a *stable* key.
+
+        Refetches when the cached entry is for a different day. On fetch failure,
+        falls back to the last-good cached data (even if it is for a prior day,
+        up to STALE_MAX_DAYS old) so the screen keeps showing tides instead of a
+        perpetual 'Loading' during a transient NOAA outage.
+        """
+        cached = self.cache_manager.get(key)  # any age
+        if isinstance(cached, dict) and cached.get('date') == today and cached.get('data'):
+            return cached['data']
+
+        fresh = fetch(u)
+        if fresh:
+            self.cache_manager.set(key, {'date': today, 'data': fresh})
+            return fresh
+
+        # Fetch failed (network error or NOAA error payload) — serve recent stale data.
+        if isinstance(cached, dict) and cached.get('data'):
+            age = self._days_old(cached.get('date'))
+            if age <= self.STALE_MAX_DAYS:
+                self.logger.warning("%s: NOAA fetch failed; serving cache from %s (%dd old)",
+                                    label, cached.get('date'), age)
+                return cached['data']
+            self.logger.warning("%s: NOAA fetch failed and cached data is stale (%s, %dd old)",
+                                label, cached.get('date'), age)
+        return None
+
+    @staticmethod
+    def _days_old(d):
+        try:
+            return (date.today() - datetime.strptime(str(d), '%Y%m%d').date()).days
+        except (TypeError, ValueError):
+            return 999
+
+    def _cache_delete(self, key):
+        """Best-effort cache delete tolerant of core cache-manager API differences."""
+        for m in ('delete', 'clear_cache'):
+            fn = getattr(self.cache_manager, m, None)
+            if callable(fn):
+                try: fn(key)
+                except Exception: pass
+                return
+
+    def _prune_legacy_daily_keys(self):
+        """One-time cleanup of the pre-1.1.3 date-stamped cache keys that leaked one
+        entry per day. Best-effort and idempotent; safe no-op if the cache manager
+        exposes no delete method."""
+        if getattr(self, '_pruned_legacy', False): return
+        self._pruned_legacy = True
+        today = date.today()
+        for n in range(0, 45):
+            d = (today - timedelta(days=n)).strftime('%Y%m%d')
+            self._cache_delete(f"{self.plugin_id}:hilo:{self.station_id}:{d}")
+            self._cache_delete(f"{self.plugin_id}:hourly:{self.station_id}:{d}")
 
     def display(self, force_clear=False):
         dw = self.display_manager.matrix.width
@@ -209,7 +267,10 @@ class TidePlugin(BasePlugin):
             p  = {**self._base(u), 'product':'predictions','date':'today','interval':'hilo'}
             r  = requests.get(NOAA_BASE, params=p, timeout=10); r.raise_for_status()
             d  = r.json()
-            if 'error' in d: return None
+            if 'error' in d:
+                self.logger.warning("hilo: NOAA API error for station %s: %s",
+                                    self.station_id, d.get('error'))
+                return None
             out = []
             for x in d.get('predictions', []):
                 try:
@@ -228,7 +289,10 @@ class TidePlugin(BasePlugin):
             p  = {**self._base(u),'product':'predictions','interval':'h','begin_date':t,'end_date':t}
             r  = requests.get(NOAA_BASE, params=p, timeout=10); r.raise_for_status()
             d  = r.json()
-            if 'error' in d: return None
+            if 'error' in d:
+                self.logger.warning("hourly: NOAA API error for station %s: %s",
+                                    self.station_id, d.get('error'))
+                return None
             h  = []
             for x in d.get('predictions',[]):
                 try:
@@ -247,7 +311,11 @@ class TidePlugin(BasePlugin):
             p = {**self._base(u),'product':'water_level','date':'latest'}
             r = requests.get(NOAA_BASE, params=p, timeout=8); r.raise_for_status()
             d = r.json()
-            if 'error' in d: return None
+            if 'error' in d:
+                # Many stations have no live water-level sensor — expected, keep quiet.
+                self.logger.debug("live: NOAA API error for station %s: %s",
+                                  self.station_id, d.get('error'))
+                return None
             data = d.get('data', [])
             return float(data[-1]['v']) if data else None
         except (requests.exceptions.RequestException, OSError, KeyError, TypeError, ValueError):
