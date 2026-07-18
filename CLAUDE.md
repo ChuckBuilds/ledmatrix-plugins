@@ -16,6 +16,10 @@ plugin store reads.
 
 There are ~39 plugins in `plugins/`; `plugins.json` also lists third-party plugins hosted in their own repos.
 
+**Deep-dive human guide:** `docs/plugin-development/` holds the full developer
+guide (anatomy, core API, advanced features, styling/skins, adaptive layout,
+manifest/schema, testing/CI). This file is the dense LLM-facing summary of it.
+
 ## Anatomy of a Plugin
 
 A plugin directory contains at minimum a `manifest.json` and an entry-point
@@ -41,7 +45,18 @@ Key methods (see `plugins/hello-world/manager.py` for a minimal reference):
 - `display(self, force_clear=False)` — render via `self.display_manager` then call `update_display()`
 - `validate_config(self)` — call `super().validate_config()` then check plugin-specific keys
 - `get_info(self)` / `cleanup(self)` — web-UI info and unload teardown
-- `self.logger`, `self.config`, `self.plugin_manager.font_manager` are provided by the base class
+- `self.logger`, `self.config`, `self.display_manager`, `self.cache_manager`,
+  `self.plugin_manager` (+ `.font_manager`), `self.plugin_id`, `self.enabled`,
+  `self.global_config` are provided by the base class
+
+Multi-mode plugins (the scoreboards) use a wider `display(self, display_mode=None,
+force_clear=False) -> bool` signature. The core also calls a family of **optional
+hooks** if implemented — dynamic duration (`supports_dynamic_duration`,
+`get_cycle_duration`, `get_dynamic_duration_cap`/`_floor`, `is_cycle_complete`,
+`reset_cycle_state`), live rotation (`get_live_modes`, `has_live_priority`,
+`has_live_content`), Vegas (`get_vegas_content`/`_type`/`_display_mode`,
+`get_supported_vegas_modes`), and lifecycle (`on_config_change`, `on_enable`,
+`on_disable`). See `docs/plugin-development/`.
 
 `hello-world` is the starter template; new plugins should begin there.
 
@@ -129,6 +144,19 @@ See `plugins/hockey-scoreboard/manager.py` (Vegas section) and
 `plugins/nfl-draft/config_schema.json` / `plugins/olympics/config_schema.json`
 for the config declaration.
 
+### Adaptive layout (`layout_mode`)
+Every plugin must render on all four sizes (64×32, 128×32, 128×64, 256×32). Most
+adapt with plain width/height-tier branching off `self.display_manager.width/height`
+(e.g. `ledmatrix-flights/renderer.py`, `masters-tournament`). Two plugins
+(`football-scoreboard`, `ledmatrix-music`) additionally opt into the core's
+**adaptive engine** via a `layout_mode` config enum (`["classic","adaptive"]`,
+default `classic`, `x-advanced`) — note the key is `layout_mode`, not
+`layout_engine`. `adaptive` (beta) scales fonts/logos/regions to the panel using
+`src.adaptive_layout` (guarded import; falls back to classic on older cores) while
+still honoring user font overrides and `customization.layout` x/y offsets. See
+`plugins/football-scoreboard/game_renderer.py` and
+`docs/plugin-development/05-adaptive-layout.md`.
+
 ## Module Naming — Avoid Cross-Plugin Collisions
 
 The core loads every plugin's top-level `*.py` files as **bare-name** modules on
@@ -198,16 +226,25 @@ Commonly present optional fields:
 - `verified`, `stars`, `downloads`, `screenshot`, `last_updated` — store display fields
 
 ## Config Schema Conventions (`config_schema.json`)
-Config schemas are **JSON Schema Draft-07** and drive the auto-generated web-UI
-config form. Beyond standard JSON Schema, the LEDMatrix UI honors custom `x-`
-extensions:
-- **`x-advanced: true`** on a property hides it behind the form's **Advanced
-  Settings** disclosure — use it for fine-tuning knobs (intervals, pixel offsets,
-  layout tweaks) that most users shouldn't need. Widely used (~60 files).
-- **`x-style-elements`** declares per-text-element user-customizable font / size /
-  color / offset controls (see `plugins/of-the-day/config_schema.json`). Each
-  element defines `font`, `size` (with `min`/`max`), `color` (RGB), and offsets
-  with `default`s; the plugin reads the resolved values at render time.
+Config schemas are **JSON Schema Draft-07** (all 39 plugins) and drive the
+auto-generated web-UI config form. Beyond standard JSON Schema, the UI honors
+custom `x-` extensions (validators ignore unknown `x-` keys):
+- **`x-advanced: true`** — hide a property behind the **Advanced Settings**
+  disclosure; use for fine-tuning knobs. By far the most used.
+- **`x-propertyOrder`** (array) — explicit property render order.
+- **`x-widget`** (string) — custom editor: `color-picker`, `checkbox-group`,
+  `file-upload`, `array-table`, `radio`, `time-picker`, `plugin-file-manager`, …
+  (companions: `x-widget-config`, `x-upload-config`, `x-columns`, `x-options`).
+- **`x-collapsed`** — section collapsed by default. **`x-secret`/`x-sensitive`** —
+  mask value. **`x-placeholder`**, **`x-display`** (`"hidden"`).
+
+**Styling / "skins" — two mechanisms.** (1) The manual `customization` block:
+per-element objects with `font`/`font_size`/`text_color` (~17 plugins; e.g.
+`plugins/clock-simple/config_schema.json`), self-contained and core-agnostic.
+(2) `x-style-elements`: a compact shorthand on `customization` that a newer core
+expands into a full font/size/color/offset UI via `src.element_style`
+(guarded import + classic fallback). Only `plugins/of-the-day` uses it — the
+reference. See `docs/plugin-development/04-styling-and-skins.md`.
 
 Mirror the property `default`s in the plugin code's `config.get(key, default)`
 calls so behavior matches the schema even when a key is absent.

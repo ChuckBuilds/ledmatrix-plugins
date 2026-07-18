@@ -21,7 +21,7 @@ The official plugin store contains curated, verified plugins that have been revi
 
 **Via API:**
 ```bash
-curl -X POST http://your-pi-ip:5000/api/plugins/install \
+curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "clock-simple", "version": "latest"}'
 ```
@@ -59,7 +59,7 @@ Install any plugin directly from a GitHub repository, even if it's not in the of
 
 **Via API:**
 ```bash
-curl -X POST http://your-pi-ip:5000/api/plugins/install-from-url \
+curl -X POST http://your-pi-ip:5000/api/v3/plugins/install-from-url \
   -H "Content-Type: application/json" \
   -d '{"repo_url": "https://github.com/user/ledmatrix-my-plugin"}'
 ```
@@ -87,13 +87,13 @@ else:
 **Via API:**
 ```bash
 # Search by query
-curl "http://your-pi-ip:5000/api/plugins/store/search?q=hockey"
+curl "http://your-pi-ip:5000/api/v3/plugins/store/search?q=hockey"
 
 # Filter by category
-curl "http://your-pi-ip:5000/api/plugins/store/search?category=sports"
+curl "http://your-pi-ip:5000/api/v3/plugins/store/search?category=sports"
 
 # Filter by tags
-curl "http://your-pi-ip:5000/api/plugins/store/search?tags=nhl&tags=hockey"
+curl "http://your-pi-ip:5000/api/v3/plugins/store/search?tags=nhl&tags=hockey"
 ```
 
 **Via Python:**
@@ -122,7 +122,7 @@ results = store.search_plugins(tags=["nhl", "hockey"])
 
 **Via API:**
 ```bash
-curl "http://your-pi-ip:5000/api/plugins/installed"
+curl "http://your-pi-ip:5000/api/v3/plugins/installed"
 ```
 
 **Via Python:**
@@ -146,7 +146,7 @@ for plugin_id in installed:
 
 **Via API:**
 ```bash
-curl -X POST http://your-pi-ip:5000/api/plugins/toggle \
+curl -X POST http://your-pi-ip:5000/api/v3/plugins/toggle \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "clock-simple", "enabled": true}'
 ```
@@ -161,7 +161,7 @@ curl -X POST http://your-pi-ip:5000/api/plugins/toggle \
 
 **Via API:**
 ```bash
-curl -X POST http://your-pi-ip:5000/api/plugins/update \
+curl -X POST http://your-pi-ip:5000/api/v3/plugins/update \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "clock-simple"}'
 ```
@@ -184,7 +184,7 @@ success = store.update_plugin('clock-simple')
 
 **Via API:**
 ```bash
-curl -X POST http://your-pi-ip:5000/api/plugins/uninstall \
+curl -X POST http://your-pi-ip:5000/api/v3/plugins/uninstall \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "clock-simple"}'
 ```
@@ -209,10 +209,13 @@ Each plugin can have its own configuration in `config/config.json`:
     "color": [255, 255, 255],
     "time_format": "12h"
   },
-  "nhl-scores": {
+  "hockey-scoreboard": {
     "enabled": true,
-    "favorite_teams": ["TBL", "FLA"],
-    "show_favorite_teams_only": true
+    "nhl": {
+      "enabled": true,
+      "favorite_teams": ["TBL", "FLA"],
+      "show_favorite_teams_only": true
+    }
   }
 }
 ```
@@ -350,15 +353,15 @@ All API endpoints return JSON with this structure:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/plugins/store/list` | List all plugins in store |
-| GET | `/api/plugins/store/search` | Search for plugins |
-| GET | `/api/plugins/installed` | List installed plugins |
-| POST | `/api/plugins/install` | Install from registry |
-| POST | `/api/plugins/install-from-url` | Install from GitHub URL |
-| POST | `/api/plugins/uninstall` | Uninstall plugin |
-| POST | `/api/plugins/update` | Update plugin |
-| POST | `/api/plugins/toggle` | Enable/disable plugin |
-| POST | `/api/plugins/config` | Update plugin config |
+| GET | `/api/v3/plugins/store/list` | List all plugins in store |
+| GET | `/api/v3/plugins/store/search` | Search for plugins |
+| GET | `/api/v3/plugins/installed` | List installed plugins |
+| POST | `/api/v3/plugins/install` | Install from registry |
+| POST | `/api/v3/plugins/install-from-url` | Install from GitHub URL |
+| POST | `/api/v3/plugins/uninstall` | Uninstall plugin |
+| POST | `/api/v3/plugins/update` | Update plugin |
+| POST | `/api/v3/plugins/toggle` | Enable/disable plugin |
+| POST | `/api/v3/plugins/config` | Update plugin config |
 
 ## Examples
 
@@ -366,7 +369,7 @@ All API endpoints return JSON with this structure:
 
 ```bash
 # Install
-curl -X POST http://192.168.1.100:5000/api/plugins/install \
+curl -X POST http://192.168.1.100:5000/api/v3/plugins/install \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "clock-simple"}'
 
@@ -389,12 +392,12 @@ sudo systemctl restart ledmatrix
 
 ```bash
 # Install your own plugin during development
-curl -X POST http://192.168.1.100:5000/api/plugins/install-from-url \
+curl -X POST http://192.168.1.100:5000/api/v3/plugins/install-from-url \
   -H "Content-Type: application/json" \
   -d '{"repo_url": "https://github.com/myusername/ledmatrix-my-custom-plugin"}'
 
 # Enable it
-curl -X POST http://192.168.1.100:5000/api/plugins/toggle \
+curl -X POST http://192.168.1.100:5000/api/v3/plugins/toggle \
   -H "Content-Type: application/json" \
   -d '{"plugin_id": "my-custom-plugin", "enabled": true}'
 
@@ -442,11 +445,11 @@ A: Yes, if a plugin needs API keys, it can access them like core managers do.
 A: Most plugins are small (1-5MB). Check individual plugin documentation.
 
 **Q: Can I create my own plugin?**  
-A: Yes! See PLUGIN_DEVELOPER_GUIDE.md for instructions.
+A: Yes! See the [Plugin Development Guide](./plugin-development/) for instructions.
 
 ## Support
 
-- **Documentation**: See PLUGIN_ARCHITECTURE_SPEC.md
+- **Documentation**: See the [Plugin Development Guide](./plugin-development/)
 - **Issues**: Report bugs on GitHub
 - **Community**: Join discussions in Issues
 - **Developer Guide**: See PLUGIN_DEVELOPER_GUIDE.md for creating plugins
