@@ -1,9 +1,49 @@
 # LEDMatrix Plugins Monorepo
 
+This repo is the **official plugin registry** for [LEDMatrix](https://github.com/ChuckBuilds/LEDMatrix).
+Each plugin is a self-contained Python package that the LEDMatrix core loads at
+runtime and renders on an RGB LED matrix. The core lives in a separate repo
+(`ChuckBuilds/LEDMatrix`); this repo only ships plugin source + the registry the
+plugin store reads.
+
 ## Structure
-- `plugins/<plugin-id>/` — Each plugin's source code, manifest, config schema, and README
-- `plugins.json` — Central registry consumed by the LEDMatrix plugin store
-- `update_registry.py` — Syncs `plugins.json` from local plugin manifests
+- `plugins/<plugin-id>/` — Each plugin's source code, manifest, config schema, README, tests
+- `plugins.json` — Central registry consumed by the LEDMatrix plugin store (auto-generated; do not hand-edit)
+- `update_registry.py` — Syncs `plugins.json` `latest_version` from local plugin manifests
+- `scripts/` — `check_module_collisions.py`, `pre-commit` hook, `archive_old_repos.sh`
+- `.github/workflows/` — CI: module-collisions, plugin safety harness, registry auto-update
+- `schema/` reference and `docs/` — supporting material; canonical `manifest_schema.json` lives in the **core** repo
+
+There are ~39 plugins in `plugins/`; `plugins.json` also lists third-party plugins hosted in their own repos.
+
+## Anatomy of a Plugin
+
+A plugin directory contains at minimum a `manifest.json` and an entry-point
+Python file (default `manager.py`) with the plugin class. Typical layout:
+
+```
+plugins/<plugin-id>/
+  manifest.json         # metadata (required) — see fields below
+  manager.py            # entry point; default class location
+  config_schema.json    # JSON Schema Draft-07 for the web-UI config form
+  requirements.txt      # plugin runtime deps (installed by CI before the harness)
+  README.md             # user docs
+  assets/               # fonts, logos, images
+  test/                 # optional safety-harness fixtures (harness.json, golden/)
+  test_*.py             # optional unit tests
+```
+
+The plugin class **inherits from `BasePlugin`** (`src.plugin_system.base_plugin.BasePlugin`
+in the core repo) and is constructed as
+`__init__(self, plugin_id, config, display_manager, cache_manager, plugin_manager)`.
+Key methods (see `plugins/hello-world/manager.py` for a minimal reference):
+- `update(self)` — fetch/refresh data (called on `update_interval`); never draw here
+- `display(self, force_clear=False)` — render via `self.display_manager` then call `update_display()`
+- `validate_config(self)` — call `super().validate_config()` then check plugin-specific keys
+- `get_info(self)` / `cleanup(self)` — web-UI info and unload teardown
+- `self.logger`, `self.config`, `self.plugin_manager.font_manager` are provided by the base class
+
+`hello-world` is the starter template; new plugins should begin there.
 
 ## Module Naming — Avoid Cross-Plugin Collisions
 
@@ -54,18 +94,44 @@ Run it locally with `python scripts/check_module_collisions.py`.
 - **Major** (1.0.0 → 2.0.0): Breaking config changes, major rewrites
 
 ### If you forget to bump the version:
-Users will NOT receive the update. The store uses version comparison, not git commits.
+Users will NOT receive the update. The store uses version comparison, not git commits. CI (`test-plugins.yml`) **fails a PR** whose plugin code changed without a version bump.
 
-## Plugin Manifest Required Fields
-Every `plugins/<id>/manifest.json` must have:
+## Plugin Manifest Fields
+Every `plugins/<id>/manifest.json` is validated against the core repo's
+`schema/manifest_schema.json`. Core required fields:
 - `id` — Plugin identifier (must match directory name)
 - `name` — Human-readable display name
 - `version` — Semver string (e.g., "1.2.3")
-- `class_name` — Python class name in manager.py
-- `display_modes` — Array of supported display modes
+- `class_name` — Python class name in the entry point
+- `display_modes` — Array of supported display mode names
+
+Commonly present optional fields:
+- `entry_point` — Python file with the plugin class (default `manager.py`)
+- `author`, `description`, `category`, `tags` — store metadata
+- `config_schema` — path to the config schema file (usually `config_schema.json`)
+- `versions` — changelog array of `{version, released, ledmatrix_min}` entries
+- `compatible_versions` / `ledmatrix_min` — core-version compatibility constraints
+- `verified`, `stars`, `downloads`, `screenshot`, `last_updated` — store display fields
+
+## Config Schema Conventions (`config_schema.json`)
+Config schemas are **JSON Schema Draft-07** and drive the auto-generated web-UI
+config form. Beyond standard JSON Schema, the LEDMatrix UI honors custom `x-`
+extensions:
+- **`x-advanced: true`** on a property hides it behind the form's **Advanced
+  Settings** disclosure — use it for fine-tuning knobs (intervals, pixel offsets,
+  layout tweaks) that most users shouldn't need. Widely used (~60 files).
+- **`x-style-elements`** declares per-text-element user-customizable font / size /
+  color / offset controls (see `plugins/of-the-day/config_schema.json`). Each
+  element defines `font`, `size` (with `min`/`max`), `color` (RGB), and offsets
+  with `default`s; the plugin reads the resolved values at render time.
+
+Mirror the property `default`s in the plugin code's `config.get(key, default)`
+calls so behavior matches the schema even when a key is absent.
 
 ## Registry Format
-`plugins.json` entries for monorepo plugins use:
+`plugins.json` is generated by `update_registry.py` — **do not hand-edit it**; it
+has top-level `version`, `last_updated`, and a `plugins` array. Entries for
+monorepo plugins use:
 - `repo`: `https://github.com/ChuckBuilds/ledmatrix-plugins`
 - `plugin_path`: `plugins/<plugin-id>`
 - `branch`: `main`
@@ -76,11 +142,22 @@ Third-party plugins keep their own `repo` URL and empty `plugin_path`.
 ## Scripts
 - `python update_registry.py` — Update plugins.json from manifests
 - `python update_registry.py --dry-run` — Preview without writing
+- `python scripts/check_module_collisions.py` — Cross-plugin module-collision check
 - `scripts/archive_old_repos.sh` — Archive old individual repos (one-time, use `--apply`)
 
 ## Git Hooks
 - `scripts/pre-commit` — Auto-syncs `plugins.json` when manifest versions change
 - Install: `cp scripts/pre-commit .git/hooks/pre-commit`
+
+## CI Workflows (`.github/workflows/`)
+- **`test-plugins.yml`** (Plugin Safety) — on PRs touching `plugins/**`: for each
+  *changed* plugin (non-test code only) it enforces the version bump, validates the
+  manifest against the schema, installs the plugin's `requirements.txt`, and runs
+  the core safety harness. Test-only changes (`plugins/<id>/test/**`) don't trigger the gate.
+- **`module-collisions.yml`** (Module Collisions) — on PRs touching `plugins/**`:
+  runs `check_module_collisions.py` across **all** plugins.
+- **`update-registry.yml`** (Update Plugin Registry) — on push to `main` touching a
+  manifest or `update_registry.py`: regenerates `plugins.json` and auto-commits it.
 
 ## Plugin Safety Harness (cross-size / cross-screen)
 
@@ -111,4 +188,11 @@ for the full reference.
 **CI:** `.github/workflows/test-plugins.yml` runs the harness against every
 *changed* plugin on each PR (installs that plugin's `requirements.txt` first),
 validates its manifest against `schema/manifest_schema.json`, and enforces the
-version bump. Test-only changes (`plugins/<id>/test/**`) don't trigger the gate.
+version bump.
+
+## Quick Reference — Making a Plugin Change
+1. Edit code in `plugins/<plugin-id>/` (keep deferred/subpackage module names plugin-unique).
+2. Update `config_schema.json` if config changed (mark fine-tuning keys `x-advanced`).
+3. **Bump `version`** in `manifest.json`.
+4. Run `python scripts/check_module_collisions.py` and, from a core checkout, the safety harness.
+5. Commit (pre-commit hook syncs `plugins.json`) and open a PR — CI enforces the version bump, manifest schema, harness, and collisions.
