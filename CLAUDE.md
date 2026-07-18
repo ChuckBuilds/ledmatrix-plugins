@@ -21,7 +21,7 @@ There are ~39 plugins in `plugins/`; `plugins.json` also lists third-party plugi
 A plugin directory contains at minimum a `manifest.json` and an entry-point
 Python file (default `manager.py`) with the plugin class. Typical layout:
 
-```
+```text
 plugins/<plugin-id>/
   manifest.json         # metadata (required) — see fields below
   manager.py            # entry point; default class location
@@ -44,6 +44,90 @@ Key methods (see `plugins/hello-world/manager.py` for a minimal reference):
 - `self.logger`, `self.config`, `self.plugin_manager.font_manager` are provided by the base class
 
 `hello-world` is the starter template; new plugins should begin there.
+
+## Advanced Plugin Features
+
+These are the optional capabilities that make plugins feature-rich. They're
+opt-in: a plugin only participates by reading the relevant config key or
+implementing the relevant method. The sports scoreboards (`hockey-scoreboard`,
+`football-scoreboard`, `baseball-scoreboard`, …) exercise most of them and are
+the best reference implementations.
+
+### Cache management (`self.cache_manager`)
+Every plugin is handed a shared `cache_manager` in its constructor. Use it for
+**anything fetched over the network** so restarts and multiple plugins don't
+re-hit APIs. Core API surface (seen across plugins):
+- `cache_manager.get(key, max_age=<seconds>)` — return cached value or `None` if missing/stale
+- `cache_manager.set(key, value, ttl=<seconds>)` — store with an optional time-to-live
+- `cache_manager.get_cached_data_with_strategy(key, strategy)` / `save_cache(key, data)` —
+  strategy-driven caching (e.g. `'leaderboard'`) that layers TTL/refresh policy on top of raw get/set;
+  see `plugins/ledmatrix-leaderboard/data_fetcher.py`
+- `cache_manager.delete(key)` / `clear_cache()` — invalidation
+
+Namespace your keys with the plugin id (e.g. `f"{self.plugin_id}:standings:{league}"`)
+so they never collide with another plugin's entries. Fetch in `update()`, never in `display()`.
+
+### Live priority (`live_priority`)
+A per-source boolean (`config[<league>]["live_priority"]`) that tells the
+rotation to **prefer live games over scheduled/recent ones**. When enabled and
+real live games exist, the manager surfaces only the live content; when no games
+are live it falls back to the normal schedule. Wire it up by reading the flag in
+`__init__` and filtering the display list in your update/selection logic (see
+`plugins/hockey-scoreboard/manager.py`, `nhl_live_priority` and the live-mode
+filter around the `_should_show` logic).
+
+Related live-rotation knobs the sports plugins expose:
+- **`favorite_live_boost`** — how many rotation turns a favorite team's live game
+  gets per turn for other live games (and it's queued first on each refresh).
+- **`non_favorite_live` / live-duration overrides** — different display durations
+  for favorite vs. non-favorite live games.
+
+### Dynamic duration (`supports_dynamic_duration()` + `dynamic_duration` config)
+Lets a plugin tell the core "hold my screen for a computed time" instead of a
+fixed `display_duration`. The plugin implements
+`supports_dynamic_duration(self, mode_type=None) -> bool` and reads a
+`dynamic_duration` config object (`enabled`, `max_duration_seconds`, per-mode
+settings). Typical use: size the on-screen time to the width of scrolling content,
+or extend live games. See `plugins/football-scoreboard/DYNAMIC_DURATION.md` and
+the `supports_dynamic_duration` implementations in the sports managers.
+
+### High-FPS / smooth scrolling
+Scrolling plugins render far faster than the default loop for smooth motion.
+Two mechanisms:
+- **Global target FPS** — read `global_config['target_fps']` (fallback
+  `scroll_target_fps`, default ~100) and push it into the scroll helper:
+  `self.scroll_helper.set_target_fps(target_fps)`, with a clamp fallback
+  (`max(30.0, min(200.0, target_fps))`) for older cores. See
+  `plugins/odds-ticker/manager.py`, `plugins/news/manager.py`,
+  `plugins/ledmatrix-leaderboard/manager.py`.
+- **Per-frame delay** — the `scroll_delay` config key (seconds/frame; `0.01` ≈ 100 FPS)
+  controls smoothness on the scoreboards.
+- **Per-plugin high-performance flag** — e.g. `high_performance_transitions` in
+  `plugins/christmas-countdown/config_schema.json` toggles 120 FPS transitions vs. 30 FPS.
+
+### Vegas mode (continuous scroll integration)
+"Vegas" is the core's continuous marquee that stitches multiple plugins into one
+endlessly-scrolling strip. A plugin opts in by implementing:
+- `get_vegas_content(self)` — return the PIL image(s) to splice into the strip (or `None`)
+- `get_vegas_content_type(self)` — `'single'` or `'multi'` (multiple scrollable items, e.g. games)
+- `get_vegas_display_mode(self)` — return a `VegasDisplayMode`, honoring the
+  `vegas_mode` config override
+
+Import the enum defensively, since older cores don't ship it:
+```python
+try:
+    from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
+except ImportError:
+    VegasDisplayMode = None
+```
+The `vegas_mode` config key (mark it `x-advanced`) is an enum:
+- `scroll` — items scroll individually through the stream (default)
+- `fixed` — the whole display scrolls by as one block
+- `static` — the marquee pauses while the plugin shows for its duration
+
+See `plugins/hockey-scoreboard/manager.py` (Vegas section) and
+`plugins/nfl-draft/config_schema.json` / `plugins/olympics/config_schema.json`
+for the config declaration.
 
 ## Module Naming — Avoid Cross-Plugin Collisions
 
