@@ -60,7 +60,7 @@ A plugin for LEDMatrix that displays scrolling odds and betting lines for upcomi
   "leagues": {
     "nba": {
       "enabled": true,
-      "favorite_teams": ["LAL", "BOS", "GSW"]
+      "favorite_teams": ["LAL", "BOS", "GS"]
     }
   }
 }
@@ -129,13 +129,13 @@ The plugin supports the following sports leagues:
 ## Team Abbreviations
 
 ### NFL Teams
-Common abbreviations: TB, DAL, GB, KC, BUF, SF, PHI, NE, MIA, NYJ, LAC, DEN, LV, CIN, BAL, CLE, PIT, IND, HOU, TEN, JAX, ARI, LAR, SEA, WAS, NYG, MIN, DET, CHI, ATL, CAR, NO
+Common abbreviations: TB, DAL, GB, KC, BUF, SF, PHI, NE, MIA, NYJ, LAC, DEN, LV, CIN, BAL, CLE, PIT, IND, HOU, TEN, JAX, ARI, LAR, SEA, WSH, NYG, MIN, DET, CHI, ATL, CAR, NO
 
 ### NBA Teams
-Common abbreviations: LAL, BOS, GSW, MIL, PHI, DEN, MIA, BKN, ATL, CHA, NYK, IND, DET, TOR, CHI, CLE, ORL, WAS, HOU, SAS, MIN, POR, SAC, LAC, MEM, DAL, PHX, UTA, OKC, NOP
+Common abbreviations: LAL, BOS, GS, MIL, PHI, DEN, MIA, BKN, ATL, CHA, NY, IND, DET, TOR, CHI, CLE, ORL, WSH, HOU, SA, MIN, POR, SAC, LAC, MEM, DAL, PHX, UTAH, OKC, NO
 
 ### MLB Teams
-Common abbreviations: NYY, BOS, LAD, HOU, ATL, PHI, TOR, TB, MIL, CHC, CIN, PIT, STL, MIN, CLE, CHW, DET, KC, LAA, OAK, SEA, TEX, ARI, COL, SD, SF, BAL, MIA, NYM, WAS
+Common abbreviations: NYY, BOS, LAD, HOU, ATL, PHI, TOR, TB, MIL, CHC, CIN, PIT, STL, MIN, CLE, CHW, DET, KC, LAA, ATH, SEA, TEX, ARI, COL, SD, SF, BAL, MIA, NYM, WSH
 
 ### NCAA Football Teams
 Common abbreviations: UGA, AUB, BAMA, CLEM, OSU, MICH, FSU, LSU, OU, TEX, etc.

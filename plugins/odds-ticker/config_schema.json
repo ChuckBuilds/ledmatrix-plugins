@@ -229,7 +229,7 @@
                 "enum": [
                   "ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE",
                   "DAL", "DEN", "DET", "GB", "HOU", "IND", "JAX", "KC",
-                  "LA", "LAC", "LV", "MIA", "MIN", "NE", "NO", "NYG",
+                  "LAR", "LAC", "LV", "MIA", "MIN", "NE", "NO", "NYG",
                   "NYJ", "PHI", "PIT", "SEA", "SF", "TB", "TEN", "WSH"
                 ]
               },
@@ -253,7 +253,7 @@
                   "IND": "Indianapolis Colts",
                   "JAX": "Jacksonville Jaguars",
                   "KC": "Kansas City Chiefs",
-                  "LA": "Los Angeles Rams",
+                  "LAR": "Los Angeles Rams",
                   "LAC": "Los Angeles Chargers",
                   "LV": "Las Vegas Raiders",
                   "MIA": "Miami Dolphins",
@@ -294,9 +294,9 @@
                 "type": "string",
                 "enum": [
                   "ATL", "BKN", "BOS", "CHA", "CHI", "CLE", "DAL", "DEN",
-                  "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
-                  "MIL", "MIN", "NOP", "NYK", "OKC", "ORL", "PHI", "PHX",
-                  "POR", "SAC", "SAS", "TOR", "UTA", "WAS"
+                  "DET", "GS", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
+                  "MIL", "MIN", "NO", "NY", "OKC", "ORL", "PHI", "PHX",
+                  "POR", "SAC", "SA", "TOR", "UTAH", "WSH"
                 ]
               },
               "uniqueItems": true,
@@ -312,7 +312,7 @@
                   "DAL": "Dallas Mavericks",
                   "DEN": "Denver Nuggets",
                   "DET": "Detroit Pistons",
-                  "GSW": "Golden State Warriors",
+                  "GS": "Golden State Warriors",
                   "HOU": "Houston Rockets",
                   "IND": "Indiana Pacers",
                   "LAC": "Los Angeles Clippers",
@@ -321,18 +321,18 @@
                   "MIA": "Miami Heat",
                   "MIL": "Milwaukee Bucks",
                   "MIN": "Minnesota Timberwolves",
-                  "NOP": "New Orleans Pelicans",
-                  "NYK": "New York Knicks",
+                  "NO": "New Orleans Pelicans",
+                  "NY": "New York Knicks",
                   "OKC": "Oklahoma City Thunder",
                   "ORL": "Orlando Magic",
                   "PHI": "Philadelphia 76ers",
                   "PHX": "Phoenix Suns",
                   "POR": "Portland Trail Blazers",
                   "SAC": "Sacramento Kings",
-                  "SAS": "San Antonio Spurs",
+                  "SA": "San Antonio Spurs",
                   "TOR": "Toronto Raptors",
-                  "UTA": "Utah Jazz",
-                  "WAS": "Washington Wizards"
+                  "UTAH": "Utah Jazz",
+                  "WSH": "Washington Wizards"
                 }
               }
             }
@@ -358,8 +358,8 @@
                 "type": "string",
                 "enum": [
                   "ARI", "ATL", "BAL", "BOS", "CHC", "CIN", "CLE", "COL",
-                  "CWS", "DET", "HOU", "KC", "LAA", "LAD", "MIA", "MIL",
-                  "MIN", "NYM", "NYY", "OAK", "PHI", "PIT", "SD", "SEA",
+                  "CHW", "DET", "HOU", "KC", "LAA", "LAD", "MIA", "MIL",
+                  "MIN", "NYM", "NYY", "ATH", "PHI", "PIT", "SD", "SEA",
                   "SF", "STL", "TB", "TEX", "TOR", "WSH"
                 ]
               },
@@ -375,7 +375,7 @@
                   "CIN": "Cincinnati Reds",
                   "CLE": "Cleveland Guardians",
                   "COL": "Colorado Rockies",
-                  "CWS": "Chicago White Sox",
+                  "CHW": "Chicago White Sox",
                   "DET": "Detroit Tigers",
                   "HOU": "Houston Astros",
                   "KC": "Kansas City Royals",
@@ -386,7 +386,7 @@
                   "MIN": "Minnesota Twins",
                   "NYM": "New York Mets",
                   "NYY": "New York Yankees",
-                  "OAK": "Oakland Athletics",
+                  "ATH": "Athletics",
                   "PHI": "Philadelphia Phillies",
                   "PIT": "Pittsburgh Pirates",
                   "SD": "San Diego Padres",
@@ -422,9 +422,9 @@
                 "type": "string",
                 "enum": [
                   "ANA", "BOS", "BUF", "CAR", "CBJ", "CGY", "CHI", "COL",
-                  "DAL", "DET", "EDM", "FLA", "LAK", "MIN", "MTL", "NJ",
+                  "DAL", "DET", "EDM", "FLA", "LA", "MIN", "MTL", "NJ",
                   "NSH", "NYI", "NYR", "OTT", "PHI", "PIT", "SJ", "STL",
-                  "TB", "TOR", "UTA", "VAN", "VGK", "WAS", "WPG"
+                  "TB", "TOR", "UTA", "VAN", "VGK", "WSH", "WPG"
                 ]
               },
               "uniqueItems": true,
@@ -443,7 +443,7 @@
                   "DET": "Detroit Red Wings",
                   "EDM": "Edmonton Oilers",
                   "FLA": "Florida Panthers",
-                  "LAK": "Los Angeles Kings",
+                  "LA": "Los Angeles Kings",
                   "MIN": "Minnesota Wild",
                   "MTL": "Montreal Canadiens",
                   "NJ": "New Jersey Devils",
@@ -460,7 +460,7 @@
                   "UTA": "Utah Hockey Club",
                   "VAN": "Vancouver Canucks",
                   "VGK": "Vegas Golden Knights",
-                  "WAS": "Washington Capitals",
+                  "WSH": "Washington Capitals",
                   "WPG": "Winnipeg Jets"
                 }
               }
@@ -484,8 +484,7 @@
               "title": "Favorite Teams",
               "description": "Enter MiLB team abbreviations (e.g., DUR, SWB, NOR). Due to the large number of minor league teams, enter abbreviations manually.",
               "items": {
-                "type": "string",
-                "pattern": "^[A-Z]{2,4}$"
+                "type": "string"
               },
               "uniqueItems": true,
               "maxItems": 120
@@ -509,8 +508,7 @@
               "title": "Favorite Teams",
               "description": "Enter NCAA Football team abbreviations (e.g., UGA, AUB, BAMA, OSU). Use AP_TOP_25 to automatically include all AP Top 25 ranked teams.",
               "items": {
-                "type": "string",
-                "pattern": "^[A-Z0-9_]{2,10}$"
+                "type": "string"
               },
               "uniqueItems": true,
               "maxItems": 130
@@ -534,8 +532,7 @@
               "title": "Favorite Teams",
               "description": "Enter NCAA Men's Basketball team abbreviations (e.g., DUKE, UNC, UK, KANSAS). Use AP_TOP_25 to automatically include all AP Top 25 ranked teams.",
               "items": {
-                "type": "string",
-                "pattern": "^[A-Z0-9_]{2,10}$"
+                "type": "string"
               },
               "uniqueItems": true,
               "maxItems": 350
@@ -565,8 +562,7 @@
               "title": "Favorite Teams",
               "description": "Enter NCAA Baseball team abbreviations (e.g., LSU, FLA, VAN, TEX).",
               "items": {
-                "type": "string",
-                "pattern": "^[A-Z]{2,4}$"
+                "type": "string"
               },
               "uniqueItems": true,
               "maxItems": 300
