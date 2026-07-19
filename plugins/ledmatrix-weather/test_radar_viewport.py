@@ -15,7 +15,7 @@ from weather_map_tiles import (
     latlon_to_world_px,
     world_px_to_latlon,
 )
-from weather_radar import RadarFetcher, RadarFrame, render_vector_map
+from weather_radar import RadarFetcher, render_vector_map
 
 MEMPHIS = (35.1495, -90.0490)
 PANEL_SIZES = [(64, 32), (128, 32), (128, 64), (256, 32)]

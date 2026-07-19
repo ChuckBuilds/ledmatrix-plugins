@@ -18,7 +18,6 @@ resolve to another plugin's module.
 
 import json
 import logging
-import math
 import os
 import tempfile
 import time
@@ -60,19 +59,18 @@ _PAST_DOT_DIM = (60, 60, 60)
 # Vector map renderer (WeatherStar style; US-only GeoJSON)
 # ---------------------------------------------------------------------------
 
-_geojson_cache: Optional[Dict] = None
+_geojson_cache: Dict[str, Any] = {}
 
 
 def _load_geojson() -> Optional[Dict]:
-    global _geojson_cache
-    if _geojson_cache is None:
+    if "data" not in _geojson_cache:
         if os.path.exists(_GEOJSON_PATH):
-            with open(_GEOJSON_PATH, "r") as f:
-                _geojson_cache = json.load(f)
+            with open(_GEOJSON_PATH, "r", encoding="utf-8") as f:
+                _geojson_cache["data"] = json.load(f)
         else:
-            logger.warning(f"[Radar] GeoJSON not found at {_GEOJSON_PATH}")
-            _geojson_cache = {}
-    return _geojson_cache or None
+            logger.warning("[Radar] GeoJSON not found at %s", _GEOJSON_PATH)
+            _geojson_cache["data"] = {}
+    return _geojson_cache["data"] or None
 
 
 def render_vector_map(viewport: MercatorViewport,
@@ -174,6 +172,8 @@ class RadarFetcher:
         self._frame_index = 0
         self._last_frame_advance = 0.0
         self._loops_completed = 0
+        self._panel_size: Optional[Tuple[int, int]] = None
+        self._font = None
 
     # ---- caching ----------------------------------------------------------
 
@@ -223,7 +223,7 @@ class RadarFetcher:
 
     def _ensure_viewport(self, width: int, height: int) -> MercatorViewport:
         vp = self._viewport
-        if (vp is None or (width, height) != getattr(self, "_panel_size", None)):
+        if vp is None or (width, height) != self._panel_size:
             vp = MercatorViewport.for_panel(self.lat, self.lon, self.range_miles,
                                             width, height)
             if self._viewport is None or vp.signature() != self._viewport.signature():
@@ -487,10 +487,10 @@ class RadarFetcher:
         return self._add_overlay(img, frame, frames, width, height, viewport)
 
     def _load_font(self):
-        if not hasattr(self, "_font"):
+        if self._font is None:
             try:
                 self._font = ImageFont.truetype(str(_FONT_PATH), 6)
-            except Exception:
+            except (OSError, ValueError):
                 self._font = ImageFont.load_default()
         return self._font
 
@@ -521,7 +521,6 @@ class RadarFetcher:
         if len(frames) > 1:
             dot_y = height - 4
             shown = frames[-12:]
-            offset = len(frames) - len(shown)
             for i, f in enumerate(shown):
                 is_current = current is not None and f.ts == current.ts
                 if f.is_nowcast:
