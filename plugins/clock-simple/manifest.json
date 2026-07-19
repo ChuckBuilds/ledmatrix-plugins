@@ -20,7 +20,7 @@
       "released": "2026-07-19",
       "version": "1.0.7",
       "ledmatrix_min": "2.0.0",
-      "notes": "Fix the clock flashing/blinking periodically. The plugin now redraws its content on every render tick and only clears the buffer when the displayed time or date changes, instead of skipping frames — so the panel stays lit steadily regardless of update_interval."
+      "notes": "Fix the clock flashing/blinking periodically. The plugin now redraws its content on every render tick and only clears the buffer when the displayed time or date changes, instead of skipping frames — so the panel stays lit steadily regardless of update_interval. Also fit the time/AM-PM and date to the panel width so content no longer overflows the edge on narrow (64px-wide) matrices; the weekday and date are abbreviated only when the full text wouldn't fit, so wider panels are unchanged."
     },
     {
       "released": "2026-07-17",

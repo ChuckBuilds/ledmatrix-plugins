@@ -169,6 +169,65 @@ class SimpleClock(BasePlugin):
         else:
             return dt.strftime("%m/%d/%Y")  # fallback
 
+    def _text_fits(self, text: str, width: int) -> bool:
+        """Return True if `text` renders within `width` px in the small font."""
+        try:
+            return self.display_manager.get_text_width(
+                text, self.display_manager.small_font
+            ) <= width
+        except Exception:
+            # If measuring fails, assume it fits so we never hide content.
+            return True
+
+    def _fit_weekday(self, weekday_str: str, width: int) -> str:
+        """
+        Shorten the weekday name so it fits the panel width.
+
+        On normal-width panels the full name already fits and is returned
+        unchanged, so wider displays render identically. On a narrow panel
+        (e.g. 64px, where "Wednesday" would spill past the edge) it falls back
+        to the 3-letter abbreviation.
+        """
+        dt = getattr(self, 'current_dt', None)
+        if dt is None or self._text_fits(weekday_str, width):
+            return weekday_str
+        abbrev = dt.strftime('%a')  # e.g. "Wed"
+        return abbrev if self._text_fits(abbrev, width) else weekday_str
+
+    def _fit_date(self, date_str: str, width: int) -> str:
+        """
+        Shorten the date so it fits the panel width.
+
+        Returns `date_str` unchanged when it already fits (so wider panels are
+        unaffected). On a narrow panel it tries progressively shorter renderings
+        of the current date for the active format — e.g. "August 1st" ->
+        "Aug 1st" -> "Aug 1" for OLD_CLOCK, or a 2-digit year for the numeric
+        formats — and returns the first that fits (or the shortest tried).
+        """
+        dt = getattr(self, 'current_dt', None)
+        if dt is None or self._text_fits(date_str, width):
+            return date_str
+
+        if self.date_format == "OLD_CLOCK":
+            suffix = self._get_ordinal_suffix(dt.day)
+            candidates = [
+                dt.strftime(f'%b {dt.day}{suffix}'),  # "Aug 1st"
+                dt.strftime(f'%b {dt.day}'),           # "Aug 1"
+            ]
+        elif self.date_format == "MM/DD/YYYY":
+            candidates = [dt.strftime('%m/%d/%y')]     # "08/01/25"
+        elif self.date_format == "DD/MM/YYYY":
+            candidates = [dt.strftime('%d/%m/%y')]     # "01/08/25"
+        elif self.date_format == "YYYY-MM-DD":
+            candidates = [dt.strftime('%m-%d')]        # "08-01"
+        else:
+            candidates = []
+
+        for candidate in candidates:
+            if self._text_fits(candidate, width):
+                return candidate
+        return candidates[-1] if candidates else date_str
+
     def update(self) -> None:
         """
         Update clock data.
@@ -355,6 +414,14 @@ class SimpleClock(BasePlugin):
                     # Spacing between time and AM/PM: ~2.5% of width, minimum 2px
                     ampm_spacing = max(2, int(width * 0.025))
                     ampm_x = (width + time_width) // 2 + ampm_spacing
+                    # Keep AM/PM inside the right edge. On wide panels there is
+                    # room to spare so this is a no-op; on a narrow panel (64px)
+                    # it pulls AM/PM back so it doesn't overflow past the edge.
+                    ampm_width = self.display_manager.get_text_width(
+                        self.current_ampm,
+                        self.display_manager.small_font
+                    )
+                    ampm_x = max(0, min(ampm_x, width - ampm_width))
                     self.display_manager.draw_text(
                         self.current_ampm,
                         x=ampm_x,
@@ -385,16 +452,16 @@ class SimpleClock(BasePlugin):
                         if date_y >= height:
                             date_y = height - 1
                     
-                    # Weekday on first line
+                    # Weekday on first line (abbreviated if it wouldn't fit)
                     self.display_manager.draw_text(
-                        self.current_weekday,
+                        self._fit_weekday(self.current_weekday, width),
                         y=weekday_y,
                         color=self.date_color,
                         small_font=True
                     )
-                    # Month and day on second line
+                    # Month and day on second line (abbreviated if it wouldn't fit)
                     self.display_manager.draw_text(
-                        self.current_date,
+                        self._fit_date(self.current_date, width),
                         y=date_y,
                         color=self.date_color,
                         small_font=True
@@ -405,7 +472,7 @@ class SimpleClock(BasePlugin):
                     date_offset = max(9, int(height * 0.14))
                     date_y = height - date_offset
                     self.display_manager.draw_text(
-                        self.current_date,
+                        self._fit_date(self.current_date, width),
                         y=date_y,
                         color=self.date_color,
                         small_font=True
