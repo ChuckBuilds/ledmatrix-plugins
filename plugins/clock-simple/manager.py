@@ -87,13 +87,12 @@ class SimpleClock(BasePlugin):
         # Get timezone
         self.timezone = self._get_timezone()
 
-        # Track last display for optimization
+        # Track the last-rendered content so display() knows when it needs to
+        # clear the buffer (content changed) versus redraw the identical pixels.
         self.last_time_str = None
-        self.last_time_without_seconds = None  # Track time without seconds for comparison
         self.last_ampm_str = None
         self.last_date_str = None
         self.last_weekday_str = None
-        self.last_seconds = None  # Track seconds separately
 
         self.logger.info(f"Clock plugin initialized for timezone: {self.timezone_str}")
 
@@ -243,72 +242,56 @@ class SimpleClock(BasePlugin):
         """
         Display the clock.
 
+        The plugin redraws its full content and pushes it on every call. The
+        display buffer is only *cleared* when the on-screen content actually
+        changes (e.g. the minute or date rolls over); otherwise the identical
+        pixels are drawn in place. Redrawing on every tick — rather than
+        returning early on unchanged frames — keeps the panel populated on every
+        frame of the core's render loop, which is what prevents the clock from
+        periodically flashing.
+
         Args:
             force_clear: If True, clear display before rendering
         """
         try:
-            # Ensure update() has been called at least once
-            if not hasattr(self, 'current_time'):
-                self.logger.warning("Clock display called before update() - calling update() now")
-                self.update()
-            else:
-                # Update time to check if it has changed
-                self.update()
+            # Refresh the current time on every render tick.
+            self.update()
 
-            # Check if time/date has changed since last display
+            # Snapshot the strings we're about to render.
             current_time_str = getattr(self, 'current_time', '')
-            current_time_without_seconds = getattr(self, 'time_without_seconds', current_time_str)
             current_ampm_str = getattr(self, 'current_ampm', '') if self.time_format == "12h" else ''
             current_date_str = getattr(self, 'current_date', '') if self.show_date else ''
             current_weekday_str = getattr(self, 'current_weekday', '') if (self.show_date and self.date_format == "OLD_CLOCK") else ''
-            current_seconds = getattr(self, 'current_seconds', None)
-            
-            # Check if only seconds changed (for partial redraw optimization)
-            only_seconds_changed = (
-                self.show_seconds and
-                current_seconds is not None and
-                self.last_seconds is not None and
-                current_seconds != self.last_seconds and
-                current_time_without_seconds == self.last_time_without_seconds and
-                current_ampm_str == getattr(self, 'last_ampm_str', '') and
-                current_date_str == self.last_date_str and
-                current_weekday_str == getattr(self, 'last_weekday_str', '')
-            )
-            
-            # Determine if we need a full redraw
-            needs_full_redraw = force_clear or (
-                current_time_without_seconds != self.last_time_without_seconds or
+
+            # Only clear the buffer when the visible content changed. Clearing
+            # every tick would blank the panel between the clear and the redraw
+            # on cores that push the buffer eagerly, which is the flash we're
+            # fixing. When nothing changed we redraw the identical pixels in
+            # place, so there is nothing to clear and no flash.
+            content_changed = force_clear or (
+                current_time_str != self.last_time_str or
                 current_ampm_str != getattr(self, 'last_ampm_str', '') or
                 current_date_str != self.last_date_str or
                 current_weekday_str != getattr(self, 'last_weekday_str', '')
             )
-            
-            # Get display dimensions early (needed for both partial and full updates)
+
+            # Get display dimensions
             width = self.display_manager.width
             height = self.display_manager.height
-            
+
             # Get font height for dynamic spacing calculations
             font_height = self.display_manager.get_font_height(self.display_manager.small_font)
-            
+
             # Calculate dynamic positions based on display dimensions
             # Time position: Small fixed offset (4px) plus small percentage for larger displays
             # This keeps time near top on small displays, scales slightly on larger ones
             time_y = max(2, min(4 + int(height * 0.02), int(height * 0.1)))
-            
-            # If only seconds changed, do partial update
-            if only_seconds_changed and not force_clear:
-                self._update_seconds_only(current_time_str, time_y, width)
-                self.last_seconds = current_seconds
-                self.last_time_str = current_time_str
-                return
-            
-            # If nothing changed, skip redraw
-            if not needs_full_redraw and not force_clear:
-                return
 
-            # Clear the display for full redraw
-            self.display_manager.clear()
-            
+            if content_changed:
+                # Clear the display so stale glyphs (e.g. the old minute) don't
+                # ghost underneath the new content.
+                self.display_manager.clear()
+
             # Display time and AM/PM based on alignment toggle
             if self.time_format == "12h" and hasattr(self, 'current_ampm') and self.center_time_with_ampm:
                 # Center time and AM/PM together as one block
@@ -428,21 +411,21 @@ class SimpleClock(BasePlugin):
                         small_font=True
                     )
 
-            # Update the physical display
+            # Push the freshly rendered frame to the panel every tick.
             self.display_manager.update_display()
-            
-            # Track what we just displayed
+
+            # Track what we just displayed so the next tick knows whether the
+            # content changed (and therefore whether it needs to clear).
             self.last_time_str = current_time_str
-            self.last_time_without_seconds = current_time_without_seconds
-            self.last_seconds = current_seconds
             if self.time_format == "12h":
                 self.last_ampm_str = current_ampm_str
             self.last_date_str = current_date_str
             if self.show_date and self.date_format == "OLD_CLOCK":
                 self.last_weekday_str = current_weekday_str
-            
-            display_str = f"{current_time_str} {current_ampm_str}".strip()
-            self.logger.debug(f"Clock displayed: {display_str} {current_date_str}")
+
+            if content_changed:
+                display_str = f"{current_time_str} {current_ampm_str}".strip()
+                self.logger.debug(f"Clock displayed: {display_str} {current_date_str}")
 
         except Exception as e:
             self.logger.error(f"Error displaying clock: {e}", exc_info=True)
@@ -457,91 +440,6 @@ class SimpleClock(BasePlugin):
                 self.display_manager.update_display()
             except Exception as e:
                 self.logger.exception("Fallback display failed: %s", e)
-
-    def _update_seconds_only(self, current_time_str: str, time_y: int, width: int) -> None:
-        """
-        Update only the seconds portion of the time display without clearing the entire screen.
-        This optimizes performance when only seconds change.
-        """
-        try:
-            # Extract seconds from time string (format: "H:MM:SS" or "HH:MM:SS")
-            if ':' in current_time_str:
-                parts = current_time_str.split(':')
-                if len(parts) >= 3:
-                    # Has seconds, extract just the seconds part
-                    seconds_str = parts[-1]
-                    # Get time without seconds for positioning
-                    time_without_seconds = ':'.join(parts[:-1])
-                    
-                    # Calculate position of seconds
-                    # Seconds always come right after the time (without seconds)
-                    time_without_seconds_width = self.display_manager.get_text_width(
-                        time_without_seconds,
-                        self.display_manager.small_font
-                    )
-                    
-                    # Calculate seconds position based on alignment mode
-                    if self.time_format == "12h" and hasattr(self, 'current_ampm') and self.center_time_with_ampm:
-                        # Time and AM/PM are centered together as one block
-                        time_width = self.display_manager.get_text_width(
-                            self.current_time,
-                            self.display_manager.small_font
-                        )
-                        space_width = self.display_manager.get_text_width(
-                            " ",
-                            self.display_manager.small_font
-                        )
-                        ampm_width = self.display_manager.get_text_width(
-                            self.current_ampm,
-                            self.display_manager.small_font
-                        )
-                        total_width = time_width + space_width + ampm_width
-                        time_x = (width - total_width) // 2
-                        # Seconds come right after time_without_seconds (before AM/PM)
-                        seconds_x = time_x + time_without_seconds_width + 1  # +1 for colon
-                    else:
-                        # Time is centered, seconds come right after centered time
-                        # When time is centered, the x position is calculated as: (width - time_width) // 2
-                        # So seconds_x = centered_time_x + time_without_seconds_width + 1
-                        centered_time_x = (width - time_without_seconds_width) // 2
-                        seconds_x = centered_time_x + time_without_seconds_width + 1  # +1 for colon
-                    
-                    # Draw a small rectangle to clear just the seconds area (with some padding)
-                    seconds_width = self.display_manager.get_text_width(
-                        seconds_str,
-                        self.display_manager.small_font
-                    )
-                    # Clear area (slightly larger to ensure clean update)
-                    clear_x = seconds_x - 1
-                    clear_y = time_y - 1
-                    clear_width = seconds_width + 2
-                    clear_height = self.display_manager.get_font_height(self.display_manager.small_font) + 2
-                    
-                    # Draw black rectangle to clear seconds area
-                    self.display_manager.draw.rectangle(
-                        [clear_x, clear_y, clear_x + clear_width, clear_y + clear_height],
-                        fill=(0, 0, 0)
-                    )
-                    
-                    # Redraw seconds
-                    self.display_manager.draw_text(
-                        seconds_str,
-                        x=seconds_x,
-                        y=time_y,
-                        color=self.time_color,
-                        small_font=True
-                    )
-                    
-                    # Update display
-                    self.display_manager.update_display()
-                    
-                    self.logger.debug(f"Updated seconds only: {seconds_str}")
-        except Exception as e:
-            self.logger.warning(f"Error updating seconds only, falling back to full redraw: {e}")
-            # Fall back to full redraw on error
-            self.display_manager.clear()
-            # Trigger full redraw by setting needs_redraw
-            self.last_time_without_seconds = None
 
     def get_display_duration(self) -> float:
         """Get display duration from config."""

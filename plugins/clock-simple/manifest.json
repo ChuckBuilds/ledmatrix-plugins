@@ -1,7 +1,7 @@
 {
   "id": "clock-simple",
   "name": "Simple Clock",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "author": "ChuckBuilds",
   "description": "A simple clock display with current time and date",
   "category": "time",
@@ -16,6 +16,12 @@
     "clock-simple"
   ],
   "versions": [
+    {
+      "released": "2026-07-19",
+      "version": "1.0.7",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Fix the clock flashing/blinking periodically. The plugin now redraws its content on every render tick and only clears the buffer when the displayed time or date changes, instead of skipping frames — so the panel stays lit steadily regardless of update_interval."
+    },
     {
       "released": "2026-07-17",
       "version": "1.0.6",
@@ -33,7 +39,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-17",
+  "last_updated": "2026-07-19",
   "stars": 0,
   "downloads": 0,
   "verified": true,
