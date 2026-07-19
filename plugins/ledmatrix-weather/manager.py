@@ -98,8 +98,8 @@ class WeatherPlugin(BasePlugin):
         self.show_pressure = config.get('show_pressure', True)
 
         # Radar config
-        self.radar_zoom = config.get('radar_zoom', 6)
-        self.radar_update_interval = config.get('radar_update_interval', 600)
+        self._radar_config = self._parse_radar_config(config)
+        self.radar_update_interval = self._radar_config['update_interval']
         
         # Data storage
         self.weather_data = None
@@ -294,6 +294,11 @@ class WeatherPlugin(BasePlugin):
         self.show_almanac = new_config.get('show_almanac', self.show_almanac)
         self.show_radar = new_config.get('show_radar', self.show_radar)
 
+        # Re-parse radar settings; _ensure_radar_fetcher rebuilds the fetcher
+        # on its next call if the signature changed.
+        self._radar_config = self._parse_radar_config(new_config)
+        self.radar_update_interval = self._radar_config['update_interval']
+
         # Rebuild mode list and reset index so IndexError can't occur
         self.modes = []
         if self.show_current:
@@ -370,6 +375,39 @@ class WeatherPlugin(BasePlugin):
             if self.forecast_data:
                 self._process_forecast_data(self.forecast_data)
 
+    # radar_zoom (deprecated) -> radar_range_miles equivalents, chosen so an
+    # existing config shows roughly the same area it did before the range key
+    # replaced the abstract zoom level.
+    _RADAR_ZOOM_TO_RANGE = {4: 200, 5: 100, 6: 50, 7: 25, 8: 12}
+
+    def _parse_radar_config(self, config: dict) -> dict:
+        """Normalize all radar settings (with back-compat for radar_zoom)."""
+        range_miles = config.get('radar_range_miles')
+        if range_miles is None:
+            try:
+                zoom = int(config.get('radar_zoom', 6))
+            except (ValueError, TypeError):
+                zoom = 6
+            range_miles = self._RADAR_ZOOM_TO_RANGE.get(zoom, 50)
+        try:
+            update_interval = int(config.get('radar_update_interval', 180))
+        except (ValueError, TypeError):
+            update_interval = 180
+        return {
+            'range_miles': float(range_miles),
+            'update_interval': update_interval,
+            'map_style': config.get('radar_map_style', 'osm'),
+            'tile_server': config.get('radar_tile_server',
+                                      'https://maps.chuck-builds.com'),
+            'map_brightness': float(config.get('radar_map_brightness', 0.5)),
+            'show_nowcast': bool(config.get('radar_show_nowcast', True)),
+            'past_frames': int(config.get('radar_past_frames', 6)),
+            'frame_seconds': float(config.get('radar_frame_seconds', 0.5)),
+            'loop_pause_seconds': float(config.get('radar_loop_pause_seconds', 1.5)),
+            'line_color': tuple(config.get('radar_line_color', [0, 130, 70])),
+            'fill_color': tuple(config.get('radar_fill_color', [15, 25, 15])),
+        }
+
     def _update_radar(self) -> None:
         """Refresh radar data in the update loop so display() never blocks on HTTP."""
         if not self.show_radar:
@@ -393,22 +431,28 @@ class WeatherPlugin(BasePlugin):
         if lat is None or lon is None:
             return
 
-        line_color = tuple(self.config.get('radar_line_color', [0, 130, 70]))
-        fill_color = tuple(self.config.get('radar_fill_color', [15, 25, 15]))
-
-        # Reuse existing fetcher if config hasn't changed
+        cfg = self._radar_config
+        signature = (lat, lon) + tuple(sorted(cfg.items()))
+        if getattr(self, '_radar_fetcher_signature', None) == signature:
+            return
         if hasattr(self, '_radar_fetcher'):
-            f = self._radar_fetcher
-            if (f.lat == lat and f.lon == lon and f.zoom == self.radar_zoom
-                    and f.line_color == line_color and f.fill_color == fill_color):
-                return
             self.logger.info("Radar config changed, recreating RadarFetcher")
 
-        from radar import RadarFetcher
+        from weather_radar import RadarFetcher
         self._radar_fetcher = RadarFetcher(
-            lat, lon, self.radar_zoom, self.cache_manager,
-            line_color=line_color, fill_color=fill_color,
+            lat, lon, cfg['range_miles'], self.cache_manager,
+            map_style=cfg['map_style'],
+            custom_tile_server=cfg['tile_server'],
+            line_color=cfg['line_color'],
+            fill_color=cfg['fill_color'],
+            map_brightness=cfg['map_brightness'],
+            show_nowcast=cfg['show_nowcast'],
+            past_frames=cfg['past_frames'],
+            frame_seconds=cfg['frame_seconds'],
+            loop_pause_seconds=cfg['loop_pause_seconds'],
+            plugin_id=self.plugin_id,
         )
+        self._radar_fetcher_signature = signature
 
     # Coordinates for a fixed location never change, so geocode once and cache
     # the result permanently — the geocoding API is only ever hit on a cache
@@ -1719,6 +1763,36 @@ class WeatherPlugin(BasePlugin):
             return False
         alerts = self.weather_data.get('alerts', [])
         return len(alerts) > 0
+
+    # --- Dynamic duration (optional, radar only, off by default) ---
+
+    def _dynamic_duration_config(self) -> dict:
+        dd = self.config.get('dynamic_duration')
+        return dd if isinstance(dd, dict) else {}
+
+    def supports_dynamic_duration(self, mode_type=None) -> bool:
+        """Hold the radar on screen until its animation loop completes."""
+        if not self._dynamic_duration_config().get('enabled', False):
+            return False
+        return mode_type in (None, 'radar')
+
+    def get_cycle_duration(self, display_mode=None):
+        if display_mode not in (None, 'radar'):
+            return None
+        fetcher = getattr(self, '_radar_fetcher', None)
+        if fetcher is None:
+            return None
+        cap = self._dynamic_duration_config().get('max_duration_seconds', 60)
+        return min(float(cap), 2 * fetcher.get_loop_duration())
+
+    def is_cycle_complete(self) -> bool:
+        fetcher = getattr(self, '_radar_fetcher', None)
+        return fetcher is None or fetcher.is_loop_complete()
+
+    def reset_cycle_state(self) -> None:
+        fetcher = getattr(self, '_radar_fetcher', None)
+        if fetcher is not None:
+            fetcher.reset_loop()
 
     def get_vegas_content(self):
         """Return images for all enabled weather display modes."""

@@ -886,7 +886,7 @@
     {
       "id": "weather",
       "name": "Weather Display",
-      "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), precipitation radar, weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
+      "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), animated precipitation radar on a real OpenStreetMap basemap (with nowcast forecast frames), weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
       "author": "ChuckBuilds",
       "category": "weather",
       "tags": [
@@ -903,10 +903,10 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.5.3",
+      "latest_version": "2.6.0",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-07-19",
       "verified": true,
       "screenshot": ""
     },

@@ -1,10 +1,10 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.5.3",
+  "version": "2.6.0",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
-  "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), precipitation radar, weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
+  "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), animated precipitation radar on a real OpenStreetMap basemap (with nowcast forecast frames), weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
   "category": "weather",
   "tags": [
     "weather",
@@ -25,6 +25,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-07-19",
+      "version": "2.6.0",
+      "notes": "Radar overhaul. (1) Real map tiles: the radar now draws over an OpenStreetMap basemap (self-hosted tile server supported via radar_tile_server, public mirrors as fallback; carto/carto_dark/esri styles too), with the classic WeatherStar vector map kept as a selectable style and as automatic fallback when tiles are unavailable — radar is no longer blank outside the US. (2) Accuracy fix: basemap and radar are now rendered through one shared Web-Mercator viewport and the radar is a mosaic of every tile in view, so precipitation finally lines up with the map on all panel sizes (previously the radar was composited at a different zoom than the map — up to 4x off on 64x32 — and cut off near tile edges). (3) Fresher data: optional RainViewer nowcast frames (~30 min of predicted radar, labeled FCST +Nm with yellow progress dots), index polled every 3 min by default with tiles only downloaded for new frames, and frames/tiles cached to disk so restarts rebuild the animation without refetching. (4) Easier config: new radar_range_miles (distance to panel edge) replaces the abstract radar_zoom (still honored for existing configs), plus map style/brightness, frame timing, and past-frame-count settings. (5) Smoother playback: time-based frame stepping with a hold on the newest frame, and optional dynamic duration to let the rotation wait for a full loop.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-17",
       "version": "2.5.3",
@@ -125,7 +131,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-17",
+  "last_updated": "2026-07-19",
   "stars": 0,
   "downloads": 0,
   "verified": true,
