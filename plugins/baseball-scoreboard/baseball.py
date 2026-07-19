@@ -1904,15 +1904,22 @@ class BaseballLive(Baseball, SportsLive):
 
             center_y = self.display_height // 2
 
-            # Draw logos with slight edge bleed
+            # Draw logos with slight edge bleed (plus any configured layout offsets)
             home_x = (
                 self.display_width - home_logo.width + 2
+                + self._get_layout_offset('home_logo', 'x_offset')
             )
-            home_y = center_y - (home_logo.height // 2)
+            home_y = (
+                center_y - (home_logo.height // 2)
+                + self._get_layout_offset('home_logo', 'y_offset')
+            )
             main_img.paste(home_logo, (home_x, home_y), home_logo)
 
-            away_x = -2
-            away_y = center_y - (away_logo.height // 2)
+            away_x = -2 + self._get_layout_offset('away_logo', 'x_offset')
+            away_y = (
+                center_y - (away_logo.height // 2)
+                + self._get_layout_offset('away_logo', 'y_offset')
+            )
             main_img.paste(away_logo, (away_x, away_y), away_logo)
 
             # --- Live Game Specific Elements ---

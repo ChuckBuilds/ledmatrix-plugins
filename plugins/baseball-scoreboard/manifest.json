@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.19.2",
+  "version": "1.19.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-18",
+      "version": "1.19.3",
+      "notes": "Live games now honor the Home/Away logo x/y offset settings (customization.layout.home_logo / away_logo), matching how upcoming and recent games already behave. Previously the live scorebug hardcoded logo positions, so any configured offset was ignored and logos snapped back to the panel edges once a game went live.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-17",
       "version": "1.19.2",
