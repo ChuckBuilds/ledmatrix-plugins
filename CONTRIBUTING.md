@@ -7,10 +7,11 @@ documentation fixes all help.
 
 ## Quick links
 
+- **Plugin development guide** (deep dive): see [docs/plugin-development/](docs/plugin-development/)
 - **Plugin submission flow**: see [SUBMISSION.md](SUBMISSION.md)
 - **Plugin verification checklist**: see [VERIFICATION.md](VERIFICATION.md)
 - **Real-time discussion**: the
-  [LEDMatrix Discord](https://discord.gg/uW36dVAtcT)
+  [LEDMatrix Discord](https://discord.gg/RdrC37rEag)
 - **Bugs / feature requests**:
   [open an issue](https://github.com/ChuckBuilds/ledmatrix-plugins/issues)
 - **Security issues**: see [SECURITY.md](SECURITY.md). Don't open
@@ -84,6 +85,15 @@ flow. See LEDMatrix's
 7. **Open a PR** using the template in
    `.github/PULL_REQUEST_TEMPLATE.md`.
 
+> **Watch out for module-name collisions.** The core loads each plugin's
+> top-level `*.py` files by bare name. If a helper module is imported from a
+> subpackage or from inside a function/method body (a *deferred* import), give it
+> a plugin-unique name (e.g. `election_data_model.py`, not `data_model.py`) —
+> otherwise it can bind another plugin's same-named module and fail to load. CI
+> runs `scripts/check_module_collisions.py` across all plugins on every PR; run it
+> locally too. Details in
+> [docs/plugin-development/07-testing-ci-and-registry.md](docs/plugin-development/07-testing-ci-and-registry.md).
+
 ## Adding a new plugin
 
 See [SUBMISSION.md](SUBMISSION.md) for the full submission flow. The
@@ -140,7 +150,19 @@ check but fails users. Use the adaptive layout system
 `fill warn` output in `check_plugin.py` reports. Declare your layout's
 design size in the manifest (`"display": {"design_size": ...}`) and, once
 your plugin is adaptive, opt into strict checking via
-`test/harness.json`: `{"fill_check": "strict"}`.
+`test/harness.json`: `{"fill_check": "strict"}`. See
+[docs/plugin-development/05-adaptive-layout.md](docs/plugin-development/05-adaptive-layout.md).
+
+### What CI enforces on every PR
+
+- **Plugin Safety** (`test-plugins.yml`): for each changed plugin, enforces the
+  version bump, validates `manifest.json` against the core schema, installs its
+  `requirements.txt`, and runs the safety harness across all matrix sizes.
+- **Module Collisions** (`module-collisions.yml`): runs
+  `check_module_collisions.py` across all plugins.
+
+A changed plugin whose code (anything outside `test/`, including its README) is
+not accompanied by a `version` bump **fails the PR**.
 
 ## Code of Conduct
 

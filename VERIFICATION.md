@@ -1,6 +1,10 @@
 # Plugin Verification Checklist
 
-Use this checklist when reviewing plugin submissions.
+Use this checklist when reviewing plugin submissions. Several of these checks are
+now **enforced automatically in CI** (see `.github/workflows/`): the manifest
+schema validation, the version bump, the cross-size safety harness, and the
+module-collision check. Use this list for the human judgment CI can't make
+(code quality, security, docs, malicious-code review).
 
 ## Code Review
 
@@ -31,8 +35,8 @@ Use this checklist when reviewing plugin submissions.
 - [ ] Tags are descriptive
 - [ ] **`display_modes` don't collide with any existing plugin's modes.**
       The display controller stores modes in a flat dict keyed by mode
-      name (`src/display_controller.py:295`); a collision means
-      whichever plugin loads second silently overrides the first.
+      name; a collision means whichever plugin loads second silently
+      overrides the first.
       Quick check:
       ```bash
       python3 -c "
@@ -90,7 +94,8 @@ Use this checklist when reviewing plugin submissions.
 ## Testing
 
 - [ ] Tested on Raspberry Pi
-- [ ] Works with 64x32 matrix (minimum)
+- [ ] Renders correctly at all four harness sizes (64×32, 128×32, 128×64,
+      256×32) — the safety harness checks this automatically
 - [ ] No excessive CPU/memory usage
 - [ ] No crashes or freezes
 

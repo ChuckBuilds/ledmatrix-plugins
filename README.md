@@ -1,6 +1,6 @@
 # LEDMatrix Official Plugins
 
-[![Plugins](https://img.shields.io/badge/plugins-30-blue)](./plugins.json)
+[![Plugins](https://img.shields.io/badge/plugins-39-blue)](./plugins.json)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/RdrC37rEag)
 [![GitHub Stars](https://img.shields.io/github/stars/ChuckBuilds/ledmatrix-plugins?style=flat&color=yellow)](https://github.com/ChuckBuilds/ledmatrix-plugins)
@@ -79,7 +79,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 ## Available Plugins
 
-### Sports (12)
+### Sports (17)
 
 | Plugin | Description |
 |--------|-------------|
@@ -89,10 +89,15 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [Baseball Scoreboard](./plugins/baseball-scoreboard/) | MLB, MiLB & NCAA Baseball live scores |
 | [Soccer Scoreboard](./plugins/soccer-scoreboard/) | Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS |
 | [Lacrosse Scoreboard](./plugins/lacrosse-scoreboard/) | NCAA lacrosse live scores and schedules |
+| [Cricket Scoreboard](./plugins/cricket-scoreboard/) | Live, recent & upcoming international (Test/ODI/T20I) and major domestic cricket |
+| [AFL Scoreboard](./plugins/afl-scoreboard/) | Australian Football League live, recent & upcoming games |
+| [NRL Scoreboard](./plugins/nrl-scoreboard/) | National Rugby League live, recent & upcoming games |
 | [F1 Scoreboard](./plugins/f1-scoreboard/) | Formula 1 race results, schedules, and standings |
 | [UFC Scoreboard](./plugins/ufc-scoreboard/) | UFC/MMA live fights, fighter headshots, records, odds & results &mdash; *by [LegoGuy1000](https://github.com/legoguy1000)* |
 | [Masters Tournament](./plugins/masters-tournament/) | Live Masters golf leaderboard, hole tracking, player cards |
-| [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NCAA |
+| [March Madness](./plugins/march-madness/) | NCAA tournament bracket tracker with round branding and live scores |
+| [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN |
+| [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NHL, NCAA |
 | [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records |
 | [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts |
 
@@ -103,19 +108,21 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [Stocks Ticker](./plugins/ledmatrix-stocks/) | Real-time stock & crypto prices with charts |
 | [Stock News](./plugins/stock-news/) | Financial headlines from RSS feeds |
 
-### Time & Calendar (3)
+### Time & Calendar (4)
 
 | Plugin | Description |
 |--------|-------------|
 | [Simple Clock](./plugins/clock-simple/) | Time and date display |
 | [7-Segment Clock](./plugins/7-segment-clock/) | Retro-style 7-segment clock with customizable colors |
 | [Google Calendar](./plugins/calendar/) | Upcoming events from Google Calendar |
+| [Geochron World Clock](./plugins/geochron/) | World map with the real-time day/night terminator |
 
-### Weather (1)
+### Weather (2)
 
 | Plugin | Description |
 |--------|-------------|
-| [Weather Display](./plugins/ledmatrix-weather/) | Current conditions, hourly & daily forecasts via OpenWeatherMap |
+| [Weather Display](./plugins/ledmatrix-weather/) | Current conditions, hourly & daily forecasts (Open-Meteo) |
+| [Tide Display](./plugins/tide-display/) | Coastal tides with animated wave level, schedule & 24-hour chart (NOAA) |
 
 ### Media (2)
 
@@ -131,18 +138,20 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [News Ticker](./plugins/news/) | RSS news headlines from ESPN, NCAA, custom sources |
 | [Of The Day](./plugins/of-the-day/) | Daily quotes, Bible verses, word of the day |
 
-### Integrations (1)
+### Integrations (2)
 
 | Plugin | Description |
 |--------|-------------|
 | [MQTT Notifications](./plugins/mqtt-notifications/) | HomeAssistant notifications via MQTT |
+| [On Air Light](./plugins/on-air/) | Broadcast ON AIR tally light, triggered remotely via MQTT / Home Assistant |
 
-### Custom (2)
+### Custom (3)
 
 | Plugin | Description |
 |--------|-------------|
 | [Flight Tracker](./plugins/ledmatrix-flights/) | Real-time ADS-B aircraft tracking with map display |
 | [Countdown Display](./plugins/countdown/) | Customizable countdowns for birthdays, events, holidays |
+| [Election Results](./plugins/ledmatrix-elections/) | Live election results ticker with full-screen race interrupts |
 
 ### Holiday (1)
 
@@ -184,7 +193,21 @@ LEDMatrix is open to community plugin contributions! The following plugins were 
 |--------|-------------|--------------|
 | [UFC Scoreboard](./plugins/ufc-scoreboard/) | [@LegoGuy1000](https://github.com/legoguy1000) | Original UFC/MMA implementation ([PR #137](https://github.com/ChuckBuilds/LEDMatrix/pull/137)) |
 
-Want to see your plugin here? Check out [3rd Party Plugin Development](#3rd-party-plugin-development) below or submit a plugin via [Discord](https://discord.gg/uW36dVAtcT).
+### Third-party plugins in the registry
+
+The plugin store also aggregates plugins hosted in their own repositories. These
+carry a **Custom** badge in the web UI and are installed the same way. They live
+outside this monorepo, so review their source before installing.
+
+| Plugin | Author | Repository |
+|--------|--------|------------|
+| GIF Player | [@ant456](https://github.com/ant456) | [ledmatrix-gif-player](https://github.com/ant456/ledmatrix-gif-player) — animated GIFs with an upload portal |
+| PGA Tour Leaderboard | [@sarjent](https://github.com/sarjent) | [ledmatrix-golf](https://github.com/sarjent/ledmatrix-golf) — PGA Tour leaderboard via ESPN |
+| Plex Marquee | [@ant456](https://github.com/ant456) | [ledmatrix-plex-marquee](https://github.com/ant456/ledmatrix-plex-marquee) — cinema marquee art via Fanart.tv |
+| Dresden Departures | [@ryug0](https://github.com/ryug0) | [ledmatrix-dresden-departures](https://github.com/ryug0/ledmatrix-dresden-departures) — Dresden VVO departure board |
+| Tidbyt Baseball Scoreboard | [@trsadler](https://github.com/trsadler) | [MLB-Scoreboard-LEDMatrix](https://github.com/trsadler/MLB-Scoreboard-LEDMatrix) — split team-color MLB live scoreboard |
+
+Want to see your plugin here? Check out [3rd Party Plugin Development](#3rd-party-plugin-development) below or submit a plugin via [Discord](https://discord.gg/RdrC37rEag).
 
 ---
 
@@ -316,7 +339,10 @@ See the [manifest schema](https://github.com/ChuckBuilds/LEDMatrix/blob/main/sch
 
 ### Getting Started
 
-1. Review the [Plugin Development Guide](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/PLUGIN_DEVELOPMENT_GUIDE.md)
+1. Read the [Plugin Development Guide](./docs/plugin-development/) in this repo —
+   anatomy, the core API, advanced features (live priority, dynamic duration,
+   high-FPS scrolling, Vegas mode), styling/skins, adaptive layout, and the
+   testing/CI workflow
 2. Start with the [Hello World plugin](./plugins/hello-world/) as a template
 3. Test without hardware: run the LEDMatrix dev preview server
    (`python3 scripts/dev_server.py` from the LEDMatrix repo, then open
@@ -329,7 +355,7 @@ See the [manifest schema](https://github.com/ChuckBuilds/LEDMatrix/blob/main/sch
 
 To add your plugin to the official registry:
 
-1. Open an issue on this repository or reach out on [Discord](https://discord.gg/t4JWgmWf)
+1. Open an issue on this repository or reach out on [Discord](https://discord.gg/RdrC37rEag)
 2. Include: repository URL, description, screenshots/video
 3. After review, your plugin will be added to the registry
 
@@ -345,7 +371,7 @@ GNU General Public License v3.0 — see [LICENSE](LICENSE) for details.
 
 ## Support & Community
 
-- **Discord**: [Join the community](https://discord.gg/uW36dVAtcT)
+- **Discord**: [Join the community](https://discord.gg/RdrC37rEag)
 - **Issues**: [Report plugin issues](https://github.com/ChuckBuilds/ledmatrix-plugins/issues)
 - **Security**: see [SECURITY.md](SECURITY.md) — please don't open
   public issues for vulnerabilities

@@ -7,7 +7,8 @@ Want to add your plugin to the official registry? Follow these steps!
 Before submitting, ensure your plugin:
 
 - ✅ Has a complete `manifest.json` with all required fields
-- ✅ Follows the plugin architecture specification
+  (`id`, `name`, `version`, `class_name`, `display_modes`)
+- ✅ Follows the [plugin development guide](docs/plugin-development/)
 - ✅ Has comprehensive README documentation
 - ✅ Includes example configuration
 - ✅ Has been tested on Raspberry Pi hardware
@@ -47,7 +48,7 @@ If you prefer to maintain your own repo:
 1. **Test Your Plugin**
    ```bash
    # Install via URL on your Pi
-   curl -X POST http://your-pi:5000/api/plugins/install-from-url \
+   curl -X POST http://your-pi:5000/api/v3/plugins/install-from-url \
      -H "Content-Type: application/json" \
      -d '{"repo_url": "https://github.com/you/ledmatrix-your-plugin"}'
    ```
@@ -60,10 +61,17 @@ If you prefer to maintain your own repo:
 
 ## Review Process
 
-1. **Automated Checks**: Manifest validation, structure check
+For monorepo submissions (Option A), CI runs automatically on your PR:
+
+1. **Automated CI gates**:
+   - **Version bump** enforced on any changed plugin code
+   - **Manifest schema validation** against the core `manifest_schema.json`
+   - **Safety harness** — renders every screen at every matrix size (64×32,
+     128×32, 128×64, 256×32), failing on crashes or content past the edge
+   - **Module-collision check** across all plugins
 2. **Code Review**: Manual review of plugin code
-3. **Testing**: Test installation and basic functionality
-4. **Approval**: If accepted, merged and marked as verified
+3. **Testing**: Installation and basic functionality
+4. **Approval**: If accepted, merged and marked as `verified: true`
 
 ## After Approval
 

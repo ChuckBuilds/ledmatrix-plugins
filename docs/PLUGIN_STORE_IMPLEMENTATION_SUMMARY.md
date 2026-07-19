@@ -1,5 +1,13 @@
 # Plugin Store Implementation Summary
 
+> **⚠️ Historical document.** This is a build-status snapshot from the original
+> plugin-store implementation (early 2025). The work described as "still needed"
+> has long since shipped — the plugin store, its web UI, and this registry are
+> live. Line counts and file paths reflect the core repo at that time and are not
+> maintained. Kept for historical context only. For current docs see the
+> [store user guide](./PLUGIN_STORE_USER_GUIDE.md), the
+> [developer guide](./plugin-development/), and [`../CLAUDE.md`](../CLAUDE.md).
+
 ## Overview
 
 We've successfully implemented the backend infrastructure for the LEDMatrix Plugin Store, enabling users to discover, install, and manage plugins from both an official registry and custom GitHub repositories.

@@ -6,7 +6,7 @@
 ```bash
 # Web UI: Plugin Manager tab → Plugin Store section → Search → Click Install
 # API:
-curl -X POST http://pi:5000/api/plugins/install \
+curl -X POST http://pi:5000/api/v3/plugins/install \
   -d '{"plugin_id": "clock-simple"}'
 ```
 
@@ -14,7 +14,7 @@ curl -X POST http://pi:5000/api/plugins/install \
 ```bash
 # Web UI: Plugin Manager tab → "Install from GitHub" section → Paste URL
 # API:
-curl -X POST http://pi:5000/api/plugins/install-from-url \
+curl -X POST http://pi:5000/api/v3/plugins/install-from-url \
   -d '{"repo_url": "https://github.com/user/ledmatrix-plugin"}'
 ```
 
@@ -22,29 +22,29 @@ curl -X POST http://pi:5000/api/plugins/install-from-url \
 ```bash
 # Web UI: Use search bar and filters
 # API:
-curl "http://pi:5000/api/plugins/store/search?q=hockey&category=sports"
+curl "http://pi:5000/api/v3/plugins/store/search?q=hockey&category=sports"
 ```
 
 ### List Installed
 ```bash
-curl "http://pi:5000/api/plugins/installed"
+curl "http://pi:5000/api/v3/plugins/installed"
 ```
 
 ### Enable/Disable
 ```bash
-curl -X POST http://pi:5000/api/plugins/toggle \
+curl -X POST http://pi:5000/api/v3/plugins/toggle \
   -d '{"plugin_id": "clock-simple", "enabled": true}'
 ```
 
 ### Update Plugin
 ```bash
-curl -X POST http://pi:5000/api/plugins/update \
+curl -X POST http://pi:5000/api/v3/plugins/update \
   -d '{"plugin_id": "clock-simple"}'
 ```
 
 ### Uninstall
 ```bash
-curl -X POST http://pi:5000/api/plugins/uninstall \
+curl -X POST http://pi:5000/api/v3/plugins/uninstall \
   -d '{"plugin_id": "clock-simple"}'
 ```
 
@@ -104,6 +104,7 @@ my-plugin/
   "description": "What it does",
   "entry_point": "manager.py",
   "class_name": "MyPlugin",
+  "display_modes": ["my-plugin"],
   "category": "custom"
 }
 ```
@@ -146,10 +147,9 @@ my-plugin/
 
 ## Documentation
 
-- Full Guide: `PLUGIN_STORE_USER_GUIDE.md`
-- Implementation: `PLUGIN_STORE_IMPLEMENTATION_SUMMARY.md`
-- Architecture: `PLUGIN_ARCHITECTURE_SPEC.md`
-- Developer Guide: `PLUGIN_DEVELOPER_GUIDE.md` (coming soon)
+- Full Guide: [`PLUGIN_STORE_USER_GUIDE.md`](./PLUGIN_STORE_USER_GUIDE.md)
+- Developer Guide: [`plugin-development/`](./plugin-development/) — building plugins
+- Repo-wide reference for AI assistants: [`../CLAUDE.md`](../CLAUDE.md)
 
 ## Support
 

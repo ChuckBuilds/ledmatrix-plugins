@@ -18,7 +18,7 @@ Use one of these channels, in order of preference:
 1. **GitHub Security Advisories** (preferred) on this repo:
    <https://github.com/ChuckBuilds/ledmatrix-plugins/security/advisories/new>
 2. **Discord DM** to a moderator on the
-   [LEDMatrix Discord](https://discord.gg/uW36dVAtcT). Don't post in
+   [LEDMatrix Discord](https://discord.gg/RdrC37rEag). Don't post in
    public channels.
 
 Please include:

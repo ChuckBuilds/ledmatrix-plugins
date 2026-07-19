@@ -5,6 +5,10 @@
 All official plugins live in `plugins/<plugin-id>/` within this repository.
 The registry file `plugins.json` is the source of truth for the Plugin Store.
 
+**Full references:** `CLAUDE.md` (dense) and `docs/plugin-development/` (deep-dive
+human guide) cover the plugin/core API, advanced features, styling, and adaptive
+layout. Consult them before non-trivial changes.
+
 ## Plugin Version Management
 
 ### When Making Changes to Any Plugin
@@ -78,6 +82,23 @@ git push origin main
 ### Version Mismatch
 **Problem**: `version` field doesn't match top entry in `versions` array.
 **Solution**: Keep both in sync.
+
+### Cross-Plugin Module Collisions
+**Problem**: The core loads each plugin's top-level `*.py` files by bare name. A
+helper module imported from a subpackage or from inside a function/method body (a
+*deferred* import) can bind a **different** plugin's same-named module and fail to
+load (real case: two plugins both shipping `data_model.py`).
+**Solution**: Give deferred/subpackage helper modules plugin-unique names (e.g.
+`election_data_model.py`, not `data_model.py`). Relative imports don't work (the
+entry point loads with no package context). CI runs
+`scripts/check_module_collisions.py` on every PR; run it locally too.
+
+### Rendering Off-Panel / Not Scaling
+**Problem**: Plugin renders past the edge, crashes, or stays tiny on large panels.
+**Solution**: Render correctly at all four sizes (64×32, 128×32, 128×64, 256×32).
+The core **safety harness** (`test-plugins.yml`) renders every screen at every
+size on each PR and fails on overflow/crash. See
+`docs/plugin-development/05-adaptive-layout.md`.
 
 ---
 
