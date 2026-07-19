@@ -380,32 +380,41 @@ class WeatherPlugin(BasePlugin):
     # replaced the abstract zoom level.
     _RADAR_ZOOM_TO_RANGE = {4: 200, 5: 100, 6: 50, 7: 25, 8: 12}
 
+    @staticmethod
+    def _coerce(value, cast, default):
+        """Cast a config value, falling back to the default on bad input so a
+        malformed hand-edited config can't raise through on_config_change."""
+        try:
+            return cast(value)
+        except (ValueError, TypeError):
+            return default
+
     def _parse_radar_config(self, config: dict) -> dict:
         """Normalize all radar settings (with back-compat for radar_zoom)."""
         range_miles = config.get('radar_range_miles')
         if range_miles is None:
-            try:
-                zoom = int(config.get('radar_zoom', 6))
-            except (ValueError, TypeError):
-                zoom = 6
+            zoom = self._coerce(config.get('radar_zoom', 6), int, 6)
             range_miles = self._RADAR_ZOOM_TO_RANGE.get(zoom, 50)
-        try:
-            update_interval = int(config.get('radar_update_interval', 180))
-        except (ValueError, TypeError):
-            update_interval = 180
         return {
-            'range_miles': float(range_miles),
-            'update_interval': update_interval,
+            'range_miles': self._coerce(range_miles, float, 50.0),
+            'update_interval': self._coerce(
+                config.get('radar_update_interval', 180), int, 180),
             'map_style': config.get('radar_map_style', 'osm'),
             'tile_server': config.get('radar_tile_server',
                                       'https://maps.chuck-builds.com'),
-            'map_brightness': float(config.get('radar_map_brightness', 0.5)),
+            'map_brightness': self._coerce(
+                config.get('radar_map_brightness', 0.5), float, 0.5),
             'show_nowcast': bool(config.get('radar_show_nowcast', True)),
-            'past_frames': int(config.get('radar_past_frames', 6)),
-            'frame_seconds': float(config.get('radar_frame_seconds', 0.5)),
-            'loop_pause_seconds': float(config.get('radar_loop_pause_seconds', 1.5)),
-            'line_color': tuple(config.get('radar_line_color', [0, 130, 70])),
-            'fill_color': tuple(config.get('radar_fill_color', [15, 25, 15])),
+            'past_frames': self._coerce(
+                config.get('radar_past_frames', 6), int, 6),
+            'frame_seconds': self._coerce(
+                config.get('radar_frame_seconds', 0.5), float, 0.5),
+            'loop_pause_seconds': self._coerce(
+                config.get('radar_loop_pause_seconds', 1.5), float, 1.5),
+            'line_color': self._coerce(
+                config.get('radar_line_color', [0, 130, 70]), tuple, (0, 130, 70)),
+            'fill_color': self._coerce(
+                config.get('radar_fill_color', [15, 25, 15]), tuple, (15, 25, 15)),
         }
 
     def _update_radar(self) -> None:
