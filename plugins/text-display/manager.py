@@ -106,6 +106,10 @@ class TextDisplayPlugin(BasePlugin):
         # config_schema types scroll_gap_width as "number", so the web UI can persist
         # it as a float (e.g. 32.0); Image.new() requires int dimensions.
         self.scroll_gap_width = int(config.get('scroll_gap_width', 32))
+        # display_duration is the on-screen floor for the dynamic scroll duration.
+        # It's a time value (seconds), not a pixel dimension, so keep it a float to
+        # preserve fractional seconds (schema types it "number", e.g. 10.5).
+        self.display_duration = float(config.get('display_duration', 10.0))
         # Convert colors to integers to handle string values from JSON config
         try:
             text_color_raw = config.get('text_color', [255, 255, 255])
@@ -177,9 +181,9 @@ class TextDisplayPlugin(BasePlugin):
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=True,
             # Honor the documented display_duration setting as the on-screen floor.
-            # Schema types it "number", so int-coerce it. Was hardcoded to 10, which
-            # silently ignored display_duration whenever dynamic duration was active.
-            min_duration=int(config.get('display_duration', 10)),
+            # Was hardcoded to 10, which silently ignored display_duration whenever
+            # dynamic duration was active.
+            min_duration=self.display_duration,
             max_duration=300,
             buffer=0.1
         )
@@ -605,8 +609,8 @@ class TextDisplayPlugin(BasePlugin):
             dynamic_duration = self.scroll_helper.get_dynamic_duration()
             if dynamic_duration > 0:
                 return float(dynamic_duration)
-        # Otherwise use config value or default
-        return self.config.get('display_duration', 10.0)
+        # Otherwise use the configured display duration
+        return self.display_duration
     
     def validate_config(self) -> bool:
         """Validate plugin configuration."""
@@ -680,7 +684,22 @@ class TextDisplayPlugin(BasePlugin):
             target_fps = max(30.0, min(240.0, self.target_fps))
             self.scroll_helper.set_target_fps(target_fps)
             self.logger.info(f"Scroll settings updated: speed={self.scroll_speed}, delay={self.scroll_delay}s, target FPS={target_fps}")
-        
+
+        # Re-apply display_duration as the dynamic-duration floor so runtime edits
+        # take effect immediately (fall back to the current value so a partial
+        # config update can't reset it).
+        new_display_duration = float(new_config.get('display_duration', self.display_duration))
+        if new_display_duration != self.display_duration:
+            self.display_duration = new_display_duration
+            if self.scroll_helper:
+                self.scroll_helper.set_dynamic_duration_settings(
+                    enabled=True,
+                    min_duration=self.display_duration,
+                    max_duration=300,
+                    buffer=0.1
+                )
+                self.logger.info(f"display_duration updated: {self.display_duration}s")
+
         # Reset scroll position if scroll was toggled
         if old_scroll_enabled != self.scroll_enabled:
             if self.scroll_helper:
