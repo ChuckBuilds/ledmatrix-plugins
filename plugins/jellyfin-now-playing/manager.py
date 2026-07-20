@@ -222,8 +222,8 @@ class JellyfinNowPlayingPlugin(BasePlugin):
             status_code = e.response.status_code if e.response is not None else None
             if status_code in (401, 403):
                 self._error = "Jellyfin: Update API Key"
-                self.logger.error("Jellyfin rejected the API key (HTTP %s). "
-                                  "Update it in the plugin's secrets.", status_code)
+                self.logger.error("Jellyfin authentication failed (HTTP %s); "
+                                  "update the credential in the plugin settings.", status_code)
             else:
                 self._error = "Jellyfin: HTTP Error"
                 self.logger.error("Error fetching Jellyfin sessions (HTTP %s)", status_code)
