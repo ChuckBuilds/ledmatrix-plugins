@@ -108,8 +108,8 @@ def render_vector_map(viewport: MercatorViewport,
                     if fill_color:
                         draw.polygon(pts, fill=fill_color)
                     draw.polygon(pts, outline=line_color)
-                except Exception:
-                    pass
+                except (ValueError, TypeError) as e:
+                    logger.debug("[Radar] Skipping unrenderable polygon: %s", e)
     return img
 
 
@@ -213,8 +213,8 @@ class RadarFetcher:
             for f in self._radar_cache_dir.glob("*.png"):
                 if f.stat().st_mtime < cutoff:
                     f.unlink(missing_ok=True)
-        except OSError:
-            pass
+        except OSError as e:
+            logger.debug("[Radar] Radar tile cache purge failed: %s", e)
 
     def _index_cache_key(self) -> str:
         return f"{self.plugin_id}:radar:index"
@@ -276,8 +276,8 @@ class RadarFetcher:
             if self.cache is not None:
                 try:
                     self.cache.set(self._index_cache_key(), data, ttl=900)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("[Radar] Could not cache index: %s", e)
             return data
         except Exception as e:
             logger.warning(f"[Radar] RainViewer index fetch failed: {e}")
@@ -287,8 +287,8 @@ class RadarFetcher:
                     if cached:
                         logger.info("[Radar] Using cached RainViewer index")
                         return cached
-                except Exception:
-                    pass
+                except Exception as cache_err:
+                    logger.debug("[Radar] Cached index unavailable: %s", cache_err)
             return None
 
     def _wanted_frames(self, index: Dict) -> List[Tuple[str, int, bool]]:
@@ -311,8 +311,8 @@ class RadarFetcher:
         if cache_path is not None and cache_path.exists():
             try:
                 return Image.open(cache_path).convert("RGBA")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("[Radar] Bad cached radar tile %s: %s", cache_path, e)
         if deadline is not None and time.time() > deadline:
             return None
         url = f"https://tilecache.rainviewer.com{path}/{TILE_SIZE}/{zoom}/{tx}/{ty}/2/1_1.png"
@@ -324,8 +324,8 @@ class RadarFetcher:
             if cache_path is not None:
                 try:
                     cache_path.write_bytes(resp.content)
-                except (PermissionError, OSError):
-                    pass
+                except (PermissionError, OSError) as e:
+                    logger.debug("[Radar] Could not cache radar tile: %s", e)
             return Image.open(BytesIO(resp.content)).convert("RGBA")
         except Exception as e:
             logger.debug(f"[Radar] Tile fetch failed ({url}): {e}")
