@@ -327,6 +327,39 @@ class F1Renderer:
                 return text + ".."
         return text
 
+    def _wrap_text(self, draw: ImageDraw.ImageDraw, text: str, font,
+                   max_w: int, max_lines: int) -> List[str]:
+        """Word-wrap text into at most max_lines lines that each fit max_w.
+
+        Prefers full words; a word longer than max_w is hard-split. If the text
+        needs more than max_lines, the last line is truncated with an ellipsis so
+        nothing spills over — but with enough lines the whole name shows."""
+        lines: List[str] = []
+        cur = ""
+        words = text.split()
+        i = 0
+        while i < len(words) and len(lines) < max_lines:
+            word = words[i]
+            trial = f"{cur} {word}".strip()
+            if self._tw(draw, trial, font) <= max_w:
+                cur = trial
+                i += 1
+            elif not cur:
+                # single word too wide for the line — hard-truncate it onto its own line
+                lines.append(self._truncate(draw, word, font, max_w))
+                i += 1
+            else:
+                lines.append(cur)
+                cur = ""
+        if cur and len(lines) < max_lines:
+            lines.append(cur)
+            i = len(words)
+        # Anything left over (ran out of lines) → ellipsize the final line.
+        if i < len(words) and lines:
+            remaining = " ".join([lines[-1]] + words[i:])
+            lines[-1] = self._truncate(draw, remaining, font, max_w)
+        return lines
+
     def _fit_text(self, draw: ImageDraw.ImageDraw, candidates: List[str],
                   font, max_w: int) -> str:
         """Return the first candidate that fits max_w; else truncate the last.
@@ -1705,19 +1738,43 @@ class F1Renderer:
             self._draw_text_outlined(draw, (x + 2, 2), sess_label, self.fonts["detail"],
                                      fill=sess_color, outline=(0, 0, 0))
 
-        # Row 2: event name
+        # Event name (+ time)
+        event = entry.get("event_name", entry.get("name", "")).replace("Grand Prix", "GP")
+        time_str = entry.get("status_detail", "")
         row2_y = 2 + self._th(draw, "A", self.fonts["detail"]) + 3
-        if row2_y + 5 < self.display_height:
-            event = entry.get("event_name", entry.get("name", "")).replace("Grand Prix", "GP")
-            # Time right-aligned on row 2
-            time_str = entry.get("status_detail", "")
+
+        if self.is_tall:
+            # Bigger, word-wrapped name filling the space below the header so the
+            # full event name is readable — no ellipsis. Time moves up to the
+            # header row (right-aligned) so the name gets the full width.
+            if time_str:
+                tw = self._tw(draw, time_str, self.fonts["small"])
+                draw.text((self.display_width - tw - 2, 2), time_str,
+                          font=self.fonts["small"], fill=(120, 120, 120))
+
+            avail_w = self.display_width - 4
+            avail_h = self.display_height - row2_y - 2
+            name_font = self.fonts["position"]
+            lh = self._th(draw, "Ay", name_font) + 2
+            lines = self._wrap_text(draw, event, name_font, avail_w, max(1, avail_h // lh))
+            # If even the wrap had to ellipsize, drop to the smaller font so more
+            # words fit per line and across more lines — the whole name shows.
+            if lines and lines[-1].endswith("..") and name_font is not self.fonts["detail"]:
+                name_font = self.fonts["detail"]
+                lh = self._th(draw, "Ay", name_font) + 2
+                lines = self._wrap_text(draw, event, name_font, avail_w, max(1, avail_h // lh))
+
+            y = row2_y + max(0, (avail_h - len(lines) * lh) // 2)
+            for line in lines:
+                self._draw_text_outlined(draw, (2, y), line, name_font, fill=(210, 210, 210))
+                y += lh
+        elif row2_y + 5 < self.display_height:
+            # Short panel: single small row, truncated (unchanged).
             time_w = self._tw(draw, time_str, self.fonts["small"]) + 2 if time_str else 0
-
-            event = self._truncate(draw, event, self.fonts["small"],
-                                   self.display_width - 2 - time_w - 2)
-            self._draw_text_outlined(draw, (2, row2_y), event, self.fonts["small"],
+            ev = self._truncate(draw, event, self.fonts["small"],
+                                self.display_width - 2 - time_w - 2)
+            self._draw_text_outlined(draw, (2, row2_y), ev, self.fonts["small"],
                                      fill=(150, 150, 150))
-
             if time_str:
                 tx = self.display_width - time_w
                 draw.text((tx, row2_y), time_str, font=self.fonts["small"], fill=(100, 100, 100))
