@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-20",
+  "last_updated": "2026-07-21",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -537,7 +537,7 @@
     {
       "id": "on-air",
       "name": "On Air Light",
-      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u2014 stays on until you turn it off.",
+      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live — stays on until you turn it off.",
       "author": "ChuckBuilds",
       "category": "utility",
       "tags": [
@@ -684,7 +684,7 @@
     {
       "id": "plex-marquee",
       "name": "Plex Marquee",
-      "description": "Cinema marquee display powered by Fanart.tv \u2014 shows banner art for whatever is currently playing on Plex, with a web portal to browse and pick banners for your library.",
+      "description": "Cinema marquee display powered by Fanart.tv — shows banner art for whatever is currently playing on Plex, with a web portal to browse and pick banners for your library.",
       "author": "ant456",
       "category": "media",
       "tags": [
@@ -886,7 +886,7 @@
     {
       "id": "weather",
       "name": "Weather Display",
-      "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), precipitation radar, weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
+      "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), animated precipitation radar on a real OpenStreetMap basemap (with nowcast forecast frames), weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
       "author": "ChuckBuilds",
       "category": "weather",
       "tags": [
@@ -903,10 +903,10 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.5.3",
+      "latest_version": "2.6.2",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-07-19",
       "verified": true,
       "screenshot": ""
     },
