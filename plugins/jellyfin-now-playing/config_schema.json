@@ -1,0 +1,223 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Jellyfin Now Playing Plugin Configuration",
+  "description": "Configuration schema for the Jellyfin Now Playing plugin - shows the active Jellyfin session's poster, title, and playback progress",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable or disable the Jellyfin Now Playing plugin"
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 15,
+      "minimum": 1,
+      "maximum": 300,
+      "description": "How long to display the screen in seconds"
+    },
+    "jellyfin_url": {
+      "type": "string",
+      "default": "http://localhost:8096",
+      "pattern": "^https?://.*",
+      "description": "Base URL of your Jellyfin server, e.g. http://192.168.1.50:8096",
+      "x-placeholder": "http://192.168.1.50:8096"
+    },
+    "api_key": {
+      "type": "string",
+      "description": "Jellyfin API key (create one under Dashboard > Advanced > API Keys)",
+      "x-secret": true
+    },
+    "username": {
+      "type": "string",
+      "default": "",
+      "description": "Only show sessions for this Jellyfin user (leave empty to show any user's session)"
+    },
+    "content_types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["Movie", "Episode", "Audio"]
+      },
+      "uniqueItems": true,
+      "default": ["Movie", "Episode", "Audio"],
+      "description": "Which media types to show",
+      "x-widget": "checkbox-group"
+    },
+    "show_progress": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show the playback progress bar"
+    },
+    "show_paused": {
+      "type": "boolean",
+      "default": true,
+      "description": "Keep showing a session while it is paused (off treats paused as nothing playing)"
+    },
+    "update_interval": {
+      "type": "integer",
+      "default": 10,
+      "minimum": 2,
+      "maximum": 300,
+      "description": "How often to poll the Jellyfin server for sessions, in seconds",
+      "x-advanced": true
+    },
+    "scroll_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Scroll the title/subtitle when they are too long to fit (off truncates with ...)"
+    },
+    "scroll_speed": {
+      "type": "integer",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 20,
+      "description": "Frames between each one-character scroll step (higher = slower)",
+      "x-advanced": true
+    },
+    "scroll_separator": {
+      "type": "string",
+      "default": "   ",
+      "description": "Text inserted between repetitions of scrolling text",
+      "x-advanced": true
+    },
+    "customization": {
+      "type": "object",
+      "title": "Display Customization",
+      "description": "Customize fonts and colors for the now-playing display",
+      "properties": {
+        "title_text": {
+          "type": "object",
+          "title": "Title",
+          "description": "Font settings for the media title",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf",
+                "cozette.bdf"
+              ],
+              "default": "5by7.regular.ttf",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 7,
+              "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Text color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [255, 255, 255]
+            }
+          },
+          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "additionalProperties": false
+        },
+        "subtitle_text": {
+          "type": "object",
+          "title": "Subtitle",
+          "description": "Font settings for the subtitle (series, artist, or user name) and time readout",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf",
+                "cozette.bdf"
+              ],
+              "default": "4x6-font.ttf",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 6,
+              "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Text color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [170, 170, 170]
+            }
+          },
+          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "additionalProperties": false
+        },
+        "progress_bar": {
+          "type": "object",
+          "title": "Progress Bar",
+          "description": "Colors for the playback progress bar",
+          "properties": {
+            "bar_color": {
+              "type": "array",
+              "title": "Bar Color",
+              "description": "Filled portion color (RGB); the bar turns amber while paused",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [124, 77, 255]
+            },
+            "background_color": {
+              "type": "array",
+              "title": "Background Color",
+              "description": "Unfilled portion color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [40, 40, 40]
+            }
+          },
+          "x-propertyOrder": ["bar_color", "background_color"],
+          "additionalProperties": false
+        }
+      },
+      "x-propertyOrder": ["title_text", "subtitle_text", "progress_bar"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["enabled"],
+  "additionalProperties": false
+}
