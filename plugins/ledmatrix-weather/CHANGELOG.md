@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.6.2] - 2026-07-21
+
+### Changed
+- **Default radar range widened** from 50 to 75 miles (distance from your
+  location to the panel edge) for a slightly more regional default view.
+  Existing configs are unaffected — an explicit `radar_range_miles` is honored
+  as set, and the deprecated `radar_zoom` still maps to its previous range.
+
 ## [2.6.1] - 2026-07-21
 
 ### Fixed

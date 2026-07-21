@@ -380,6 +380,10 @@ class WeatherPlugin(BasePlugin):
     # replaced the abstract zoom level.
     _RADAR_ZOOM_TO_RANGE = {4: 200, 5: 100, 6: 50, 7: 25, 8: 12}
 
+    # Default radar coverage (miles from center to panel edge) when nothing is
+    # configured — a slightly wider regional view than the old 50 mi default.
+    _DEFAULT_RANGE_MILES = 75
+
     @staticmethod
     def _coerce(value, cast, default):
         """Cast a config value, falling back to the default on bad input so a
@@ -393,10 +397,17 @@ class WeatherPlugin(BasePlugin):
         """Normalize all radar settings (with back-compat for radar_zoom)."""
         range_miles = config.get('radar_range_miles')
         if range_miles is None:
-            zoom = self._coerce(config.get('radar_zoom', 6), int, 6)
-            range_miles = self._RADAR_ZOOM_TO_RANGE.get(zoom, 50)
+            # Back-compat: an explicit (deprecated) radar_zoom still maps to its
+            # old range. With neither key set, default to a slightly wider view.
+            zoom = config.get('radar_zoom')
+            if zoom is not None:
+                range_miles = self._RADAR_ZOOM_TO_RANGE.get(
+                    self._coerce(zoom, int, 6), self._DEFAULT_RANGE_MILES)
+            else:
+                range_miles = self._DEFAULT_RANGE_MILES
         return {
-            'range_miles': self._coerce(range_miles, float, 50.0),
+            'range_miles': self._coerce(
+                range_miles, float, float(self._DEFAULT_RANGE_MILES)),
             'update_interval': self._coerce(
                 config.get('radar_update_interval', 180), int, 180),
             'map_style': config.get('radar_map_style', 'osm'),

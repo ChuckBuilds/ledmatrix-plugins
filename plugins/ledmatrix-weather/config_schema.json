@@ -150,7 +150,7 @@
     },
     "radar_range_miles": {
       "type": "integer",
-      "default": 50,
+      "default": 75,
       "minimum": 10,
       "maximum": 500,
       "description": "Distance from your location to the edge of the radar view, in miles. Replaces the old Radar Zoom Level setting.",
