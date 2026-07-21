@@ -1558,7 +1558,7 @@ class F1Renderer:
         avail_h = self.display_height - bottom_reserve
         row_heights = [self._th(draw, t, f) for t, f, _ in rows]
         ys = self._spread_ys(avail_h, row_heights, top_pad=1)
-        for (text, font, fill), ry, rh in zip(rows, ys, row_heights):
+        for (text, font, fill), ry, rh in zip(rows, ys, row_heights, strict=True):
             # Drop a row that would run into the reserved countdown strip
             # (happens when packed on a short panel with no room to spare).
             if ry + rh <= avail_h:
