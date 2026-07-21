@@ -1,5 +1,82 @@
 # Changelog
 
+## [2.6.2] - 2026-07-21
+
+### Changed
+- **Default radar range widened** from 50 to 75 miles (distance from your
+  location to the panel edge) for a slightly more regional default view.
+  Existing configs are unaffected — an explicit `radar_range_miles` is honored
+  as set, and the deprecated `radar_zoom` still maps to its previous range.
+
+## [2.6.1] - 2026-07-21
+
+### Fixed
+- **Radar "gray box" on high-zoom panels**: RainViewer serves radar tiles only
+  up to zoom 7 and returns a "Zoom Level Not Supported" placeholder (a dark
+  rounded label tile) above it. On small-range/large-panel combos the shared
+  viewport — which the higher-resolution OpenStreetMap basemap can use — could
+  pick a deeper zoom, so that placeholder composited over the map as a gray box
+  covering part of the display (e.g. 256×64 at 50 mi picked zoom 8). Radar tiles
+  are now fetched through a same-center viewport capped at zoom 7 and upscaled to
+  stay pixel-aligned with the basemap.
+- **Radar starved by the weather update interval**: radar tiles are fetched from
+  inside `update()`, but the core scheduled `update()` at the weather
+  `update_interval` (default 1800 s), so `radar_update_interval` was effectively
+  ignored and a fresh start showed the vector-map fallback for up to the full
+  weather interval before the basemap/frames loaded. The plugin now advertises a
+  60 s `update_interval` in its manifest so the core polls `update()` frequently
+  enough to fetch radar promptly; the weather API stays throttled by the plugin's
+  own (config) `update_interval`, so this does not increase Open-Meteo calls.
+
+## [2.6.0] - 2026-07-19
+
+### Added
+- **Real map tiles under the radar**: the radar now draws over an OpenStreetMap
+  basemap by default (`radar_map_style: osm`), with `carto`, `carto_dark`, and
+  `esri` styles available. A self-hosted OSM server is supported via
+  `radar_tile_server` (tried first, public mirrors as fallback). The classic
+  WeatherStar vector state map remains available as `radar_map_style: vector`
+  and is used automatically whenever tiles can't be fetched — and radar is no
+  longer a blank black screen outside the US.
+- **Nowcast forecast frames**: after the observed frames, the animation now
+  plays ~30 minutes of RainViewer's predicted radar, labeled `FCST +10m` etc.
+  with yellow progress dots (`radar_show_nowcast`, on by default).
+- **`radar_range_miles`**: set the radar coverage as a distance from your
+  location to the panel edge instead of the old abstract zoom level. The
+  deprecated `radar_zoom` is still honored for existing configs.
+- New tuning knobs (Advanced): `radar_map_brightness`, `radar_past_frames`,
+  `radar_frame_seconds`, `radar_loop_pause_seconds`, and an opt-in
+  `dynamic_duration` block that holds the radar on screen until a full
+  animation loop completes.
+
+### Fixed
+- **Radar/basemap misalignment**: the basemap and the radar were rendered at
+  different Web-Mercator scales (`_composite_frame` force-cropped the single
+  radar tile to at least 128px), so precipitation could be drawn up to ~4×
+  too wide and displaced from the map and crosshair — worst on 64×32 panels.
+  Both layers now render through one shared viewport and are pixel-aligned on
+  every panel size.
+- **Radar cut off at tile edges**: only the single RainViewer tile containing
+  the configured location was fetched; the view now mosaics every tile that
+  intersects the viewport, and the crosshair marks the location's true
+  projected position instead of assuming panel center.
+- **Frames lost on restart**: radar tiles and the frame index are now cached
+  (disk + cache manager), so a restart rebuilds the animation without
+  refetching; the `cache_manager` handed to the fetcher was previously unused.
+- Font loading for the radar overlay resolved CWD-relative paths and silently
+  fell back to PIL's oversized default font; it now resolves the 4x6 font
+  relative to the plugin location.
+- Radar overlay timestamps no longer rely on the glibc-only `%-I` strftime
+  extension.
+
+### Changed
+- `radar_update_interval` default lowered from 600s to 180s (minimum from
+  300s to 60s): the index poll is a tiny JSON request and tiles are only
+  downloaded when RainViewer publishes a new frame, so fresh frames appear
+  within ~3 minutes of publication instead of up to 10+ minutes late.
+- `radar.py` is replaced by `weather_radar.py` + `weather_map_tiles.py`
+  (plugin-unique module names, per the repo's deferred-import collision rule).
+
 ## [2.5.1] - 2026-06-14
 
 ### Changed

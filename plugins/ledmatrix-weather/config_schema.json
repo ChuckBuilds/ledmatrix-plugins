@@ -25,6 +25,7 @@
     },
     "api_key": {
       "x-advanced": true,
+      "x-display": "hidden",
       "type": "string",
       "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs.",
       "title": "API Key (deprecated)"
@@ -140,14 +141,53 @@
       "description": "Show barometric pressure on current conditions (requires display height ≥48px)",
       "title": "Show Pressure"
     },
+    "radar_map_style": {
+      "type": "string",
+      "enum": ["osm", "carto", "carto_dark", "esri", "vector"],
+      "default": "osm",
+      "description": "Basemap under the radar. Tile styles (osm/carto/carto_dark/esri) show real map detail worldwide and automatically fall back to the classic vector state-outline map when tiles are unavailable. 'vector' is the retro WeatherStar look (US-only).",
+      "title": "Radar Map Style"
+    },
+    "radar_range_miles": {
+      "type": "integer",
+      "default": 75,
+      "minimum": 10,
+      "maximum": 500,
+      "description": "Distance from your location to the edge of the radar view, in miles. Replaces the old Radar Zoom Level setting.",
+      "title": "Radar Range (miles)"
+    },
+    "radar_show_nowcast": {
+      "type": "boolean",
+      "default": true,
+      "description": "Append ~30 minutes of predicted radar (RainViewer nowcast) after the observed frames, labeled 'FCST +10m' etc. with yellow progress dots.",
+      "title": "Show Forecast Frames"
+    },
     "radar_zoom": {
       "x-advanced": true,
+      "x-display": "hidden",
       "type": "integer",
       "default": 6,
       "minimum": 4,
       "maximum": 8,
-      "description": "Radar zoom level (4=regional, 6=local, 8=very close). Higher values show more detail but less area.",
-      "title": "Radar Zoom Level"
+      "description": "Deprecated — use Radar Range (miles) instead. Still honored when radar_range_miles is not set.",
+      "title": "Radar Zoom Level (deprecated)"
+    },
+    "radar_tile_server": {
+      "x-advanced": true,
+      "type": "string",
+      "pattern": "^(https?://.*)?$",
+      "default": "https://maps.chuck-builds.com",
+      "description": "Self-hosted OpenStreetMap tile server used for the 'osm' map style, expected to serve tiles at {server}/tile/{z}/{x}/{y}.png. Public OSM mirrors are used as fallback. Leave empty to use public mirrors only.",
+      "title": "Radar Tile Server"
+    },
+    "radar_map_brightness": {
+      "x-advanced": true,
+      "type": "number",
+      "default": 0.5,
+      "minimum": 0.1,
+      "maximum": 1.5,
+      "description": "Brightness applied to the tile basemap so precipitation stands out on the LED matrix (1.0 = unchanged).",
+      "title": "Radar Map Brightness"
     },
     "radar_line_color": {
       "x-advanced": true,
@@ -156,7 +196,7 @@
       "minItems": 3,
       "maxItems": 3,
       "default": [0, 130, 70],
-      "description": "RGB color for state boundary lines on radar map (WeatherStar style). Default is green.",
+      "description": "RGB color for state boundary lines on the vector map style (also used as the automatic fallback when tiles are unavailable). Default is green.",
       "title": "Radar Map Line Color"
     },
     "radar_fill_color": {
@@ -166,17 +206,65 @@
       "minItems": 3,
       "maxItems": 3,
       "default": [15, 25, 15],
-      "description": "RGB color for land fill on radar map. Use [0,0,0] for no fill (outlines only).",
+      "description": "RGB color for land fill on the vector map style. Use [0,0,0] for no fill (outlines only).",
       "title": "Radar Map Land Color"
     },
     "radar_update_interval": {
       "x-advanced": true,
       "type": "integer",
-      "default": 600,
-      "minimum": 300,
+      "default": 180,
+      "minimum": 60,
       "maximum": 1800,
-      "description": "How often to refresh radar imagery in seconds (RainViewer updates every 10 minutes)",
+      "description": "How often to check for new radar frames, in seconds. Checks are cheap — tiles are only downloaded when RainViewer publishes a new frame (roughly every 10 minutes).",
       "title": "Radar Update Interval"
+    },
+    "radar_past_frames": {
+      "x-advanced": true,
+      "type": "integer",
+      "default": 6,
+      "minimum": 2,
+      "maximum": 12,
+      "description": "How many observed (past) radar frames to animate. RainViewer publishes one every ~10 minutes, so 6 frames = about an hour of history.",
+      "title": "Radar Past Frames"
+    },
+    "radar_frame_seconds": {
+      "x-advanced": true,
+      "type": "number",
+      "default": 0.5,
+      "minimum": 0.2,
+      "maximum": 2.0,
+      "description": "Seconds each radar animation frame is shown.",
+      "title": "Radar Frame Duration"
+    },
+    "radar_loop_pause_seconds": {
+      "x-advanced": true,
+      "type": "number",
+      "default": 1.5,
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Extra hold on the newest frame before the animation loops.",
+      "title": "Radar Loop Pause"
+    },
+    "dynamic_duration": {
+      "x-advanced": true,
+      "type": "object",
+      "title": "Dynamic Duration (radar)",
+      "description": "When enabled, the rotation holds the radar mode until its animation completes a full loop (up to the cap) instead of the fixed display duration.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "title": "Enabled"
+        },
+        "max_duration_seconds": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 10,
+          "maximum": 300,
+          "title": "Max Duration (seconds)"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "required": [

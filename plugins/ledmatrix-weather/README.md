@@ -36,7 +36,9 @@ Daily Forecast:
 - **Hourly forecast**: next 24 hours
 - **Daily forecast**: 3–7 day high/low
 - **Almanac**: sunrise/sunset, moon phase, day length
-- **Precipitation radar**: live RainViewer imagery
+- **Precipitation radar**: animated RainViewer imagery over a real
+  OpenStreetMap basemap (worldwide), with optional ~30 min of forecast
+  (nowcast) frames and a retro WeatherStar vector-map style
 - **Weather alerts**: when active (US only), takes priority in the rotation
 
 ## Requirements
@@ -72,10 +74,17 @@ generated from it. The keys you'll touch most often:
 | `show_radar` | `true` | Toggle precipitation radar mode |
 | `show_alerts` | `true` | Show active weather alerts (preempts rotation, US only) |
 | `show_feels_like` / `show_dew_point` / `show_visibility` / `show_pressure` | `true` | Extra current-conditions metrics (need height ≥ 48px) |
-| `radar_zoom` | `6` | 4 (regional) to 8 (very close) |
-| `radar_line_color` | `[0, 130, 70]` | RGB for state outlines |
+| `radar_map_style` | `"osm"` | Basemap: `osm`, `carto`, `carto_dark`, `esri` (real tiles, worldwide) or `vector` (retro WeatherStar state outlines, US-only). Tile styles fall back to the vector map automatically when tiles can't be fetched |
+| `radar_range_miles` | `50` | Distance from your location to the panel edge (10–500). Replaces the deprecated `radar_zoom`, which is still honored for old configs |
+| `radar_show_nowcast` | `true` | Append ~30 min of predicted radar (`FCST +10m` … with yellow dots) after the observed frames |
+| `radar_tile_server` | `"https://maps.chuck-builds.com"` | Self-hosted OSM tile server for the `osm` style (`{server}/tile/{z}/{x}/{y}.png`); public mirrors are the fallback |
+| `radar_map_brightness` | `0.5` | Dim the tile basemap so precipitation pops on the matrix |
+| `radar_line_color` | `[0, 130, 70]` | RGB for state outlines (vector style / fallback) |
 | `radar_fill_color` | `[15, 25, 15]` | RGB for land fill (`[0,0,0]` = outlines only) |
-| `radar_update_interval` | `600` | RainViewer refresh seconds (300–1800) |
+| `radar_update_interval` | `180` | Seconds between new-frame checks (60–1800). Checks are cheap; tiles only download when RainViewer publishes a new frame |
+| `radar_past_frames` | `6` | Observed frames to animate (~10 min apart) |
+| `radar_frame_seconds` / `radar_loop_pause_seconds` | `0.5` / `1.5` | Animation pacing: per-frame time and the hold on the newest frame |
+| `dynamic_duration` | `{"enabled": false}` | Opt-in: hold the radar until a full animation loop completes (capped by `max_duration_seconds`) |
 
 ## Display modes
 
@@ -88,7 +97,7 @@ controller rotates through them in order:
 | `hourly_forecast` | Next ~24 hours |
 | `daily_forecast` | 3–7 day high/low forecast |
 | `almanac` | Sunrise, sunset, moon phase, day length |
-| `radar` | Live precipitation radar from RainViewer |
+| `radar` | Animated precipitation radar (RainViewer) over an OSM or vector basemap, with optional nowcast frames |
 
 When an active weather alert is available and `show_alerts` is true, the
 alert takes priority over the normal rotation. Alerts are sourced from the
@@ -108,6 +117,7 @@ The plugin auto-rotates through enabled display modes based on
 | Current conditions, forecast, almanac | [Open-Meteo](https://open-meteo.com/) | None |
 | Weather alerts | [NWS API](https://www.weather.gov/documentation/services-web-api) (US only) | None |
 | Precipitation radar | [RainViewer](https://www.rainviewer.com/api.html) | None |
+| Radar basemap tiles | Self-hosted/[OpenStreetMap](https://www.openstreetmap.org) (or Carto/Esri per `radar_map_style`) | None |
 
 ## Troubleshooting
 
@@ -123,7 +133,13 @@ The plugin auto-rotates through enabled display modes based on
 
 **Radar not showing:**
 - Radar uses RainViewer and updates on a separate `radar_update_interval`
-  (default 600 s); allow a minute for the first tiles to load
+  (default 180 s); allow a minute for the first tiles to load — frames are
+  fetched in the background across update cycles
+
+**Radar map is the green-outline vector style instead of a real map:**
+- That's the automatic fallback when basemap tiles can't be fetched. Check
+  connectivity to your `radar_tile_server` (or leave it empty to use public
+  OSM mirrors), and note the `vector` style is the only offline-friendly one
 
 ## License
 

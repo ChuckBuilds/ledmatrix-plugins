@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-20",
+  "last_updated": "2026-07-21",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -164,10 +164,10 @@
       "plugin_path": "plugins/clock-simple",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-19",
+      "last_updated": "2026-07-21",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.7"
+      "latest_version": "1.0.8"
     },
     {
       "id": "countdown",
@@ -828,10 +828,10 @@
       "plugin_path": "plugins/text-display",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-07-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.2"
+      "latest_version": "1.1.4"
     },
     {
       "id": "tide-display",
@@ -886,7 +886,7 @@
     {
       "id": "weather",
       "name": "Weather Display",
-      "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), precipitation radar, weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
+      "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), animated precipitation radar on a real OpenStreetMap basemap (with nowcast forecast frames), weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
       "author": "ChuckBuilds",
       "category": "weather",
       "tags": [
@@ -903,10 +903,10 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.5.3",
+      "latest_version": "2.6.2",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-07-19",
       "verified": true,
       "screenshot": ""
     },
@@ -1071,6 +1071,30 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.0.4"
+    },
+    {
+      "id": "jellyfin-now-playing",
+      "name": "Jellyfin Now Playing",
+      "description": "Shows what's playing on your Jellyfin server: poster art, title, and playback progress",
+      "author": "ChuckBuilds",
+      "category": "media",
+      "tags": [
+        "jellyfin",
+        "media",
+        "now-playing",
+        "movies",
+        "tv",
+        "music"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/jellyfin-now-playing",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-07-20",
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.0.0"
     }
   ]
 }

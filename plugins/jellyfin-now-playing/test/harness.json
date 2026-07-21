@@ -1,0 +1,8 @@
+{
+  "_comment": "Settings the plugin safety harness uses to render jellyfin-now-playing deterministically. With no API key configured, update() short-circuits before any network call and display() renders the static setup message, which is identical on any host.",
+  "config": {
+    "enabled": true,
+    "api_key": ""
+  },
+  "mock_data": {}
+}
