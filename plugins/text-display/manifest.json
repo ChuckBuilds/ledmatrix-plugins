@@ -1,7 +1,7 @@
 {
   "id": "text-display",
   "name": "Text Display",
-  "version": "1.1.2",
+  "version": "1.1.4",
   "author": "ChuckBuilds",
   "description": "Display custom scrolling or static text with configurable fonts, colors, and scroll speed. Perfect for announcements, messages, or custom displays.",
   "category": "display",
@@ -24,6 +24,18 @@
     }
   },
   "versions": [
+    {
+      "released": "2026-07-20",
+      "version": "1.1.4",
+      "ledmatrix_min": "2.0.0",
+      "notes": "display_duration is a time value, so preserve fractional seconds (float instead of int) when used as the dynamic-scroll duration floor, and re-apply it on runtime config changes so live edits take effect immediately."
+    },
+    {
+      "released": "2026-07-19",
+      "version": "1.1.3",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Fix scrolling text never scrolling when scroll_gap_width is stored as a float (the web UI persists the \"number\" schema type as e.g. 32.0): int-coerce scroll_gap_width on read and guard cache_width before Image.new(), which was crashing every frame. Also honor display_duration as the dynamic-duration floor instead of a hardcoded 10."
+    },
     {
       "released": "2026-07-17",
       "version": "1.1.2",
@@ -57,7 +69,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-17",
+  "last_updated": "2026-07-20",
   "stars": 0,
   "downloads": 0,
   "verified": true,

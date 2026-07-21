@@ -828,10 +828,10 @@
       "plugin_path": "plugins/text-display",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-07-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.2"
+      "latest_version": "1.1.4"
     },
     {
       "id": "tide-display",
@@ -1071,6 +1071,30 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.0.4"
+    },
+    {
+      "id": "jellyfin-now-playing",
+      "name": "Jellyfin Now Playing",
+      "description": "Shows what's playing on your Jellyfin server: poster art, title, and playback progress",
+      "author": "ChuckBuilds",
+      "category": "media",
+      "tags": [
+        "jellyfin",
+        "media",
+        "now-playing",
+        "movies",
+        "tv",
+        "music"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/jellyfin-now-playing",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-07-20",
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.0.0"
     }
   ]
 }

@@ -1,0 +1,44 @@
+{
+  "id": "jellyfin-now-playing",
+  "name": "Jellyfin Now Playing",
+  "version": "1.0.0",
+  "author": "ChuckBuilds",
+  "description": "Shows what's playing on your Jellyfin server: poster art, title, and playback progress",
+  "category": "media",
+  "tags": [
+    "jellyfin",
+    "media",
+    "now-playing",
+    "movies",
+    "tv",
+    "music"
+  ],
+  "entry_point": "manager.py",
+  "class_name": "JellyfinNowPlayingPlugin",
+  "display_modes": [
+    "jellyfin-now-playing"
+  ],
+  "update_interval": 10,
+  "config_schema": "config_schema.json",
+  "requirements_file": "requirements.txt",
+  "dependencies": [
+    "requests",
+    "pillow"
+  ],
+  "versions": [
+    {
+      "released": "2026-07-20",
+      "version": "1.0.0",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Initial release: polls the Jellyfin /Sessions API and shows the active session's poster (series poster for TV episodes), scrolling title and subtitle, a paused indicator, and a progress bar that moves smoothly between polls. Includes username and content-type filters, a Nothing Playing screen, and on-panel setup/error messages on all four panel sizes."
+    }
+  ],
+  "last_updated": "2026-07-20",
+  "stars": 0,
+  "downloads": 0,
+  "verified": true,
+  "screenshot": "",
+  "compatible_versions": [
+    ">=2.0.0"
+  ]
+}
