@@ -49,6 +49,14 @@ _NOWCAST_FRAMES = 3          # RainViewer publishes 3 nowcast frames (10/20/30 m
 _RADAR_TILE_MAX_AGE = 3 * 3600  # disk-cache purge horizon for radar tiles
 _WORK_RETRY_SECONDS = 60     # backoff before retrying failed tile work
 
+# RainViewer serves radar tiles only up to this slippy zoom; above it the API
+# returns a "Zoom Level Not Supported" placeholder (a small dark label tile)
+# rather than a transparent/precip tile. The basemap tile server (OSM) supports
+# deeper zooms, so on small-range/large-panel combos the shared viewport can
+# pick a zoom past this ceiling. We fetch radar at the capped zoom and upscale
+# to the viewport so the placeholder never composites over the map.
+_RAINVIEWER_MAX_ZOOM = 7
+
 _NOWCAST_DOT = (255, 255, 0)
 _NOWCAST_DOT_DIM = (90, 90, 0)
 _PAST_DOT = (255, 255, 255)
@@ -333,18 +341,43 @@ class RadarFetcher:
 
     def _build_frame_image(self, frame: RadarFrame, viewport: MercatorViewport,
                            deadline: Optional[float]) -> bool:
-        """Mosaic every viewport tile for one frame. False if incomplete."""
-        x0, y0, x1, y1 = viewport.tile_range()
-        mosaic = Image.new("RGBA", (viewport.view_w, viewport.view_h), (0, 0, 0, 0))
+        """Mosaic every viewport tile for one frame. False if incomplete.
+
+        When the shared viewport is zoomed deeper than RainViewer serves radar
+        (`_RAINVIEWER_MAX_ZOOM`), the radar layer is fetched at the capped zoom
+        through a same-center viewport with proportionally smaller view dims —
+        which covers the identical geography — then upscaled to align exactly
+        with the (deeper) basemap. This avoids RainViewer's "Zoom Level Not
+        Supported" placeholder tile while keeping radar registered to the map.
+        """
+        rv = self._radar_viewport(viewport)
+        x0, y0, x1, y1 = rv.tile_range()
+        mosaic = Image.new("RGBA", (rv.view_w, rv.view_h), (0, 0, 0, 0))
         for tx in range(x0, x1 + 1):
             for ty in range(y0, y1 + 1):
-                tile = self._fetch_radar_tile(frame.path, viewport.zoom,
-                                              viewport.wrap_tile_x(tx), ty, deadline)
+                tile = self._fetch_radar_tile(frame.path, rv.zoom,
+                                              rv.wrap_tile_x(tx), ty, deadline)
                 if tile is None:
                     return False
-                mosaic.paste(tile, viewport.tile_paste_offset(tx, ty))
+                mosaic.paste(tile, rv.tile_paste_offset(tx, ty))
+        if (rv.view_w, rv.view_h) != (viewport.view_w, viewport.view_h):
+            mosaic = mosaic.resize((viewport.view_w, viewport.view_h),
+                                   Image.Resampling.NEAREST)
         frame.image = mosaic
         return True
+
+    @staticmethod
+    def _radar_viewport(viewport: MercatorViewport) -> MercatorViewport:
+        """Viewport to fetch radar tiles through: the shared viewport unless it
+        exceeds RainViewer's max zoom, in which case a same-center viewport at
+        the capped zoom (with view dims halved per zoom step down) covering the
+        identical geographic window."""
+        if viewport.zoom <= _RAINVIEWER_MAX_ZOOM:
+            return viewport
+        scale = 2 ** (viewport.zoom - _RAINVIEWER_MAX_ZOOM)
+        return MercatorViewport(viewport.center_lat, viewport.center_lon,
+                                _RAINVIEWER_MAX_ZOOM,
+                                viewport.view_w / scale, viewport.view_h / scale)
 
     # ---- refresh ----------------------------------------------------------
 

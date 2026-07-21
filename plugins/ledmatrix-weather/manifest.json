@@ -1,9 +1,10 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
+  "update_interval": 60,
   "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), animated precipitation radar on a real OpenStreetMap basemap (with nowcast forecast frames), weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
   "category": "weather",
   "tags": [
@@ -25,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-07-21",
+      "version": "2.6.1",
+      "notes": "Radar fixes for high-zoom panels. (1) The radar layer no longer shows RainViewer's 'Zoom Level Not Supported' placeholder (a dark rounded label that appeared as a gray box over part of the map) on small-range/large-panel combos: RainViewer only serves radar tiles up to zoom 7, but the shared viewport (which the higher-resolution OpenStreetMap basemap can use) could pick a deeper zoom. Radar tiles are now fetched at a capped zoom and upscaled to stay aligned with the map. (2) Radar now refreshes promptly instead of being starved by the weather update_interval: the plugin advertises a 60s manifest update_interval so the core polls update() often enough to fetch radar tiles (the weather API stays throttled by the plugin's own update_interval), so the map/radar no longer stays on the vector fallback for up to the full weather interval after a restart.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-19",
       "version": "2.6.0",

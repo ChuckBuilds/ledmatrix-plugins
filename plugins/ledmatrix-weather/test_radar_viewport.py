@@ -233,5 +233,56 @@ class TestZoomBackCompat:
         assert ranges == sorted(ranges, reverse=True)
 
 
+class TestRadarZoomCap:
+    """Radar tiles must never be requested past RainViewer's max zoom (7);
+    above it RainViewer returns a 'Zoom Level Not Supported' placeholder that
+    would composite as a gray box over the map."""
+
+    from weather_radar import _RAINVIEWER_MAX_ZOOM as MAX_RADAR_ZOOM
+
+    def test_radar_viewport_never_exceeds_max_zoom(self):
+        # Small ranges on wide panels push the shared viewport deep.
+        for pw, ph in [(256, 64), (256, 32), (128, 64)]:
+            for r in (5, 10, 12, 25):
+                shared = MercatorViewport.for_panel(MEMPHIS[0], MEMPHIS[1], r, pw, ph)
+                rv = RadarFetcher._radar_viewport(shared)
+                assert rv.zoom <= self.MAX_RADAR_ZOOM
+                # same center — radar stays registered to the basemap
+                assert rv.center_lat == shared.center_lat
+                assert rv.center_lon == shared.center_lon
+
+    def test_capped_viewport_covers_same_geography(self):
+        # A deep shared viewport and its capped radar viewport must frame the
+        # identical geographic window (so the upscale aligns pixel-for-pixel).
+        shared = MercatorViewport(MEMPHIS[0], MEMPHIS[1], 9, 300, 100)
+        rv = RadarFetcher._radar_viewport(shared)
+        assert rv.zoom == self.MAX_RADAR_ZOOM
+        for lat, lon in [MEMPHIS, (35.20, -90.10), (35.10, -89.95)]:
+            sx, sy = shared.latlon_to_panel(lat, lon, 256, 64)
+            rx, ry = rv.latlon_to_panel(lat, lon, 256, 64)
+            assert sx == pytest.approx(rx, abs=1)
+            assert sy == pytest.approx(ry, abs=1)
+
+    def test_build_frame_image_requests_only_capped_zoom(self):
+        f = make_fetcher()
+        shared = MercatorViewport(MEMPHIS[0], MEMPHIS[1], 9, 300, 100)
+        requested_zooms = []
+
+        def fake_tile(path, zoom, tx, ty, deadline):
+            requested_zooms.append(zoom)
+            return Image.new("RGBA", (TILE_SIZE, TILE_SIZE), (0, 180, 0, 100))
+
+        f._fetch_radar_tile = fake_tile
+        frame = list(f._frames.values())[0] if f._frames else None
+        if frame is None:
+            f._reconcile_frames(f._wanted_frames(fake_index()))
+            frame = list(f._frames.values())[0]
+        assert f._build_frame_image(frame, shared, None) is True
+        assert requested_zooms, "no tiles were fetched"
+        assert all(z <= self.MAX_RADAR_ZOOM for z in requested_zooms)
+        # frame image is upscaled to align with the shared (deeper) viewport
+        assert frame.image.size == (shared.view_w, shared.view_h)
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))

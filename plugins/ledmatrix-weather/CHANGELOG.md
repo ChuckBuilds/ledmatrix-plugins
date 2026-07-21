@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.6.1] - 2026-07-21
+
+### Fixed
+- **Radar "gray box" on high-zoom panels**: RainViewer serves radar tiles only
+  up to zoom 7 and returns a "Zoom Level Not Supported" placeholder (a dark
+  rounded label tile) above it. On small-range/large-panel combos the shared
+  viewport — which the higher-resolution OpenStreetMap basemap can use — could
+  pick a deeper zoom, so that placeholder composited over the map as a gray box
+  covering part of the display (e.g. 256×64 at 50 mi picked zoom 8). Radar tiles
+  are now fetched through a same-center viewport capped at zoom 7 and upscaled to
+  stay pixel-aligned with the basemap.
+- **Radar starved by the weather update interval**: radar tiles are fetched from
+  inside `update()`, but the core scheduled `update()` at the weather
+  `update_interval` (default 1800 s), so `radar_update_interval` was effectively
+  ignored and a fresh start showed the vector-map fallback for up to the full
+  weather interval before the basemap/frames loaded. The plugin now advertises a
+  60 s `update_interval` in its manifest so the core polls `update()` frequently
+  enough to fetch radar promptly; the weather API stays throttled by the plugin's
+  own (config) `update_interval`, so this does not increase Open-Meteo calls.
+
 ## [2.6.0] - 2026-07-19
 
 ### Added
