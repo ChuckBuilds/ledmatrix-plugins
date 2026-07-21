@@ -10,6 +10,9 @@ API Version: 1.0.0
 import time
 from datetime import datetime
 from typing import Dict, Any, Tuple
+
+from PIL import Image, ImageDraw
+
 from src.plugin_system.base_plugin import BasePlugin
 
 try:
@@ -86,13 +89,6 @@ class SimpleClock(BasePlugin):
 
         # Get timezone
         self.timezone = self._get_timezone()
-
-        # Track the last-rendered content so display() knows when it needs to
-        # clear the buffer (content changed) versus redraw the identical pixels.
-        self.last_time_str = None
-        self.last_ampm_str = None
-        self.last_date_str = None
-        self.last_weekday_str = None
 
         self.logger.info(f"Clock plugin initialized for timezone: {self.timezone_str}")
 
@@ -301,38 +297,25 @@ class SimpleClock(BasePlugin):
         """
         Display the clock.
 
-        The plugin redraws its full content and pushes it on every call. The
-        display buffer is only *cleared* when the on-screen content actually
-        changes (e.g. the minute or date rolls over); otherwise the identical
-        pixels are drawn in place. Redrawing on every tick — rather than
-        returning early on unchanged frames — keeps the panel populated on every
-        frame of the core's render loop, which is what prevents the clock from
-        periodically flashing.
+        The plugin rebuilds its full frame on a fresh in-memory buffer every
+        call and pushes it. It deliberately does NOT call
+        ``display_manager.clear()``: that writes black straight to the matrix
+        front buffer, so with the core's ~1 Hz render loop the panel is briefly
+        blank between the clear and the redraw — the per-second flash. Instead
+        we reset only the offscreen image, then let ``update_display()`` swap it
+        in atomically (SwapOnVSync). Its dirty-tracking skips the push entirely
+        when the rendered pixels are unchanged (e.g. the same minute re-rendered
+        every second), and swaps directly from the old frame to the new one when
+        the time rolls over — so the clock never blanks, regardless of whether
+        seconds are shown.
 
         Args:
-            force_clear: If True, clear display before rendering
+            force_clear: accepted for interface compatibility; unused (every
+                frame already starts from a cleared in-memory buffer).
         """
         try:
             # Refresh the current time on every render tick.
             self.update()
-
-            # Snapshot the strings we're about to render.
-            current_time_str = getattr(self, 'current_time', '')
-            current_ampm_str = getattr(self, 'current_ampm', '') if self.time_format == "12h" else ''
-            current_date_str = getattr(self, 'current_date', '') if self.show_date else ''
-            current_weekday_str = getattr(self, 'current_weekday', '') if (self.show_date and self.date_format == "OLD_CLOCK") else ''
-
-            # Only clear the buffer when the visible content changed. Clearing
-            # every tick would blank the panel between the clear and the redraw
-            # on cores that push the buffer eagerly, which is the flash we're
-            # fixing. When nothing changed we redraw the identical pixels in
-            # place, so there is nothing to clear and no flash.
-            content_changed = force_clear or (
-                current_time_str != self.last_time_str or
-                current_ampm_str != getattr(self, 'last_ampm_str', '') or
-                current_date_str != self.last_date_str or
-                current_weekday_str != getattr(self, 'last_weekday_str', '')
-            )
 
             # Get display dimensions
             width = self.display_manager.width
@@ -346,10 +329,11 @@ class SimpleClock(BasePlugin):
             # This keeps time near top on small displays, scales slightly on larger ones
             time_y = max(2, min(4 + int(height * 0.02), int(height * 0.1)))
 
-            if content_changed:
-                # Clear the display so stale glyphs (e.g. the old minute) don't
-                # ghost underneath the new content.
-                self.display_manager.clear()
+            # Start each frame from a fresh black buffer (in memory only) so stale
+            # glyphs never ghost underneath the new content — without the hardware
+            # clear that causes the flash. See the docstring above.
+            self.display_manager.image = Image.new('RGB', (width, height), (0, 0, 0))
+            self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
 
             # Display time and AM/PM based on alignment toggle
             if self.time_format == "12h" and hasattr(self, 'current_ampm') and self.center_time_with_ampm:
@@ -478,21 +462,11 @@ class SimpleClock(BasePlugin):
                         small_font=True
                     )
 
-            # Push the freshly rendered frame to the panel every tick.
+            # Push the freshly rendered frame to the panel every tick. The
+            # display manager's dirty-tracking skips the actual hardware swap
+            # when the pixels are identical to the last push, so re-rendering
+            # the same minute every second is effectively free and never blanks.
             self.display_manager.update_display()
-
-            # Track what we just displayed so the next tick knows whether the
-            # content changed (and therefore whether it needs to clear).
-            self.last_time_str = current_time_str
-            if self.time_format == "12h":
-                self.last_ampm_str = current_ampm_str
-            self.last_date_str = current_date_str
-            if self.show_date and self.date_format == "OLD_CLOCK":
-                self.last_weekday_str = current_weekday_str
-
-            if content_changed:
-                display_str = f"{current_time_str} {current_ampm_str}".strip()
-                self.logger.debug(f"Clock displayed: {display_str} {current_date_str}")
 
         except Exception as e:
             self.logger.error(f"Error displaying clock: {e}", exc_info=True)
