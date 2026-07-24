@@ -43,14 +43,17 @@ class AuthError(ProviderError):
 # Canonical carrier slugs we know how to badge/color. Anything else buckets
 # into "other" so a stray sensor never spawns a junk card.
 KNOWN_CARRIERS = {
-    "usps", "ups", "fedex", "dhl", "amazon", "ontrac", "lasership",
-    "dpd", "gls", "hermes", "royalmail", "canadapost", "auspost",
+    "usps", "ups", "fedex", "dhl", "amazon", "walmart", "deutschepost",
+    "ontrac", "lasership", "dpd", "gls", "hermes", "royalmail",
+    "canadapost", "auspost",
 }
 
 _CARRIER_ALIASES = {
-    "fed_ex": "fedex", "fedex_ground": "fedex", "royal_mail": "royalmail",
-    "canada_post": "canadapost", "australia_post": "auspost", "aus_post": "auspost",
-    "amazon_hub": "amazon", "amzl": "amazon", "zpackages": "other", "mail": "usps",
+    "fedex": "fedex", "fedexground": "fedex", "royalmail": "royalmail",
+    "canadapost": "canadapost", "australiapost": "auspost", "auspost": "auspost",
+    "amazonhub": "amazon", "amzl": "amazon", "zpackages": "other",
+    "mail": "usps", "postde": "deutschepost", "deutschepost": "deutschepost",
+    "generic": "other",
 }
 
 
@@ -117,9 +120,12 @@ class Snapshot:
     carriers: List[CarrierStat] = field(default_factory=list)
     total_in_transit: int = 0
     total_delivering_today: int = 0
+    total_delivered_today: int = 0
     packages: List[Package] = field(default_factory=list)
     usps_mail_count: Optional[int] = None
     usps_image_url: Optional[str] = None
+    carrier_images: Dict[str, str] = field(default_factory=dict)  # slug -> image URL
+    summary_text: str = ""
     updated: Optional[datetime] = None
 
     def finalize(self) -> "Snapshot":
@@ -208,10 +214,14 @@ class HomeAssistantProvider(PackageProvider):
             return rest[len("mail_"):]
         return None
 
+    def _abs_url(self, path: Optional[str]) -> Optional[str]:
+        if not path:
+            return None
+        return self.base_url + path if path.startswith("/") else path
+
     def _parse_states(self, states: List[Dict[str, Any]]) -> Snapshot:
         snap = Snapshot()
         stats: Dict[str, CarrierStat] = {}
-        cam_picture: Optional[str] = None
         url_fallback: Optional[str] = None
 
         def stat(carrier_raw: str) -> CarrierStat:
@@ -232,19 +242,27 @@ class HomeAssistantProvider(PackageProvider):
                 continue
 
             if domain == "camera":
-                # The USPS camera serves the Informed Delivery mail image; its
-                # entity_picture carries a signed token we can fetch locally.
-                if "usps" in key:
-                    cam_picture = entity.get("attributes", {}).get("entity_picture")
+                # Each carrier camera serves that carrier's scanned delivery
+                # image; its entity_picture carries a signed token we fetch
+                # locally. Map e.g. amazon_delivery_camera / ups_camera -> slug.
+                cam = key[:-len("_camera")] if key.endswith("_camera") else key
+                if cam.endswith("_delivery"):
+                    cam = cam[: -len("_delivery")]
+                pic = entity.get("attributes", {}).get("entity_picture")
+                abs_url = self._abs_url(pic)
+                if abs_url:
+                    snap.carrier_images[normalize_carrier(cam)] = abs_url
                 continue
 
             state = entity.get("state")
             if key in ("packages_in_transit", "zpackages_transit"):
                 snap.total_in_transit = _to_int(state)
             elif key in ("packages_delivered", "zpackages_delivered"):
-                pass                                # total delivered; not a card
+                snap.total_delivered_today = _to_int(state)
             elif key == "usps_mail":
                 snap.usps_mail_count = _to_int(state)
+            elif key == "summary":
+                snap.summary_text = state if isinstance(state, str) else ""
             elif key == "image_url":
                 if isinstance(state, str) and state.startswith("http"):
                     url_fallback = state            # external (Nabu Casa) URL
@@ -257,13 +275,9 @@ class HomeAssistantProvider(PackageProvider):
             elif key in ("mail_updated", "updated"):
                 snap.updated = _parse_dt(state)
 
-        # Prefer the local camera proxy (works on-LAN with its embedded token)
-        # over the external image_url.
-        if cam_picture:
-            snap.usps_image_url = (self.base_url + cam_picture
-                                   if cam_picture.startswith("/") else cam_picture)
-        elif url_fallback:
-            snap.usps_image_url = url_fallback
+        # USPS Informed Delivery mail image: prefer the local camera proxy,
+        # fall back to the external image_url sensor.
+        snap.usps_image_url = snap.carrier_images.get("usps") or url_fallback
 
         snap.carriers = list(stats.values())
         return snap.finalize()
@@ -365,9 +379,11 @@ class MockProvider(PackageProvider):
                 CarrierStat("ups", delivering_today=2, in_transit=3),
                 CarrierStat("usps", delivering_today=1, in_transit=0),
                 CarrierStat("amazon", delivering_today=0, in_transit=4),
-                CarrierStat("fedex", delivering_today=0, in_transit=1),
+                CarrierStat("fedex", delivering_today=0, in_transit=1, delivered_today=2),
             ],
+            total_delivered_today=2,
             usps_mail_count=4,
+            summary_text="3 packages arriving today.",
         )
         return snap.finalize()
 

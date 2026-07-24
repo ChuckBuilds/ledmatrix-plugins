@@ -41,12 +41,14 @@ from package_sources import (
 ERROR_TEXT_COLOR = (255, 90, 90)
 IDLE_COLOR = (140, 140, 140)
 MUTED_COLOR = (150, 150, 150)
+DELIVERED_COLOR = (120, 185, 120)
 
 CARRIER_NAMES = {
     "usps": "USPS", "ups": "UPS", "fedex": "FedEx", "dhl": "DHL",
-    "amazon": "Amazon", "ontrac": "OnTrac", "lasership": "LaserShip",
-    "dpd": "DPD", "gls": "GLS", "hermes": "Hermes", "royalmail": "Royal Mail",
-    "canadapost": "Canada Post", "auspost": "AusPost", "other": "Package",
+    "amazon": "Amazon", "walmart": "Walmart", "deutschepost": "Deutsche Post",
+    "ontrac": "OnTrac", "lasership": "LaserShip", "dpd": "DPD", "gls": "GLS",
+    "hermes": "Hermes", "royalmail": "Royal Mail", "canadapost": "Canada Post",
+    "auspost": "AusPost", "other": "Package",
 }
 
 # Per-carrier badge: (background, foreground, abbreviation). Drawn (not shipped
@@ -57,6 +59,8 @@ CARRIER_STYLE = {
     "fedex": ((77, 32, 127), (255, 102, 0), "FDX"),
     "dhl": ((255, 204, 0), (211, 0, 0), "DHL"),
     "amazon": ((35, 47, 62), (255, 153, 0), "amzn"),
+    "walmart": ((0, 113, 206), (255, 194, 32), "WMT"),
+    "deutschepost": ((255, 204, 0), (211, 0, 0), "DP"),
     "ontrac": ((0, 90, 70), (255, 255, 255), "OT"),
     "lasership": ((180, 30, 40), (255, 255, 255), "LS"),
     "dpd": ((70, 20, 90), (255, 255, 255), "DPD"),
@@ -83,6 +87,8 @@ class IncomingPackagesPlugin(BasePlugin):
         self.include_delivered = bool(config.get("include_delivered", False))
         self.show_carrier_logo = bool(config.get("show_carrier_logo", True))
         self.show_usps_mail = bool(config.get("show_usps_mail_image", True))
+        self.show_delivery_images = bool(config.get("show_delivery_images", True))
+        self.show_delivered = bool(config.get("show_delivered", True))
         self.highlight_today = bool(config.get("highlight_today", True))
         self.accent_color = self._parse_color(config.get("accent_color"), (0, 220, 120))
 
@@ -99,8 +105,10 @@ class IncomingPackagesPlugin(BasePlugin):
         # State
         self._snapshot: Optional[Snapshot] = None
         self._cards: List[Dict[str, Any]] = []
-        self._usps_image: Optional[Image.Image] = None
-        self._usps_image_key: Optional[Tuple[str, Tuple[int, int]]] = None
+        # Fetched images keyed by slot: 'usps_mail' for the Informed Delivery
+        # image, and a carrier slug for that carrier's delivery image.
+        self._images: Dict[str, Image.Image] = {}
+        self._image_sig: Dict[str, Tuple[str, Tuple[int, int]]] = {}
         self._error: Optional[str] = None
         self._last_fetch = 0.0
         self._has_fetched = False
@@ -187,8 +195,8 @@ class IncomingPackagesPlugin(BasePlugin):
         except Exception:
             return 8
 
-    def _usps_image_box(self) -> Tuple[int, int]:
-        """Image area for the USPS card: full width, leaving a row for the label."""
+    def _image_box(self) -> Tuple[int, int]:
+        """Image area for an image card: full width, leaving a row for the label."""
         w, h = self._dims()
         _, small = self._tier_fonts()
         return (max(1, w), max(1, h - self._font_height(small) - 1))
@@ -216,25 +224,42 @@ class IncomingPackagesPlugin(BasePlugin):
             self.logger.exception("Package provider failed")
             self._error = "Provider error"
             self._snapshot = None
-        self._maybe_fetch_usps_image(self._snapshot)
+        self._fetch_images(self._snapshot)
         self._cards = self._build_cards(self._snapshot) if self._snapshot else []
         if self.current_index >= len(self._cards):
             self.current_index = 0
 
-    def _maybe_fetch_usps_image(self, snap: Optional[Snapshot]) -> None:
-        """Fetch the USPS Informed Delivery image (only when there is mail).
-        Done here in update(), never in display()."""
-        want = bool(self.show_usps_mail and snap and snap.usps_image_url
-                    and (snap.usps_mail_count or 0) > 0)
-        if not want:
-            self._usps_image = None
-            self._usps_image_key = None
-            return
-        box = self._usps_image_box()
-        key = (snap.usps_image_url, box)
-        if key != self._usps_image_key:
-            self._usps_image = self._fetch_image(snap.usps_image_url, box)
-            self._usps_image_key = key
+    def _wanted_images(self, snap: Snapshot) -> Dict[str, str]:
+        """Which images to show this refresh: the USPS Informed Delivery image
+        when there is mail, and a carrier's scanned delivery image when that
+        carrier is out for delivery today (otherwise the camera is a 'NO
+        DELIVERIES' placeholder)."""
+        wanted: Dict[str, str] = {}
+        if self.show_usps_mail and (snap.usps_mail_count or 0) > 0 and snap.usps_image_url:
+            wanted["usps_mail"] = snap.usps_image_url
+        if self.show_delivery_images:
+            for cs in snap.carriers:
+                if cs.delivering_today > 0 and cs.carrier in snap.carrier_images:
+                    wanted[cs.carrier] = snap.carrier_images[cs.carrier]
+        return wanted
+
+    def _fetch_images(self, snap: Optional[Snapshot]) -> None:
+        """Fetch the needed images in update() (never in display())."""
+        wanted = self._wanted_images(snap) if snap else {}
+        box = self._image_box()
+        for slot in list(self._images):            # drop images no longer wanted
+            if slot not in wanted:
+                self._images.pop(slot, None)
+                self._image_sig.pop(slot, None)
+        for slot, url in wanted.items():
+            sig = (url, box)
+            if self._image_sig.get(slot) != sig or slot not in self._images:
+                img = self._fetch_image(url, box)
+                if img is not None:
+                    self._images[slot] = img
+                    self._image_sig[slot] = sig
+                else:
+                    self._images.pop(slot, None)
 
     def _image_headers(self) -> Dict[str, str]:
         if self.provider_name == "homeassistant":
@@ -258,25 +283,33 @@ class IncomingPackagesPlugin(BasePlugin):
 
     def _build_cards(self, snap: Snapshot) -> List[Dict[str, Any]]:
         cards: List[Dict[str, Any]] = []
+        delivered = snap.total_delivered_today if self.show_delivered else 0
         # Lead summary when there's more than one carrier in play.
         if len(snap.carriers) > 1 and (snap.total_in_transit or snap.total_delivering_today):
             cards.append({"type": "summary",
                           "total": snap.total_in_transit + snap.total_delivering_today,
-                          "today": snap.total_delivering_today})
+                          "today": snap.total_delivering_today,
+                          "delivered": delivered})
         # USPS Informed Delivery mail image, when there is mail today.
-        if self._usps_image is not None:
+        if "usps_mail" in self._images:
             cards.append({"type": "usps_image", "mail": snap.usps_mail_count or 0})
-        # Carrier cards: arriving-today first, then most-in-transit.
+        # Carrier cards: arriving-today first, then most-in-transit. When a
+        # carrier is out for delivery today and we have its scanned image, show
+        # the image card instead of the plain count card.
         carriers = sorted(snap.carriers,
                           key=lambda c: (-c.delivering_today, -c.in_transit, c.carrier))
         for cs in carriers:
-            cards.append({
-                "type": "carrier",
+            common = {
                 "carrier": cs.carrier,
                 "today": cs.delivering_today,
                 "transit": cs.in_transit,
+                "delivered": cs.delivered_today if self.show_delivered else 0,
                 "mail": snap.usps_mail_count if cs.carrier == "usps" else None,
-            })
+            }
+            if cs.delivering_today > 0 and cs.carrier in self._images:
+                cards.append({"type": "carrier_image", **common})
+            else:
+                cards.append({"type": "carrier", **common})
         return cards[: self.max_cards]
 
     def display(self, force_clear: bool = False) -> None:
@@ -289,7 +322,9 @@ class IncomingPackagesPlugin(BasePlugin):
             self._render_static(self._error, ERROR_TEXT_COLOR, force_clear, hint=True)
             return
         if not self._cards:
-            self._render_static("No incoming packages", IDLE_COLOR, force_clear)
+            summary = (self._snapshot.summary_text if self._snapshot else "") or \
+                "No incoming packages"
+            self._render_static(summary, IDLE_COLOR, force_clear)
             return
 
         self._last_static_signature = None
@@ -342,12 +377,35 @@ class IncomingPackagesPlugin(BasePlugin):
         _, small = self._tier_fonts()
         image = Image.new("RGB", (width, height))
         draw = ImageDraw.Draw(image)
-        text = self._truncate(message, small, width - 2)
-        draw.text(((width - self._text_width(text, small)) // 2,
-                   (height - self._font_height(small)) // 2),
-                  text, font=small, fill=color)
+        lines = self._wrap_two(message, small, width - 2)
+        lh = self._font_height(small)
+        total = lh * len(lines) + (len(lines) - 1)
+        y = max(0, (height - total) // 2)
+        for line in lines:
+            draw.text(((width - self._text_width(line, small)) // 2, y),
+                      line, font=small, fill=color)
+            y += lh + 1
         self.display_manager.image = image
         self.display_manager.update_display()
+
+    def _wrap_two(self, text: str, font, max_w: int) -> List[str]:
+        """Greedy word-wrap into at most two lines (second is ellipsized if the
+        text still doesn't fit)."""
+        if self._text_width(text, font) <= max_w:
+            return [text]
+        words, lines, cur = text.split(), [], ""
+        for w in words:
+            trial = (cur + " " + w).strip()
+            if not cur or self._text_width(trial, font) <= max_w:
+                cur = trial
+            else:
+                lines.append(cur)
+                cur = w
+        if cur:
+            lines.append(cur)
+        if len(lines) <= 1:
+            return lines or [""]
+        return [lines[0], self._truncate(" ".join(lines[1:]), font, max_w)]
 
     def _render_card(self, card: Dict[str, Any]) -> Image.Image:
         width, height = self._dims()
@@ -356,23 +414,35 @@ class IncomingPackagesPlugin(BasePlugin):
         draw = ImageDraw.Draw(image)
         tall = height >= 46
 
-        if card["type"] == "usps_image":
-            if self._usps_image is not None:
-                iw, ih = self._usps_image.size
-                image.paste(self._usps_image, ((width - iw) // 2, 0))
-            label = f"USPS  {card['mail']} mail"
+        if card["type"] in ("usps_image", "carrier_image"):
+            slot = "usps_mail" if card["type"] == "usps_image" else card["carrier"]
+            img_obj = self._images.get(slot)
+            if img_obj is not None:
+                image.paste(img_obj, ((width - img_obj.width) // 2, 0))
+            if card["type"] == "usps_image":
+                label, color = f"USPS  {card['mail']} mail", self.base_color
+            else:
+                name = CARRIER_NAMES.get(card["carrier"], card["carrier"].title())
+                label = f"{name}  {card['today']} today"
+                color = self.accent_color if self.highlight_today else self.base_color
             lh = self._font_height(small)
             lt = self._truncate(label, small, width - 2)
             draw.text(((width - self._text_width(lt, small)) // 2, height - lh),
-                      lt, font=small, fill=self.base_color)
+                      lt, font=small, fill=color)
             return image
 
         if card["type"] == "summary":
             rows = [("INCOMING", small, MUTED_COLOR, None, True),
                     (str(card["total"]), big, self.base_color, None, True)]
-            if card["today"] > 0 and self.highlight_today:
-                label = f"{card['today']} today" if width < 128 else f"{card['today']} arriving today"
-                rows.append((self._fit(label, small, big, width - 4), small, self.accent_color, None, True))
+            today, delivered = card["today"], card.get("delivered", 0)
+            # One status row (keeps the card to 3 rows so the big count fits).
+            if today > 0 and self.highlight_today:
+                lbl = f"{today} today" if width < 160 else f"{today} arriving today"
+                if delivered > 0 and width >= 160:
+                    lbl += f"  {delivered} done"
+                rows.append((lbl, small, self.accent_color, None, True))
+            elif delivered > 0:
+                rows.append((f"{delivered} delivered", small, DELIVERED_COLOR, None, True))
             self._place_rows(draw, rows, 2, width - 4, height)
             return image
 
@@ -397,11 +467,14 @@ class IncomingPackagesPlugin(BasePlugin):
             rows.append((self._transit_label(transit, tall), small, MUTED_COLOR, None, False))
         if mail:
             rows.append((f"{mail} mail", small, MUTED_COLOR, None, False))
+        if tall and card.get("delivered", 0) > 0:
+            rows.append((f"{card['delivered']} delivered", small, DELIVERED_COLOR, None, False))
         if today == 0 and transit == 0 and mail:  # USPS mail only
             rows = rows[:1] + [(f"{mail} mail", big if tall else small, self.base_color, None, False)]
 
-        if not tall:  # short panels: name + the single most important line
-            rows = rows[:2]
+        # Cap rows so the (possibly large) arriving-today line always fits:
+        # 2 on short panels, 3 on tall.
+        rows = rows[:2] if not tall else rows[:3]
         self._place_rows(draw, rows, tx, tw, height)
         return image
 
@@ -464,10 +537,6 @@ class IncomingPackagesPlugin(BasePlugin):
         return canvas
 
     # ── text fitting / marquee (adapted from jellyfin-now-playing) ──────────
-
-    def _fit(self, text: str, small, big, max_w: int):
-        """Return text unchanged (used where either font may render it)."""
-        return text
 
     def _clip(self, text: str, font, max_width: int) -> str:
         if max_width <= 0 or not text:

@@ -44,13 +44,22 @@ uses.
 
 ## Display
 
-- **Rotating cards**, `rotation_interval` seconds each: a summary card
-  ("N incoming · M today"), then one card per carrier — a drawn carrier badge, the
-  count arriving today (accent color + emphasis when `highlight_today`), and the
-  count in transit. USPS cards also show the mail-piece count.
+- **Rotating cards**, `rotation_interval` seconds each:
+  - a **summary** card ("N incoming · M today", plus "K done" delivered today);
+  - a **USPS Informed Delivery** image card when there is mail (`show_usps_mail_image`);
+  - a **per-carrier delivery image** card when a carrier is out for delivery today —
+    the scanned delivery photo from Home Assistant's carrier cameras
+    (`show_delivery_images`; Amazon/UPS/FedEx/Walmart/USPS/…);
+  - a **count card** per carrier otherwise — a drawn carrier badge, the count
+    arriving today (accent color when `highlight_today`), in transit, and a
+    "N delivered" confirmation (`show_delivered`).
+- Carriers arriving today are sorted first. Known carriers include USPS, UPS,
+  FedEx, DHL, Amazon, Walmart, Deutsche Post and more.
 - **Size-adaptive**: reads the panel dimensions every frame, picks a bitmap font
   tier sized to the panel, and marquee-scrolls or truncates text that would
   overflow — renders correctly from 64×32 to 256×64.
+- When idle it shows Home Assistant's own summary string ("No mail today. No
+  packages in transit.").
 
 Carrier badges are drawn (colored badge + abbreviation), so no trademarked logo
 images are bundled. Drop a `assets/carrier_logos/<slug>.png` (e.g. `ups.png`,

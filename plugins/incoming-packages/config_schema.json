@@ -60,7 +60,17 @@
     "show_usps_mail_image": {
       "type": "boolean",
       "default": true,
-      "description": "Include the USPS Informed Delivery mail count / image when available"
+      "description": "Include the USPS Informed Delivery mail count / image when there is mail"
+    },
+    "show_delivery_images": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show a carrier's scanned delivery image when it is out for delivery today (Home Assistant provider)"
+    },
+    "show_delivered": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show a 'N delivered' confirmation count for packages delivered today"
     },
     "include_delivered": {
       "type": "boolean",

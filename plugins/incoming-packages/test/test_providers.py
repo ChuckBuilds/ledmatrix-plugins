@@ -109,6 +109,41 @@ def test_mail_key_ignores_gmail_substring():
     assert HomeAssistantProvider._mail_key("sensor.living_room_temp") is None
 
 
+def test_ha_images_delivered_summary_and_new_carriers():
+    pre = "sensor.imap_gmail_com_mail_"
+    cpre = "camera.imap_gmail_com_mail_"
+    states = [
+        {"entity_id": pre + "walmart_delivering", "state": "1"},
+        {"entity_id": pre + "deutschepost_packages", "state": "2"},
+        {"entity_id": pre + "packages_delivered", "state": "4"},
+        {"entity_id": "sensor.mail_summary", "state": "1 package arriving today."},
+        {"entity_id": cpre + "amazon_delivery_camera", "state": "idle",
+         "attributes": {"entity_picture": "/api/camera_proxy/camera.a?token=1"}},
+        {"entity_id": cpre + "ups_camera", "state": "idle",
+         "attributes": {"entity_picture": "/api/camera_proxy/camera.u?token=2"}},
+        {"entity_id": cpre + "walmart_delivery_camera", "state": "idle",
+         "attributes": {"entity_picture": "/api/camera_proxy/camera.w?token=3"}},
+    ]
+    p = HomeAssistantProvider({"ha_base_url": "http://ha:8123", "ha_token": "t"}, _log())
+    snap = p._parse_states(states)
+    by = {c.carrier: c for c in snap.carriers}
+    # new carriers recognized (not bucketed to "other")
+    assert by["walmart"].delivering_today == 1
+    assert by["deutschepost"].in_transit == 2
+    assert snap.total_delivered_today == 4
+    assert snap.summary_text == "1 package arriving today."
+    # camera keys map to carrier slugs, resolved to absolute local URLs
+    assert snap.carrier_images["amazon"] == "http://ha:8123/api/camera_proxy/camera.a?token=1"
+    assert snap.carrier_images["ups"].endswith("camera.u?token=2")
+    assert snap.carrier_images["walmart"].endswith("camera.w?token=3")
+
+
+def test_new_carrier_normalization():
+    assert normalize_carrier("walmart") == "walmart"
+    assert normalize_carrier("post_de") == "deutschepost"
+    assert normalize_carrier("generic") == "other"
+
+
 # ─── AfterShip provider ─────────────────────────────────────────────────────
 
 def test_aftership_aggregates_and_classifies():
