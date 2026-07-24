@@ -195,9 +195,24 @@ class HomeAssistantProvider(PackageProvider):
             raise ProviderError("HA bad response") from exc
         return self._parse_states(states)
 
+    @staticmethod
+    def _mail_key(entity_id: str) -> Optional[str]:
+        """Return the part of an entity id after the integration's `mail_`
+        segment, independent of the config-entry name. Handles both
+        `sensor.mail_usps_delivering` and `sensor.imap_gmail_com_mail_usps_delivering`.
+        Returns None for non-Mail-and-Packages entities."""
+        _, _, rest = entity_id.partition(".")
+        if "_mail_" in rest:                       # e.g. imap_gmail_com_mail_usps_...
+            return rest.rsplit("_mail_", 1)[1]
+        if rest.startswith("mail_"):               # default entry name
+            return rest[len("mail_"):]
+        return None
+
     def _parse_states(self, states: List[Dict[str, Any]]) -> Snapshot:
         snap = Snapshot()
         stats: Dict[str, CarrierStat] = {}
+        cam_picture: Optional[str] = None
+        url_fallback: Optional[str] = None
 
         def stat(carrier_raw: str) -> CarrierStat:
             slug = normalize_carrier(carrier_raw)
@@ -206,25 +221,33 @@ class HomeAssistantProvider(PackageProvider):
             return stats[slug]
 
         for entity in states:
-            try:
-                eid = entity.get("entity_id", "")
-            except AttributeError:
+            if not isinstance(entity, dict):
                 continue
-            if not eid.startswith(self.prefix):
+            eid = entity.get("entity_id", "")
+            domain = eid.split(".", 1)[0]
+            if domain not in ("sensor", "camera"):
                 continue
-            key = eid[len(self.prefix):]
-            state = entity.get("state")
+            key = self._mail_key(eid)
+            if key is None:
+                continue
 
+            if domain == "camera":
+                # The USPS camera serves the Informed Delivery mail image; its
+                # entity_picture carries a signed token we can fetch locally.
+                if "usps" in key:
+                    cam_picture = entity.get("attributes", {}).get("entity_picture")
+                continue
+
+            state = entity.get("state")
             if key in ("packages_in_transit", "zpackages_transit"):
                 snap.total_in_transit = _to_int(state)
             elif key in ("packages_delivered", "zpackages_delivered"):
-                # total delivered today; not a carrier card on its own
-                pass
+                pass                                # total delivered; not a card
             elif key == "usps_mail":
                 snap.usps_mail_count = _to_int(state)
-            elif key.endswith("image_url"):
+            elif key == "image_url":
                 if isinstance(state, str) and state.startswith("http"):
-                    snap.usps_image_url = state
+                    url_fallback = state            # external (Nabu Casa) URL
             elif key.endswith("_delivering"):
                 stat(key[: -len("_delivering")]).delivering_today = _to_int(state)
             elif key.endswith("_packages"):
@@ -233,6 +256,14 @@ class HomeAssistantProvider(PackageProvider):
                 stat(key[: -len("_delivered")]).delivered_today = _to_int(state)
             elif key in ("mail_updated", "updated"):
                 snap.updated = _parse_dt(state)
+
+        # Prefer the local camera proxy (works on-LAN with its embedded token)
+        # over the external image_url.
+        if cam_picture:
+            snap.usps_image_url = (self.base_url + cam_picture
+                                   if cam_picture.startswith("/") else cam_picture)
+        elif url_fallback:
+            snap.usps_image_url = url_fallback
 
         snap.carriers = list(stats.values())
         return snap.finalize()

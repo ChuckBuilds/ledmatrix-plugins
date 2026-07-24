@@ -22,9 +22,11 @@ API Version: 1.0.0
 
 import os
 import time
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import requests
 from PIL import Image, ImageDraw, ImageFont
 
 from src.plugin_system.base_plugin import BasePlugin
@@ -97,6 +99,8 @@ class IncomingPackagesPlugin(BasePlugin):
         # State
         self._snapshot: Optional[Snapshot] = None
         self._cards: List[Dict[str, Any]] = []
+        self._usps_image: Optional[Image.Image] = None
+        self._usps_image_key: Optional[Tuple[str, Tuple[int, int]]] = None
         self._error: Optional[str] = None
         self._last_fetch = 0.0
         self._has_fetched = False
@@ -183,6 +187,12 @@ class IncomingPackagesPlugin(BasePlugin):
         except Exception:
             return 8
 
+    def _usps_image_box(self) -> Tuple[int, int]:
+        """Image area for the USPS card: full width, leaving a row for the label."""
+        w, h = self._dims()
+        _, small = self._tier_fonts()
+        return (max(1, w), max(1, h - self._font_height(small) - 1))
+
     # ── lifecycle ──────────────────────────────────────────────────────────
 
     def update(self) -> None:
@@ -206,9 +216,45 @@ class IncomingPackagesPlugin(BasePlugin):
             self.logger.exception("Package provider failed")
             self._error = "Provider error"
             self._snapshot = None
+        self._maybe_fetch_usps_image(self._snapshot)
         self._cards = self._build_cards(self._snapshot) if self._snapshot else []
         if self.current_index >= len(self._cards):
             self.current_index = 0
+
+    def _maybe_fetch_usps_image(self, snap: Optional[Snapshot]) -> None:
+        """Fetch the USPS Informed Delivery image (only when there is mail).
+        Done here in update(), never in display()."""
+        want = bool(self.show_usps_mail and snap and snap.usps_image_url
+                    and (snap.usps_mail_count or 0) > 0)
+        if not want:
+            self._usps_image = None
+            self._usps_image_key = None
+            return
+        box = self._usps_image_box()
+        key = (snap.usps_image_url, box)
+        if key != self._usps_image_key:
+            self._usps_image = self._fetch_image(snap.usps_image_url, box)
+            self._usps_image_key = key
+
+    def _image_headers(self) -> Dict[str, str]:
+        if self.provider_name == "homeassistant":
+            token = (self.config.get("ha_token") or "").strip()
+            if token:
+                return {"Authorization": f"Bearer {token}"}
+        return {}
+
+    def _fetch_image(self, url: str, box: Tuple[int, int]) -> Optional[Image.Image]:
+        try:
+            resp = requests.get(url, headers=self._image_headers(), timeout=8)
+            resp.raise_for_status()
+            img = Image.open(BytesIO(resp.content))
+            img.seek(0)  # first frame of an animated GIF
+            img = img.convert("RGB")
+            img.thumbnail(box, Image.Resampling.LANCZOS)
+            return img
+        except Exception as exc:  # pragma: no cover - network/decoding
+            self.logger.warning("USPS image fetch failed: %s", type(exc).__name__)
+            return None
 
     def _build_cards(self, snap: Snapshot) -> List[Dict[str, Any]]:
         cards: List[Dict[str, Any]] = []
@@ -217,6 +263,9 @@ class IncomingPackagesPlugin(BasePlugin):
             cards.append({"type": "summary",
                           "total": snap.total_in_transit + snap.total_delivering_today,
                           "today": snap.total_delivering_today})
+        # USPS Informed Delivery mail image, when there is mail today.
+        if self._usps_image is not None:
+            cards.append({"type": "usps_image", "mail": snap.usps_mail_count or 0})
         # Carrier cards: arriving-today first, then most-in-transit.
         carriers = sorted(snap.carriers,
                           key=lambda c: (-c.delivering_today, -c.in_transit, c.carrier))
@@ -306,6 +355,17 @@ class IncomingPackagesPlugin(BasePlugin):
         image = Image.new("RGB", (width, height))
         draw = ImageDraw.Draw(image)
         tall = height >= 46
+
+        if card["type"] == "usps_image":
+            if self._usps_image is not None:
+                iw, ih = self._usps_image.size
+                image.paste(self._usps_image, ((width - iw) // 2, 0))
+            label = f"USPS  {card['mail']} mail"
+            lh = self._font_height(small)
+            lt = self._truncate(label, small, width - 2)
+            draw.text(((width - self._text_width(lt, small)) // 2, height - lh),
+                      lt, font=small, fill=self.base_color)
+            return image
 
         if card["type"] == "summary":
             rows = [("INCOMING", small, MUTED_COLOR, None, True),

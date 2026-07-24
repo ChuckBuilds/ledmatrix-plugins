@@ -80,6 +80,35 @@ def test_ha_carrier_counts_and_drops_empty():
     assert "other" not in by          # unrelated sensor ignored
 
 
+def test_ha_prefixed_entry_name():
+    """Real integrations name the config entry (e.g. imap_gmail_com), so entity
+    ids look like sensor.imap_gmail_com_mail_usps_delivering. Parsing must find
+    the mail_ segment regardless of the entry name (and not trip on 'gmail')."""
+    states = [
+        {"entity_id": "sensor.imap_gmail_com_mail_amazon_packages", "state": "3"},
+        {"entity_id": "sensor.imap_gmail_com_mail_usps_delivering", "state": "1"},
+        {"entity_id": "sensor.imap_gmail_com_mail_packages_in_transit", "state": "3"},
+        {"entity_id": "sensor.imap_gmail_com_mail_usps_mail", "state": "0"},
+        {"entity_id": "camera.imap_gmail_com_mail_usps_camera", "state": "idle",
+         "attributes": {"entity_picture": "/api/camera_proxy/camera.x?token=abc"}},
+    ]
+    p = HomeAssistantProvider({"ha_base_url": "http://ha:8123", "ha_token": "t"}, _log())
+    snap = p._parse_states(states)
+    by = {c.carrier: c for c in snap.carriers}
+    assert by["amazon"].in_transit == 3
+    assert by["usps"].delivering_today == 1
+    assert snap.total_in_transit == 3
+    # camera proxy resolved to an absolute local URL with its token
+    assert snap.usps_image_url == "http://ha:8123/api/camera_proxy/camera.x?token=abc"
+
+
+def test_mail_key_ignores_gmail_substring():
+    assert HomeAssistantProvider._mail_key(
+        "sensor.imap_gmail_com_mail_usps_delivering") == "usps_delivering"
+    assert HomeAssistantProvider._mail_key("sensor.mail_ups_packages") == "ups_packages"
+    assert HomeAssistantProvider._mail_key("sensor.living_room_temp") is None
+
+
 # ─── AfterShip provider ─────────────────────────────────────────────────────
 
 def test_aftership_aggregates_and_classifies():

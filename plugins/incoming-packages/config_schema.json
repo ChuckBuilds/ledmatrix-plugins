@@ -94,7 +94,7 @@
     "entity_prefix": {
       "type": "string",
       "default": "sensor.mail_",
-      "description": "Home Assistant entity id prefix for the Mail and Packages sensors",
+      "description": "Optional: Mail and Packages entity id prefix. Usually unneeded - the plugin auto-detects the integration's mail_ sensors regardless of the config-entry name (e.g. sensor.imap_gmail_com_mail_*).",
       "x-advanced": true
     },
     "scroll_enabled": {
