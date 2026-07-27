@@ -5,6 +5,7 @@
   "author": "ChuckBuilds",
   "description": "Rotating cards for packages headed your way - per carrier, with the count arriving today highlighted. Reads a normalized snapshot from a pluggable provider: the Home Assistant Mail and Packages integration (default), AfterShip, or a built-in demo. Email scanning stays inside Home Assistant; the plugin only stores an API URL + token.",
   "category": "productivity",
+  "icon": "fas fa-box",
   "tags": [
     "packages",
     "shipping",
@@ -33,7 +34,7 @@
       "notes": "Initial release. Provider-agnostic incoming-package display with a Home Assistant Mail and Packages provider (default, auto-discovers sensor.mail_* entities over the HA REST API), an AfterShip provider, and a built-in demo provider. Size-adaptive rotating cards: one per active carrier with a drawn carrier badge, the count arriving today (prioritized and shown in an accent color), the count in transit, and a lead summary card, plus optional USPS mail count. Renders on all panel sizes from 64x32 to 256x64 with adaptive font tiers and marquee text; on-panel setup/error messages."
     }
   ],
-  "last_updated": "2026-07-24",
+  "last_updated": "2026-07-27",
   "stars": 0,
   "downloads": 0,
   "verified": true,

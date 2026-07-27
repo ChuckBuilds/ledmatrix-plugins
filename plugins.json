@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-24",
+  "last_updated": "2026-07-27",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -1118,7 +1118,8 @@
       "last_updated": "2026-07-24",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.0",
+      "icon": "fas fa-box"
     }
   ]
 }

@@ -4,43 +4,60 @@ Rotating cards on your LEDMatrix for packages headed your way — one per active
 carrier, with the count **arriving today** prioritized and highlighted, plus a
 lead summary card.
 
-> **Note:** this plugin does **not** use the Shop app — Shopify exposes no public
-> API for a consumer's package list. Instead it reads a normalized snapshot from a
-> pluggable **provider**. The plugin only ever stores an API URL + token and reads
-> data; it never touches your email.
+> **This plugin does not use the Shop app** — Shopify exposes no public API for a
+> consumer's package list. Instead it reads a normalized snapshot from a pluggable
+> **provider** (default: Home Assistant). The plugin only ever stores an API URL +
+> token and reads data — **it never touches your email**.
+
+## Requirements
+
+The default (recommended) setup relies on **one Home Assistant HACS integration**:
+
+- **[Mail and Packages](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages)**
+  by `moralmunky` — a HACS custom integration that scans your email **locally inside
+  Home Assistant** ("no data leaves your instance") for shipping notifications and
+  publishes per-carrier sensors (USPS/UPS/FedEx/DHL/Amazon/Walmart/…) plus the USPS
+  Informed Delivery mail image.
+
+This plugin reads those sensors over your LAN via Home Assistant's REST API. The
+email scanning stays entirely inside Home Assistant; **the plugin itself only holds
+an HA URL + token and never accesses your email**.
+
+> Don't run Home Assistant? Use `provider: mock` to preview it, or `provider:
+> aftership` with an AfterShip account (see [Providers](#providers)).
+
+## Setup (Home Assistant)
+
+1. **Install HACS** in Home Assistant if you haven't
+   ([hacs.xyz](https://hacs.xyz)).
+2. **Install "Mail and Packages"** via HACS (HACS → Integrations → search *Mail and
+   Packages* → download), then **restart Home Assistant**.
+3. **Configure Mail and Packages** (Settings → Devices & Services → Add Integration →
+   *Mail and Packages*) with your email account. This is where your email credentials
+   live — in Home Assistant, not in this plugin. Confirm you see `sensor.*_mail_*`
+   entities appear.
+4. **Create a Long-Lived Access Token** in Home Assistant: click your user (bottom
+   left) → **Security** → *Long-Lived Access Tokens* → **Create Token** → copy it.
+5. **Configure this plugin** (in the LEDMatrix web UI or config):
+   - `provider`: `homeassistant`
+   - `ha_base_url`: your HA URL, e.g. `http://homeassistant.local:8123`
+     (use the IP, e.g. `http://192.168.1.50:8123`, if the name doesn't resolve)
+   - `ha_token`: the long-lived token from step 4
+6. Enable the plugin and add `incoming_packages` to your display rotation.
+
+The provider **auto-discovers** the Mail and Packages sensors regardless of the
+integration's config-entry name (e.g. `sensor.imap_gmail_com_mail_*`) — no
+per-carrier or per-package setup. It reads each carrier's *delivering* (arriving
+today) and *packages* (in transit) counts, the delivered totals, the USPS mail
+count/image, and Home Assistant's own summary string.
 
 ## Providers
 
-### Home Assistant — Mail and Packages (default, recommended)
-
-Reuses the [Mail and Packages](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages)
-integration you run in Home Assistant. That integration scans your email **locally
-inside Home Assistant** ("no data leaves your instance") and publishes per-carrier
-sensors. This plugin reads those sensors over your LAN via the HA REST API — the
-email scanning stays entirely in Home Assistant.
-
-Setup:
-1. Install and configure Mail and Packages in Home Assistant (via HACS).
-2. In Home Assistant, create a **Long-Lived Access Token**
-   (Profile → Security → Long-Lived Access Tokens).
-3. In this plugin's config: `provider: homeassistant`, set `ha_base_url`
-   (e.g. `http://homeassistant.local:8123`) and `ha_token`.
-
-The provider auto-discovers `sensor.mail_*` entities (override `entity_prefix` if
-your integration uses a different name) and reads the per-carrier *delivering*
-(arriving today) and *packages* (in transit) counts, the summary totals, and the
-USPS mail count — no per-package configuration.
-
-### AfterShip
-
-`provider: aftership` + an AfterShip API key (`api_key`). Reads your AfterShip
-tracking list and aggregates it into the same per-carrier snapshot.
-
-### Demo
-
-`provider: mock` shows built-in demo data — useful to preview the layout on the
-panel before wiring up a real source. This is also what the offline test harness
-uses.
+- **`homeassistant`** (default) — Mail and Packages sensors, as above.
+- **`aftership`** — set `provider: aftership` and an AfterShip `api_key`; reads your
+  AfterShip tracking list and aggregates it into the same per-carrier snapshot.
+- **`mock`** — built-in demo data to preview the layout on the panel with no
+  credentials (also used by the offline test harness).
 
 ## Display
 
