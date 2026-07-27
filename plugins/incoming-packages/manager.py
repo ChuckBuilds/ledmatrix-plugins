@@ -642,14 +642,14 @@ class IncomingPackagesPlugin(BasePlugin):
         draw = ImageDraw.Draw(img)
         radius = max(2, size // 6)
         draw.rounded_rectangle([0, 0, size - 1, size - 1], radius=radius, fill=bg)
-        # largest font whose abbrev fits the badge
-        for name, px in (("6x10.bdf", 10), ("5x8.bdf", 8), ("4x6.bdf", 6)):
-            font = self._load_font(name, px)
-            tw = self._text_width(abbrev, font)
-            if tw <= size - 4:
-                th = self._font_height(font)
-                draw.text(((size - tw) // 2, (size - th) // 2), abbrev, font=font, fill=fg)
-                break
+        # Largest font whose abbrev fits; always fall back to the smallest so a
+        # small (e.g. dashboard) badge never renders empty. Clip to the badge.
+        fonts = [self._load_font(n, px) for n, px in
+                 (("6x10.bdf", 10), ("5x8.bdf", 8), ("4x6.bdf", 6))]
+        font = next((f for f in fonts if self._text_width(abbrev, f) <= size - 2), fonts[-1])
+        text = self._clip(abbrev, font, size - 1)
+        tw, th = self._text_width(text, font), self._font_height(font)
+        draw.text(((size - tw) // 2, (size - th) // 2), text, font=font, fill=fg)
         return img
 
     def _carrier_logo_file(self, slug: str, size: int) -> Optional[Image.Image]:
