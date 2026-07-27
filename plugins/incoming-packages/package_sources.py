@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
@@ -137,6 +137,31 @@ class Snapshot:
         if not self.total_delivering_today:
             self.total_delivering_today = sum(c.delivering_today for c in self.carriers)
         return self
+
+    def to_dict(self) -> Dict[str, Any]:
+        """JSON-serializable form for the cache (dates -> ISO strings)."""
+        d = asdict(self)
+        d["packages"] = [{**asdict(p), "eta": p.eta.isoformat() if p.eta else None}
+                         for p in self.packages]
+        d["updated"] = self.updated.isoformat() if self.updated else None
+        return d
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "Snapshot":
+        """Rebuild a Snapshot from its cached dict form."""
+        return cls(
+            carriers=[CarrierStat(**c) for c in d.get("carriers", [])],
+            total_in_transit=d.get("total_in_transit", 0),
+            total_delivering_today=d.get("total_delivering_today", 0),
+            total_delivered_today=d.get("total_delivered_today", 0),
+            packages=[Package(**{**p, "eta": _parse_date(p.get("eta"))})
+                      for p in d.get("packages", [])],
+            usps_mail_count=d.get("usps_mail_count"),
+            usps_image_url=d.get("usps_image_url"),
+            carrier_images=dict(d.get("carrier_images", {})),
+            summary_text=d.get("summary_text", ""),
+            updated=_parse_dt(d.get("updated")),
+        )
 
 
 # ─── Provider interface ────────────────────────────────────────────────────

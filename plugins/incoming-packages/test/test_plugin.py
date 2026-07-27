@@ -14,7 +14,18 @@ try:
 except Exception:  # pragma: no cover - core not on path
     pytest.skip("LEDMatrix core not importable", allow_module_level=True)
 
-from package_sources import ProviderError
+from package_sources import CarrierStat, ProviderError, Snapshot
+
+
+class FakeCache:
+    def __init__(self):
+        self.store = {}
+
+    def get(self, key, max_age=300):
+        return self.store.get(key)
+
+    def set(self, key, data, ttl=None):
+        self.store[key] = data
 
 
 class FakeDM:
@@ -70,6 +81,37 @@ def test_error_card_when_no_cached_data():
     p.update()
     assert p._error == "HA unreachable"
     assert p._cards == []
+
+
+def test_update_caches_snapshot_and_serves_from_cache():
+    cache = FakeCache()
+    p1 = IncomingPackagesPlugin("incoming-packages",
+                                {"enabled": True, "provider": "mock"}, FakeDM(), cache, None)
+    p1.update()
+    assert p1._snapshot_cache_key() in cache.store        # written to cache
+    # a fresh plugin sharing the cache serves from it without a network fetch
+    p2 = IncomingPackagesPlugin("incoming-packages",
+                                {"enabled": True, "provider": "mock"}, FakeDM(), cache, None)
+    calls = []
+    p2.provider.fetch = lambda: calls.append(1) or (_ for _ in ()).throw(AssertionError())
+    p2.update()
+    assert calls == [] and p2._cards                      # cache-first, cards built
+
+
+def test_include_delivered_filters_delivered_only_carriers():
+    snap = Snapshot(
+        carriers=[CarrierStat("ups", 1, 0, 0), CarrierStat("fedex", 0, 0, 3)],
+        total_delivering_today=1, total_delivered_today=3,
+    ).finalize()
+
+    def carrier_cards(p):
+        return {c["carrier"]: c for c in p._build_cards(snap)
+                if c["type"] in ("carrier", "carrier_image")}
+
+    off = carrier_cards(_plugin(include_delivered=False, show_dashboard=False))
+    assert "fedex" not in off and "ups" in off            # delivered-only dropped
+    on = carrier_cards(_plugin(include_delivered=True, show_dashboard=False))
+    assert on["fedex"]["delivered"] == 3                   # kept + informative
 
 
 def test_age_label():

@@ -178,7 +178,10 @@ class IncomingPackagesPlugin(BasePlugin):
         """Pick (big, small) bitmap fonts sized to the panel — width-aware so
         text never overflows a narrow panel, taller on big ones."""
         w, h = self._dims()
-        scale = min(h / 32.0, max(1.0, w / 128.0))
+        # Wide panels have room for height-driven type; narrow panels stay
+        # width-aware so big fonts don't overflow. This lifts 128x64 (tall but
+        # not wide) out of the smallest tier.
+        scale = h / 32.0 if w >= 128 else min(h / 32.0, max(1.0, w / 64.0))
         if scale >= 1.75:
             big, small = ("10x20.bdf", 20), ("7x13.bdf", 13)
         elif scale >= 1.25:
@@ -218,7 +221,10 @@ class IncomingPackagesPlugin(BasePlugin):
         self._has_fetched = True
         self._last_fetch = now
         try:
-            snap = self.provider.fetch()
+            snap = self._load_cached_snapshot()
+            if snap is None:
+                snap = self.provider.fetch()
+                self._cache_snapshot(snap)
             self._snapshot = snap
             self._last_success = now
             self._error = None
@@ -248,6 +254,30 @@ class IncomingPackagesPlugin(BasePlugin):
             self._cards = []
             self._images.clear()
             self._image_sig.clear()
+
+    def _snapshot_cache_key(self) -> str:
+        return f"{self.plugin_id}:snapshot"
+
+    def _load_cached_snapshot(self) -> Optional[Snapshot]:
+        """Return a fresh cached snapshot (survives restarts; avoids a network
+        fetch on the first render) or None to fetch. Never raises."""
+        if not self.cache_manager:
+            return None
+        try:
+            cached = self.cache_manager.get(self._snapshot_cache_key(),
+                                            max_age=self.update_interval)
+            return Snapshot.from_dict(cached) if cached else None
+        except Exception:  # pragma: no cover - defensive (bad/legacy cache)
+            return None
+
+    def _cache_snapshot(self, snap: Snapshot) -> None:
+        if not self.cache_manager:
+            return
+        try:
+            self.cache_manager.set(self._snapshot_cache_key(), snap.to_dict(),
+                                   ttl=self.update_interval)
+        except Exception:  # pragma: no cover - defensive
+            self.logger.debug("Could not cache snapshot")
 
     def _data_age_seconds(self) -> float:
         """Seconds since the data we're showing was last confirmed fresh:
@@ -333,6 +363,10 @@ class IncomingPackagesPlugin(BasePlugin):
         delivered = snap.total_delivered_today if self.show_delivered else 0
         carriers = sorted(snap.carriers,
                           key=lambda c: (-c.delivering_today, -c.in_transit, c.carrier))
+        # Drop carriers whose only activity today is already-delivered packages,
+        # unless include_delivered keeps them (as an informative "N delivered" card).
+        if not self.include_delivered:
+            carriers = [c for c in carriers if c.active]
         # Lead overview when there's more than one carrier in play: an
         # all-carriers dashboard, or the compact text summary.
         if len(carriers) > 1 and (snap.total_in_transit or snap.total_delivering_today):
@@ -371,7 +405,7 @@ class IncomingPackagesPlugin(BasePlugin):
             self.update()
 
         if self._error:
-            self._render_static(self._error, ERROR_TEXT_COLOR, force_clear, hint=True)
+            self._render_static(self._error, ERROR_TEXT_COLOR, force_clear)
             return
         if not self._cards:
             summary = (self._snapshot.summary_text if self._snapshot else "") or \
@@ -435,8 +469,7 @@ class IncomingPackagesPlugin(BasePlugin):
             self._scroll_pos[field] = 0
             self._scroll_tick[field] = 0
 
-    def _render_static(self, message: str, color, force_clear: bool,
-                       hint: bool = False) -> None:
+    def _render_static(self, message: str, color, force_clear: bool) -> None:
         width, height = self._dims()
         signature = f"{message}|{width}x{height}"
         if not force_clear and signature == self._last_static_signature:
@@ -548,6 +581,9 @@ class IncomingPackagesPlugin(BasePlugin):
             rows.append((f"{card['delivered']} delivered", small, DELIVERED_COLOR, None, False))
         if today == 0 and transit == 0 and mail:  # USPS mail only
             rows = rows[:1] + [(f"{mail} mail", big if tall else small, self.base_color, None, False)]
+        elif today == 0 and transit == 0 and card.get("delivered", 0) > 0:  # delivered only
+            rows = rows[:1] + [(f"{card['delivered']} delivered",
+                                big if tall else small, DELIVERED_COLOR, None, False)]
 
         # Cap rows so the (possibly large) arriving-today line always fits:
         # 2 on short panels, 3 on tall.

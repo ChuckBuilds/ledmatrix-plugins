@@ -10,8 +10,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from package_sources import (  # noqa: E402
     AfterShipProvider,
+    CarrierStat,
     HomeAssistantProvider,
     MockProvider,
+    Package,
+    Snapshot,
     normalize_carrier,
 )
 
@@ -33,6 +36,10 @@ def test_normalize_carrier():
     assert normalize_carrier("zpackages") == "other"
     assert normalize_carrier("wombat-express") == "other"
     assert normalize_carrier("uspsprioritymail") == "usps"  # substring fallback
+    # underscore aliases must resolve after the regex strip (keys are alnum)
+    assert normalize_carrier("australia_post") == "auspost"
+    assert normalize_carrier("aus_post") == "auspost"
+    assert normalize_carrier("post_de") == "deutschepost"
 
 
 # ─── Home Assistant provider ────────────────────────────────────────────────
@@ -173,6 +180,25 @@ def test_mock_provider_has_activity():
     assert snap.total_in_transit > 0
     assert snap.total_delivering_today > 0
     assert any(c.carrier == "usps" for c in snap.carriers)
+
+
+def test_snapshot_cache_roundtrip():
+    """Snapshot -> dict -> Snapshot survives caching (used by cache_manager)."""
+    from datetime import date, datetime
+    snap = Snapshot(
+        carriers=[CarrierStat("ups", 2, 3, 1), CarrierStat("usps", 0, 0, 4)],
+        total_in_transit=3, total_delivering_today=2, total_delivered_today=5,
+        packages=[Package("ups", "Cables", "in_transit", "On the way",
+                          date(2026, 7, 30), "1Z9")],
+        usps_mail_count=4, usps_image_url="http://ha/img",
+        carrier_images={"ups": "http://ha/ups"},
+        summary_text="2 arriving today.", updated=datetime(2026, 7, 27, 9, 0, 0),
+    )
+    back = Snapshot.from_dict(snap.to_dict())
+    assert back.to_dict() == snap.to_dict()
+    assert back.carriers[0].carrier == "ups" and back.carriers[0].delivered_today == 1
+    assert back.packages[0].eta == date(2026, 7, 30)
+    assert back.updated == datetime(2026, 7, 27, 9, 0, 0)
 
 
 if __name__ == "__main__":
