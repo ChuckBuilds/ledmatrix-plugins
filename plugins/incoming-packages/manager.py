@@ -11,7 +11,7 @@ a normalized snapshot from a pluggable provider — by default the Home Assistan
 "Mail and Packages" integration you already run: the email scanning happens
 locally inside Home Assistant, and this plugin only ever holds an HA URL + token
 and reads sensor states over the LAN. AfterShip and a built-in demo provider are
-also available. See package_sources.py.
+also available. See incoming_packages_sources.py.
 
 The renderer is fully size-adaptive: it reads the panel dimensions every frame,
 picks a crisp bitmap font tier for the panel, and marquee-scrolls or truncates
@@ -20,6 +20,7 @@ text that would overflow, so it renders correctly from 64x32 up to 256x64+.
 API Version: 1.0.0
 """
 
+import hashlib
 import os
 import time
 from io import BytesIO
@@ -31,7 +32,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageSequence
 
 from src.plugin_system.base_plugin import BasePlugin
 
-from package_sources import (
+from incoming_packages_sources import (
     AuthError,
     ProviderError,
     Snapshot,
@@ -178,9 +179,10 @@ class IncomingPackagesPlugin(BasePlugin):
         """Pick (big, small) bitmap fonts sized to the panel — width-aware so
         text never overflows a narrow panel, taller on big ones."""
         w, h = self._dims()
-        # Wide panels have room for height-driven type; narrow panels stay
-        # width-aware so big fonts don't overflow. This lifts 128x64 (tall but
-        # not wide) out of the smallest tier.
+        # Font tier by panel geometry: panels with w >= 128 (128x32, 128x64,
+        # 256x32, 256x64) scale by height (h / 32); narrower panels (64x32) stay
+        # width-aware (w / 64) so a big font never overflows a thin panel. So
+        # 128x64 (tall but not wide) lands in the big tier, not the smallest.
         scale = h / 32.0 if w >= 128 else min(h / 32.0, max(1.0, w / 64.0))
         if scale >= 1.75:
             big, small = ("10x20.bdf", 20), ("7x13.bdf", 13)
@@ -256,7 +258,17 @@ class IncomingPackagesPlugin(BasePlugin):
             self._image_sig.clear()
 
     def _snapshot_cache_key(self) -> str:
-        return f"{self.plugin_id}:snapshot"
+        # Partition the cached snapshot by a fingerprint of the data source
+        # (provider + HA endpoint + entity prefix) so a config change can't
+        # serve data fetched from a different source. Secrets (tokens/keys) are
+        # excluded — they authenticate the same source, they don't identify it.
+        fp_src = "|".join((
+            self.provider_name,
+            (self.config.get("ha_base_url") or "").strip().rstrip("/"),
+            (self.config.get("entity_prefix") or "").strip(),
+        ))
+        fp = hashlib.sha1(fp_src.encode("utf-8")).hexdigest()[:10]
+        return f"{self.plugin_id}:snapshot:{fp}"
 
     def _load_cached_snapshot(self) -> Optional[Snapshot]:
         """Return a fresh cached snapshot (survives restarts; avoids a network
@@ -367,14 +379,16 @@ class IncomingPackagesPlugin(BasePlugin):
         # unless include_delivered keeps them (as an informative "N delivered" card).
         if not self.include_delivered:
             carriers = [c for c in carriers if c.active]
-        # Lead overview when there's more than one carrier in play: an
-        # all-carriers dashboard, or the compact text summary.
-        if len(carriers) > 1 and (snap.total_in_transit or snap.total_delivering_today):
+        # The overview/dashboard is about *incoming* packages, so it counts only
+        # carriers with something arriving or in transit — a delivered-only
+        # carrier must never appear as a zero-count grid entry.
+        active = [c for c in carriers if c.active]
+        if len(active) > 1 and (snap.total_in_transit or snap.total_delivering_today):
             lead = {
                 "total": snap.total_in_transit + snap.total_delivering_today,
                 "today": snap.total_delivering_today,
                 "delivered": delivered,
-                "grid": [(c.carrier, c.delivering_today, c.in_transit) for c in carriers],
+                "grid": [(c.carrier, c.delivering_today, c.in_transit) for c in active],
             }
             lead["type"] = "dashboard" if self.show_dashboard else "summary"
             cards.append(lead)
@@ -478,7 +492,10 @@ class IncomingPackagesPlugin(BasePlugin):
         _, small = self._tier_fonts()
         image = Image.new("RGB", (width, height))
         draw = ImageDraw.Draw(image)
-        lines = self._wrap_two(message, small, width - 2)
+        # Wrap to two lines, then hard-truncate each so an over-wide unbroken
+        # word (a long token, URL, …) can never spill past the panel edge.
+        lines = [self._truncate(ln, small, width - 2)
+                 for ln in self._wrap_two(message, small, width - 2)]
         lh = self._font_height(small)
         total = lh * len(lines) + (len(lines) - 1)
         y = max(0, (height - total) // 2)

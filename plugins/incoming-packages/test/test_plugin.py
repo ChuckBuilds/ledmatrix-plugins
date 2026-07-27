@@ -1,31 +1,39 @@
-"""Plugin-level tests (dashboard card, resilience). Skipped where the LEDMatrix
-core (src.plugin_system) isn't importable, e.g. a plugins-only checkout."""
+"""Plugin-level tests (dashboard, resilience, caching). Requires the LEDMatrix
+core (src.plugin_system) on the path; a genuine import error must fail loudly
+rather than silently skipping the whole module."""
 
 import os
 import sys
+import time
 
 import pytest
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-try:
-    from manager import IncomingPackagesPlugin
-except Exception:  # pragma: no cover - core not on path
-    pytest.skip("LEDMatrix core not importable", allow_module_level=True)
+from manager import IncomingPackagesPlugin
 
-from package_sources import CarrierStat, ProviderError, Snapshot
+from incoming_packages_sources import CarrierStat, ProviderError, Snapshot
 
 
 class FakeCache:
+    """cache_manager stand-in: max_age governs read expiry (as in the real
+    cache); ttl is stored for compatibility."""
+
     def __init__(self):
-        self.store = {}
+        self.store = {}   # key -> (data, stored_at, ttl)
 
     def get(self, key, max_age=300):
-        return self.store.get(key)
+        entry = self.store.get(key)
+        if entry is None:
+            return None
+        data, stored_at, _ttl = entry
+        if time.time() - stored_at > max_age:
+            return None
+        return data
 
     def set(self, key, data, ttl=None):
-        self.store[key] = data
+        self.store[key] = (data, time.time(), ttl)
 
 
 class FakeDM:
@@ -98,6 +106,40 @@ def test_update_caches_snapshot_and_serves_from_cache():
     assert calls == [] and p2._cards                      # cache-first, cards built
 
 
+def test_cache_key_partitioned_by_provider_config():
+    """A snapshot cached for one data source must not be reused for another."""
+    def key(**cfg):
+        c = {"enabled": True}
+        c.update(cfg)
+        return IncomingPackagesPlugin("incoming-packages", c, FakeDM(), FakeCache(),
+                                      None)._snapshot_cache_key()
+    k_ha1 = key(provider="homeassistant", ha_base_url="http://ha1:8123")
+    k_ha2 = key(provider="homeassistant", ha_base_url="http://ha2:8123")
+    k_aftership = key(provider="aftership")
+    assert k_ha1 != k_ha2 != k_aftership and k_ha1 != k_aftership
+    # a secret change must NOT change the key (auth, not source identity)
+    assert key(provider="homeassistant", ha_base_url="http://ha1:8123", ha_token="a") == k_ha1
+
+
+def test_stale_cache_entry_triggers_refetch():
+    """When the cached snapshot is older than update_interval, update() fetches
+    again instead of serving stale data (FakeCache honors max_age)."""
+    cache = FakeCache()
+    cfg = {"enabled": True, "provider": "mock", "update_interval": 60}
+    p1 = IncomingPackagesPlugin("incoming-packages", cfg, FakeDM(), cache, None)
+    p1.update()
+    # age the cached entry past update_interval
+    key = p1._snapshot_cache_key()
+    data, _stored, ttl = cache.store[key]
+    cache.store[key] = (data, time.time() - 999, ttl)
+    p2 = IncomingPackagesPlugin("incoming-packages", cfg, FakeDM(), cache, None)
+    calls = []
+    orig = p2.provider.fetch
+    p2.provider.fetch = lambda: (calls.append(1), orig())[1]
+    p2.update()
+    assert calls == [1]                                   # stale -> refetched
+
+
 def test_include_delivered_filters_delivered_only_carriers():
     snap = Snapshot(
         carriers=[CarrierStat("ups", 1, 0, 0), CarrierStat("fedex", 0, 0, 3)],
@@ -112,6 +154,20 @@ def test_include_delivered_filters_delivered_only_carriers():
     assert "fedex" not in off and "ups" in off            # delivered-only dropped
     on = carrier_cards(_plugin(include_delivered=True, show_dashboard=False))
     assert on["fedex"]["delivered"] == 3                   # kept + informative
+
+
+def test_dashboard_grid_excludes_delivered_only():
+    """A delivered-only carrier must not appear as a zero-count grid entry, even
+    when include_delivered keeps its own card."""
+    snap = Snapshot(
+        carriers=[CarrierStat("ups", 2, 0, 0), CarrierStat("usps", 0, 3, 0),
+                  CarrierStat("fedex", 0, 0, 3)],
+        total_in_transit=3, total_delivering_today=2, total_delivered_today=3,
+    ).finalize()
+    cards = _plugin(include_delivered=True, show_dashboard=True)._build_cards(snap)
+    assert cards[0]["type"] == "dashboard"
+    assert {slug for slug, _t, _tr in cards[0]["grid"]} == {"ups", "usps"}
+    assert any(c.get("carrier") == "fedex" for c in cards)   # still carded
 
 
 def test_age_label():

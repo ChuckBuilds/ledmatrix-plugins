@@ -8,7 +8,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from package_sources import (  # noqa: E402
+from incoming_packages_sources import (  # noqa: E402
     AfterShipProvider,
     CarrierStat,
     HomeAssistantProvider,

@@ -13,8 +13,8 @@ The plugin is provider-agnostic; today three providers ship:
 * `MockProvider` — built-in demo data for the offline safety harness and for a
   no-credentials preview on the panel.
 
-Named `package_sources` (a plugin-unique module name) so it never collides with
-another plugin on the loader's deferred-import path.
+Named `incoming_packages_sources` (prefixed with the plugin id) so it never
+collides with another plugin on the loader's deferred-import path.
 """
 
 from __future__ import annotations
