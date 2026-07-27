@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageSequence
 
 from src.plugin_system.base_plugin import BasePlugin
 
@@ -89,6 +89,9 @@ class IncomingPackagesPlugin(BasePlugin):
         self.show_usps_mail = bool(config.get("show_usps_mail_image", True))
         self.show_delivery_images = bool(config.get("show_delivery_images", True))
         self.show_delivered = bool(config.get("show_delivered", True))
+        self.show_dashboard = bool(config.get("show_dashboard", True))
+        self.stale_after = max(60, int(config.get("stale_after_minutes", 60)) * 60)
+        self.image_frame_seconds = max(0.2, float(config.get("image_frame_seconds", 1.5)))
         self.highlight_today = bool(config.get("highlight_today", True))
         self.accent_color = self._parse_color(config.get("accent_color"), (0, 220, 120))
 
@@ -105,12 +108,15 @@ class IncomingPackagesPlugin(BasePlugin):
         # State
         self._snapshot: Optional[Snapshot] = None
         self._cards: List[Dict[str, Any]] = []
-        # Fetched images keyed by slot: 'usps_mail' for the Informed Delivery
-        # image, and a carrier slug for that carrier's delivery image.
-        self._images: Dict[str, Image.Image] = {}
+        # Fetched image frames keyed by slot: 'usps_mail' for the Informed
+        # Delivery image (multi-frame GIF), and a carrier slug for a delivery
+        # image. Value is a list of fitted frames (one for static images).
+        self._images: Dict[str, List[Image.Image]] = {}
         self._image_sig: Dict[str, Tuple[str, Tuple[int, int]]] = {}
         self._error: Optional[str] = None
         self._last_fetch = 0.0
+        self._last_success = 0.0     # wall-clock of the last good fetch
+        self._stale = False          # last fetch failed; showing cached data
         self._has_fetched = False
         self.current_index = 0
         # Start the clock now so the first card shows for a full interval (and so
@@ -212,22 +218,55 @@ class IncomingPackagesPlugin(BasePlugin):
         self._has_fetched = True
         self._last_fetch = now
         try:
-            self._snapshot = self.provider.fetch()
+            snap = self.provider.fetch()
+            self._snapshot = snap
+            self._last_success = now
             self._error = None
-        except AuthError as exc:
-            self._error = str(exc)
-            self._snapshot = None
-        except ProviderError as exc:
-            self._error = str(exc)
-            self._snapshot = None
-        except Exception as exc:  # pragma: no cover - defensive
+            self._stale = False
+            self._fetch_images(snap)
+            self._cards = self._build_cards(snap)
+        except (AuthError, ProviderError) as exc:
+            self._handle_fetch_error(str(exc), now)
+        except Exception:  # pragma: no cover - defensive
             self.logger.exception("Package provider failed")
-            self._error = "Provider error"
-            self._snapshot = None
-        self._fetch_images(self._snapshot)
-        self._cards = self._build_cards(self._snapshot) if self._snapshot else []
+            self._handle_fetch_error("Provider error", now)
         if self.current_index >= len(self._cards):
             self.current_index = 0
+
+    def _handle_fetch_error(self, message: str, now: float) -> None:
+        """Ride out a transient failure on the last-good snapshot (flagged
+        stale) rather than blanking; only surface the error card once the
+        cached data is gone or too old to trust."""
+        grace = max(self.stale_after, 2 * self.update_interval)
+        if self._cards and self._snapshot is not None and (now - self._last_success) < grace:
+            self._stale = True
+            self._error = None
+            self.logger.warning("Provider error (%s); showing cached data", message)
+        else:
+            self._error = message
+            self._snapshot = None
+            self._cards = []
+            self._images.clear()
+            self._image_sig.clear()
+
+    def _data_age_seconds(self) -> float:
+        """Seconds since the data we're showing was last confirmed fresh:
+        HA's own last-scan time when available, else our last successful fetch."""
+        if self._snapshot and self._snapshot.updated:
+            return max(0.0, time.time() - self._snapshot.updated.timestamp())
+        if self._last_success:
+            return max(0.0, time.time() - self._last_success)
+        return 0.0
+
+    @staticmethod
+    def _age_label(seconds: float) -> str:
+        mins = int(seconds // 60)
+        if mins < 1:
+            return "just now"
+        if mins < 60:
+            return f"{mins}m ago"
+        hours = mins // 60
+        return f"{hours}h ago" if hours < 24 else f"{hours // 24}d ago"
 
     def _wanted_images(self, snap: Snapshot) -> Dict[str, str]:
         """Which images to show this refresh: the USPS Informed Delivery image
@@ -254,9 +293,9 @@ class IncomingPackagesPlugin(BasePlugin):
         for slot, url in wanted.items():
             sig = (url, box)
             if self._image_sig.get(slot) != sig or slot not in self._images:
-                img = self._fetch_image(url, box)
-                if img is not None:
-                    self._images[slot] = img
+                frames = self._fetch_frames(url, box)
+                if frames:
+                    self._images[slot] = frames
                     self._image_sig[slot] = sig
                 else:
                     self._images.pop(slot, None)
@@ -268,36 +307,49 @@ class IncomingPackagesPlugin(BasePlugin):
                 return {"Authorization": f"Bearer {token}"}
         return {}
 
-    def _fetch_image(self, url: str, box: Tuple[int, int]) -> Optional[Image.Image]:
+    def _fetch_frames(self, url: str, box: Tuple[int, int]) -> List[Image.Image]:
+        """Fetch an image and return every frame fitted to `box`. The USPS
+        Informed Delivery image is an animated GIF cycling through each scanned
+        mail piece; a static image yields a single frame. Capped to keep memory
+        and the animation length sane."""
         try:
             resp = requests.get(url, headers=self._image_headers(), timeout=8)
             resp.raise_for_status()
-            img = Image.open(BytesIO(resp.content))
-            img.seek(0)  # first frame of an animated GIF
-            img = img.convert("RGB")
-            img.thumbnail(box, Image.Resampling.LANCZOS)
-            return img
+            src = Image.open(BytesIO(resp.content))
+            frames: List[Image.Image] = []
+            for frame in ImageSequence.Iterator(src):
+                rgb = frame.convert("RGB")
+                rgb.thumbnail(box, Image.Resampling.LANCZOS)
+                frames.append(rgb)
+                if len(frames) >= 24:
+                    break
+            return frames
         except Exception as exc:  # pragma: no cover - network/decoding
-            self.logger.warning("USPS image fetch failed: %s", type(exc).__name__)
-            return None
+            self.logger.warning("Image fetch failed: %s", type(exc).__name__)
+            return []
 
     def _build_cards(self, snap: Snapshot) -> List[Dict[str, Any]]:
         cards: List[Dict[str, Any]] = []
         delivered = snap.total_delivered_today if self.show_delivered else 0
-        # Lead summary when there's more than one carrier in play.
-        if len(snap.carriers) > 1 and (snap.total_in_transit or snap.total_delivering_today):
-            cards.append({"type": "summary",
-                          "total": snap.total_in_transit + snap.total_delivering_today,
-                          "today": snap.total_delivering_today,
-                          "delivered": delivered})
+        carriers = sorted(snap.carriers,
+                          key=lambda c: (-c.delivering_today, -c.in_transit, c.carrier))
+        # Lead overview when there's more than one carrier in play: an
+        # all-carriers dashboard, or the compact text summary.
+        if len(carriers) > 1 and (snap.total_in_transit or snap.total_delivering_today):
+            lead = {
+                "total": snap.total_in_transit + snap.total_delivering_today,
+                "today": snap.total_delivering_today,
+                "delivered": delivered,
+                "grid": [(c.carrier, c.delivering_today, c.in_transit) for c in carriers],
+            }
+            lead["type"] = "dashboard" if self.show_dashboard else "summary"
+            cards.append(lead)
         # USPS Informed Delivery mail image, when there is mail today.
         if "usps_mail" in self._images:
             cards.append({"type": "usps_image", "mail": snap.usps_mail_count or 0})
         # Carrier cards: arriving-today first, then most-in-transit. When a
         # carrier is out for delivery today and we have its scanned image, show
         # the image card instead of the plain count card.
-        carriers = sorted(snap.carriers,
-                          key=lambda c: (-c.delivering_today, -c.in_transit, c.carrier))
         for cs in carriers:
             common = {
                 "carrier": cs.carrier,
@@ -329,12 +381,12 @@ class IncomingPackagesPlugin(BasePlugin):
 
         self._last_static_signature = None
         now = time.time()
-        if now - self.last_rotation >= self.rotation_interval:
+        if self.current_index >= len(self._cards):
+            self.current_index = 0
+        if now - self.last_rotation >= self._card_dwell(self._cards[self.current_index]):
             self.current_index = (self.current_index + 1) % len(self._cards)
             self.last_rotation = now
             self._reset_scroll()
-        if self.current_index >= len(self._cards):
-            self.current_index = 0
 
         if force_clear:
             self.display_manager.clear()
@@ -342,9 +394,25 @@ class IncomingPackagesPlugin(BasePlugin):
         self.display_manager.image = image
         self.display_manager.update_display()
 
+    def _image_slot(self, card: Dict[str, Any]) -> Optional[str]:
+        if card.get("type") == "usps_image":
+            return "usps_mail"
+        if card.get("type") == "carrier_image":
+            return card["carrier"]
+        return None
+
+    def _card_dwell(self, card: Dict[str, Any]) -> float:
+        """Seconds to hold a card. Animated image cards stay long enough to
+        play through all their frames once."""
+        slot = self._image_slot(card)
+        frames = len(self._images.get(slot, [])) if slot else 1
+        if frames > 1:
+            return max(self.rotation_interval, frames * self.image_frame_seconds)
+        return self.rotation_interval
+
     def get_display_duration(self) -> float:
-        n = max(1, len(self._cards))
-        return max(6.0, min(60.0, n * self.rotation_interval))
+        total = sum(self._card_dwell(c) for c in self._cards) if self._cards else self.rotation_interval
+        return max(6.0, min(90.0, total))
 
     def validate_config(self) -> bool:
         if not super().validate_config():
@@ -415,10 +483,13 @@ class IncomingPackagesPlugin(BasePlugin):
         tall = height >= 46
 
         if card["type"] in ("usps_image", "carrier_image"):
-            slot = "usps_mail" if card["type"] == "usps_image" else card["carrier"]
-            img_obj = self._images.get(slot)
-            if img_obj is not None:
-                image.paste(img_obj, ((width - img_obj.width) // 2, 0))
+            frames = self._images.get(self._image_slot(card), [])
+            if frames:
+                # Animate multi-frame images (the USPS GIF cycles through each
+                # scanned mail piece); pick this instant's frame by wall clock.
+                idx = int(time.time() / self.image_frame_seconds) % len(frames)
+                frame = frames[idx]
+                image.paste(frame, ((width - frame.width) // 2, 0))
             if card["type"] == "usps_image":
                 label, color = f"USPS  {card['mail']} mail", self.base_color
             else:
@@ -429,6 +500,11 @@ class IncomingPackagesPlugin(BasePlugin):
             lt = self._truncate(label, small, width - 2)
             draw.text(((width - self._text_width(lt, small)) // 2, height - lh),
                       lt, font=small, fill=color)
+            self._draw_stale(draw, width)
+            return image
+
+        if card["type"] == "dashboard":
+            self._render_dashboard(image, draw, card, width, height)
             return image
 
         if card["type"] == "summary":
@@ -444,6 +520,7 @@ class IncomingPackagesPlugin(BasePlugin):
             elif delivered > 0:
                 rows.append((f"{delivered} delivered", small, DELIVERED_COLOR, None, True))
             self._place_rows(draw, rows, 2, width - 4, height)
+            self._draw_freshness(draw, width, height)
             return image
 
         # Carrier card
@@ -476,7 +553,69 @@ class IncomingPackagesPlugin(BasePlugin):
         # 2 on short panels, 3 on tall.
         rows = rows[:2] if not tall else rows[:3]
         self._place_rows(draw, rows, tx, tw, height)
+        self._draw_stale(draw, width)
         return image
+
+    # ── dashboard + freshness ───────────────────────────────────────────────
+
+    def _render_dashboard(self, image, draw, card, width, height) -> None:
+        """All active carriers at a glance: a header line plus a grid of badge
+        + count cells. On narrow panels (<128px) it falls back to the compact
+        text summary so nothing is cramped."""
+        if width < 128:
+            rows = [(f"{card['total']} INCOMING", self._tier_fonts()[1], MUTED_COLOR, None, True)]
+            if card["today"] > 0:
+                rows.append((f"{card['today']} today", self._tier_fonts()[1],
+                             self.accent_color, None, True))
+            self._place_rows(draw, rows, 2, width - 4, height)
+            self._draw_freshness(draw, width, height)
+            return
+
+        _, small = self._tier_fonts()
+        fh = self._font_height(small)
+        header = f"{card['total']} incoming"
+        if card["today"] > 0:
+            header += f"  ·  {card['today']} today"
+        draw.text((2, 1), self._truncate(header, small, width - 4), font=small,
+                  fill=self.base_color)
+
+        grid = card.get("grid", [])
+        top = fh + 3
+        cell_h = height - top - 1
+        badge = max(12, min(cell_h, 26))
+        gap = 4
+        x = 2
+        for slug, today, transit in grid:
+            count = today + transit
+            cnt = str(count)
+            cw = self._text_width(cnt, small)
+            cell_w = badge + 2 + cw
+            if x + cell_w > width:            # no more room on this single row
+                break
+            by = top + (cell_h - badge) // 2
+            image.paste(self._carrier_badge(slug, badge), (x, by))
+            color = self.accent_color if today > 0 else MUTED_COLOR
+            draw.text((x + badge + 2, top + (cell_h - fh) // 2), cnt, font=small, fill=color)
+            x += cell_w + gap
+        self._draw_freshness(draw, width, height)
+
+    def _draw_freshness(self, draw, width, height) -> None:
+        """Small bottom-right 'Xm ago' when the data isn't fresh, in a warning
+        tint if it is stale (last fetch failed / older than stale_after)."""
+        age = self._data_age_seconds()
+        if not self._stale and age <= 300:
+            return
+        _, small = self._tier_fonts()
+        label = self._age_label(age)
+        color = (230, 150, 60) if (self._stale or age > self.stale_after) else MUTED_COLOR
+        tw = self._text_width(label, small)
+        draw.text((width - tw - 1, height - self._font_height(small)),
+                  label, font=small, fill=color)
+
+    def _draw_stale(self, draw, width) -> None:
+        """A small amber dot in the top-right corner while showing cached data."""
+        if self._stale:
+            draw.ellipse([width - 4, 1, width - 1, 4], fill=(230, 150, 60))
 
     def _transit_label(self, n: int, tall: bool) -> str:
         return f"{n} in transit" if tall else f"{n} transit"

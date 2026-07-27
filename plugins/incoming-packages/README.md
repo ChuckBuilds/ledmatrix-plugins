@@ -45,8 +45,10 @@ uses.
 ## Display
 
 - **Rotating cards**, `rotation_interval` seconds each:
-  - a **summary** card ("N incoming · M today", plus "K done" delivered today);
-  - a **USPS Informed Delivery** image card when there is mail (`show_usps_mail_image`);
+  - a lead **dashboard** card — every active carrier at a glance (badge + count,
+    green when arriving today) — or a compact text summary (`show_dashboard`);
+  - an **animated USPS Informed Delivery** image card when there is mail: it plays
+    through each scanned mail piece (`show_usps_mail_image`, `image_frame_seconds`);
   - a **per-carrier delivery image** card when a carrier is out for delivery today —
     the scanned delivery photo from Home Assistant's carrier cameras
     (`show_delivery_images`; Amazon/UPS/FedEx/Walmart/USPS/…);
@@ -60,6 +62,9 @@ uses.
   overflow — renders correctly from 64×32 to 256×64.
 - When idle it shows Home Assistant's own summary string ("No mail today. No
   packages in transit.").
+- **Resilient**: keeps showing the last-good data through a brief Home Assistant
+  hiccup rather than blanking, with a small amber "Xm ago" freshness marker once
+  the data is stale (`stale_after_minutes`).
 
 Carrier badges are drawn (colored badge + abbreviation), so no trademarked logo
 images are bundled. Drop a `assets/carrier_logos/<slug>.png` (e.g. `ups.png`,

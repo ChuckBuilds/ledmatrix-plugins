@@ -72,6 +72,27 @@
       "default": true,
       "description": "Show a 'N delivered' confirmation count for packages delivered today"
     },
+    "show_dashboard": {
+      "type": "boolean",
+      "default": true,
+      "description": "Lead with an at-a-glance dashboard card (all carriers with counts) instead of a plain text summary"
+    },
+    "stale_after_minutes": {
+      "type": "integer",
+      "default": 60,
+      "minimum": 5,
+      "maximum": 1440,
+      "description": "Flag data as stale (amber 'Xm ago') once it is older than this",
+      "x-advanced": true
+    },
+    "image_frame_seconds": {
+      "type": "number",
+      "default": 1.5,
+      "minimum": 0.2,
+      "maximum": 10,
+      "description": "Seconds per frame when animating the USPS Informed Delivery mail image",
+      "x-advanced": true
+    },
     "include_delivered": {
       "type": "boolean",
       "default": false,
