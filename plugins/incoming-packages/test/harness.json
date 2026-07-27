@@ -1,5 +1,5 @@
 {
-  "_comment": "Deterministic settings for the plugin safety harness. provider=mock returns built-in demo data with no network, so update() and display() render identically on any host. freeze_time pins the wall clock so the rotation stays on card 0 (the summary card) for a stable golden. sizes covers the narrow/short panels (64x32, 128x32, 256x32), the wide-short rig (192x48), and the two tall panels (128x64, 256x64) to exercise the adaptive font tiers, carrier badges, and marquee/truncation.",
+  "_comment": "Deterministic settings for the plugin safety harness. provider=mock returns built-in demo data with no network, so update() and display() render with no host dependencies. freeze_time pins the wall clock so the rotation/animation are stable. No committed golden images: the card mix animates (USPS GIF frames) and pixel-exact bitmap-font rendering drifts across freetype builds, so goldens would be flaky across CI/dev hosts; the harness still enforces crash + overflow (content past the panel edge) at every size. sizes covers the narrow/short panels (64x32, 128x32, 256x32), the wide-short rig (192x48), and the two tall panels (128x64, 256x64) to exercise the adaptive font tiers, dashboard grid, carrier badges, and marquee/truncation.",
   "config": {
     "enabled": true,
     "provider": "mock"
