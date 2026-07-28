@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-stocks",
   "name": "Stock & Crypto Ticker",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "description": "Displays stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies. Supports scroll and switch display modes.",
   "author": "LEDMatrix Team",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",
@@ -41,8 +41,8 @@
   "versions": [
     {
       "released": "2026-07-28",
-      "version": "2.4.1",
-      "notes": "Minimize the gap between the price text and the inline mini-chart. The chart was anchored to the far-right of the wide scroll canvas, leaving a large empty gap after the price on bigger panels (e.g. ~135px at 256x64). It now sits just to the right of the price text, and the entry canvas is cropped to the content.",
+      "version": "2.5.0",
+      "notes": "Stock ticker layout overhaul so entries stay compact on large/4x panels and in vegas mode. The mini-chart is now a definite pixel size (chart_width_px / chart_height_px, default 64x32) instead of a fraction of the display, so it no longer balloons on wide chains or tall panels. The chart sits directly to the right of the price (no large gap), and each entry canvas is sized to its actual content so there is no dead space between tickers. Replaces the chart_width_percent / chart_height_percent config keys.",
       "ledmatrix_min": "2.0.0"
     },
     {
