@@ -31,9 +31,11 @@
     "paused_color",
     "time_color",
     "background_color",
+    "digit_style",
+    "show_ghost_segments",
     "show_phase_label",
     "show_session_dots",
-    "show_progress_bar",
+    "progress_style",
     "work_label",
     "short_break_label",
     "long_break_label",
@@ -52,7 +54,6 @@
       "default": true,
       "title": "Enabled"
     },
-
     "work_minutes": {
       "type": "integer",
       "default": 25,
@@ -104,7 +105,6 @@
       "description": "Begin a work session as soon as the plugin loads. Useful if you don't use MQTT.",
       "x-advanced": true
     },
-
     "mqtt_enabled": {
       "type": "boolean",
       "default": true,
@@ -180,10 +180,12 @@
       "description": "How often the countdown is published while running. Raise this to cut broker traffic; state changes (start, pause, phase change) are always published immediately.",
       "x-advanced": true
     },
-
     "color_mode": {
       "type": "string",
-      "enum": ["phase", "fixed"],
+      "enum": [
+        "phase",
+        "fixed"
+      ],
       "default": "phase",
       "title": "Countdown Color",
       "description": "'phase' colors the countdown by what's running (work / break / long break / paused). 'fixed' always uses the Countdown Text Color below.",
@@ -191,57 +193,105 @@
     },
     "work_color": {
       "type": "array",
-      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
       "minItems": 3,
       "maxItems": 3,
-      "default": [255, 70, 50],
+      "default": [
+        255,
+        70,
+        50
+      ],
       "title": "Work Color",
       "x-widget": "color-picker"
     },
     "short_break_color": {
       "type": "array",
-      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
       "minItems": 3,
       "maxItems": 3,
-      "default": [60, 200, 110],
+      "default": [
+        60,
+        200,
+        110
+      ],
       "title": "Short Break Color",
       "x-widget": "color-picker"
     },
     "long_break_color": {
       "type": "array",
-      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
       "minItems": 3,
       "maxItems": 3,
-      "default": [70, 150, 255],
+      "default": [
+        70,
+        150,
+        255
+      ],
       "title": "Long Break Color",
       "x-widget": "color-picker"
     },
     "idle_color": {
       "type": "array",
-      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
       "minItems": 3,
       "maxItems": 3,
-      "default": [110, 110, 110],
+      "default": [
+        110,
+        110,
+        110
+      ],
       "title": "Idle Color",
       "x-widget": "color-picker",
       "x-advanced": true
     },
     "paused_color": {
       "type": "array",
-      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
       "minItems": 3,
       "maxItems": 3,
-      "default": [255, 176, 0],
+      "default": [
+        255,
+        176,
+        0
+      ],
       "title": "Paused Color",
       "x-widget": "color-picker",
       "x-advanced": true
     },
     "time_color": {
       "type": "array",
-      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
       "minItems": 3,
       "maxItems": 3,
-      "default": [255, 255, 255],
+      "default": [
+        255,
+        255,
+        255
+      ],
       "title": "Countdown Text Color",
       "description": "Used only when Countdown Color is set to 'fixed'.",
       "x-widget": "color-picker",
@@ -249,15 +299,22 @@
     },
     "background_color": {
       "type": "array",
-      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
       "minItems": 3,
       "maxItems": 3,
-      "default": [0, 0, 0],
+      "default": [
+        0,
+        0,
+        0
+      ],
       "title": "Background Color",
       "x-widget": "color-picker",
       "x-advanced": true
     },
-
     "show_phase_label": {
       "type": "boolean",
       "default": true,
@@ -270,13 +327,6 @@
       "title": "Show Session Dots",
       "description": "Show one dot per work session in the set, filled in as you complete them."
     },
-    "show_progress_bar": {
-      "type": "boolean",
-      "default": true,
-      "title": "Show Progress Bar",
-      "description": "Show a bar along the bottom edge that fills as the current phase elapses."
-    },
-
     "work_label": {
       "type": "string",
       "default": "FOCUS",
@@ -314,7 +364,6 @@
       "description": "Shown in place of the phase name while the timer is paused. Leave blank to keep showing the phase name.",
       "x-advanced": true
     },
-
     "font_path": {
       "type": "string",
       "default": "",
@@ -331,7 +380,6 @@
       "description": "Fix the countdown font height in pixels. Leave at 0 to size the countdown automatically to the panel.",
       "x-advanced": true
     },
-
     "pin_while_running": {
       "type": "boolean",
       "default": true,
@@ -361,8 +409,45 @@
       "title": "Display Duration (seconds)",
       "description": "How long the timer stays on screen each rotation cycle when it isn't holding the display.",
       "x-advanced": true
+    },
+    "digit_style": {
+      "type": "string",
+      "enum": [
+        "seven_segment",
+        "pixel"
+      ],
+      "default": "seven_segment",
+      "title": "Countdown Digits",
+      "description": "'seven_segment' draws the countdown as clock-radio style segments sized to the panel. 'pixel' uses the display's pixel font.",
+      "x-widget": "radio"
+    },
+    "show_ghost_segments": {
+      "type": "boolean",
+      "default": true,
+      "title": "Show Unlit Segments",
+      "description": "Keep the unlit segments faintly visible, the way a real LED clock shows its dark segments. Turn off for digits on pure black.",
+      "x-advanced": true
+    },
+    "progress_style": {
+      "type": "string",
+      "enum": [
+        "perimeter",
+        "bar",
+        "segments",
+        "none"
+      ],
+      "default": "perimeter",
+      "title": "Burndown Indicator",
+      "description": "How the time left in the phase is shown. 'perimeter' drains a ring around the edge of the panel and leaves the most room for the digits; 'bar' empties a bar along the bottom; 'segments' puts out a row of blocks one at a time; 'none' hides it.",
+      "x-widget": "radio"
     }
   },
-  "required": ["enabled", "work_minutes", "short_break_minutes", "long_break_minutes", "sessions_before_long_break"],
+  "required": [
+    "enabled",
+    "work_minutes",
+    "short_break_minutes",
+    "long_break_minutes",
+    "sessions_before_long_break"
+  ],
   "additionalProperties": false
 }

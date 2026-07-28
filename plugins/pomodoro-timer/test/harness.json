@@ -1,5 +1,5 @@
 {
-  "_comment": "Deterministic settings the plugin safety harness renders pomodoro-timer with for golden-image comparison. The timer is idle on a fresh instance, so the golden shows the resting screen: the idle label above the configured work length, with an empty progress bar and an empty set of session dots. Everything that affects the frame is pinned here so a future change to a schema default can't silently invalidate the goldens.",
+  "_comment": "Deterministic settings the plugin safety harness renders pomodoro-timer with for golden-image comparison. The timer is idle on a fresh instance, so the golden shows the resting screen: the idle label above the configured work length in seven-segment digits, a full burndown ring, and an empty set of session dots. Everything that affects the frame is pinned here so a future change to a schema default can't silently invalidate the goldens.",
   "config": {
     "work_minutes": 25,
     "short_break_minutes": 5,
@@ -13,7 +13,9 @@
     "idle_label": "POMODORO",
     "show_phase_label": true,
     "show_session_dots": true,
-    "show_progress_bar": true,
+    "digit_style": "seven_segment",
+    "show_ghost_segments": true,
+    "progress_style": "perimeter",
     "font_path": "",
     "font_size": 0
   },

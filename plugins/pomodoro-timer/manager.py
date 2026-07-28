@@ -95,6 +95,12 @@ def _dim(color: Tuple[int, int, int], factor: float) -> Tuple[int, int, int]:
     return tuple(max(0, min(255, int(c * factor))) for c in color)  # type: ignore[return-value]
 
 
+def _lighten(color: Tuple[int, int, int], factor: float) -> Tuple[int, int, int]:
+    """Blend `factor` of white into `color` — used for the burndown's head."""
+    return tuple(  # type: ignore[return-value]
+        max(0, min(255, int(c + (255 - c) * factor))) for c in color)
+
+
 def _fmt_clock(seconds: float) -> str:
     """Format remaining seconds as MM:SS (minutes are not wrapped at 60)."""
     total = int(math.ceil(max(0.0, seconds) - 1e-6))
@@ -195,7 +201,13 @@ class PomodoroTimerPlugin(BasePlugin):
         self.background_color  = _rgb(config.get("background_color", [0, 0, 0]), (0, 0, 0))
         self.show_phase_label  = bool(config.get("show_phase_label", True))
         self.show_session_dots = bool(config.get("show_session_dots", True))
-        self.show_progress_bar = bool(config.get("show_progress_bar", True))
+        self.digit_style = str(config.get("digit_style", "seven_segment"))
+        if self.digit_style not in ("seven_segment", "pixel"):
+            self.digit_style = "seven_segment"
+        self.show_ghost_segments = bool(config.get("show_ghost_segments", True))
+        self.progress_style = str(config.get("progress_style", "perimeter"))
+        if self.progress_style not in ("perimeter", "bar", "segments", "none"):
+            self.progress_style = "perimeter"
         self.font_path = str(config.get("font_path", "") or "")
         try:
             self.font_size = max(0, min(64, int(config.get("font_size", 0))))
@@ -858,68 +870,88 @@ class PomodoroTimerPlugin(BasePlugin):
         draw.rectangle([0, 0, width - 1, height - 1], fill=background)
 
         label = snap["label"]
-        bar_h = self._bar_height(height) if self.show_progress_bar else 0
+        remaining = max(0.0, 1.0 - snap["elapsed_fraction"])
+
+        # The perimeter ring lives on the outermost pixels, so the content
+        # box steps in to clear it. Every other style sits below the content.
+        ring = self.progress_style == "perimeter"
+        inset = 2 if ring else 0
+        strip_h = 0 if ring else self._strip_height(height)
         dot_h = self._dot_size(height) if self.show_session_dots else 0
 
+        box = (inset, inset, width - 2 * inset, height - 2 * inset - strip_h)
         if width >= 192 and height <= 48:
-            self._render_wide(draw, width, height, snap, label, text_color, accent,
-                              bar_h, dot_h)
+            self._render_wide(draw, box, snap, label, text_color, accent, dot_h)
         else:
-            self._render_stacked(draw, width, height, snap, label, text_color, accent,
-                                 bar_h, dot_h)
+            self._render_stacked(draw, box, snap, label, text_color, accent, dot_h)
 
-        if bar_h:
-            self._draw_progress_bar(draw, 0, height - bar_h, width, bar_h,
-                                    snap["elapsed_fraction"], accent)
+        if ring:
+            self._draw_perimeter(draw, width, height, remaining, accent)
+        elif strip_h:
+            self._draw_strip(draw, 0, height - strip_h, width, strip_h, remaining, accent)
 
-    @staticmethod
-    def _bar_height(height: int) -> int:
+    def _strip_height(self, height: int) -> int:
+        if self.progress_style == "none":
+            return 0
         return 3 if height >= 64 else 2
 
     @staticmethod
     def _dot_size(height: int) -> int:
         return 4 if height >= 64 else 3
 
-    def _render_stacked(self, draw, width, height, snap, label, text_color, accent,
-                        bar_h, dot_h) -> None:
-        label_h = (10 if height >= 64 else 7) if (self.show_phase_label and label) else 0
-        top = label_h + (1 if label_h else 0)
-        bottom = height - bar_h - (dot_h + 1 if dot_h else 0)
+    def _render_stacked(self, draw, box, snap, label, text_color, accent, dot_h) -> None:
+        bx, by, bw, bh = box
+        label_h = (10 if bh >= 54 else 7) if (self.show_phase_label and label) else 0
+        label_font = self._fit_font(draw, label, bw - 2, label_h) if label_h else None
+
+        # On a 32px panel a dedicated dots row costs a quarter of the height the
+        # digits could have. When the label leaves enough width, the dots tuck in
+        # beside it instead and the countdown gets those rows back.
+        dots_inline = False
+        if dot_h and label_font is not None and bh < 40:
+            label_w = self._measure(draw, label, label_font)[0]
+            if label_w + self._dots_span(snap, dot_h) + 6 <= bw:
+                dots_inline = True
+
+        top = by + label_h + (1 if label_h else 0)
+        bottom = by + bh - (0 if (dots_inline or not dot_h) else dot_h + 1)
         box_h = max(6, bottom - top)
 
         if label_h:
-            label_font = self._fit_font(draw, label, width - 2, label_h)
-            self._draw_in_box(draw, label, label_font, (1, 0, width - 2, label_h), accent)
+            self._draw_in_box(draw, label, label_font, (bx + 1, by, bw - 2, label_h), accent)
 
-        time_text = snap["remaining"]
-        time_font = self._fit_font(draw, time_text, width - 4, box_h)
-        self._draw_in_box(draw, time_text, time_font, (2, top, width - 4, box_h), text_color)
+        self._draw_time(draw, snap["remaining"], (bx + 2, top, bw - 4, box_h), text_color)
 
-        if dot_h:
-            self._draw_session_dots(draw, 0, bottom + 1, width, dot_h, snap, accent,
+        if dot_h and dots_inline:
+            self._draw_session_dots(draw, bx, by + max(0, (label_h - dot_h) // 2),
+                                    bw - 1, dot_h, snap, accent, align="right")
+        elif dot_h:
+            self._draw_session_dots(draw, bx, bottom + 1, bw, dot_h, snap, accent,
                                     align="center")
 
-    def _render_wide(self, draw, width, height, snap, label, text_color, accent,
-                     bar_h, dot_h) -> None:
+    @staticmethod
+    def _dots_span(snap: Dict[str, Any], size: int) -> int:
+        total = max(1, int(snap["sessions_before_long_break"]))
+        return total * (size + 1) - 1
+
+    def _render_wide(self, draw, box, snap, label, text_color, accent, dot_h) -> None:
         """Side-by-side layout for very wide panels (e.g. 256x32)."""
-        left_w = max(40, int(width * 0.30))
-        usable_h = height - bar_h
-        label_h = (min(12, usable_h // 2) if (self.show_phase_label and label) else 0)
+        bx, by, bw, bh = box
+        left_w = max(40, int(bw * 0.30))
+        label_h = (min(12, bh // 2) if (self.show_phase_label and label) else 0)
 
         if label_h:
             label_font = self._fit_font(draw, label, left_w - 4, label_h)
-            self._draw_in_box(draw, label, label_font, (2, 1, left_w - 4, label_h),
+            self._draw_in_box(draw, label, label_font, (bx + 2, by + 1, left_w - 4, label_h),
                               accent, align="left")
         if dot_h:
-            dots_y = (label_h + 3) if label_h else max(1, (usable_h - dot_h) // 2)
-            dots_y = min(dots_y, max(0, usable_h - dot_h - 1))
-            self._draw_session_dots(draw, 2, dots_y, left_w - 4, dot_h, snap, accent,
+            dots_y = by + ((label_h + 3) if label_h else max(1, (bh - dot_h) // 2))
+            dots_y = min(dots_y, by + max(0, bh - dot_h - 1))
+            self._draw_session_dots(draw, bx + 2, dots_y, left_w - 4, dot_h, snap, accent,
                                     align="left")
 
-        time_text = snap["remaining"]
-        time_box = (left_w + 2, 0, width - left_w - 4, max(6, usable_h - 1))
-        time_font = self._fit_font(draw, time_text, time_box[2], time_box[3])
-        self._draw_in_box(draw, time_text, time_font, time_box, text_color)
+        self._draw_time(draw, snap["remaining"],
+                        (bx + left_w + 2, by, bw - left_w - 4, max(6, bh - 1)), text_color)
 
     def _draw_session_dots(self, draw, x: int, y: int, avail_w: int, size: int,
                            snap: Dict[str, Any], accent: Tuple[int, int, int],
@@ -932,19 +964,188 @@ class PomodoroTimerPlugin(BasePlugin):
         span = total * (size + gap) - gap
         if span > avail_w or size < 1:
             return
-        start = x if align == "left" else x + max(0, (avail_w - span) // 2)
+        if align == "left":
+            start = x
+        elif align == "right":
+            start = x + max(0, avail_w - span)
+        else:
+            start = x + max(0, (avail_w - span) // 2)
         dim = _dim(accent, 0.28)
         for index in range(total):
             left = start + index * (size + gap)
             draw.rectangle([left, y, left + size - 1, y + size - 1],
                            fill=accent if index < filled else dim)
 
-    def _draw_progress_bar(self, draw, x: int, y: int, width: int, height: int,
-                           fraction: float, accent: Tuple[int, int, int]) -> None:
-        draw.rectangle([x, y, x + width - 1, y + height - 1], fill=_dim(accent, 0.22))
-        filled = int(round(max(0.0, min(1.0, fraction)) * width))
-        if filled > 0:
-            draw.rectangle([x, y, x + filled - 1, y + height - 1], fill=accent)
+    # ── Countdown digits ────────────────────────────────────────────────────────
+
+    def _draw_time(self, draw, text: str, box: Tuple[int, int, int, int],
+                   color: Tuple[int, int, int]) -> None:
+        if self.digit_style == "seven_segment":
+            if self._draw_seven_segment(draw, text, box, color):
+                return
+            # Too little room for legible segments — fall back to the pixel font.
+        bx, by, bw, bh = box
+        font = self._fit_font(draw, text, bw, bh)
+        self._draw_in_box(draw, text, font, box, color)
+
+    def _seven_segment_metrics(self, text: str, bw: int, bh: int):
+        """Largest segment geometry for `text` that fits (bw, bh), or None.
+
+        Returns (digit_h, digit_w, stroke, gap, colon_w, total_w).
+        """
+        digits = sum(c.isdigit() for c in text)
+        colons = sum(c == ":" for c in text)
+        if not digits:
+            return None
+        for h in range(bh, 4, -1):
+            stroke = max(1, round(h * 0.15))
+            gap = max(1, round(h * 0.10))
+            colon_w = stroke
+            spare = bw - colons * colon_w - (digits + colons - 1) * gap
+            if spare <= 0:
+                continue
+            width_cap = spare // digits
+            # A digit narrower than two strokes plus a gap has no interior left,
+            # so the vertical segments would fuse into a solid block.
+            digit_w = min(round(h * 0.72), width_cap)
+            if digit_w < 2 * stroke + 1 or h < 3 * stroke + 2:
+                continue
+            # Keep the classic clock-radio proportion. Without this a tall,
+            # narrow box drives the digits to a sliver and a 0 stops reading as
+            # a digit at all — it becomes two stacked boxes. Falling through to
+            # a shorter h trades height for a shape that still reads.
+            if digit_w < round(h * 0.64):
+                continue
+            total = digits * digit_w + colons * colon_w + (digits + colons - 1) * gap
+            return h, digit_w, stroke, gap, colon_w, total
+        return None
+
+    def _draw_seven_segment(self, draw, text: str, box: Tuple[int, int, int, int],
+                            color: Tuple[int, int, int]) -> bool:
+        """Draw `text` as seven-segment digits. False if it cannot be done legibly."""
+        bx, by, bw, bh = box
+        metrics = self._seven_segment_metrics(text, bw, bh)
+        if metrics is None:
+            return False
+        h, digit_w, stroke, gap, colon_w, total = metrics
+
+        # Unlit segments stay faintly visible, the way the dark segments of a
+        # real LED clock are: it anchors the digits so they don't appear to
+        # jump around as the numbers change. At a one-pixel stroke there is no
+        # room for the effect to read as anything but noise, so it drops out.
+        ghost = (_dim(color, 0.17)
+                 if self.show_ghost_segments and stroke >= 2 else None)
+        x = bx + max(0, (bw - total) // 2)
+        y = by + max(0, (bh - h) // 2)
+
+        for index, char in enumerate(text):
+            if index:
+                x += gap
+            if char == ":":
+                dot = max(1, colon_w)
+                for cy in (y + h // 3 - dot // 2, y + 2 * h // 3 - dot // 2):
+                    draw.rectangle([x, cy, x + dot - 1, cy + dot - 1], fill=color)
+                x += colon_w
+                continue
+            if char.isdigit():
+                self._draw_digit(draw, char, x, y, digit_w, h, stroke, color, ghost)
+                x += digit_w
+        return True
+
+    # Lit segments per digit, labelled clockwise from the top bar plus the middle.
+    _SEGMENTS = {
+        "0": "abcdef", "1": "bc",     "2": "abdeg",  "3": "abcdg", "4": "bcfg",
+        "5": "acdfg",  "6": "acdefg", "7": "abc",    "8": "abcdefg", "9": "abcdfg",
+    }
+
+    @staticmethod
+    def _segment_boxes(x: int, y: int, w: int, h: int, t: int) -> Dict[str, Tuple]:
+        mid = y + (h - t) // 2
+        # Verticals stop at the middle bar so corners meet cleanly.
+        upper_h = mid - y + t
+        lower_h = (y + h) - mid
+        return {
+            "a": (x, y, w, t),
+            "b": (x + w - t, y, t, upper_h),
+            "c": (x + w - t, mid, t, lower_h),
+            "d": (x, y + h - t, w, t),
+            "e": (x, mid, t, lower_h),
+            "f": (x, y, t, upper_h),
+            "g": (x, mid, w, t),
+        }
+
+    def _draw_digit(self, draw, char: str, x: int, y: int, w: int, h: int, t: int,
+                    color: Tuple[int, int, int],
+                    ghost: Optional[Tuple[int, int, int]]) -> None:
+        lit = self._SEGMENTS.get(char, "")
+        boxes = self._segment_boxes(x, y, w, h, t)
+        for name, (sx, sy, sw, sh) in boxes.items():
+            on = name in lit
+            fill = color if on else ghost
+            if fill is None:
+                continue
+            draw.rectangle([sx, sy, sx + sw - 1, sy + sh - 1], fill=fill)
+
+    # ── Burndown indicator ──────────────────────────────────────────────────────
+
+    def _draw_perimeter(self, draw, width: int, height: int, remaining: float,
+                        accent: Tuple[int, int, int]) -> None:
+        """Trace the remaining time around the edge of the panel.
+
+        The whole border is lit at the start of a phase and drains clockwise
+        from the top-left, so the ring itself is the countdown. It costs no
+        interior space, which is what lets the digits be as large as they are.
+        """
+        path = []
+        path += [(x, 0) for x in range(width)]
+        path += [(width - 1, y) for y in range(1, height)]
+        path += [(x, height - 1) for x in range(width - 2, -1, -1)]
+        path += [(0, y) for y in range(height - 2, 0, -1)]
+        if not path:
+            return
+
+        track = _dim(accent, 0.14)
+        for point in path:
+            draw.point(point, fill=track)
+
+        lit = int(round(max(0.0, min(1.0, remaining)) * len(path)))
+        for point in path[:lit]:
+            draw.point(point, fill=accent)
+        if 0 < lit <= len(path):
+            # A brighter head makes the direction of travel readable, and gives
+            # the last minute of a phase something to watch.
+            draw.point(path[lit - 1], fill=_lighten(accent, 0.55))
+
+    def _draw_strip(self, draw, x: int, y: int, width: int, height: int,
+                    remaining: float, accent: Tuple[int, int, int]) -> None:
+        if self.progress_style == "segments":
+            self._draw_segments(draw, x, y, width, height, remaining, accent)
+            return
+        draw.rectangle([x, y, x + width - 1, y + height - 1], fill=_dim(accent, 0.18))
+        lit = int(round(max(0.0, min(1.0, remaining)) * width))
+        if lit <= 0:
+            return
+        draw.rectangle([x, y, x + lit - 1, y + height - 1], fill=accent)
+        draw.rectangle([x + lit - 1, y, x + lit - 1, y + height - 1],
+                       fill=_lighten(accent, 0.55))
+
+    def _draw_segments(self, draw, x: int, y: int, width: int, height: int,
+                       remaining: float, accent: Tuple[int, int, int]) -> None:
+        """A row of discrete blocks that go out one by one, like a fuel gauge."""
+        count = max(4, min(32, width // 8))
+        gap = 1
+        block = (width - (count - 1) * gap) // count
+        if block < 1:
+            self.progress_style = "bar"
+            return
+        span = count * block + (count - 1) * gap
+        start = x + max(0, (width - span) // 2)
+        lit = int(round(max(0.0, min(1.0, remaining)) * count))
+        dark = _dim(accent, 0.18)
+        for index in range(count):
+            left = start + index * (block + gap)
+            draw.rectangle([left, y, left + block - 1, y + height - 1],
+                           fill=accent if index < lit else dark)
 
     # ── Display pinning ─────────────────────────────────────────────────────────
 

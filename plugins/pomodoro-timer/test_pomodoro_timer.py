@@ -311,6 +311,72 @@ def test_display_renders_every_panel_size():
         assert p.display_manager.image.getbbox() is not None, "rendered a blank frame"
 
 
+def _ring_path(width, height):
+    return ([(x, 0) for x in range(width)]
+            + [(width - 1, y) for y in range(1, height)]
+            + [(x, height - 1) for x in range(width - 2, -1, -1)]
+            + [(0, y) for y in range(height - 2, 0, -1)])
+
+
+def _lit_ring_fraction(plugin):
+    width, height = plugin.display_manager.image.size
+    pixels = plugin.display_manager.image.convert("RGB").load()
+    path = _ring_path(width, height)
+    lit = sum(1 for point in path if sum(pixels[point]) > 200)
+    return lit / len(path)
+
+
+def test_burndown_ring_drains_with_the_phase():
+    for elapsed in (0.0, 0.25, 0.5, 0.75):
+        p = make_plugin(128, 32, progress_style="perimeter")
+        p._apply_command("START", {})
+        with p.state_lock:
+            p.deadline -= p.phase_total * elapsed
+        p.display()
+        got = _lit_ring_fraction(p)
+        assert abs(got - (1 - elapsed)) < 0.02, \
+            f"{elapsed:.0%} elapsed should leave {1 - elapsed:.0%} of the ring lit, got {got:.0%}"
+
+
+def test_seven_segment_digits_keep_a_readable_shape():
+    """A digit that gets too narrow for its height stops reading as a digit."""
+    for width, height in ((64, 32), (128, 32), (128, 64), (256, 32)):
+        p = make_plugin(width, height)
+        for text in ("25:00", "05:00", "180:00"):
+            metrics = p._seven_segment_metrics(text, width - 6, height - 10)
+            if metrics is None:
+                continue
+            h, digit_w, stroke, gap, colon_w, total = metrics
+            assert digit_w >= round(h * 0.64), f"{width}x{height} {text}: digit too narrow"
+            assert digit_w >= 2 * stroke + 1, f"{width}x{height} {text}: segments would fuse"
+            assert total <= width - 6, f"{width}x{height} {text}: digits overrun the box"
+
+
+def test_seven_segment_gives_up_when_there_is_no_room():
+    p = make_plugin()
+    assert p._seven_segment_metrics("25:00", 10, 4) is None
+    # ...and display() still renders, having fallen back to the pixel font.
+    tiny = make_plugin(64, 16)
+    tiny._apply_command("START", {})
+    assert tiny.display() is True
+    assert tiny.display_manager.image.getbbox() is not None
+
+
+def test_every_indicator_and_digit_style_renders():
+    for style in ("perimeter", "bar", "segments", "none"):
+        for digits in ("seven_segment", "pixel"):
+            p = make_plugin(128, 32, progress_style=style, digit_style=digits)
+            p._apply_command("START", {})
+            assert p.display() is True, f"{style}/{digits} failed to render"
+            assert p.display_manager.image.getbbox() is not None
+
+
+def test_unknown_styles_fall_back_to_the_defaults():
+    p = make_plugin(progress_style="disco", digit_style="gothic")
+    assert p.progress_style == "perimeter"
+    assert p.digit_style == "seven_segment"
+
+
 def test_discovery_payloads_are_valid_json_and_unique():
     p = make_plugin()
     entities = p._discovery_entities()

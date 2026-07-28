@@ -57,17 +57,30 @@ normal rotation when the timer goes idle.
 ## What's On Screen
 
 ```text
-┌──────────────────────────────┐
-│           FOCUS              │  ← phase label (or PAUSED)
-│          17:42               │  ← countdown, colored by phase
-│           ●●○○               │  ← one dot per session in the set
-│ ▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░ │  ← progress through the current phase
-└──────────────────────────────┘
+▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▔▔▔▔▔▔▔▔   ← burndown ring: lit = time left in the phase
+▏      FOCUS          ●●○○    ▕   ← phase label, and one dot per session in the set
+▏   ┌─┐ ┌─┐ ┌─┐ ┌─┐           ▕
+▏   │17│:│42│                 ▕   ← countdown in seven-segment digits
+▏   └─┘ └─┘                   ▕
+▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 ```
+
+The countdown is drawn as **seven-segment digits**, sized to whatever space the
+panel has left rather than picked from a font. The unlit segments stay faintly
+visible, the way the dark segments of a real LED clock do, which keeps the digits
+from appearing to jump around as the numbers change.
+
+The **burndown ring** is the default indicator: the whole border is lit when a
+phase starts and drains clockwise from the top-left, with a brighter head pixel
+leading the way. It costs no interior space, which is what lets the digits be as
+large as they are. If you'd rather have the border back, `bar` and `segments` put
+the indicator along the bottom edge instead, and `none` hides it.
 
 Each element can be turned off, and each color can be changed. The layout adapts
 to the panel: stacked on 64×32, 128×32, and 128×64; label and dots beside a large
-countdown on long panels like 256×32.
+countdown on long panels like 256×32. On short panels the session dots tuck in
+beside the label rather than taking a row of their own, so the digits get the
+height instead.
 
 | Phase | Default color |
 |---|---|
@@ -143,9 +156,11 @@ durations you configured.
 | **Idle / Paused Color** | grey / amber | Used when nothing is running and when paused. |
 | **Countdown Text Color** | white | Only used when Countdown Color is `fixed`. |
 | **Background Color** | black | Panel background. |
+| **Countdown Digits** | `seven_segment` | `seven_segment` draws clock-radio style segments sized to the panel. `pixel` uses the display's pixel font. |
+| **Show Unlit Segments** | `true` | Keep the unlit segments faintly visible, like a real LED clock. Turn off for digits on pure black. Ignored when the stroke is only one pixel wide, where the effect would just be noise. |
+| **Burndown Indicator** | `perimeter` | `perimeter` drains a ring around the edge of the panel; `bar` empties a bar along the bottom; `segments` puts out a row of blocks one at a time; `none` hides it. |
 | **Show Phase Label** | `true` | The phase name above the countdown. |
 | **Show Session Dots** | `true` | One dot per session in the set, filled as you complete them. |
-| **Show Progress Bar** | `true` | Bar along the bottom that fills as the phase elapses. |
 | **Work / Short Break / Long Break / Idle / Paused Label** | `FOCUS` / `BREAK` / `LONG BREAK` / `POMODORO` / `PAUSED` | The on-screen text for each state. Blank the Paused Label to keep showing the phase name while paused. |
 | **Font** | *(blank)* | Path to a TTF relative to the LEDMatrix root, e.g. `assets/fonts/PressStart2P-Regular.ttf`. Blank uses the display's default font. |
 | **Font Size (px)** | `0` | Fix the countdown height in pixels. `0` sizes it automatically to the panel. |
@@ -419,7 +434,8 @@ python plugins/pomodoro-timer/test_pomodoro_timer.py
 | Log says `MQTT connect error` and retries | Wrong host or port, or the broker isn't reachable from the Pi. The plugin retries with backoff, so fixing the config is enough. |
 | The timer never appears on the matrix | Check the plugin is enabled and, if **Hold the Display While Running** is off, that it has a turn in your display rotation. |
 | The timer takes over and won't give the panel back | That's **Hold the Display While Running**. Turn it off to keep the timer in the normal rotation, or send `STOP`. |
-| The countdown looks tiny on a big panel | Set **Font Size (px)** to `0` so it auto-sizes, or raise it for a fixed size. |
+| The countdown looks tiny on a big panel | The seven-segment digits are sized to the space left after the label and dots. Turning off **Show Phase Label**, or switching **Burndown Indicator** to `perimeter`, frees the most room. **Font Size (px)** applies to the `pixel` digit style only. |
+| The digits look squashed or the zeros read as two stacked boxes | The digits refuse to go below a readable width-to-height ratio and step down in size instead, so this should not happen — if it does on your panel shape, please open an issue with the dimensions. |
 | Text is cut off | Shorten the phase labels — long labels are truncated to fit rather than drawn past the panel edge. |
 | Durations changed in HA revert after a restart | Number-box changes are runtime-only by design. Set them in the plugin's web UI config to make them permanent. |
 | The session count reset itself | `RESET` zeroes it (that's the difference between `STOP` and `RESET`), and so does a long break for the on-screen dots. |

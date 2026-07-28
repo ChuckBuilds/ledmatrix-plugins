@@ -1,7 +1,7 @@
 {
   "id": "pomodoro-timer",
   "name": "Pomodoro Timer",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "author": "ChuckBuilds",
   "description": "A configurable Pomodoro focus/break timer for your matrix. Set the work and break lengths, then start, pause, skip, or reset it over MQTT — with Home Assistant auto-discovery so the whole timer shows up as a device with no YAML.",
   "entry_point": "manager.py",
@@ -22,6 +22,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "released": "2026-07-28",
+      "version": "1.1.0",
+      "notes": "Redrawn display. The countdown is now rendered as geometric seven-segment digits sized to the panel rather than set in a pixel font, with faintly-lit unlit segments the way a real LED clock shows them; digit_style: pixel keeps the old look. New burndown indicator styles replace the fill-up progress bar: perimeter (default) drains a ring around the edge of the panel with a brighter leading pixel and costs no interior space, bar and segments sit along the bottom edge, none hides it. On panels under 40px tall the session dots tuck in beside the phase label instead of taking their own row, giving the digits that height. Config: show_progress_bar is replaced by progress_style; adds digit_style and show_ghost_segments.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-07-28",
       "version": "1.0.1",
