@@ -976,9 +976,12 @@ class F1Renderer:
                                  self.fonts["position"], fill=pos_color)
         pos_w = self._tw(draw, pos_label, self.fonts["position"])
 
+        # Name is bounded by the team logo on the right (a different row from the
+        # header date, so no header_date_reserve here); the gap/status drawn after
+        # it has its own overlap checks below.
         code_x = x + pos_w + 4
         code_trunc = self._fit_driver_name(draw, result, self.fonts["position"],
-                                           logo_left - code_x - self.header_date_reserve)
+                                           logo_left - code_x)
         self._draw_text_outlined(draw, (code_x, content_y), code_trunc,
                                  self.fonts["position"], fill=tc_bright)
 
