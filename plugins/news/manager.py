@@ -250,6 +250,25 @@ class NewsTickerPlugin(BasePlugin):
         else:
             self.logger.info("Headline paging disabled - all headlines share one scroll cycle")
 
+    @staticmethod
+    def _pixel_draw(image: Image.Image) -> ImageDraw.ImageDraw:
+        """
+        Build an ImageDraw that renders text crisply on the LED grid.
+
+        PIL anti-aliases by default, which blends glyph edges into dim
+        partial-lit pixels. On a 1:1 LED matrix those half-lit pixels read as
+        blur rather than as smoothing, and at the plugin's default font_size of
+        12 a headline picks up ~150 of them. ``fontmode = "1"`` switches
+        FreeType to 1-bit rendering so every pixel is fully on or fully off.
+
+        Every draw surface in this plugin -- including the throwaway ones used
+        only to measure text -- goes through here, so measurement and rendering
+        can never disagree about glyph metrics.
+        """
+        draw = ImageDraw.Draw(image)
+        draw.fontmode = "1"
+        return draw
+
     def _load_fonts(self) -> Dict[str, ImageFont.FreeTypeFont]:
         """Load fonts for the news ticker display."""
         fonts = {}
@@ -1181,7 +1200,7 @@ class NewsTickerPlugin(BasePlugin):
             feed_name = headline.get('feed_name', 'Unknown')
 
             # Calculate text dimensions
-            draw_temp = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+            draw_temp = self._pixel_draw(Image.new('RGB', (1, 1)))
             
             # Get text dimensions for title
             title_bbox = draw_temp.textbbox((0, 0), title, font=self.fonts['headline'])
@@ -1241,7 +1260,7 @@ class NewsTickerPlugin(BasePlugin):
 
             # Create image for this headline
             headline_img = Image.new('RGB', (total_width, total_height), (0, 0, 0))
-            draw = ImageDraw.Draw(headline_img)
+            draw = self._pixel_draw(headline_img)
 
             # Draw components
             current_x = 0
@@ -1279,7 +1298,7 @@ class NewsTickerPlugin(BasePlugin):
     def _display_no_headlines(self):
         """Display message when no headlines are available."""
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
-        draw = ImageDraw.Draw(img)
+        draw = self._pixel_draw(img)
 
         # Determine the reason for no headlines
         enabled_feeds = self.feeds_config.get('enabled_feeds', [])
@@ -1324,7 +1343,7 @@ class NewsTickerPlugin(BasePlugin):
     def _display_error(self, message: str):
         """Display error message."""
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
-        draw = ImageDraw.Draw(img)
+        draw = self._pixel_draw(img)
         draw.text((5, 12), message, font=self.fonts.get('headline', ImageFont.load_default()), fill=(255, 0, 0))
 
         self.display_manager.image = img

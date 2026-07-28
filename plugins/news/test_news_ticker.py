@@ -1,9 +1,10 @@
 """
-Tests for news ticker headline paging and dynamic-duration hooks.
+Tests for the news ticker: headline paging, dynamic-duration hooks, and
+pixel-perfect text rendering.
 
 Run from a LEDMatrix (core) checkout with this plugin directory importable:
 
-    PYTHONPATH=/path/to/LEDMatrix python -m pytest plugins/news/test_headline_paging.py
+    PYTHONPATH=/path/to/LEDMatrix python -m pytest plugins/news/test_news_ticker.py
 """
 
 import os
@@ -12,8 +13,8 @@ import types
 
 import pytest
 
-PIL = pytest.importorskip("PIL")
-from PIL import Image  # noqa: E402
+pytest.importorskip("PIL")
+from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -62,6 +63,51 @@ class FakePluginManager:
             load_config=lambda: payload,
             save_config=lambda _cfg: None,
         )
+
+
+def find_pixel_font():
+    """Locate PressStart2P-Regular.ttf in a core checkout, if one is reachable.
+
+    Only a real pixel font exercises anti-aliasing: PIL's built-in fallback is
+    an unscalable bitmap that never produces partial-lit pixels, so a test run
+    against it would pass no matter what fontmode was set to.
+    """
+    name = "PressStart2P-Regular.ttf"
+    candidates = []
+    directory = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        candidates.append(os.path.join(directory, "assets", "fonts", name))
+        directory = os.path.dirname(directory)
+    candidates.append(os.path.join(os.getcwd(), "assets", "fonts", name))
+    for module in list(sys.modules.values()):
+        core = getattr(module, "__file__", None)
+        if core and core.endswith("src/common/scroll_helper.py"):
+            root = os.path.dirname(os.path.dirname(os.path.dirname(core)))
+            candidates.append(os.path.join(root, "assets", "fonts", name))
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def count_blended(image, allowed):
+    """Number of pixels that are neither background nor an exact fill colour.
+
+    Anything else is a blend of the two, which is precisely what anti-aliasing
+    produces. Checking against the exact fill set rather than "is it fully lit"
+    matters here because the plugin legitimately draws in dim colours -- the
+    grey feed label at 150 and the fallback message at 220 are intentional, not
+    blur, and a brightness threshold would flag them.
+    """
+    rgb = image.convert("RGB")
+    pixels = rgb.load()
+    allowed = set(allowed) | {(0, 0, 0)}
+    return sum(
+        1
+        for y in range(rgb.height)
+        for x in range(rgb.width)
+        if pixels[x, y] not in allowed
+    )
 
 
 def make_plugin(config=None, width=128, core_cap=1000):
@@ -262,6 +308,56 @@ def test_parked_page_rolls_over_when_the_controller_never_resets():
     assert plugin._cycle_complete is False
     assert plugin._page_start == (first_start + 2) % 10
     assert plugin.scroll_helper.cached_image is not None, "no blank frame on the swap"
+
+
+def test_every_draw_surface_disables_anti_aliasing():
+    """Measurement surfaces too -- metrics must match what actually renders."""
+    draw = NewsTickerPlugin._pixel_draw(Image.new("RGB", (8, 8)))
+    assert draw.fontmode == "1"
+
+
+def test_headlines_render_with_no_anti_aliased_pixels():
+    """The real defect: PIL's default anti-aliasing blurs glyphs on the LED grid.
+
+    Font size 12 (this plugin's default) does not land on Press Start 2P's 8px
+    design grid, so with anti-aliasing on FreeType blends glyph edges into dim
+    partial-lit pixels. Those read as blur on a 1:1 matrix, not as smoothing.
+    """
+    font_path = find_pixel_font()
+    if not font_path:
+        pytest.skip("PressStart2P-Regular.ttf not reachable from this checkout")
+
+    plugin = make_plugin({"global": {"font_path": font_path, "font_size": 12}})
+    assert isinstance(plugin.fonts["headline"], ImageFont.FreeTypeFont), \
+        "test must run against the real pixel font, not PIL's bitmap fallback"
+
+    title = "Chiefs beat Bills 27-24 in overtime thriller"
+    image = plugin._render_headline({"feed_name": "NFL", "title": title})
+    assert image is not None
+
+    # The three fills _render_headline uses: grey feed label, headline, separator.
+    fills = [(150, 150, 150), plugin.text_color, plugin.separator_color]
+    assert count_blended(image, fills) == 0
+
+    # Guard the guard: the same text anti-aliases heavily without the fix, so a
+    # zero count above is meaningful rather than vacuous.
+    naive = Image.new("RGB", (image.width, image.height))
+    ImageDraw.Draw(naive).text(
+        (0, 0), title, font=plugin.fonts["headline"], fill=(255, 255, 255)
+    )
+    assert count_blended(naive, [(255, 255, 255)]) > 0, \
+        "font/size chosen must actually anti-alias, or this test proves nothing"
+
+
+def test_fallback_screens_render_crisp():
+    font_path = find_pixel_font()
+    if not font_path:
+        pytest.skip("PressStart2P-Regular.ttf not reachable from this checkout")
+
+    plugin = make_plugin({"global": {"font_path": font_path, "font_size": 12}})
+    plugin.current_headlines = []
+    plugin._display_no_headlines()
+    assert count_blended(plugin.display_manager.image, [(220, 220, 220)]) == 0
 
 
 def test_refresh_keeps_the_page_position():

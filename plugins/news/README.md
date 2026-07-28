@@ -20,6 +20,7 @@ A plugin for LEDMatrix that displays scrolling news headlines from RSS feeds inc
 - **Multiple RSS Sources**: ESPN sports feeds, NCAA updates, and custom RSS URLs
 - **Scrolling Headlines**: Continuous scrolling ticker display
 - **Headline Paging**: Each turn shows as many headlines as can finish scrolling, then the next turn picks up where the last one stopped — headlines aren't cut off part-way through, and the tail of a long feed list still reaches the panel
+- **Pixel-Perfect Text**: Glyphs render 1-bit with anti-aliasing off, so every pixel is fully lit or fully off — no blurred edges on the LED grid
 - **News Source Logos**: Display logos for news sources (ESPN, NFL Network, MLB Network, etc.)
 - **Headline Rotation**: Cycle through headlines after multiple viewings
 - **Custom Feeds**: Add your own RSS feed URLs
@@ -198,6 +199,23 @@ The news ticker displays information in a scrolling format showing:
 - **Headline**: Full news headline text, never abbreviated
 - **Separator**: Visual separator between headlines (shown when there's no logo)
 
+## Pixel-Perfect Text
+
+All text is drawn with anti-aliasing disabled (`fontmode = "1"`), so every
+pixel is either fully lit or fully off. PIL anti-aliases by default, which
+blends glyph edges into dim partial-lit pixels — on a 1:1 LED matrix those read
+as blur rather than as smoothing.
+
+This matters most at font sizes that don't land on the font's design grid. Press
+Start 2P is drawn on an 8px grid: at size 8 or 16 it happens to align and stays
+crisp either way, but at the default size of 12 a single headline picks up
+roughly 150 blended pixels with anti-aliasing left on. Sizes on the grid (8, 16,
+24) also give the most even stroke widths, so they're worth preferring if you
+want the sharpest possible result.
+
+Nothing to configure — it applies to headlines, feed labels, separators and the
+fallback screens alike.
+
 ## Headline Paging
 
 Headlines are never shortened, so a full set of feeds can easily produce a strip
@@ -285,6 +303,9 @@ This plugin requires the main LEDMatrix installation and uses the cache manager 
 - **RSS parsing errors**: Verify feed URLs are valid and return proper XML
 - **Slow scrolling**: Adjust scroll speed and delay settings
 - **Network errors**: Check your internet connection and RSS server availability
+- **Blurry or muddy text**: Text is rendered 1-bit, so blur usually means the
+  font size sits off the font's design grid and stroke widths are uneven. Try a
+  multiple of 8 for Press Start 2P (`global.font_size`: 8, 16 or 24).
 - **Headlines still cut off mid-word**: The scroll is running behind its nominal
   speed. Raise `global.headline_paging.duration_overrun_allowance`, or lower
   `global.display.scroll_speed` so less content is packed into each turn.
@@ -298,6 +319,7 @@ This plugin requires the main LEDMatrix installation and uses the cache manager 
 
 ## Advanced Features
 
+- **Pixel-Perfect Text**: 1-bit glyph rendering with anti-aliasing disabled, so nothing renders half-lit
 - **Headline Paging**: Sizes each turn to what can actually finish scrolling, then resumes where it left off
 - **Headline Rotation**: Legacy fallback that rotates headlines after multiple cycles when paging is disabled
 - **Dynamic Duration**: Holds the display until the strip has scrolled to the end, rather than cutting at a fixed time

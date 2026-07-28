@@ -1,7 +1,7 @@
 {
   "id": "news",
   "name": "News Ticker",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
   "author": "ChuckBuilds",
   "category": "content",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/news",
   "versions": [
+    {
+      "version": "1.2.0",
+      "released": "2026-07-28",
+      "notes": "Pixel-perfect text. Every draw surface now sets fontmode = \"1\" so glyphs render 1-bit instead of anti-aliased. PIL anti-aliases by default, blending glyph edges into dim partial-lit pixels that read as blur on a 1:1 LED matrix; at the default font_size of 12 -- which does not land on Press Start 2P's 8px design grid -- a single headline picked up around 150 of them. Applies to headlines, feed labels, separators and the fallback screens, and to the throwaway surfaces used to measure text, so metrics can never disagree with what renders. Matches the convention already used by ledmatrix-flights and the sports scoreboards.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "version": "1.1.0",
       "released": "2026-07-28",
