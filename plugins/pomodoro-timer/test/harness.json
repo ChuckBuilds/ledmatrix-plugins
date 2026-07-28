@@ -8,13 +8,21 @@
     "mqtt_enabled": false,
     "auto_start_on_enable": false,
     "color_mode": "phase",
-    "idle_color": [110, 110, 110],
-    "background_color": [0, 0, 0],
+    "idle_color": [
+      110,
+      110,
+      110
+    ],
+    "background_color": [
+      0,
+      0,
+      0
+    ],
     "idle_label": "POMODORO",
     "show_phase_label": true,
     "show_session_dots": true,
     "digit_style": "seven_segment",
-    "show_ghost_segments": true,
+    "show_ghost_segments": false,
     "progress_style": "perimeter",
     "font_path": "",
     "font_size": 0

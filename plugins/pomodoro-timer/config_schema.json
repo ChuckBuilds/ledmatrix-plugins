@@ -423,9 +423,9 @@
     },
     "show_ghost_segments": {
       "type": "boolean",
-      "default": true,
+      "default": false,
       "title": "Show Unlit Segments",
-      "description": "Keep the unlit segments faintly visible, the way a real LED clock shows its dark segments. Turn off for digits on pure black.",
+      "description": "Show the unlit segments faintly, the way a real LED clock shows its dark segments. It looks authentic but costs legibility — every digit gains a faint 8 behind it — so it is off by default. Ignored when the stroke is only one pixel wide.",
       "x-advanced": true
     },
     "progress_style": {

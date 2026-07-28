@@ -66,9 +66,14 @@ normal rotation when the timer goes idle.
 ```
 
 The countdown is drawn as **seven-segment digits**, sized to whatever space the
-panel has left rather than picked from a font. The unlit segments stay faintly
-visible, the way the dark segments of a real LED clock do, which keeps the digits
-from appearing to jump around as the numbers change.
+panel has left rather than picked from a font, with a heavy stroke so it stays
+readable from across a room. The phase label is held back a little so the eye
+lands on the time first.
+
+If you want the full clock-radio look, **Show Unlit Segments** faintly lights the
+dark segments the way real hardware does. It's off by default because it costs
+real legibility — every digit gains a faint `8` behind it, and a `15` starts to
+read as an `85`.
 
 The **burndown ring** is the default indicator: the whole border is lit when a
 phase starts and drains clockwise from the top-left, with a brighter head pixel
@@ -157,7 +162,7 @@ durations you configured.
 | **Countdown Text Color** | white | Only used when Countdown Color is `fixed`. |
 | **Background Color** | black | Panel background. |
 | **Countdown Digits** | `seven_segment` | `seven_segment` draws clock-radio style segments sized to the panel. `pixel` uses the display's pixel font. |
-| **Show Unlit Segments** | `true` | Keep the unlit segments faintly visible, like a real LED clock. Turn off for digits on pure black. Ignored when the stroke is only one pixel wide, where the effect would just be noise. |
+| **Show Unlit Segments** | `false` | Faintly light the unlit segments, like a real LED clock. Authentic, but it costs legibility — every digit gains a faint `8` behind it. Ignored when the stroke is only one pixel wide, where the effect would just be noise. |
 | **Burndown Indicator** | `perimeter` | `perimeter` drains a ring around the edge of the panel; `bar` empties a bar along the bottom; `segments` puts out a row of blocks one at a time; `none` hides it. |
 | **Show Phase Label** | `true` | The phase name above the countdown. |
 | **Show Session Dots** | `true` | One dot per session in the set, filled as you complete them. |

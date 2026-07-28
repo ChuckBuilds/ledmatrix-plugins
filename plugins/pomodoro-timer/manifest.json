@@ -1,7 +1,7 @@
 {
   "id": "pomodoro-timer",
   "name": "Pomodoro Timer",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "author": "ChuckBuilds",
   "description": "A configurable Pomodoro focus/break timer for your matrix. Set the work and break lengths, then start, pause, skip, or reset it over MQTT — with Home Assistant auto-discovery so the whole timer shows up as a device with no YAML.",
   "entry_point": "manager.py",
@@ -22,6 +22,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "released": "2026-07-28",
+      "version": "1.2.0",
+      "notes": "Legibility pass on the countdown. The unlit 'ghost' segments are now off by default: they look authentic but put a faint 8 behind every digit, so a 15 read as an 85 at a glance. The segment stroke is heavier and the digits are allowed to spend spare panel width, since height is usually the binding constraint and longer horizontal segments read further away. The phase label is drawn at 70% brightness so the eye lands on the time first. A 1 is centred in its cell rather than hanging off the right, which evens out the spacing of times like 11:11 without changing cell widths, so the digits never jitter as the time changes; with the ghost layer enabled it stays right-hung, which is what real hardware looks like.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-07-28",
       "version": "1.1.1",

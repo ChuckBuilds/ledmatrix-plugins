@@ -204,7 +204,7 @@ class PomodoroTimerPlugin(BasePlugin):
         self.digit_style = str(config.get("digit_style", "seven_segment"))
         if self.digit_style not in ("seven_segment", "pixel"):
             self.digit_style = "seven_segment"
-        self.show_ghost_segments = bool(config.get("show_ghost_segments", True))
+        self.show_ghost_segments = bool(config.get("show_ghost_segments", False))
         self.progress_style = str(config.get("progress_style", "perimeter"))
         if self.progress_style not in ("perimeter", "bar", "segments", "none"):
             self.progress_style = "perimeter"
@@ -914,6 +914,10 @@ class PomodoroTimerPlugin(BasePlugin):
 
         label = snap["label"]
         remaining = max(0.0, 1.0 - snap["elapsed_fraction"])
+        # Hold the label back so the eye lands on the countdown first. It is
+        # still plainly the phase colour, just not competing at full brightness.
+        # During the alert flash everything is already inverted, so leave it.
+        label_color = accent if snap["alerting"] else _dim(accent, 0.7)
 
         # The perimeter ring lives on the outermost pixels, so the content
         # box steps in to clear it. Every other style sits below the content.
@@ -924,9 +928,11 @@ class PomodoroTimerPlugin(BasePlugin):
 
         box = (inset, inset, width - 2 * inset, height - 2 * inset - strip_h)
         if width >= 192 and height <= 48:
-            self._render_wide(draw, box, snap, label, text_color, accent, dot_h)
+            self._render_wide(draw, box, snap, label, text_color, accent,
+                              label_color, dot_h)
         else:
-            self._render_stacked(draw, box, snap, label, text_color, accent, dot_h)
+            self._render_stacked(draw, box, snap, label, text_color, accent,
+                                 label_color, dot_h)
 
         if ring:
             self._draw_perimeter(draw, width, height, remaining, accent)
@@ -942,7 +948,8 @@ class PomodoroTimerPlugin(BasePlugin):
     def _dot_size(height: int) -> int:
         return 4 if height >= 64 else 3
 
-    def _render_stacked(self, draw, box, snap, label, text_color, accent, dot_h) -> None:
+    def _render_stacked(self, draw, box, snap, label, text_color, accent,
+                        label_color, dot_h) -> None:
         """Label above the countdown, for panels that are not extremely wide."""
         bx, by, bw, bh = box
         label_h = (10 if bh >= 54 else 7) if (self.show_phase_label and label) else 0
@@ -962,7 +969,8 @@ class PomodoroTimerPlugin(BasePlugin):
         box_h = max(6, bottom - top)
 
         if label_h:
-            self._draw_in_box(draw, label, label_font, (bx + 1, by, bw - 2, label_h), accent)
+            self._draw_in_box(draw, label, label_font, (bx + 1, by, bw - 2, label_h),
+                              label_color)
 
         self._draw_time(draw, snap["remaining"], (bx + 2, top, bw - 4, box_h), text_color)
 
@@ -978,7 +986,8 @@ class PomodoroTimerPlugin(BasePlugin):
         total = max(1, int(snap["sessions_before_long_break"]))
         return total * (size + 1) - 1
 
-    def _render_wide(self, draw, box, snap, label, text_color, accent, dot_h) -> None:
+    def _render_wide(self, draw, box, snap, label, text_color, accent,
+                     label_color, dot_h) -> None:
         """Side-by-side layout for very wide panels (e.g. 256x32)."""
         bx, by, bw, bh = box
         left_w = max(40, int(bw * 0.30))
@@ -987,7 +996,7 @@ class PomodoroTimerPlugin(BasePlugin):
         if label_h:
             label_font = self._fit_font(draw, label, left_w - 4, label_h)
             self._draw_in_box(draw, label, label_font, (bx + 2, by + 1, left_w - 4, label_h),
-                              accent, align="left")
+                              label_color, align="left")
         if dot_h:
             dots_y = by + ((label_h + 3) if label_h else max(1, (bh - dot_h) // 2))
             dots_y = min(dots_y, by + max(0, bh - dot_h - 1))
@@ -1042,7 +1051,9 @@ class PomodoroTimerPlugin(BasePlugin):
         if not digits:
             return None
         for h in range(bh, 4, -1):
-            stroke = max(1, round(h * 0.15))
+            # A heavier stroke puts more lit pixels on the panel, which is what
+            # legibility comes down to at a distance.
+            stroke = max(1, round(h * 0.17))
             gap = max(1, round(h * 0.10))
             colon_w = stroke
             spare = bw - colons * colon_w - (digits + colons - 1) * gap
@@ -1050,8 +1061,10 @@ class PomodoroTimerPlugin(BasePlugin):
                 continue
             width_cap = spare // digits
             # A digit narrower than two strokes plus a gap has no interior left,
-            # so the vertical segments would fuse into a solid block.
-            digit_w = min(round(h * 0.72), width_cap)
+            # so the vertical segments would fuse into a solid block. The height
+            # is usually the binding constraint, so spend spare width on wider
+            # digits — longer horizontal segments read further away.
+            digit_w = min(round(h * 0.78), width_cap)
             if digit_w < 2 * stroke + 1 or h < 3 * stroke + 2:
                 continue
             # Keep the classic clock-radio proportion. Without this a tall,
@@ -1125,12 +1138,23 @@ class PomodoroTimerPlugin(BasePlugin):
         """Draw one seven-segment digit, lit segments over the ghost layer."""
         lit = self._SEGMENTS.get(char, "")
         boxes = self._segment_boxes(x, y, w, h, t)
-        for name, (sx, sy, sw, sh) in boxes.items():
-            on = name in lit
-            fill = color if on else ghost
-            if fill is None:
-                continue
-            draw.rectangle([sx, sy, sx + sw - 1, sy + sh - 1], fill=fill)
+
+        if ghost is not None:
+            for name, (sx, sy, sw, sh) in boxes.items():
+                if name not in lit:
+                    draw.rectangle([sx, sy, sx + sw - 1, sy + sh - 1], fill=ghost)
+        elif char == "1":
+            # A 1 lights only the right-hand verticals, so it hangs off the edge
+            # of its cell and opens a ragged gap before the next digit — "11:11"
+            # reads as four scattered bars. Centring it in the cell evens the
+            # spacing without changing cell widths, so digits never jitter as the
+            # time changes. With the ghost layer on, the unlit 8 already anchors
+            # the cell and a right-hung 1 is what real hardware looks like.
+            boxes = self._segment_boxes(x + (w - t) // 2, y, t, h, t)
+
+        for name in lit:
+            sx, sy, sw, sh = boxes[name]
+            draw.rectangle([sx, sy, sx + sw - 1, sy + sh - 1], fill=color)
 
     # ── Burndown indicator ──────────────────────────────────────────────────────
 
