@@ -267,7 +267,7 @@ class IncomingPackagesPlugin(BasePlugin):
             (self.config.get("ha_base_url") or "").strip().rstrip("/"),
             (self.config.get("entity_prefix") or "").strip(),
         ))
-        fp = hashlib.sha1(fp_src.encode("utf-8")).hexdigest()[:10]
+        fp = hashlib.sha256(fp_src.encode("utf-8")).hexdigest()[:10]
         return f"{self.plugin_id}:snapshot:{fp}"
 
     def _load_cached_snapshot(self) -> Optional[Snapshot]:
