@@ -108,13 +108,31 @@ class _PluginManager:
     config_manager = None
 
 
+_MISSING = object()
+_STUBBED_MODULES = ("src", "src.plugin_system", "src.plugin_system.base_plugin")
+
+
 def _load_module():
-    _install_core_stub()
-    spec = importlib.util.spec_from_file_location(
-        "pomodoro_timer_manager", PLUGIN_DIR / "manager.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    """Import manager.py against the stubbed core, then put sys.modules back.
+
+    `manager.py` binds BasePlugin at class-creation time, so the stub only has
+    to be in place for the exec. Restoring afterwards keeps our fake `src` from
+    shadowing the real core for any other plugin's tests in the same session.
+    """
+    originals = {name: sys.modules.get(name, _MISSING) for name in _STUBBED_MODULES}
+    try:
+        _install_core_stub()
+        spec = importlib.util.spec_from_file_location(
+            "pomodoro_timer_manager", PLUGIN_DIR / "manager.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        for name, original in originals.items():
+            if original is _MISSING:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = original
 
 
 MODULE = _load_module()
@@ -378,6 +396,103 @@ def test_a_failed_connection_does_not_look_connected():
     p._on_mqtt_connect(client, None, {}, 5)   # 5 = not authorised
     assert p.mqtt_connected is False
     assert client.subscriptions == []
+
+
+def test_start_on_a_running_timer_emits_no_event():
+    p = make_plugin()
+    client = _wire_client(p)
+    p._apply_command("START", {})
+    before = [t for t, _ in client.published if t == p.event_topic]
+
+    p._apply_command("START", {})   # e.g. the HA Start button pressed again
+    after = [t for t, _ in client.published if t == p.event_topic]
+    assert after == before, "a redundant START re-fired the started event"
+
+    # Settings sent alongside a redundant START still apply and get published.
+    p._apply_command("START", {"work_minutes": 30})
+    assert p.work_minutes == 30
+    assert dict(client.published)[p.number_state_topics["work_minutes"]] == "30"
+
+    # A resume, by contrast, is a real transition and does emit.
+    p._apply_command("PAUSE", {})
+    p._apply_command("START", {})
+    assert p._snapshot()["status"] == "running"
+    assert len([t for t, _ in client.published if t == p.event_topic]) > len(after)
+
+
+class _StubPahoClient:
+    """Records the teardown calls made against a live client."""
+
+    def __init__(self):
+        self.loop_stopped = 0
+        self.disconnected = 0
+        self.published = []
+
+    def loop_stop(self):
+        self.loop_stopped += 1
+
+    def disconnect(self):
+        self.disconnected += 1
+
+    def publish(self, topic, payload, retain=False, qos=0):
+        self.published.append((topic, payload))
+
+
+def test_teardown_releases_the_client_and_is_idempotent():
+    p = make_plugin()
+    client = _StubPahoClient()
+    p.mqtt_client = client
+    p.mqtt_connected = True
+    p.mqtt_connecting = True
+
+    p._teardown_client()
+    assert p.mqtt_client is None
+    assert p.mqtt_connected is False and p.mqtt_connecting is False
+    assert client.loop_stopped == 1 and client.disconnected == 1
+
+    p._teardown_client()   # no client left — must not raise or re-call
+    assert client.loop_stopped == 1
+
+
+def test_teardown_survives_a_client_that_raises():
+    p = make_plugin()
+
+    class _Angry(_StubPahoClient):
+        def loop_stop(self):
+            raise RuntimeError("loop already stopped")
+
+        def disconnect(self):
+            raise RuntimeError("socket gone")
+
+    p.mqtt_client = _Angry()
+    p._teardown_client()          # must swallow both failures
+    assert p.mqtt_client is None
+
+
+def test_shutdown_releases_a_client_left_by_a_dead_thread():
+    p = make_plugin()
+    client = _StubPahoClient()
+    p.mqtt_client = client        # loop exited (or never ran) with a live client
+    p.mqtt_thread = None
+
+    p._graceful_shutdown()
+    assert p.mqtt_stop_event.is_set()
+    assert p.mqtt_client is None
+    assert client.disconnected >= 1
+    # HA must be told we're gone before the socket closes, or the device sits
+    # "online" until the keepalive lapses.
+    assert (p.availability_topic, "offline") in client.published
+
+
+def test_pin_state_is_restored_when_the_request_fails():
+    p = make_plugin()
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("cache unavailable")
+
+    p.cache_manager.set = _boom
+    p._apply_command("START", {})
+    assert p._pinned is False, "a failed request must stay retryable"
 
 
 def test_derived_topics_track_the_command_topic():

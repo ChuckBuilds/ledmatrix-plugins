@@ -394,6 +394,7 @@ class PomodoroTimerPlugin(BasePlugin):
                     duration = None
 
             if command in ("START", "ON", "PLAY"):
+                started = True
                 phase = str(payload.get("phase", "") or "").strip().lower()
                 if phase in _PHASE_ORDER:
                     self._begin_phase_locked(phase, duration, run=True, label=label)
@@ -403,8 +404,16 @@ class PomodoroTimerPlugin(BasePlugin):
                     self._resume_locked()
                 elif duration is not None:
                     self._begin_phase_locked(self.phase, duration, run=True, label=label)
-                events.append({"event_type": "started", "phase": self.phase,
-                               "duration_seconds": int(self.phase_total)})
+                else:
+                    # Already running with nothing to change. Pressing Start
+                    # mid-session must not re-fire "started" automations, so
+                    # emit no event — any settings in the same payload were
+                    # still applied above and are published below.
+                    self.logger.debug("START ignored: timer already running")
+                    started = False
+                if started:
+                    events.append({"event_type": "started", "phase": self.phase,
+                                   "duration_seconds": int(self.phase_total)})
 
             elif command in ("WORK", "FOCUS"):
                 self._begin_phase_locked(PHASE_WORK, duration, run=True, label=label)
@@ -618,6 +627,14 @@ class PomodoroTimerPlugin(BasePlugin):
                     self.mqtt_password, self.command_topic, self.state_topic,
                     self.ha_discovery, self.discovery_prefix)
         was_idle = self.phase == PHASE_IDLE
+
+        # Turning discovery off has to clear the retained config topics while we
+        # still know where they were published, or the entities linger in Home
+        # Assistant forever. A plain restart deliberately leaves them retained —
+        # that's what lets HA keep the device across reboots, with the LWT
+        # marking it unavailable in the meantime.
+        if self.ha_discovery and not bool(new_config.get("ha_discovery", True)):
+            self._remove_discovery()
 
         self._load_settings(new_config)
         self._font_cache = {}
@@ -932,26 +949,35 @@ class PomodoroTimerPlugin(BasePlugin):
     # ── Display pinning ─────────────────────────────────────────────────────────
 
     def _sync_pin(self) -> None:
-        """Take over (or release) the panel to match the timer's state."""
+        """Take over (or release) the panel to match the timer's state.
+
+        Called from the timer thread, the MQTT thread, and the display thread,
+        so the whole compare-and-set — including writing the request — runs
+        under state_lock. Otherwise two callers can interleave and publish the
+        requests out of order (a stop landing after a start), and because the
+        method early-returns once _pinned matches, the panel would stay stuck
+        that way until the next transition.
+        """
         with self.state_lock:
             active = self.phase != PHASE_IDLE
             alerting = time.monotonic() < self.alert_until
-        want = (self.pin_while_running and active) or alerting
-        if want == self._pinned:
-            return
-        self._pinned = want
-        request: Dict[str, Any] = {
-            "request_id": str(uuid.uuid4()),
-            "plugin_id":  self.plugin_id,
-            "action":     "start" if want else "stop",
-            "timestamp":  time.time(),
-        }
-        if want:
-            request.update({"mode": "pomodoro", "duration": None, "pinned": True})
-        try:
-            self.cache_manager.set("display_on_demand_request", request)
-        except Exception as e:
-            self.logger.debug("On-demand display request failed: %s", e)
+            want = (self.pin_while_running and active) or alerting
+            if want == self._pinned:
+                return
+            self._pinned = want
+            request: Dict[str, Any] = {
+                "request_id": str(uuid.uuid4()),
+                "plugin_id":  self.plugin_id,
+                "action":     "start" if want else "stop",
+                "timestamp":  time.time(),
+            }
+            if want:
+                request.update({"mode": "pomodoro", "duration": None, "pinned": True})
+            try:
+                self.cache_manager.set("display_on_demand_request", request)
+            except Exception as e:
+                self.logger.debug("On-demand display request failed: %s", e)
+                self._pinned = not want   # let the next tick retry
 
     def _timer_loop(self) -> None:
         while not self.timer_stop_event.wait(0.25):
@@ -974,12 +1000,23 @@ class PomodoroTimerPlugin(BasePlugin):
         except Exception as e:
             self.logger.debug("Publish to %s failed: %s", topic, e)
 
-    def _publish_availability(self, online: bool) -> None:
-        if not self.mqtt_client:
+    def _publish_availability(self, online: bool, wait: bool = False) -> None:
+        """Publish the availability state.
+
+        Pass wait=True when shutting down: the publish has to reach the broker
+        before we disconnect, otherwise it sits in paho's outbound queue and
+        dies with the client, leaving the device stuck 'online' in HA until the
+        keepalive lapses.
+        """
+        client = self.mqtt_client
+        if client is None:
             return
         try:
-            self.mqtt_client.publish(self.availability_topic,
-                                     "online" if online else "offline", retain=True)
+            info = client.publish(self.availability_topic,
+                                  "online" if online else "offline",
+                                  qos=1, retain=True)
+            if wait and info is not None and hasattr(info, "wait_for_publish"):
+                info.wait_for_publish(timeout=2.0)
         except Exception as e:
             self.logger.debug("Availability publish failed: %s", e)
 
@@ -1187,53 +1224,82 @@ class PomodoroTimerPlugin(BasePlugin):
             self.logger.error("MQTT connect error: %s", e)
             return False
 
+    def _teardown_client(self) -> None:
+        """Stop the network loop, disconnect, and release the paho client.
+
+        The single place a client is torn down: the reconnect path, the loop's
+        error handler, and shutdown all funnel through here so a refused or
+        half-open connection can never leave a live client (and its network
+        thread) behind. Idempotent, and never raises.
+        """
+        client, self.mqtt_client = self.mqtt_client, None
+        self.mqtt_connected = False
+        self.mqtt_connecting = False
+        if client is None:
+            return
+        try:
+            client.loop_stop()
+        except Exception as e:
+            self.logger.debug("MQTT loop_stop during teardown failed: %s", e)
+        try:
+            client.disconnect()
+        except Exception as e:
+            self.logger.debug("MQTT disconnect during teardown failed: %s", e)
+
+    def _backoff(self) -> bool:
+        """Sleep out the current reconnect delay, then double it.
+
+        Returns True when the plugin is shutting down and the loop should stop.
+        """
+        wait = min(self.mqtt_reconnect_delay, self.mqtt_max_reconnect_delay)
+        self.logger.info("Retrying MQTT in %.0fs", wait)
+        if self.mqtt_stop_event.wait(wait):
+            return True
+        self.mqtt_reconnect_delay = min(
+            self.mqtt_reconnect_delay * 2, self.mqtt_max_reconnect_delay)
+        return False
+
     def _mqtt_loop(self) -> None:
         while not self.mqtt_stop_event.is_set():
             try:
-                if not self.mqtt_connected and not self.mqtt_connecting:
-                    self.mqtt_connecting = True
-                    if self._connect_mqtt():
-                        self.mqtt_client.loop_start()
-                        # Give the broker a moment to answer CONNACK before the
-                        # next pass, so we never open a second connection.
-                        self.mqtt_stop_event.wait(5.0)
-                    else:
-                        self.mqtt_connecting = False
-                        wait = min(self.mqtt_reconnect_delay, self.mqtt_max_reconnect_delay)
-                        self.logger.info("Retrying MQTT in %.0fs", wait)
-                        if self.mqtt_stop_event.wait(wait):
-                            break
-                        self.mqtt_reconnect_delay = min(
-                            self.mqtt_reconnect_delay * 2, self.mqtt_max_reconnect_delay)
-                else:
+                if self.mqtt_connected:
                     if self.mqtt_stop_event.wait(1.0):
                         break
                     self.mqtt_reconnect_delay = 1.0
+                    continue
+
+                # Release whatever is left from a refused or half-open attempt
+                # before dialing again, so its network thread can't outlive it.
+                self._teardown_client()
+                self.mqtt_connecting = True
+                if not self._connect_mqtt():
+                    self._teardown_client()
+                    if self._backoff():
+                        break
+                    continue
+
+                client = self.mqtt_client
+                if client is None:      # torn down from another thread
+                    continue
+                client.loop_start()
+                # Wait for CONNACK before looping so we never open a second
+                # connection. If it never arrives, drop this client and retry
+                # rather than sitting here connecting forever.
+                self.mqtt_stop_event.wait(5.0)
+                if not self.mqtt_connected and not self.mqtt_stop_event.is_set():
+                    self.logger.warning("No CONNACK from %s:%s within 5s — retrying",
+                                        self.mqtt_host, self.mqtt_port)
+                    self._teardown_client()
+                    if self._backoff():
+                        break
             except Exception as e:
                 self.logger.error("MQTT loop error: %s", e, exc_info=True)
-                self.mqtt_connected = False
-                self.mqtt_connecting = False
-                if self.mqtt_client:
-                    try:
-                        self.mqtt_client.loop_stop()
-                        self.mqtt_client.disconnect()
-                    except Exception:
-                        pass
-                    self.mqtt_client = None
-                wait = min(self.mqtt_reconnect_delay, self.mqtt_max_reconnect_delay)
-                if self.mqtt_stop_event.wait(wait):
+                self._teardown_client()
+                if self._backoff():
                     break
-                self.mqtt_reconnect_delay = min(
-                    self.mqtt_reconnect_delay * 2, self.mqtt_max_reconnect_delay)
 
         self._publish_availability(False)
-        if self.mqtt_client:
-            try:
-                self.mqtt_client.loop_stop()
-                self.mqtt_client.disconnect()
-            except Exception:
-                pass
-            self.mqtt_client = None
+        self._teardown_client()
         self.logger.info("MQTT loop stopped")
 
     def _graceful_shutdown(self) -> None:
@@ -1242,15 +1308,22 @@ class PomodoroTimerPlugin(BasePlugin):
             self.timer_thread.join(timeout=2.0)
         self.timer_thread = None
 
+        # Say goodbye while the socket is still up — once we disconnect below,
+        # the loop thread's own offline publish has nothing to send on.
+        self._publish_availability(False, wait=True)
+
+        self.mqtt_stop_event.set()
         if self.mqtt_thread and self.mqtt_thread.is_alive():
-            self.mqtt_stop_event.set()
-            if self.mqtt_client:
+            # Drop the connection so the loop wakes out of its wait instead of
+            # sitting there for the full timeout.
+            client = self.mqtt_client
+            if client is not None:
                 try:
-                    self.mqtt_client.loop_stop()
-                    self.mqtt_client.disconnect()
-                except Exception:
-                    pass
+                    client.disconnect()
+                except Exception as e:
+                    self.logger.debug("MQTT disconnect during shutdown failed: %s", e)
             self.mqtt_thread.join(timeout=5.0)
         self.mqtt_thread = None
-        self.mqtt_connected = False
-        self.mqtt_connecting = False
+        # Unconditional: the loop may have died (or never started) with a live
+        # client still attached.
+        self._teardown_client()

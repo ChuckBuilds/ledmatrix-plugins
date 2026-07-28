@@ -1,16 +1,33 @@
 {
   "id": "pomodoro-timer",
   "name": "Pomodoro Timer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "ChuckBuilds",
   "description": "A configurable Pomodoro focus/break timer for your matrix. Set the work and break lengths, then start, pause, skip, or reset it over MQTT — with Home Assistant auto-discovery so the whole timer shows up as a device with no YAML.",
   "entry_point": "manager.py",
   "class_name": "PomodoroTimerPlugin",
   "category": "productivity",
-  "tags": ["pomodoro", "timer", "focus", "productivity", "mqtt", "home-assistant"],
-  "display_modes": ["pomodoro"],
-  "compatible_versions": [">=2.0.0"],
+  "tags": [
+    "pomodoro",
+    "timer",
+    "focus",
+    "productivity",
+    "mqtt",
+    "home-assistant"
+  ],
+  "display_modes": [
+    "pomodoro"
+  ],
+  "compatible_versions": [
+    ">=2.0.0"
+  ],
   "versions": [
+    {
+      "released": "2026-07-28",
+      "version": "1.0.1",
+      "notes": "Reliability fixes from review. Centralise MQTT client teardown so a refused or half-open connection can no longer leave a live paho client and its network thread behind, and retry instead of stalling forever when no CONNACK arrives. Shut down cleanly even when the MQTT thread already died, and publish the offline availability state before the socket closes so Home Assistant doesn't sit on a stale 'online'. Serialise the display-pin compare-and-set under the state lock so concurrent callers can't strand the panel pinned or unpinned. START on an already-running timer no longer re-fires the 'started' event. Clear retained discovery topics when Home Assistant discovery is turned off.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-07-28",
       "version": "1.0.0",
