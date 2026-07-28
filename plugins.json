@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-21",
+  "last_updated": "2026-07-27",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -1095,6 +1095,31 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.0.0"
+    },
+    {
+      "id": "incoming-packages",
+      "name": "Incoming Packages",
+      "description": "Rotating cards for packages headed your way - per carrier, with the count arriving today highlighted. Reads a normalized snapshot from a pluggable provider: the Home Assistant Mail and Packages integration (default), AfterShip, or a built-in demo. Email scanning stays inside Home Assistant; the plugin only stores an API URL + token.",
+      "author": "ChuckBuilds",
+      "category": "productivity",
+      "tags": [
+        "packages",
+        "shipping",
+        "tracking",
+        "delivery",
+        "home-assistant",
+        "logistics"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/incoming-packages",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-07-24",
+      "verified": true,
+      "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/incoming-packages/assets/screenshot.png",
+      "latest_version": "1.0.0",
+      "icon": "fas fa-box"
     }
   ]
 }

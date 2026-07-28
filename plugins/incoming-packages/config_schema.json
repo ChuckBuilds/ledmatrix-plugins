@@ -1,0 +1,183 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Incoming Packages Plugin Configuration",
+  "description": "Show packages headed your way, sourced from Home Assistant (Mail and Packages), AfterShip, or a built-in demo.",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable or disable the Incoming Packages plugin"
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 30,
+      "minimum": 1,
+      "maximum": 300,
+      "description": "How long to display the plugin in the rotation, in seconds"
+    },
+    "provider": {
+      "type": "string",
+      "enum": ["homeassistant", "aftership", "mock"],
+      "default": "homeassistant",
+      "description": "Where to read package data from. 'homeassistant' reads the Mail and Packages integration; 'aftership' reads the AfterShip API; 'mock' shows built-in demo data."
+    },
+    "ha_base_url": {
+      "type": "string",
+      "default": "",
+      "pattern": "^(https?://.*)?$",
+      "description": "Home Assistant base URL, e.g. http://homeassistant.local:8123",
+      "x-placeholder": "http://homeassistant.local:8123"
+    },
+    "ha_token": {
+      "type": "string",
+      "description": "Home Assistant long-lived access token (Profile > Long-Lived Access Tokens)",
+      "x-secret": true
+    },
+    "api_key": {
+      "type": "string",
+      "description": "AfterShip API key (only used when provider is 'aftership')",
+      "x-secret": true
+    },
+    "highlight_today": {
+      "type": "boolean",
+      "default": true,
+      "description": "Prioritize and accent-color packages arriving today"
+    },
+    "accent_color": {
+      "type": "array",
+      "items": {"type": "integer", "minimum": 0, "maximum": 255},
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [0, 220, 120],
+      "description": "RGB accent color for the 'arriving today' highlight"
+    },
+    "show_carrier_logo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show a carrier badge on each card"
+    },
+    "show_usps_mail_image": {
+      "type": "boolean",
+      "default": true,
+      "description": "Include the USPS Informed Delivery mail count / image when there is mail"
+    },
+    "show_delivery_images": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show a carrier's scanned delivery image when it is out for delivery today (Home Assistant provider)"
+    },
+    "show_delivered": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show a 'N delivered' confirmation count for packages delivered today"
+    },
+    "show_dashboard": {
+      "type": "boolean",
+      "default": true,
+      "description": "Lead with an at-a-glance dashboard card (all carriers with counts) instead of a plain text summary"
+    },
+    "stale_after_minutes": {
+      "type": "integer",
+      "default": 60,
+      "minimum": 5,
+      "maximum": 1440,
+      "description": "Flag data as stale (amber 'Xm ago') once it is older than this",
+      "x-advanced": true
+    },
+    "image_frame_seconds": {
+      "type": "number",
+      "default": 1.5,
+      "minimum": 0.2,
+      "maximum": 10,
+      "description": "Seconds per frame when animating the USPS Informed Delivery mail image",
+      "x-advanced": true
+    },
+    "include_delivered": {
+      "type": "boolean",
+      "default": false,
+      "description": "Also show packages already delivered today"
+    },
+    "max_cards": {
+      "type": "integer",
+      "default": 8,
+      "minimum": 1,
+      "maximum": 20,
+      "description": "Maximum number of cards to rotate through",
+      "x-advanced": true
+    },
+    "rotation_interval": {
+      "type": "number",
+      "default": 6,
+      "minimum": 1,
+      "maximum": 60,
+      "description": "Seconds each card is shown before rotating",
+      "x-advanced": true
+    },
+    "update_interval": {
+      "type": "integer",
+      "default": 600,
+      "minimum": 60,
+      "maximum": 7200,
+      "description": "How often to refresh package data from the provider, in seconds",
+      "x-advanced": true
+    },
+    "entity_prefix": {
+      "type": "string",
+      "default": "sensor.mail_",
+      "description": "Optional: Mail and Packages entity id prefix. Usually unneeded - the plugin auto-detects the integration's mail_ sensors regardless of the config-entry name (e.g. sensor.imap_gmail_com_mail_*).",
+      "x-advanced": true
+    },
+    "scroll_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Marquee-scroll text that is too long to fit",
+      "x-advanced": true
+    },
+    "scroll_speed": {
+      "type": "integer",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 30,
+      "description": "Frames between marquee steps (higher = slower)",
+      "x-advanced": true
+    },
+    "scroll_separator": {
+      "type": "string",
+      "default": "   ",
+      "description": "Separator inserted between marquee loops",
+      "x-advanced": true
+    },
+    "timezone": {
+      "type": "string",
+      "default": "",
+      "description": "Override timezone for 'today' (leave empty to use the system/global timezone)",
+      "x-advanced": true
+    },
+    "customization": {
+      "type": "object",
+      "title": "Customization",
+      "description": "Fonts and colors",
+      "properties": {
+        "title_text": {
+          "type": "object",
+          "title": "Primary Text",
+          "properties": {
+            "text_color": {
+              "type": "array",
+              "items": {"type": "integer", "minimum": 0, "maximum": 255},
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [255, 255, 255],
+              "description": "RGB color for primary text"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["enabled"],
+  "additionalProperties": false
+}
