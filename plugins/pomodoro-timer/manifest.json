@@ -1,7 +1,7 @@
 {
   "id": "pomodoro-timer",
   "name": "Pomodoro Timer",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "author": "ChuckBuilds",
   "description": "A configurable Pomodoro focus/break timer for your matrix. Set the work and break lengths, then start, pause, skip, or reset it over MQTT — with Home Assistant auto-discovery so the whole timer shows up as a device with no YAML.",
   "entry_point": "manager.py",
@@ -22,6 +22,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "released": "2026-07-28",
+      "version": "1.3.0",
+      "notes": "Session pips now have three states rather than two: completed are solid, upcoming are hollow outlines, and the session you are actually in is picked out and slowly pulses (pulse_active_pip), so the row reads as 'two done, on the third' instead of just a count. New task label, settable from Home Assistant via an MQTT text entity or by publishing to <base>/task/set, which takes the label row since the phase is already carried by the colour; cleared by RESET. New 'calm' colour theme preset (warm terracotta, sage, soft indigo) as an alternative to the punchy defaults, and paused_style: desaturate, which drains the phase's own hue instead of switching to amber. A label sent with START to an already-running timer is now applied instead of silently dropped.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-07-28",
       "version": "1.2.0",

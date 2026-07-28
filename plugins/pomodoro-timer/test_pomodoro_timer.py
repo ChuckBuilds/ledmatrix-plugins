@@ -371,6 +371,51 @@ def test_every_indicator_and_digit_style_renders():
             assert p.display_manager.image.getbbox() is not None
 
 
+def test_a_task_replaces_the_phase_label_and_survives_phases():
+    p = make_plugin()
+    client = _wire_client(p)
+    p._apply_command("START", {})
+    assert p._snapshot()["label"] == "FOCUS"
+
+    p._on_mqtt_message(client, None, _Message(p.task_set_topic, "Editing specs"))
+    assert p._snapshot()["task"] == "Editing specs"
+    assert p._snapshot()["label"] == "Editing specs"
+    assert dict(client.published)[p.task_topic] == "Editing specs"
+
+    # It is what you are working on, not what phase you are in, so it carries
+    # across a phase change...
+    p._apply_command("SKIP", {})
+    assert p._snapshot()["label"] == "Editing specs"
+    # ...but a per-session label sent with a start command still wins.
+    p._apply_command("START", {"label": "DEEP WORK"})
+    assert p._snapshot()["label"] == "DEEP WORK"
+    # ...and RESET clears it.
+    p._apply_command("RESET", {})
+    assert p._snapshot()["task"] == ""
+    assert p._snapshot()["label"] == "POMODORO"
+
+
+def test_task_text_is_bounded():
+    p = make_plugin()
+    client = _wire_client(p)
+    p._on_mqtt_message(client, None, _Message(p.task_set_topic, "x" * 200))
+    assert len(p._snapshot()["task"]) == 32
+
+
+def test_calm_theme_and_desaturated_pause():
+    classic = make_plugin()
+    calm = make_plugin(color_theme="calm")
+    assert calm.work_color != classic.work_color
+    for name in ("work_color", "short_break_color", "long_break_color"):
+        assert getattr(calm, name) != getattr(classic, name)
+
+    p = make_plugin(paused_style="desaturate")
+    p._apply_command("START", {})
+    p._apply_command("PAUSE", {})
+    assert p.display() is True
+    assert p.display_manager.image.getbbox() is not None
+
+
 def test_unknown_styles_fall_back_to_the_defaults():
     p = make_plugin(progress_style="disco", digit_style="gothic")
     assert p.progress_style == "perimeter"
@@ -391,7 +436,7 @@ def test_changing_the_discovery_prefix_clears_the_old_configs():
     p.on_config_change({**DEFAULTS, "mqtt_enabled": False, "discovery_prefix": "ha2"})
     cleared = [t for t, payload in client.published
                if t.startswith("homeassistant/") and payload == ""]
-    assert len(cleared) == 17, "old prefix's retained configs would orphan HA entities"
+    assert len(cleared) == 18, "old prefix's retained configs would orphan HA entities"
 
 
 def test_renaming_the_command_topic_clears_the_old_state_topics():
@@ -411,7 +456,7 @@ def test_renaming_the_command_topic_clears_the_old_state_topics():
 def test_discovery_payloads_are_valid_json_and_unique():
     p = make_plugin()
     entities = p._discovery_entities()
-    assert len(entities) == 17
+    assert len(entities) == 18
     uids = set()
     for topic, payload in entities:
         assert topic.count("/") == 2 and topic.endswith("/config")
@@ -422,6 +467,7 @@ def test_discovery_payloads_are_valid_json_and_unique():
     assert any(t.startswith("switch/") for t in topics)
     assert sum(t.startswith("button/") for t in topics) == 5
     assert sum(t.startswith("number/") for t in topics) == 4
+    assert any(t.startswith("text/") for t in topics)
 
 
 class _RecordingClient:

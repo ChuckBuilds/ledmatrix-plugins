@@ -58,7 +58,7 @@ normal rotation when the timer goes idle.
 
 ```text
 ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▔▔▔▔▔▔▔▔   ← burndown ring: lit = time left in the phase
-▏      FOCUS          ●●○○    ▕   ← phase label, and one dot per session in the set
+▏  Editing specs      ●●◉○    ▕   ← task (or phase label), and one pip per session
 ▏   ┌─┐ ┌─┐ ┌─┐ ┌─┐           ▕
 ▏   │17│:│42│                 ▕   ← countdown in seven-segment digits
 ▏   └─┘ └─┘                   ▕
@@ -74,6 +74,11 @@ If you want the full clock-radio look, **Show Unlit Segments** faintly lights th
 dark segments the way real hardware does. It's off by default because it costs
 real legibility — every digit gains a faint `8` behind it, and a `15` starts to
 read as an `85`.
+
+The **task label** is whatever you're working on. Set it from Home Assistant (or
+any MQTT client) and it takes the label row — the phase is already carried by the
+colour, so it doesn't need the words too. Leave it empty and the phase name shows
+instead.
 
 The **burndown ring** is the default indicator: the whole border is lit when a
 phase starts and drains clockwise from the top-left, with a brighter head pixel
@@ -157,15 +162,18 @@ durations you configured.
 | Field | Default | Description |
 |---|---|---|
 | **Countdown Color** | `phase` | `phase` colors the countdown by what's running; `fixed` always uses the Countdown Text Color. |
+| **Colour Theme** | `classic` | `classic` uses the individual phase colours below. `calm` overrides them with a softer palette — warm terracotta, sage, soft indigo. |
 | **Work / Short Break / Long Break Color** | red / green / blue | Phase colors. |
 | **Idle / Paused Color** | grey / amber | Used when nothing is running and when paused. |
+| **How Paused Looks** | `amber` | `amber` switches the countdown to the Paused Colour. `desaturate` keeps the phase's own hue but drains it, so a held timer reads as halted without changing which phase you're in. |
 | **Countdown Text Color** | white | Only used when Countdown Color is `fixed`. |
 | **Background Color** | black | Panel background. |
 | **Countdown Digits** | `seven_segment` | `seven_segment` draws clock-radio style segments sized to the panel. `pixel` uses the display's pixel font. |
 | **Show Unlit Segments** | `false` | Faintly light the unlit segments, like a real LED clock. Authentic, but it costs legibility — every digit gains a faint `8` behind it. Ignored when the stroke is only one pixel wide, where the effect would just be noise. |
 | **Burndown Indicator** | `perimeter` | `perimeter` drains a ring around the edge of the panel; `bar` empties a bar along the bottom; `segments` puts out a row of blocks one at a time; `none` hides it. |
 | **Show Phase Label** | `true` | The phase name above the countdown. |
-| **Show Session Dots** | `true` | One dot per session in the set, filled as you complete them. |
+| **Show Session Dots** | `true` | One pip per session in the set. Completed are solid, upcoming are hollow, and the one you're in is picked out. |
+| **Pulse the Current Session Dot** | `true` | Slowly blink the pip for the session you're in, so the row reads as "two done, on the third" rather than just a count. |
 | **Work / Short Break / Long Break / Idle / Paused Label** | `FOCUS` / `BREAK` / `LONG BREAK` / `POMODORO` / `PAUSED` | The on-screen text for each state. Blank the Paused Label to keep showing the phase name while paused. |
 | **Font** | *(blank)* | Path to a TTF relative to the LEDMatrix root, e.g. `assets/fonts/PressStart2P-Regular.ttf`. Blank uses the display's default font. |
 | **Font Size (px)** | `0` | Fix the countdown height in pixels. `0` sizes it automatically to the panel. |
@@ -248,8 +256,12 @@ changes:
 | `<base>/session` | Completed work sessions |
 | `<base>/attributes` | JSON snapshot of everything above plus `cycle_position`, `elapsed_fraction`, and the configured durations |
 | `<base>/event` | JSON `{"event_type": …}` on every transition — `started`, `paused`, `resumed`, `stopped`, `reset`, `skipped`, `phase_started`, `work_complete`, `break_complete` |
+| `<base>/task` | The current task label |
 | `<base>/available` | `online` / `offline` (also the last-will message) |
 | `<base>/work_minutes` etc. | Current value of each duration setting |
+
+The task label is set by publishing to `<base>/task/set` (max 32 characters;
+publish an empty payload to clear it). `RESET` clears it too.
 
 Each duration also has a matching command topic — `<base>/work_minutes/set`,
 `<base>/short_break_minutes/set`, `<base>/long_break_minutes/set`,
@@ -281,6 +293,7 @@ number boxes write to.
 | **Time Remaining** | Sensor | `MM:SS` |
 | **Seconds Remaining** | Sensor | Numeric, for gauges and templates |
 | **Completed Sessions** | Sensor | Running count, resets on `RESET` |
+| **Task** | Text | What you're working on. Type it in HA and it appears on the panel. |
 | **Timer Event** | Event | Fires on every transition — the clean hook for automations |
 | **MQTT Connected** | Binary sensor | Connectivity |
 

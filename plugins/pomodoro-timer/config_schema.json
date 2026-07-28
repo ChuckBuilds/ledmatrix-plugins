@@ -23,18 +23,21 @@
     "discovery_prefix",
     "device_name",
     "publish_interval_seconds",
+    "color_theme",
     "color_mode",
     "work_color",
     "short_break_color",
     "long_break_color",
     "idle_color",
     "paused_color",
+    "paused_style",
     "time_color",
     "background_color",
     "digit_style",
     "show_ghost_segments",
     "show_phase_label",
     "show_session_dots",
+    "pulse_active_pip",
     "progress_style",
     "work_label",
     "short_break_label",
@@ -440,6 +443,36 @@
       "title": "Burndown Indicator",
       "description": "How the time left in the phase is shown. 'perimeter' drains a ring around the edge of the panel and leaves the most room for the digits; 'bar' empties a bar along the bottom; 'segments' puts out a row of blocks one at a time; 'none' hides it.",
       "x-widget": "radio"
+    },
+    "color_theme": {
+      "type": "string",
+      "enum": [
+        "classic",
+        "calm"
+      ],
+      "default": "classic",
+      "title": "Colour Theme",
+      "description": "'classic' uses the individual phase colours below. 'calm' overrides them with a softer palette — warm terracotta, sage, and a soft indigo — for a panel that doesn't shout at you.",
+      "x-widget": "radio"
+    },
+    "paused_style": {
+      "type": "string",
+      "enum": [
+        "amber",
+        "desaturate"
+      ],
+      "default": "amber",
+      "title": "How Paused Looks",
+      "description": "'amber' switches the countdown to the Paused Colour. 'desaturate' keeps the phase's own hue but drains it, so a held timer reads as halted without changing what phase you're in.",
+      "x-widget": "radio",
+      "x-advanced": true
+    },
+    "pulse_active_pip": {
+      "type": "boolean",
+      "default": true,
+      "title": "Pulse the Current Session Dot",
+      "description": "Slowly blink the dot for the session you're in, so the row reads as 'two done, on the third' rather than just a count. Completed sessions are solid and upcoming ones are hollow either way.",
+      "x-advanced": true
     }
   },
   "required": [

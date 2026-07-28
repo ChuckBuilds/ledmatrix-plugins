@@ -79,6 +79,16 @@ _EVENT_TYPES = [
 
 _PHASE_ORDER = (PHASE_WORK, PHASE_SHORT_BREAK, PHASE_LONG_BREAK)
 
+# Calmer hues for people who don't want the panel shouting at them. Chosen to
+# still separate cleanly on an LED matrix, where heavily muted colours turn to
+# mud: warm terracotta, sage, and a soft indigo.
+_CALM_THEME = {
+    "work_color":        (230, 108,  76),
+    "short_break_color": (122, 176, 150),
+    "long_break_color":  (118, 132, 210),
+    "idle_color":        (120, 124, 140),
+}
+
 
 def _rgb(value, default: Tuple[int, int, int]) -> Tuple[int, int, int]:
     """Coerce a config/JSON colour into a clamped RGB tuple."""
@@ -93,6 +103,13 @@ def _rgb(value, default: Tuple[int, int, int]) -> Tuple[int, int, int]:
 
 def _dim(color: Tuple[int, int, int], factor: float) -> Tuple[int, int, int]:
     return tuple(max(0, min(255, int(c * factor))) for c in color)  # type: ignore[return-value]
+
+
+def _desaturate(color: Tuple[int, int, int], amount: float) -> Tuple[int, int, int]:
+    """Pull `color` toward its own luminance — keeps the hue, drops the punch."""
+    grey = int(0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2])
+    return tuple(  # type: ignore[return-value]
+        max(0, min(255, int(c + (grey - c) * amount))) for c in color)
 
 
 def _lighten(color: Tuple[int, int, int], factor: float) -> Tuple[int, int, int]:
@@ -125,6 +142,7 @@ class PomodoroTimerPlugin(BasePlugin):
         self.completed_sessions = 0
         self.cycle_position = 0
         self.custom_label: Optional[str] = None
+        self.task = ""
         self.alert_until = 0.0
         self.alert_color: Optional[Tuple[int, int, int]] = None
 
@@ -199,6 +217,14 @@ class PomodoroTimerPlugin(BasePlugin):
         self.idle_color        = _rgb(config.get("idle_color", [110, 110, 110]), (110, 110, 110))
         self.paused_color      = _rgb(config.get("paused_color", [255, 176, 0]), (255, 176, 0))
         self.background_color  = _rgb(config.get("background_color", [0, 0, 0]), (0, 0, 0))
+        self.color_theme = str(config.get("color_theme", "classic"))
+        if self.color_theme == "calm":
+            for key, value in _CALM_THEME.items():
+                setattr(self, key.replace("_color", "") + "_color", value)
+        self.paused_style = str(config.get("paused_style", "amber"))
+        if self.paused_style not in ("amber", "desaturate"):
+            self.paused_style = "amber"
+        self.pulse_active_pip = bool(config.get("pulse_active_pip", True))
         self.show_phase_label  = bool(config.get("show_phase_label", True))
         self.show_session_dots = bool(config.get("show_session_dots", True))
         self.digit_style = str(config.get("digit_style", "seven_segment"))
@@ -257,6 +283,8 @@ class PomodoroTimerPlugin(BasePlugin):
         self.session_topic      = f"{base}/session"
         self.attributes_topic   = f"{base}/attributes"
         self.event_topic        = f"{base}/event"
+        self.task_topic         = f"{base}/task"
+        self.task_set_topic     = f"{base}/task/set"
         self.number_state_topics = {f: f"{base}/{f}" for f, *_ in _NUMBER_FIELDS}
         self.number_set_topics   = {f"{base}/{f}/set": f for f, *_ in _NUMBER_FIELDS}
 
@@ -423,10 +451,13 @@ class PomodoroTimerPlugin(BasePlugin):
                 elif duration is not None:
                     self._begin_phase_locked(self.phase, duration, run=True, label=label)
                 else:
-                    # Already running with nothing to change. Pressing Start
+                    # Already running with nothing to restart. Pressing Start
                     # mid-session must not re-fire "started" automations, so
-                    # emit no event — any settings in the same payload were
-                    # still applied above and are published below.
+                    # emit no event — but an explicit label is a real change
+                    # the caller asked for, so apply it rather than drop it.
+                    # Settings in the same payload were applied above.
+                    if label:
+                        self.custom_label = label
                     self.logger.debug("START ignored: timer already running")
                     started = False
                 if started:
@@ -485,6 +516,7 @@ class PomodoroTimerPlugin(BasePlugin):
 
             elif command in ("RESET", "CLEAR"):
                 self._go_idle_locked(reset_counters=True)
+                self.task = ""
                 self.alert_until = 0.0
                 events.append({"event_type": "reset"})
 
@@ -735,7 +767,12 @@ class PomodoroTimerPlugin(BasePlugin):
                 "work_minutes": self.work_minutes,
                 "short_break_minutes": self.short_break_minutes,
                 "long_break_minutes": self.long_break_minutes,
-                "label": self.custom_label or self._phase_label(self.phase, self.running),
+                "task": self.task,
+                # A task name is what you actually want to see; the phase is
+                # already carried by the colour, so the task takes the label
+                # row rather than fighting for a second one on a 32px panel.
+                "label": (self.custom_label or self.task
+                          or self._phase_label(self.phase, self.running)),
                 "alerting": time.monotonic() < self.alert_until,
                 "alert_color": self.alert_color,
             }
@@ -898,7 +935,8 @@ class PomodoroTimerPlugin(BasePlugin):
         phase = snap["phase"]
         accent = self._phase_color(phase)
         if snap["status"] == "paused":
-            accent = self.paused_color
+            accent = (_dim(_desaturate(accent, 0.6), 0.75)
+                      if self.paused_style == "desaturate" else self.paused_color)
         background = self.background_color
         text_color = accent if self.color_mode == "phase" else self.time_color
 
@@ -1023,11 +1061,25 @@ class PomodoroTimerPlugin(BasePlugin):
             start = x + max(0, avail_w - span)
         else:
             start = x + max(0, (avail_w - span) // 2)
+
         dim = _dim(accent, 0.28)
+        # The session you are actually in gets its own state, so the row reads
+        # as "two done, on the third, one to go" rather than just a count.
+        active = filled if snap["phase"] == PHASE_WORK else -1
+        pulse_on = int(time.monotonic()) % 2 == 0
         for index in range(total):
             left = start + index * (size + gap)
-            draw.rectangle([left, y, left + size - 1, y + size - 1],
-                           fill=accent if index < filled else dim)
+            box = [left, y, left + size - 1, y + size - 1]
+            if index < filled:
+                draw.rectangle(box, fill=accent)
+            elif index == active:
+                lit = accent if (pulse_on or not self.pulse_active_pip) else dim
+                draw.rectangle(box, fill=lit)
+            elif size >= 3:
+                # Hollow: clearly "not yet" without reading as a dim filled dot.
+                draw.rectangle(box, outline=dim)
+            else:
+                draw.rectangle(box, fill=dim)
 
     # ── Countdown digits ────────────────────────────────────────────────────────
 
@@ -1312,7 +1364,7 @@ class PomodoroTimerPlugin(BasePlugin):
         now = time.monotonic()
         snap = self._snapshot()
         key = (snap["phase"], snap["status"], snap["remaining"],
-               snap["completed_sessions"], snap["cycle_position"])
+               snap["completed_sessions"], snap["cycle_position"], snap["task"])
         if not force:
             if key == self._last_published_key:
                 return
@@ -1327,6 +1379,7 @@ class PomodoroTimerPlugin(BasePlugin):
         self._publish(self.remaining_topic, snap["remaining"])
         self._publish(self.remaining_secs_topic, str(snap["remaining_seconds"]))
         self._publish(self.session_topic, str(snap["completed_sessions"]))
+        self._publish(self.task_topic, snap["task"])
         self._publish(self.attributes_topic, json.dumps({
             k: v for k, v in snap.items() if k != "alert_color"
         }))
@@ -1406,6 +1459,11 @@ class PomodoroTimerPlugin(BasePlugin):
             "state_topic": self.session_topic, "state_class": "total_increasing",
             "icon": "mdi:check-circle-outline", **common,
         }))
+        entities.append((f"text/{uid}_task/config", {
+            "name": "Task", "unique_id": f"{uid}_task",
+            "command_topic": self.task_set_topic, "state_topic": self.task_topic,
+            "max": 32, "icon": "mdi:format-text", **common,
+        }))
         entities.append((f"event/{uid}_event/config", {
             "name": "Timer Event", "unique_id": f"{uid}_event",
             "state_topic": self.event_topic, "event_types": _EVENT_TYPES,
@@ -1441,7 +1499,8 @@ class PomodoroTimerPlugin(BasePlugin):
             return
         topics = [self.state_topic, self.status_topic, self.phase_topic,
                   self.remaining_topic, self.remaining_secs_topic,
-                  self.session_topic, self.attributes_topic, self.availability_topic]
+                  self.session_topic, self.attributes_topic, self.availability_topic,
+                  self.task_topic]
         topics += list(self.number_state_topics.values())
         for topic in topics:
             self._publish(topic, "")
@@ -1461,6 +1520,7 @@ class PomodoroTimerPlugin(BasePlugin):
         client.subscribe(self.command_topic, qos=1)
         for topic in self.number_set_topics:
             client.subscribe(topic, qos=1)
+        client.subscribe(self.task_set_topic, qos=1)
         self._publish_availability(True)
         self._publish_discovery()
         self._publish_state(force=True)
@@ -1486,6 +1546,17 @@ class PomodoroTimerPlugin(BasePlugin):
                     changed = self._set_number_locked(field, raw)
                 if changed:
                     self.logger.info("%s set to %s via MQTT", field, getattr(self, field))
+                self._publish_state(force=True)
+                return
+
+            if msg.topic == self.task_set_topic:
+                try:
+                    task = msg.payload.decode("utf-8").strip()[:32]
+                except (UnicodeDecodeError, AttributeError):
+                    return
+                with self.state_lock:
+                    self.task = task
+                self.logger.info("Task set to %r", task)
                 self._publish_state(force=True)
                 return
 
