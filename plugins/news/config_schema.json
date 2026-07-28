@@ -122,10 +122,46 @@
             }
           ]
         },
+        "headline_paging": {
+          "type": "object",
+          "description": "Split headlines into pages that each fit inside one display turn, so the ticker is never cut off part-way through a headline and every headline eventually gets a full pass",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show as many headlines per turn as can finish scrolling, then continue from where the last turn stopped. Turn off to put every headline in a single long scroll (the old behavior)."
+            },
+            "max_headlines_per_page": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 50,
+              "description": "Hard limit on headlines per display turn. 0 fits as many as the available time allows.",
+              "x-advanced": true
+            },
+            "page_hold_seconds": {
+              "type": "number",
+              "default": 2.0,
+              "minimum": 0,
+              "maximum": 30,
+              "description": "How long to hold the last frame after a page finishes before starting the next one, when the ticker stays on screen (e.g. it is the only enabled display mode)",
+              "x-advanced": true
+            },
+            "duration_overrun_allowance": {
+              "type": "number",
+              "default": 0.25,
+              "minimum": 0,
+              "maximum": 1.0,
+              "description": "Extra time allowance (0-1) requested from the display controller so a scroll running slower than its nominal speed still reaches the end instead of being cut off",
+              "x-advanced": true
+            }
+          },
+          "additionalProperties": false
+        },
         "rotation_enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable headline rotation after multiple cycles",
+          "description": "Enable headline rotation after multiple cycles (only used when headline paging is disabled)",
           "x-advanced": true
         },
         "rotation_threshold": {
@@ -133,7 +169,7 @@
           "default": 3,
           "minimum": 1,
           "maximum": 10,
-          "description": "Number of cycles before rotating headlines",
+          "description": "Number of cycles before rotating headlines (only used when headline paging is disabled)",
           "x-advanced": true
         },
         "headlines_per_feed": {

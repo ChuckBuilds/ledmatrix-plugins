@@ -19,6 +19,7 @@ A plugin for LEDMatrix that displays scrolling news headlines from RSS feeds inc
 
 - **Multiple RSS Sources**: ESPN sports feeds, NCAA updates, and custom RSS URLs
 - **Scrolling Headlines**: Continuous scrolling ticker display
+- **Headline Paging**: Each turn shows as many headlines as can finish scrolling, then the next turn picks up where the last one stopped — headlines aren't cut off part-way through, and the tail of a long feed list still reaches the panel
 - **News Source Logos**: Display logos for news sources (ESPN, NFL Network, MLB Network, etc.)
 - **Headline Rotation**: Cycle through headlines after multiple viewings
 - **Custom Feeds**: Add your own RSS feed URLs
@@ -44,8 +45,14 @@ of truth. The keys you'll touch most often:
 - `global.dynamic_duration`: Object — `enabled` (default `true`),
   `min_duration_seconds` (default `30`), `max_duration_seconds`
   (default `300`), `buffer_ratio` (default `0.1`)
-- `global.rotation_enabled`: Enable headline rotation (default `true`)
-- `global.rotation_threshold`: Cycles before rotating headlines (1–10, default 3)
+- `global.headline_paging`: Object — `enabled` (default `true`),
+  `max_headlines_per_page` (default `0` = fit as many as time allows),
+  `page_hold_seconds` (default `2.0`), `duration_overrun_allowance`
+  (default `0.25`). See [Headline Paging](#headline-paging).
+- `global.rotation_enabled`: Enable headline rotation (default `true`; only
+  used when `headline_paging.enabled` is `false`)
+- `global.rotation_threshold`: Cycles before rotating headlines (1–10, default 3;
+  only used when `headline_paging.enabled` is `false`)
 - `global.headlines_per_feed`: Headlines to fetch per feed (1–10, default 2)
 - `global.background_service.*`: Background fetch tuning —
   `enabled`, `request_timeout`, `max_retries`, `priority`
@@ -186,10 +193,39 @@ The plugin includes these predefined RSS feeds:
 
 The news ticker displays information in a scrolling format showing:
 
-- **Feed Source**: Name of the RSS feed (e.g., "NFL", "ESPN")
-- **Headline**: News headline text (truncated if too long)
-- **Separator**: Visual separator between headlines ("---")
-- **Timestamp**: When the headline was published (if available)
+- **Feed Source**: Name of the RSS feed (e.g., "NFL", "ESPN") — replaced by the
+  feed's logo when one is available
+- **Headline**: Full news headline text, never abbreviated
+- **Separator**: Visual separator between headlines (shown when there's no logo)
+
+## Headline Paging
+
+Headlines are never shortened, so a full set of feeds can easily produce a strip
+of scrolling text several minutes long — far more than the display controller
+will keep any one plugin on screen. Paging solves that.
+
+Before each turn the plugin measures how much text can actually finish scrolling
+in the time it will be given, fills the strip up to that point, and defers the
+rest. When the strip finishes, the next turn resumes at the first headline that
+didn't fit. Nothing is drawn that can't be read to the end, and every headline
+reaches the panel in a few turns instead of the list's tail never being seen.
+
+The time budget is derived from the scroll rate and the shortest ceiling that
+will be enforced — the plugin's own `dynamic_duration.max_duration_seconds` and
+the core's `display.dynamic_duration.max_duration_seconds`, whichever is lower.
+
+Tuning:
+
+- `enabled` (default `true`) — set `false` to go back to one long strip
+  containing every headline, paced by `rotation_enabled`/`rotation_threshold`
+- `max_headlines_per_page` (default `0`) — cap headlines per turn regardless of
+  available time; `0` fits as many as will scroll
+- `page_hold_seconds` (default `2.0`) — how long the finished strip stays on
+  screen before the next page starts, when the ticker isn't rotated away (for
+  example when News is the only enabled display mode)
+- `duration_overrun_allowance` (default `0.25`) — extra time requested from the
+  controller so a scroll running behind its nominal speed still reaches the end.
+  Raise it if headlines still get clipped on a heavily loaded Pi.
 
 ## Background Service
 
@@ -249,11 +285,22 @@ This plugin requires the main LEDMatrix installation and uses the cache manager 
 - **RSS parsing errors**: Verify feed URLs are valid and return proper XML
 - **Slow scrolling**: Adjust scroll speed and delay settings
 - **Network errors**: Check your internet connection and RSS server availability
+- **Headlines still cut off mid-word**: The scroll is running behind its nominal
+  speed. Raise `global.headline_paging.duration_overrun_allowance`, or lower
+  `global.display.scroll_speed` so less content is packed into each turn.
+- **Only ever seeing the same first few headlines**: Confirm
+  `global.headline_paging.enabled` is `true` — with paging off, the legacy
+  rotation only advances one headline every `rotation_threshold` cycles.
+- **Fewer headlines per turn than expected**: Each turn is sized to the shortest
+  enforced duration cap. Raise `global.dynamic_duration.max_duration_seconds`
+  *and* the core's `display.dynamic_duration.max_duration_seconds` (default
+  180s) — the lower of the two wins.
 
 ## Advanced Features
 
-- **Headline Rotation**: Automatically rotates through headlines after multiple cycles
-- **Dynamic Duration**: Adjusts display time based on content length
+- **Headline Paging**: Sizes each turn to what can actually finish scrolling, then resumes where it left off
+- **Headline Rotation**: Legacy fallback that rotates headlines after multiple cycles when paging is disabled
+- **Dynamic Duration**: Holds the display until the strip has scrolled to the end, rather than cutting at a fixed time
 - **Color Customization**: Configure text and separator colors
 - **Font Sizing**: Adjustable font size for readability
 - **Feed Prioritization**: Control which feeds are displayed and in what order
@@ -294,6 +341,12 @@ For best performance, use the frame-based scrolling format:
       "min_duration_seconds": 30,
       "max_duration_seconds": 300,
       "buffer_ratio": 0.1
+    },
+    "headline_paging": {
+      "enabled": true,
+      "max_headlines_per_page": 0,
+      "page_hold_seconds": 2.0,
+      "duration_overrun_allowance": 0.25
     }
   }
 }

@@ -23,7 +23,7 @@ import xml.etree.ElementTree as ET
 import html
 import re
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 from pathlib import Path
 from urllib.parse import urlparse
 from PIL import Image, ImageDraw, ImageFont
@@ -76,6 +76,19 @@ class NewsTickerPlugin(BasePlugin):
         'NCAA': 'espn.png',  # ESPN logo
         'Other': 'espn.png'  # Default to ESPN
     }
+
+    # Gaps handed to ScrollHelper.create_scrolling_image(). Kept as constants
+    # because page sizing has to measure content with the exact same layout
+    # arithmetic the scroll helper uses.
+    ITEM_GAP = 32
+    ELEMENT_GAP = 16
+
+    # Mirrors DEFAULT_DYNAMIC_DURATION_CAP in the core's display_controller.
+    # The controller caps every plugin at min(plugin cap, global cap) and falls
+    # back to this value when display.dynamic_duration.max_duration_seconds is
+    # unset, so page sizing has to assume the same ceiling — otherwise we build
+    # a page longer than the controller will ever let us finish.
+    CORE_DEFAULT_DURATION_CAP = 180.0
 
     def __init__(self, plugin_id: str, config: Dict[str, Any],
                  display_manager, cache_manager, plugin_manager):
@@ -132,6 +145,9 @@ class NewsTickerPlugin(BasePlugin):
         self.font_size = self.global_config.get('font_size', 12)
         self.target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps', 100)
 
+        # Headline paging settings
+        self._load_paging_settings()
+
         # Colors
         self.text_color = tuple(self.feeds_config.get('text_color', [255, 255, 255]))
         self.separator_color = tuple(self.feeds_config.get('separator_color', [255, 0, 0]))
@@ -162,6 +178,16 @@ class NewsTickerPlugin(BasePlugin):
         self.last_update = 0
         self.rotation_count = 0
         self._cycle_complete = False
+        self._cycle_complete_at = 0.0
+        # Index of the first headline in the page currently on screen, how many
+        # headlines that page holds, and whether the next page is queued up but
+        # not yet rendered.
+        self._page_start = 0
+        self._page_count = 0
+        self._page_dirty = False
+        # Rendered headline images, reused across cycles within one data refresh
+        # so paging back and forth doesn't re-rasterise text every cycle.
+        self._headline_image_cache: Dict[Tuple[str, str], Optional[Image.Image]] = {}
         self.initialized = True
 
         # Load fonts
@@ -213,6 +239,16 @@ class NewsTickerPlugin(BasePlugin):
             self.max_duration,
             self.duration_buffer,
         )
+        if self.paging_enabled:
+            self.logger.info(
+                "Headline paging enabled: budget=%.0fpx per cycle (cap=%.0fs at %.0f px/s), max_headlines_per_page=%s",
+                self._page_width_budget() or 0.0,
+                self._effective_duration_cap(),
+                self._effective_pixels_per_second(),
+                self.max_headlines_per_page or 'auto',
+            )
+        else:
+            self.logger.info("Headline paging disabled - all headlines share one scroll cycle")
 
     def _load_fonts(self) -> Dict[str, ImageFont.FreeTypeFont]:
         """Load fonts for the news ticker display."""
@@ -319,6 +355,90 @@ class NewsTickerPlugin(BasePlugin):
                 self.logger.error(f"Error persisting migrated config to disk: {e}", exc_info=True)
                 # Continue even if save fails - migration is still applied in memory
         
+
+    def _load_paging_settings(self) -> None:
+        """Read the headline paging block from ``global`` config."""
+        paging_config = self.global_config.get('headline_paging', {})
+        if not isinstance(paging_config, dict):
+            paging_config = {}
+        self.paging_enabled = paging_config.get('enabled', True)
+        self.max_headlines_per_page = paging_config.get('max_headlines_per_page', 0)
+        self.page_hold_seconds = paging_config.get('page_hold_seconds', 2.0)
+        self.duration_overrun_allowance = paging_config.get('duration_overrun_allowance', 0.25)
+
+    def _read_core_duration_cap(self) -> float:
+        """
+        Read the display controller's global dynamic-duration cap.
+
+        The controller holds a plugin for at most min(plugin cap, global cap),
+        where the global cap is ``display.dynamic_duration.max_duration_seconds``
+        and defaults to CORE_DEFAULT_DURATION_CAP when absent. Page sizing has to
+        respect that ceiling to guarantee a page finishes scrolling.
+        """
+        try:
+            config_manager = getattr(self.plugin_manager, 'config_manager', None)
+            if config_manager:
+                full_config = config_manager.load_config() or {}
+                dynamic = (full_config.get('display', {}) or {}).get('dynamic_duration', {}) or {}
+                cap_value = dynamic.get('max_duration_seconds')
+                if cap_value is not None:
+                    cap = float(cap_value)
+                    if cap > 0:
+                        return cap
+        except (AttributeError, TypeError, ValueError, OSError) as e:
+            self.logger.debug(f"Could not read core dynamic duration cap, assuming default: {e}")
+        return self.CORE_DEFAULT_DURATION_CAP
+
+    def _plugin_duration_cap(self) -> float:
+        """
+        Longest this plugin will ever ask to stay on screen, slack included.
+
+        The overrun allowance has to be part of the cap, not just of
+        get_cycle_duration(): the controller takes min(cycle duration, cap), so a
+        cap set to the bare page duration would clip the very slack that lets a
+        slow-running scroll reach the end.
+        """
+        base = float(self.max_duration) if self.max_duration and self.max_duration > 0 \
+            else self.CORE_DEFAULT_DURATION_CAP
+        return base * (1.0 + max(0.0, self.duration_overrun_allowance))
+
+    def _effective_duration_cap(self) -> float:
+        """Ceiling the controller will actually enforce: min(plugin cap, core cap)."""
+        return min(self._plugin_duration_cap(), self._read_core_duration_cap())
+
+    def _effective_pixels_per_second(self) -> float:
+        """Nominal scroll rate in pixels per second, whichever mode is active."""
+        if getattr(self, 'scroll_pixels_per_second', None):
+            return float(self.scroll_pixels_per_second)
+        if self.scroll_delay and self.scroll_delay > 0:
+            return float(self.scroll_speed) / float(self.scroll_delay)
+        return float(self.scroll_speed) * 100.0
+
+    def _page_width_budget(self) -> Optional[float]:
+        """
+        Width of content, in pixels, that one display turn can actually scroll.
+
+        Returns None when paging is disabled or the rate can't be determined,
+        meaning "no limit — put every headline in one strip".
+        """
+        if not self.paging_enabled:
+            return None
+
+        pixels_per_second = self._effective_pixels_per_second()
+        cap = self._effective_duration_cap()
+        if pixels_per_second <= 0 or cap <= 0:
+            return None
+
+        # Work backwards from the cap through the two multipliers that sit
+        # between raw scroll time and the wall the controller enforces:
+        # ScrollHelper adds buffer_ratio when it derives the cycle duration, and
+        # get_cycle_duration() adds overrun slack on top of that.
+        divisor = (1.0 + max(0.0, self.duration_buffer)) * (1.0 + max(0.0, self.duration_overrun_allowance))
+        usable_seconds = cap / divisor if divisor > 0 else cap
+
+        # Never go below two panel-widths, or a narrow panel with a slow scroll
+        # would produce pages that can't hold a single headline.
+        return max(float(self.display_width * 2), pixels_per_second * usable_seconds)
 
     def _configure_scroll_settings(self) -> None:
         """
@@ -499,6 +619,11 @@ class NewsTickerPlugin(BasePlugin):
             self.logger.info(f"Feeds configuration updated. Custom feeds: {custom_feed_names}, Enabled feeds: {list(new_enabled_feeds)}")
             # Clear headlines cache to force refresh
             self.current_headlines = []
+            self._headline_image_cache = {}
+            # A different feed set means the old page window means nothing
+            self._page_start = 0
+            self._page_count = 0
+            self._page_dirty = False
             if hasattr(self, 'scroll_helper'):
                 self.scroll_helper.clear_cache()
             # Trigger immediate update on next display cycle
@@ -554,7 +679,14 @@ class NewsTickerPlugin(BasePlugin):
         old_font_size = getattr(self, 'font_size', 12)
         self.font_size = self.global_config.get('font_size', 12)
         self.target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps', 100)
-        
+
+        # Reload paging settings - page size depends on scroll speed and the
+        # duration cap, so any of those changing invalidates the current strip
+        self._load_paging_settings()
+        self._page_dirty = False
+        if hasattr(self, 'scroll_helper'):
+            self.scroll_helper.clear_cache()
+
         # Apply scroll settings to scroll_helper
         self._configure_scroll_settings()
         
@@ -569,6 +701,9 @@ class NewsTickerPlugin(BasePlugin):
         # Reload fonts if font size changed
         if self.font_size != old_font_size:
             self.fonts = self._load_fonts()
+
+        # Colors and fonts are baked into the rendered headline images
+        self._headline_image_cache = {}
 
     def update(self) -> None:
         """Update news headlines from all enabled feeds."""
@@ -643,6 +778,14 @@ class NewsTickerPlugin(BasePlugin):
             # Reset rotation tracking for new content
             if self.current_headlines:
                 self.rotation_count = 0
+                # Rendered text is tied to the headlines it came from
+                self._headline_image_cache = {}
+                # Deliberately keep _page_start rather than rewinding to the
+                # first headline: a refresh lands every update_interval, and
+                # restarting the page window each time is exactly what kept the
+                # tail of the list from ever reaching the panel.
+                self._page_start %= len(self.current_headlines)
+                self._page_dirty = False
                 # Clear scroll cache to force recreation of scrolling image
                 if hasattr(self, 'scroll_helper'):
                     self.scroll_helper.clear_cache()
@@ -763,29 +906,19 @@ class NewsTickerPlugin(BasePlugin):
 
         # Update scroll position using the scroll helper
         self.scroll_helper.update_scroll_position()
-        if self.dynamic_duration_enabled and self.scroll_helper.is_scroll_complete():
+        if self.scroll_helper.is_scroll_complete():
             if not self._cycle_complete:
-                scroll_info = self.scroll_helper.get_scroll_info()
-                elapsed_time = scroll_info.get('elapsed_time')
-                self.logger.info(
-                    "News ticker scroll cycle completed (elapsed=%.2fs, target=%.2fs)",
-                    elapsed_time if elapsed_time is not None else -1.0,
-                    scroll_info.get('dynamic_duration'),
-                )
-                
-                # Increment rotation count and check if we should rotate headlines
-                if self.rotation_enabled:
-                    self.rotation_count += 1
-                    self.logger.debug(f"Rotation count: {self.rotation_count}/{self.rotation_threshold}")
-                    
-                    if self.rotation_count >= self.rotation_threshold:
-                        self._rotate_headlines()
-                        self.rotation_count = 0
-                        # Clear scroll cache to force recreation with new headline order
-                        self.scroll_helper.clear_cache()
-                        self.logger.info("Headlines rotated - scroll cache cleared for next cycle")
-            
-            self._cycle_complete = True
+                self._on_scroll_cycle_complete()
+                self._cycle_complete = True
+                self._cycle_complete_at = time.time()
+            elif self._page_dirty and (time.time() - self._cycle_complete_at) >= self.page_hold_seconds:
+                # Still on screen after finishing a page. That happens when the
+                # controller doesn't rotate away — most often because the news
+                # ticker is the only mode in the rotation, so reset_cycle_state()
+                # is never called. Roll onto the next page rather than sitting on
+                # a frozen last frame.
+                self.logger.debug("Parked on a finished page; rolling to the next one")
+                self._start_next_page()
 
         # Get visible portion
         visible_portion = self.scroll_helper.get_visible_portion()
@@ -797,41 +930,149 @@ class NewsTickerPlugin(BasePlugin):
         # Log frame rate (less frequently to avoid spam)
         self.scroll_helper.log_frame_rate()
 
+    def _on_scroll_cycle_complete(self) -> None:
+        """Handle the moment the strip finishes one full pass."""
+        scroll_info = self.scroll_helper.get_scroll_info()
+        elapsed_time = scroll_info.get('elapsed_time')
+        self.logger.info(
+            "News ticker scroll cycle completed (elapsed=%.2fs, target=%.2fs)",
+            elapsed_time if elapsed_time is not None else -1.0,
+            scroll_info.get('dynamic_duration'),
+        )
+
+        if self.paging_enabled:
+            # Queue the next page but leave the finished strip on screen. The
+            # rebuild is deferred to reset_cycle_state()/force_clear (or the
+            # page_hold_seconds fallback in display()) so a fresh page never
+            # starts scrolling into a hand-off the controller is about to make.
+            self._advance_page()
+            self._page_dirty = True
+        elif self.rotation_enabled:
+            self.rotation_count += 1
+            self.logger.debug(f"Rotation count: {self.rotation_count}/{self.rotation_threshold}")
+
+            if self.rotation_count >= self.rotation_threshold:
+                self._rotate_headlines()
+                self.rotation_count = 0
+                # Clear scroll cache to force recreation with new headline order
+                self.scroll_helper.clear_cache()
+                self.logger.info("Headlines rotated - scroll cache cleared for next cycle")
+
+    def _render_headline_cached(self, headline: Dict[str, Any]) -> Optional[Image.Image]:
+        """Render a headline, reusing the image for the life of the current data."""
+        key = (headline.get('feed_name', ''), headline.get('title', ''))
+        if key not in self._headline_image_cache:
+            self._headline_image_cache[key] = self._render_headline(headline)
+        return self._headline_image_cache[key]
+
+    def _build_page_images(self) -> Tuple[List[Image.Image], int]:
+        """
+        Render the headlines that make up the current page.
+
+        A page is the longest run of consecutive headlines starting at
+        ``self._page_start`` whose combined scroll width still fits in the time
+        the display controller will actually grant this plugin. Sizing the strip
+        to the time budget is what stops the tail of a cycle from being
+        guillotined mid-word: a headline that wouldn't finish is deferred to the
+        next page instead of being drawn and then cut off.
+
+        Returns:
+            Tuple of (rendered images for this page, headlines consumed).
+        """
+        total = len(self.current_headlines)
+        if total == 0:
+            return [], 0
+
+        self._page_start %= total
+        budget = self._page_width_budget()
+        limit = self.max_headlines_per_page if self.max_headlines_per_page > 0 else total
+
+        images: List[Image.Image] = []
+        # create_scrolling_image() prepends display_width px of blank lead-in.
+        width = float(self.display_width)
+        consumed = 0
+
+        while consumed < total and len(images) < limit:
+            headline = self.current_headlines[(self._page_start + consumed) % total]
+            image = self._render_headline_cached(headline)
+            consumed += 1
+            if image is None:
+                continue
+
+            # Mirrors create_scrolling_image()'s layout: each item costs its own
+            # width plus one element_gap, and item_gap sits between items.
+            cost = image.width + self.ELEMENT_GAP + (self.ITEM_GAP if images else 0)
+            if images and budget is not None and width + cost > budget:
+                consumed -= 1  # defer this headline to the next page
+                break
+
+            images.append(image)
+            width += cost
+
+        # A single headline wider than the whole budget still gets its own page:
+        # it can't be shown in full either way, but splitting it would be worse.
+        return images, max(consumed, 1)
+
+    def _advance_page(self) -> None:
+        """Move the page window forward by exactly the headlines just shown."""
+        total = len(self.current_headlines)
+        if total == 0:
+            return
+        step = self._page_count if self._page_count > 0 else 1
+        self._page_start = (self._page_start + step) % total
+        self.logger.info(
+            "Advanced to next headline page: starting at headline %d/%d ('%s')",
+            self._page_start + 1,
+            total,
+            self.current_headlines[self._page_start].get('title', 'Unknown')[:50],
+        )
+
+    def _start_next_page(self) -> None:
+        """Swap the finished strip for the queued page's, ready to scroll."""
+        self._page_dirty = False
+        self._cycle_complete = False
+        self.scroll_helper.clear_cache()
+        # Rebuild here rather than leaving it to the next display() call, so the
+        # swap costs no blank frame. Skipped when every feed has gone empty --
+        # display() falls through to the "no headlines" screen instead.
+        if self.current_headlines:
+            self._create_scrolling_image()
+
     def _create_scrolling_image(self) -> None:
-        """Create the scrolling news ticker image."""
+        """Create the scrolling news ticker image for the current page."""
         try:
-            # Create PIL Images for each headline
-            headline_images = []
-            for headline in self.current_headlines:
-                headline_img = self._render_headline(headline)
-                if headline_img:
-                    headline_images.append(headline_img)
+            headline_images, page_count = self._build_page_images()
 
             if not headline_images:
                 self.logger.warning("No headline images created")
                 self.scroll_helper.clear_cache()
                 return
 
+            self._page_count = page_count
+
             # Log headline widths for debugging
             headline_widths = [img.width for img in headline_images]
             total_headline_width = sum(headline_widths)
             self.logger.debug(
-                "Preparing scrolling image: %d headlines, widths=%s, total=%dpx",
-                len(headline_images), headline_widths, total_headline_width
+                "Preparing scrolling image: %d headlines, widths=%s, total=%dpx, budget=%s",
+                len(headline_images), headline_widths, total_headline_width, self._page_width_budget()
             )
-            
+
             # Use ScrollHelper to create the scrolling image
             self.scroll_helper.create_scrolling_image(
                 headline_images,
-                item_gap=32,  # Gap between headlines
-                element_gap=16  # Gap within headline elements
+                item_gap=self.ITEM_GAP,
+                element_gap=self.ELEMENT_GAP
             )
             # Dynamic duration is automatically calculated by create_scrolling_image()
             self._cycle_complete = False
+            self._page_dirty = False
 
             self.logger.info(
-                "Created news ticker image: %d headlines, total_scroll_width=%dpx, dynamic_duration=%ds",
-                len(headline_images),
+                "Created news ticker image: headlines %d-%d of %d, total_scroll_width=%dpx, dynamic_duration=%ds",
+                self._page_start + 1,
+                self._page_start + len(headline_images),
+                len(self.current_headlines),
                 self.scroll_helper.total_scroll_width,
                 self.scroll_helper.get_dynamic_duration()
             )
@@ -1089,27 +1330,91 @@ class NewsTickerPlugin(BasePlugin):
         self.display_manager.image = img
         self.display_manager.update_display()
 
+    def supports_dynamic_duration(self) -> bool:
+        """
+        Tell the display controller this plugin sizes its own display time.
+
+        This must be overridden. BasePlugin's implementation reads a top-level
+        ``dynamic_duration`` key, but this plugin has always kept that block
+        under ``global``, so the base class saw nothing and reported False. The
+        controller then treated the ticker as fixed-duration: it never consulted
+        is_cycle_complete() and cut the strip at a flat wall-clock time,
+        mid-headline, no matter how much was left to scroll.
+        """
+        return bool(self.dynamic_duration_enabled)
+
+    def get_dynamic_duration_cap(self) -> Optional[float]:
+        """Longest the controller should wait for a scroll cycle to finish."""
+        if not self.dynamic_duration_enabled:
+            return None
+        return self._plugin_duration_cap()
+
+    def get_cycle_duration(self, display_mode: str = None) -> Optional[float]:
+        """
+        Time needed to scroll the current page from end to end.
+
+        The controller uses this as a hard wall, so it carries overrun slack on
+        top of the scroll helper's estimate: a Pi under load renders below the
+        nominal frame rate and ScrollHelper drops the missed pixels instead of
+        catching up, so the strip finishes a little behind schedule. Without the
+        slack that wall lands mid-headline. It only costs real time when the
+        scroll actually ran late — the controller still hands over the moment
+        is_cycle_complete() flips.
+        """
+        _ = display_mode  # single-mode plugin; accepted for API consistency
+        if not self.dynamic_duration_enabled:
+            return None
+        if not self.scroll_helper or not self.scroll_helper.cached_image:
+            return None
+
+        duration = self.scroll_helper.get_dynamic_duration()
+        if not duration or duration <= 0:
+            return None
+        return float(duration) * (1.0 + max(0.0, self.duration_overrun_allowance))
+
+    def reset_cycle_state(self) -> None:
+        """Restart the ticker from the top when the controller comes back to it."""
+        super().reset_cycle_state()
+        self._cycle_complete = False
+        self._cycle_complete_at = 0.0
+        if self.scroll_helper:
+            if self._page_dirty:
+                # A page finished during the previous turn; render its successor.
+                self._start_next_page()
+            else:
+                self.scroll_helper.reset_scroll()
+
     def is_cycle_complete(self) -> bool:
         """
         Check if the news ticker scroll cycle is complete.
-        
+
         This method is called by the display controller to determine when
         to switch to the next plugin. Returns True only when the scroll
         has completed its full cycle, ensuring headlines aren't cut off.
-        
+
         Returns:
             bool: True if scroll cycle is complete, False otherwise
         """
+        if not self.dynamic_duration_enabled:
+            # Nothing is pacing the hand-off, so never hold the display hostage.
+            return True
         return self._cycle_complete
 
     def get_display_duration(self) -> float:
-        """Get display duration, using dynamic duration if enabled."""
-        # If dynamic duration is enabled and scroll helper has calculated a duration, use it
-        if self.dynamic_duration_enabled:
+        """
+        Get display duration, using dynamic duration if enabled.
+
+        With dynamic duration active the controller reads this as the *minimum*
+        time on screen and takes the real target from get_cycle_duration(). Only
+        report a scroll-derived duration once a strip actually exists — the
+        scroll helper otherwise returns its 60s placeholder, which used to be
+        handed out as a flat duration on the very first turn.
+        """
+        if self.dynamic_duration_enabled and self.scroll_helper.cached_image:
             duration = self.scroll_helper.get_dynamic_duration()
             if duration > 0:
                 return float(duration)
-        
+
         # Fallback to configured duration
         return float(self.display_duration)
 
@@ -1139,7 +1444,12 @@ class NewsTickerPlugin(BasePlugin):
             'separator_color': self.separator_color,
             'show_logos': self.show_logos,
             'logo_size': self.logo_size,
-            'feed_logo_map': self.feed_logo_map
+            'feed_logo_map': self.feed_logo_map,
+            'paging_enabled': self.paging_enabled,
+            'page_start': self._page_start,
+            'headlines_this_page': self._page_count,
+            'page_width_budget': self._page_width_budget(),
+            'duration_cap': self._effective_duration_cap()
         })
         return info
 
@@ -1164,6 +1474,10 @@ class NewsTickerPlugin(BasePlugin):
     def cleanup(self) -> None:
         """Cleanup resources."""
         self.current_headlines = []
+        self._headline_image_cache = {}
+        self._page_start = 0
+        self._page_count = 0
+        self._page_dirty = False
         if hasattr(self, 'scroll_helper'):
             self.scroll_helper.clear_cache()
         self.logger.info("News ticker plugin cleaned up")
