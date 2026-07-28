@@ -65,6 +65,11 @@ class F1DataSource:
             "sprint": 24 * 3600,        # 24 hours
             "practice": 2 * 3600,       # 2 hours
             "drivers": 24 * 3600,       # 24 hours
+            # Persistent last-known round: long-lived so it still resolves after
+            # a restart or while the API is offline. Not unbounded — the read
+            # below short-circuits the fresh fetch, so it must still expire (once
+            # a day) or the round would never advance to a newly completed race.
+            "latest_round": 24 * 3600,  # 24 hours
         }
 
         # In-memory cache for when no cache_manager
@@ -1114,6 +1119,14 @@ class F1DataSource:
             if time.time() - cached_time < max_age:
                 return round_num
 
+        # Persistent cache so the value survives restarts and the plugin still
+        # resolves the latest round when the ergast API is unreachable (offline).
+        round_key = f"f1_latest_round_{season}"
+        cached_round = self._get_cached(round_key, "latest_round")
+        if cached_round is not None:
+            self._latest_round_cache[season] = (time.time(), cached_round)
+            return cached_round
+
         data = self._fetch_json(
             f"{JOLPI_BASE}/{season}/driverStandings.json")
         if not data:
@@ -1129,6 +1142,7 @@ class F1DataSource:
             if standings_lists:
                 round_num = int(standings_lists[0].get("round", 0))
                 self._latest_round_cache[season] = (time.time(), round_num)
+                self._set_cached(round_key, round_num)
                 return round_num
         except (KeyError, IndexError, ValueError):
             pass
