@@ -30,6 +30,11 @@ LOOPBACK_REDIRECT = 'http://127.0.0.1'
 PLUGIN_DIR = Path(__file__).parent.resolve()
 CREDENTIALS_FILE = PLUGIN_DIR / 'credentials.json'
 TOKEN_FILE = PLUGIN_DIR / 'token.pickle'
+# The web-UI OAuth flow runs as two separate processes (generate URL, then
+# exchange code). google-auth-oauthlib uses PKCE, so the code_verifier created
+# while building the auth URL in step 1 must be persisted here and restored in
+# step 2 — otherwise the token exchange fails with "Missing code verifier".
+VERIFIER_FILE = PLUGIN_DIR / '.pkce_code_verifier'
 
 
 def _is_headless():
@@ -84,6 +89,15 @@ def main():
         try:
             flow = InstalledAppFlow.from_client_secrets_file(str(CREDENTIALS_FILE), SCOPES)
             flow.redirect_uri = LOOPBACK_REDIRECT
+            # Restore the PKCE code_verifier generated in step 1 (separate
+            # process). Without it Google rejects the exchange with
+            # "invalid_grant: Missing code verifier".
+            try:
+                saved_verifier = VERIFIER_FILE.read_text().strip()
+            except OSError:
+                saved_verifier = ""
+            if saved_verifier:
+                flow.code_verifier = saved_verifier
             # Extract the authorization code from the redirect URL
             if 'code=' in redirect_url:
                 from urllib.parse import urlparse, parse_qs
@@ -111,6 +125,10 @@ def main():
         except Exception as e:
             print(json.dumps({"status": "error", "message": f"Failed to complete authentication: {e}"}))
             sys.exit(1)
+        finally:
+            # The verifier is single-use; drop it whether or not the exchange
+            # succeeded so a later attempt starts from a fresh step 1.
+            VERIFIER_FILE.unlink(missing_ok=True)
 
     # Step 1: Generate auth URL
     if _is_headless():
@@ -118,6 +136,15 @@ def main():
             flow = InstalledAppFlow.from_client_secrets_file(str(CREDENTIALS_FILE), SCOPES)
             flow.redirect_uri = LOOPBACK_REDIRECT
             auth_url, _ = flow.authorization_url(prompt='consent')
+
+            # Persist the PKCE code_verifier so step 2 (a separate process) can
+            # complete the token exchange.
+            try:
+                VERIFIER_FILE.write_text(flow.code_verifier or "")
+            except OSError as e:
+                print(json.dumps({"status": "error",
+                                  "message": f"Failed to save auth state: {e}"}))
+                sys.exit(1)
 
             print(json.dumps({
                 "status": "success",
