@@ -272,12 +272,9 @@ class StockDisplayRenderer:
         price_width_tmp = int(price_bbox[2] - price_bbox[0])
         change_width_tmp = int(change_bbox[2] - change_bbox[0]) if change_text else 0
         max_text_width = max(symbol_width_tmp, price_width_tmp, change_width_tmp, 1)
+        # Text column sits just right of the logo. The chart is now placed
+        # relative to this column (see below), so no chart-overlap clamp is needed.
         column_x = logo_right + logo_gap + (max_text_width // 2)
-        if self.toggle_chart:
-            # Clamp so text does not overlap the mini chart area
-            chart_width_px = int(width * self.chart_width_percent)
-            chart_start = width - chart_width_px - 4
-            column_x = min(column_x, chart_start - (max_text_width // 2) - logo_gap)
         
         # Draw symbol
         symbol_width = int(symbol_bbox[2] - symbol_bbox[0])
@@ -299,18 +296,26 @@ class StockDisplayRenderer:
             change_y = int(price_y + price_height + text_gap)  # Adjusted gap
             draw.text((change_x, change_y), change_text, font=change_font, fill=change_color)
         
-        # Draw mini chart on the right only if toggle_chart is enabled
+        # Place the mini chart immediately to the right of the text column (a
+        # small gap) instead of anchoring it to the far right of the wide canvas,
+        # so the price and its chart read as one unit. Then crop the canvas to the
+        # content so the leftover space doesn't become dead inter-symbol gap.
+        text_right = column_x + (max_text_width // 2)
+        chart_gap = 6      # px between the price text and the chart
+        right_margin = 4   # px of breathing room after the content
         if self.toggle_chart and 'price_history' in data and len(data['price_history']) >= 2:
-            self._draw_mini_chart(draw, data['price_history'], width, height, change_color)
+            chart_width = int(width * self.chart_width_percent)
+            # Clamp so the chart still fits on-canvas if the text is unusually wide.
+            chart_x = min(text_right + chart_gap, width - chart_width - right_margin)
+            self._draw_mini_chart(draw, data['price_history'], width, height,
+                                  change_color, chart_x=chart_x)
+            content_right = min(chart_x + chart_width + right_margin, width)
+        else:
+            # No chart drawn: trim to the text content.
+            content_right = min(text_right + 8, width)
 
-        # When chart is disabled, trim the canvas to actual content width.
-        # The canvas is created at 1.5x display width for text room, but content
-        # typically only fills ~half that — the dead space becomes inter-symbol gap.
-        if not self.toggle_chart:
-            content_right = column_x + (max_text_width // 2) + 8  # 8px right margin
-            content_right = min(content_right, width)
-            if content_right < width:
-                image = image.crop((0, 0, content_right, height))
+        if content_right < width:
+            image = image.crop((0, 0, content_right, height))
 
         return image
     
@@ -464,18 +469,19 @@ class StockDisplayRenderer:
         return (255, 255, 0)  # Yellow for no change
     
     def _draw_mini_chart(self, draw: ImageDraw.Draw, price_history: List[Dict],
-                        width: int, height: int, color: Tuple[int, int, int]) -> None:
-        """Draw a mini price chart on the right side of the display."""
+                        width: int, height: int, color: Tuple[int, int, int],
+                        chart_x: Optional[int] = None) -> None:
+        """Draw a mini price chart. By default it anchors to the right edge; pass
+        chart_x to place it explicitly (e.g. right after the price text)."""
         if len(price_history) < 2:
             return
 
         # Chart dimensions - sized as a configurable fraction of the item canvas
-        # (self.chart_width_percent / self.chart_height_percent), matching the
-        # clamp used in create_stock_display so text never overlaps the chart.
+        # (self.chart_width_percent / self.chart_height_percent).
         # Ensure all dimensions are integers
         chart_width = int(width * self.chart_width_percent)
         chart_height = int(height * self.chart_height_percent)
-        chart_x = int(width - chart_width - 4)  # 4px margin from right edge
+        chart_x = int(width - chart_width - 4) if chart_x is None else int(chart_x)  # default: 4px from right edge
         chart_y = int((height - chart_height) / 2)
         
         # Extract prices - match old stock_manager exactly
