@@ -244,6 +244,7 @@ class PomodoroTimerPlugin(BasePlugin):
         self._derive_topics()
 
     def _derive_topics(self) -> None:
+        """Rebuild every published topic from the command topic's base."""
         base = self.command_topic
         if base.endswith("/set"):
             base = base[:-4]
@@ -260,6 +261,7 @@ class PomodoroTimerPlugin(BasePlugin):
         self.number_set_topics   = {f"{base}/{f}/set": f for f, *_ in _NUMBER_FIELDS}
 
     def validate_config(self) -> bool:
+        """Check the plugin-specific config on top of the base validation."""
         if not super().validate_config():
             return False
         if self.color_mode not in ("phase", "fixed"):
@@ -277,6 +279,7 @@ class PomodoroTimerPlugin(BasePlugin):
     # ── Timer state ─────────────────────────────────────────────────────────────
 
     def _phase_seconds(self, phase: str) -> float:
+        """Configured length of `phase`, in seconds."""
         return {
             PHASE_WORK:        self.work_minutes * 60.0,
             PHASE_SHORT_BREAK: self.short_break_minutes * 60.0,
@@ -284,12 +287,14 @@ class PomodoroTimerPlugin(BasePlugin):
         }.get(phase, self.work_minutes * 60.0)
 
     def _remaining_locked(self) -> float:
+        """Seconds left in the current phase. Caller must hold state_lock."""
         if self.running and self.deadline is not None:
             return max(0.0, self.deadline - time.monotonic())
         return max(0.0, self.remaining)
 
     def _begin_phase_locked(self, phase: str, seconds: Optional[float] = None,
                             run: bool = True, label: Optional[str] = None) -> None:
+        """Start `phase`, optionally paused. Caller must hold state_lock."""
         total = float(seconds) if seconds else self._phase_seconds(phase)
         self.phase = phase
         self.phase_total = max(1.0, total)
@@ -299,6 +304,7 @@ class PomodoroTimerPlugin(BasePlugin):
         self.custom_label = label or None
 
     def _go_idle_locked(self, reset_counters: bool = False) -> None:
+        """Stop the timer. Caller must hold state_lock."""
         self.phase = PHASE_IDLE
         self.running = False
         self.deadline = None
@@ -504,6 +510,7 @@ class PomodoroTimerPlugin(BasePlugin):
                              _fmt_clock(self._remaining_locked()))
 
     def _resume_locked(self) -> None:
+        """Continue a paused phase from where it stopped."""
         self.remaining = max(1.0, self.remaining)
         self.running = True
         self.deadline = time.monotonic() + self.remaining
@@ -577,9 +584,16 @@ class PomodoroTimerPlugin(BasePlugin):
     def update(self) -> None:
         # No network data to fetch; just keep the state machine honest even if
         # the timer thread is not running (e.g. under the safety harness).
+        """Keep the state machine honest even when the timer thread is not
+        running (the safety harness constructs the plugin without enabling it).
+        There is no network data to fetch.
+        """
         self._tick()
 
     def display(self, force_clear: bool = False) -> bool:
+        """Render the current frame. Ticks first so a phase that expired between
+        renders rolls over before it is drawn.
+        """
         try:
             self._tick()
             snapshot = self._snapshot()
@@ -634,19 +648,37 @@ class PomodoroTimerPlugin(BasePlugin):
         self.logger.info("Pomodoro timer cleaned up")
 
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Reload every setting, clearing anything retained under topics we are
+        about to abandon, and reconnect only if the broker wiring changed.
+        """
         super().on_config_change(new_config)
         previous = (self.mqtt_enabled, self.mqtt_host, self.mqtt_port, self.mqtt_username,
                     self.mqtt_password, self.command_topic, self.state_topic,
                     self.ha_discovery, self.discovery_prefix)
         was_idle = self.phase == PHASE_IDLE
 
-        # Turning discovery off has to clear the retained config topics while we
-        # still know where they were published, or the entities linger in Home
-        # Assistant forever. A plain restart deliberately leaves them retained —
-        # that's what lets HA keep the device across reboots, with the LWT
-        # marking it unavailable in the meantime.
-        if self.ha_discovery and not bool(new_config.get("ha_discovery", True)):
+        # Anything retained under the OLD topics has to be cleared before
+        # _load_settings overwrites them, while we still know where it went.
+        # A plain restart deliberately leaves discovery retained — that is what
+        # lets HA keep the device across reboots, with the LWT marking it
+        # unavailable in the meantime — but these two cases orphan it:
+        #
+        #   discovery off  the config topics would linger and HA would keep
+        #                  entities for a device that no longer announces itself
+        #   prefix change  the configs are republished under the new prefix, so
+        #                  the ones at the old prefix are never touched again
+        #
+        # A command_topic change is different: the discovery path is keyed on the
+        # prefix and plugin id, so republishing overwrites it in place and HA
+        # follows. What it does strand is the retained payloads on the old state
+        # topics, so those get cleared instead.
+        new_prefix = str(new_config.get("discovery_prefix", "homeassistant"))
+        new_command = str(new_config.get("command_topic", "ledmatrix/pomodoro/set"))
+        discovery_off = not bool(new_config.get("ha_discovery", True))
+        if self.ha_discovery and (discovery_off or new_prefix != self.discovery_prefix):
             self._remove_discovery()
+        if new_command != self.command_topic:
+            self._clear_retained_state()
 
         self._load_settings(new_config)
         self._font_cache = {}
@@ -665,6 +697,7 @@ class PomodoroTimerPlugin(BasePlugin):
             self._publish_state(force=True)
 
     def get_info(self) -> Dict[str, Any]:
+        """State plus connection details for the web UI."""
         info = super().get_info()
         info.update(self._snapshot())
         info.update({
@@ -679,6 +712,11 @@ class PomodoroTimerPlugin(BasePlugin):
     # ── State snapshot ──────────────────────────────────────────────────────────
 
     def _snapshot(self) -> Dict[str, Any]:
+        """A consistent view of the timer for rendering and publishing.
+
+        Taken under the lock so a frame can never mix a phase from before a
+        rollover with a countdown from after it.
+        """
         with self.state_lock:
             remaining = self._remaining_locked()
             return {
@@ -703,6 +741,7 @@ class PomodoroTimerPlugin(BasePlugin):
             }
 
     def _phase_label(self, phase: str, running: bool) -> str:
+        """The on-screen name for a phase, or the paused label when held."""
         if phase == PHASE_IDLE:
             return self.idle_label
         if not running and self.paused_label:
@@ -714,6 +753,7 @@ class PomodoroTimerPlugin(BasePlugin):
         }.get(phase, self.work_label)
 
     def _phase_color(self, phase: str) -> Tuple[int, int, int]:
+        """The configured colour for a phase."""
         return {
             PHASE_WORK: self.work_color,
             PHASE_SHORT_BREAK: self.short_break_color,
@@ -723,6 +763,7 @@ class PomodoroTimerPlugin(BasePlugin):
     # ── Rendering ───────────────────────────────────────────────────────────────
 
     def _panel_size(self) -> Tuple[int, int]:
+        """The panel's logical size, however the core exposes it."""
         dm = self.display_manager
         width = getattr(dm, "width", None) or getattr(getattr(dm, "matrix", None), "width", 128)
         height = getattr(dm, "height", None) or getattr(getattr(dm, "matrix", None), "height", 32)
@@ -792,6 +833,7 @@ class PomodoroTimerPlugin(BasePlugin):
         return font
 
     def _fallback_font(self, max_height: int):
+        """A built-in font for when no TrueType face is available."""
         dm = self.display_manager
         if max_height >= 8:
             return getattr(dm, "small_font", None) or getattr(dm, "regular_font", None)
@@ -852,6 +894,7 @@ class PomodoroTimerPlugin(BasePlugin):
         draw.text((x - ox, y - oy), text, font=font, fill=color)
 
     def _render(self, draw, width: int, height: int, snap: Dict[str, Any]) -> None:
+        """Compose one frame: background, phase content, then the indicator."""
         phase = snap["phase"]
         accent = self._phase_color(phase)
         if snap["status"] == "paused":
@@ -900,6 +943,7 @@ class PomodoroTimerPlugin(BasePlugin):
         return 4 if height >= 64 else 3
 
     def _render_stacked(self, draw, box, snap, label, text_color, accent, dot_h) -> None:
+        """Label above the countdown, for panels that are not extremely wide."""
         bx, by, bw, bh = box
         label_h = (10 if bh >= 54 else 7) if (self.show_phase_label and label) else 0
         label_font = self._fit_font(draw, label, bw - 2, label_h) if label_h else None
@@ -1060,6 +1104,7 @@ class PomodoroTimerPlugin(BasePlugin):
 
     @staticmethod
     def _segment_boxes(x: int, y: int, w: int, h: int, t: int) -> Dict[str, Tuple]:
+        """Pixel rectangles for each of the seven segments of a digit cell."""
         mid = y + (h - t) // 2
         # Verticals stop at the middle bar so corners meet cleanly.
         upper_h = mid - y + t
@@ -1077,6 +1122,7 @@ class PomodoroTimerPlugin(BasePlugin):
     def _draw_digit(self, draw, char: str, x: int, y: int, w: int, h: int, t: int,
                     color: Tuple[int, int, int],
                     ghost: Optional[Tuple[int, int, int]]) -> None:
+        """Draw one seven-segment digit, lit segments over the ghost layer."""
         lit = self._SEGMENTS.get(char, "")
         boxes = self._segment_boxes(x, y, w, h, t)
         for name, (sx, sy, sw, sh) in boxes.items():
@@ -1121,6 +1167,10 @@ class PomodoroTimerPlugin(BasePlugin):
         if self.progress_style == "segments":
             self._draw_segments(draw, x, y, width, height, remaining, accent)
             return
+        self._draw_bar(draw, x, y, width, height, remaining, accent)
+
+    def _draw_bar(self, draw, x: int, y: int, width: int, height: int,
+                  remaining: float, accent: Tuple[int, int, int]) -> None:
         draw.rectangle([x, y, x + width - 1, y + height - 1], fill=_dim(accent, 0.18))
         lit = int(round(max(0.0, min(1.0, remaining)) * width))
         if lit <= 0:
@@ -1136,7 +1186,10 @@ class PomodoroTimerPlugin(BasePlugin):
         gap = 1
         block = (width - (count - 1) * gap) // count
         if block < 1:
-            self.progress_style = "bar"
+            # Too narrow for discrete blocks. Fall back for this frame only —
+            # rewriting self.progress_style here would silently overwrite the
+            # user's setting from the render thread.
+            self._draw_bar(draw, x, y, width, height, remaining, accent)
             return
         span = count * block + (count - 1) * gap
         start = x + max(0, (width - span) // 2)
@@ -1181,6 +1234,9 @@ class PomodoroTimerPlugin(BasePlugin):
                 self._pinned = not want   # let the next tick retry
 
     def _timer_loop(self) -> None:
+        """Drive the state machine independently of the render loop, so the
+        timer keeps counting while another plugin owns the panel.
+        """
         while not self.timer_stop_event.wait(0.25):
             try:
                 self._tick()
@@ -1341,6 +1397,7 @@ class PomodoroTimerPlugin(BasePlugin):
         return entities
 
     def _publish_discovery(self) -> None:
+        """Announce every entity to Home Assistant."""
         if not self.ha_discovery or not self.mqtt_client:
             return
         for suffix, payload in self._discovery_entities():
@@ -1348,14 +1405,27 @@ class PomodoroTimerPlugin(BasePlugin):
         self.logger.info("Published HA MQTT discovery — device: %s", self.device_name)
 
     def _remove_discovery(self) -> None:
+        """Clear the retained discovery configs so HA drops the entities."""
         if not self.ha_discovery or not self.mqtt_client:
             return
         for suffix, _ in self._discovery_entities():
             self._publish(f"{self.discovery_prefix}/{suffix}", "")
 
+    def _clear_retained_state(self) -> None:
+        """Empty the retained payloads on the topics we are about to abandon."""
+        if not self.mqtt_client:
+            return
+        topics = [self.state_topic, self.status_topic, self.phase_topic,
+                  self.remaining_topic, self.remaining_secs_topic,
+                  self.session_topic, self.attributes_topic, self.availability_topic]
+        topics += list(self.number_state_topics.values())
+        for topic in topics:
+            self._publish(topic, "")
+
     # ── MQTT callbacks ──────────────────────────────────────────────────────────
 
     def _on_mqtt_connect(self, client, userdata, flags, rc):  # pylint: disable=unused-argument
+        """Subscribe and announce ourselves once the broker accepts us."""
         if rc != 0:
             self.mqtt_connecting = False
             self.mqtt_connected = False
@@ -1373,12 +1443,14 @@ class PomodoroTimerPlugin(BasePlugin):
         self.logger.info("MQTT connected — subscribed to %s", self.command_topic)
 
     def _on_mqtt_disconnect(self, client, userdata, rc):  # pylint: disable=unused-argument
+        """Mark the connection down so the supervisor loop redials."""
         self.mqtt_connected = False
         self.mqtt_connecting = False
         if rc != 0:
             self.logger.warning("MQTT disconnected unexpectedly rc=%s", rc)
 
     def _on_mqtt_message(self, client, userdata, msg):  # pylint: disable=unused-argument
+        """Route an incoming message to a duration setter or a command."""
         try:
             field = self.number_set_topics.get(msg.topic)
             if field:
@@ -1404,6 +1476,7 @@ class PomodoroTimerPlugin(BasePlugin):
     # ── MQTT connect / loop ─────────────────────────────────────────────────────
 
     def _connect_mqtt(self) -> bool:
+        """Build and dial a client. False if it could not be reached."""
         try:
             try:
                 self.mqtt_client = mqtt.Client(
@@ -1461,6 +1534,9 @@ class PomodoroTimerPlugin(BasePlugin):
         return False
 
     def _mqtt_loop(self) -> None:
+        """Supervise the connection: dial, wait for CONNACK, redial on failure
+        with backoff, and tear the client down on the way out.
+        """
         while not self.mqtt_stop_event.is_set():
             try:
                 if self.mqtt_connected:
@@ -1504,6 +1580,7 @@ class PomodoroTimerPlugin(BasePlugin):
         self.logger.info("MQTT loop stopped")
 
     def _graceful_shutdown(self) -> None:
+        """Stop both threads and release the MQTT client. Safe to call twice."""
         self.timer_stop_event.set()
         if self.timer_thread and self.timer_thread.is_alive():
             self.timer_thread.join(timeout=2.0)

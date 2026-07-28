@@ -346,7 +346,7 @@ def test_seven_segment_digits_keep_a_readable_shape():
             metrics = p._seven_segment_metrics(text, width - 6, height - 10)
             if metrics is None:
                 continue
-            h, digit_w, stroke, gap, colon_w, total = metrics
+            h, digit_w, stroke, _gap, _colon_w, total = metrics
             assert digit_w >= round(h * 0.64), f"{width}x{height} {text}: digit too narrow"
             assert digit_w >= 2 * stroke + 1, f"{width}x{height} {text}: segments would fuse"
             assert total <= width - 6, f"{width}x{height} {text}: digits overrun the box"
@@ -375,6 +375,37 @@ def test_unknown_styles_fall_back_to_the_defaults():
     p = make_plugin(progress_style="disco", digit_style="gothic")
     assert p.progress_style == "perimeter"
     assert p.digit_style == "seven_segment"
+
+
+def test_rendering_never_rewrites_the_configured_style():
+    """A panel too narrow for blocks falls back per-frame, not permanently."""
+    p = make_plugin(24, 16, progress_style="segments")
+    p._apply_command("START", {})
+    p.display()
+    assert p.progress_style == "segments", "the render path overwrote the user's setting"
+
+
+def test_changing_the_discovery_prefix_clears_the_old_configs():
+    p = make_plugin(command_topic="ledmatrix/pomodoro/set")
+    client = _wire_client(p)
+    p.on_config_change({**DEFAULTS, "mqtt_enabled": False, "discovery_prefix": "ha2"})
+    cleared = [t for t, payload in client.published
+               if t.startswith("homeassistant/") and payload == ""]
+    assert len(cleared) == 17, "old prefix's retained configs would orphan HA entities"
+
+
+def test_renaming_the_command_topic_clears_the_old_state_topics():
+    p = make_plugin(command_topic="ledmatrix/pomodoro/set")
+    client = _wire_client(p)
+    old_state, old_avail = p.state_topic, p.availability_topic
+    p.on_config_change({**DEFAULTS, "mqtt_enabled": False,
+                        "command_topic": "desk/focus/set"})
+    cleared = {t for t, payload in client.published if payload == ""}
+    assert old_state in cleared and old_avail in cleared
+    # The discovery configs are keyed on the prefix, so they are republished in
+    # place rather than orphaned — nothing under homeassistant/ gets cleared.
+    assert not any(t.startswith("homeassistant/") for t in cleared)
+    assert p.topic_base == "desk/focus"
 
 
 def test_discovery_payloads_are_valid_json_and_unique():

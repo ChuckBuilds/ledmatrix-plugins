@@ -1,7 +1,7 @@
 {
   "id": "pomodoro-timer",
   "name": "Pomodoro Timer",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "ChuckBuilds",
   "description": "A configurable Pomodoro focus/break timer for your matrix. Set the work and break lengths, then start, pause, skip, or reset it over MQTT — with Home Assistant auto-discovery so the whole timer shows up as a device with no YAML.",
   "entry_point": "manager.py",
@@ -22,6 +22,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "released": "2026-07-28",
+      "version": "1.1.1",
+      "notes": "Review fixes. The segments indicator no longer rewrites the configured progress_style from the render thread when a panel is too narrow for discrete blocks; it falls back to a bar for that frame only. Changing the Home Assistant discovery prefix now clears the retained configs at the old prefix, which would otherwise leave permanently-unavailable entities in HA, and renaming the command topic clears the retained payloads on the state topics it abandons. Docstrings added across the state machine, render path, and MQTT plumbing.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-07-28",
       "version": "1.1.0",
