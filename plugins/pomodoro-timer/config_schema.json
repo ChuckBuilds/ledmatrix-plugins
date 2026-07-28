@@ -1,0 +1,368 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Pomodoro Timer",
+  "description": "A focus/break timer on the matrix, controlled over MQTT or Home Assistant.",
+  "x-propertyOrder": [
+    "enabled",
+    "work_minutes",
+    "short_break_minutes",
+    "long_break_minutes",
+    "sessions_before_long_break",
+    "auto_start_breaks",
+    "auto_start_work",
+    "auto_start_on_enable",
+    "mqtt_enabled",
+    "mqtt_host",
+    "mqtt_port",
+    "mqtt_username",
+    "mqtt_password",
+    "command_topic",
+    "state_topic",
+    "ha_discovery",
+    "discovery_prefix",
+    "device_name",
+    "publish_interval_seconds",
+    "color_mode",
+    "work_color",
+    "short_break_color",
+    "long_break_color",
+    "idle_color",
+    "paused_color",
+    "time_color",
+    "background_color",
+    "show_phase_label",
+    "show_session_dots",
+    "show_progress_bar",
+    "work_label",
+    "short_break_label",
+    "long_break_label",
+    "idle_label",
+    "paused_label",
+    "font_path",
+    "font_size",
+    "pin_while_running",
+    "alert_seconds",
+    "alert_flash",
+    "display_duration"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "title": "Enabled"
+    },
+
+    "work_minutes": {
+      "type": "integer",
+      "default": 25,
+      "minimum": 1,
+      "maximum": 180,
+      "title": "Work Session (minutes)",
+      "description": "Length of a focus session. Also settable at runtime from Home Assistant."
+    },
+    "short_break_minutes": {
+      "type": "integer",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 60,
+      "title": "Short Break (minutes)",
+      "description": "Break taken after each work session."
+    },
+    "long_break_minutes": {
+      "type": "integer",
+      "default": 15,
+      "minimum": 1,
+      "maximum": 120,
+      "title": "Long Break (minutes)",
+      "description": "Longer break taken after a full set of work sessions."
+    },
+    "sessions_before_long_break": {
+      "type": "integer",
+      "default": 4,
+      "minimum": 1,
+      "maximum": 12,
+      "title": "Sessions Before Long Break",
+      "description": "How many work sessions make up one set. Shown on screen as the row of session dots."
+    },
+    "auto_start_breaks": {
+      "type": "boolean",
+      "default": true,
+      "title": "Auto-Start Breaks",
+      "description": "Start the break automatically when a work session ends. Turn this off to make the break wait for a Start/Resume command."
+    },
+    "auto_start_work": {
+      "type": "boolean",
+      "default": false,
+      "title": "Auto-Start Next Work Session",
+      "description": "Start the next work session automatically when a break ends. Off by default so you decide when to get back to it."
+    },
+    "auto_start_on_enable": {
+      "type": "boolean",
+      "default": false,
+      "title": "Start Timer When Plugin Is Enabled",
+      "description": "Begin a work session as soon as the plugin loads. Useful if you don't use MQTT.",
+      "x-advanced": true
+    },
+
+    "mqtt_enabled": {
+      "type": "boolean",
+      "default": true,
+      "title": "Enable MQTT Control",
+      "description": "Connect to an MQTT broker so the timer can be driven from Home Assistant or any MQTT client. Turn off to run the timer purely from this configuration."
+    },
+    "mqtt_host": {
+      "type": "string",
+      "default": "localhost",
+      "title": "Broker Address",
+      "description": "Hostname or IP of your MQTT broker — usually the same address as your Home Assistant instance."
+    },
+    "mqtt_port": {
+      "type": "integer",
+      "default": 1883,
+      "minimum": 1,
+      "maximum": 65535,
+      "title": "Broker Port",
+      "description": "Default is 1883. Use 8883 for TLS."
+    },
+    "mqtt_username": {
+      "type": "string",
+      "default": "",
+      "title": "Username",
+      "description": "MQTT broker username. Leave blank if your broker does not require authentication."
+    },
+    "mqtt_password": {
+      "type": "string",
+      "default": "",
+      "title": "Password",
+      "description": "MQTT broker password. Leave blank if your broker does not require authentication.",
+      "x-sensitive": true
+    },
+    "command_topic": {
+      "type": "string",
+      "default": "ledmatrix/pomodoro/set",
+      "title": "Command Topic",
+      "description": "The plugin subscribes here. Publish START, PAUSE, RESUME, TOGGLE, SKIP, STOP or RESET — or JSON for per-message durations and labels. Every other topic is derived from this one."
+    },
+    "state_topic": {
+      "type": "string",
+      "default": "ledmatrix/pomodoro/state",
+      "title": "State Topic",
+      "description": "The plugin publishes ON (a session is active) or OFF (idle) here so the Home Assistant switch stays in sync.",
+      "x-advanced": true
+    },
+    "ha_discovery": {
+      "type": "boolean",
+      "default": true,
+      "title": "Enable Home Assistant Auto-Discovery",
+      "description": "Announce the timer to Home Assistant over MQTT. HA creates a device with the switch, start/pause/skip/reset buttons, duration number boxes, and phase/remaining sensors — no configuration.yaml entry needed."
+    },
+    "discovery_prefix": {
+      "type": "string",
+      "default": "homeassistant",
+      "title": "HA Discovery Prefix",
+      "description": "The MQTT topic prefix your HA MQTT integration listens on. Leave as 'homeassistant' unless you changed it in HA.",
+      "x-advanced": true
+    },
+    "device_name": {
+      "type": "string",
+      "default": "LED Matrix — Pomodoro",
+      "title": "Device Name in Home Assistant",
+      "description": "How this device appears under Settings → Devices & Services → MQTT in Home Assistant.",
+      "x-advanced": true
+    },
+    "publish_interval_seconds": {
+      "type": "integer",
+      "default": 1,
+      "minimum": 1,
+      "maximum": 60,
+      "title": "State Publish Interval (seconds)",
+      "description": "How often the countdown is published while running. Raise this to cut broker traffic; state changes (start, pause, phase change) are always published immediately.",
+      "x-advanced": true
+    },
+
+    "color_mode": {
+      "type": "string",
+      "enum": ["phase", "fixed"],
+      "default": "phase",
+      "title": "Countdown Color",
+      "description": "'phase' colors the countdown by what's running (work / break / long break / paused). 'fixed' always uses the Countdown Text Color below.",
+      "x-widget": "radio"
+    },
+    "work_color": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [255, 70, 50],
+      "title": "Work Color",
+      "x-widget": "color-picker"
+    },
+    "short_break_color": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [60, 200, 110],
+      "title": "Short Break Color",
+      "x-widget": "color-picker"
+    },
+    "long_break_color": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [70, 150, 255],
+      "title": "Long Break Color",
+      "x-widget": "color-picker"
+    },
+    "idle_color": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [110, 110, 110],
+      "title": "Idle Color",
+      "x-widget": "color-picker",
+      "x-advanced": true
+    },
+    "paused_color": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [255, 176, 0],
+      "title": "Paused Color",
+      "x-widget": "color-picker",
+      "x-advanced": true
+    },
+    "time_color": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [255, 255, 255],
+      "title": "Countdown Text Color",
+      "description": "Used only when Countdown Color is set to 'fixed'.",
+      "x-widget": "color-picker",
+      "x-advanced": true
+    },
+    "background_color": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [0, 0, 0],
+      "title": "Background Color",
+      "x-widget": "color-picker",
+      "x-advanced": true
+    },
+
+    "show_phase_label": {
+      "type": "boolean",
+      "default": true,
+      "title": "Show Phase Label",
+      "description": "Show the current phase name above the countdown."
+    },
+    "show_session_dots": {
+      "type": "boolean",
+      "default": true,
+      "title": "Show Session Dots",
+      "description": "Show one dot per work session in the set, filled in as you complete them."
+    },
+    "show_progress_bar": {
+      "type": "boolean",
+      "default": true,
+      "title": "Show Progress Bar",
+      "description": "Show a bar along the bottom edge that fills as the current phase elapses."
+    },
+
+    "work_label": {
+      "type": "string",
+      "default": "FOCUS",
+      "maxLength": 24,
+      "title": "Work Label",
+      "x-advanced": true
+    },
+    "short_break_label": {
+      "type": "string",
+      "default": "BREAK",
+      "maxLength": 24,
+      "title": "Short Break Label",
+      "x-advanced": true
+    },
+    "long_break_label": {
+      "type": "string",
+      "default": "LONG BREAK",
+      "maxLength": 24,
+      "title": "Long Break Label",
+      "x-advanced": true
+    },
+    "idle_label": {
+      "type": "string",
+      "default": "POMODORO",
+      "maxLength": 24,
+      "title": "Idle Label",
+      "description": "Shown when no timer is running, above the next work session's length.",
+      "x-advanced": true
+    },
+    "paused_label": {
+      "type": "string",
+      "default": "PAUSED",
+      "maxLength": 24,
+      "title": "Paused Label",
+      "description": "Shown in place of the phase name while the timer is paused. Leave blank to keep showing the phase name.",
+      "x-advanced": true
+    },
+
+    "font_path": {
+      "type": "string",
+      "default": "",
+      "title": "Font",
+      "description": "Path to a TTF font file relative to the LEDMatrix root, e.g. assets/fonts/PressStart2P-Regular.ttf. Leave blank to use the display's default font.",
+      "x-advanced": true
+    },
+    "font_size": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 64,
+      "title": "Font Size (px)",
+      "description": "Fix the countdown font height in pixels. Leave at 0 to size the countdown automatically to the panel.",
+      "x-advanced": true
+    },
+
+    "pin_while_running": {
+      "type": "boolean",
+      "default": true,
+      "title": "Hold the Display While Running",
+      "description": "Take over the matrix for as long as a session is active, instead of rotating through your other plugins. Turn off to let the timer take its normal turn in the rotation."
+    },
+    "alert_seconds": {
+      "type": "integer",
+      "default": 8,
+      "minimum": 0,
+      "maximum": 60,
+      "title": "Phase-Change Alert (seconds)",
+      "description": "How long the timer grabs the display when a phase ends. Set to 0 to disable the alert."
+    },
+    "alert_flash": {
+      "type": "boolean",
+      "default": true,
+      "title": "Flash on Phase Change",
+      "description": "Flash the panel during the phase-change alert.",
+      "x-advanced": true
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 10,
+      "minimum": 1,
+      "maximum": 300,
+      "title": "Display Duration (seconds)",
+      "description": "How long the timer stays on screen each rotation cycle when it isn't holding the display.",
+      "x-advanced": true
+    }
+  },
+  "required": ["enabled", "work_minutes", "short_break_minutes", "long_break_minutes", "sessions_before_long_break"],
+  "additionalProperties": false
+}
