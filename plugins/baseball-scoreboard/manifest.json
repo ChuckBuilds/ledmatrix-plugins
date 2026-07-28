@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.19.3",
+  "version": "1.20.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-28",
+      "version": "1.20.0",
+      "notes": "Fix game start times rendering in UTC. The plugin looked for the LEDMatrix global timezone only on cache_manager.config_manager; on cores that expose config_manager via the plugin manager instead, that lookup found nothing and every start time was drawn in UTC (a 6:45pm Central first pitch showed as 11:45PM) even though the clock plugin was correct on the same device. Timezone resolution now checks the plugin override, then both config managers, then the host system zone, before falling back to UTC. Adds a documented timezone setting under Advanced Settings -- previously the key was rejected by the config schema, so hand-editing it had no effect -- and stops the plugin writing a resolved timezone back into the saved config.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-18",
       "version": "1.19.3",
