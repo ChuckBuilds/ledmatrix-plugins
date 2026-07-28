@@ -78,7 +78,7 @@
             "description": "Horizontal alignment of the countdown name and value within the text area"
           },
           "image_path": {
-            "type": "string",
+            "type": ["string", "null"],
             "title": "Image",
             "x-widget": "file-upload-single",
             "x-upload-config": {
