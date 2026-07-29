@@ -426,6 +426,12 @@ class PomodoroTimerPlugin(BasePlugin):
                 if field in payload:
                     self._set_number_locked(field, payload[field])
             label = payload.get("label")
+            if label is not None:
+                # Bounded exactly like the task label: it lands in the same
+                # trim-a-character-at-a-time loop in the renderer, so an
+                # unbounded string is a per-frame cost, and a non-string would
+                # reach the draw call untouched.
+                label = str(label).strip()[:32] or None
             explicit = payload.get("duration_minutes") or payload.get("minutes")
             duration = None
             if explicit is not None:
@@ -448,6 +454,10 @@ class PomodoroTimerPlugin(BasePlugin):
                     self._begin_phase_locked(PHASE_WORK, duration, run=True, label=label)
                 elif not self.running:
                     self._resume_locked()
+                    # Resuming keeps the phase it was holding, so nothing else
+                    # would pick up a label sent with the same message.
+                    if label:
+                        self.custom_label = label
                 elif duration is not None:
                     self._begin_phase_locked(self.phase, duration, run=True, label=label)
                 else:
@@ -700,16 +710,19 @@ class PomodoroTimerPlugin(BasePlugin):
         #   prefix change  the configs are republished under the new prefix, so
         #                  the ones at the old prefix are never touched again
         #
-        # A command_topic change is different: the discovery path is keyed on the
-        # prefix and plugin id, so republishing overwrites it in place and HA
-        # follows. What it does strand is the retained payloads on the old state
-        # topics, so those get cleared instead.
+        # A topic change is different: the discovery path is keyed on the prefix
+        # and plugin id, so republishing overwrites it in place and HA follows.
+        # What it does strand is the retained payloads on the state topics being
+        # left behind, so those get cleared instead. command_topic is the base
+        # every other published topic derives from, and state_topic is settable
+        # on its own, so either one moving abandons something.
         new_prefix = str(new_config.get("discovery_prefix", "homeassistant"))
         new_command = str(new_config.get("command_topic", "ledmatrix/pomodoro/set"))
+        new_state = str(new_config.get("state_topic", "ledmatrix/pomodoro/state"))
         discovery_off = not bool(new_config.get("ha_discovery", True))
         if self.ha_discovery and (discovery_off or new_prefix != self.discovery_prefix):
             self._remove_discovery()
-        if new_command != self.command_topic:
+        if new_command != self.command_topic or new_state != self.state_topic:
             self._clear_retained_state()
 
         self._load_settings(new_config)

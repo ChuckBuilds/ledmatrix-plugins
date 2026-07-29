@@ -402,6 +402,40 @@ def test_task_text_is_bounded():
     assert len(p._snapshot()["task"]) == 32
 
 
+def test_a_label_sent_with_start_applies_however_the_timer_was_left():
+    """START carries a label whichever branch it lands in.
+
+    Idle, running and paused each restart differently, and a label the caller
+    explicitly asked for shouldn't depend on which one it hit.
+    """
+    for name, setup in (("idle", []),
+                        ("running", [("START", {})]),
+                        ("paused", [("START", {}), ("PAUSE", {})])):
+        p = make_plugin()
+        for command, payload in setup:
+            p._apply_command(command, payload)
+        p._apply_command("START", {"label": "DEEP WORK"})
+        assert p._snapshot()["label"] == "DEEP WORK", f"dropped when {name}"
+    # Resuming still resumes rather than restarting the phase.
+    p = make_plugin()
+    p._apply_command("START", {})
+    with p.state_lock:
+        p.deadline -= 600
+    p._apply_command("PAUSE", {})
+    p._apply_command("START", {"label": "DEEP WORK"})
+    assert p._snapshot()["remaining"] == "15:00"
+
+
+def test_command_labels_are_bounded_like_the_task():
+    p = make_plugin()
+    p._apply_command("START", {"label": "x" * 200})
+    assert len(p._snapshot()["label"]) == 32
+    # Anything that isn't a string still has to survive the render path.
+    p._apply_command("WORK", {"label": 12345})
+    assert p._snapshot()["label"] == "12345"
+    assert p.display() is True
+
+
 def test_calm_theme_and_desaturated_pause():
     classic = make_plugin()
     calm = make_plugin(color_theme="calm")
@@ -497,6 +531,21 @@ def test_renaming_the_command_topic_clears_the_old_state_topics():
     # place rather than orphaned — nothing under homeassistant/ gets cleared.
     assert not any(t.startswith("homeassistant/") for t in cleared)
     assert p.topic_base == "desk/focus"
+
+
+def test_renaming_only_the_state_topic_clears_what_it_left_behind():
+    """`state_topic` is settable on its own, not just derived from the base.
+
+    Changing it alone would otherwise leave the old topic retained on the
+    broker forever, showing a timer that stopped existing.
+    """
+    p = make_plugin()
+    client = _wire_client(p)
+    old_state = p.state_topic
+    p.on_config_change({**DEFAULTS, "mqtt_enabled": False,
+                        "state_topic": "desk/focus/running"})
+    assert old_state in {t for t, payload in client.published if payload == ""}
+    assert p.state_topic == "desk/focus/running"
 
 
 def test_discovery_payloads_are_valid_json_and_unique():
