@@ -12,7 +12,7 @@ import sys
 import types
 
 import pytest
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageFont
 
 # The plugin imports BasePlugin from the core, which is not on the path here.
 if 'src' not in sys.modules:
@@ -60,11 +60,25 @@ class FakeDisplayManager:
         self.image = Image.new('RGB', (self.matrix.width, self.matrix.height))
 
 
-def make_plugin(show_trails=True, aircraft=None, trails=None, width=W, height=H):
-    """Build a plugin shell with just the state the map renderer touches."""
+def _plugin_shell():
+    """A FlightTrackerPlugin whose __init__ is a no-op.
+
+    The real __init__ builds fetchers, threads and caches; the map renderer
+    needs none of that. Subclassing with an empty __init__ is clearer than
+    __new__ gymnastics and keeps static analysis happy.
+    """
     from manager import FlightTrackerPlugin
 
-    p = FlightTrackerPlugin.__new__(FlightTrackerPlugin)
+    class _Shell(FlightTrackerPlugin):
+        def __init__(self):
+            pass
+
+    return _Shell()
+
+
+def make_plugin(show_trails=True, aircraft=None, trails=None, width=W, height=H):
+    """Build a plugin shell with just the state the map renderer touches."""
+    p = _plugin_shell()
     dm = FakeDisplayManager(width, height)
     p._display_manager_ref = dm
     p.display_manager = dm
