@@ -1,7 +1,7 @@
 {
   "id": "jellyfin-now-playing",
   "name": "Jellyfin Now Playing",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "ChuckBuilds",
   "description": "Shows what's playing on your Jellyfin server: poster art, title, and playback progress",
   "category": "media",
@@ -26,6 +26,12 @@
     "pillow"
   ],
   "versions": [
+    {
+      "released": "2026-07-29",
+      "version": "1.1.0",
+      "notes": "Progress bar now matches the widest of the title and subtitle instead of spanning the whole text area, so a short episode name no longer leaves a bar stretched across a wide panel — and the blank remainder can be reclaimed in Vegas scroll mode. Disable with progress_bar_match_text.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-20",
       "version": "1.0.0",
