@@ -50,10 +50,19 @@ class FakeLogger:
 
 
 def make_plugin(config=None, px_per_char=6, fail=False):
-    """Build a MusicPlugin shell without running its real __init__."""
+    """Build a MusicPlugin shell without running its real __init__.
+
+    The real __init__ starts polling threads and API clients; the progress-bar
+    sizing needs none of that. Subclassing with an empty __init__ is clearer
+    than __new__ gymnastics and keeps static analysis happy.
+    """
     from manager import MusicPlugin
 
-    plugin = MusicPlugin.__new__(MusicPlugin)
+    class _Shell(MusicPlugin):
+        def __init__(self):
+            pass
+
+    plugin = _Shell()
     plugin.config = config if config is not None else {}
     plugin.display_manager = FakeDisplayManager(px_per_char, fail)
     plugin.logger = FakeLogger()
