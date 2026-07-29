@@ -104,20 +104,26 @@ def resolve_timezone_name(
     """
     log = log or logger
 
-    candidates = [
-        ("plugin config", (config or {}).get("timezone")),
-        (
+    def candidates():
+        """Yield (source, name) lazily.
+
+        ``SportsCore._get_timezone()`` runs this once per game, and the answer
+        is almost always the first candidate. Evaluating the sources on demand
+        keeps the common case from calling into both config managers and
+        stat-ing the host timezone files every time.
+        """
+        yield "plugin config", (config or {}).get("timezone")
+        yield (
             "plugin_manager.config_manager",
             _from_config_manager(getattr(plugin_manager, "config_manager", None), log),
-        ),
-        (
+        )
+        yield (
             "cache_manager.config_manager",
             _from_config_manager(getattr(cache_manager, "config_manager", None), log),
-        ),
-        ("system timezone", system_timezone_name()),
-    ]
+        )
+        yield "system timezone", system_timezone_name()
 
-    for source, name in candidates:
+    for source, name in candidates():
         if not isinstance(name, str):
             continue
         name = name.strip()

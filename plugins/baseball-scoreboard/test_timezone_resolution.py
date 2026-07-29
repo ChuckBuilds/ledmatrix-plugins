@@ -42,6 +42,18 @@ class _LegacyConfigManager:
         return {"timezone": self._timezone}
 
 
+class _CountingConfigManager:
+    """Records how many times the core was asked for the timezone."""
+
+    def __init__(self, timezone=None):
+        self._timezone = timezone
+        self.calls = 0
+
+    def get_timezone(self):
+        self.calls += 1
+        return self._timezone
+
+
 class _BrokenConfigManager:
     """Core whose get_timezone() blows up -- must not take the plugin down."""
 
@@ -70,6 +82,30 @@ def test_plugin_config_override_wins():
     )
     assert name == "America/Denver", name
     print("✓ explicit plugin-level timezone wins")
+
+
+def test_lower_priority_sources_are_not_evaluated():
+    """SportsCore._get_timezone() runs per game; once a candidate resolves, the
+    remaining sources must not be touched."""
+    plugin_cm = _CountingConfigManager("America/New_York")
+    cache_cm = _CountingConfigManager("Europe/London")
+    system_calls = []
+
+    baseball_timezone.system_timezone_name = lambda: system_calls.append(1) or None
+    try:
+        name = resolve_timezone_name(
+            config={"timezone": "America/Chicago"},
+            plugin_manager=_Holder(plugin_cm),
+            cache_manager=_Holder(cache_cm),
+        )
+    finally:
+        baseball_timezone.system_timezone_name = _real_system_timezone_name
+
+    assert name == "America/Chicago", name
+    assert plugin_cm.calls == 0, plugin_cm.calls
+    assert cache_cm.calls == 0, cache_cm.calls
+    assert system_calls == [], system_calls
+    print("✓ resolution stops at the first valid source")
 
 
 def test_plugin_manager_config_manager_is_consulted():
@@ -166,6 +202,7 @@ def test_system_timezone_name_is_a_string_or_none():
 def main():
     tests = [
         test_plugin_config_override_wins,
+        test_lower_priority_sources_are_not_evaluated,
         test_plugin_manager_config_manager_is_consulted,
         test_cache_manager_config_manager_fallback,
         test_legacy_load_config_fallback,
