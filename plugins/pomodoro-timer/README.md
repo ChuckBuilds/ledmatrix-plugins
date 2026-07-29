@@ -10,6 +10,14 @@ break.
 Home Assistant MQTT auto-discovery is on by default, so the whole timer —
 switch, buttons, duration boxes, and sensors — appears as a device with no YAML.
 
+![A work session on a 128×64 panel: the task name across the top, a large
+seven-segment countdown, session pips along the bottom, and the burndown ring
+part-drained around the edge](assets/hero.png)
+
+*A work session on a 128×64 panel. Every image in this README is real plugin
+output, rendered at the true panel size and then scaled up so the pixels stay
+pixels — nothing is a mockup.*
+
 ---
 
 ## Table of Contents
@@ -65,6 +73,13 @@ normal rotation when the timer goes idle.
 ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 ```
 
+Each state has its own colour, so you can read the timer from across the room
+without reading a single word:
+
+![The six on-screen states on a 128×32 panel — idle in grey, work in red,
+paused in amber, short break in green, long break in blue, and a work session
+showing a task name instead of the phase label](assets/phases.png)
+
 The countdown is drawn as **seven-segment digits**, sized to whatever space the
 panel has left rather than picked from a font, with a heavy stroke so it stays
 readable from across a room. The phase label is held back a little so the eye
@@ -86,11 +101,19 @@ leading the way. It costs no interior space, which is what lets the digits be as
 large as they are. If you'd rather have the border back, `bar` and `segments` put
 the indicator along the bottom edge instead, and `none` hides it.
 
-Each element can be turned off, and each color can be changed. The layout adapts
-to the panel: stacked on 64×32, 128×32, and 128×64; label and dots beside a large
-countdown on long panels like 256×32. On short panels the session dots tuck in
-beside the label rather than taking a row of their own, so the digits get the
-height instead.
+Each element can be turned off, and each colour can be changed:
+
+![The appearance options side by side on a 128×32 panel — the four burndown
+styles, unlit segments on, pixel digits, the calm colour theme, and the
+desaturated paused style](assets/options.png)
+
+The layout adapts to the panel: stacked on 64×32, 128×32, and 128×64; label and
+dots beside a large countdown on long panels like 256×32. On short panels the
+session dots tuck in beside the label rather than taking a row of their own, so
+the digits get the height instead.
+
+![The same work session on all four panel sizes — 64×32, 128×32, 128×64 and
+256×32 — drawn at the same scale so the relative sizes are true](assets/sizes.png)
 
 | Phase | Default color |
 |---|---|
@@ -438,6 +461,14 @@ The plugin's own test suite runs without a broker or a LEDMatrix checkout:
 
 ```bash
 python plugins/pomodoro-timer/test_pomodoro_timer.py
+```
+
+The screenshots above are generated the same way the safety harness renders the
+plugin, so they can't drift from what the display actually does. Regenerate them
+against a LEDMatrix checkout with:
+
+```bash
+python plugins/pomodoro-timer/test/render_readme_assets.py --core /path/to/LEDMatrix
 ```
 
 ---
