@@ -98,6 +98,12 @@
       "description": "Duration in seconds to show each individual game before rotating to the next game within the same mode",
       "x-advanced": true
     },
+    "timezone": {
+      "x-advanced": true,
+      "type": "string",
+      "default": "",
+      "description": "IANA timezone used to display event start times (e.g. America/Chicago). Leave blank to follow the LEDMatrix global timezone, or the system timezone if none is set."
+    },
     "background_service": {
       "type": "object",
       "properties": {
@@ -4940,6 +4946,7 @@
     "upcoming_games_to_show",
     "show_favorite_teams_only",
     "game_display_duration",
+    "timezone",
     "background_service",
     "custom_leagues",
     "leagues"

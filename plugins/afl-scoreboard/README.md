@@ -92,6 +92,13 @@ config (there is no per-league nesting).
 | `dynamic_duration` | off | Size a mode's total on-screen time to the number of games it has. |
 | `mode_durations` | null | Fix the total duration of each mode (overrides dynamic calculation). |
 
+### Timezone
+
+- `timezone` (Advanced): IANA name used to display event start times, e.g.
+  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
+  timezone; if that isn't set, the host system's timezone is used, and only if
+  neither is available do times fall back to UTC.
+
 ## Team Names & Abbreviations
 
 The `favorite_teams` / `exclude_teams` fields require the **ESPN API
@@ -144,6 +151,9 @@ Manual install: copy this directory into your LEDMatrix `plugins_directory`
 
 ## Troubleshooting
 
+- **Start times look like UTC** (a 6:45pm Central start showing as 11:45PM):
+  the plugin couldn't read your global timezone. Set `timezone` under the
+  plugin's Advanced Settings to your IANA zone, e.g. `America/Chicago`.
 - **No games showing**: Confirm the ESPN endpoint is reachable and that at least
   one display mode is enabled.
 - **Missing team logos**: The plugin auto-downloads logos; check the display's

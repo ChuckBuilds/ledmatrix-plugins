@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.2.4",
+  "version": "1.3.0",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "released": "2026-07-29",
+      "version": "1.3.0",
+      "notes": "Fix event start times rendering in UTC. The plugin looked for the LEDMatrix global timezone only on cache_manager.config_manager; on cores that expose config_manager via the plugin manager instead, that lookup found nothing and every start time was drawn in UTC even though the clock plugin was correct on the same device. Timezone resolution now checks the plugin override, then both config managers, then the host system zone, before falling back to UTC. Adds a documented timezone setting under Advanced Settings -- previously the key was not in the config schema, so hand-editing it had no effect.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-05-15",
       "version": "1.2.4",

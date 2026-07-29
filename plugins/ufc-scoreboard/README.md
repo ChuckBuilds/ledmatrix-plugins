@@ -61,6 +61,13 @@ For the full set of nested keys (scroll tuning, display durations,
 update intervals, customization fonts/colors), see
 [`config_schema.json`](config_schema.json).
 
+### Timezone
+
+- `timezone` (Advanced): IANA name used to display event start times, e.g.
+  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
+  timezone; if that isn't set, the host system's timezone is used, and only if
+  neither is available do times fall back to UTC.
+
 ## Fighter headshots
 
 On first display the plugin downloads fighter headshots into
