@@ -19,10 +19,23 @@ try:
     from dynamic_team_resolver import DynamicTeamResolver
 except ImportError:
     DynamicTeamResolver = None
-from logo_downloader import LogoDownloader, download_missing_logo
 from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
 from ufc_timezone import resolve_timezone
+
+# Import main logo downloader (same as football plugin).
+# This used to be a bare `from logo_downloader import ...`, but ufc-scoreboard
+# ships no logo_downloader.py -- the name only ever resolved by binding some
+# *other* plugin's copy off sys.path, so loading this plugin failed outright
+# when no such plugin happened to be loaded. Sibling plugins (soccer, nrl, afl)
+# and this file's own deferred import below both use the src.* path.
+import sys
+# Add parent directory to path to import from src
+plugin_dir = Path(__file__).resolve().parent
+project_root = plugin_dir.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+from src.logo_downloader import LogoDownloader, download_missing_logo
 
 
 class SportsCore(ABC):
