@@ -924,11 +924,24 @@ class PomodoroTimerPlugin(BasePlugin):
         while tw > bw and len(text) > 1:
             text = text[:-1]
             tw, th, ox, oy = self._measure(draw, text, font)
-        if tw > bw:
+        if tw > bw or th > bh:
             return
         x = bx if align == "left" else bx + max(0, (bw - tw) // 2)
         y = by + max(0, (bh - th) // 2)
-        draw.text((x - ox, y - oy), text, font=font, fill=color)
+
+        # PIL antialiases TrueType text, which on an LED panel shows up as
+        # fringe pixels at partial brightness around every glyph. The label face
+        # is a pixel font rendered at integer sizes, so that grey is pure
+        # artefact — render to a mask, threshold it, and paint one flat colour
+        # so every lit pixel is fully lit.
+        try:
+            mask = Image.new("L", (tw, th), 0)
+            ImageDraw.Draw(mask).text((-ox, -oy), text, font=font, fill=255)
+            draw.bitmap((x, y), mask.point(lambda v: 255 if v >= 128 else 0),
+                        fill=color)
+        except Exception as e:
+            self.logger.debug("Crisp text failed, falling back: %s", e)
+            draw.text((x - ox, y - oy), text, font=font, fill=color)
 
     def _render(self, draw, width: int, height: int, snap: Dict[str, Any]) -> None:
         """Compose one frame: background, phase content, then the indicator."""
@@ -1004,7 +1017,15 @@ class PomodoroTimerPlugin(BasePlugin):
 
         top = by + label_h + (1 if label_h else 0)
         bottom = by + bh - (0 if (dots_inline or not dot_h) else dot_h + 1)
-        box_h = max(6, bottom - top)
+        # On a very short panel the label and the countdown cannot both fit.
+        # The countdown is the point, so the label goes. Flooring box_h instead
+        # would push the digits straight off the bottom edge.
+        if label_h and bottom - top < 7:
+            label_h = 0
+            label_font = None
+            top = by
+            bottom = by + bh - (0 if (dots_inline or not dot_h) else dot_h + 1)
+        box_h = max(1, bottom - top)
 
         if label_h:
             self._draw_in_box(draw, label, label_font, (bx + 1, by, bw - 2, label_h),
@@ -1042,7 +1063,7 @@ class PomodoroTimerPlugin(BasePlugin):
                                     align="left")
 
         self._draw_time(draw, snap["remaining"],
-                        (bx + left_w + 2, by, bw - left_w - 4, max(6, bh - 1)), text_color)
+                        (bx + left_w + 2, by, bw - left_w - 4, max(1, bh - 1)), text_color)
 
     def _draw_session_dots(self, draw, x: int, y: int, avail_w: int, size: int,
                            snap: Dict[str, Any], accent: Tuple[int, int, int],

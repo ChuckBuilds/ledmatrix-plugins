@@ -416,6 +416,52 @@ def test_calm_theme_and_desaturated_pause():
     assert p.display_manager.image.getbbox() is not None
 
 
+def _panel_colours(plugin):
+    return {c for _, c in plugin.display_manager.image.convert("RGB").getcolors(65536)}
+
+
+def test_nothing_is_antialiased():
+    """Every pixel is one of the palette colours — no half-lit fringe.
+
+    PIL antialiases TrueType text by default, which on an LED panel is a grey
+    halo around every glyph. The label face is a pixel font at integer sizes,
+    so any intermediate value is an artefact rather than a design choice.
+    """
+    def dim(c, f):
+        return tuple(max(0, min(255, int(x * f))) for x in c)
+
+    for width, height in ((64, 32), (128, 32), (128, 64), (256, 32)):
+        p = make_plugin(width, height)
+        p._apply_command("START", {})
+        p.display()
+        accent = p.work_color
+        allowed = {
+            (0, 0, 0), accent,
+            dim(accent, 0.7),                       # label
+            dim(accent, 0.14), dim(accent, 0.28),   # ring track, upcoming pip
+            tuple(max(0, min(255, int(c + (255 - c) * 0.55))) for c in accent),
+        }
+        stray = _panel_colours(p) - allowed
+        assert not stray, f"{width}x{height} has unintended colours: {sorted(stray)}"
+
+
+def test_no_overflow_on_any_panel_shape():
+    """A panel can be almost any size, so sweep well past the sampled ones.
+
+    The label is dropped rather than squeezed once there is no room for both
+    it and the countdown; flooring the countdown box instead pushed the digits
+    straight off the bottom edge on anything under ~16px tall.
+    """
+    for width in (32, 48, 64, 96, 128, 192, 256, 384):
+        for height in (8, 10, 12, 14, 16, 20, 32, 64, 128):
+            p = make_plugin(width, height)
+            p._apply_command("START", {})
+            assert p.display() is True, f"{width}x{height} failed to render"
+            image = p.display_manager.image
+            assert image.size == (width, height)
+            assert image.getbbox() is not None, f"{width}x{height} rendered blank"
+
+
 def test_unknown_styles_fall_back_to_the_defaults():
     p = make_plugin(progress_style="disco", digit_style="gothic")
     assert p.progress_style == "perimeter"
