@@ -373,6 +373,9 @@ Make sure `enabled: true` in the configuration and the plugin is activated in th
 ## Troubleshooting
 
 **No games showing:**
+- **Start times look like UTC** (a 6:45pm Central start showing as 11:45PM):
+  the plugin couldn't read your global timezone. Set `timezone` under the
+  plugin's Advanced Settings to your IANA zone, e.g. `America/Chicago`.
 - Check that at least one league is enabled in config
 - Verify the season is active for enabled leagues
 - Check `recent_games_hours` and `upcoming_games_hours` settings
@@ -512,6 +515,13 @@ Games from all leagues will be mixed and sorted by:
 1. Live games first
 2. Favorite teams (if enabled)
 3. Start time
+
+### Timezone
+
+- `timezone` (Advanced): IANA name used to display event start times, e.g.
+  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
+  timezone; if that isn't set, the host system's timezone is used, and only if
+  neither is available do times fall back to UTC.
 
 ## Data Source
 
