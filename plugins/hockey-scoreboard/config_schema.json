@@ -996,7 +996,7 @@
               "type": "array",
               "items": {"type": "string"},
               "default": [],
-              "description": "NCAA Women's Hockey favorite team abbreviations (e.g., ['WISC', 'MINN', 'OSU'])"
+              "description": "NCAA Women's Hockey favorite team abbreviations (e.g., ['WIS', 'MINN', 'OSU']). These are ESPN's codes: Wisconsin is WIS, not WISC."
             },
             "exclude_teams": {
               "x-advanced": true,

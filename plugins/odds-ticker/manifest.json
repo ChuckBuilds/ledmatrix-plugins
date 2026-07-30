@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "released": "2026-07-29",
+      "version": "1.1.8",
+      "notes": "Fix the NHL team picker, which listed UTA (retired code, labelled with the club's former name) instead of ESPN's UTAH, and omitted the Seattle Kraken entirely so they could not be selected at all. The list is now generated from ESPN and matches it exactly.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-18",
       "version": "1.1.7",

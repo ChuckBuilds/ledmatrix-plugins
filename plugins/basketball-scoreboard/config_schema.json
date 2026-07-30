@@ -85,7 +85,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "List of favorite NBA team abbreviations (e.g., LAL, BOS, GSW). Use 2-3 letter codes."
+          "description": "List of favorite NBA team abbreviations (e.g., LAL, BOS, GS). Use 2-3 letter codes. These are ESPN's codes, which are not always the ones you would guess: Golden State is GS, not GSW."
         },
         "exclude_teams": {
           "x-advanced": true,
@@ -457,7 +457,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "List of favorite WNBA team abbreviations (e.g., NYL, LAS, SEA). Use 2-3 letter codes."
+          "description": "List of favorite WNBA team abbreviations (e.g., NY, LA, SEA). Use 2-3 letter codes. These are ESPN's codes: New York Liberty is NY and Los Angeles Sparks is LA."
         },
         "exclude_teams": {
           "x-advanced": true,
@@ -1239,7 +1239,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "List of favorite NCAA Women's Basketball team abbreviations (e.g., UCONN, SCAR, STAN). Use 2-4 letter codes."
+          "description": "List of favorite NCAA Women's Basketball team abbreviations (e.g., CONN, SC, STAN). Use 2-4 letter codes. These are ESPN's codes: UConn is CONN and South Carolina is SC."
         },
         "exclude_teams": {
           "x-advanced": true,
