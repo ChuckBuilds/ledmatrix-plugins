@@ -42,6 +42,8 @@ from ncaaw_hockey_managers import (
     NCAAWHockeyUpcomingManager,
 )
 
+from hockey_timezone import resolve_timezone_name
+
 logger = logging.getLogger(__name__)
 
 
@@ -843,12 +845,16 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             }
         }
 
-        # Add global config - get timezone from cache_manager's config_manager if available
-        timezone_str = self.config.get("timezone")
-        if not timezone_str and hasattr(self.cache_manager, 'config_manager'):
-            timezone_str = self.cache_manager.config_manager.get_timezone()
-        if not timezone_str:
-            timezone_str = "UTC"
+        # Resolve timezone: plugin override -> global config (either manager)
+        # -> host system zone -> UTC. Reading only cache_manager.config_manager
+        # used to fall through to UTC on cores that expose it via the plugin
+        # manager instead, rendering every start time in UTC.
+        timezone_str = resolve_timezone_name(
+            config=self.config,
+            plugin_manager=getattr(self, "plugin_manager", None),
+            cache_manager=self.cache_manager,
+            log=self.logger,
+        )
         
         # Get display config from main config if available
         display_config = self.config.get("display", {})

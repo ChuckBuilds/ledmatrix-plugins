@@ -36,6 +36,10 @@ A plugin for LEDMatrix that displays live, recent, and upcoming basketball games
 - `update_interval`: How often to fetch new data in seconds (30-86400, default: 3600)
 - `game_display_duration`: Duration to show each individual game before rotating to next game (3-60 seconds, default: 15)
 - `background_service`: Configure API request settings (timeout, retries, priority)
+- `timezone` (Advanced): IANA name used to display event start times, e.g.
+  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
+  timezone; if that isn't set, the host system's timezone is used, and only if
+  neither is available do times fall back to UTC.
 
 ### Per-League Settings
 
@@ -383,6 +387,9 @@ shorten). Leave it at `0` to display every live game for `live_game_duration`.
 
 ## Troubleshooting
 
+- **Start times look like UTC** (a 6:45pm Central start showing as 11:45PM):
+  the plugin couldn't read your global timezone. Set `timezone` under the
+  plugin's Advanced Settings to your IANA zone, e.g. `America/Chicago`.
 - **No games showing**: 
   - Check if leagues are enabled in configuration
   - Verify API endpoints are accessible

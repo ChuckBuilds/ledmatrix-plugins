@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.9.0] - 2026-07-29
+
+### Fixed
+- **Game start times shown in UTC**: The plugin read the LEDMatrix global timezone only from `cache_manager.config_manager`. On cores that hang `config_manager` off the plugin manager instead, that lookup came back empty and every start time was rendered in UTC, while plugins that check the plugin manager first (clock-simple, geochron) showed the correct local time on the same device. Timezone resolution now lives in `football_timezone.py`, shared by the scorebug and the plugin manager, and tries, in order: the plugin's own `timezone` setting, `plugin_manager.config_manager`, `cache_manager.config_manager`, the host system zone (`TZ`, `/etc/timezone`, `/etc/localtime`), and only then UTC.
+- **`timezone` setting was silently discarded**: The key was never declared in `config_schema.json`, which sets `additionalProperties: false`, so hand-editing it in the saved config had no effect. It is now a documented string property under Advanced Settings.
+- **Plugin no longer writes a timezone back into your config**: `on_config_change` used to assign `self.config["timezone"]`, mutating the dict the core handed it and persisting a stale `"timezone": "UTC"` into the saved plugin config, which then shadowed the real global timezone.
+
+### Added
+- `timezone` (Advanced Settings): optional IANA zone override, e.g. `America/Chicago`. Blank (the default) follows the LEDMatrix global timezone.
+
 ## [2.8.1] - 2026-07-10
 
 ### Fixed
