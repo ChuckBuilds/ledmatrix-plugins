@@ -21,6 +21,8 @@ from logo_downloader import F1LogoLoader
 from scroll_display import ScrollDisplayManager
 from team_colors import normalize_constructor_id
 
+from f1_timezone import resolve_timezone_name
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,7 +66,7 @@ class F1ScoreboardPlugin(BasePlugin):
         # effect immediately. Kept in a shallow copy (never written back into
         # `config`) so the resolved value never gets persisted as a stale
         # plugin-level override that would shadow future global changes.
-        self.timezone = self._resolve_timezone(config, cache_manager)
+        self.timezone = self._resolve_timezone(config, cache_manager, plugin_manager)
         render_config = {**config, "timezone": self.timezone}
 
         # Initialize components
@@ -124,22 +126,20 @@ class F1ScoreboardPlugin(BasePlugin):
         self.logger.info("F1 Scoreboard initialized with %d modes: %s",
                         len(self.modes), ", ".join(self.modes))
 
-    def _resolve_timezone(self, config: Dict, cache_manager) -> str:
-        """Resolve timezone: plugin config → global config → UTC."""
-        tz = config.get("timezone")
-        if tz:
-            return tz
-        config_manager = getattr(cache_manager, "config_manager", None)
-        if config_manager is not None:
-            try:
-                tz = config_manager.get_timezone()
-            except (AttributeError, TypeError):
-                self.logger.debug("Global timezone unavailable; falling back to UTC")
-            except Exception:
-                self.logger.exception(
-                    "Failed to read global timezone from config_manager.get_timezone(); falling back to UTC."
-                )
-        return tz or "UTC"
+    def _resolve_timezone(self, config: Dict, cache_manager, plugin_manager=None) -> str:
+        """Resolve timezone: plugin config → global config → system zone → UTC.
+
+        Consulting only ``cache_manager.config_manager`` used to fall through to
+        UTC on cores that expose ``config_manager`` via the plugin manager
+        instead, rendering every session start time in UTC.
+        """
+        return resolve_timezone_name(
+            config=config,
+            plugin_manager=plugin_manager if plugin_manager is not None
+            else getattr(self, "plugin_manager", None),
+            cache_manager=cache_manager,
+            log=self.logger,
+        )
 
     def _build_enabled_modes(self) -> List[str]:
         """Build list of enabled display modes from config."""

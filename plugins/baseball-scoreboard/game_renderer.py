@@ -11,8 +11,9 @@ from pathlib import Path
 import os
 from typing import Any, Dict, Optional
 
-import pytz
 from PIL import Image, ImageDraw, ImageFont
+
+from baseball_timezone import resolve_timezone
 
 # Maps the core FontManager's common-font family aliases (src/font_manager.py
 # `common_fonts`) to the real files in assets/fonts. A font config value may be
@@ -484,12 +485,7 @@ class GameRenderer:
             if start_time:
                 try:
                     dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
-                    tz_name = self.config.get('timezone') or 'UTC'
-                    try:
-                        local_tz = pytz.timezone(tz_name)
-                    except pytz.UnknownTimeZoneError:
-                        self.logger.warning("Unknown timezone %r; falling back to UTC", tz_name)
-                        local_tz = pytz.UTC
+                    local_tz = resolve_timezone(config=self.config, log=self.logger)
                     dt_local = dt.astimezone(local_tz)
                     game_date = dt_local.strftime('%b %d')
                     game_time = dt_local.strftime('%-I:%M %p')
