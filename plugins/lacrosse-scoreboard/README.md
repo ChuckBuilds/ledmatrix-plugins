@@ -177,6 +177,13 @@ watch a game delayed and don't want the score spoiled. It uses the same
 full-name abbreviation format as `favorite_teams` (see below), and always
 wins if a team appears in both lists.
 
+### Timezone
+
+- `timezone` (Advanced): IANA name used to display event start times, e.g.
+  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
+  timezone; if that isn't set, the host system's timezone is used, and only if
+  neither is available do times fall back to UTC.
+
 ## Team Abbreviations
 
 **Important — NCAA lacrosse uses full-name abbreviations, not the short codes you may be used to from the football, basketball, or hockey plugins.** ESPN's lacrosse feed returns team abbreviations like `NORTH CAROLINA`, `JOHNS HOPKINS`, `SAINT JOSEPH'S`, not `UNC` / `JHU` / `SJU`. Use the full-name form in `favorite_teams` or the matching will fail silently.
@@ -245,6 +252,11 @@ Team logos are fetched from `https://a.espncdn.com/i/teamlogos/ncaa/500/{team_id
 
 ## Troubleshooting
 
+
+
+- **Start times look like UTC** (a 6:45pm Central start showing as 11:45PM):
+  the plugin couldn't read your global timezone. Set `timezone` under the
+  plugin's Advanced Settings to your IANA zone, e.g. `America/Chicago`.
 **My favorite team doesn't show up.** You're almost certainly using a short abbreviation like `UNC` or `JHU`. Lacrosse abbreviations are the full school name in uppercase — see **Team Abbreviations** above.
 
 **No games appear at all.** NCAA lacrosse is a spring sport. Men's runs roughly January through late May; women's runs February through late May. Outside that window, the ESPN scoreboard endpoint returns an empty `events[]` array and the plugin has nothing to display.

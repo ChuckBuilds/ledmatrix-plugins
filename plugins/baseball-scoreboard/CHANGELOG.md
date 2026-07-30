@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.20.0] - 2026-07-28
+
+### Fixed
+- **Game start times shown in UTC**: The plugin read the LEDMatrix global timezone only from `cache_manager.config_manager`. On cores that hang `config_manager` off the plugin manager instead, that lookup came back empty and every start time was rendered in UTC — a 6:45pm Central first pitch displayed as `11:45PM` — while plugins that check the plugin manager first (clock-simple, geochron) showed the correct local time on the same device. Timezone resolution now lives in one place (`baseball_timezone.py`) shared by the switch-mode scorebug, the scroll-mode game card and the plugin manager, and tries, in order: the plugin's own `timezone` setting, `plugin_manager.config_manager`, `cache_manager.config_manager`, the host system zone (`TZ`, `/etc/timezone`, `/etc/localtime`), and only then UTC.
+- **`timezone` setting was silently discarded**: The key was never declared in `config_schema.json`, which sets `additionalProperties: false`, so hand-editing it in the saved config had no effect. It is now a documented string property under Advanced Settings.
+- **Plugin no longer writes a timezone back into your config**: The manager used to assign `self.config["timezone"]`, mutating the dict the core handed it and persisting a bogus `"timezone": "UTC"` into the saved plugin config. The resolved value is now kept on the instance and passed to sub-components via a copy.
+
+### Added
+- `timezone` (Advanced Settings): optional IANA zone override, e.g. `America/Chicago`. Blank (the default) follows the LEDMatrix global timezone.
+
 ## [1.19.0] - 2026-07-09
 
 ### Added

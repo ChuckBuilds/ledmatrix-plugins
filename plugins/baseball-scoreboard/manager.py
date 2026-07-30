@@ -50,6 +50,7 @@ from ncaa_baseball_managers import (
     NCAABaseballUpcomingManager,
 )
 from milb_managers import MiLBLiveManager, MiLBRecentManager, MiLBUpcomingManager
+from baseball_timezone import resolve_timezone_name
 
 # Import scroll display components
 try:
@@ -92,22 +93,17 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         self.logger = logger
 
-        # Resolve timezone: plugin config → global config → UTC.
-        # Inject into self.config so all sub-components (scroll display, game
-        # renderer, etc.) can read it via config.get('timezone').
-        if not self.config.get("timezone"):
-            global_tz = None
-            config_manager = getattr(cache_manager, "config_manager", None)
-            if config_manager is not None:
-                try:
-                    global_tz = config_manager.get_timezone()
-                except (AttributeError, TypeError):
-                    self.logger.debug("Global timezone unavailable; falling back to UTC")
-                except Exception:
-                    self.logger.exception(
-                        "Failed to read global timezone from config_manager.get_timezone(); falling back to UTC."
-                    )
-            self.config["timezone"] = global_tz or "UTC"
+        # Resolve timezone: plugin override → global config (either manager) →
+        # system zone → UTC. Kept on the instance rather than written back into
+        # self.config: mutating the dict the core handed us used to persist a
+        # bogus "timezone": "UTC" into the user's saved plugin config.
+        self.timezone_str = resolve_timezone_name(
+            config=self.config,
+            plugin_manager=plugin_manager,
+            cache_manager=cache_manager,
+            log=self.logger,
+        )
+        self.logger.info(f"Baseball scoreboard using timezone: {self.timezone_str}")
 
         # Basic configuration
         self.is_enabled = config.get("enabled", True)
@@ -174,7 +170,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             try:
                 self._scroll_manager = ScrollDisplayManager(
                     self.display_manager,
-                    self.config,
+                    self._sub_component_config(),
                     self.logger
                 )
                 self.logger.info("Scroll display manager initialized")
@@ -261,19 +257,12 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.config = new_config or {}
 
         # Resolve timezone the same way __init__ does so sub-managers inherit it.
-        if not self.config.get("timezone"):
-            global_tz = None
-            config_manager = getattr(self.cache_manager, "config_manager", None)
-            if config_manager is not None:
-                try:
-                    global_tz = config_manager.get_timezone()
-                except (AttributeError, TypeError):
-                    self.logger.debug("Global timezone unavailable; falling back to UTC")
-                except Exception:
-                    self.logger.exception(
-                        "Failed to read global timezone from config_manager.get_timezone(); falling back to UTC."
-                    )
-            self.config["timezone"] = global_tz or "UTC"
+        self.timezone_str = resolve_timezone_name(
+            config=self.config,
+            plugin_manager=self.plugin_manager,
+            cache_manager=self.cache_manager,
+            log=self.logger,
+        )
 
         # Re-derive scalar settings.
         self.enabled = self.config.get("enabled", getattr(self, "enabled", True))
@@ -301,7 +290,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         if SCROLL_AVAILABLE and ScrollDisplayManager:
             try:
                 self._scroll_manager = ScrollDisplayManager(
-                    self.display_manager, self.config, self.logger
+                    self.display_manager, self._sub_component_config(), self.logger
                 )
             except Exception as e:
                 self.logger.warning(f"Could not rebuild scroll display manager: {e}")
@@ -724,13 +713,9 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             }
         }
 
-        # Add global config - get timezone from cache_manager's config_manager if available
-        timezone_str = self.config.get("timezone")
-        if not timezone_str and hasattr(self.cache_manager, 'config_manager'):
-            timezone_str = self.cache_manager.config_manager.get_timezone()
-        if not timezone_str:
-            timezone_str = "UTC"
-        
+        # Timezone was resolved once at init/config-change time.
+        timezone_str = self.timezone_str
+
         # Get display config from main config if available
         display_config = self.config.get("display", {})
         if not display_config and hasattr(self.cache_manager, 'config_manager'):
@@ -750,7 +735,17 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.logger.debug(f"Using timezone: {timezone_str} for {league} managers")
 
         return manager_config
-    
+
+    def _sub_component_config(self) -> Dict[str, Any]:
+        """Plugin config with the resolved timezone folded in.
+
+        Sub-components that receive the whole config (the scroll display manager
+        and, through it, the game card renderer) read ``config['timezone']``.
+        Hand them a copy rather than mutating the core's dict, which would leak
+        the resolved value back into the user's saved config.
+        """
+        return {**self.config, "timezone": self.timezone_str}
+
     def _parse_display_mode_settings(self) -> Dict[str, Dict[str, str]]:
         """
         Parse display mode settings from config.
