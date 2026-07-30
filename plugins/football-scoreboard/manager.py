@@ -58,6 +58,8 @@ except ImportError:
     ScrollDisplayManager = None
     SCROLL_AVAILABLE = False
 
+from football_timezone import resolve_timezone_name
+
 logger = logging.getLogger(__name__)
 
 
@@ -239,21 +241,11 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         self.config = new_config or {}
 
-        # Resolve timezone the same way the managers expect (cache_manager owns
-        # the global timezone); _adapt_config_for_manager re-reads it per league.
-        if not self.config.get("timezone"):
-            global_tz = None
-            config_manager = getattr(self.cache_manager, "config_manager", None)
-            if config_manager is not None:
-                try:
-                    global_tz = config_manager.get_timezone()
-                except (AttributeError, TypeError):
-                    self.logger.debug("Global timezone unavailable; falling back to UTC")
-                except Exception:
-                    self.logger.exception(
-                        "Failed to read global timezone from config_manager.get_timezone(); falling back to UTC."
-                    )
-            self.config["timezone"] = global_tz or "UTC"
+        # Resolve timezone for the managers. Deliberately NOT written back into
+        # self.config: mutating the dict the core handed us used to persist a
+        # bogus "timezone": "UTC" into the user's saved plugin config, which
+        # then shadowed the real global timezone forever.
+        # _adapt_config_for_manager re-resolves it per league.
 
         # Re-derive scalar settings.
         self.enabled = self.config.get("enabled", getattr(self, "enabled", True))
@@ -674,12 +666,16 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             }
         }
 
-        # Add global config - get timezone from cache_manager's config_manager if available
-        timezone_str = self.config.get("timezone")
-        if not timezone_str and hasattr(self.cache_manager, 'config_manager'):
-            timezone_str = self.cache_manager.config_manager.get_timezone()
-        if not timezone_str:
-            timezone_str = "UTC"
+        # Resolve timezone: plugin override -> global config (either manager)
+        # -> host system zone -> UTC. Reading only cache_manager.config_manager
+        # used to fall through to UTC on cores that expose it via the plugin
+        # manager instead, rendering every start time in UTC.
+        timezone_str = resolve_timezone_name(
+            config=self.config,
+            plugin_manager=getattr(self, "plugin_manager", None),
+            cache_manager=self.cache_manager,
+            log=self.logger,
+        )
         
         # Get display config from main config if available
         display_config = self.config.get("display", {})

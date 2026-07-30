@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.4.0] - 2026-07-29
+## [2.5.0] - 2026-07-29
 
 ### Fixed
 - **TEAMS.md listed wrong team codes**: the documented abbreviations had drifted

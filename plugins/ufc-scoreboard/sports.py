@@ -19,9 +19,23 @@ try:
     from dynamic_team_resolver import DynamicTeamResolver
 except ImportError:
     DynamicTeamResolver = None
-from logo_downloader import LogoDownloader, download_missing_logo
 from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
+from ufc_timezone import resolve_timezone
+
+# Import main logo downloader (same as football plugin).
+# This used to be a bare `from logo_downloader import ...`, but ufc-scoreboard
+# ships no logo_downloader.py -- the name only ever resolved by binding some
+# *other* plugin's copy off sys.path, so loading this plugin failed outright
+# when no such plugin happened to be loaded. Sibling plugins (soccer, nrl, afl)
+# and this file's own deferred import below both use the src.* path.
+import sys
+# Add parent directory to path to import from src
+plugin_dir = Path(__file__).resolve().parent
+project_root = plugin_dir.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+from src.logo_downloader import LogoDownloader, download_missing_logo
 
 
 class SportsCore(ABC):
@@ -621,22 +635,17 @@ class SportsCore(ABC):
             )
 
     def _get_timezone(self):
-        """Get timezone from config, with fallback to cache_manager's config_manager."""
-        try:
-            # First try plugin config
-            timezone_str = self.config.get("timezone")
-            # If not in plugin config, try to get from cache_manager's config_manager
-            if not timezone_str and hasattr(self, 'cache_manager') and hasattr(self.cache_manager, 'config_manager'):
-                timezone_str = self.cache_manager.config_manager.get_timezone()
-            # Final fallback to UTC
-            if not timezone_str:
-                timezone_str = "UTC"
+        """Timezone event start times are rendered in.
 
-            self.logger.debug(f"Using timezone: {timezone_str}")
-            return pytz.timezone(timezone_str)
-        except pytz.UnknownTimeZoneError:
-            self.logger.warning(f"Unknown timezone: {timezone_str}, falling back to UTC")
-            return pytz.utc
+        Normally the plugin manager has already resolved this and passed it down
+        in ``config['timezone']``; the shared resolver re-derives it from the
+        core config or the host system if it hasn't.
+        """
+        return resolve_timezone(
+            config=self.config,
+            cache_manager=getattr(self, "cache_manager", None),
+            log=self.logger,
+        )
 
     def _should_log(self, warning_type: str, cooldown: int = 60) -> bool:
         """Check if we should log a warning based on cooldown period."""
