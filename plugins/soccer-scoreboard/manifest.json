@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "released": "2026-07-29",
+      "version": "2.4.0",
+      "notes": "Corrected every team code in TEAMS.md against ESPN's live data — Manchester United is MAN (not MUN), Manchester City MNC (not MCI), Real Madrid RMA, and Ligue 1 had eight wrong codes. The plugin now also says why a league is empty: an unrecognised favorite team logs a warning naming the closest match, while a correct code in a league with no fixtures yet logs the date the season starts.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-17",
       "version": "2.3.1",
