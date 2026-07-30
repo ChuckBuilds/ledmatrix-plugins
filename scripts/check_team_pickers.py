@@ -27,7 +27,6 @@ Usage::
 import argparse
 import json
 import os
-import re
 import sys
 import urllib.request
 
@@ -58,7 +57,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def fetch_teams(path):
     """ESPN's {abbreviation: display name}. ``limit=1000`` is not optional here:
     the default page size truncates the NCAA rosters to about half."""
-    with urllib.request.urlopen(TEAMS_URL.format(path=path), timeout=45) as response:
+    url = TEAMS_URL.format(path=path)
+    # The league path is interpolated into the URL, so pin the scheme rather
+    # than trusting the result: urlopen would honour file:// or a custom scheme
+    # if a path ever arrived from somewhere less trustworthy than the table above.
+    if not url.startswith("https://"):
+        raise ValueError("refusing to fetch a non-HTTPS URL: {!r}".format(url))
+    # nosec B310 - the scheme is pinned to https by the check above; B310 is a
+    # syntactic blacklist rule and fires on the call regardless of the guard.
+    with urllib.request.urlopen(url, timeout=45) as response:  # nosec B310
         payload = json.load(response)
     entries = payload["sports"][0]["leagues"][0]["teams"]
     return {
