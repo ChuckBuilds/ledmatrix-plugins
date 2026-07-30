@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "released": "2026-07-30",
+      "version": "1.5.1",
+      "notes": "Timezone resolution no longer mistakes the core ConfigManager's own default for a real setting. ConfigManager.get_timezone() returns \"UTC\" when the global config has no timezone key at all, so the previous release latched onto that and never reached the host system zone. Resolution now reads the raw config and treats an absent key as absent, falling through to the system timezone as intended.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-29",
       "version": "1.5.0",

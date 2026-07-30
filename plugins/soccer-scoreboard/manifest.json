@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "released": "2026-07-30",
+      "version": "2.4.1",
+      "notes": "Timezone resolution no longer mistakes the core ConfigManager's own default for a real setting. ConfigManager.get_timezone() returns \"UTC\" when the global config has no timezone key at all, so the previous release latched onto that and never reached the host system zone. Resolution now reads the raw config and treats an absent key as absent, falling through to the system timezone as intended.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-29",
       "version": "2.4.0",

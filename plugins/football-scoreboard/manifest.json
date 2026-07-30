@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "released": "2026-07-30",
+      "version": "2.9.1",
+      "notes": "Timezone resolution no longer mistakes the core ConfigManager's own default for a real setting. ConfigManager.get_timezone() returns \"UTC\" when the global config has no timezone key at all, so the previous release latched onto that and never reached the host system zone. Resolution now reads the raw config and treats an absent key as absent, falling through to the system timezone as intended. Additionally, a leftover \"timezone\": \"UTC\" written into your saved plugin config by the old write-back bug is now detected and ignored automatically whenever your global or system timezone disagrees -- no manual config edit needed. Set \"Etc/UTC\" if you genuinely want UTC; that spelling is always honored.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-29",
       "version": "2.9.0",

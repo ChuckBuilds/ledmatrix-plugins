@@ -37,6 +37,14 @@ A plugin for LEDMatrix that displays live, recent, and upcoming baseball games a
   timezone; if that isn't set, the host system's timezone is used, and only if
   neither is available do times fall back to UTC.
 
+  **Leftover `"UTC"` from an older version?** Before the write-back fix this
+  plugin could persist `"timezone": "UTC"` into your saved config, where it
+  then shadowed your real global timezone. That stale value is now detected
+  and ignored automatically whenever your global or system timezone disagrees
+  — no manual edit needed. If you genuinely want UTC here, set `Etc/UTC`,
+  which is always honored.
+
+
 ### Per-League Settings
 
 #### MLB Configuration
