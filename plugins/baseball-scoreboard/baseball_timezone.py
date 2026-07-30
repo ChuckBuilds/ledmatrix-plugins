@@ -141,8 +141,18 @@ def _validated(name: Any, source: str, log: logging.Logger) -> Optional[str]:
         return None
     try:
         pytz.timezone(name)
-    except Exception:
+    except pytz.UnknownTimeZoneError:
         log.warning("Ignoring invalid timezone %r from %s", name, source)
+        return None
+    except Exception:
+        # Not an unknown-zone error, so something else went wrong inside pytz.
+        # Log it loudly rather than silently reclassifying it as "invalid" --
+        # but still don't propagate: this runs in the render path, and a
+        # mislabelled zone beats taking the whole display down.
+        log.warning(
+            "Unexpected error validating timezone %r from %s; ignoring it",
+            name, source, exc_info=True,
+        )
         return None
     return name
 

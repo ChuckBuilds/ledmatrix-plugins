@@ -1,6 +1,6 @@
 """Timezone resolution for the soccer scoreboard plugin.
 
-Game start times arrive from ESPN/MLB in UTC and have to be converted to the
+Game start times arrive from ESPN in UTC and have to be converted to the
 user's local zone before they are drawn. This module owns the "which zone?"
 decision so the switch-mode scorebug (``sports.py``), the scroll-mode game card
 (``game_renderer.py``) and the plugin manager all agree.
@@ -53,8 +53,9 @@ logger = logging.getLogger(__name__)
 # can only have come from the user and is always honored verbatim.
 _HAD_WRITEBACK_BUG = False
 
-# Release that fixed the write-back, named in the warning so users can tell
-# whether a "UTC" in their config predates it.
+# Inert here: kept only so the shared resolver body stays identical across the
+# ten plugins. It is read solely by the _HAD_WRITEBACK_BUG branch above, which
+# this plugin never takes.
 _WRITEBACK_FIXED_IN = "2.4.0"
 
 
@@ -140,8 +141,18 @@ def _validated(name: Any, source: str, log: logging.Logger) -> Optional[str]:
         return None
     try:
         pytz.timezone(name)
-    except Exception:
+    except pytz.UnknownTimeZoneError:
         log.warning("Ignoring invalid timezone %r from %s", name, source)
+        return None
+    except Exception:
+        # Not an unknown-zone error, so something else went wrong inside pytz.
+        # Log it loudly rather than silently reclassifying it as "invalid" --
+        # but still don't propagate: this runs in the render path, and a
+        # mislabelled zone beats taking the whole display down.
+        log.warning(
+            "Unexpected error validating timezone %r from %s; ignoring it",
+            name, source, exc_info=True,
+        )
         return None
     return name
 
