@@ -42,6 +42,11 @@ except ImportError:
 from nrl_managers import create_nrl_managers, LEAGUE_NAMES, NRL_LEAGUE_SLUG
 
 from nrl_timezone import resolve_timezone_name
+from nrl_favorite_check import FavoriteTeamCheck
+
+# Which ESPN endpoint backs the league, for the favorite-team diagnostic.
+FAVORITE_CHECK_KEY = 'nrl'
+FAVORITE_CHECK_LEAGUES = {FAVORITE_CHECK_KEY: ('NRL', 'rugby-league/3')}
 
 logger = logging.getLogger(__name__)
 
@@ -447,10 +452,36 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
     # ------------------------------------------------------------------
     # Update
     # ------------------------------------------------------------------
+    def _check_favorite_teams(self) -> None:
+        """
+        Say why the league is showing nothing.
+
+        A favourite that is not a real ESPN abbreviation matches no game, and so
+        does a correct one before its season starts; both look like an empty
+        screen. The check runs in the background, once per process, and never
+        affects what is displayed.
+        """
+        try:
+            checker = getattr(self, "_favorite_check", None)
+            if checker is None:
+                checker = FavoriteTeamCheck(self.logger, FAVORITE_CHECK_LEAGUES)
+                self._favorite_check = checker
+            with self._config_lock:
+                managers = dict(self._managers)
+            for mode in ("live", "recent", "upcoming"):
+                favorites = getattr(managers.get(mode), "favorite_teams", None)
+                if favorites:
+                    checker.schedule(FAVORITE_CHECK_KEY, favorites)
+                    break
+        except Exception as exc:
+            self.logger.debug("Favorite team check skipped: %s", exc)
+
     def update(self) -> None:
         """Update NRL game data using parallel manager updates."""
         if not self.is_enabled:
             return
+
+        self._check_favorite_teams()
 
         with self._config_lock:
             managers_snapshot = dict(self._managers)
@@ -750,6 +781,11 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
             self.enable_scrolling = self._has_any_scroll_mode()
 
         self.logger.info(f"NRL config updated at runtime - reinitialized. Modes: {self.modes}")
+
+        # Favorites may have changed, so let the diagnostic report on them again.
+        checker = getattr(self, "_favorite_check", None)
+        if checker is not None:
+            checker.reset()
 
     # ------------------------------------------------------------------
     # Info

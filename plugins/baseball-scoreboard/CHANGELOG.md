@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.21.0] - 2026-07-29
+
+### Fixed
+- Explain an empty screen instead of leaving the user guessing. A favorite team code that is not a real ESPN abbreviation matched no game and showed nothing, and so did a correct code before its season started - the two were indistinguishable from the logs. The plugin now says which it is, suggests the right code for a near miss (GBP -> GB), and reports when the league's next games are. The check runs in the background, once per league, and cannot affect what is displayed.
+
 ## [1.20.0] - 2026-07-28
 
 ### Fixed
