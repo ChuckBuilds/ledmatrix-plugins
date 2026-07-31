@@ -48,7 +48,13 @@ class JellyfinNowPlayingPlugin(BasePlugin):
         show_progress (bool): Draw the playback progress bar
         show_paused (bool): Treat paused sessions as playing
         update_interval (int): Session poll interval in seconds (default: 10)
+        progress_bar_match_text (bool): Size the progress bar to the widest
+            text line rather than the whole text area (default: True)
     """
+
+    # Floor for the content-matched progress bar, so a very short title still
+    # leaves something recognisable as a progress indicator.
+    MIN_PROGRESS_BAR_WIDTH = 24
 
     def __init__(self, plugin_id: str, config: Dict[str, Any],
                  display_manager, cache_manager, plugin_manager):
@@ -523,20 +529,59 @@ class JellyfinNowPlayingPlugin(BasePlugin):
             draw.text((text_x, subtitle_y + sub_h + 3), time_str,
                       font=self.subtitle_font, fill=self.subtitle_color)
 
-        # Progress bar along the bottom of the text area
+        # Progress bar along the bottom of the text area, no wider than the text
+        # it sits under. Spanning the whole text area made the frame full-width
+        # whatever the title length: on a 512px panel a short episode name left a
+        # bar stretching across the display, and because a bar is drawn pixels
+        # there is nothing for a ticker to trim back. Sizing it to the content
+        # keeps the block compact and lets the blank remainder be reclaimed.
         if self.show_progress and duration_s > 0:
+            bar_w = self._content_width(text_w)
             bar_y = height - bar_h - 2
-            bar_x2 = text_x + text_w - 1
+            bar_x2 = text_x + bar_w - 1
             draw.rectangle([text_x, bar_y, bar_x2, bar_y + bar_h - 1],
                            fill=self.bar_background)
             progress = min(1.0, max(0.0, position_s / duration_s))
-            fill_w = int(round((text_w - 1) * progress))
+            fill_w = int(round((bar_w - 1) * progress))
             if fill_w > 0:
                 color = PAUSED_BAR_COLOR if info['is_paused'] else self.bar_color
                 draw.rectangle([text_x, bar_y, text_x + fill_w, bar_y + bar_h - 1],
                                fill=color)
 
         return image
+
+    def _content_width(self, available: int) -> int:
+        """
+        Width of the widest text line, capped at ``available``.
+
+        Used to size the progress bar to its content instead of the whole text
+        area. A line long enough to be marqueed measures wider than the area and
+        so pins the bar to full width, which is right — that line really does
+        fill it. A floor keeps a very short title from leaving a stub too small
+        to read as a progress indicator.
+
+        Set ``progress_bar_match_text`` false for the original full-width bar.
+        """
+        if not self.config.get('progress_bar_match_text', True):
+            return available
+
+        info = self.now_playing or {}
+        widest = 0
+        for text, font in (
+            (info.get('title'), self.title_font),
+            (info.get('subtitle'), self.subtitle_font),
+        ):
+            if not text:
+                continue
+            try:
+                widest = max(widest, self._text_width(text, font))
+            except Exception:
+                # Measurement is best-effort; never lose the bar over it.
+                return available
+
+        if widest <= 0:
+            return available
+        return max(min(self.MIN_PROGRESS_BAR_WIDTH, available), min(widest, available))
 
     def _current_position(self) -> Tuple[int, int]:
         """Playback position extrapolated between polls, clamped to duration."""
