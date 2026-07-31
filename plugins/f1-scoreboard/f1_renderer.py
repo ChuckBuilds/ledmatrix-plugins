@@ -380,6 +380,21 @@ class F1Renderer:
         return self._fit_text(draw, [_team_full(constructor_id),
                                      _team_short(constructor_id)], font, max_w)
 
+    def _fit_driver_name(self, draw: ImageDraw.ImageDraw, entry: Dict,
+                         font, max_w: int) -> str:
+        """Driver surname if it fits the measured width, else the 3-letter code.
+
+        Mirrors _fit_team_name so drivers get the fuller name on panels with
+        room and fall back to the broadcast code only where space is tight.
+        Handles both data shapes: Ergast/Jolpi carries last_name, while OpenF1
+        practice data carries a full 'First LASTNAME' string in 'name'."""
+        last = (entry.get("last_name") or "").strip()
+        if not last:
+            full = (entry.get("name") or "").strip()
+            last = full.split()[-1] if full else ""
+        code = entry.get("code", "???")
+        return self._fit_text(draw, [last.upper(), code], font, max_w)
+
     def _body_top(self, content_h: int, block_h: int, min_top: int = 2) -> int:
         """Top y for a content block of block_h within content_h. On tall panels
         the block is vertically centered so cards don't cluster at the top and
@@ -599,9 +614,8 @@ class F1Renderer:
         self._draw_text_outlined(draw, (x, ys[0]), pos_text, self.fonts["position"], fill=pos_color)
         px = x + self._tw(draw, pos_text, self.fonts["position"]) + 3
 
-        code = entry.get("code", "???")
         code_color = (255, 215, 0) if is_fav else (255, 255, 255)
-        code_text = self._truncate(draw, code, self.fonts["position"], content_max_x - px)
+        code_text = self._fit_driver_name(draw, entry, self.fonts["position"], content_max_x - px)
         self._draw_text_outlined(draw, (px, ys[0]), code_text, self.fonts["position"], fill=code_color)
 
         # ── Row 2: Team name (left) ──────────────────────────────────
@@ -801,7 +815,6 @@ class F1Renderer:
         for i in range(top_n):
             r = results[i]
             pos = r.get("position", i + 1)
-            code = r.get("code", "???")
             cid = r.get("constructor_id", "")
             tc = get_team_color(cid)
             medal = PODIUM_COLORS.get(pos, (180, 180, 180))
@@ -856,10 +869,10 @@ class F1Renderer:
                         draw.text((d_x, py2), delta_str,
                                   font=self.fonts["small"], fill=delta_color)
 
-            # Driver code on second row
+            # Driver name (surname if it fits the column, else code) on second row
             code_y = podium_y + row_ys[1]
             code_max_w = section_w - 4 - (mini_logo.width + 2 if mini_logo else 0)
-            code_trunc = self._truncate(draw, code, self.fonts["detail"], code_max_w)
+            code_trunc = self._fit_driver_name(draw, r, self.fonts["detail"], code_max_w)
             self._draw_text_outlined(draw, (x0 + 2, code_y), code_trunc,
                                      self.fonts["detail"], fill=(240, 240, 240))
 
@@ -915,7 +928,6 @@ class F1Renderer:
 
         cid = result.get("constructor_id", "")
         pos = result.get("position", 0)
-        code = result.get("code", "???")
         tc = get_team_color(cid)
         tc_bright = _team_color_bright(cid)
 
@@ -964,9 +976,12 @@ class F1Renderer:
                                  self.fonts["position"], fill=pos_color)
         pos_w = self._tw(draw, pos_label, self.fonts["position"])
 
+        # Name is bounded by the team logo on the right (a different row from the
+        # header date, so no header_date_reserve here); the gap/status drawn after
+        # it has its own overlap checks below.
         code_x = x + pos_w + 4
-        code_trunc = self._truncate(draw, code, self.fonts["position"],
-                                    logo_left - code_x - self.header_date_reserve)
+        code_trunc = self._fit_driver_name(draw, result, self.fonts["position"],
+                                           logo_left - code_x)
         self._draw_text_outlined(draw, (code_x, content_y), code_trunc,
                                  self.fonts["position"], fill=tc_bright)
 
@@ -1246,15 +1261,19 @@ class F1Renderer:
                                  fill=(200, 200, 200))
         px = x + self._tw(draw, pos_text, self.fonts["position"]) + 3
 
-        code = entry.get("code", "???")
-        self._draw_text_outlined(draw, (px, top), code, self.fonts["position"],
-                                 fill=(255, 255, 255))
-        cx = px + self._tw(draw, code, self.fonts["position"]) + 4
-
-        # Time — strip milliseconds (e.g. "1:10.123" → "1:10") so the dot isn't invisible
+        # The lap/qualifying time is the priority on this row — strip its
+        # milliseconds ("1:10.123" → "1:10") and reserve its width so the driver
+        # name only grows into free space, falling back to the code when tight.
         time_str = entry.get(time_key, "") if time_key else ""
         if time_str and "." in time_str and not time_str.startswith("+"):
             time_str = time_str.rsplit(".", 1)[0]
+        time_w = self._tw(draw, time_str, self.fonts["detail"]) if time_str else 0
+        name = self._fit_driver_name(draw, entry, self.fonts["position"],
+                                     content_max_x - px - (time_w + 4 if time_str else 0))
+        self._draw_text_outlined(draw, (px, top), name, self.fonts["position"],
+                                 fill=(255, 255, 255))
+        cx = px + self._tw(draw, name, self.fonts["position"]) + 4
+
         if time_str:
             time_trunc = self._truncate(draw, time_str, self.fonts["detail"],
                                         content_max_x - cx)
@@ -1717,41 +1736,56 @@ class F1Renderer:
         sess_label = sess_labels.get(sess_type, sess_type)
         sess_color = sess_colors.get(sess_type, (180, 180, 180))
 
-        # Row 1: date + session type
+        # Event name + session time are resolved up front so row 1 can reserve
+        # space for the (tall-panel) right-aligned time and keep the date/session
+        # cluster from ever running underneath it.
+        event = entry.get("event_name", entry.get("name", "")).replace("Grand Prix", "GP")
+        time_str = entry.get("status_detail", "")
+        row2_y = 2 + self._th(draw, "A", self.fonts["detail"]) + 3
+
+        # On tall panels the time is drawn right-aligned on row 1; reserve its
+        # width. On short panels the time lives on row 2, so row 1 has full width.
+        time_w1 = self._tw(draw, time_str, self.fonts["small"]) if (time_str and self.is_tall) else 0
+        row1_max_x = self.display_width - 2 - (time_w1 + 3 if time_w1 else 0)
+        if time_w1:
+            draw.text((self.display_width - time_w1 - 2, 2), time_str,
+                      font=self.fonts["small"], fill=(120, 120, 120))
+
+        # Row 1: date + weekday + session-type badge, laid out left→right and
+        # clamped to row1_max_x so nothing overlaps the reserved time.
         x = 2
         if date_disp:
             self._draw_text_outlined(draw, (x, 2), date_disp, self.fonts["detail"],
                                      fill=(220, 220, 220))
             x += self._tw(draw, date_disp, self.fonts["detail"]) + 4
 
+        # The weekday is the least important element — draw it only if it plus a
+        # usable session badge still fit before the reserved time.
         if day_disp:
-            self._draw_text_outlined(draw, (x, 2), day_disp, self.fonts["small"],
-                                     fill=(100, 100, 100))
-            x += self._tw(draw, day_disp, self.fonts["small"]) + 4
+            day_w = self._tw(draw, day_disp, self.fonts["small"])
+            badge_reserve = (self._tw(draw, sess_label, self.fonts["detail"]) + 6) if sess_label else 0
+            if x + day_w + 4 + badge_reserve <= row1_max_x:
+                self._draw_text_outlined(draw, (x, 2), day_disp, self.fonts["small"],
+                                         fill=(100, 100, 100))
+                x += day_w + 4
 
         if sess_label:
-            # Badge background for session type
-            sw = self._tw(draw, sess_label, self.fonts["detail"]) + 4
-            sh = self._th(draw, sess_label, self.fonts["detail"]) + 2
-            badge_color = tuple(max(0, int(c * 0.3)) for c in sess_color)
-            draw.rectangle([x, 1, x + sw, 1 + sh], fill=badge_color)
-            self._draw_text_outlined(draw, (x + 2, 2), sess_label, self.fonts["detail"],
-                                     fill=sess_color, outline=(0, 0, 0))
-
-        # Event name (+ time)
-        event = entry.get("event_name", entry.get("name", "")).replace("Grand Prix", "GP")
-        time_str = entry.get("status_detail", "")
-        row2_y = 2 + self._th(draw, "A", self.fonts["detail"]) + 3
+            # Session badge, truncated to the width left before the reserved time
+            # and height-clamped so the badge never bleeds into the event row.
+            avail_badge = row1_max_x - x - 4
+            if avail_badge >= 8:
+                sess_label = self._truncate(draw, sess_label, self.fonts["detail"], avail_badge)
+                sw = self._tw(draw, sess_label, self.fonts["detail"]) + 4
+                sh = min(self._th(draw, sess_label, self.fonts["detail"]) + 2, row2_y - 2)
+                badge_color = tuple(max(0, int(c * 0.3)) for c in sess_color)
+                draw.rectangle([x, 1, min(x + sw, row1_max_x), 1 + sh], fill=badge_color)
+                self._draw_text_outlined(draw, (x + 2, 2), sess_label, self.fonts["detail"],
+                                         fill=sess_color, outline=(0, 0, 0))
 
         if self.is_tall:
             # Bigger, word-wrapped name filling the space below the header so the
-            # full event name is readable — no ellipsis. Time moves up to the
+            # full event name is readable — no ellipsis. Time was drawn up on the
             # header row (right-aligned) so the name gets the full width.
-            if time_str:
-                tw = self._tw(draw, time_str, self.fonts["small"])
-                draw.text((self.display_width - tw - 2, 2), time_str,
-                          font=self.fonts["small"], fill=(120, 120, 120))
-
             avail_w = self.display_width - 4
             avail_h = self.display_height - row2_y - 2
             name_font = self.fonts["position"]
@@ -1828,25 +1862,28 @@ class F1Renderer:
             img.paste(logo, (x, ly), logo)
             x += logo.width + 3
 
-        # ── Row 1: CODE (big, team color) + P# + PTS ─────────────
-        code = driver_entry.get("code", "???")
-        self._draw_text_outlined(draw, (x, 1), code, self.fonts["position"],
-                                 fill=_team_color_bright(cid), outline=(0, 0, 0))
-        cx = x + self._tw(draw, code, self.fonts["position"]) + 3
-
+        # ── Row 1: driver name (big, team color) + P# + PTS ─────────────
         pos_text = f"P{driver_entry.get('position', '?')}"
+        pts = int(driver_entry.get("points", 0))
+        pts_text = f"{pts}pt"
+        pts_x = self.display_width - self._tw(draw, pts_text, self.fonts["detail"]) - 2
+        # The name grows into the space left of the P# and right-aligned points;
+        # it falls back to the 3-letter code when that space is tight.
+        name_budget = pts_x - x - self._tw(draw, pos_text, self.fonts["small"]) - 6
+        name = self._fit_driver_name(draw, driver_entry, self.fonts["position"], name_budget)
+        self._draw_text_outlined(draw, (x, 1), name, self.fonts["position"],
+                                 fill=_team_color_bright(cid), outline=(0, 0, 0))
+        cx = x + self._tw(draw, name, self.fonts["position"]) + 3
+
         self._draw_text_outlined(draw, (cx, 2), pos_text, self.fonts["small"],
                                  fill=(255, 215, 0))
         cx += self._tw(draw, pos_text, self.fonts["small"]) + 3
 
-        pts = int(driver_entry.get("points", 0))
-        pts_text = f"{pts}pt"
-        pts_x = self.display_width - self._tw(draw, pts_text, self.fonts["detail"]) - 2
         self._draw_text_outlined(draw, (pts_x, 2), pts_text, self.fonts["detail"],
                                  fill=(255, 220, 50))
 
         # ── Row 2: Team name + GAP ───────────────────────────────
-        row2_y = 1 + self._th(draw, code, self.fonts["position"]) + 2
+        row2_y = 1 + self._th(draw, name, self.fonts["position"]) + 2
         if row2_y + 5 < content_h:
             gap = driver_entry.get("gap_to_leader", 0)
             gap_text = f"-{int(gap)}" if gap > 0 else "LEADER"

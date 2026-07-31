@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pytz
+
+from hockey_timezone import resolve_timezone
 import requests
 from PIL import Image, ImageDraw, ImageFont
 from requests.adapters import HTTPAdapter
@@ -224,12 +226,17 @@ class SportsCore(ABC):
             return None
     
     def _get_timezone(self):
-        """Get configured timezone."""
-        try:
-            timezone_str = self.config.get('timezone', 'UTC')
-            return pytz.timezone(timezone_str)
-        except pytz.UnknownTimeZoneError:
-            return pytz.utc
+        """Timezone event start times are rendered in.
+
+        Normally the plugin manager has already resolved this and passed it down
+        in ``config['timezone']``; the shared resolver re-derives it from the
+        core config or the host system if it hasn't.
+        """
+        return resolve_timezone(
+            config=self.config,
+            cache_manager=getattr(self, "cache_manager", None),
+            log=self.logger,
+        )
     
     def _extract_game_details_common(self, game_event: Dict) -> tuple:
         """Extract common game details from ESPN event."""

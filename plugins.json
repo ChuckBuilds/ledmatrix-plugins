@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-29",
+  "last_updated": "2026-07-31",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -76,7 +76,7 @@
       "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.19.3"
+      "latest_version": "1.20.1"
     },
     {
       "id": "basketball-scoreboard",
@@ -101,7 +101,7 @@
       "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.7.1"
+      "latest_version": "1.8.0"
     },
     {
       "id": "calendar",
@@ -212,10 +212,10 @@
       "plugin_path": "plugins/f1-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-18",
+      "last_updated": "2026-07-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.1"
+      "latest_version": "1.7.0"
     },
     {
       "id": "football-scoreboard",
@@ -240,7 +240,7 @@
       "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.8.3"
+      "latest_version": "2.9.0"
     },
     {
       "id": "geochron",
@@ -335,7 +335,7 @@
       "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.1",
+      "latest_version": "1.5.0",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -359,7 +359,7 @@
       "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.1",
+      "latest_version": "1.5.0",
       "icon": "fas fa-baseball-ball"
     },
     {
@@ -508,7 +508,7 @@
       "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.2"
+      "latest_version": "1.2.0"
     },
     {
       "id": "news",
@@ -732,10 +732,10 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.3.1"
+      "latest_version": "2.4.1"
     },
     {
       "id": "static-image",
@@ -804,10 +804,10 @@
       "plugin_path": "plugins/ledmatrix-stocks",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-10",
+      "last_updated": "2026-07-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.4.0",
+      "latest_version": "2.5.0",
       "icon": "fas fa-chart-line"
     },
     {
@@ -880,7 +880,7 @@
       "last_updated": "2026-05-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.4",
+      "latest_version": "1.3.0",
       "icon": "fas fa-fist-raised"
     },
     {
@@ -1023,7 +1023,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2",
+      "latest_version": "1.1.0",
       "last_updated": "2026-07-17"
     },
     {
@@ -1070,7 +1070,7 @@
       "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.4"
+      "latest_version": "1.1.0"
     },
     {
       "id": "jellyfin-now-playing",
@@ -1120,6 +1120,31 @@
       "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/incoming-packages/assets/screenshot.png",
       "latest_version": "1.0.0",
       "icon": "fas fa-box"
+    },
+    {
+      "id": "pomodoro-timer",
+      "name": "Pomodoro Timer",
+      "description": "A configurable Pomodoro focus/break timer for your matrix. Set the work and break lengths, then start, pause, skip, or reset it over MQTT — with Home Assistant auto-discovery so the whole timer shows up as a device with no YAML.",
+      "author": "ChuckBuilds",
+      "category": "productivity",
+      "tags": [
+        "pomodoro",
+        "timer",
+        "focus",
+        "productivity",
+        "mqtt",
+        "home-assistant"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/pomodoro-timer",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-07-29",
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.3.3",
+      "icon": "fa-hourglass-half"
     }
   ]
 }

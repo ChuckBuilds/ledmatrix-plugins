@@ -32,6 +32,10 @@ A plugin for LEDMatrix that displays live, recent, and upcoming baseball games a
 - `show_records`: Display team win-loss records (default: false)
 - `show_ranking`: Display team rankings when available (default: false)
 - `background_service`: Configure API request settings
+- `timezone` (Advanced): IANA name used to display game start times, e.g.
+  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
+  timezone; if that isn't set, the host system's timezone is used, and only if
+  neither is available do times fall back to UTC.
 
 ### Per-League Settings
 
@@ -401,6 +405,12 @@ service.
 
 ## Troubleshooting
 
+- **Game times look like UTC** (a 6:45pm Central first pitch showing as
+  11:45PM): the plugin couldn't read your global timezone. Set `timezone`
+  under the plugin's Advanced Settings to your IANA zone, e.g.
+  `America/Chicago`. If your config already has a `timezone` entry stuck on
+  `"UTC"` from a version before 1.20.0, clear it or set it to your zone —
+  an explicit value there overrides everything else.
 - **No games showing**: Check if leagues are enabled and API endpoints are accessible
 - **Missing team logos**: Ensure team logo files exist in your assets/sports/ directory
 - **Slow updates**: Adjust the update interval in league configuration
