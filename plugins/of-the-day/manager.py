@@ -413,10 +413,13 @@ class OfTheDayPlugin(BasePlugin):
         max_width = self.display_manager.width
         if _w(title) <= max_width:
             return title
+        ellipsis = "..."
+        if _w(ellipsis) > max_width:
+            return ""
         truncated = title
-        while len(truncated) > 1 and _w(truncated + "...") > max_width:
+        while truncated and _w(truncated + ellipsis) > max_width:
             truncated = truncated[:-1]
-        return truncated + "..."
+        return truncated + ellipsis
 
     def _draw_bdf_text(self, draw, font, text: str, x: int, y: int, color: tuple = (255, 255, 255)):
         """Draw text supporting both BDF (FreeType Face) and PIL TTF fonts, similar to old manager."""
@@ -529,6 +532,8 @@ class OfTheDayPlugin(BasePlugin):
         
         # Center the title horizontally (+ user layout offset)
         title_x = (self.display_manager.width - title_width) // 2 + title_dx
+        # A user layout offset (title_dx) must not push the title off-panel.
+        title_x = max(0, min(title_x, max(0, self.display_manager.width - title_width)))
         title_y = margin_top + title_dy
 
         # Draw title using display_manager.draw_text (proper method)
@@ -645,6 +650,8 @@ class OfTheDayPlugin(BasePlugin):
         
         # Center the title horizontally (same position as in _display_title)
         title_x = (self.display_manager.width - title_width) // 2 + title_dx
+        # A user layout offset (title_dx) must not push the title off-panel.
+        title_x = max(0, min(title_x, max(0, self.display_manager.width - title_width)))
         title_y = margin_top + title_dy
 
         # Draw title using display_manager.draw_text (same as title screen)

@@ -86,8 +86,10 @@ class StockTickerPlugin(BasePlugin):
             buffer=self.config_manager.duration_buffer
         )
 
-        # Honor the global smooth-scrolling FPS target (older cores lack the setter)
-        global_config = getattr(self, 'global_config', {}) or {}
+        # Honor the global smooth-scrolling FPS target (older cores lack the setter).
+        # The convention (news, leaderboard) is a `global` section in the plugin config.
+        self.global_config = config.get('global', {}) or {}
+        global_config = self.global_config
         target_fps = global_config.get('target_fps') or global_config.get('scroll_target_fps', 100)
         if hasattr(self.scroll_helper, 'set_target_fps'):
             self.scroll_helper.set_target_fps(target_fps)

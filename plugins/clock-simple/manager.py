@@ -402,8 +402,11 @@ class SimpleClock(BasePlugin):
                 # Total width of "Time AM/PM" block
                 total_width = time_width + space_width + ampm_width
 
-                # Calculate x position to center the entire "Time AM/PM" block
-                time_x = (width - total_width) // 2
+                # Calculate x position to center the entire "Time AM/PM" block.
+                # A user-selected large font can exceed the panel; clamp so the
+                # block starts on-panel and overflow clips on the right instead
+                # of shifting content off the left edge.
+                time_x = max(0, (width - total_width) // 2)
 
                 # Draw time at calculated position
                 self.display_manager.draw_text(

@@ -99,7 +99,7 @@ class MarchMadnessPlugin(BasePlugin):
         self.scroll_speed: float = display_options.get("scroll_speed", 1.0)
         self.scroll_delay: float = display_options.get("scroll_delay", 0.02)
         # Plugin-level target_fps wins; otherwise honor the global FPS target.
-        _global_cfg = getattr(self, 'global_config', {}) or {}
+        _global_cfg = self.config.get('global', {}) or {}
         self.target_fps: int = (display_options.get("target_fps")
                                 or _global_cfg.get("target_fps")
                                 or _global_cfg.get("scroll_target_fps", 120))

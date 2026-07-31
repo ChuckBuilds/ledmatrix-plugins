@@ -151,6 +151,8 @@ class TidePlugin(BasePlugin):
         schema defaults by the web UI — renders byte-identically.
         """
         def _crgb(value, default):
+            if not isinstance(value, (list, tuple)) or len(value) != 3:
+                return default
             try:
                 return tuple(max(0, min(255, int(c))) for c in value)
             except (TypeError, ValueError):
@@ -603,8 +605,10 @@ class TidePlugin(BasePlugin):
         draw.ellipse(bbox, outline=_lerp(C_BG, C_MOON, 0.35), width=1)
 
     def _raw_txt(self, x, y, text, color, font, centered):
-        try: self.display_manager.draw_text(text, x=x, y=y, font=font, color=color, centered=centered)
-        except Exception as _e: self.logger.debug("draw_text: %s", _e)
+        try:
+            self.display_manager.draw_text(text, x=x, y=y, font=font, color=color, centered=centered)
+        except Exception as _e:
+            self.logger.debug("draw_text: %s", _e)
 
     def _txt(self, x, y, text, color=C_TEXT, small=True):
         color, font = self._element_style(color, small)

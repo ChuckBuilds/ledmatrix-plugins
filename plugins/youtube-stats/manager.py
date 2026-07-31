@@ -46,6 +46,8 @@ class YouTubeStatsPlugin(BasePlugin):
         # so a missing block — or one merely filled in with schema defaults by
         # the web UI — renders byte-identically.
         def _rgb(value, default):
+            if not isinstance(value, (list, tuple)) or len(value) != 3:
+                return default
             try:
                 return tuple(max(0, min(255, int(c))) for c in value)
             except (TypeError, ValueError):
@@ -267,23 +269,37 @@ class YouTubeStatsPlugin(BasePlugin):
             # Calculate right section width and starting position
             right_section_x = logo_x + logo_width + 4  # Start after logo with some padding
             
-            # Calculate text positions
-            line_height = 10  # Approximate line height for PressStart2P font at size 8
-            total_text_height = line_height * 3  # 3 lines of text
-            start_y = (matrix_height - total_text_height) // 2
-            
             # Per-element fonts: None override means the classic self.font.
             # Measurement (textbbox) below always uses the same face as the draw.
             name_font = self.name_font_override or self.font
             subs_font = self.subs_font_override or self.font
             views_font = self.views_font_override or self.font
 
-            # Draw channel name (top)
+            # Calculate text positions. The classic layout uses a fixed
+            # 10px row; when a custom font is selected, derive the row height
+            # from the tallest selected font so larger sizes don't overlap.
+            line_height = 10  # Approximate line height for PressStart2P at size 8
+            if self.name_font_override or self.subs_font_override or self.views_font_override:
+                row_h = max(
+                    draw.textbbox((0, 0), "Ag", font=name_font)[3],
+                    draw.textbbox((0, 0), "Ag", font=subs_font)[3],
+                    draw.textbbox((0, 0), "Ag", font=views_font)[3],
+                    8,
+                )
+                line_height = row_h + 2
+            total_text_height = line_height * 3  # 3 lines of text
+            start_y = max(0, (matrix_height - total_text_height) // 2)
+
+            # Draw channel name (top), truncated by measured width so any
+            # selected font fits the available space. (For the monospace 8px
+            # default this truncates at exactly the same character count as
+            # the old 8px-per-char heuristic.)
             channel_name = channel_stats['title']
-            # Truncate channel name if too long
-            max_chars = (matrix_width - right_section_x - 4) // 8  # 8 pixels per character
-            if len(channel_name) > max_chars:
-                channel_name = channel_name[:max_chars-3] + "..."
+            avail_width = matrix_width - right_section_x - 4
+            if draw.textbbox((0, 0), channel_name, font=name_font)[2] > avail_width:
+                while channel_name and draw.textbbox((0, 0), channel_name + "...", font=name_font)[2] > avail_width:
+                    channel_name = channel_name[:-1]
+                channel_name = (channel_name + "...") if channel_name else "..."
             name_bbox = draw.textbbox((0, 0), channel_name, font=name_font)
             name_width = name_bbox[2] - name_bbox[0]
             name_x = right_section_x + ((matrix_width - right_section_x - name_width) // 2)
