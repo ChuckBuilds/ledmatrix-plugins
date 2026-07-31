@@ -41,6 +41,8 @@ except ImportError:
 # Import the NRL manager factory
 from nrl_managers import create_nrl_managers, LEAGUE_NAMES, NRL_LEAGUE_SLUG
 
+from nrl_timezone import resolve_timezone_name
+
 logger = logging.getLogger(__name__)
 
 # NRL is a single league. Its ESPN league slug is "3" (see nrl_managers.py), but
@@ -260,12 +262,16 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
             }
         }
 
-        # Global config - timezone from cache_manager's config_manager if available
-        timezone_str = cfg.get("timezone")
-        if not timezone_str and hasattr(self.cache_manager, 'config_manager'):
-            timezone_str = self.cache_manager.config_manager.get_timezone()
-        if not timezone_str:
-            timezone_str = "UTC"
+        # Resolve timezone: plugin override -> global config (either manager)
+        # -> host system zone -> UTC. Reading only cache_manager.config_manager
+        # used to fall through to UTC on cores that expose it via the plugin
+        # manager instead, rendering every start time in UTC.
+        timezone_str = resolve_timezone_name(
+            config=cfg,
+            plugin_manager=getattr(self, "plugin_manager", None),
+            cache_manager=self.cache_manager,
+            log=self.logger,
+        )
 
         display_config = cfg.get("display", {})
         if not display_config and hasattr(self.cache_manager, 'config_manager'):

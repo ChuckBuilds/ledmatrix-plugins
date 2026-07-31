@@ -39,6 +39,12 @@
       "default": "",
       "description": "Favorite driver code (e.g., VER, NOR, PIA, LEC, SAI, HAM, RUS, ALO, STR). This driver will always be shown and highlighted in standings and results."
     },
+    "timezone": {
+      "x-advanced": true,
+      "type": "string",
+      "default": "",
+      "description": "IANA timezone used to display event start times (e.g. America/Chicago). Leave blank to follow the LEDMatrix global timezone, or the system timezone if none is set."
+    },
     "driver_standings": {
       "type": "object",
       "title": "Driver Standings",
@@ -733,7 +739,7 @@
       "additionalProperties": false
     }
   },
-  "x-propertyOrder": ["enabled", "display_duration", "update_interval", "favorite_team", "favorite_driver", "driver_standings", "constructor_standings", "recent_races", "upcoming", "qualifying", "practice", "sprint", "calendar", "dynamic_duration", "scroll", "visual", "customization"],
+  "x-propertyOrder": ["enabled", "display_duration", "update_interval", "favorite_team", "favorite_driver", "timezone", "driver_standings", "constructor_standings", "recent_races", "upcoming", "qualifying", "practice", "sprint", "calendar", "dynamic_duration", "scroll", "visual", "customization"],
   "additionalProperties": false,
   "required": ["enabled"]
 }

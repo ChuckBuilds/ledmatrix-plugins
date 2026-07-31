@@ -101,6 +101,13 @@ options (see `config_schema.json` for the full list, types, and defaults):
 }
 ```
 
+### Timezone
+
+- `timezone` (Advanced): IANA name used to display event start times, e.g.
+  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
+  timezone; if that isn't set, the host system's timezone is used, and only if
+  neither is available do times fall back to UTC.
+
 ## License
 
 See `LICENSE`.

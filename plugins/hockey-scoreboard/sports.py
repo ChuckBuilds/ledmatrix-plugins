@@ -25,6 +25,7 @@ from dynamic_team_resolver import DynamicTeamResolver
 from logo_downloader import LogoDownloader, download_missing_logo
 from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
+from hockey_timezone import resolve_timezone
 
 
 class SportsCore(ABC):
@@ -612,29 +613,17 @@ class SportsCore(ABC):
             )
 
     def _get_timezone(self):
-        timezone_name = None
+        """Timezone event start times are rendered in.
 
-        # Allow plugin-specific override first
-        timezone_name = self.config.get("timezone")
-
-        if not timezone_name and self.config_manager:
-            try:
-                timezone_name = self.config_manager.get_timezone()
-            except Exception as exc:
-                self.logger.warning(
-                    f"Error retrieving timezone from ConfigManager: {exc}"
-                )
-
-        if not timezone_name:
-            timezone_name = "UTC"
-
-        try:
-            return pytz.timezone(timezone_name)
-        except pytz.UnknownTimeZoneError:
-            self.logger.warning(
-                f"Unknown timezone '{timezone_name}' - falling back to UTC"
-            )
-            return pytz.utc
+        Normally the plugin manager has already resolved this and passed it down
+        in ``config['timezone']``; the shared resolver re-derives it from the
+        core config or the host system if it hasn't.
+        """
+        return resolve_timezone(
+            config=self.config,
+            cache_manager=getattr(self, "cache_manager", None),
+            log=self.logger,
+        )
 
     def _should_log(self, warning_type: str, cooldown: int = 60) -> bool:
         """Check if we should log a warning based on cooldown period."""
