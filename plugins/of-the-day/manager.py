@@ -159,18 +159,22 @@ class OfTheDayPlugin(BasePlugin):
             return (title.font, title.color, title.offset,
                     body.font, body.color, body.offset)
 
-        try:
-            title_font = ImageFont.truetype('assets/fonts/PressStart2P-Regular.ttf', 8)
-        except Exception as e:
-            self.logger.warning(f"Failed to load PressStart2P font: {e}, using fallback")
-            title_font = self.display_manager.small_font if hasattr(self.display_manager, 'small_font') else ImageFont.load_default()
-        try:
-            body_font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 6)
-        except Exception as e:
-            self.logger.warning(f"Failed to load 4x6 font: {e}, using fallback")
-            body_font = self.display_manager.extra_small_font if hasattr(self.display_manager, 'extra_small_font') else ImageFont.load_default()
-        return (title_font, self.title_color, (0, 0),
-                body_font, self.subtitle_color, (0, 0))
+        fonts = getattr(self, '_classic_fonts', None)
+        if fonts is None:
+            try:
+                title_font = ImageFont.truetype('assets/fonts/PressStart2P-Regular.ttf', 8)
+            except Exception as e:
+                self.logger.warning(f"Failed to load PressStart2P font: {e}, using fallback")
+                title_font = self.display_manager.small_font if hasattr(self.display_manager, 'small_font') else ImageFont.load_default()
+            try:
+                body_font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 6)
+            except Exception as e:
+                self.logger.warning(f"Failed to load 4x6 font: {e}, using fallback")
+                body_font = self.display_manager.extra_small_font if hasattr(self.display_manager, 'extra_small_font') else ImageFont.load_default()
+            fonts = (title_font, body_font)
+            self._classic_fonts = fonts
+        return (fonts[0], self.title_color, (0, 0),
+                fonts[1], self.subtitle_color, (0, 0))
     
     def _load_data_files(self):
         """Load all data files for enabled categories."""

@@ -234,27 +234,28 @@ class WebUIInfoPlugin(BasePlugin):
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
             
-            # Try to load a small font
-            # Try to find project root and use assets/fonts
-            font_small = None
-            try:
-                # Try to find project root (parent of plugins directory)
-                current_dir = Path(__file__).resolve().parent
-                project_root = current_dir.parent.parent
-                font_path = project_root / "assets" / "fonts" / "4x6-font.ttf"
-                
-                if font_path.exists():
-                    font_small = ImageFont.truetype(str(font_path), 6)
-                else:
-                    # Try relative path from current working directory
-                    font_path = "assets/fonts/4x6-font.ttf"
-                    if os.path.exists(font_path):
-                        font_small = ImageFont.truetype(font_path, 6)
+            # Try to load a small font (resolved once, reused across display calls)
+            font_small = getattr(self, '_font_small', None)
+            if font_small is None:
+                try:
+                    # Try to find project root (parent of plugins directory)
+                    current_dir = Path(__file__).resolve().parent
+                    project_root = current_dir.parent.parent
+                    font_path = project_root / "assets" / "fonts" / "4x6-font.ttf"
+
+                    if font_path.exists():
+                        font_small = ImageFont.truetype(str(font_path), 6)
                     else:
-                        font_small = ImageFont.load_default()
-            except Exception as e:
-                self.logger.debug(f"Could not load custom font: {e}, using default")
-                font_small = ImageFont.load_default()
+                        # Try relative path from current working directory
+                        font_path = "assets/fonts/4x6-font.ttf"
+                        if os.path.exists(font_path):
+                            font_small = ImageFont.truetype(font_path, 6)
+                        else:
+                            font_small = ImageFont.load_default()
+                except Exception as e:
+                    self.logger.debug(f"Could not load custom font: {e}, using default")
+                    font_small = ImageFont.load_default()
+                self._font_small = font_small
             
             # Determine which address to display
             if self.current_display_mode == "ip":
