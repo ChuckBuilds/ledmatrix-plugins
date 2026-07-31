@@ -18,6 +18,7 @@ normalizes the nulls/strings back into the shapes the managers expect.
 Run: <core-venv>/bin/python plugins/soccer-scoreboard/test_custom_league_config.py
 """
 
+import importlib.util
 import json
 import re
 import sys
@@ -149,11 +150,8 @@ def schema_errors(config):
     ]
 
 
-try:
-    import jsonschema  # noqa: F401
-    HAVE_JSONSCHEMA = True
-except ImportError:  # pragma: no cover - CI installs it with the core
-    HAVE_JSONSCHEMA = False
+HAVE_JSONSCHEMA = importlib.util.find_spec("jsonschema") is not None
+if not HAVE_JSONSCHEMA:  # pragma: no cover - CI installs it with the core
     print("SKIP: jsonschema not installed - schema validation cases skipped")
 
 # --- Case 1: a freshly added Championship row saves ------------------------
@@ -199,13 +197,13 @@ for code in ("eng2", "ENG.2", "eng.2 ", "english championship", ""):
 
 
 def make_plugin(custom_leagues):
-    plugin = SoccerScoreboardPlugin.__new__(SoccerScoreboardPlugin)
-    plugin.logger = logging.getLogger("test-soccer-custom-leagues")
-    plugin.config = {"enabled": True, "custom_leagues": custom_leagues}
-    plugin.display_manager = None
-    plugin.cache_manager = None
-    plugin.plugin_manager = None
-    return plugin
+    instance = SoccerScoreboardPlugin.__new__(SoccerScoreboardPlugin)
+    instance.logger = logging.getLogger("test-soccer-custom-leagues")
+    instance.config = {"enabled": True, "custom_leagues": custom_leagues}
+    instance.display_manager = None
+    instance.cache_manager = None
+    instance.plugin_manager = None
+    return instance
 
 
 plugin = make_plugin([widget_row({
@@ -247,9 +245,7 @@ check("null containers dropped",
               ("favorite_teams", "display_modes", "game_limits", "filtering",
                "dynamic_duration")))
 
-adapted = SoccerScoreboardPlugin._adapt_config_for_custom_league.__get__(plugin)(
-    cleared_league
-)["soccer_eng.2_scoreboard"]
+adapted = plugin._adapt_config_for_custom_league(cleared_league)["soccer_eng.2_scoreboard"]
 check("adapter falls back to empty favorites", adapted["favorite_teams"] == [])
 check("adapter falls back to default durations", adapted["live_game_duration"] == 20)
 check("adapter enables all display modes by default",
@@ -268,9 +264,9 @@ check("get_dynamic_duration_cap survives a cleared row",
       plugin.get_dynamic_duration_cap() is None)
 
 print()
-failed = [name for name, passed in results if not passed]
+failed = [case for case, passed in results if not passed]
 print(f"{len(results) - len(failed)}/{len(results)} passed")
 if failed:
-    for name in failed:
-        print(f"  FAILED: {name}")
+    for case in failed:
+        print(f"  FAILED: {case}")
     sys.exit(1)
