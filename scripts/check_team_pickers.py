@@ -144,6 +144,11 @@ def main():
     rosters = {}
     problems = []
     warnings = []
+    # Problems that --apply can never fix (an unknown league key has no roster
+    # to regenerate the enum from), tracked separately so they cannot be
+    # silently dropped from --apply's output just because they never made it
+    # into `pending`.
+    unresolved = []
     checked = 0
     pending = {}
 
@@ -160,8 +165,9 @@ def main():
 
             espn_path = LEAGUE_PATHS.get(league)
             if not espn_path:
-                problems.append("{} - unknown league key; add it to LEAGUE_PATHS"
-                                .format(where))
+                msg = "{} - unknown league key; add it to LEAGUE_PATHS".format(where)
+                problems.append(msg)
+                unresolved.append(msg)
                 continue
 
             if espn_path not in rosters:
@@ -172,6 +178,12 @@ def main():
                     rosters[espn_path] = None
             live = rosters[espn_path]
             if not live:
+                if live is not None:
+                    # Fetch succeeded but returned no teams (e.g. ESPN entries
+                    # missing 'abbreviation', or an API shape change) — distinct
+                    # from the connectivity failure above, which already warned.
+                    warnings.append(
+                        "{} - ESPN returned no teams for this league".format(where))
                 continue
 
             labels = (node.get("x-options") or {}).get("labels") or {}
@@ -233,6 +245,14 @@ def main():
             rewrite(path, mutate)
             print("  rewrote {}".format(os.path.relpath(path, ROOT)))
         print("\nEnums regenerated. Bump the affected plugin versions before committing.")
+        for warning in warnings:
+            print("  warn   {}".format(warning))
+        if unresolved:
+            print("\n{} problem(s) could not be regenerated automatically:"
+                  .format(len(unresolved)))
+            for problem in unresolved:
+                print("  - {}".format(problem))
+            return 1
         return 0
 
     for warning in warnings:
