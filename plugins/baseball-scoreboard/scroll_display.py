@@ -593,16 +593,42 @@ class ScrollDisplayManager:
         Returns:
             True if scroll was started successfully
         """
-        scroll_display = self.get_scroll_display(game_type)
-
-        success = scroll_display.prepare_scroll_content(
-            games, game_type, leagues, rankings_cache
-        )
+        success = self.prepare_content(games, game_type, leagues, rankings_cache)
 
         if success:
             self._current_game_type = game_type
 
         return success
+
+    def prepare_content(
+        self,
+        games: List[Dict],
+        game_type: str,
+        leagues: List[str],
+        rankings_cache: Dict[str, int] = None
+    ) -> bool:
+        """
+        Render content for one scroll display without making it the active one.
+
+        Vegas mode builds its own combined slate in the background while the
+        standalone rotation may be mid-scroll on a different game type. Going
+        through prepare_and_display() for that would repoint
+        ``_current_game_type``, so the next display_frame() would render the
+        Vegas slate instead of the mode the rotation is actually showing.
+
+        Args:
+            games: List of game dictionaries
+            game_type: Scroll display key to render into
+            leagues: List of leagues
+            rankings_cache: Optional team rankings cache
+
+        Returns:
+            True if content was prepared successfully
+        """
+        scroll_display = self.get_scroll_display(game_type)
+        return scroll_display.prepare_scroll_content(
+            games, game_type, leagues, rankings_cache
+        )
 
     def display_frame(self, game_type: Optional[str] = None) -> bool:
         """
@@ -681,3 +707,25 @@ class ScrollDisplayManager:
             if vegas_items:
                 items.extend(vegas_items)
         return items
+
+    def get_vegas_content_items_for(self, game_type: str) -> list:
+        """
+        Return the Vegas item list for a single scroll display.
+
+        Vegas mode needs the items from one specific display (the combined
+        live/recent/upcoming set), not the union across all of them.
+        get_all_vegas_content_items() returns whatever the standalone display
+        modes happen to have rendered, which both under-reports (only the last
+        rendered mode's games) and can double-count a game that appears in two
+        displays.
+
+        Args:
+            game_type: Scroll display key, e.g. 'mixed'
+
+        Returns:
+            Copy of that display's Vegas items, or an empty list if absent.
+        """
+        scroll_display = self._scroll_displays.get(game_type)
+        if scroll_display is None:
+            return []
+        return list(getattr(scroll_display, '_vegas_content_items', None) or [])
