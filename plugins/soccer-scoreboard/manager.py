@@ -279,6 +279,10 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         # Track current display context for granular dynamic duration
         self._current_display_league: Optional[str] = None  # 'eng.1', 'esp.1', etc.
+
+        # Leagues whose favorite-team codes have been checked against ESPN, so
+        # the diagnostic runs once rather than on every update.
+        self._favorites_checked: Set[str] = set()
         self._current_display_mode_type: Optional[str] = None  # 'live', 'recent', 'upcoming'
 
         # Throttle logging for has_live_content() when returning False
@@ -1283,6 +1287,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             self._league_registry.clear()
             self._scroll_prepared.clear()
             self._scroll_active.clear()
+            # Re-verify team codes against ESPN, so a corrected code is
+            # confirmed in the logs rather than staying silent.
+            self._favorites_checked.clear()
 
             # Reinitialize managers and modes
             self._initialize_managers()
@@ -1299,6 +1306,205 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             f"Config updated at runtime - reinitialized. Enabled leagues: "
             f"{', '.join([LEAGUE_NAMES.get(k, k) for k in enabled_leagues]) if enabled_leagues else 'None'}"
         )
+
+    def _check_favorite_teams(self, league_key: str, league_name: str,
+                              managers: Dict[str, Any]) -> None:
+        """
+        Say why a league is showing nothing: a bad team code, or no fixtures yet.
+
+        An empty screen has two very different causes and they were
+        indistinguishable from the logs. Favourites are matched by exact ESPN
+        abbreviation, so a plausible-looking code silently matches nothing — the
+        codes are not always guessable (ESPN calls Manchester United ``MAN``, not
+        ``MUN``, and ``MUN`` is Bayern Munich). Between seasons, meanwhile, a
+        perfectly correct code also shows nothing, which looks identical.
+
+        Runs once per league per process; a failed check is not retried, since
+        this is a diagnostic and must never interfere with updates.
+        """
+        with self._config_lock:
+            if league_key in self._favorites_checked:
+                return
+            self._favorites_checked.add(league_key)
+
+        favorites = []
+        for mode_type in ('live', 'recent', 'upcoming'):
+            manager = managers.get(mode_type)
+            if manager is not None:
+                favorites = list(getattr(manager, 'favorite_teams', []) or [])
+                if favorites:
+                    break
+        if not favorites:
+            return
+
+        try:
+            teams = self._fetch_league_teams(league_key)
+        except Exception as exc:
+            self.logger.debug(
+                "Could not verify %s favorite teams: %s", league_name, exc)
+            return
+
+        if not teams:
+            return
+
+        recognised = [f for f in favorites if f in teams]
+        unknown = [f for f in favorites if f not in teams]
+
+        for code in unknown:
+            self.logger.warning(
+                "%s favorite team %r is not a %s team code.%s "
+                "See TEAMS.md for the full list.",
+                league_name, code, league_name,
+                self._suggest_team_code(code, teams),
+            )
+
+        if not recognised:
+            self.logger.warning(
+                "%s has no recognised favorite teams, so nothing will be shown "
+                "for it. Codes must be ESPN abbreviations, e.g. %s.",
+                league_name,
+                ", ".join("{} ({})".format(a, n)
+                          for a, n in list(sorted(teams.items()))[:3]),
+            )
+            return
+
+        # Codes are fine — check whether the league simply has no fixtures yet,
+        # which produces the same empty screen for an entirely different reason.
+        try:
+            starts = self._fetch_season_start(league_key)
+        except Exception as exc:
+            self.logger.debug(
+                "Could not check the %s schedule: %s", league_name, exc)
+            return
+
+        if starts:
+            self.logger.info(
+                "%s favorite teams %s look correct, but the league has no "
+                "fixtures published yet — its season starts %s. An empty "
+                "display until then is expected, not a configuration problem.",
+                league_name, ", ".join(recognised), starts,
+            )
+        else:
+            self.logger.info(
+                "%s favorite teams recognised: %s",
+                league_name, ", ".join(recognised),
+            )
+
+    @staticmethod
+    def _abbreviates(code: str, name: str) -> bool:
+        """
+        Whether ``code`` reads as an abbreviation of ``name``.
+
+        Each part of the code must be a prefix of one of the name's words, taken
+        in order — which is how people actually shorten club names. Plain string
+        similarity is no use for three-letter codes: 'MUN' scores identically
+        against 'MAN' and 'SUN', so Manchester United and Sunderland tie and the
+        suggestion is a coin flip. This rule separates them, because 'MUN' splits
+        as M-anchester UN-ited while Sunderland has no word starting with M.
+        """
+        import re
+
+        words = [w for w in re.split(r'[^A-Za-z0-9]+', (name or '').upper()) if w]
+
+        def consume(rest, remaining):
+            if not rest:
+                return True
+            if not remaining:
+                return False
+            head, tail = remaining[0], remaining[1:]
+            # Skip this word entirely, as in "Manchester United" -> "UTD".
+            if consume(rest, tail):
+                return True
+            # Or take a prefix of it.
+            for size in range(1, min(len(rest), len(head)) + 1):
+                if head.startswith(rest[:size]) and consume(rest[size:], tail):
+                    return True
+            return False
+
+        return consume((code or '').strip().upper(), words)
+
+    @classmethod
+    def _suggest_team_code(cls, code: str, teams: Dict[str, str]) -> str:
+        """Nearest matching code for a typo, as a ready-to-log clause."""
+        import difflib
+
+        upper = (code or "").strip().upper()
+        if not upper:
+            return ""
+
+        # Right code, wrong case — matching is case-sensitive. Guard on the
+        # case actually differing, so a valid code never draws this message.
+        if code in teams:
+            return ""
+        for abbr in teams:
+            if abbr.upper() == upper:
+                return " Codes are case-sensitive; use {!r} ({}).".format(
+                    abbr, teams[abbr])
+
+        abbreviated = sorted(a for a, n in teams.items() if cls._abbreviates(upper, n))
+        if len(abbreviated) == 1:
+            return " Closest match is {!r} ({}).".format(
+                abbreviated[0], teams[abbreviated[0]])
+        if abbreviated:
+            return " Did you mean {}?".format(", ".join(
+                "{!r} ({})".format(a, teams[a]) for a in abbreviated[:3]))
+
+        # Otherwise fall back to similarity, against names before codes: a name
+        # gives more characters to compare and so produces fewer ties.
+        names = {n.upper(): a for a, n in teams.items()}
+        hits = difflib.get_close_matches(upper, list(names), n=1, cutoff=0.6)
+        if not hits:
+            code_hits = difflib.get_close_matches(upper, list(teams), n=1, cutoff=0.6)
+            if code_hits:
+                return " Closest match is {!r} ({}).".format(
+                    code_hits[0], teams[code_hits[0]])
+            return ""
+        abbr = names[hits[0]]
+        return " Closest match is {!r} ({}).".format(abbr, teams[abbr])
+
+    def _fetch_league_teams(self, league_key: str) -> Dict[str, str]:
+        """ESPN's {abbreviation: display name} for a league."""
+        import requests
+
+        url = ("https://site.api.espn.com/apis/site/v2/sports/soccer/"
+               "{}/teams".format(league_key))
+        payload = requests.get(url, timeout=15).json()
+        entries = payload['sports'][0]['leagues'][0]['teams']
+        return {
+            t['team']['abbreviation']: t['team']['displayName']
+            for t in entries if t.get('team', {}).get('abbreviation')
+        }
+
+    def _fetch_season_start(self, league_key: str) -> Optional[str]:
+        """
+        First fixture date when a league has none scheduled yet, else None.
+
+        ESPN keeps publishing a league's calendar between seasons while its
+        scoreboard is empty, which is exactly the state that looks like a broken
+        config.
+        """
+        import requests
+        from datetime import datetime, timezone
+
+        url = ("https://site.api.espn.com/apis/site/v2/sports/soccer/"
+               "{}/scoreboard".format(league_key))
+        payload = requests.get(url, timeout=15).json()
+
+        if payload.get('events'):
+            return None  # fixtures exist; an empty screen is not about the season
+
+        calendar = (payload.get('leagues') or [{}])[0].get('calendar') or []
+        for entry in calendar:
+            raw = entry if isinstance(entry, str) else entry.get('startDate')
+            if not raw:
+                continue
+            try:
+                when = datetime.fromisoformat(raw.replace('Z', '+00:00'))
+            except ValueError:
+                continue
+            if when > datetime.now(timezone.utc):
+                return when.strftime('%d %B %Y')
+        return None
 
     def update(self) -> None:
         """Update soccer game data using parallel manager updates."""
@@ -1319,6 +1525,8 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
 
             league_name = LEAGUE_NAMES.get(league_key, league_key)
             managers = league_data.get('managers', {})
+
+            self._check_favorite_teams(league_key, league_name, managers)
 
             for mode_type in ('live', 'recent', 'upcoming'):
                 manager = managers.get(mode_type)
