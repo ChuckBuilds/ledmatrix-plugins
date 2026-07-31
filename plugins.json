@@ -237,10 +237,10 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.9.1"
+      "latest_version": "2.10.0"
     },
     {
       "id": "geochron",
@@ -356,10 +356,10 @@
       "plugin_path": "plugins/lacrosse-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.0",
+      "latest_version": "1.6.0",
       "icon": "fas fa-baseball-ball"
     },
     {
