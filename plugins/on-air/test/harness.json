@@ -1,0 +1,8 @@
+{
+  "_comment": "Harness config for the ON AIR sign. The active state is event-driven (MQTT); with no broker reachable the plugin renders its idle black frame, which still exercises the full display path on every panel size. No goldens: the interesting (active) frame cannot be forced from config alone.",
+  "config": {
+    "enabled": true,
+    "mqtt_host": "127.0.0.1",
+    "mqtt_port": 1
+  }
+}

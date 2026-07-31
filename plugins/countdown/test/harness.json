@@ -1,0 +1,16 @@
+{
+  "_comment": "Deterministic harness config: one fixed countdown with the clock frozen well before the target, so the rendered days/hours remaining are constant. Colors and fonts are pinned to the schema defaults so a future default change cannot silently invalidate goldens.",
+  "config": {
+    "enabled": true,
+    "countdowns": [
+      {
+        "id": "harness-fixed",
+        "enabled": true,
+        "name": "Launch",
+        "target_date": "2026-12-25"
+      }
+    ],
+    "show_expired": false
+  },
+  "freeze_time": "2026-08-01 15:00:00"
+}

@@ -1,0 +1,10 @@
+{
+  "_comment": "Deterministic harness config: fixed text with scrolling disabled so the static centered layout renders identically every run. Scroll mode is deliberately not goldened (a scroll's first frame is a blank lead-in buffer).",
+  "config": {
+    "enabled": true,
+    "text": "HELLO LEDMATRIX",
+    "scroll": false,
+    "font_mode": "manual",
+    "font_size": 8
+  }
+}

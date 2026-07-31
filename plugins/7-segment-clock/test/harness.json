@@ -1,0 +1,11 @@
+{
+  "_comment": "Deterministic harness config: timezone pinned to UTC and the clock frozen mid-minute. The flashing separator is driven by the current second, so freezing time also pins the separator state.",
+  "config": {
+    "enabled": true,
+    "location": {"timezone": "UTC"},
+    "is_24_hour_format": true,
+    "has_leading_zero": true,
+    "has_flashing_separator": false
+  },
+  "freeze_time": "2026-08-01 15:25:30"
+}

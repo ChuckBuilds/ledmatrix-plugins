@@ -1,0 +1,14 @@
+{
+  "_comment": "Deterministic harness config: the default config has no categories (they are added via the file manager), so one category is pinned to the bundled word_of_the_day.json data file. Item selection is keyed to the calendar date, so freezing the clock pins which entry renders.",
+  "config": {
+    "enabled": true,
+    "categories": {
+      "word_of_the_day": {
+        "enabled": true,
+        "data_file": "of_the_day/word_of_the_day.json",
+        "display_name": "Word of the Day"
+      }
+    }
+  },
+  "freeze_time": "2026-08-01 12:00:00"
+}
