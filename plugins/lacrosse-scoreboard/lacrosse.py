@@ -345,10 +345,7 @@ class LacrosseLive(Lacrosse, SportsLive):
 
             # Shot totals
             if self.show_shots:
-                try:
-                    shots_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                except (OSError, IOError):
-                    shots_font = ImageFont.load_default()
+                shots_font = self.fonts.get("shots") or self.fonts.get("record") or ImageFont.load_default()
                 home_shots = str(game.get("home_shots", "0"))
                 away_shots = str(game.get("away_shots", "0"))
                 shots_text = f"{away_shots}   SHOTS   {home_shots}"
@@ -369,10 +366,7 @@ class LacrosseLive(Lacrosse, SportsLive):
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                except IOError:
-                    record_font = ImageFont.load_default()
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
 
                 away_abbr = game.get("away_abbr", "")
                 home_abbr = game.get("home_abbr", "")

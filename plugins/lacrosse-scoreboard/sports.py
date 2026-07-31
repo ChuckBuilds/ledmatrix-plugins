@@ -370,6 +370,18 @@ class SportsCore(ABC):
                 fonts["status"] = ImageFont.load_default()
                 fonts["detail"] = ImageFont.load_default()
                 fonts["rank"] = ImageFont.load_default()
+        # Record/ranking annotations always use the small 4x6 face; cached here
+        # so the scorebug draw paths don't reload it from disk every frame.
+        try:
+            fonts["record"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+        except OSError:
+            fonts["record"] = ImageFont.load_default()
+        # Shot-total line in the live scorebug uses the same small face;
+        # cached here so it isn't reloaded from disk every frame.
+        try:
+            fonts["shots"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+        except OSError:
+            fonts["shots"] = ImageFont.load_default()
         return fonts
 
     def _draw_dynamic_odds(
@@ -1258,14 +1270,7 @@ class SportsUpcoming(SportsCore):
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
 
                 # Get team abbreviations
                 away_abbr = game.get("away_abbr", "")
@@ -1761,14 +1766,7 @@ class SportsRecent(SportsCore):
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
 
                 # Get team abbreviations
                 away_abbr = game.get("away_abbr", "")
