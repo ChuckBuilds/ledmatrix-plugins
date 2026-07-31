@@ -85,6 +85,16 @@ class StockTickerPlugin(BasePlugin):
             max_duration=int(self.config_manager.max_duration),
             buffer=self.config_manager.duration_buffer
         )
+
+        # Honor the global smooth-scrolling FPS target (older cores lack the setter)
+        global_config = getattr(self, 'global_config', {}) or {}
+        target_fps = global_config.get('target_fps') or global_config.get('scroll_target_fps', 100)
+        if hasattr(self.scroll_helper, 'set_target_fps'):
+            self.scroll_helper.set_target_fps(target_fps)
+            self.logger.info(f"Target FPS set to: {target_fps}")
+        else:
+            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
+            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
         
         self.logger.info("Stock ticker plugin initialized - %dx%d", 
                         self.display_width, self.display_height)

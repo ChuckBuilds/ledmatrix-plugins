@@ -169,9 +169,14 @@ class TextDisplayPlugin(BasePlugin):
             
         self.scroll_helper.set_scroll_delay(self.scroll_delay)
         
-        # Set target FPS from config (clamp to valid range)
+        # Set target FPS from config (clamp to valid range; the core helper
+        # additionally clamps to its own 30-200 range internally)
         target_fps = max(30.0, min(240.0, self.target_fps))
-        self.scroll_helper.set_target_fps(target_fps)
+        if hasattr(self.scroll_helper, 'set_target_fps'):
+            self.scroll_helper.set_target_fps(target_fps)
+        else:
+            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
+            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
         # Sub-pixel scrolling disabled - using high frame rate integer scrolling for smoothness
         # This matches the behavior of stock/leaderboard tickers
         

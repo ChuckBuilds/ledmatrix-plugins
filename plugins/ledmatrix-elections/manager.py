@@ -92,6 +92,15 @@ class ElectionPlugin(BasePlugin):
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=True, min_duration=int(self.display_duration), max_duration=300
         )
+        # Honor the global smooth-scrolling FPS target (older cores lack the setter)
+        global_config = getattr(self, 'global_config', {}) or {}
+        target_fps = global_config.get('target_fps') or global_config.get('scroll_target_fps', 100)
+        if hasattr(self.scroll_helper, 'set_target_fps'):
+            self.scroll_helper.set_target_fps(target_fps)
+            self.logger.info(f"Target FPS set to: {target_fps}")
+        else:
+            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
+            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
 
         # State
         self.races: List[Race] = []
