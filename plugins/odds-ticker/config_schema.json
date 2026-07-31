@@ -54,6 +54,7 @@
           "description": "Extra buffer time added to calculated duration (as percentage, 0.1 = 10%)"
         },
         "scroll_speed": {
+          "x-advanced": true,
           "type": "number",
           "description": "Scrolling speed in pixels per frame",
           "minimum": 0.5,

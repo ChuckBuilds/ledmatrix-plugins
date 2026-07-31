@@ -34,6 +34,7 @@
           "description": "Seconds to display each stock/crypto before switching to the next (only used in switch mode)"
         },
         "scroll_speed": {
+          "x-advanced": true,
           "type": "number",
           "description": "Scrolling speed in pixels per frame",
           "minimum": 0.5,
@@ -41,6 +42,7 @@
           "default": 1.0
         },
         "scroll_delay": {
+          "x-advanced": true,
           "type": "number",
           "description": "Delay between scroll steps in seconds",
           "minimum": 0.001,

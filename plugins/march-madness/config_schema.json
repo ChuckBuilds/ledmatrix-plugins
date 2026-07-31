@@ -64,6 +64,7 @@
           "x-advanced": true
         },
         "scroll_speed": {
+          "x-advanced": true,
           "type": "number",
           "default": 1.0,
           "minimum": 0.5,

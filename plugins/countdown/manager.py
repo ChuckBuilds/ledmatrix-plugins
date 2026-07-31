@@ -53,6 +53,9 @@ class CountdownPlugin(BasePlugin):
         self.font_family = config.get('font_family', 'press_start')
         self.font_size = config.get('font_size', 8)
         self.font_color = self._parse_color(config.get('font_color', [255, 255, 255]), (255, 255, 255))
+        # Per-element font face for the name line. None (the schema default)
+        # inherits font_family, so existing configs render exactly as before.
+        self.name_font_family = config.get('name_font_family', None)
         self.name_font_size = config.get('name_font_size', 8)
         self.name_font_color = self._parse_color(config.get('name_font_color', [200, 200, 200]), (200, 200, 200))
 
@@ -157,6 +160,7 @@ class CountdownPlugin(BasePlugin):
             "font_family":      d.get("font_family") or None,
             "font_size":        d.get("font_size") or None,
             "font_color":       self._parse_color(font_color, None) if font_color is not None else None,
+            "name_font_family": d.get("name_font_family") or None,
             "name_font_size":   d.get("name_font_size") or None,
             "name_font_color":  self._parse_color(name_color, None) if name_color is not None else None,
             "background_color": self._parse_color(bg_color, None) if bg_color is not None else None,
@@ -268,7 +272,7 @@ class CountdownPlugin(BasePlugin):
             fm.register_manager_font(
                 manager_id=self.plugin_id,
                 element_key=f"{self.plugin_id}.countdown_name",
-                family=self.font_family,
+                family=self.name_font_family or self.font_family,
                 size_px=self.name_font_size,
                 color=self.name_font_color
             )
@@ -534,6 +538,9 @@ class CountdownPlugin(BasePlugin):
             eff_font_family    = style.get('font_family')    or self.font_family
             eff_font_size      = style.get('font_size')      or self.font_size
             eff_font_color     = style.get('font_color')     or self.font_color
+            # Name font face: per-countdown override → global name face → the
+            # shared font_family (the pre-existing behavior when unset).
+            eff_name_font_family = style.get('name_font_family') or self.name_font_family or eff_font_family
             eff_name_font_size = style.get('name_font_size') or self.name_font_size
             eff_name_color     = style.get('name_font_color')or self.name_font_color
             eff_bg             = style.get('background_color') or self.background_color
@@ -618,7 +625,7 @@ class CountdownPlugin(BasePlugin):
             self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
 
             # Resolve fonts (per-countdown scoped keys enable independent sizing)
-            name_font  = self._resolve_font(cd_id, 'name',  eff_font_family, eff_name_font_size, eff_name_color  or (200, 200, 200))
+            name_font  = self._resolve_font(cd_id, 'name',  eff_name_font_family, eff_name_font_size, eff_name_color  or (200, 200, 200))
             value_font = self._resolve_font(cd_id, 'value', eff_font_family, eff_font_size,       eff_font_color  or (255, 255, 255))
 
             # For "now/today" events use a bright yellow highlight
@@ -662,7 +669,8 @@ class CountdownPlugin(BasePlugin):
             img = Image.new('RGB', (dw, dh), self.background_color)
             self.display_manager.image = img.copy()
             self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
-            font = self._resolve_font('_system', 'name', self.font_family, self.name_font_size,
+            font = self._resolve_font('_system', 'name', self.name_font_family or self.font_family,
+                                       self.name_font_size,
                                        self.name_font_color or (200, 200, 200))
             if font:
                 self.display_manager.draw_text("No Active",  x=dw // 2, y=dh // 3,        font=font, centered=True)
@@ -748,6 +756,7 @@ class CountdownPlugin(BasePlugin):
         self.font_family         = self.config.get('font_family', 'press_start')
         self.font_size           = self.config.get('font_size', 8)
         self.font_color          = self._parse_color(self.config.get('font_color', [255, 255, 255]), (255, 255, 255))
+        self.name_font_family    = self.config.get('name_font_family', None)
         self.name_font_size      = self.config.get('name_font_size', 8)
         self.name_font_color     = self._parse_color(self.config.get('name_font_color', [200, 200, 200]), (200, 200, 200))
 

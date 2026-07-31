@@ -12,12 +12,12 @@ Data: NOAA Tides & Currents API (free, no API key, US stations).
 Find your station: tidesandcurrents.noaa.gov/stations.html
 """
 
-import math, time, logging
+import math, os, time, logging
 from datetime import datetime, date, timedelta
 from typing import Dict, List, Optional, Tuple
 
 import requests
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 from src.plugin_system.base_plugin import BasePlugin
 
@@ -116,6 +116,10 @@ class TidePlugin(BasePlugin):
         self.tide_color   = _rgb('tide_color',      C_WATER_MID)
         self.hi_color     = _rgb('highlight_color', C_WAVE1)
 
+        # Per-element text styling from the optional `customization` block.
+        self._font_cache: Dict[Tuple[str, int], Optional[ImageFont.FreeTypeFont]] = {}
+        self._apply_customization(config)
+
         self.show_mode    = {
             'current':  bool(config.get('show_current',  True)),
             'schedule': bool(config.get('show_schedule', True)),
@@ -131,6 +135,105 @@ class TidePlugin(BasePlugin):
         self.hilo:   List[Dict]      = []
         self.hourly: List[float]     = []
         self.live:   Optional[float] = None
+
+    # ── Customization (per-element text styling) ───────────────────────────────
+
+    # Default element face — exactly the display manager's extra-small font
+    # (assets/fonts/4x6-font.ttf @ 6), which is what every element used before
+    # customization existed. The schema defaults mirror this.
+    _DEF_ELEMENT_FONT = ('4x6-font.ttf', 6)
+
+    def _apply_customization(self, config: Dict) -> None:
+        """Parse the optional `customization` block.
+
+        Defaults mirror the hardcoded rendering (extra-small font, C_TEXT /
+        C_LABEL colours), so a missing block — or one merely filled in with
+        schema defaults by the web UI — renders byte-identically.
+        """
+        def _crgb(value, default):
+            try:
+                return tuple(max(0, min(255, int(c))) for c in value)
+            except (TypeError, ValueError):
+                return default
+
+        cust      = config.get('customization', {}) or {}
+        text_cfg  = cust.get('tide_text', {})  or {}
+        label_cfg = cust.get('label_text', {}) or {}
+        self.text_color  = _crgb(text_cfg.get('text_color'),  C_TEXT)
+        self.label_color = _crgb(label_cfg.get('text_color'), C_LABEL)
+        self.text_font   = self._load_element_font(text_cfg)
+        self.label_font  = self._load_element_font(label_cfg)
+
+    def _load_element_font(self, element_cfg: Dict):
+        """Resolve an element's configured font, or None for the default.
+
+        The schema default (4x6-font.ttf @ 6) is exactly the display manager's
+        extra-small font, so a default or merged-defaults config returns None
+        and rendering is unchanged. Only a genuine non-default selection loads
+        a custom face; load failures fall back to None with a warning.
+        """
+        name = element_cfg.get('font', self._DEF_ELEMENT_FONT[0])
+        try:
+            size = int(element_cfg.get('font_size', self._DEF_ELEMENT_FONT[1]))
+        except (TypeError, ValueError):
+            size = self._DEF_ELEMENT_FONT[1]
+        if (name, size) == self._DEF_ELEMENT_FONT:
+            return None
+        key = (name, size)
+        if key not in self._font_cache:
+            font = None
+            candidates = [
+                os.path.join('assets', 'fonts', name),
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'fonts', name),
+            ]
+            for path in candidates:
+                if not os.path.exists(path):
+                    continue
+                try:
+                    # FreeType handles .ttf and (at its native size) .bdf faces.
+                    font = ImageFont.truetype(path, size)
+                    break
+                except Exception as e:
+                    self.logger.warning("Could not load font %s@%d: %s", name, size, e)
+            if font is None and not any(os.path.exists(p) for p in candidates):
+                self.logger.warning("Font file not found: %s; using default font", name)
+            self._font_cache[key] = font
+        return self._font_cache[key]
+
+    def _element_style(self, color, small: bool):
+        """Map a draw call's palette colour to its customization element.
+
+        Call sites pass the module palette constants: C_TEXT-coloured text is
+        the 'tide_text' element, C_LABEL-coloured text is 'label_text'. Any
+        other colour (state colours like C_HIGH/C_RISING, dimmed variants, …)
+        keeps its semantic colour and uses the tide_text font. Returns the
+        resolved (color, font) pair.
+        """
+        is_label = (color == C_LABEL)
+        if color == C_TEXT:
+            color = self.text_color
+        elif is_label:
+            color = self.label_color
+        font = (self.label_font if is_label else self.text_font) if small else None
+        if font is None:
+            font = (self.display_manager.extra_small_font if small
+                    else self.display_manager.small_font)
+        return color, font
+
+    def _tw(self, text: str, label: bool = False) -> int:
+        """Pixel width of `text` in its element's active font.
+
+        Uses the historical 4px-per-char estimate when no custom font is set
+        (so default layout is byte-identical), and measures the actual font
+        otherwise — measurement always matches the face used to draw.
+        """
+        font = self.label_font if label else self.text_font
+        if font is None:
+            return len(text) * 4
+        try:
+            return int(self.display_manager.get_text_width(text, font))
+        except Exception:
+            return len(text) * 4
 
     # ── BasePlugin ──────────────────────────────────────────────────────────────
 
@@ -499,20 +602,23 @@ class TidePlugin(BasePlugin):
             draw.ellipse([dx, cy-r, dx+dark_w, cy+r], fill=C_BG)
         draw.ellipse(bbox, outline=_lerp(C_BG, C_MOON, 0.35), width=1)
 
-    def _txt(self, x, y, text, color=C_TEXT, small=True):
-        font = self.display_manager.extra_small_font if small else self.display_manager.small_font
-        try: self.display_manager.draw_text(text, x=x, y=y, font=font, color=color, centered=False)
+    def _raw_txt(self, x, y, text, color, font, centered):
+        try: self.display_manager.draw_text(text, x=x, y=y, font=font, color=color, centered=centered)
         except Exception as _e: self.logger.debug("draw_text: %s", _e)
 
+    def _txt(self, x, y, text, color=C_TEXT, small=True):
+        color, font = self._element_style(color, small)
+        self._raw_txt(x, y, text, color, font, centered=False)
+
     def _txtc(self, cx, y, text, color=C_TEXT, small=True):
-        font = self.display_manager.extra_small_font if small else self.display_manager.small_font
-        try: self.display_manager.draw_text(text, x=cx, y=y, font=font, color=color, centered=True)
-        except Exception as _e: self.logger.debug("draw_text: %s", _e)
+        color, font = self._element_style(color, small)
+        self._raw_txt(cx, y, text, color, font, centered=True)
 
     def _txt_s(self, x, y, text, color=C_TEXT, small=True):
         """Draw text with a 1-pixel drop shadow for readability over animated backgrounds."""
-        self._txt(x + 1, y + 1, text, (0, 0, 8), small)
-        self._txt(x, y, text, color, small)
+        color, font = self._element_style(color, small)
+        self._raw_txt(x + 1, y + 1, text, (0, 0, 8), font, centered=False)
+        self._raw_txt(x, y, text, color, font, centered=False)
 
     # ── Placeholder screens ─────────────────────────────────────────────────────
 
@@ -556,7 +662,7 @@ class TidePlugin(BasePlugin):
 
         # LEFT: direction + height
         self._txt_s(3, r1, direction, dir_c)
-        arr_x = 3 + len(direction) * 4 + 3
+        arr_x = 3 + self._tw(direction) + 3
         if arr_x < dw // 2 - 6:
             self._dir_arrow(draw, arr_x, r1 + 3, direction, sz=3)
         if lv is not None:
@@ -594,7 +700,7 @@ class TidePlugin(BasePlugin):
                 self._txt_s(3, last + 2, name[:16], C_LABEL)
             pct = int(fill_ratio * 100)
             pct_str = f"{pct}%"
-            pct_w = len(pct_str) * 4 + 2
+            pct_w = self._tw(pct_str, label=True) + 2
             self._txt_s(dw - pct_w - 2, last + 2, pct_str, C_LABEL)
 
     # ── Mode 2: Schedule ────────────────────────────────────────────────────────
@@ -736,7 +842,7 @@ class TidePlugin(BasePlugin):
         if L['small']: labels = [(0,'0'),(12,'12')]
         for lh, lt in labels:
             lx   = cx + int(lh * cw / 23)
-            tw   = len(lt) * 4              # ~4px per char at extra-small font
+            tw   = self._tw(lt, label=True)  # ~4px/char at default extra-small font
             label_x = max(0, min(dw - tw - 1, lx - tw // 2))
             self._txt(label_x, ax_y, lt, C_LABEL)
 
@@ -832,7 +938,7 @@ class TidePlugin(BasePlugin):
             # % label right-aligned under gauge — always inside display bounds
             pct_g = int(fr*100)
             pct_str_g = f"{pct_g}%"
-            g_lx = min(gx, dw - len(pct_str_g)*4 - 1)
+            g_lx = min(gx, dw - self._tw(pct_str_g, label=True) - 1)
             self._txt(g_lx, gy+gh+2, pct_str_g, C_LABEL)
 
         # Cycle progress bar — gradient fill, height-scaled thickness
@@ -850,7 +956,7 @@ class TidePlugin(BasePlugin):
                            fill=_lerp(C_LOW, C_HIGH, t2))
             # Cycle % label — above the bar so it can't clip past display bottom
             pct_str = f"{cycle_pct}%"
-            pct_w   = len(pct_str) * 4 + 1
+            pct_w   = self._tw(pct_str, label=True) + 1
             lx      = max(bar_x0, min(dw - pct_w - 1, bar_x0 + flen - pct_w // 2))
             self._txt(lx, max(1, bar_y - 7), pct_str, C_LABEL)
 
@@ -868,6 +974,7 @@ class TidePlugin(BasePlugin):
         self.show_moon    = bool(self.config.get('show_moon_phase', True))
         self.tide_color   = _rgb('tide_color',      C_WATER_MID)
         self.hi_color     = _rgb('highlight_color', C_WAVE1)
+        self._apply_customization(self.config)
         self.show_mode    = {
             'current':  bool(self.config.get('show_current',  True)),
             'schedule': bool(self.config.get('show_schedule', True)),
