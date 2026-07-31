@@ -290,6 +290,22 @@ class TextDisplayPlugin(BasePlugin):
                     project_path = project_root / font_path
                     if project_path.exists():
                         resolved_path = str(project_path)
+                    else:
+                        # Strategy 4: Resolve against the core install the
+                        # display manager was loaded from — works when the
+                        # process cwd is not the core root (e.g. CI harness).
+                        # Walk upward because the object may come from a
+                        # nested package (src/plugin_system/testing/...).
+                        try:
+                            import inspect
+                            module_path = Path(inspect.getfile(type(self.display_manager))).resolve()
+                            for ancestor in module_path.parents:
+                                candidate = ancestor / font_path
+                                if candidate.exists():
+                                    resolved_path = str(candidate)
+                                    break
+                        except Exception:
+                            pass
             
             if resolved_path:
                 font_path = resolved_path
