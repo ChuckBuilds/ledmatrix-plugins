@@ -64,6 +64,8 @@ from soccer_managers import (
     create_custom_league_managers,
 )
 
+from soccer_timezone import resolve_timezone_name
+
 logger = logging.getLogger(__name__)
 
 # Predefined league keys and display names (priority 1-8)
@@ -417,12 +419,16 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             }
         }
 
-        # Add global config - get timezone from cache_manager's config_manager if available
-        timezone_str = self.config.get("timezone")
-        if not timezone_str and hasattr(self.cache_manager, 'config_manager'):
-            timezone_str = self.cache_manager.config_manager.get_timezone()
-        if not timezone_str:
-            timezone_str = "UTC"
+        # Resolve timezone: plugin override -> global config (either manager)
+        # -> host system zone -> UTC. Reading only cache_manager.config_manager
+        # used to fall through to UTC on cores that expose it via the plugin
+        # manager instead, rendering every start time in UTC.
+        timezone_str = resolve_timezone_name(
+            config=self.config,
+            plugin_manager=getattr(self, "plugin_manager", None),
+            cache_manager=self.cache_manager,
+            log=self.logger,
+        )
         
         # Get display config from main config if available
         display_config = self.config.get("display", {})
@@ -448,9 +454,49 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         """Build O(1) lookup map from custom_leagues config, keyed by league_code."""
         self._custom_league_map: Dict[str, Dict] = {
             cl['league_code']: cl
-            for cl in self.config.get('custom_leagues', [])
-            if cl.get('league_code')
+            for cl in (self.config.get('custom_leagues') or [])
+            if isinstance(cl, dict) and cl.get('league_code')
         }
+
+    def _normalize_custom_leagues(self) -> None:
+        """
+        Clean up the custom_leagues config in place before anything reads it.
+
+        The web UI's array-table editor keeps every non-column property in a
+        hidden text input, so anything it can't represent as text comes back as
+        null (empty input), and list properties come back as the comma-separated
+        string the user typed. Dropping the nulls lets every downstream
+        ``.get(key, default)`` fall back to its default, and splitting the
+        strings restores the list shape the managers expect.
+        """
+        custom_leagues = self.config.get('custom_leagues') or []
+
+        def _strip_nulls(value: Any) -> Any:
+            if isinstance(value, dict):
+                return {k: _strip_nulls(v) for k, v in value.items() if v is not None}
+            return value
+
+        normalized: List[Dict[str, Any]] = []
+        for custom_league in custom_leagues:
+            if not isinstance(custom_league, dict):
+                self.logger.warning("Skipping malformed custom league entry: %r", custom_league)
+                continue
+
+            cleaned = _strip_nulls(custom_league)
+
+            # "ARS, CHE" (row editor) -> ["ARS", "CHE"]
+            for key in ('favorite_teams', 'exclude_teams'):
+                teams = cleaned.get(key)
+                if isinstance(teams, str):
+                    cleaned[key] = [t.strip() for t in teams.split(',') if t.strip()]
+
+            code = cleaned.get('league_code')
+            if isinstance(code, str):
+                cleaned['league_code'] = code.strip().lower()
+
+            normalized.append(cleaned)
+
+        self.config['custom_leagues'] = normalized
 
     def _get_league_config(self, league_key: str, league_data: Optional[Dict] = None) -> Dict:
         """Get the config dict for a league, handling both predefined and custom leagues."""
@@ -476,6 +522,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         3. Updates league_enabled and league_live_priority dicts
         4. Updates LEAGUE_NAMES for display purposes
         """
+        self._normalize_custom_leagues()
         custom_leagues = self.config.get('custom_leagues', [])
 
         if not custom_leagues:
@@ -659,11 +706,16 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         }
 
         # Add global config
-        timezone_str = self.config.get("timezone")
-        if not timezone_str and hasattr(self.cache_manager, 'config_manager'):
-            timezone_str = self.cache_manager.config_manager.get_timezone()
-        if not timezone_str:
-            timezone_str = "UTC"
+        # Resolve timezone: plugin override -> global config (either manager)
+        # -> host system zone -> UTC. Reading only cache_manager.config_manager
+        # used to fall through to UTC on cores that expose it via the plugin
+        # manager instead, rendering every start time in UTC.
+        timezone_str = resolve_timezone_name(
+            config=self.config,
+            plugin_manager=getattr(self, "plugin_manager", None),
+            cache_manager=self.cache_manager,
+            log=self.logger,
+        )
 
         display_config = self.config.get("display", {})
         if not display_config and hasattr(self.cache_manager, 'config_manager'):

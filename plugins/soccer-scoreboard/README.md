@@ -32,6 +32,10 @@ A plugin for LEDMatrix that displays live, recent, and upcoming soccer games acr
 - `show_records`: Display team win-loss records (default: false)
 - `show_ranking`: Display team rankings when available (default: false)
 - `background_service`: Configure API request settings
+- `timezone` (Advanced): IANA name used to display event start times, e.g.
+  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
+  timezone; if that isn't set, the host system's timezone is used, and only if
+  neither is available do times fall back to UTC.
 
 ### Per-League Settings
 
@@ -178,7 +182,32 @@ The plugin supports the following soccer leagues:
 - **uefa.europa**: UEFA Europa League
 - **fifa.world**: FIFA World Cup
 
-Additional leagues can be added via the **Custom Leagues** setting using any ESPN soccer league code (e.g. `mex.1`, `arg.1`, `bra.1`, `ned.1`).
+### Adding another league
+
+Any other league ESPN covers can be added under **Add More Leagues** in the plugin
+settings. Click **Add Item**, then fill in **both** a display name and the ESPN
+league code — a row with a blank name will not save.
+
+Common codes:
+
+| Code | League |
+| --- | --- |
+| `eng.2` | English Championship |
+| `eng.3` | English League One |
+| `eng.fa` | FA Cup |
+| `eng.league_cup` | EFL (Carabao) Cup |
+| `mex.1` | Liga MX |
+| `arg.1` | Argentine Primera División |
+| `bra.1` | Brasileirão Série A |
+| `ned.1` | Eredivisie |
+| `sco.1` | Scottish Premiership |
+| `tur.1` | Turkish Süper Lig |
+| `bel.1` | Belgian Pro League |
+| `conmebol.libertadores` | Copa Libertadores |
+
+Codes are lowercase and dot-separated, exactly as they appear in ESPN's own URLs
+(`espn.com/soccer/scoreboard/_/league/eng.2`). Per-league favorites, durations,
+and display modes live behind the ⚙ button on the league's row.
 
 ## FIFA World Cup
 
@@ -293,6 +322,9 @@ service.
 
 ## Troubleshooting
 
+- **Start times look like UTC** (a 6:45pm Central start showing as 11:45PM):
+  the plugin couldn't read your global timezone. Set `timezone` under the
+  plugin's Advanced Settings to your IANA zone, e.g. `America/Chicago`.
 - **No games showing**: Check if leagues are enabled and API endpoints are accessible
 - **Missing team logos**: Ensure team logo files exist in your assets/sports/soccer_logos/ directory
 - **Slow updates**: Adjust the update interval in league configuration

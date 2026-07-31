@@ -32,6 +32,12 @@
       "maximum": 60,
       "description": "Duration in seconds to show each individual game before rotating to the next game within the same mode"
     },
+    "timezone": {
+      "x-advanced": true,
+      "type": "string",
+      "default": "",
+      "description": "IANA timezone used to display event start times (e.g. America/Chicago). Leave blank to follow the LEDMatrix global timezone, or the system timezone if none is set."
+    },
     "background_service": {
       "type": "object",
       "title": "Background Service Settings",
@@ -79,7 +85,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "List of favorite NBA team abbreviations (e.g., LAL, BOS, GSW). Use 2-3 letter codes."
+          "description": "List of favorite NBA team abbreviations (e.g., LAL, BOS, GS). Use 2-3 letter codes. These are ESPN's codes, which are not always the ones you would guess: Golden State is GS, not GSW."
         },
         "exclude_teams": {
           "x-advanced": true,
@@ -451,7 +457,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "List of favorite WNBA team abbreviations (e.g., NYL, LAS, SEA). Use 2-3 letter codes."
+          "description": "List of favorite WNBA team abbreviations (e.g., NY, LA, SEA). Use 2-3 letter codes. These are ESPN's codes: New York Liberty is NY and Los Angeles Sparks is LA."
         },
         "exclude_teams": {
           "x-advanced": true,
@@ -1233,7 +1239,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "List of favorite NCAA Women's Basketball team abbreviations (e.g., UCONN, SCAR, STAN). Use 2-4 letter codes."
+          "description": "List of favorite NCAA Women's Basketball team abbreviations (e.g., CONN, SC, STAN). Use 2-4 letter codes. These are ESPN's codes: UConn is CONN and South Carolina is SC."
         },
         "exclude_teams": {
           "x-advanced": true,
@@ -1984,6 +1990,7 @@
     "display_duration",
     "update_interval",
     "game_display_duration",
+    "timezone",
     "nba",
     "wnba",
     "ncaam",

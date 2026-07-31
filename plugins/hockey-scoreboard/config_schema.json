@@ -9,6 +9,12 @@
       "default": false,
       "description": "Enable or disable the hockey scoreboard plugin"
     },
+    "timezone": {
+      "x-advanced": true,
+      "type": "string",
+      "default": "",
+      "description": "IANA timezone used to display event start times (e.g. America/Chicago). Leave blank to follow the LEDMatrix global timezone, or the system timezone if none is set."
+    },
     "defaults": {
       "type": "object",
       "description": "Default settings that can be inherited by leagues (can be overridden per league)",
@@ -990,7 +996,7 @@
               "type": "array",
               "items": {"type": "string"},
               "default": [],
-              "description": "NCAA Women's Hockey favorite team abbreviations (e.g., ['WISC', 'MINN', 'OSU'])"
+              "description": "NCAA Women's Hockey favorite team abbreviations (e.g., ['WIS', 'MINN', 'OSU']). These are ESPN's codes: Wisconsin is WIS, not WISC."
             },
             "exclude_teams": {
               "x-advanced": true,

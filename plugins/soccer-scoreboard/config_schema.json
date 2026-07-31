@@ -98,6 +98,12 @@
       "description": "Duration in seconds to show each individual game before rotating to the next game within the same mode",
       "x-advanced": true
     },
+    "timezone": {
+      "x-advanced": true,
+      "type": "string",
+      "default": "",
+      "description": "IANA timezone used to display event start times (e.g. America/Chicago). Leave blank to follow the LEDMatrix global timezone, or the system timezone if none is set."
+    },
     "background_service": {
       "type": "object",
       "properties": {
@@ -4241,7 +4247,7 @@
     "custom_leagues": {
       "type": "array",
       "title": "Add More Leagues",
-      "description": "Add any soccer league available on ESPN. Click 'Add Item' then enter a league code. Common codes: mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish Süper Lig), bel.1 (Belgian Pro League)",
+      "description": "Add any soccer league available on ESPN. Click 'Add Item', then fill in BOTH a name and a league code. Common codes: eng.2 (English Championship), eng.3 (League One), eng.fa (FA Cup), eng.league_cup (EFL Cup), mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish Süper Lig), bel.1 (Belgian Pro League)",
       "x-widget": "array-table",
       "x-columns": [
         "name",
@@ -4265,11 +4271,11 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 50,
-            "pattern": "^[a-z]{2,4}(\\.[a-z0-9]+)+$",
-            "description": "ESPN league code in dot-separated format (e.g., 'por.1', 'mex.1', 'arg.1', 'uefa.champions')"
+            "pattern": "^[a-z][a-z0-9_-]*(\\.[a-z0-9_-]+)+$",
+            "description": "ESPN league code in dot-separated format (e.g., 'eng.2', 'mex.1', 'uefa.champions', 'eng.league_cup', 'conmebol.libertadores')"
           },
           "priority": {
-            "type": "integer",
+            "type": ["integer", "null"],
             "default": 50,
             "minimum": 1,
             "maximum": 100,
@@ -4281,17 +4287,17 @@
             "description": "Whether this league is enabled"
           },
           "favorite_teams": {
-            "type": "array",
+            "type": ["array", "string", "null"],
             "items": {
               "type": "string"
             },
             "default": [],
             "uniqueItems": true,
             "maxItems": 20,
-            "description": "Favorite team abbreviations for this league"
+            "description": "Favorite team abbreviations for this league (comma-separated when typed into the row editor)"
           },
           "exclude_teams": {
-            "type": "array",
+            "type": ["array", "string", "null"],
             "items": {
               "type": "string",
               "description": "Custom league team name or abbreviation"
@@ -4299,7 +4305,7 @@
             "uniqueItems": true,
             "maxItems": 20,
             "default": [],
-            "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live.",
+            "description": "Team abbreviations to always hide from live rotation and recent/final scores for this league (spoiler protection). Takes precedence over Favorite Teams and Show All Live. Comma-separated when typed into the row editor.",
             "x-advanced": true
           },
           "live_priority": {
@@ -4362,7 +4368,7 @@
             "additionalProperties": false
           },
           "live_game_duration": {
-            "type": "integer",
+            "type": ["integer", "null"],
             "default": 20,
             "minimum": 10,
             "maximum": 120,
@@ -4370,7 +4376,7 @@
             "x-advanced": true
           },
           "non_favorite_live_game_duration": {
-            "type": "integer",
+            "type": ["integer", "null"],
             "default": 0,
             "minimum": 0,
             "maximum": 120,
@@ -4378,7 +4384,7 @@
             "x-advanced": true
           },
           "recent_game_duration": {
-            "type": "integer",
+            "type": ["integer", "null"],
             "default": 15,
             "minimum": 5,
             "maximum": 60,
@@ -4386,7 +4392,7 @@
             "x-advanced": true
           },
           "upcoming_game_duration": {
-            "type": "integer",
+            "type": ["integer", "null"],
             "default": 15,
             "minimum": 5,
             "maximum": 60,
@@ -4399,14 +4405,14 @@
             "description": "Control how many games to show",
             "properties": {
               "recent_games_to_show": {
-                "type": "integer",
+                "type": ["integer", "null"],
                 "default": 1,
                 "minimum": 1,
                 "maximum": 20,
                 "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
               },
               "upcoming_games_to_show": {
-                "type": "integer",
+                "type": ["integer", "null"],
                 "default": 10,
                 "minimum": 1,
                 "maximum": 20,
@@ -4431,7 +4437,7 @@
                 "description": "Show all live games, not just favorites"
               },
               "favorite_live_boost": {
-                "type": "integer",
+                "type": ["integer", "null"],
                 "minimum": 1,
                 "maximum": 5,
                 "default": 2,
@@ -4453,7 +4459,7 @@
                 "x-advanced": true
               },
               "min_duration_seconds": {
-                "type": "number",
+                "type": ["number", "null"],
                 "minimum": 10,
                 "maximum": 300,
                 "default": 30,
@@ -4461,14 +4467,14 @@
                 "x-advanced": true
               },
               "max_duration_seconds": {
-                "type": "number",
+                "type": ["number", "null"],
                 "minimum": 60,
                 "maximum": 600,
                 "description": "Maximum total duration in seconds",
                 "x-advanced": true
               },
               "modes": {
-                "type": "object",
+                "type": ["object", "null"],
                 "title": "Per-Mode Settings",
                 "description": "Configure dynamic duration for specific modes",
                 "properties": {
@@ -4482,13 +4488,13 @@
                         "x-advanced": true
                       },
                       "min_duration_seconds": {
-                        "type": "number",
+                        "type": ["number", "null"],
                         "minimum": 10,
                         "maximum": 300,
                         "x-advanced": true
                       },
                       "max_duration_seconds": {
-                        "type": "number",
+                        "type": ["number", "null"],
                         "minimum": 60,
                         "maximum": 600,
                         "x-advanced": true
@@ -4506,13 +4512,13 @@
                         "x-advanced": true
                       },
                       "min_duration_seconds": {
-                        "type": "number",
+                        "type": ["number", "null"],
                         "minimum": 10,
                         "maximum": 300,
                         "x-advanced": true
                       },
                       "max_duration_seconds": {
-                        "type": "number",
+                        "type": ["number", "null"],
                         "minimum": 60,
                         "maximum": 600,
                         "x-advanced": true
@@ -4530,13 +4536,13 @@
                         "x-advanced": true
                       },
                       "min_duration_seconds": {
-                        "type": "number",
+                        "type": ["number", "null"],
                         "minimum": 10,
                         "maximum": 300,
                         "x-advanced": true
                       },
                       "max_duration_seconds": {
-                        "type": "number",
+                        "type": ["number", "null"],
                         "minimum": 60,
                         "maximum": 600,
                         "x-advanced": true
@@ -4940,6 +4946,7 @@
     "upcoming_games_to_show",
     "show_favorite_teams_only",
     "game_display_duration",
+    "timezone",
     "background_service",
     "custom_leagues",
     "leagues"

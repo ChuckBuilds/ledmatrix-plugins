@@ -1,5 +1,14 @@
 # Lacrosse Scoreboard — Changelog
 
+## 1.5.0 (2026-07-29)
+
+### Fixed
+- **Game start times shown in UTC**: The plugin read the LEDMatrix global timezone only from `cache_manager.config_manager`. On cores that hang `config_manager` off the plugin manager instead, that lookup came back empty and every start time was rendered in UTC, while plugins that check the plugin manager first (clock-simple, geochron) showed the correct local time on the same device. Timezone resolution now lives in `lacrosse_timezone.py` and tries, in order: the plugin's own `timezone` setting, `plugin_manager.config_manager`, `cache_manager.config_manager`, the host system zone (`TZ`, `/etc/timezone`, `/etc/localtime`), and only then UTC.
+- **`timezone` setting was not in the config schema**, so it never appeared in the web UI. It is now a documented string property under Advanced Settings.
+
+### Added
+- `timezone` (Advanced Settings): optional IANA zone override, e.g. `America/Chicago`. Blank (the default) follows the LEDMatrix global timezone.
+
 ## 1.1.0 (2026-04-07)
 
 ### Breaking change — display modes renamed with `lax_` prefix

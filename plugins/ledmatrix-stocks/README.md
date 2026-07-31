@@ -43,8 +43,8 @@ generated from it. The most-used keys, with their actual nesting:
 | `display.scroll_speed` | `1.0` | Scroll speed multiplier |
 | `display.scroll_delay` | `0.02` | Per-step delay (smaller = smoother but more CPU) |
 | `display.toggle_chart` | `true` | Show an inline mini-chart per symbol |
-| `display.chart_width_percent` | `0.4` | Chart width as a fraction of each symbol's canvas width (`0.1`-`0.7`) |
-| `display.chart_height_percent` | `0.667` | Chart height as a fraction of the display height (`0.2`-`1.0`) |
+| `display.chart_width_px` | `64` | Mini-chart width in pixels — a fixed size that does not scale with the display width (`8`-`256`) |
+| `display.chart_height_px` | `32` | Mini-chart height in pixels — a fixed size that does not scale with the display height; clamped to the panel (`6`-`256`) |
 | `display.dynamic_duration` | `true` | Let the controller pick a duration based on content width |
 | `display.min_duration` | `30` | Floor for dynamic duration (seconds) |
 | `display.max_duration` | `300` | Ceiling for dynamic duration (seconds) |
