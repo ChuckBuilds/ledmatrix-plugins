@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.20.0",
+  "version": "1.20.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-07-28",
+      "version": "1.20.1",
+      "notes": "Fix Vegas scroll mode showing only a single game: get_vegas_content() inherited whichever standalone display mode had rendered last, so one live game collapsed the whole ticker entry to one card. It now reads a dedicated combined live/recent/upcoming slate that the standalone modes cannot clobber, rebuilt only when the games actually change. Also stops the Vegas build doing network I/O on the render path (which froze the ticker) and stops it hijacking an in-progress standalone scroll.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-28",
       "version": "1.20.0",

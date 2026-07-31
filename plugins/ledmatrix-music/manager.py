@@ -69,8 +69,12 @@ class MusicPlugin(BasePlugin):
     with album art, scrolling text, and progress bars. Supports both sources
     with automatic switching and seamless display updates.
     """
-    
-    def __init__(self, plugin_id: str, config: Dict[str, Any], 
+
+    # Floor for the content-matched progress bar, so a very short title still
+    # leaves something recognisable as a progress indicator.
+    MIN_PROGRESS_BAR_WIDTH = 24
+
+    def __init__(self, plugin_id: str, config: Dict[str, Any],
                  display_manager, cache_manager, plugin_manager):
         """Initialize the music plugin."""
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
@@ -909,6 +913,57 @@ class MusicPlugin(BasePlugin):
         if not self.poll_thread or not self.poll_thread.is_alive():
             self.start_polling()
 
+    def _progress_bar_width(self, text_area_width, lines):
+        """Width for the progress bar, matched to the widest line of text.
+
+        The bar used to span the whole text area regardless of how much of it
+        the text actually filled. With a short title on a wide panel that left
+        a bar stretching across the display under a few characters, which reads
+        as a full-width element in a ticker even after blank margins are
+        trimmed (the bar *is* ink, so there is nothing to trim).
+
+        Sizing it to the widest of title/artist/album ties it to the content.
+        A line long enough to scroll measures wider than the area and so pins
+        the bar to full width — correct, because that line really does fill it.
+
+        Set ``progress_bar_match_text`` false to restore the full-width bar.
+
+        Args:
+            text_area_width: Space available for text, and the maximum width
+            lines: Iterable of (text, font) pairs, or None for a line that is
+                not currently drawn
+
+        Returns:
+            Bar width in pixels, at least MIN_PROGRESS_BAR_WIDTH (or the whole
+            area if that is narrower)
+        """
+        if not self.config.get('progress_bar_match_text', True):
+            return text_area_width
+
+        widest = 0
+        for line in lines:
+            if not line:
+                continue
+            text, font = line
+            if not text:
+                continue
+            try:
+                widest = max(widest, self.display_manager.get_text_width(text, font))
+            except Exception:
+                # Font measurement is best-effort; a failure should not lose the
+                # progress bar entirely.
+                self.logger.debug(
+                    "MusicPlugin: could not measure text for progress bar width",
+                    exc_info=True,
+                )
+                return text_area_width
+
+        if widest <= 0:
+            return text_area_width
+
+        floor = min(self.MIN_PROGRESS_BAR_WIDTH, text_area_width)
+        return max(floor, min(widest, text_area_width))
+
     def _clip_text_to_width(self, text, font, max_width):
         """Trim trailing characters so the rendered text fits within max_width px.
 
@@ -1431,7 +1486,15 @@ class MusicPlugin(BasePlugin):
         progress_ms = current_track_info_snapshot.get('progress_ms', 0)
 
         if duration_ms > 0 and text_area_width > 0:
-            bar_total_width = text_area_width
+            album_shown = available_height_for_album >= album_height
+            bar_total_width = self._progress_bar_width(
+                text_area_width,
+                [
+                    (title, font_title),
+                    (artist, font_artist),
+                    (album, font_album) if album_shown else None,
+                ],
+            )
             filled_ratio = progress_ms / duration_ms
             filled_width = int(filled_ratio * bar_total_width)
 

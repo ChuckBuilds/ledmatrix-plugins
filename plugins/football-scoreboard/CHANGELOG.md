@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.9.1] - 2026-07-29
+
+### Fixed
+- Correct the NCAA football example team codes in the favorite-teams help text: Alabama is ALA in ESPN's data, not BAMA. Copying the old example matched no team and showed nothing.
+
 ## [2.9.0] - 2026-07-29
 
 ### Fixed

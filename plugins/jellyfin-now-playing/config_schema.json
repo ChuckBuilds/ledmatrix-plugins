@@ -44,6 +44,12 @@
       "description": "Which media types to show",
       "x-widget": "checkbox-group"
     },
+    "progress_bar_match_text": {
+      "x-advanced": true,
+      "type": "boolean",
+      "default": true,
+      "description": "Size the progress bar to the widest of the title and subtitle instead of stretching it across the whole text area. On a wide panel a short title otherwise leaves a bar spanning the display, and because a bar is drawn pixels it cannot be trimmed back in Vegas scroll mode. A title long enough to scroll still fills the bar. Turn off for the original full-width bar."
+    },
     "show_progress": {
       "type": "boolean",
       "default": true,

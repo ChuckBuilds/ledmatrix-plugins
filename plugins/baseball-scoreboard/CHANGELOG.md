@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.20.1] - 2026-07-28
+
+### Fixed
+- **Vegas scroll showed only one game**: `get_vegas_content()` returned the union
+  of every scroll display's cached items, so once the standalone rotation had
+  rendered a mode, Vegas inherited that mode's games — with a single live game in
+  progress the whole ticker entry collapsed to one card. It now reads a dedicated
+  combined slate (live + recent + upcoming, across every enabled league) that
+  cannot be clobbered by the standalone displays, and a game held by two displays
+  is no longer shown twice.
+- **Vegas content stalled the scroll**: building the Vegas slate called `update()`,
+  putting network I/O on the render path and freezing the ticker for seconds. The
+  slate is now rendered from whatever data the plugin already has, and is rebuilt
+  only when the games actually change (fingerprinted on scores, inning, count and
+  game set) instead of on every fetch.
+- **Vegas build hijacked the standalone scroll**: rendering the Vegas slate went
+  through `prepare_and_display()`, which also repoints the manager's active
+  scroll display, so the next standalone frame rendered the Vegas slate instead
+  of the game type the rotation was showing. Vegas now uses a new
+  `prepare_content()` that renders without switching the active display.
+
+### Changed
+- **`game_card_width` guidance**: the description advised lowering it on
+  multi-panel chains, which is backwards — on a wide panel cards need to be
+  *wider* to stay readable. It now suggests roughly display width / 3.
+
 ## [1.20.0] - 2026-07-28
 
 ### Fixed

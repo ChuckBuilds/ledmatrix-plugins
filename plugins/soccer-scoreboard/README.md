@@ -182,7 +182,32 @@ The plugin supports the following soccer leagues:
 - **uefa.europa**: UEFA Europa League
 - **fifa.world**: FIFA World Cup
 
-Additional leagues can be added via the **Custom Leagues** setting using any ESPN soccer league code (e.g. `mex.1`, `arg.1`, `bra.1`, `ned.1`).
+### Adding another league
+
+Any other league ESPN covers can be added under **Add More Leagues** in the plugin
+settings. Click **Add Item**, then fill in **both** a display name and the ESPN
+league code — a row with a blank name will not save.
+
+Common codes:
+
+| Code | League |
+| --- | --- |
+| `eng.2` | English Championship |
+| `eng.3` | English League One |
+| `eng.fa` | FA Cup |
+| `eng.league_cup` | EFL (Carabao) Cup |
+| `mex.1` | Liga MX |
+| `arg.1` | Argentine Primera División |
+| `bra.1` | Brasileirão Série A |
+| `ned.1` | Eredivisie |
+| `sco.1` | Scottish Premiership |
+| `tur.1` | Turkish Süper Lig |
+| `bel.1` | Belgian Pro League |
+| `conmebol.libertadores` | Copa Libertadores |
+
+Codes are lowercase and dot-separated, exactly as they appear in ESPN's own URLs
+(`espn.com/soccer/scoreboard/_/league/eng.2`). Per-league favorites, durations,
+and display modes live behind the ⚙ button on the league's row.
 
 ## FIFA World Cup
 

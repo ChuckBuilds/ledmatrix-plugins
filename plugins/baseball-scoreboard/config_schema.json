@@ -167,7 +167,7 @@
                             "default": 128,
                             "minimum": 32,
                             "maximum": 512,
-                            "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                            "description": "Width of each game card in scroll mode (pixels). Default 128, which suits a single 128px panel. On a wider chain raise it so each card stays readable - roughly display width divided by 3 shows about three games at once. Lower it to fit more games on screen at the cost of detail."
                         }
                     }
                 },
@@ -608,7 +608,7 @@
                             "default": 128,
                             "minimum": 32,
                             "maximum": 512,
-                            "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                            "description": "Width of each game card in scroll mode (pixels). Default 128, which suits a single 128px panel. On a wider chain raise it so each card stays readable - roughly display width divided by 3 shows about three games at once. Lower it to fit more games on screen at the cost of detail."
                         }
                     }
                 },
@@ -1025,7 +1025,7 @@
                             "default": 128,
                             "minimum": 32,
                             "maximum": 512,
-                            "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+                            "description": "Width of each game card in scroll mode (pixels). Default 128, which suits a single 128px panel. On a wider chain raise it so each card stays readable - roughly display width divided by 3 shows about three games at once. Lower it to fit more games on screen at the cost of detail."
                         }
                     }
                 },
