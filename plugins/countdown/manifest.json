@@ -1,7 +1,7 @@
 {
   "id": "countdown",
   "name": "Countdown Display",
-  "version": "3.1.4",
+  "version": "3.2.0",
   "author": "ChuckBuilds",
   "description": "Create and manage customizable countdowns with images. Perfect for birthdays, holidays, events, and special occasions.",
   "entry_point": "manager.py",
@@ -21,6 +21,11 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "3.2.0",
+      "released": "2026-07-31",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-28",
       "version": "3.1.4",
@@ -82,5 +87,5 @@
   "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/countdown",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-07-28"
+  "last_updated": "2026-07-31"
 }

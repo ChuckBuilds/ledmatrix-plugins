@@ -1,7 +1,7 @@
 {
   "id": "web-ui-info",
   "name": "Web UI Info",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "LEDMatrix",
   "description": "Displays the web UI URL for easy access. Shows 'visit web ui at http://[deviceID]:5000'",
   "entry_point": "manager.py",
@@ -20,6 +20,11 @@
   "default_duration": 10,
   "versions": [
     {
+      "version": "1.0.2",
+      "released": "2026-07-31",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
       "released": "2026-05-15",
       "version": "1.0.1",
       "ledmatrix_min": "2.0.0"
@@ -30,7 +35,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-07-31",
   "compatible_versions": [
     ">=2.0.0"
   ]
