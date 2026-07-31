@@ -2558,9 +2558,6 @@ class FlightTrackerPlugin(BasePlugin):
         Flight tracking returns one card per tracked flight.
         """
         try:
-            w = self.display_width
-            h = self.display_height
-
             mode = self.display_mode
             if mode == 'auto':
                 has_airborne_tracked = any(
@@ -2581,15 +2578,11 @@ class FlightTrackerPlugin(BasePlugin):
                     mode = 'stats'
 
             if mode == 'map':
-                map_bg = self._get_map_background(self.center_lat, self.center_lon)
-                img = map_bg.copy() if map_bg else Image.new('RGB', (w, h), (0, 0, 0))
-                draw = ImageDraw.Draw(img)
-                for aircraft in self.aircraft_data.values():
-                    pixel = self._latlon_to_pixel(aircraft['lat'], aircraft['lon'])
-                    if pixel:
-                        color = tuple(min(255, int(c * 1.3)) for c in aircraft['color'])
-                        draw.point(pixel, fill=color)
-                return [img]
+                # Shared with _display_map so the ticker gets the same map the
+                # rotation does — trails, centre marker and aircraft count
+                # included. This used to be a cut-down copy that omitted all
+                # three.
+                return [self._render_map_image()]
 
             if mode == 'overhead':
                 # Render the proximity aircraft from the full pool (independent of
@@ -2889,44 +2882,56 @@ class FlightTrackerPlugin(BasePlugin):
     # Original display modes (kept in manager.py for backward compatibility)
     # -------------------------------------------------------------------------
 
-    def _display_map(self, force_clear: bool = False) -> None:
-        """Display the flight map with aircraft and geographical background."""
-        if force_clear:
-            self.display_manager.clear()
-        
+    def _render_map_image(self) -> Image.Image:
+        """Render the flight map: background, centre marker, trails, aircraft, count.
+
+        The single source of truth for the map view, shared by ``_display_map``
+        and ``get_vegas_content``. Vegas used to reimplement a cut-down version
+        of this, which drifted: it drew only the background and the aircraft
+        dots, so trails, the centre position marker and the aircraft count were
+        all silently missing from the ticker even with ``show_trails`` enabled.
+
+        Sizing comes from ``display_width``/``display_height``, which are
+        properties over ``matrix``. Vegas narrows the display manager while it
+        requests content, so the projection in ``_latlon_to_pixel`` scales to
+        whatever width the ticker asked for without any extra plumbing.
+
+        Returns:
+            The composed map as a new RGB image at the current display size
+        """
         # Get map background if enabled
         map_bg = self._get_map_background(self.center_lat, self.center_lon)
-        
+
         # Create image with background
         if map_bg:
             img = map_bg.copy()
         else:
             self.logger.debug("[Flight Tracker] Map background unavailable; using solid background")
             img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
-        
+
         draw = ImageDraw.Draw(img)
-        
+
         # Draw center position marker (white dot at our lat/lon)
         center_pixel = self._latlon_to_pixel(self.center_lat, self.center_lon)
         if center_pixel:
             x, y = center_pixel
             # Draw white center dot
             draw.point((x, y), fill=(255, 255, 255))
-        
+
         # Draw aircraft trails if enabled
         if self.show_trails:
             for icao, trail in self.aircraft_trails.items():
                 if icao not in self.aircraft_data:
                     continue
-                
+
                 aircraft = self.aircraft_data[icao]
                 trail_pixels = []
-                
+
                 for lat, lon, timestamp in trail:
                     pixel = self._latlon_to_pixel(lat, lon)
                     if pixel:
                         trail_pixels.append(pixel)
-                
+
                 # Draw trail with fading effect
                 if len(trail_pixels) >= 2:
                     for i in range(len(trail_pixels) - 1):
@@ -2934,37 +2939,44 @@ class FlightTrackerPlugin(BasePlugin):
                         alpha = int(255 * (i + 1) / len(trail_pixels))
                         color = tuple(int(c * alpha / 255) for c in aircraft['color'])
                         draw.line([trail_pixels[i], trail_pixels[i + 1]], fill=color, width=1)
-        
+
         # Draw aircraft
         for aircraft in self.aircraft_data.values():
             pixel = self._latlon_to_pixel(aircraft['lat'], aircraft['lon'])
             if not pixel:
                 continue
-            
+
             x, y = pixel
             # Brighten the plane colors by boosting RGB values
             base_color = aircraft['color']
             color = tuple(min(255, int(c * 1.3)) for c in base_color)
-            
+
             # Draw single pixel for each aircraft
             draw.point((x, y), fill=color)
-        
+
         # Draw info text with pixel-perfect rendering for better readability
         if len(self.aircraft_data) > 0:
             # Draw aircraft count
             info_text = f"{len(self.aircraft_data)}"
-            self._draw_text_smart(draw, info_text, (2, 2), self.fonts['small'], 
+            self._draw_text_smart(draw, info_text, (2, 2), self.fonts['small'],
                                 fill=(200, 200, 200), use_outline=False)
-            
+
             # Get text width to position the airplane icon
             bbox = draw.textbbox((0, 0), info_text, font=self.fonts['small'])
             text_width = bbox[2] - bbox[0]
-            
+
             # Draw airplane icon after the count (with 2px spacing)
             self._draw_airplane_icon(draw, 2 + text_width + 2, 2, color=(200, 200, 200))
-        
+
+        return img
+
+    def _display_map(self, force_clear: bool = False) -> None:
+        """Display the flight map with aircraft and geographical background."""
+        if force_clear:
+            self.display_manager.clear()
+
         # Display the image
-        self.display_manager.image = img.copy()
+        self.display_manager.image = self._render_map_image()
         self.display_manager.update_display()
     
     def _display_overhead(self, force_clear: bool = False) -> None:

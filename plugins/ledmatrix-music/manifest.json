@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -66,6 +66,12 @@
     }
   ],
   "versions": [
+    {
+      "released": "2026-07-29",
+      "version": "1.2.0",
+      "notes": "Progress bar now matches the widest of the title/artist/album lines instead of always spanning the full text area, so a short track title no longer leaves a bar stretched across a wide panel. A line long enough to scroll still fills the bar. Disable with progress_bar_match_text.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-17",
       "version": "1.1.2",

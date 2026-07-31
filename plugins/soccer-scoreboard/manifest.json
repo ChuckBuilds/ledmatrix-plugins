@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "released": "2026-07-31",
+      "version": "2.4.1",
+      "notes": "Fix adding a custom league (e.g. the English Championship, eng.2) failing to save with HTTP 400. The web UI's row editor sends unset list/object properties as null and typed team lists as comma-separated text, which the strict array/object/number types in custom_leagues rejected, so the whole config save was blocked no matter which league code was entered. Those properties now accept null (and comma-separated text for team lists), and the plugin normalizes them back to defaults on load. The league_code pattern also no longer rejects valid ESPN codes with underscores or long prefixes (eng.league_cup, conmebol.libertadores).",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-29",
       "version": "2.4.0",
@@ -136,7 +142,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-17",
+  "last_updated": "2026-07-31",
   "stars": 0,
   "downloads": 0,
   "verified": true,

@@ -424,8 +424,8 @@
                 "enum": [
                   "ANA", "BOS", "BUF", "CAR", "CBJ", "CGY", "CHI", "COL",
                   "DAL", "DET", "EDM", "FLA", "LA", "MIN", "MTL", "NJ",
-                  "NSH", "NYI", "NYR", "OTT", "PHI", "PIT", "SJ", "STL",
-                  "TB", "TOR", "UTA", "VAN", "VGK", "WSH", "WPG"
+                  "NSH", "NYI", "NYR", "OTT", "PHI", "PIT", "SEA", "SJ",
+                  "STL", "TB", "TOR", "UTAH", "VAN", "VGK", "WSH", "WPG"
                 ]
               },
               "uniqueItems": true,
@@ -454,11 +454,12 @@
                   "OTT": "Ottawa Senators",
                   "PHI": "Philadelphia Flyers",
                   "PIT": "Pittsburgh Penguins",
+                  "SEA": "Seattle Kraken",
                   "SJ": "San Jose Sharks",
                   "STL": "St. Louis Blues",
                   "TB": "Tampa Bay Lightning",
                   "TOR": "Toronto Maple Leafs",
-                  "UTA": "Utah Hockey Club",
+                  "UTAH": "Utah Mammoth",
                   "VAN": "Vancouver Canucks",
                   "VGK": "Vegas Golden Knights",
                   "WSH": "Washington Capitals",
