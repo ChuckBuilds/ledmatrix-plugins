@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "released": "2026-07-29",
+      "version": "2.9.1",
+      "notes": "Correct the NCAA football example team codes in the favorite-teams help text: Alabama is ALA in ESPN's data, not BAMA. Copying the old example matched no team and showed nothing.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-29",
       "version": "2.9.0",

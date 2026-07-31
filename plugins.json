@@ -101,7 +101,7 @@
       "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.8.0"
+      "latest_version": "1.8.1"
     },
     {
       "id": "calendar",
@@ -240,7 +240,7 @@
       "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.9.0"
+      "latest_version": "2.9.1"
     },
     {
       "id": "geochron",
@@ -335,7 +335,7 @@
       "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.0",
+      "latest_version": "1.5.1",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -608,7 +608,7 @@
       "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.7"
+      "latest_version": "1.1.8"
     },
     {
       "id": "of-the-day",
