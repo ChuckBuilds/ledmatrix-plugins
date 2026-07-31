@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-30",
+  "last_updated": "2026-07-31",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -732,10 +732,10 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.4.0"
+      "latest_version": "2.4.1"
     },
     {
       "id": "static-image",
