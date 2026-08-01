@@ -216,26 +216,6 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Display mode settings parsing (for future scroll mode support in config schema)
         self._display_mode_settings = self._parse_display_mode_settings()
 
-        # Initialize scroll display manager if available
-        self._scroll_manager = None
-        if SCROLL_AVAILABLE and ScrollDisplayManager:
-            try:
-                self._scroll_manager = ScrollDisplayManager(
-                    self.display_manager,
-                    self.config,
-                    self.logger,
-                    global_config=getattr(self, 'global_config', {}) or {}
-                )
-                self.logger.info("Hockey scroll display manager initialized")
-            except Exception as e:
-                self.logger.warning(f"Could not initialize scroll display manager: {e}")
-        else:
-            self.logger.info("Scroll display not available - scroll mode disabled")
-
-        # Scroll state tracking
-        self._scroll_prepared = {}  # Tracks which scroll modes are prepared
-        self._scroll_active = {}  # Tracks which scroll modes are active
-
         self.logger.info(
             f"Hockey scoreboard plugin initialized - {self.display_width}x{self.display_height}"
         )

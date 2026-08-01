@@ -495,12 +495,6 @@ class SportsCore(ABC):
             fonts["detail"] = self._load_custom_font_from_element_config(detail_config, default_size=6)
             fonts["rank"] = self._load_custom_font_from_element_config(rank_config, default_size=10)
             self.logger.info("Successfully loaded fonts from config")
-            # Record/ranking annotations always use the small 4x6 face; cached here
-            # so the scorebug draw paths don't reload it from disk every frame.
-            try:
-                fonts["record"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-            except OSError:
-                fonts["record"] = ImageFont.load_default()
         except Exception as e:
             self.logger.error(f"Error loading fonts: {e}, using defaults")
             # Fallback to hardcoded defaults
@@ -519,6 +513,13 @@ class SportsCore(ABC):
                 fonts["status"] = ImageFont.load_default()
                 fonts["detail"] = ImageFont.load_default()
                 fonts["rank"] = ImageFont.load_default()
+        # Record/ranking annotations always use the small 4x6 face; cached here
+        # (after both branches, so it is set on every path) so the scorebug
+        # draw paths don't reload it from disk every frame.
+        try:
+            fonts["record"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+        except OSError:
+            fonts["record"] = ImageFont.load_default()
         return fonts
 
     def _draw_dynamic_odds(

@@ -299,7 +299,7 @@ class SportsCore(ABC):
                         self.logger.debug(f"Loaded BDF font: {font_name} at size {font_size}")
                         self._font_cache[cache_key] = font
                         return font
-                    except Exception:
+                    except OSError:
                         native_size = self._bdf_native_size_cache.get(font_path)
                         if native_size is None:
                             native_size = self._read_bdf_native_size(font_path)
@@ -328,17 +328,21 @@ class SportsCore(ABC):
         except Exception as e:
             self.logger.error(f"Error loading font {font_name}: {e}, using default")
         
-        # Fall back to default font
+        # Fall back to default font. Cached under the requested (name, size)
+        # key too, so a misconfigured or missing font pays the disk cost once
+        # instead of on every frame of a font-ladder walk.
         default_font_path = os.path.join('assets', 'fonts', 'PressStart2P-Regular.ttf')
         try:
             if os.path.exists(default_font_path):
-                return ImageFont.truetype(default_font_path, font_size)
+                font = ImageFont.truetype(default_font_path, font_size)
             else:
                 self.logger.warning("Default font not found, using PIL default")
-                return ImageFont.load_default()
+                font = ImageFont.load_default()
         except Exception as e:
             self.logger.error(f"Error loading default font: {e}")
-            return ImageFont.load_default()
+            font = ImageFont.load_default()
+        self._font_cache[cache_key] = font
+        return font
 
     @staticmethod
     def _read_bdf_native_size(bdf_path: str) -> Optional[int]:

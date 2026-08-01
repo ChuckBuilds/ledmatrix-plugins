@@ -188,6 +188,12 @@ class ScrollDisplay:
 
         # Honor the global smooth-scrolling FPS target (older cores lack the setter)
         target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps')
+        try:
+            # Coerce before comparing: a malformed global config value
+            # must degrade to today's scroll_delay pacing, not raise.
+            target_fps = float(target_fps) if target_fps is not None else None
+        except (TypeError, ValueError):
+            target_fps = None
         if target_fps:
             if hasattr(self.scroll_helper, 'set_target_fps'):
                 self.scroll_helper.set_target_fps(target_fps)

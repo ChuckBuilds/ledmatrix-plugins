@@ -327,10 +327,31 @@ class CountdownPlugin(BasePlugin):
                 if candidate.exists():
                     font = ImageFont.truetype(str(candidate), int(size_px))
                     break
-            except Exception:
+            except Exception as exc:
+                self.logger.debug("Font candidate %s failed to load: %s", candidate, exc)
                 continue
         cache[key] = font
         return font
+
+    def _is_family_missing(self, fm, family: str) -> bool:
+        """True when the FontManager's catalog can't serve this family.
+
+        Memoized per family: the check stats the filesystem and _resolve_font
+        runs on every render. The catalog only changes on core restart, so a
+        cached answer stays correct for this plugin instance's lifetime.
+        """
+        cache = getattr(self, '_family_missing_cache', None)
+        if cache is None:
+            cache = self._family_missing_cache = {}
+        if family in cache:
+            return cache[family]
+        try:
+            catalog_path = getattr(fm, 'font_catalog', {}).get(family)
+            missing = not catalog_path or not os.path.exists(catalog_path)
+        except Exception:
+            missing = False
+        cache[family] = missing
+        return missing
 
     def _resolve_font(self, countdown_id: str, role: str, family: str, size_px: int, color: Tuple):
         """Resolve a font. color is used only for registration, not resolution.
@@ -367,12 +388,7 @@ class CountdownPlugin(BasePlugin):
                 # signal. Detect the miss via the catalog and prefer loading
                 # the real file cwd-independently so rendering doesn't depend
                 # on the working directory.
-                try:
-                    catalog_path = getattr(fm, 'font_catalog', {}).get(family)
-                    family_missing = not catalog_path or not os.path.exists(catalog_path)
-                except Exception:
-                    family_missing = False
-                if font is not None and family_missing:
+                if font is not None and self._is_family_missing(fm, family):
                     direct = self._load_family_font_direct(family, size_px)
                     if direct is not None:
                         return direct

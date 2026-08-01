@@ -37,7 +37,6 @@ except ImportError:
         from base_odds_manager import BaseOddsManager
     except ImportError:
         BaseOddsManager = None
-    BaseOddsManager = None
 
 # Import scroll display components
 try:

@@ -188,6 +188,21 @@ class TidePlugin(BasePlugin):
                 os.path.join('assets', 'fonts', name),
                 os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'fonts', name),
             ]
+            # Resolve against the core install the display manager was loaded
+            # from too, so custom fonts work when the process cwd is not the
+            # core root (e.g. the CI safety harness).
+            try:
+                import inspect
+                module_path = os.path.abspath(inspect.getfile(type(self.display_manager)))
+                d = os.path.dirname(module_path)
+                while True:
+                    candidates.append(os.path.join(d, 'assets', 'fonts', name))
+                    parent = os.path.dirname(d)
+                    if parent == d:
+                        break
+                    d = parent
+            except Exception:
+                pass
             for path in candidates:
                 if not os.path.exists(path):
                     continue
@@ -712,7 +727,7 @@ class TidePlugin(BasePlugin):
             pct = int(fill_ratio * 100)
             pct_str = f"{pct}%"
             pct_w = self._tw(pct_str, label=True) + 2
-            self._txt_s(dw - pct_w - 2, last + 2, pct_str, C_LABEL)
+            self._txt_s(max(0, dw - pct_w - 2), last + 2, pct_str, C_LABEL)
 
     # ── Mode 2: Schedule ────────────────────────────────────────────────────────
 
@@ -949,7 +964,7 @@ class TidePlugin(BasePlugin):
             # % label right-aligned under gauge — always inside display bounds
             pct_g = int(fr*100)
             pct_str_g = f"{pct_g}%"
-            g_lx = min(gx, dw - self._tw(pct_str_g, label=True) - 1)
+            g_lx = max(0, min(gx, dw - self._tw(pct_str_g, label=True) - 1))
             self._txt(g_lx, gy+gh+2, pct_str_g, C_LABEL)
 
         # Cycle progress bar — gradient fill, height-scaled thickness
@@ -968,7 +983,7 @@ class TidePlugin(BasePlugin):
             # Cycle % label — above the bar so it can't clip past display bottom
             pct_str = f"{cycle_pct}%"
             pct_w   = self._tw(pct_str, label=True) + 1
-            lx      = max(bar_x0, min(dw - pct_w - 1, bar_x0 + flen - pct_w // 2))
+            lx      = max(0, min(dw - pct_w - 1, bar_x0 + flen - pct_w // 2))
             self._txt(lx, max(1, bar_y - 7), pct_str, C_LABEL)
 
     # ── Config change ────────────────────────────────────────────────────────────
