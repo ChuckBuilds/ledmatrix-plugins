@@ -131,9 +131,10 @@ jobs:
         run: |
           set -e
           fail=0
+          failed_ids=""
           for pid in $IDS; do
             case "$pid" in
-              '' | *[!a-z0-9._-]*) echo "::error::invalid plugin id '$pid'"; fail=1; continue ;;
+              '' | *[!a-z0-9._-]*) echo "::error::invalid plugin id '$pid'"; fail=1; failed_ids="$failed_ids $pid"; continue ;;
             esac
             pdir="plugins-repo/plugins/$pid"
             [ -d "$pdir" ] || { echo "::notice::$pid removed, skipping"; continue; }
@@ -142,9 +143,15 @@ jobs:
             # A failure here is a real problem (the plugin can't load), so let it fail.
             if [ -f "$pdir/requirements.txt" ]; then pip install -r "$pdir/requirements.txt"; fi
             python core/scripts/check_plugin.py --plugin "$pid" \
-              --plugin-dir "$PWD/plugins-repo/plugins" || fail=1
+              --plugin-dir "$PWD/plugins-repo/plugins" || { fail=1; failed_ids="$failed_ids $pid"; }
             echo "::endgroup::"
           done
+          # Summary at the very end so it survives log tail-truncation on long runs.
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::Safety harness failed for:$failed_ids"
+          else
+            echo "Safety harness passed for all changed plugins."
+          fi
           exit $fail
 
       - name: Nothing to check
