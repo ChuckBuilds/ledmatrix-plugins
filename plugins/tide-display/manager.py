@@ -201,8 +201,8 @@ class TidePlugin(BasePlugin):
                     if parent == d:
                         break
                     d = parent
-            except Exception:
-                pass
+            except (OSError, TypeError) as exc:
+                self.logger.debug("Module-relative font resolution failed: %s", exc)
             for path in candidates:
                 if not os.path.exists(path):
                     continue

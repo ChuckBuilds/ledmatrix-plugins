@@ -42,7 +42,11 @@ from logo_downloader import LogoDownloader, download_missing_logo
 # loader's bare-name isolation rules (see docs/plugin-development/08-*.md).
 try:
     from src.base_odds_manager import BaseOddsManager
-except ImportError:
+except ModuleNotFoundError as exc:
+    # Fall back only when the CORE module is absent; an import failure from
+    # inside it (missing dependency) should surface, not be masked.
+    if exc.name not in {"src", "src.base_odds_manager"}:
+        raise
     from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
 from baseball_timezone import resolve_timezone

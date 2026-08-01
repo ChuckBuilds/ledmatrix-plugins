@@ -80,13 +80,13 @@ has no copy to converge — it simply wasn't reachable.
 The core now exposes the whole config on `BasePlugin`:
 
 ```python
-fps = self.global_config.get('target_fps')
+fps = getattr(self, 'global_config', {}).get('target_fps')
 ```
 
 Resolution is `plugin_manager.config_manager` then `cache_manager.config_manager`,
-returning `{}` when neither exists. Read it as
-`getattr(self, 'global_config', {})` so a plugin still loads on a core that
-predates the property. Treat the result as **read-only** — it is the live
+returning `{}` when neither exists. Always go through
+`getattr(self, 'global_config', {})` as above so a plugin still loads on a core
+that predates the property. Treat the result as **read-only** — it is the live
 config dict, and mutating it has bitten this repo before (a plugin writing
 `self.config["timezone"]` back persisted a stale `"UTC"` for every consumer).
 
