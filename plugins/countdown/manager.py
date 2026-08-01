@@ -287,6 +287,51 @@ class CountdownPlugin(BasePlugin):
         except Exception as e:
             self.logger.warning(f"Error registering fonts: {e}")
 
+    # Mirror of the core FontManager's family -> file table for the families
+    # this plugin offers, used only by the cwd-independent fallback below.
+    _FAMILY_FILES = {
+        "press_start": "assets/fonts/PressStart2P-Regular.ttf",
+        "four_by_six": "assets/fonts/4x6-font.ttf",
+        "five_by_seven": "assets/fonts/5x7.bdf",
+    }
+
+    def _load_family_font_direct(self, family: str, size_px: int):
+        """Load a family's font file without relying on the process cwd.
+
+        The core FontManager resolves families via cwd-relative
+        assets/fonts paths, so when the process runs from outside the core
+        root (the CI safety harness does) it silently degrades to PIL's
+        default bitmap font. Resolve the same file against the core install
+        the display manager was loaded from instead. Returns None when the
+        family is unknown or nothing loads.
+        """
+        rel = self._FAMILY_FILES.get(family)
+        if not rel:
+            return None
+        cache = getattr(self, '_direct_font_cache', None)
+        if cache is None:
+            cache = self._direct_font_cache = {}
+        key = (family, int(size_px))
+        if key in cache:
+            return cache[key]
+        font = None
+        candidates = [Path(rel)]
+        try:
+            import inspect
+            module_path = Path(inspect.getfile(type(self.display_manager))).resolve()
+            candidates.extend(ancestor / rel for ancestor in module_path.parents)
+        except Exception:
+            pass
+        for candidate in candidates:
+            try:
+                if candidate.exists():
+                    font = ImageFont.truetype(str(candidate), int(size_px))
+                    break
+            except Exception:
+                continue
+        cache[key] = font
+        return font
+
     def _resolve_font(self, countdown_id: str, role: str, family: str, size_px: int, color: Tuple):
         """Resolve a font. color is used only for registration, not resolution.
 
@@ -298,6 +343,7 @@ class CountdownPlugin(BasePlugin):
         back to ImageFont.load_default() means the text is always visible,
         even if not in the configured font/size.
         """
+        font = None
         try:
             if hasattr(self.plugin_manager, 'font_manager') and self.plugin_manager.font_manager:
                 fm = self.plugin_manager.font_manager
@@ -314,11 +360,30 @@ class CountdownPlugin(BasePlugin):
                     family=family,
                     size_px=size_px
                 )
+                # When the FontManager's catalog missed this family (it scans
+                # assets/fonts relative to the process cwd), resolve_font
+                # silently degrades to PIL's default face — which in current
+                # Pillow is itself a FreeTypeFont, so the type gives no
+                # signal. Detect the miss via the catalog and prefer loading
+                # the real file cwd-independently so rendering doesn't depend
+                # on the working directory.
+                try:
+                    catalog_path = getattr(fm, 'font_catalog', {}).get(family)
+                    family_missing = not catalog_path or not os.path.exists(catalog_path)
+                except Exception:
+                    family_missing = False
+                if font is not None and family_missing:
+                    direct = self._load_family_font_direct(family, size_px)
+                    if direct is not None:
+                        return direct
                 if font is not None:
                     return font
         except Exception as e:
             self.logger.warning(f"Error resolving font for {countdown_id}.{role}: {e}")
-        return ImageFont.load_default()
+        direct = self._load_family_font_direct(family, size_px)
+        if direct is not None:
+            return direct
+        return font if font is not None else ImageFont.load_default()
 
     # ─── Image loading ────────────────────────────────────────────────────────
 
