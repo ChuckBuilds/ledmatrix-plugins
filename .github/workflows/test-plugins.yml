@@ -134,7 +134,7 @@ jobs:
           failed_ids=""
           for pid in $IDS; do
             case "$pid" in
-              '' | *[!a-z0-9._-]*) echo "::error::invalid plugin id '$pid'"; fail=1; failed_ids="$failed_ids $pid"; continue ;;
+              '' | *[!a-z0-9._-]*) echo "::error::invalid plugin id (redacted)"; fail=1; failed_ids="$failed_ids (invalid-id)"; continue ;;
             esac
             pdir="plugins-repo/plugins/$pid"
             [ -d "$pdir" ] || { echo "::notice::$pid removed, skipping"; continue; }
