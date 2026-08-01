@@ -131,7 +131,11 @@ class SimpleClock(BasePlugin):
                     # FreeType handles .ttf and (at its native size) .bdf faces.
                     font = ImageFont.truetype(path, size)
                     break
-                except Exception as e:
+                except OSError as e:
+                    # OSError only: that is what FreeType raises for a missing,
+                    # unreadable or malformed face. Catching everything here
+                    # would turn a programming error into a silent fallback to
+                    # the default font, which looks like a config problem.
                     self.logger.warning(f"Could not load font {name}@{size}: {e}")
             if font is None and not any(os.path.exists(p) for p in candidates):
                 self.logger.warning(f"Font file not found: {name}; using default font")

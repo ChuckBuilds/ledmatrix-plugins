@@ -58,7 +58,13 @@ the core actually ships:
   ```python
   try:
       from src.base_odds_manager import BaseOddsManager  # core-shipped
-  except ImportError:
+  except ModuleNotFoundError as exc:
+      # Fall back only when the CORE module is absent. A bare `except
+      # ImportError` would also swallow a failure raised *inside* a core
+      # module that is present, silently loading the bundled copy and hiding
+      # a broken core install.
+      if exc.name not in {"src", "src.base_odds_manager"}:
+          raise
       from base_odds_manager import BaseOddsManager      # bundled fallback
   ```
 
