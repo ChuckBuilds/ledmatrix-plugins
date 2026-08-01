@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.9.0",
+  "version": "1.8.2",
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -19,7 +19,7 @@
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
     {
-      "version": "1.9.0",
+      "version": "1.8.2",
       "released": "2026-07-31",
       "ledmatrix_min": "2.0.0"
     },
