@@ -1,7 +1,7 @@
 {
   "id": "clock-simple",
   "name": "Simple Clock",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "author": "ChuckBuilds",
   "description": "A simple clock display with current time and date",
   "category": "time",
@@ -17,7 +17,7 @@
   ],
   "versions": [
     {
-      "version": "1.0.9",
+      "version": "1.0.10",
       "released": "2026-07-31",
       "ledmatrix_min": "2.0.0"
     },

@@ -10,7 +10,7 @@ API Version: 1.0.0
 import os
 import time
 from datetime import datetime
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -235,6 +235,27 @@ class SimpleClock(BasePlugin):
             return weekday_str
         abbrev = dt.strftime('%a')  # e.g. "Wed"
         return abbrev if self._text_fits(abbrev, width) else weekday_str
+
+    def _centered_x(self, text: str, width: int) -> Optional[int]:
+        """Left edge that centers ``text``, never negative.
+
+        ``draw_text`` auto-centres with ``(width - text_width) // 2`` and does
+        not clamp, so text wider than the panel gets a negative x and is
+        clipped at *both* ends -- the reader loses the start of the string. The
+        shortening helpers can still return an over-wide string when even their
+        shortest candidate does not fit (a large user-selected date font on a
+        64px panel), so clamp here and let the overflow clip on the right only.
+        """
+        try:
+            text_width = self.display_manager.get_text_width(
+                text, self.date_font or self.display_manager.small_font
+            )
+        except Exception:
+            # Measuring failed; fall back to draw_text's own centring rather
+            # than guessing a position (mirrors _text_fits, which assumes a fit
+            # so content is never hidden by a measurement failure).
+            return None
+        return max(0, (width - text_width) // 2)
 
     def _fit_date(self, date_str: str, width: int) -> str:
         """
@@ -491,16 +512,20 @@ class SimpleClock(BasePlugin):
                             date_y = height - 1
                     
                     # Weekday on first line (abbreviated if it wouldn't fit)
+                    weekday_text = self._fit_weekday(self.current_weekday, width)
                     self.display_manager.draw_text(
-                        self._fit_weekday(self.current_weekday, width),
+                        weekday_text,
+                        x=self._centered_x(weekday_text, width),
                         y=weekday_y,
                         color=self.date_color,
                         small_font=True,
                         font=self.date_font
                     )
                     # Month and day on second line (abbreviated if it wouldn't fit)
+                    date_text = self._fit_date(self.current_date, width)
                     self.display_manager.draw_text(
-                        self._fit_date(self.current_date, width),
+                        date_text,
+                        x=self._centered_x(date_text, width),
                         y=date_y,
                         color=self.date_color,
                         small_font=True,
@@ -511,8 +536,10 @@ class SimpleClock(BasePlugin):
                     # Position ~9px from bottom (scales with display size)
                     date_offset = max(9, int(height * 0.14))
                     date_y = height - date_offset
+                    date_text = self._fit_date(self.current_date, width)
                     self.display_manager.draw_text(
-                        self._fit_date(self.current_date, width),
+                        date_text,
+                        x=self._centered_x(date_text, width),
                         y=date_y,
                         color=self.date_color,
                         small_font=True,
