@@ -71,6 +71,30 @@ the core actually ships:
   ships a unified version — `sports.py` / `scroll_display.py` / 
   `game_renderer.py` themselves.
 
+## Device-wide settings: read them from the core, not a copy
+
+Cross-cutting settings are the other half of this problem. `self.config` is
+only the plugin's own slice, so a device-wide value like the scroll frame rate
+has no copy to converge — it simply wasn't reachable.
+
+The core now exposes the whole config on `BasePlugin`:
+
+```python
+fps = self.global_config.get('target_fps')
+```
+
+Resolution is `plugin_manager.config_manager` then `cache_manager.config_manager`,
+returning `{}` when neither exists. Read it as
+`getattr(self, 'global_config', {})` so a plugin still loads on a core that
+predates the property. Treat the result as **read-only** — it is the live
+config dict, and mutating it has bitten this repo before (a plugin writing
+`self.config["timezone"]` back persisted a stale `"UTC"` for every consumer).
+
+Assignment still works and overrides the resolved value, which is what
+`news`, `stock-news`, `ledmatrix-stocks`, `ledmatrix-elections`,
+`ledmatrix-leaderboard` and `nfl-draft` rely on when they set
+`self.global_config = config.get('global', {})`.
+
 ## The sunset rule
 
 A plugin may **delete** its local copy of a converged module only when both are
