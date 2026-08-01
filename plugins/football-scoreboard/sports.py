@@ -17,7 +17,14 @@ from urllib3.util.retry import Retry
 # Import simplified dependencies for plugin use
 from dynamic_team_resolver import DynamicTeamResolver
 from logo_downloader import LogoDownloader, download_missing_logo
-from base_odds_manager import BaseOddsManager
+# Prefer the core-shipped odds manager (adds cache_ttl support); fall back to
+# the bundled copy for cores that don't ship src.base_odds_manager yet.
+# Both branches are module-level imports, so they are collision-safe under the
+# loader's bare-name isolation rules (see docs/plugin-development/08-*.md).
+try:
+    from src.base_odds_manager import BaseOddsManager
+except ImportError:
+    from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
 from football_timezone import resolve_timezone
 # Imported at module load time on purpose (see the monorepo module-naming

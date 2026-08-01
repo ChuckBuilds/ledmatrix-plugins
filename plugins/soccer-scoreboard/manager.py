@@ -34,12 +34,20 @@ from typing import Dict, Any, Set, Optional, Tuple, List
 try:
     from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
     from src.background_data_service import get_background_service
-    from base_odds_manager import BaseOddsManager
 except ImportError:
     BasePlugin = None
     VegasDisplayMode = None
     get_background_service = None
-    BaseOddsManager = None
+
+# Odds manager: prefer the core-shipped version, fall back to the bundled copy.
+# Kept outside the guard above so a missing odds module can never null BasePlugin.
+try:
+    from src.base_odds_manager import BaseOddsManager
+except ImportError:
+    try:
+        from base_odds_manager import BaseOddsManager
+    except ImportError:
+        BaseOddsManager = None
 
 # Import scroll display components
 try:
