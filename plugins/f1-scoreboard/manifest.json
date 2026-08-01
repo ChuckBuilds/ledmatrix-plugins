@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,12 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.8.0",
+      "released": "2026-08-01",
+      "notes": "Honor the global smooth-scrolling FPS target (target_fps/scroll_target_fps) in scroll mode.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-30",
       "version": "1.7.0",

@@ -30,10 +30,12 @@ class ScrollDisplay:
     """
 
     def __init__(self, display_manager, config: Optional[Dict[str, Any]] = None,
-                 custom_logger: Optional[logging.Logger] = None):
+                 custom_logger: Optional[logging.Logger] = None,
+                 global_config: Optional[Dict[str, Any]] = None):
         self.display_manager = display_manager
         self.config = config or {}
         self.logger = custom_logger or logger
+        self.global_config = global_config or {}
 
         # Get display dimensions
         if hasattr(display_manager, "matrix") and display_manager.matrix:
@@ -66,6 +68,15 @@ class ScrollDisplay:
                 max_duration=scroll_cfg.get("max_duration", 120),
                 buffer=self.display_width
             )
+
+            # Honor the global smooth-scrolling FPS target (older cores lack the setter)
+            target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps')
+            if target_fps:
+                if hasattr(self.scroll_helper, 'set_target_fps'):
+                    self.scroll_helper.set_target_fps(target_fps)
+                else:
+                    self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
+                    self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
 
         # Content state
         self._content_items: List[Image.Image] = []
@@ -172,10 +183,12 @@ class ScrollDisplayManager:
     """
 
     def __init__(self, display_manager, config: Optional[Dict[str, Any]] = None,
-                 custom_logger: Optional[logging.Logger] = None):
+                 custom_logger: Optional[logging.Logger] = None,
+                 global_config: Optional[Dict[str, Any]] = None):
         self.display_manager = display_manager
         self.config = config or {}
         self.logger = custom_logger or logger
+        self.global_config = global_config or {}
 
         self._scroll_displays: Dict[str, ScrollDisplay] = {}
 
@@ -185,7 +198,8 @@ class ScrollDisplayManager:
             self._scroll_displays[mode_key] = ScrollDisplay(
                 self.display_manager,
                 self.config,
-                self.logger
+                self.logger,
+                global_config=self.global_config
             )
         return self._scroll_displays[mode_key]
 

@@ -81,7 +81,8 @@ class F1ScoreboardPlugin(BasePlugin):
             self._card_width, self.display_height,
             render_config, self.logo_loader, self.logger)
         self._scroll_manager = ScrollDisplayManager(
-            display_manager, config, self.logger)
+            display_manager, config, self.logger,
+            global_config=getattr(self, 'global_config', {}) or {})
         self.enable_scrolling = self._scroll_manager is not None
 
         # Data state
@@ -928,7 +929,8 @@ class F1ScoreboardPlugin(BasePlugin):
             self._card_width, self.display_height,
             render_config, self.logo_loader, self.logger)
         self._scroll_manager = ScrollDisplayManager(
-            self.display_manager, render_config, self.logger)
+            self.display_manager, render_config, self.logger,
+            global_config=getattr(self, 'global_config', {}) or {})
         self.enable_scrolling = self._scroll_manager is not None
 
         # Force data refresh

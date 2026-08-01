@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-07-31",
+  "last_updated": "2026-08-01",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -215,7 +215,7 @@
       "last_updated": "2026-07-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.7.0"
+      "latest_version": "1.8.0"
     },
     {
       "id": "football-scoreboard",

@@ -60,7 +60,8 @@ class ScrollDisplay:
         self,
         display_manager,
         config: Dict[str, Any],
-        custom_logger: Optional[logging.Logger] = None
+        custom_logger: Optional[logging.Logger] = None,
+        global_config: Optional[Dict[str, Any]] = None
     ):
         """
         Initialize the ScrollDisplay handler.
@@ -69,10 +70,12 @@ class ScrollDisplay:
             display_manager: Display manager instance
             config: Plugin configuration dictionary
             custom_logger: Optional custom logger instance
+            global_config: Optional global LEDMatrix config (for target_fps)
         """
         self.display_manager = display_manager
         self.config = config
         self.logger = custom_logger or logger
+        self.global_config = global_config or {}
 
         # Get display dimensions
         if hasattr(display_manager, 'matrix') and display_manager.matrix is not None:
@@ -134,6 +137,15 @@ class ScrollDisplay:
         # Set scroll delay
         scroll_delay = scroll_settings.get("scroll_delay", 0.01)
         self.scroll_helper.set_scroll_delay(scroll_delay)
+
+        # Honor the global smooth-scrolling FPS target (older cores lack the setter)
+        target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps')
+        if target_fps:
+            if hasattr(self.scroll_helper, 'set_target_fps'):
+                self.scroll_helper.set_target_fps(target_fps)
+            else:
+                self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
+                self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
 
         # Enable dynamic duration
         dynamic_duration = scroll_settings.get("dynamic_duration", True)
@@ -538,7 +550,8 @@ class ScrollDisplayManager:
         self,
         display_manager,
         config: Dict[str, Any],
-        custom_logger: Optional[logging.Logger] = None
+        custom_logger: Optional[logging.Logger] = None,
+        global_config: Optional[Dict[str, Any]] = None
     ):
         """
         Initialize the ScrollDisplayManager.
@@ -547,10 +560,12 @@ class ScrollDisplayManager:
             display_manager: Display manager instance
             config: Plugin configuration dictionary
             custom_logger: Optional custom logger instance
+            global_config: Optional global LEDMatrix config (for target_fps)
         """
         self.display_manager = display_manager
         self.config = config
         self.logger = custom_logger or logger
+        self.global_config = global_config or {}
 
         # Create scroll displays for each game type
         self._scroll_displays: Dict[str, ScrollDisplay] = {}
@@ -570,7 +585,8 @@ class ScrollDisplayManager:
             self._scroll_displays[game_type] = ScrollDisplay(
                 self.display_manager,
                 self.config,
-                self.logger
+                self.logger,
+                global_config=self.global_config
             )
         return self._scroll_displays[game_type]
 

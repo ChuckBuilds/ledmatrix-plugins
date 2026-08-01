@@ -134,7 +134,8 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 self._scroll_manager = ScrollDisplayManager(
                     self.display_manager,
                     self.config,
-                    self.logger
+                    self.logger,
+                    global_config=getattr(self, 'global_config', {}) or {}
                 )
                 self.logger.info("Scroll display manager initialized")
             except Exception as e:
@@ -222,7 +223,8 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 self._scroll_manager = ScrollDisplayManager(
                     self.display_manager,
                     self.config,
-                    self.logger
+                    self.logger,
+                    global_config=getattr(self, 'global_config', {}) or {}
                 )
                 self.logger.info("Hockey scroll display manager initialized")
             except Exception as e:
