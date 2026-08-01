@@ -72,9 +72,12 @@ class SportsCore(ABC):
         self.sport_config = None
         # Initialize data source
         self.data_source = ESPNDataSource(logger)
-        self.mode_config = config.get(
-            f"{sport_key}_scoreboard", {}
-        )  # Changed config key
+        # The adapter builds the managers' config under "<league>_scoreboard"
+        # ("ufc_scoreboard") and sport_key is already "ufc_scoreboard", so the
+        # old f"{sport_key}_scoreboard" lookup resolved to the nonexistent
+        # "ufc_scoreboard_scoreboard" — leaving every manager disabled and the
+        # plugin rendering blank. Look up the key the adapter actually writes.
+        self.mode_config = config.get(sport_key, {})
         self.is_enabled: bool = self.mode_config.get("enabled", False)
         self.show_odds: bool = self.mode_config.get("show_odds", False)
         # Use LogoDownloader to get the correct default logo directory for this sport

@@ -1,0 +1,37 @@
+{
+  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the MLB season-schedule cache (key mlb_schedule_2026) with one final, one in-progress, and one scheduled game so recent/upcoming render real game cards without network access. MLBLiveManager._fetch_data() -> _fetch_todays_games() is a direct network call with no cache read, so the live screen cannot be fed from mock data; instead test_mode (which the baseball adapter passes through to the managers) makes the live manager render its deterministic built-in BOS @ NYY live game with no network access.",
+  "config": {
+    "enabled": true,
+    "timezone": "UTC",
+    "mlb": {
+      "enabled": true,
+      "favorite_teams": [],
+      "test_mode": true,
+      "display_modes": {
+        "show_live": true,
+        "show_recent": true,
+        "show_upcoming": true,
+        "live_display_mode": "switch",
+        "recent_display_mode": "switch",
+        "upcoming_display_mode": "switch"
+      },
+      "display_options": {
+        "show_records": false,
+        "show_ranking": false,
+        "show_odds": false
+      },
+      "filtering": {
+        "show_favorite_teams_only": false,
+        "show_all_live": true
+      }
+    },
+    "milb": {
+      "enabled": false
+    },
+    "ncaa_baseball": {
+      "enabled": false
+    }
+  },
+  "mock_data": "test/fixtures/mock.json",
+  "freeze_time": "2026-07-10 12:00:00"
+}
