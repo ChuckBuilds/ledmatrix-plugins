@@ -9,32 +9,55 @@ This file lists the team abbreviations used by the ESPN API for each supported l
 
 Abbreviations are shown as uppercase 2–4 character codes. If you don't see your team listed or the abbreviation doesn't seem to work, check the plugin's debug logs — the plugin logs `home_abbr` and `away_abbr` for every game it processes.
 
+The tables below are generated from ESPN's live team endpoints, so they are the
+codes the plugin actually compares against. **They are not always the code you
+would guess:** ESPN uses `MAN` for Manchester United (not `MUN`), `MNC` for
+Manchester City (not `MCI`), `RMA` for Real Madrid (not `RM`), and `LYON` /
+`OLM` for Lyon and Marseille (not `OL` / `OM`).
+
+### Codes that mean different clubs in different leagues
+
+Favourites are matched by abbreviation across every league you have enabled, so
+if two of your enabled leagues share a code you will match both. The one to
+watch is `MUN`, which is **Bayern Munich** in the Bundesliga — not Manchester
+United.
+
+| Code | Could be |
+|------|----------|
+| `MUN` | Bayern Munich (Bundesliga) — Manchester United is `MAN` |
+| `BRE` | Brentford (Premier League) or Brest (Ligue 1) |
+| `MON` | Monza (Serie A) or AS Monaco (Ligue 1) |
+| `PAR` | Parma (Serie A) or Paris FC (Ligue 1) |
+| `SCP` | SC Paderborn (Bundesliga) or Sporting CP (Liga Portugal) |
+| `FCA` | FC Augsburg (Bundesliga) or Arouca (Liga Portugal) |
+| `TOR` | Torino (Serie A) or Toronto FC (MLS) |
+
 ---
 
 ## Premier League (eng.1)
 
 | Club | Abbreviation |
 |------|-------------|
+| AFC Bournemouth | BOU |
 | Arsenal | ARS |
 | Aston Villa | AVL |
-| Bournemouth | BOU |
 | Brentford | BRE |
 | Brighton & Hove Albion | BHA |
 | Chelsea | CHE |
+| Coventry City | COV |
 | Crystal Palace | CRY |
 | Everton | EVE |
 | Fulham | FUL |
+| Hull City | HUL |
 | Ipswich Town | IPS |
-| Leicester City | LEI |
+| Leeds United | LEE |
 | Liverpool | LIV |
-| Manchester City | MCI |
-| Manchester United | MUN |
+| Manchester City | MNC |
+| Manchester United | MAN |
 | Newcastle United | NEW |
 | Nottingham Forest | NFO |
-| Southampton | SOU |
+| Sunderland | SUN |
 | Tottenham Hotspur | TOT |
-| West Ham United | WHU |
-| Wolverhampton Wanderers | WOL |
 
 ---
 
@@ -42,24 +65,25 @@ Abbreviations are shown as uppercase 2–4 character codes. If you don't see you
 
 | Club | Abbreviation |
 |------|-------------|
-| Athletic Club (Bilbao) | ATH |
-| Atletico Madrid | ATM |
+| Alavés | ALA |
+| Athletic Club | ATH |
+| Atlético Madrid | ATM |
 | Barcelona | BAR |
 | Celta Vigo | CEL |
+| Deportivo La Coruña | DEP |
+| Elche | ELC |
 | Espanyol | ESP |
 | Getafe | GET |
-| Girona | GIR |
-| Las Palmas | LPA |
-| Leganes | LEG |
-| Mallorca | MAL |
+| Levante | LEV |
+| Málaga | MCF |
 | Osasuna | OSA |
+| Racing Santander | RAC |
 | Rayo Vallecano | RAY |
 | Real Betis | BET |
-| Real Madrid | RM |
+| Real Madrid | RMA |
 | Real Sociedad | RSO |
 | Sevilla | SEV |
 | Valencia | VAL |
-| Valladolid | VLL |
 | Villarreal | VIL |
 
 ---
@@ -68,24 +92,24 @@ Abbreviations are shown as uppercase 2–4 character codes. If you don't see you
 
 | Club | Abbreviation |
 |------|-------------|
-| Augsburg | AUG |
+| 1. FC Union Berlin | FCU |
 | Bayer Leverkusen | B04 |
-| Bayern Munich | BAY |
-| Borussia Dortmund | BVB |
-| Borussia Monchengladbach | BMG |
+| Bayern Munich | MUN |
+| Borussia Dortmund | DOR |
+| Borussia Mönchengladbach | BMG |
 | Eintracht Frankfurt | SGE |
-| Freiburg | SCF |
-| Heidenheim | HDH |
-| Hoffenheim | TSG |
-| Holstein Kiel | KIE |
-| Mainz | MNZ |
+| FC Augsburg | FCA |
+| FC Cologne | KOE |
+| Hamburg SV | HSV |
+| Mainz | M05 |
 | RB Leipzig | RBL |
-| St. Pauli | STP |
-| Stuttgart | VFB |
-| Union Berlin | FCU |
+| SC Freiburg | SCF |
+| SC Paderborn 07 | SCP |
+| Schalke 04 | S04 |
+| SV Elversberg | ELV |
+| TSG Hoffenheim | TSG |
+| VfB Stuttgart | VFB |
 | Werder Bremen | SVW |
-| Wolfsburg | WOB |
-| Bochum | BOC |
 
 ---
 
@@ -94,22 +118,22 @@ Abbreviations are shown as uppercase 2–4 character codes. If you don't see you
 | Club | Abbreviation |
 |------|-------------|
 | AC Milan | MIL |
-| AS Roma | ROM |
+| AS Roma | ROMA |
 | Atalanta | ATA |
 | Bologna | BOL |
 | Cagliari | CAG |
-| Como | COM |
-| Empoli | EMP |
+| Como | COMO |
 | Fiorentina | FIO |
+| Frosinone | FRO |
 | Genoa | GEN |
-| Hellas Verona | VER |
-| Inter Milan | INT |
+| Internazionale | INT |
 | Juventus | JUV |
 | Lazio | LAZ |
 | Lecce | LEC |
 | Monza | MON |
 | Napoli | NAP |
 | Parma | PAR |
+| Sassuolo | SAS |
 | Torino | TOR |
 | Udinese | UDI |
 | Venezia | VEN |
@@ -120,24 +144,24 @@ Abbreviations are shown as uppercase 2–4 character codes. If you don't see you
 
 | Club | Abbreviation |
 |------|-------------|
+| AJ Auxerre | AUX |
 | Angers | ANG |
-| Auxerre | AUX |
+| AS Monaco | MON |
 | Brest | BRE |
-| Le Havre | HAV |
+| Le Havre AC | HAC |
+| Le Mans | MNS |
 | Lens | RCL |
-| Lille | LIL |
-| Lyon | OL |
-| Marseille | OM |
-| Monaco | ASM |
-| Montpellier | MHSC |
-| Nantes | FCN |
-| Nice | OGC |
+| Lille | LILL |
+| Lorient | LOR |
+| Lyon | LYON |
+| Marseille | OLM |
+| Nice | NICE |
+| Paris FC | PAR |
 | Paris Saint-Germain | PSG |
-| Reims | SDR |
-| Rennes | SRFC |
-| Saint-Etienne | ASSE |
-| Strasbourg | RCSA |
-| Toulouse | TFC |
+| Stade Rennais | REN |
+| Strasbourg | STR |
+| Toulouse | TOU |
+| Troyes | TRY |
 
 ---
 
@@ -145,34 +169,34 @@ Abbreviations are shown as uppercase 2–4 character codes. If you don't see you
 
 | Club | Abbreviation |
 |------|-------------|
-| Atlanta United | ATL |
+| Atlanta United FC | ATL |
 | Austin FC | ATX |
+| CF Montréal | MTL |
 | Charlotte FC | CLT |
-| Chicago Fire | CHI |
-| FC Cincinnati | CIN |
+| Chicago Fire FC | CHI |
 | Colorado Rapids | COL |
 | Columbus Crew | CLB |
 | D.C. United | DC |
+| FC Cincinnati | CIN |
 | FC Dallas | DAL |
-| Houston Dynamo | HOU |
-| Inter Miami | MIA |
+| Houston Dynamo FC | HOU |
+| Inter Miami CF | MIA |
 | LA Galaxy | LA |
-| Los Angeles FC | LAFC |
-| Minnesota United | MIN |
-| CF Montréal | MTL |
+| LAFC | LAFC |
+| Minnesota United FC | MIN |
 | Nashville SC | NSH |
 | New England Revolution | NE |
 | New York City FC | NYC |
-| New York Red Bulls | RBNY |
-| Orlando City | ORL |
+| Orlando City SC | ORL |
 | Philadelphia Union | PHI |
 | Portland Timbers | POR |
 | Real Salt Lake | RSL |
+| Red Bull New York | RBNY |
 | San Diego FC | SD |
 | San Jose Earthquakes | SJ |
-| Seattle Sounders | SEA |
+| Seattle Sounders FC | SEA |
 | Sporting Kansas City | SKC |
-| St. Louis City SC | STL |
+| St. Louis CITY SC | STL |
 | Toronto FC | TOR |
 | Vancouver Whitecaps | VAN |
 
@@ -182,27 +206,30 @@ Abbreviations are shown as uppercase 2–4 character codes. If you don't see you
 
 | Club | Abbreviation |
 |------|-------------|
-| Arouca | ARO |
+| Académico de Viseu | AVF |
+| Alverca | ALV |
+| Arouca | FCA |
 | Benfica | SLB |
-| Boavista | BOA |
 | Braga | SCB |
-| Casa Pia | CPA |
-| Estoril | EST |
-| Famalicao | FAM |
-| Farense | FAR |
-| Gil Vicente | GIL |
-| Moreirense | MOR |
-| Nacional | NAC |
-| Porto | FCP |
-| Rio Ave | RAV |
+| C.D. Nacional | CDN |
+| Casa Pia | CPAC |
+| Estoril | EPF |
+| Estrela | EST |
+| FC Famalicao | FCF |
+| FC Porto | FCP |
+| Gil Vicente | GVFC |
+| Maritimo | MAR |
+| Moreirense | MFC |
+| Rio Ave | RAFC |
+| Santa Clara | CDSC |
 | Sporting CP | SCP |
-| Vitoria SC (Guimaraes) | VIT |
+| Vitória de Guimaraes | VSC |
 
 ---
 
 ## UEFA Champions League (uefa.champions)
 
-Teams change each season. Use the club's abbreviation from its domestic league table above. For example, Real Madrid is `RM`, Liverpool is `LIV`.
+Teams change each season. Use the club's abbreviation from its domestic league table above. For example, Real Madrid is `RMA`, Liverpool is `LIV`.
 
 ---
 
@@ -285,3 +312,10 @@ downloads its flag on demand from ESPN into the same `national/` directory.
 - **Abbreviations are case-sensitive** — use uppercase as shown (e.g. `"LIV"` not `"liv"`)
 - **Season rosters change** — promoted/relegated teams join or leave; if a team isn't listed here, check the debug logs for the abbreviation the API returns
 - **Custom leagues** — for any ESPN-supported league not listed here (e.g., `mex.1`, `arg.1`), run the plugin with debug logging and look for `home_abbr`/`away_abbr` log lines to find the correct codes
+- **Nothing showing up?** The plugin now tells you which it is at startup. An
+  unrecognised code logs a warning naming the closest match; a code that is
+  valid but has no fixtures yet logs the date the season starts. Check the logs
+  before assuming the code is wrong — between seasons an empty screen is normal
+- **Re-checking a code yourself** — ESPN's team list for a league is at
+  `https://site.api.espn.com/apis/site/v2/sports/soccer/<league>/teams`, e.g.
+  `.../soccer/eng.1/teams`

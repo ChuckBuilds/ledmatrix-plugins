@@ -39,6 +39,12 @@
     },
     {
       "released": "2026-07-29",
+      "version": "2.5.0",
+      "notes": "Corrected every team code in TEAMS.md against ESPN's live data — Manchester United is MAN (not MUN), Manchester City MNC (not MCI), Real Madrid RMA, and Ligue 1 had eight wrong codes. The plugin now also says why a league is empty: an unrecognised favorite team logs a warning naming the closest match, while a correct code in a league with no fixtures yet logs the date the season starts.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-29",
       "version": "2.4.0",
       "notes": "Fix event start times rendering in UTC. The plugin looked for the LEDMatrix global timezone only on cache_manager.config_manager; on cores that expose config_manager via the plugin manager instead, that lookup found nothing and every start time was drawn in UTC even though the clock plugin was correct on the same device. Timezone resolution now checks the plugin override, then both config managers, then the host system zone, before falling back to UTC. Adds a documented timezone setting under Advanced Settings -- previously the key was not in the config schema, so hand-editing it had no effect.",
       "ledmatrix_min": "2.0.0"
