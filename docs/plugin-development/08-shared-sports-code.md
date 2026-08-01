@@ -110,6 +110,56 @@ compatibility check is **advisory only** (it logs a warning and never blocks),
 so the `except ImportError` fallback is the real protection for users running
 an older core.
 
+### Worked example: the scroll display
+
+Core 3.2.0 ships `src/common/sports_scroll.py`, which holds the *orchestration*
+half of `scroll_display.py` — scroll-helper configuration, frame pumping,
+completion, settings resolution, and native `global_config['target_fps']`
+support. The *content* half stays per-plugin, permanently: a survey of the eight
+copies that share a shape found `prepare_scroll_content` has eight distinct
+bodies (145 lines, 53% similar at worst) because each draws its own game card.
+Same method name, different job.
+
+Once a plugin floors at 3.2.0, the adoption is mechanical:
+
+```python
+from src.common.sports_scroll import SportsScrollDisplay, SportsScrollDisplayManager
+
+class ScrollDisplay(SportsScrollDisplay):
+    # The ladder the local _get_scroll_settings used to hardcode, same order.
+    SCROLL_LEAGUE_KEYS = ("nhl", "ncaa_mens", "ncaam_hockey")
+
+    def scroll_settings_defaults(self):
+        # Only where this plugin's defaults differ from core's.
+        return {**super().scroll_settings_defaults(), "game_card_width": 128}
+
+    def _load_separator_icons(self): ...      # per-sport
+    def prepare_scroll_content(self, games, game_type, leagues, rankings=None): ...
+
+class ScrollDisplayManager(SportsScrollDisplayManager):
+    display_class = ScrollDisplay
+```
+
+Delete the local `__init__`, `_configure_scroll_helper`, `_get_scroll_settings`,
+`display_scroll_frame`, `_log_scroll_progress`, `is_scroll_complete`,
+`reset_scroll`, `get_scroll_info`, `clear`, and the whole manager body except
+methods that genuinely differ. Keep `_determine_game_type` if your plugin
+supports `'mixed'` scrolls.
+
+**Measured on hockey-scoreboard** against a core carrying 3.2.0: 691 → 289
+lines, and all 16 harness renders (8 sizes × 2 screens) byte-for-byte identical
+to the pre-adoption run. That byte-comparison is the acceptance gate — run the
+harness before and after and `diff -r` the two output directories.
+
+Two things to watch when you do this:
+
+- **Check the imports you inherited.** `_load_separator_icons` uses `os.path`
+  even though nothing else in the trimmed file does; dropping `import os` with
+  the rest is an easy way to break the plugin at load time.
+- **The base always constructs a `ScrollHelper`**, so `if not self.scroll_helper`
+  guards inherited from the old copy are dead. Harmless, but delete them rather
+  than leaving a check that can never fire.
+
 ## Rules for future changes
 
 - **Fix all lineage members in one PR.** Grep every copy of the file you're
