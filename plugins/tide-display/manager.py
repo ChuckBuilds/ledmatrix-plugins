@@ -235,7 +235,14 @@ class TidePlugin(BasePlugin):
         try:
             return int(self.display_manager.get_text_width(text, font))
         except Exception:
-            return len(text) * 4
+            # Keep measurement tied to the face that will be drawn: fall back
+            # to the font's own metrics before the 4px/char estimate, so a
+            # custom font never draws wider than the width we reported.
+            try:
+                bbox = font.getbbox(text)
+                return int(bbox[2] - bbox[0])
+            except Exception:
+                return len(text) * 4
 
     # ── BasePlugin ──────────────────────────────────────────────────────────────
 

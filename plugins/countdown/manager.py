@@ -320,8 +320,8 @@ class CountdownPlugin(BasePlugin):
             import inspect
             module_path = Path(inspect.getfile(type(self.display_manager))).resolve()
             candidates.extend(ancestor / rel for ancestor in module_path.parents)
-        except Exception:
-            pass
+        except Exception as exc:
+            self.logger.debug("Module-relative font resolution failed: %s", exc)
         for candidate in candidates:
             try:
                 if candidate.exists():

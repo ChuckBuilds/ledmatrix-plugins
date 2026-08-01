@@ -73,7 +73,7 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
       "latest_version": "1.21.0"
@@ -1024,7 +1024,7 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.2.0",
-      "last_updated": "2026-07-17"
+      "last_updated": "2026-07-31"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1115,7 +1115,7 @@
       "plugin_path": "plugins/incoming-packages",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-24",
+      "last_updated": "2026-07-27",
       "verified": true,
       "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/incoming-packages/assets/screenshot.png",
       "latest_version": "1.0.0",

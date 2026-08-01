@@ -110,7 +110,7 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False) 
         # should never disagree with it on the fields the Plugin Store
         # actually renders to users.
         synced_fields = []
-        for field in ("name", "description", "author", "category", "tags", "icon"):
+        for field in ("name", "description", "author", "category", "tags", "icon", "last_updated"):
             if field in manifest and plugin.get(field) != manifest[field]:
                 if not dry_run:
                     plugin[field] = manifest[field]

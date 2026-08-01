@@ -304,8 +304,9 @@ class TextDisplayPlugin(BasePlugin):
                                 if candidate.exists():
                                     resolved_path = str(candidate)
                                     break
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            self.logger.debug(
+                                "Module-relative font resolution failed: %s", exc)
             
             if resolved_path:
                 font_path = resolved_path
