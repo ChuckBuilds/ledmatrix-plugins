@@ -1,0 +1,204 @@
+{
+  "nfl_schedule_2025": {
+    "events": [
+      {
+        "id": "8001",
+        "date": "2026-01-14T01:15Z",
+        "name": "Buffalo Bills at Kansas City Chiefs",
+        "shortName": "BUF @ KC",
+        "competitions": [
+          {
+            "id": "8001",
+            "date": "2026-01-14T01:15Z",
+            "status": {
+              "clock": 0.0,
+              "displayClock": "0:00",
+              "period": 4,
+              "type": {
+                "id": "3",
+                "name": "STATUS_FINAL",
+                "state": "post",
+                "completed": true,
+                "description": "Final",
+                "detail": "Final",
+                "shortDetail": "Final"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "12",
+                "score": "27",
+                "team": {
+                  "id": "12",
+                  "abbreviation": "KC",
+                  "displayName": "Kansas City Chiefs",
+                  "shortDisplayName": "Kansas City Chiefs",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "2",
+                "score": "24",
+                "team": {
+                  "id": "2",
+                  "abbreviation": "BUF",
+                  "displayName": "Buffalo Bills",
+                  "shortDisplayName": "Buffalo Bills",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 0.0,
+          "displayClock": "0:00",
+          "period": 4,
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          }
+        }
+      },
+      {
+        "id": "8002",
+        "date": "2026-01-15T10:30Z",
+        "name": "Dallas Cowboys at Philadelphia Eagles",
+        "shortName": "DAL @ PHI",
+        "competitions": [
+          {
+            "id": "8002",
+            "date": "2026-01-15T10:30Z",
+            "status": {
+              "clock": 492.0,
+              "displayClock": "8:12",
+              "period": 3,
+              "type": {
+                "id": "2",
+                "name": "STATUS_IN_PROGRESS",
+                "state": "in",
+                "completed": false,
+                "description": "In Progress",
+                "detail": "Q3 8:12",
+                "shortDetail": "Q3 8:12"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "21",
+                "score": "17",
+                "team": {
+                  "id": "21",
+                  "abbreviation": "PHI",
+                  "displayName": "Philadelphia Eagles",
+                  "shortDisplayName": "Philadelphia Eagles",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "6",
+                "score": "14",
+                "team": {
+                  "id": "6",
+                  "abbreviation": "DAL",
+                  "displayName": "Dallas Cowboys",
+                  "shortDisplayName": "Dallas Cowboys",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 492.0,
+          "displayClock": "8:12",
+          "period": 3,
+          "type": {
+            "id": "2",
+            "name": "STATUS_IN_PROGRESS",
+            "state": "in",
+            "completed": false,
+            "description": "In Progress",
+            "detail": "Q3 8:12",
+            "shortDetail": "Q3 8:12"
+          }
+        }
+      },
+      {
+        "id": "8003",
+        "date": "2026-01-18T23:30Z",
+        "name": "Green Bay Packers at Detroit Lions",
+        "shortName": "GB @ DET",
+        "competitions": [
+          {
+            "id": "8003",
+            "date": "2026-01-18T23:30Z",
+            "status": {
+              "clock": 0.0,
+              "displayClock": "0:00",
+              "period": 0,
+              "type": {
+                "id": "1",
+                "name": "STATUS_SCHEDULED",
+                "state": "pre",
+                "completed": false,
+                "description": "Scheduled",
+                "detail": "1/18 - 6:30 PM EST",
+                "shortDetail": "1/18 - 6:30 PM EST"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "8",
+                "score": "0",
+                "team": {
+                  "id": "8",
+                  "abbreviation": "DET",
+                  "displayName": "Detroit Lions",
+                  "shortDisplayName": "Detroit Lions",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "9",
+                "score": "0",
+                "team": {
+                  "id": "9",
+                  "abbreviation": "GB",
+                  "displayName": "Green Bay Packers",
+                  "shortDisplayName": "Green Bay Packers",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 0.0,
+          "displayClock": "0:00",
+          "period": 0,
+          "type": {
+            "id": "1",
+            "name": "STATUS_SCHEDULED",
+            "state": "pre",
+            "completed": false,
+            "description": "Scheduled",
+            "detail": "1/18 - 6:30 PM EST",
+            "shortDetail": "1/18 - 6:30 PM EST"
+          }
+        }
+      }
+    ]
+  }
+}

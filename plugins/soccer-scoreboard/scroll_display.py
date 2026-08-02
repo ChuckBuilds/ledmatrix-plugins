@@ -76,7 +76,8 @@ class ScrollDisplay:
         display_width: int,
         display_height: int,
         config: Dict[str, Any],
-        plugin_dir: str
+        plugin_dir: str,
+        global_config: Optional[Dict[str, Any]] = None
     ):
         """
         Initialize the ScrollDisplay handler.
@@ -87,12 +88,14 @@ class ScrollDisplay:
             display_height: Height of the display in pixels
             config: Plugin configuration dictionary
             plugin_dir: Path to the plugin directory for assets
+            global_config: Optional global LEDMatrix configuration dictionary
         """
         self.display_manager = display_manager
         self.display_width = display_width
         self.display_height = display_height
         self.config = config
         self.plugin_dir = plugin_dir
+        self.global_config = global_config or {}
         self.logger = logging.getLogger(__name__)
 
         # Shared logo cache reused across renders so each team logo is loaded once
@@ -129,18 +132,12 @@ class ScrollDisplay:
         scroll_config = self.config.get('scroll_mode', {})
         return scroll_config.get('scroll_speed', 50.0)
 
-    def _get_target_fps(self) -> int:
-        """Get target FPS from config with fallback."""
-        scroll_config = self.config.get('scroll_mode', {})
-        return scroll_config.get('target_fps', 30)
-
     def _get_scroll_settings(self) -> Dict[str, Any]:
         """Get scroll-related settings from config."""
         scroll_config = self.config.get('scroll_mode', {})
         return {
             'scroll_speed': scroll_config.get('scroll_speed', 50.0),
             'scroll_delay': scroll_config.get('scroll_delay', 0.01),
-            'target_fps': scroll_config.get('target_fps', 30),
             'gap_between_games': scroll_config.get('gap_between_games', 24),
             'show_league_separators': scroll_config.get('show_league_separators', True),
             'min_duration': scroll_config.get('min_duration', 30),
@@ -188,6 +185,21 @@ class ScrollDisplay:
             f"[Soccer Scroll] ScrollHelper configured: {pixels_per_frame:.2f} px/frame, "
             f"delay={scroll_delay}s (effective {effective_pps:.1f} px/s)"
         )
+
+        # Honor the global smooth-scrolling FPS target (older cores lack the setter)
+        target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps')
+        try:
+            # Coerce before comparing: a malformed global config value
+            # must degrade to today's scroll_delay pacing, not raise.
+            target_fps = float(target_fps) if target_fps is not None else None
+        except (TypeError, ValueError):
+            target_fps = None
+        if target_fps:
+            if hasattr(self.scroll_helper, 'set_target_fps'):
+                self.scroll_helper.set_target_fps(target_fps)
+            else:
+                self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
+                self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
 
     def _load_separator_icons(self) -> None:
         """Load league separator icons from assets directory."""
@@ -565,7 +577,8 @@ class ScrollDisplayManager:
         self,
         display_manager,
         config: Dict[str, Any],
-        custom_logger: Optional[logging.Logger] = None
+        custom_logger: Optional[logging.Logger] = None,
+        global_config: Optional[Dict[str, Any]] = None
     ):
         """
         Initialize the ScrollDisplayManager.
@@ -574,10 +587,12 @@ class ScrollDisplayManager:
             display_manager: Display manager instance
             config: Plugin configuration dictionary
             custom_logger: Optional custom logger instance
+            global_config: Optional global LEDMatrix configuration dictionary
         """
         self.display_manager = display_manager
         self.config = config
         self.logger = custom_logger or logger
+        self.global_config = global_config or {}
 
         # Determine plugin directory for asset loading
         self._plugin_dir = str(Path(__file__).parent)
@@ -604,7 +619,8 @@ class ScrollDisplayManager:
                 display_width,
                 display_height,
                 self.config,
-                self._plugin_dir
+                self._plugin_dir,
+                global_config=self.global_config
             )
         return self._scroll_displays[game_type]
 

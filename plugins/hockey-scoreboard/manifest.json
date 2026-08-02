@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -55,9 +55,14 @@
   ],
   "versions": [
     {
-      "released": "2026-07-30",
+      "version": "1.5.2",
+      "released": "2026-07-31",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-29",
       "version": "1.5.1",
-      "notes": "Timezone resolution no longer mistakes the core ConfigManager's own default for a real setting. ConfigManager.get_timezone() returns \"UTC\" when the global config has no timezone key at all, so the previous release latched onto that and never reached the host system zone. Resolution now reads the raw config and treats an absent key as absent, falling through to the system timezone as intended.",
+      "notes": "Correct the NCAA women's hockey example team codes in the favorite-teams help text: Wisconsin is WIS in ESPN's data, not WISC. Copying the old example matched no team and showed nothing.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -165,7 +170,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-17",
+  "last_updated": "2026-07-31",
   "stars": 0,
   "downloads": 0,
   "verified": true,

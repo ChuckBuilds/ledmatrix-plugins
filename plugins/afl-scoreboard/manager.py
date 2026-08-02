@@ -22,12 +22,24 @@ from typing import Dict, Any, Set, Optional, List
 try:
     from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
     from src.background_data_service import get_background_service
-    from base_odds_manager import BaseOddsManager
 except ImportError:
     BasePlugin = None
     VegasDisplayMode = None
     get_background_service = None
-    BaseOddsManager = None
+
+# Odds manager: prefer the core-shipped version, fall back to the bundled copy.
+# Kept outside the guard above so a missing odds module can never null BasePlugin.
+try:
+    from src.base_odds_manager import BaseOddsManager
+except ModuleNotFoundError as exc:
+    # Fall back only when the CORE module is absent; an import failure from
+    # inside it (missing dependency) should surface, not be masked.
+    if exc.name not in {"src", "src.base_odds_manager"}:
+        raise
+    try:
+        from base_odds_manager import BaseOddsManager
+    except ImportError:
+        BaseOddsManager = None
 
 # Import scroll display components
 try:
@@ -140,7 +152,8 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
                 self._scroll_manager = ScrollDisplayManager(
                     self.display_manager,
                     self.config,
-                    self.logger
+                    self.logger,
+                    global_config=getattr(self, 'global_config', {}) or {}
                 )
                 self.logger.info("Scroll display manager initialized")
             except Exception as e:

@@ -317,12 +317,7 @@ class FootballLive(Football, SportsLive):
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(f"Failed to load 6px font, using default font (size: {record_font.size})")
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
                 
                 # Get team abbreviations
                 away_abbr = game.get('away_abbr', '')

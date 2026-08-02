@@ -7,11 +7,12 @@ Migrated from the original clock.py manager as a plugin example.
 API Version: 1.0.0
 """
 
+import os
 import time
 from datetime import datetime
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Optional, Tuple
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 from src.plugin_system.base_plugin import BasePlugin
 
@@ -83,6 +84,14 @@ class SimpleClock(BasePlugin):
         self.date_color = _parse_color(date_text.get('text_color'), [255, 128, 64])
         self.ampm_color = _parse_color(ampm_text.get('text_color'), [255, 255, 128])
 
+        # Per-element font overrides. None means "use the display manager's
+        # small font", which is what every element used before fonts were
+        # honored — so default configs render exactly as they always have.
+        self._font_cache: Dict[Tuple[str, int], Any] = {}
+        self.time_font = self._load_element_font(time_text)
+        self.date_font = self._load_element_font(date_text)
+        self.ampm_font = self._load_element_font(ampm_text)
+
         # Position - use flattened keys
         self.pos_x = config.get('position_x', 0)
         self.pos_y = config.get('position_y', 0)
@@ -91,6 +100,47 @@ class SimpleClock(BasePlugin):
         self.timezone = self._get_timezone()
 
         self.logger.info(f"Clock plugin initialized for timezone: {self.timezone_str}")
+
+    def _load_element_font(self, element_cfg: Dict[str, Any]):
+        """Resolve an element's configured font, or None for the default.
+
+        The schema default (PressStart2P-Regular.ttf @ 8) is exactly the
+        display manager's small font, so a default or merged-defaults config
+        returns None and rendering is unchanged. Only a genuine non-default
+        font/size selection loads a custom face; load failures fall back to
+        None with a warning rather than breaking the clock.
+        """
+        name = element_cfg.get('font', 'PressStart2P-Regular.ttf')
+        try:
+            size = int(element_cfg.get('font_size', 8))
+        except (TypeError, ValueError):
+            size = 8
+        if name == 'PressStart2P-Regular.ttf' and size == 8:
+            return None
+        key = (name, size)
+        if key not in self._font_cache:
+            font = None
+            candidates = [
+                os.path.join('assets', 'fonts', name),
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'fonts', name),
+            ]
+            for path in candidates:
+                if not os.path.exists(path):
+                    continue
+                try:
+                    # FreeType handles .ttf and (at its native size) .bdf faces.
+                    font = ImageFont.truetype(path, size)
+                    break
+                except OSError as e:
+                    # OSError only: that is what FreeType raises for a missing,
+                    # unreadable or malformed face. Catching everything here
+                    # would turn a programming error into a silent fallback to
+                    # the default font, which looks like a config problem.
+                    self.logger.warning(f"Could not load font {name}@{size}: {e}")
+            if font is None and not any(os.path.exists(p) for p in candidates):
+                self.logger.warning(f"Font file not found: {name}; using default font")
+            self._font_cache[key] = font
+        return self._font_cache[key]
 
     def _get_global_timezone(self) -> str:
         """Get the global timezone from the main config."""
@@ -166,10 +216,10 @@ class SimpleClock(BasePlugin):
             return dt.strftime("%m/%d/%Y")  # fallback
 
     def _text_fits(self, text: str, width: int) -> bool:
-        """Return True if `text` renders within `width` px in the small font."""
+        """Return True if `text` renders within `width` px in the date font."""
         try:
             return self.display_manager.get_text_width(
-                text, self.display_manager.small_font
+                text, self.date_font or self.display_manager.small_font
             ) <= width
         except Exception:
             # If measuring fails, assume it fits so we never hide content.
@@ -189,6 +239,27 @@ class SimpleClock(BasePlugin):
             return weekday_str
         abbrev = dt.strftime('%a')  # e.g. "Wed"
         return abbrev if self._text_fits(abbrev, width) else weekday_str
+
+    def _centered_x(self, text: str, width: int) -> Optional[int]:
+        """Left edge that centers ``text``, never negative.
+
+        ``draw_text`` auto-centres with ``(width - text_width) // 2`` and does
+        not clamp, so text wider than the panel gets a negative x and is
+        clipped at *both* ends -- the reader loses the start of the string. The
+        shortening helpers can still return an over-wide string when even their
+        shortest candidate does not fit (a large user-selected date font on a
+        64px panel), so clamp here and let the overflow clip on the right only.
+        """
+        try:
+            text_width = self.display_manager.get_text_width(
+                text, self.date_font or self.display_manager.small_font
+            )
+        except Exception:
+            # Measuring failed; fall back to draw_text's own centring rather
+            # than guessing a position (mirrors _text_fits, which assumes a fit
+            # so content is never hidden by a measurement failure).
+            return None
+        return max(0, (width - text_width) // 2)
 
     def _fit_date(self, date_str: str, width: int) -> str:
         """
@@ -321,8 +392,9 @@ class SimpleClock(BasePlugin):
             width = self.display_manager.width
             height = self.display_manager.height
 
-            # Get font height for dynamic spacing calculations
-            font_height = self.display_manager.get_font_height(self.display_manager.small_font)
+            # Get font height for dynamic spacing calculations (date lines)
+            font_height = self.display_manager.get_font_height(
+                self.date_font or self.display_manager.small_font)
 
             # Calculate dynamic positions based on display dimensions
             # Time position: Small fixed offset (4px) plus small percentage for larger displays
@@ -341,32 +413,36 @@ class SimpleClock(BasePlugin):
                 # Calculate widths of each component
                 time_width = self.display_manager.get_text_width(
                     self.current_time,
-                    self.display_manager.small_font
+                    self.time_font or self.display_manager.small_font
                 )
                 space_width = self.display_manager.get_text_width(
                     " ",
-                    self.display_manager.small_font
+                    self.time_font or self.display_manager.small_font
                 )
                 ampm_width = self.display_manager.get_text_width(
                     self.current_ampm,
-                    self.display_manager.small_font
+                    self.ampm_font or self.display_manager.small_font
                 )
-                
+
                 # Total width of "Time AM/PM" block
                 total_width = time_width + space_width + ampm_width
-                
-                # Calculate x position to center the entire "Time AM/PM" block
-                time_x = (width - total_width) // 2
-                
+
+                # Calculate x position to center the entire "Time AM/PM" block.
+                # A user-selected large font can exceed the panel; clamp so the
+                # block starts on-panel and overflow clips on the right instead
+                # of shifting content off the left edge.
+                time_x = max(0, (width - total_width) // 2)
+
                 # Draw time at calculated position
                 self.display_manager.draw_text(
                     self.current_time,
                     x=time_x,
                     y=time_y,
                     color=self.time_color,
-                    small_font=True
+                    small_font=True,
+                    font=self.time_font
                 )
-                
+
                 # Draw AM/PM right after time with proper spacing
                 ampm_x = time_x + time_width + space_width
                 self.display_manager.draw_text(
@@ -374,7 +450,8 @@ class SimpleClock(BasePlugin):
                     x=ampm_x,
                     y=time_y,
                     color=self.ampm_color,
-                    small_font=True
+                    small_font=True,
+                    font=self.ampm_font
                 )
             else:
                 # Default behavior: center time first, then add AM/PM to the right
@@ -383,18 +460,19 @@ class SimpleClock(BasePlugin):
                     self.current_time,
                     y=time_y,
                     color=self.time_color,
-                    small_font=True
+                    small_font=True,
+                    font=self.time_font
                 )
 
                 # Display AM/PM indicator (12h format only) - positioned next to time
                 if self.time_format == "12h" and hasattr(self, 'current_ampm'):
                     # Calculate AM/PM position: to the right of centered time
-                    # Use the same font that's used for drawing (small_font)
+                    # Use the same font that's used for drawing
                     time_width = self.display_manager.get_text_width(
-                        self.current_time, 
-                        self.display_manager.small_font
+                        self.current_time,
+                        self.time_font or self.display_manager.small_font
                     )
-                    
+
                     # Spacing between time and AM/PM: ~2.5% of width, minimum 2px
                     ampm_spacing = max(2, int(width * 0.025))
                     ampm_x = (width + time_width) // 2 + ampm_spacing
@@ -403,7 +481,7 @@ class SimpleClock(BasePlugin):
                     # it pulls AM/PM back so it doesn't overflow past the edge.
                     ampm_width = self.display_manager.get_text_width(
                         self.current_ampm,
-                        self.display_manager.small_font
+                        self.ampm_font or self.display_manager.small_font
                     )
                     ampm_x = max(0, min(ampm_x, width - ampm_width))
                     self.display_manager.draw_text(
@@ -411,7 +489,8 @@ class SimpleClock(BasePlugin):
                         x=ampm_x,
                         y=time_y,  # Align with time
                         color=self.ampm_color,
-                        small_font=True
+                        small_font=True,
+                        font=self.ampm_font
                     )
 
             # Display date
@@ -437,29 +516,38 @@ class SimpleClock(BasePlugin):
                             date_y = height - 1
                     
                     # Weekday on first line (abbreviated if it wouldn't fit)
+                    weekday_text = self._fit_weekday(self.current_weekday, width)
                     self.display_manager.draw_text(
-                        self._fit_weekday(self.current_weekday, width),
+                        weekday_text,
+                        x=self._centered_x(weekday_text, width),
                         y=weekday_y,
                         color=self.date_color,
-                        small_font=True
+                        small_font=True,
+                        font=self.date_font
                     )
                     # Month and day on second line (abbreviated if it wouldn't fit)
+                    date_text = self._fit_date(self.current_date, width)
                     self.display_manager.draw_text(
-                        self._fit_date(self.current_date, width),
+                        date_text,
+                        x=self._centered_x(date_text, width),
                         y=date_y,
                         color=self.date_color,
-                        small_font=True
+                        small_font=True,
+                        font=self.date_font
                     )
                 else:
                     # Other date formats: single line centered near bottom
                     # Position ~9px from bottom (scales with display size)
                     date_offset = max(9, int(height * 0.14))
                     date_y = height - date_offset
+                    date_text = self._fit_date(self.current_date, width)
                     self.display_manager.draw_text(
-                        self._fit_date(self.current_date, width),
+                        date_text,
+                        x=self._centered_x(date_text, width),
                         y=date_y,
                         color=self.date_color,
-                        small_font=True
+                        small_font=True,
+                        font=self.date_font
                     )
 
             # Push the freshly rendered frame to the panel every tick. The

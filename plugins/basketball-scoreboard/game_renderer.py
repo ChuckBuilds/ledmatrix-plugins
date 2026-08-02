@@ -551,10 +551,13 @@ class GameRenderer:
     
     def _draw_records_or_rankings(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw team records, rankings, or tournament seeds."""
-        try:
-            record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-        except IOError:
-            record_font = ImageFont.load_default()
+        record_font = getattr(self, '_record_font', None)
+        if record_font is None:
+            try:
+                record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+            except OSError:
+                record_font = ImageFont.load_default()
+            self._record_font = record_font
 
         # Get team info - support both flat format (from sports.py) and nested format
         away_abbr = game.get('away_abbr', '')

@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.6.1",
+  "version": "1.7.1",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -30,10 +30,16 @@
   ],
   "versions": [
     {
-      "released": "2026-07-30",
-      "version": "1.6.1",
-      "notes": "Timezone resolution no longer mistakes the core ConfigManager's own default for a real setting. ConfigManager.get_timezone() returns \"UTC\" when the global config has no timezone key at all, so the previous release latched onto that and never reached the host system zone. Resolution now reads the raw config and treats an absent key as absent, falling through to the system timezone as intended.",
+      "version": "1.7.1",
+      "released": "2026-08-01",
+      "notes": "Honor the global smooth-scrolling FPS target (target_fps/scroll_target_fps) in scroll mode.",
       "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-30",
+      "version": "1.7.0",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Driver cards now show the full surname when the panel has room (standings, podium, favorite-driver spotlight, qualifying/practice/sprint rows), falling back to the 3-letter code only where space is tight. Fixed the race-calendar row so the session-type badge no longer overlaps the date or the right-aligned session time."
     },
     {
       "released": "2026-07-29",
@@ -226,7 +232,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-18",
+  "last_updated": "2026-08-01",
   "stars": 0,
   "downloads": 0,
   "verified": true,

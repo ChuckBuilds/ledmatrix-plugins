@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -19,9 +19,14 @@
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
     {
-      "released": "2026-07-30",
+      "version": "1.8.2",
+      "released": "2026-07-31",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-29",
       "version": "1.8.1",
-      "notes": "Timezone resolution no longer mistakes the core ConfigManager's own default for a real setting. ConfigManager.get_timezone() returns \"UTC\" when the global config has no timezone key at all, so the previous release latched onto that and never reached the host system zone. Resolution now reads the raw config and treats an absent key as absent, falling through to the system timezone as intended.",
+      "notes": "Correct the example team codes in the favorite-teams help text. They are ESPN's codes and are not always the ones you would guess: Golden State is GS not GSW, New York Liberty is NY not NYL, Los Angeles Sparks is LA not LAS, UConn is CONN not UCONN, and South Carolina is SC not SCAR. Copying the old examples matched no team and showed nothing.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -111,7 +116,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-07-17",
+  "last_updated": "2026-07-31",
   "verified": true,
   "screenshot": "",
   "display_modes": [

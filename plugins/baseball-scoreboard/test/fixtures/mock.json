@@ -1,0 +1,204 @@
+{
+  "mlb_schedule_2026": {
+    "events": [
+      {
+        "id": "7001",
+        "date": "2026-07-09T02:10Z",
+        "name": "San Francisco Giants at Los Angeles Dodgers",
+        "shortName": "SF @ LAD",
+        "competitions": [
+          {
+            "id": "7001",
+            "date": "2026-07-09T02:10Z",
+            "status": {
+              "clock": 0.0,
+              "displayClock": "0:00",
+              "period": 9,
+              "type": {
+                "id": "3",
+                "name": "STATUS_FINAL",
+                "state": "post",
+                "completed": true,
+                "description": "Final",
+                "detail": "Final",
+                "shortDetail": "Final"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "19",
+                "score": "5",
+                "team": {
+                  "id": "19",
+                  "abbreviation": "LAD",
+                  "displayName": "Los Angeles Dodgers",
+                  "shortDisplayName": "Los Angeles Dodgers",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "26",
+                "score": "3",
+                "team": {
+                  "id": "26",
+                  "abbreviation": "SF",
+                  "displayName": "San Francisco Giants",
+                  "shortDisplayName": "San Francisco Giants",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 0.0,
+          "displayClock": "0:00",
+          "period": 9,
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          }
+        }
+      },
+      {
+        "id": "7002",
+        "date": "2026-07-10T10:05Z",
+        "name": "Boston Red Sox at New York Yankees",
+        "shortName": "BOS @ NYY",
+        "competitions": [
+          {
+            "id": "7002",
+            "date": "2026-07-10T10:05Z",
+            "status": {
+              "clock": 0.0,
+              "displayClock": "0:00",
+              "period": 7,
+              "type": {
+                "id": "2",
+                "name": "STATUS_IN_PROGRESS",
+                "state": "in",
+                "completed": false,
+                "description": "In Progress",
+                "detail": "Top 7th",
+                "shortDetail": "Top 7th"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "10",
+                "score": "4",
+                "team": {
+                  "id": "10",
+                  "abbreviation": "NYY",
+                  "displayName": "New York Yankees",
+                  "shortDisplayName": "New York Yankees",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "2",
+                "score": "3",
+                "team": {
+                  "id": "2",
+                  "abbreviation": "BOS",
+                  "displayName": "Boston Red Sox",
+                  "shortDisplayName": "Boston Red Sox",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 0.0,
+          "displayClock": "0:00",
+          "period": 7,
+          "type": {
+            "id": "2",
+            "name": "STATUS_IN_PROGRESS",
+            "state": "in",
+            "completed": false,
+            "description": "In Progress",
+            "detail": "Top 7th",
+            "shortDetail": "Top 7th"
+          }
+        }
+      },
+      {
+        "id": "7003",
+        "date": "2026-07-11T23:10Z",
+        "name": "Atlanta Braves at New York Mets",
+        "shortName": "ATL @ NYM",
+        "competitions": [
+          {
+            "id": "7003",
+            "date": "2026-07-11T23:10Z",
+            "status": {
+              "clock": 0.0,
+              "displayClock": "0:00",
+              "period": 0,
+              "type": {
+                "id": "1",
+                "name": "STATUS_SCHEDULED",
+                "state": "pre",
+                "completed": false,
+                "description": "Scheduled",
+                "detail": "7/11 - 7:10 PM EDT",
+                "shortDetail": "7/11 - 7:10 PM EDT"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "21",
+                "score": "0",
+                "team": {
+                  "id": "21",
+                  "abbreviation": "NYM",
+                  "displayName": "New York Mets",
+                  "shortDisplayName": "New York Mets",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "15",
+                "score": "0",
+                "team": {
+                  "id": "15",
+                  "abbreviation": "ATL",
+                  "displayName": "Atlanta Braves",
+                  "shortDisplayName": "Atlanta Braves",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 0.0,
+          "displayClock": "0:00",
+          "period": 0,
+          "type": {
+            "id": "1",
+            "name": "STATUS_SCHEDULED",
+            "state": "pre",
+            "completed": false,
+            "description": "Scheduled",
+            "detail": "7/11 - 7:10 PM EDT",
+            "shortDetail": "7/11 - 7:10 PM EDT"
+          }
+        }
+      }
+    ]
+  }
+}

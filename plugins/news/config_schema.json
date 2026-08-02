@@ -32,6 +32,7 @@
           "description": "Display and scrolling settings",
           "properties": {
             "scroll_speed": {
+              "x-advanced": true,
               "type": "number",
               "description": "Scrolling speed in pixels per frame",
               "minimum": 0.5,
@@ -351,6 +352,94 @@
           "x-advanced": true
         }
       },
+      "additionalProperties": false
+    },
+    "customization": {
+      "type": "object",
+      "title": "Display Customization",
+      "description": "Customize fonts for the ticker's text elements. Headline color is set by feeds.text_color and separator color by feeds.separator_color.",
+      "properties": {
+        "headline_text": {
+          "type": "object",
+          "title": "Headline Text",
+          "description": "Font settings for headline titles (the separator bullet shares this font). Text color is configured under Feeds (text_color).",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf",
+                "cozette.bdf"
+              ],
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 24,
+              "default": 12,
+              "x-advanced": true
+            }
+          },
+          "x-propertyOrder": ["font", "font_size"],
+          "additionalProperties": false
+        },
+        "source_text": {
+          "type": "object",
+          "title": "Source Name Text",
+          "description": "Font and color settings for the feed-name prefix shown when a feed has no logo",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf",
+                "cozette.bdf"
+              ],
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 6,
+              "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Text color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [150, 150, 150]
+            }
+          },
+          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "additionalProperties": false
+        }
+      },
+      "x-propertyOrder": ["headline_text", "source_text"],
       "additionalProperties": false
     }
   },

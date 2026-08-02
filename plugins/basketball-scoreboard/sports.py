@@ -17,7 +17,18 @@ from urllib3.util.retry import Retry
 
 # Import simplified dependencies for plugin use
 from dynamic_team_resolver import DynamicTeamResolver
-from base_odds_manager import BaseOddsManager
+# Prefer the core-shipped odds manager (adds cache_ttl support); fall back to
+# the bundled copy for cores that don't ship src.base_odds_manager yet.
+# Both branches are module-level imports, so they are collision-safe under the
+# loader's bare-name isolation rules (see docs/plugin-development/08-*.md).
+try:
+    from src.base_odds_manager import BaseOddsManager
+except ModuleNotFoundError as exc:
+    # Fall back only when the CORE module is absent; an import failure from
+    # inside it (missing dependency) should surface, not be masked.
+    if exc.name not in {"src", "src.base_odds_manager"}:
+        raise
+    from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
 from basketball_timezone import resolve_timezone
 
@@ -343,6 +354,17 @@ class SportsCore(ABC):
                 fonts["status"] = ImageFont.load_default()
                 fonts["detail"] = ImageFont.load_default()
                 fonts["rank"] = ImageFont.load_default()
+        # Record/ranking annotations always use the small 4x6 face; cached here
+        # so the scorebug draw paths don't reload it from disk every frame.
+        try:
+            fonts["record"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+        except OSError:
+            fonts["record"] = ImageFont.load_default()
+        # Tournament game dates use the same small face; cache it as well.
+        try:
+            fonts["date"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+        except OSError:
+            fonts["date"] = ImageFont.load_default()
         return fonts
 
     def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
@@ -1671,14 +1693,7 @@ class SportsUpcoming(SportsCore):
             show_seeds = is_tourney and self.show_seeds
 
             if self.show_records or self.show_ranking or show_seeds:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
 
                 # Get team abbreviations
                 game.get("away_abbr", "")
@@ -2236,10 +2251,7 @@ class SportsRecent(SportsCore):
 
             # Show game date for tournament games (helps distinguish games from different days/rounds)
             if game.get("is_tournament") and game.get("game_date"):
-                try:
-                    date_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                except IOError:
-                    date_font = ImageFont.load_default()
+                date_font = self.fonts.get("date") or self.fonts.get("status") or ImageFont.load_default()
                 date_text = game["game_date"]
                 date_width = draw_overlay.textlength(date_text, font=date_font)
                 date_x = (display_width - date_width) // 2 + self._get_layout_offset('status', 'x_offset')
@@ -2257,14 +2269,7 @@ class SportsRecent(SportsCore):
             show_seeds = is_tourney and self.show_seeds
 
             if self.show_records or self.show_ranking or show_seeds:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
 
                 # Get team abbreviations
                 game.get("away_abbr", "")

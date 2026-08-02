@@ -36,7 +36,18 @@ def resolve_font_name(font_name: str) -> str:
 # Import simplified dependencies for plugin use
 from dynamic_team_resolver import DynamicTeamResolver
 from logo_downloader import LogoDownloader, download_missing_logo
-from base_odds_manager import BaseOddsManager
+# Prefer the core-shipped odds manager (adds cache_ttl support); fall back to
+# the bundled copy for cores that don't ship src.base_odds_manager yet.
+# Both branches are module-level imports, so they are collision-safe under the
+# loader's bare-name isolation rules (see docs/plugin-development/08-*.md).
+try:
+    from src.base_odds_manager import BaseOddsManager
+except ModuleNotFoundError as exc:
+    # Fall back only when the CORE module is absent; an import failure from
+    # inside it (missing dependency) should surface, not be masked.
+    if exc.name not in {"src", "src.base_odds_manager"}:
+        raise
+    from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
 from baseball_timezone import resolve_timezone
 
@@ -137,6 +148,10 @@ class SportsCore(ABC):
         self.current_game = None
         # Thread safety lock for shared game state
         self._games_lock = threading.RLock()
+        # Memoizes (font name, size) -> loaded face so per-frame font-ladder
+        # walks (traditional scoreboard, at-bat card) don't hit the disk.
+        self._font_cache = {}
+        self._bdf_native_size_cache = {}
         self.fonts = self._load_fonts()
 
         # Initialize dynamic team resolver and resolve favorite teams
@@ -255,8 +270,16 @@ class SportsCore(ABC):
         font_size = int(element_config.get('font_size', default_size))  # Ensure integer for PIL
 
         # Resolve family aliases (e.g. "press_start") to real filenames, then build path
-        font_path = os.path.join('assets', 'fonts', resolve_font_name(font_name))
-        
+        resolved_name = resolve_font_name(font_name)
+        font_path = os.path.join('assets', 'fonts', resolved_name)
+
+        # Memoized: per-frame callers (font-ladder walks) resolve the same
+        # (name, size) repeatedly -- return the previously loaded face.
+        cache_key = (resolved_name, font_size)
+        cached_font = self._font_cache.get(cache_key)
+        if cached_font is not None:
+            return cached_font
+
         # Try to load the font
         try:
             if os.path.exists(font_path):
@@ -264,6 +287,7 @@ class SportsCore(ABC):
                 if font_path.lower().endswith('.ttf'):
                     font = ImageFont.truetype(font_path, font_size)
                     self.logger.debug(f"Loaded font: {font_name} at size {font_size}")
+                    self._font_cache[cache_key] = font
                     return font
                 elif font_path.lower().endswith('.bdf'):
                     # BDF fonts are fixed-size bitmaps, not scalable outlines --
@@ -277,9 +301,14 @@ class SportsCore(ABC):
                     try:
                         font = ImageFont.truetype(font_path, font_size)
                         self.logger.debug(f"Loaded BDF font: {font_name} at size {font_size}")
+                        self._font_cache[cache_key] = font
                         return font
-                    except Exception:
-                        native_size = self._read_bdf_native_size(font_path)
+                    except OSError:
+                        native_size = self._bdf_native_size_cache.get(font_path)
+                        if native_size is None:
+                            native_size = self._read_bdf_native_size(font_path)
+                            if native_size is not None:
+                                self._bdf_native_size_cache[font_path] = native_size
                         if native_size and native_size != font_size:
                             try:
                                 font = ImageFont.truetype(font_path, native_size)
@@ -287,6 +316,7 @@ class SportsCore(ABC):
                                     f"Loaded BDF font: {font_name} at its native size {native_size} "
                                     f"(requested {font_size} isn't a valid strike for this file)"
                                 )
+                                self._font_cache[cache_key] = font
                                 return font
                             except Exception as retry_exc:
                                 self.logger.debug(
@@ -302,17 +332,21 @@ class SportsCore(ABC):
         except Exception as e:
             self.logger.error(f"Error loading font {font_name}: {e}, using default")
         
-        # Fall back to default font
+        # Fall back to default font. Cached under the requested (name, size)
+        # key too, so a misconfigured or missing font pays the disk cost once
+        # instead of on every frame of a font-ladder walk.
         default_font_path = os.path.join('assets', 'fonts', 'PressStart2P-Regular.ttf')
         try:
             if os.path.exists(default_font_path):
-                return ImageFont.truetype(default_font_path, font_size)
+                font = ImageFont.truetype(default_font_path, font_size)
             else:
                 self.logger.warning("Default font not found, using PIL default")
-                return ImageFont.load_default()
+                font = ImageFont.load_default()
         except Exception as e:
             self.logger.error(f"Error loading default font: {e}")
-            return ImageFont.load_default()
+            font = ImageFont.load_default()
+        self._font_cache[cache_key] = font
+        return font
 
     @staticmethod
     def _read_bdf_native_size(bdf_path: str) -> Optional[int]:
@@ -418,6 +452,12 @@ class SportsCore(ABC):
                 fonts["status"] = ImageFont.load_default()
                 fonts["detail"] = ImageFont.load_default()
                 fonts["rank"] = ImageFont.load_default()
+        # Record/ranking annotations always use the small 4x6 face; cached here
+        # so the scorebug draw paths don't reload it from disk every frame.
+        try:
+            fonts["record"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+        except OSError:
+            fonts["record"] = ImageFont.load_default()
         return fonts
 
     def _draw_dynamic_odds(
@@ -1392,14 +1432,7 @@ class SportsUpcoming(SportsCore):
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
 
                 # Get team abbreviations
                 away_abbr = game.get("away_abbr", "")
@@ -1964,14 +1997,7 @@ class SportsRecent(SportsCore):
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
 
                 # Get team abbreviations
                 away_abbr = game.get("away_abbr", "")

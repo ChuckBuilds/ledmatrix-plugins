@@ -169,15 +169,14 @@ class TextDisplayPlugin(BasePlugin):
             
         self.scroll_helper.set_scroll_delay(self.scroll_delay)
         
-        # Set target FPS from config (clamp to valid range)
-        target_fps = max(30.0, min(240.0, self.target_fps))
-        self.scroll_helper.set_target_fps(target_fps)
+        # Set target FPS from config (clamped; older cores lack the setter)
+        self._apply_target_fps()
         # Sub-pixel scrolling disabled - using high frame rate integer scrolling for smoothness
         # This matches the behavior of stock/leaderboard tickers
         
         # Calculate pixels per second for logging (even though we use frame-based mode)
         pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-        self.logger.info(f"Scroll settings: {self.scroll_speed} px/frame, {self.scroll_delay}s delay = {pixels_per_second:.1f} px/s, target FPS: {target_fps}")
+        self.logger.info(f"Scroll settings: {self.scroll_speed} px/frame, {self.scroll_delay}s delay = {pixels_per_second:.1f} px/s, target FPS: {self.target_fps}")
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=True,
             # Honor the documented display_duration setting as the on-screen floor.
@@ -291,6 +290,23 @@ class TextDisplayPlugin(BasePlugin):
                     project_path = project_root / font_path
                     if project_path.exists():
                         resolved_path = str(project_path)
+                    else:
+                        # Strategy 4: Resolve against the core install the
+                        # display manager was loaded from — works when the
+                        # process cwd is not the core root (e.g. CI harness).
+                        # Walk upward because the object may come from a
+                        # nested package (src/plugin_system/testing/...).
+                        try:
+                            import inspect
+                            module_path = Path(inspect.getfile(type(self.display_manager))).resolve()
+                            for ancestor in module_path.parents:
+                                candidate = ancestor / font_path
+                                if candidate.exists():
+                                    resolved_path = str(candidate)
+                                    break
+                        except Exception as exc:
+                            self.logger.debug(
+                                "Module-relative font resolution failed: %s", exc)
             
             if resolved_path:
                 font_path = resolved_path
@@ -639,6 +655,19 @@ class TextDisplayPlugin(BasePlugin):
         
         return True
     
+    def _apply_target_fps(self) -> None:
+        """Clamp the configured FPS to the helper's effective 30-200 range and
+        push it, with a direct-attribute fallback for ScrollHelper builds that
+        predate set_target_fps. Storing the clamped value keeps get_info and
+        logs consistent with what the helper actually runs at.
+        """
+        self.target_fps = max(30.0, min(200.0, float(self.target_fps)))
+        if hasattr(self.scroll_helper, 'set_target_fps'):
+            self.scroll_helper.set_target_fps(self.target_fps)
+        else:
+            self.scroll_helper.target_fps = self.target_fps
+            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
+
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
         """Handle configuration changes at runtime."""
         super().on_config_change(new_config)
@@ -680,10 +709,8 @@ class TextDisplayPlugin(BasePlugin):
                 self.scroll_helper.set_scroll_speed(pixels_per_second)
                 
             self.scroll_helper.set_scroll_delay(self.scroll_delay)
-            # Clamp target FPS to valid range
-            target_fps = max(30.0, min(240.0, self.target_fps))
-            self.scroll_helper.set_target_fps(target_fps)
-            self.logger.info(f"Scroll settings updated: speed={self.scroll_speed}, delay={self.scroll_delay}s, target FPS={target_fps}")
+            self._apply_target_fps()
+            self.logger.info(f"Scroll settings updated: speed={self.scroll_speed}, delay={self.scroll_delay}s, target FPS={self.target_fps}")
 
         # Re-apply display_duration as the dynamic-duration floor so runtime edits
         # take effect immediately (fall back to the current value so a partial

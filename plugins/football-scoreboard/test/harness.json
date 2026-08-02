@@ -1,0 +1,34 @@
+{
+  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the NFL season-schedule cache (key nfl_schedule_2025) with one final, one in-progress, and one scheduled game so recent/upcoming render real game cards without network access. Live mode is disabled: NFLLiveManager._fetch_data() -> _fetch_todays_games() is a direct network call with no cache read and no test_mode passthrough in _adapt_config_for_manager, so the live screen can never be fed from mock data. The huge live_update_interval keeps the always-instantiated live manager from attempting that doomed network fetch on every update() (under freeze_time, now - last_update stays below it), keeping CI runs fast.",
+  "config": {
+    "enabled": true,
+    "timezone": "UTC",
+    "nfl": {
+      "enabled": true,
+      "favorite_teams": [],
+      "display_modes": {
+        "show_live": false,
+        "show_recent": true,
+        "show_upcoming": true,
+        "live_display_mode": "switch",
+        "recent_display_mode": "switch",
+        "upcoming_display_mode": "switch"
+      },
+      "live_update_interval": 9999999999,
+      "display_options": {
+        "show_records": false,
+        "show_ranking": false,
+        "show_odds": false
+      },
+      "filtering": {
+        "show_favorite_teams_only": false,
+        "show_all_live": true
+      }
+    },
+    "ncaa_fb": {
+      "enabled": false
+    }
+  },
+  "mock_data": "test/fixtures/mock.json",
+  "freeze_time": "2026-01-15 12:00:00"
+}

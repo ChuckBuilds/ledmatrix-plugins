@@ -416,7 +416,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "List of favorite NCAA FB team abbreviations (e.g., UGA, AUB, BAMA). Use 2-4 letter codes."
+          "description": "List of favorite NCAA FB team abbreviations (e.g., UGA, AUB, ALA). Use 2-4 letter codes. These are ESPN's codes: Alabama is ALA, not BAMA."
         },
         "exclude_teams": {
           "x-advanced": true,

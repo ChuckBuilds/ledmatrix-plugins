@@ -72,9 +72,12 @@ class SportsCore(ABC):
         self.sport_config = None
         # Initialize data source
         self.data_source = ESPNDataSource(logger)
-        self.mode_config = config.get(
-            f"{sport_key}_scoreboard", {}
-        )  # Changed config key
+        # The adapter builds the managers' config under "<league>_scoreboard"
+        # ("ufc_scoreboard") and sport_key is already "ufc_scoreboard", so the
+        # old f"{sport_key}_scoreboard" lookup resolved to the nonexistent
+        # "ufc_scoreboard_scoreboard" — leaving every manager disabled and the
+        # plugin rendering blank. Look up the key the adapter actually writes.
+        self.mode_config = config.get(sport_key, {})
         self.is_enabled: bool = self.mode_config.get("enabled", False)
         self.show_odds: bool = self.mode_config.get("show_odds", False)
         # Use LogoDownloader to get the correct default logo directory for this sport
@@ -1319,14 +1322,7 @@ class SportsUpcoming(SportsCore):
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
 
                 # Get team abbreviations
                 away_abbr = game.get("away_abbr", "")
@@ -1882,14 +1878,7 @@ class SportsRecent(SportsCore):
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
 
                 # Get team abbreviations
                 away_abbr = game.get("away_abbr", "")

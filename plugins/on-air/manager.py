@@ -216,7 +216,15 @@ class OnAirPlugin(BasePlugin):
                 if font_path and font_size:
                     new_size = max(6, int(font_size * (dw * 0.95) / tw))
                     try:
-                        font = ImageFont.truetype(font_path, new_size)
+                        # Keyed by (path, size) so a config font change never
+                        # serves a stale face; avoids reloading every frame.
+                        sized_cache = getattr(self, '_sized_font_cache', None)
+                        if sized_cache is None:
+                            sized_cache = self._sized_font_cache = {}
+                        font = sized_cache.get((font_path, new_size))
+                        if font is None:
+                            font = ImageFont.truetype(font_path, new_size)
+                            sized_cache[(font_path, new_size)] = font
                         bbox = draw.textbbox((0, 0), text, font=font)
                         tw   = bbox[2] - bbox[0]
                         th   = bbox[3] - bbox[1]
