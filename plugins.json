@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-08-01",
+  "last_updated": "2026-08-02",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -76,7 +76,7 @@
       "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.20.2"
+      "latest_version": "1.20.3"
     },
     {
       "id": "basketball-scoreboard",
@@ -101,7 +101,7 @@
       "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.8.2"
+      "latest_version": "1.8.3"
     },
     {
       "id": "calendar",
@@ -215,7 +215,7 @@
       "last_updated": "2026-08-01",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.7.1"
+      "latest_version": "1.7.2"
     },
     {
       "id": "football-scoreboard",
@@ -240,7 +240,7 @@
       "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.9.2"
+      "latest_version": "2.9.3"
     },
     {
       "id": "geochron",
@@ -335,7 +335,7 @@
       "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.2",
+      "latest_version": "1.5.3",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -359,7 +359,7 @@
       "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.1",
+      "latest_version": "1.5.2",
       "icon": "fas fa-baseball-ball"
     },
     {
@@ -735,7 +735,7 @@
       "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.5.1"
+      "latest_version": "2.5.2"
     },
     {
       "id": "static-image",
@@ -880,7 +880,7 @@
       "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.1",
+      "latest_version": "1.3.2",
       "icon": "fas fa-fist-raised"
     },
     {
@@ -1023,7 +1023,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.1",
+      "latest_version": "1.1.2",
       "last_updated": "2026-07-31"
     },
     {
@@ -1070,7 +1070,7 @@
       "last_updated": "2026-07-31",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.1"
+      "latest_version": "1.1.2"
     },
     {
       "id": "jellyfin-now-playing",
