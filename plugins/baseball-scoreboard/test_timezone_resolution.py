@@ -61,6 +61,26 @@ class _BrokenConfigManager:
         raise RuntimeError("config not loaded")
 
 
+class _RealCoreConfigManager:
+    """Faithful stand-in for the shipping core ConfigManager.
+
+    The real get_timezone() is ``self.config.get('timezone', 'UTC')`` -- it
+    substitutes its own "UTC" when the global config has no timezone key.
+    """
+
+    def __init__(self, config):
+        self._config = config
+
+    def get_config(self):
+        return self._config
+
+    def load_config(self):
+        return self._config
+
+    def get_timezone(self):
+        return self._config.get("timezone", "UTC")
+
+
 class _Holder:
     """Stands in for a plugin_manager / cache_manager."""
 
@@ -193,6 +213,86 @@ def test_resolve_timezone_returns_tzinfo_and_converts():
     print("✓ resolve_timezone() converts a UTC start time to local")
 
 
+def test_stale_utc_artifact_is_ignored_when_global_disagrees():
+    """The pre-1.20.0 write-back bug persisted "timezone": "UTC" into saved
+    configs, where it then shadowed the real global timezone."""
+    name = resolve_timezone_name(
+        config={"timezone": "UTC"},
+        plugin_manager=_Holder(_RealCoreConfigManager({"timezone": "America/Chicago"})),
+        cache_manager=_Holder(),
+    )
+    assert name == "America/Chicago", name
+    print("✓ stale plugin-level 'UTC' is ignored when the global config disagrees")
+
+
+def test_stale_utc_falls_back_to_system_zone():
+    baseball_timezone.system_timezone_name = lambda: "America/Chicago"
+    try:
+        name = resolve_timezone_name(
+            config={"timezone": "UTC"}, plugin_manager=_Holder(), cache_manager=_Holder()
+        )
+    finally:
+        baseball_timezone.system_timezone_name = _real_system_timezone_name
+    assert name == "America/Chicago", name
+    print("✓ stale plugin-level 'UTC' defers to the host system zone")
+
+
+def test_utc_is_kept_when_nothing_disagrees():
+    """A genuinely-UTC device must not be dragged off UTC."""
+    baseball_timezone.system_timezone_name = lambda: "UTC"
+    try:
+        name = resolve_timezone_name(
+            config={"timezone": "UTC"},
+            plugin_manager=_Holder(_RealCoreConfigManager({"timezone": "UTC"})),
+            cache_manager=_Holder(),
+        )
+    finally:
+        baseball_timezone.system_timezone_name = _real_system_timezone_name
+    assert name == "UTC", name
+    print("✓ 'UTC' is kept when the global/system zone agrees")
+
+
+def test_etc_utc_is_always_honored():
+    """The unambiguous opt-in the write-back bug could never have produced."""
+    name = resolve_timezone_name(
+        config={"timezone": "Etc/UTC"},
+        plugin_manager=_Holder(_RealCoreConfigManager({"timezone": "America/Chicago"})),
+        cache_manager=_Holder(),
+    )
+    assert name == "Etc/UTC", name
+    print("✓ 'Etc/UTC' forces UTC even when the global config disagrees")
+
+
+def test_absent_global_key_falls_through_to_system_zone():
+    """The core's get_timezone() returns its own 'UTC' default for a config
+    with no timezone key; that must not mask the system zone."""
+    baseball_timezone.system_timezone_name = lambda: "America/Chicago"
+    try:
+        name = resolve_timezone_name(
+            config={},
+            plugin_manager=_Holder(_RealCoreConfigManager({"display": {}})),
+            cache_manager=_Holder(),
+        )
+    finally:
+        baseball_timezone.system_timezone_name = _real_system_timezone_name
+    assert name == "America/Chicago", name
+    print("✓ a global config with no timezone key falls through to the system zone")
+
+
+def test_present_global_key_still_wins_over_system_zone():
+    baseball_timezone.system_timezone_name = lambda: "America/Denver"
+    try:
+        name = resolve_timezone_name(
+            config={},
+            plugin_manager=_Holder(_RealCoreConfigManager({"timezone": "America/Chicago"})),
+            cache_manager=_Holder(),
+        )
+    finally:
+        baseball_timezone.system_timezone_name = _real_system_timezone_name
+    assert name == "America/Chicago", name
+    print("✓ an explicit global timezone still outranks the system zone")
+
+
 def test_system_timezone_name_is_a_string_or_none():
     value = _real_system_timezone_name()
     assert value is None or isinstance(value, str), value
@@ -211,6 +311,12 @@ def main():
         test_system_timezone_backstop,
         test_utc_last_resort,
         test_resolve_timezone_returns_tzinfo_and_converts,
+        test_stale_utc_artifact_is_ignored_when_global_disagrees,
+        test_stale_utc_falls_back_to_system_zone,
+        test_utc_is_kept_when_nothing_disagrees,
+        test_etc_utc_is_always_honored,
+        test_absent_global_key_falls_through_to_system_zone,
+        test_present_global_key_still_wins_over_system_zone,
         test_system_timezone_name_is_a_string_or_none,
     ]
     for test in tests:

@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,12 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "released": "2026-08-02",
+      "version": "1.7.2",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Auto-heal the stale \"timezone\": \"UTC\" left in saved configs by the pre-1.x write-back bug: it is now detected and ignored when the global or system timezone disagrees, so users no longer see UTC times or have to hand-edit config.json. Etc/UTC remains the explicit opt-in for UTC."
+    },
     {
       "version": "1.7.1",
       "released": "2026-08-01",
