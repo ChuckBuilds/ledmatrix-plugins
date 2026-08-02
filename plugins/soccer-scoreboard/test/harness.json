@@ -1,0 +1,53 @@
+{
+  "_comment": "Deterministic fixture for the plugin safety harness. Enables only the Premier League and seeds its date-range schedule cache (key soccer_eng.1_schedule_20260101-20260129, derived from freeze_time +/- 14 days, consumed by the recent/upcoming managers) and the live scoreboard cache (key soccer_eng.1_scoreboard_current, consumed by SoccerLiveManager._fetch_todays_games) with one final, one in-progress, and one scheduled match so all three modes render real game cards without network access.",
+  "config": {
+    "enabled": true,
+    "timezone": "UTC",
+    "show_odds": false,
+    "leagues": {
+      "eng.1": {
+        "enabled": true,
+        "favorite_teams": [],
+        "display_modes": {
+          "live": true,
+          "recent": true,
+          "upcoming": true,
+          "live_display_mode": "switch",
+          "recent_display_mode": "switch",
+          "upcoming_display_mode": "switch"
+        },
+        "show_all_live": true,
+        "show_favorite_teams_only": false
+      },
+      "esp.1": {
+        "enabled": false
+      },
+      "ger.1": {
+        "enabled": false
+      },
+      "ita.1": {
+        "enabled": false
+      },
+      "fra.1": {
+        "enabled": false
+      },
+      "usa.1": {
+        "enabled": false
+      },
+      "por.1": {
+        "enabled": false
+      },
+      "uefa.champions": {
+        "enabled": false
+      },
+      "uefa.europa": {
+        "enabled": false
+      },
+      "fifa.world": {
+        "enabled": false
+      }
+    }
+  },
+  "mock_data": "test/fixtures/mock.json",
+  "freeze_time": "2026-01-15 12:00:00"
+}

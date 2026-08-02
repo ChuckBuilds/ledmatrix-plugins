@@ -47,10 +47,12 @@ class ScrollDisplayManager:
         display_manager,
         config: Dict[str, Any],
         custom_logger: Optional[logging.Logger] = None,
+        global_config: Optional[Dict[str, Any]] = None,
     ):
         self.display_manager = display_manager
         self.config = config
         self.logger = custom_logger or logger
+        self.global_config = global_config or {}
 
         # Get display dimensions
         if hasattr(display_manager, "matrix") and display_manager.matrix is not None:
@@ -105,6 +107,21 @@ class ScrollDisplayManager:
         scroll_delay = scroll_settings.get("scroll_delay", 0.01)
 
         self.scroll_helper.set_scroll_delay(scroll_delay)
+
+        # Honor the global smooth-scrolling FPS target (older cores lack the setter)
+        target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps')
+        try:
+            # Coerce before comparing: a malformed global config value
+            # must degrade to today's scroll_delay pacing, not raise.
+            target_fps = float(target_fps) if target_fps is not None else None
+        except (TypeError, ValueError):
+            target_fps = None
+        if target_fps:
+            if hasattr(self.scroll_helper, 'set_target_fps'):
+                self.scroll_helper.set_target_fps(target_fps)
+            else:
+                self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
+                self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
 
         # Enable dynamic duration
         dynamic_duration = scroll_settings.get("dynamic_duration", True)

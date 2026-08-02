@@ -98,7 +98,11 @@ class MarchMadnessPlugin(BasePlugin):
         self.show_bracket_progress: bool = display_options.get("show_bracket_progress", True)
         self.scroll_speed: float = display_options.get("scroll_speed", 1.0)
         self.scroll_delay: float = display_options.get("scroll_delay", 0.02)
-        self.target_fps: int = display_options.get("target_fps", 120)
+        # Plugin-level target_fps wins; otherwise honor the global FPS target.
+        _global_cfg = self.config.get('global', {}) or {}
+        self.target_fps: int = (display_options.get("target_fps")
+                                or _global_cfg.get("target_fps")
+                                or _global_cfg.get("scroll_target_fps", 120))
         self.loop: bool = display_options.get("loop", True)
         self.dynamic_duration_enabled: bool = display_options.get("dynamic_duration", True)
         self.min_duration: int = display_options.get("min_duration", 30)
@@ -150,6 +154,9 @@ class MarchMadnessPlugin(BasePlugin):
             self.scroll_helper.set_scroll_delay(self.scroll_delay)
             if hasattr(self.scroll_helper, "set_target_fps"):
                 self.scroll_helper.set_target_fps(self.target_fps)
+            else:
+                self.scroll_helper.target_fps = max(30.0, min(200.0, self.target_fps))
+                self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
             self.scroll_helper.set_dynamic_duration_settings(
                 enabled=self.dynamic_duration_enabled,
                 min_duration=self.min_duration,

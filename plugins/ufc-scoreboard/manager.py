@@ -119,7 +119,8 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         if SCROLL_AVAILABLE and ScrollDisplayManager:
             try:
                 self._scroll_manager = ScrollDisplayManager(
-                    self.display_manager, self.config, self.logger
+                    self.display_manager, self.config, self.logger,
+                    global_config=getattr(self, 'global_config', {}) or {}
                 )
                 self.logger.info("Scroll display manager initialized")
             except Exception as e:

@@ -40,7 +40,33 @@ class YouTubeStatsPlugin(BasePlugin):
         self.channel_id = config.get('channel_id', '')
         self.api_key = config.get('api_key', '')  # From merged secrets
         self.update_interval_config = config.get('update_interval', 300)
-        
+
+        # Per-element styling from the optional `customization` block.
+        # Defaults mirror the hardcoded rendering (PressStart2P @ 8, white),
+        # so a missing block — or one merely filled in with schema defaults by
+        # the web UI — renders byte-identically.
+        def _rgb(value, default):
+            if not isinstance(value, (list, tuple)) or len(value) != 3:
+                return default
+            try:
+                return tuple(max(0, min(255, int(c))) for c in value)
+            except (TypeError, ValueError):
+                return default
+
+        self._element_font_cache: Dict[Any, Any] = {}
+        customization = config.get('customization', {}) or {}
+        name_cfg = customization.get('channel_name', {}) or {}
+        subs_cfg = customization.get('subscriber_count', {}) or {}
+        views_cfg = customization.get('view_count', {}) or {}
+        self.name_color = _rgb(name_cfg.get('text_color'), (255, 255, 255))
+        self.subs_color = _rgb(subs_cfg.get('text_color'), (255, 255, 255))
+        self.views_color = _rgb(views_cfg.get('text_color'), (255, 255, 255))
+        # None means "use self.font" (PressStart2P @ 8) — the pre-customization
+        # behavior — so default configs render exactly as they always have.
+        self.name_font_override = self._load_element_font(name_cfg)
+        self.subs_font_override = self._load_element_font(subs_cfg)
+        self.views_font_override = self._load_element_font(views_cfg)
+
         # State
         self.channel_stats: Optional[Dict[str, Any]] = None
         self.font = None
@@ -57,6 +83,43 @@ class YouTubeStatsPlugin(BasePlugin):
         else:
             self.logger.info("YouTube Stats plugin disabled")
     
+    def _load_element_font(self, element_cfg: Dict[str, Any]):
+        """Resolve an element's configured font, or None for the default.
+
+        The schema default (PressStart2P-Regular.ttf @ 8) is exactly the font
+        this plugin has always rendered with (self.font), so a default or
+        merged-defaults config returns None and rendering is unchanged. Only a
+        genuine non-default font/size selection loads a custom face; load
+        failures fall back to None with a warning.
+        """
+        name = element_cfg.get('font', 'PressStart2P-Regular.ttf')
+        try:
+            size = int(element_cfg.get('font_size', 8))
+        except (TypeError, ValueError):
+            size = 8
+        if name == 'PressStart2P-Regular.ttf' and size == 8:
+            return None
+        key = (name, size)
+        if key not in self._element_font_cache:
+            font = None
+            candidates = [
+                os.path.join('assets', 'fonts', name),
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'fonts', name),
+            ]
+            for path in candidates:
+                if not os.path.exists(path):
+                    continue
+                try:
+                    # FreeType handles .ttf and (at its native size) .bdf faces.
+                    font = ImageFont.truetype(path, size)
+                    break
+                except Exception as e:
+                    self.logger.warning(f"Could not load font {name}@{size}: {e}")
+            if font is None and not any(os.path.exists(p) for p in candidates):
+                self.logger.warning(f"Font file not found: {name}; using default font")
+            self._element_font_cache[key] = font
+        return self._element_font_cache[key]
+
     def _initialize_display(self):
         """Initialize display components (font and logo)."""
         try:
@@ -206,35 +269,55 @@ class YouTubeStatsPlugin(BasePlugin):
             # Calculate right section width and starting position
             right_section_x = logo_x + logo_width + 4  # Start after logo with some padding
             
-            # Calculate text positions
-            line_height = 10  # Approximate line height for PressStart2P font at size 8
+            # Per-element fonts: None override means the classic self.font.
+            # Measurement (textbbox) below always uses the same face as the draw.
+            name_font = self.name_font_override or self.font
+            subs_font = self.subs_font_override or self.font
+            views_font = self.views_font_override or self.font
+
+            # Calculate text positions. The classic layout uses a fixed
+            # 10px row; when a custom font is selected, derive the row height
+            # from the tallest selected font so larger sizes don't overlap.
+            line_height = 10  # Approximate line height for PressStart2P at size 8
+            if self.name_font_override or self.subs_font_override or self.views_font_override:
+                row_h = max(
+                    draw.textbbox((0, 0), "Ag", font=name_font)[3],
+                    draw.textbbox((0, 0), "Ag", font=subs_font)[3],
+                    draw.textbbox((0, 0), "Ag", font=views_font)[3],
+                    8,
+                )
+                line_height = row_h + 2
             total_text_height = line_height * 3  # 3 lines of text
-            start_y = (matrix_height - total_text_height) // 2
-            
-            # Draw channel name (top)
+            start_y = max(0, (matrix_height - total_text_height) // 2)
+
+            # Draw channel name (top), truncated by measured width so any
+            # selected font fits the available space. (For the monospace 8px
+            # default this truncates at exactly the same character count as
+            # the old 8px-per-char heuristic.)
             channel_name = channel_stats['title']
-            # Truncate channel name if too long
-            max_chars = (matrix_width - right_section_x - 4) // 8  # 8 pixels per character
-            if len(channel_name) > max_chars:
-                channel_name = channel_name[:max_chars-3] + "..."
-            name_bbox = draw.textbbox((0, 0), channel_name, font=self.font)
+            avail_width = matrix_width - right_section_x - 4
+            if draw.textbbox((0, 0), channel_name, font=name_font)[2] > avail_width:
+                while channel_name and draw.textbbox((0, 0), channel_name + "...", font=name_font)[2] > avail_width:
+                    channel_name = channel_name[:-1]
+                channel_name = (channel_name + "...") if channel_name else "..."
+            name_bbox = draw.textbbox((0, 0), channel_name, font=name_font)
             name_width = name_bbox[2] - name_bbox[0]
             name_x = right_section_x + ((matrix_width - right_section_x - name_width) // 2)
-            draw.text((name_x, start_y), channel_name, font=self.font, fill=(255, 255, 255))
-            
+            draw.text((name_x, start_y), channel_name, font=name_font, fill=self.name_color)
+
             # Draw subscriber count (middle)
             subs_text = f"{channel_stats['subscribers']:,} subs"
-            subs_bbox = draw.textbbox((0, 0), subs_text, font=self.font)
+            subs_bbox = draw.textbbox((0, 0), subs_text, font=subs_font)
             subs_width = subs_bbox[2] - subs_bbox[0]
             subs_x = right_section_x + ((matrix_width - right_section_x - subs_width) // 2)
-            draw.text((subs_x, start_y + line_height), subs_text, font=self.font, fill=(255, 255, 255))
-            
+            draw.text((subs_x, start_y + line_height), subs_text, font=subs_font, fill=self.subs_color)
+
             # Draw view count (bottom)
             views_text = f"{channel_stats['views']:,} views"
-            views_bbox = draw.textbbox((0, 0), views_text, font=self.font)
+            views_bbox = draw.textbbox((0, 0), views_text, font=views_font)
             views_width = views_bbox[2] - views_bbox[0]
             views_x = right_section_x + ((matrix_width - right_section_x - views_width) // 2)
-            draw.text((views_x, start_y + (line_height * 2)), views_text, font=self.font, fill=(255, 255, 255))
+            draw.text((views_x, start_y + (line_height * 2)), views_text, font=views_font, fill=self.views_color)
             
             return image
         except Exception as e:

@@ -107,7 +107,18 @@ class MQTTNotificationsPlugin(BasePlugin):
         
         # Load font
         self.font = self._load_font()
-        
+
+        # Per-element font override from the `customization` block. The message
+        # is the plugin's single text element (title/message are not rendered
+        # separately), and its colors are already covered by text.text_color /
+        # text.background_color, so customization only adds font + font_size.
+        self._font_cache: Dict[Any, Any] = {}
+        customization = config.get('customization', {}) or {}
+        message_cfg = customization.get('message_text', {}) if isinstance(customization, dict) else {}
+        custom_font = self._load_element_font(message_cfg or {})
+        if custom_font is not None:
+            self.font = custom_font
+
         self.logger.info("MQTT Notifications plugin initialized")
         self.logger.info("MQTT broker: %s:%s", self.mqtt_host, self.mqtt_port)
         self.logger.info("Topics: %s", self.topics)
@@ -168,7 +179,46 @@ class MQTTNotificationsPlugin(BasePlugin):
         except Exception as e:
             self.logger.error("Failed to load font %s: %s", font_path, e)
             return ImageFont.load_default()
-    
+
+    def _load_element_font(self, element_cfg: Dict[str, Any]):
+        """Resolve the message_text customization font, or None for the default.
+
+        The schema defaults (PressStart2P-Regular.ttf @ 8) mirror the existing
+        text.font_path / text.font_size defaults, so a default (or
+        merged-defaults) customization block returns None and the font resolved
+        by _load_font() is kept — default rendering stays byte-identical (the
+        web UI merges schema defaults into saved configs, so "key present" must
+        not change output). Only a genuine non-default selection loads a custom
+        face; load failures fall back to None with a warning.
+        """
+        name = element_cfg.get('font', 'PressStart2P-Regular.ttf')
+        try:
+            size = int(element_cfg.get('font_size', 8))
+        except (TypeError, ValueError):
+            size = 8
+        if name == 'PressStart2P-Regular.ttf' and size == 8:
+            return None
+        key = (name, size)
+        if key not in self._font_cache:
+            font = None
+            candidates = [
+                os.path.join('assets', 'fonts', name),
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'fonts', name),
+            ]
+            for path in candidates:
+                if not os.path.exists(path):
+                    continue
+                try:
+                    # FreeType handles .ttf and (at its native size) .bdf faces.
+                    font = ImageFont.truetype(path, size)
+                    break
+                except Exception as e:
+                    self.logger.warning("Could not load font %s@%s: %s", name, size, e)
+            if font is None and not any(os.path.exists(p) for p in candidates):
+                self.logger.warning("Font file not found: %s; using default font", name)
+            self._font_cache[key] = font
+        return self._font_cache[key]
+
     def _on_mqtt_connect(self, client, userdata, flags, rc):  # pylint: disable=unused-argument
         """Callback for MQTT connection."""
         if rc == 0:

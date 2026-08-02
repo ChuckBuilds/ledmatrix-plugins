@@ -33,6 +33,150 @@
       "minimum": 5,
       "maximum": 60,
       "description": "How long to display the channel stats on screen in seconds (5-60 seconds)"
+    },
+    "customization": {
+      "type": "object",
+      "title": "Display Customization",
+      "description": "Customize fonts and colors for the channel stats text elements",
+      "properties": {
+        "channel_name": {
+          "type": "object",
+          "title": "Channel Name",
+          "description": "Font settings for the channel name (top line)",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf"
+              ],
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 8,
+              "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Text color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [255, 255, 255]
+            }
+          },
+          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "additionalProperties": false
+        },
+        "subscriber_count": {
+          "type": "object",
+          "title": "Subscriber Count",
+          "description": "Font settings for the subscriber count (middle line)",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf"
+              ],
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 8,
+              "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Text color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [255, 255, 255]
+            }
+          },
+          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "additionalProperties": false
+        },
+        "view_count": {
+          "type": "object",
+          "title": "View Count",
+          "description": "Font settings for the total view count (bottom line)",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf"
+              ],
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 8,
+              "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Text color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [255, 255, 255]
+            }
+          },
+          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "additionalProperties": false
+        }
+      },
+      "x-propertyOrder": ["channel_name", "subscriber_count", "view_count"],
+      "additionalProperties": false
     }
   },
   "required": [

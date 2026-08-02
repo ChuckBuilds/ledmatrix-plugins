@@ -127,6 +127,22 @@ class NFLDraftPlugin(BasePlugin):
         # Scroll settings
         self.scroll_speed = self.config.get("scroll_speed", 30)
         self.scroll_helper.set_scroll_speed(self.scroll_speed)
+        # Pace frames explicitly (previously unset, leaving the helper default)
+        self.scroll_delay = self.config.get("scroll_delay", 0.01)
+        if hasattr(self.scroll_helper, 'set_scroll_delay'):
+            self.scroll_helper.set_scroll_delay(self.scroll_delay)
+
+        # Honor the global smooth-scrolling FPS target (older cores lack the setter).
+        # The convention (news, leaderboard) is a `global` section in the plugin config.
+        self.global_config = self.config.get('global', {}) or {}
+        global_config = self.global_config
+        target_fps = global_config.get('target_fps') or global_config.get('scroll_target_fps', 100)
+        if hasattr(self.scroll_helper, 'set_target_fps'):
+            self.scroll_helper.set_target_fps(target_fps)
+            self.logger.info(f"Target FPS set to: {target_fps}")
+        else:
+            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
+            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
 
         # Refresh intervals
         self.live_refresh_interval = self.config.get("live_refresh_interval", 600)  # 10 minutes

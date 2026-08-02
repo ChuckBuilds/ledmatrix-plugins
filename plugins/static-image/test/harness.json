@@ -1,0 +1,9 @@
+{
+  "_comment": "Deterministic harness config: renders a bundled test-pattern PNG (paths resolve relative to the core working directory, then the project root; the harness runs from a core checkout with --plugin-dir pointing here, so an absolute-safe relative path into this plugin's test fixtures is used). fit_to_display scales the 64x32 pattern to each panel deterministically.",
+  "config": {
+    "enabled": true,
+    "images": ["plugins/static-image/test/fixtures/test-pattern.png"],
+    "fit_to_display": true,
+    "preserve_aspect_ratio": false
+  }
+}

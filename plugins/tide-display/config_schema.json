@@ -15,7 +15,8 @@
     "show_stats",
     "show_moon_phase",
     "tide_color",
-    "highlight_color"
+    "highlight_color",
+    "customization"
   ],
   "properties": {
     "enabled": {
@@ -110,6 +111,105 @@
       "default": [0, 220, 255],
       "description": "RGB color for wave crests and chart line [R, G, B]",
       "x-advanced": true
+    },
+    "customization": {
+      "type": "object",
+      "title": "Display Customization",
+      "description": "Customize fonts and colors for tide text elements. Water and wave colors are set by Water Color and Highlight / Wave Color above.",
+      "properties": {
+        "tide_text": {
+          "type": "object",
+          "title": "Tide Text",
+          "description": "Font settings for the main tide readouts (direction, heights, times, stats). Color applies to neutral text only; high/low and rising/falling text keeps its status colors.",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "4x6-font.ttf",
+                "PressStart2P-Regular.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf"
+              ],
+              "default": "4x6-font.ttf",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 6,
+              "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Text color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [205, 225, 255]
+            }
+          },
+          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "additionalProperties": false
+        },
+        "label_text": {
+          "type": "object",
+          "title": "Labels",
+          "description": "Font settings for secondary labels (station name, chart time axis, percentages)",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "4x6-font.ttf",
+                "PressStart2P-Regular.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf"
+              ],
+              "default": "4x6-font.ttf",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 6,
+              "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Text color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [120, 150, 200]
+            }
+          },
+          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "additionalProperties": false
+        }
+      },
+      "x-propertyOrder": ["tide_text", "label_text"],
+      "additionalProperties": false
     }
   },
   "required": ["enabled"]

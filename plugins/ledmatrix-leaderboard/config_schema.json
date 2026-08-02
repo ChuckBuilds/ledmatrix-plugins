@@ -35,6 +35,7 @@
           "description": "Duration in seconds to display the leaderboard"
         },
         "scroll_speed": {
+          "x-advanced": true,
           "type": "number",
           "default": 1,
           "minimum": 0.1,

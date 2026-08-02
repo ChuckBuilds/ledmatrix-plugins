@@ -1,0 +1,274 @@
+{
+  "soccer_eng.1_schedule_20260101-20260129": {
+    "events": [
+      {
+        "id": "5001",
+        "date": "2026-01-14T20:00Z",
+        "name": "Chelsea at Arsenal",
+        "shortName": "CHE @ ARS",
+        "competitions": [
+          {
+            "id": "5001",
+            "date": "2026-01-14T20:00Z",
+            "status": {
+              "clock": 0.0,
+              "displayClock": "0:00",
+              "period": 2,
+              "type": {
+                "id": "3",
+                "name": "STATUS_FINAL",
+                "state": "post",
+                "completed": true,
+                "description": "Final",
+                "detail": "FT",
+                "shortDetail": "FT"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "359",
+                "score": "2",
+                "team": {
+                  "id": "359",
+                  "abbreviation": "ARS",
+                  "displayName": "Arsenal",
+                  "shortDisplayName": "Arsenal",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "363",
+                "score": "1",
+                "team": {
+                  "id": "363",
+                  "abbreviation": "CHE",
+                  "displayName": "Chelsea",
+                  "shortDisplayName": "Chelsea",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 0.0,
+          "displayClock": "0:00",
+          "period": 2,
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "FT",
+            "shortDetail": "FT"
+          }
+        }
+      },
+      {
+        "id": "5002",
+        "date": "2026-01-15T11:30Z",
+        "name": "Manchester City at Liverpool",
+        "shortName": "MNC @ LIV",
+        "competitions": [
+          {
+            "id": "5002",
+            "date": "2026-01-15T11:30Z",
+            "status": {
+              "clock": 4020.0,
+              "displayClock": "67'",
+              "period": 2,
+              "type": {
+                "id": "2",
+                "name": "STATUS_IN_PROGRESS",
+                "state": "in",
+                "completed": false,
+                "description": "In Progress",
+                "detail": "67'",
+                "shortDetail": "67'"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "364",
+                "score": "1",
+                "team": {
+                  "id": "364",
+                  "abbreviation": "LIV",
+                  "displayName": "Liverpool",
+                  "shortDisplayName": "Liverpool",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "382",
+                "score": "1",
+                "team": {
+                  "id": "382",
+                  "abbreviation": "MNC",
+                  "displayName": "Manchester City",
+                  "shortDisplayName": "Manchester City",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 4020.0,
+          "displayClock": "67'",
+          "period": 2,
+          "type": {
+            "id": "2",
+            "name": "STATUS_IN_PROGRESS",
+            "state": "in",
+            "completed": false,
+            "description": "In Progress",
+            "detail": "67'",
+            "shortDetail": "67'"
+          }
+        }
+      },
+      {
+        "id": "5003",
+        "date": "2026-01-16T20:00Z",
+        "name": "Manchester United at Tottenham Hotspur",
+        "shortName": "MAN @ TOT",
+        "competitions": [
+          {
+            "id": "5003",
+            "date": "2026-01-16T20:00Z",
+            "status": {
+              "clock": 0.0,
+              "displayClock": "0:00",
+              "period": 0,
+              "type": {
+                "id": "1",
+                "name": "STATUS_SCHEDULED",
+                "state": "pre",
+                "completed": false,
+                "description": "Scheduled",
+                "detail": "1/16 - 3:00 PM EST",
+                "shortDetail": "1/16 - 3:00 PM EST"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "367",
+                "score": "0",
+                "team": {
+                  "id": "367",
+                  "abbreviation": "TOT",
+                  "displayName": "Tottenham Hotspur",
+                  "shortDisplayName": "Tottenham Hotspur",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "360",
+                "score": "0",
+                "team": {
+                  "id": "360",
+                  "abbreviation": "MAN",
+                  "displayName": "Manchester United",
+                  "shortDisplayName": "Manchester United",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 0.0,
+          "displayClock": "0:00",
+          "period": 0,
+          "type": {
+            "id": "1",
+            "name": "STATUS_SCHEDULED",
+            "state": "pre",
+            "completed": false,
+            "description": "Scheduled",
+            "detail": "1/16 - 3:00 PM EST",
+            "shortDetail": "1/16 - 3:00 PM EST"
+          }
+        }
+      }
+    ]
+  },
+  "soccer_eng.1_scoreboard_current": {
+    "events": [
+      {
+        "id": "5002",
+        "date": "2026-01-15T11:30Z",
+        "name": "Manchester City at Liverpool",
+        "shortName": "MNC @ LIV",
+        "competitions": [
+          {
+            "id": "5002",
+            "date": "2026-01-15T11:30Z",
+            "status": {
+              "clock": 4020.0,
+              "displayClock": "67'",
+              "period": 2,
+              "type": {
+                "id": "2",
+                "name": "STATUS_IN_PROGRESS",
+                "state": "in",
+                "completed": false,
+                "description": "In Progress",
+                "detail": "67'",
+                "shortDetail": "67'"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "364",
+                "score": "1",
+                "team": {
+                  "id": "364",
+                  "abbreviation": "LIV",
+                  "displayName": "Liverpool",
+                  "shortDisplayName": "Liverpool",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "382",
+                "score": "1",
+                "team": {
+                  "id": "382",
+                  "abbreviation": "MNC",
+                  "displayName": "Manchester City",
+                  "shortDisplayName": "Manchester City",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 4020.0,
+          "displayClock": "67'",
+          "period": 2,
+          "type": {
+            "id": "2",
+            "name": "STATUS_IN_PROGRESS",
+            "state": "in",
+            "completed": false,
+            "description": "In Progress",
+            "detail": "67'",
+            "shortDetail": "67'"
+          }
+        }
+      }
+    ]
+  }
+}

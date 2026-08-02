@@ -153,6 +153,48 @@
         }
       },
       "additionalProperties": false
+    },
+    "customization": {
+      "type": "object",
+      "title": "Display Customization",
+      "description": "Customize the font for the notification text. Text and background colors are configured under Text (text_color / background_color). A non-default selection here overrides text.font_path / text.font_size.",
+      "properties": {
+        "message_text": {
+          "type": "object",
+          "title": "Message Text",
+          "description": "Font settings for the notification message text",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf",
+                "cozette.bdf"
+              ],
+              "default": "PressStart2P-Regular.ttf",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 32,
+              "default": 8,
+              "x-advanced": true
+            }
+          },
+          "x-propertyOrder": ["font", "font_size"],
+          "additionalProperties": false
+        }
+      },
+      "x-propertyOrder": ["message_text"],
+      "additionalProperties": false
     }
   },
   "required": ["enabled", "mqtt"],

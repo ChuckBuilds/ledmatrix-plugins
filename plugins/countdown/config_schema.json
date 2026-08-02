@@ -3,7 +3,7 @@
   "title": "Countdown Plugin Configuration",
   "description": "Configuration schema for the Countdown plugin - create and manage multiple countdowns with custom images, fonts, and layouts",
   "type": "object",
-  "x-propertyOrder": ["enabled", "countdowns", "font_family", "font_size", "font_color", "name_font_size", "name_font_color", "background_color", "display_duration", "show_expired", "fit_to_display", "preserve_aspect_ratio"],
+  "x-propertyOrder": ["enabled", "countdowns", "font_family", "font_size", "font_color", "name_font_family", "name_font_size", "name_font_color", "background_color", "display_duration", "show_expired", "fit_to_display", "preserve_aspect_ratio"],
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -199,6 +199,14 @@
                 "default": null,
                 "description": "Countdown value text color [R, G, B] (null = use global)"
               },
+              "name_font_family": {
+                "x-advanced": true,
+                "type": ["string", "null"],
+                "title": "Name Font Family",
+                "enum": ["press_start", "four_by_six", "tom_thumb", "tiny", "picopixel", null],
+                "default": null,
+                "description": "Font family override for the countdown name (null = use global name font family, which itself falls back to the shared font family)"
+              },
               "name_font_size": {
                 "x-advanced": true,
                 "type": ["integer", "null"],
@@ -274,6 +282,14 @@
       "maxItems": 3,
       "default": [255, 255, 255],
       "description": "Global RGB color for countdown value text [R, G, B]"
+    },
+    "name_font_family": {
+      "x-advanced": true,
+      "type": ["string", "null"],
+      "title": "Default Name Font Family",
+      "enum": ["press_start", "four_by_six", "tom_thumb", "tiny", "picopixel", null],
+      "default": null,
+      "description": "Font family for countdown name text (null = use Default Font Family, matching previous behavior; can be overridden per countdown)"
     },
     "name_font_size": {
       "x-advanced": true,

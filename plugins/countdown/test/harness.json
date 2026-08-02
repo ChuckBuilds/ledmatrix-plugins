@@ -1,0 +1,23 @@
+{
+  "_comment": "Deterministic harness config: one fixed countdown with the clock frozen well before the target, so the rendered days-remaining figure is constant. Fonts and colors are pinned to today's schema defaults so a future default change cannot silently invalidate the goldens.",
+  "config": {
+    "enabled": true,
+    "countdowns": [
+      {
+        "id": "harness-fixed",
+        "enabled": true,
+        "name": "Launch",
+        "target_date": "2026-12-25"
+      }
+    ],
+    "show_expired": false,
+    "font_family": "press_start",
+    "font_size": 8,
+    "font_color": [255, 255, 255],
+    "name_font_family": null,
+    "name_font_size": 8,
+    "name_font_color": [200, 200, 200],
+    "background_color": [0, 0, 0]
+  },
+  "freeze_time": "2026-08-01 15:00:00"
+}

@@ -108,6 +108,7 @@
               "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
               "properties": {
                 "scroll_speed": {
+                  "x-advanced": true,
                   "type": "number",
                   "default": 50.0,
                   "minimum": 1.0,
@@ -115,6 +116,7 @@
                   "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
                 },
                 "scroll_delay": {
+                  "x-advanced": true,
                   "type": "number",
                   "default": 0.01,
                   "minimum": 0.001,

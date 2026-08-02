@@ -92,6 +92,17 @@ class ElectionPlugin(BasePlugin):
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=True, min_duration=int(self.display_duration), max_duration=300
         )
+        # Honor the global smooth-scrolling FPS target (older cores lack the setter).
+        # The convention (news, leaderboard) is a `global` section in the plugin config.
+        self.global_config = config.get('global', {}) or {}
+        global_config = self.global_config
+        target_fps = global_config.get('target_fps') or global_config.get('scroll_target_fps', 100)
+        if hasattr(self.scroll_helper, 'set_target_fps'):
+            self.scroll_helper.set_target_fps(target_fps)
+            self.logger.info(f"Target FPS set to: {target_fps}")
+        else:
+            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
+            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
 
         # State
         self.races: List[Race] = []
@@ -163,6 +174,14 @@ class ElectionPlugin(BasePlugin):
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=True, min_duration=int(self.display_duration), max_duration=300
         )
+        # Refresh the FPS target from the (possibly edited) global section.
+        self.global_config = config.get('global', {}) or {}
+        target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps', 100)
+        if hasattr(self.scroll_helper, 'set_target_fps'):
+            self.scroll_helper.set_target_fps(target_fps)
+        else:
+            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
+            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
 
         # Force a re-fetch + segment rebuild with the new filters/sources.
         self.races = []

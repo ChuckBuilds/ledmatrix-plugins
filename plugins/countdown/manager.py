@@ -53,6 +53,9 @@ class CountdownPlugin(BasePlugin):
         self.font_family = config.get('font_family', 'press_start')
         self.font_size = config.get('font_size', 8)
         self.font_color = self._parse_color(config.get('font_color', [255, 255, 255]), (255, 255, 255))
+        # Per-element font face for the name line. None (the schema default)
+        # inherits font_family, so existing configs render exactly as before.
+        self.name_font_family = config.get('name_font_family', None)
         self.name_font_size = config.get('name_font_size', 8)
         self.name_font_color = self._parse_color(config.get('name_font_color', [200, 200, 200]), (200, 200, 200))
 
@@ -157,6 +160,7 @@ class CountdownPlugin(BasePlugin):
             "font_family":      d.get("font_family") or None,
             "font_size":        d.get("font_size") or None,
             "font_color":       self._parse_color(font_color, None) if font_color is not None else None,
+            "name_font_family": d.get("name_font_family") or None,
             "name_font_size":   d.get("name_font_size") or None,
             "name_font_color":  self._parse_color(name_color, None) if name_color is not None else None,
             "background_color": self._parse_color(bg_color, None) if bg_color is not None else None,
@@ -268,7 +272,7 @@ class CountdownPlugin(BasePlugin):
             fm.register_manager_font(
                 manager_id=self.plugin_id,
                 element_key=f"{self.plugin_id}.countdown_name",
-                family=self.font_family,
+                family=self.name_font_family or self.font_family,
                 size_px=self.name_font_size,
                 color=self.name_font_color
             )
@@ -283,6 +287,72 @@ class CountdownPlugin(BasePlugin):
         except Exception as e:
             self.logger.warning(f"Error registering fonts: {e}")
 
+    # Mirror of the core FontManager's family -> file table for the families
+    # this plugin offers, used only by the cwd-independent fallback below.
+    _FAMILY_FILES = {
+        "press_start": "assets/fonts/PressStart2P-Regular.ttf",
+        "four_by_six": "assets/fonts/4x6-font.ttf",
+        "five_by_seven": "assets/fonts/5x7.bdf",
+    }
+
+    def _load_family_font_direct(self, family: str, size_px: int):
+        """Load a family's font file without relying on the process cwd.
+
+        The core FontManager resolves families via cwd-relative
+        assets/fonts paths, so when the process runs from outside the core
+        root (the CI safety harness does) it silently degrades to PIL's
+        default bitmap font. Resolve the same file against the core install
+        the display manager was loaded from instead. Returns None when the
+        family is unknown or nothing loads.
+        """
+        rel = self._FAMILY_FILES.get(family)
+        if not rel:
+            return None
+        cache = getattr(self, '_direct_font_cache', None)
+        if cache is None:
+            cache = self._direct_font_cache = {}
+        key = (family, int(size_px))
+        if key in cache:
+            return cache[key]
+        font = None
+        candidates = [Path(rel)]
+        try:
+            import inspect
+            module_path = Path(inspect.getfile(type(self.display_manager))).resolve()
+            candidates.extend(ancestor / rel for ancestor in module_path.parents)
+        except Exception as exc:
+            self.logger.debug("Module-relative font resolution failed: %s", exc)
+        for candidate in candidates:
+            try:
+                if candidate.exists():
+                    font = ImageFont.truetype(str(candidate), int(size_px))
+                    break
+            except Exception as exc:
+                self.logger.debug("Font candidate %s failed to load: %s", candidate, exc)
+                continue
+        cache[key] = font
+        return font
+
+    def _is_family_missing(self, fm, family: str) -> bool:
+        """True when the FontManager's catalog can't serve this family.
+
+        Memoized per family: the check stats the filesystem and _resolve_font
+        runs on every render. The catalog only changes on core restart, so a
+        cached answer stays correct for this plugin instance's lifetime.
+        """
+        cache = getattr(self, '_family_missing_cache', None)
+        if cache is None:
+            cache = self._family_missing_cache = {}
+        if family in cache:
+            return cache[family]
+        try:
+            catalog_path = getattr(fm, 'font_catalog', {}).get(family)
+            missing = not catalog_path or not os.path.exists(catalog_path)
+        except Exception:
+            missing = False
+        cache[family] = missing
+        return missing
+
     def _resolve_font(self, countdown_id: str, role: str, family: str, size_px: int, color: Tuple):
         """Resolve a font. color is used only for registration, not resolution.
 
@@ -294,6 +364,7 @@ class CountdownPlugin(BasePlugin):
         back to ImageFont.load_default() means the text is always visible,
         even if not in the configured font/size.
         """
+        font = None
         try:
             if hasattr(self.plugin_manager, 'font_manager') and self.plugin_manager.font_manager:
                 fm = self.plugin_manager.font_manager
@@ -310,11 +381,25 @@ class CountdownPlugin(BasePlugin):
                     family=family,
                     size_px=size_px
                 )
+                # When the FontManager's catalog missed this family (it scans
+                # assets/fonts relative to the process cwd), resolve_font
+                # silently degrades to PIL's default face — which in current
+                # Pillow is itself a FreeTypeFont, so the type gives no
+                # signal. Detect the miss via the catalog and prefer loading
+                # the real file cwd-independently so rendering doesn't depend
+                # on the working directory.
+                if font is not None and self._is_family_missing(fm, family):
+                    direct = self._load_family_font_direct(family, size_px)
+                    if direct is not None:
+                        return direct
                 if font is not None:
                     return font
         except Exception as e:
             self.logger.warning(f"Error resolving font for {countdown_id}.{role}: {e}")
-        return ImageFont.load_default()
+        direct = self._load_family_font_direct(family, size_px)
+        if direct is not None:
+            return direct
+        return font if font is not None else ImageFont.load_default()
 
     # ─── Image loading ────────────────────────────────────────────────────────
 
@@ -534,6 +619,9 @@ class CountdownPlugin(BasePlugin):
             eff_font_family    = style.get('font_family')    or self.font_family
             eff_font_size      = style.get('font_size')      or self.font_size
             eff_font_color     = style.get('font_color')     or self.font_color
+            # Name font face: per-countdown override → global name face → the
+            # shared font_family (the pre-existing behavior when unset).
+            eff_name_font_family = style.get('name_font_family') or self.name_font_family or eff_font_family
             eff_name_font_size = style.get('name_font_size') or self.name_font_size
             eff_name_color     = style.get('name_font_color')or self.name_font_color
             eff_bg             = style.get('background_color') or self.background_color
@@ -618,7 +706,7 @@ class CountdownPlugin(BasePlugin):
             self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
 
             # Resolve fonts (per-countdown scoped keys enable independent sizing)
-            name_font  = self._resolve_font(cd_id, 'name',  eff_font_family, eff_name_font_size, eff_name_color  or (200, 200, 200))
+            name_font  = self._resolve_font(cd_id, 'name',  eff_name_font_family, eff_name_font_size, eff_name_color  or (200, 200, 200))
             value_font = self._resolve_font(cd_id, 'value', eff_font_family, eff_font_size,       eff_font_color  or (255, 255, 255))
 
             # For "now/today" events use a bright yellow highlight
@@ -662,7 +750,8 @@ class CountdownPlugin(BasePlugin):
             img = Image.new('RGB', (dw, dh), self.background_color)
             self.display_manager.image = img.copy()
             self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
-            font = self._resolve_font('_system', 'name', self.font_family, self.name_font_size,
+            font = self._resolve_font('_system', 'name', self.name_font_family or self.font_family,
+                                       self.name_font_size,
                                        self.name_font_color or (200, 200, 200))
             if font:
                 self.display_manager.draw_text("No Active",  x=dw // 2, y=dh // 3,        font=font, centered=True)
@@ -748,6 +837,7 @@ class CountdownPlugin(BasePlugin):
         self.font_family         = self.config.get('font_family', 'press_start')
         self.font_size           = self.config.get('font_size', 8)
         self.font_color          = self._parse_color(self.config.get('font_color', [255, 255, 255]), (255, 255, 255))
+        self.name_font_family    = self.config.get('name_font_family', None)
         self.name_font_size      = self.config.get('name_font_size', 8)
         self.name_font_color     = self._parse_color(self.config.get('name_font_color', [200, 200, 200]), (200, 200, 200))
 

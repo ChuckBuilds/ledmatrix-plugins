@@ -159,18 +159,22 @@ class OfTheDayPlugin(BasePlugin):
             return (title.font, title.color, title.offset,
                     body.font, body.color, body.offset)
 
-        try:
-            title_font = ImageFont.truetype('assets/fonts/PressStart2P-Regular.ttf', 8)
-        except Exception as e:
-            self.logger.warning(f"Failed to load PressStart2P font: {e}, using fallback")
-            title_font = self.display_manager.small_font if hasattr(self.display_manager, 'small_font') else ImageFont.load_default()
-        try:
-            body_font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 6)
-        except Exception as e:
-            self.logger.warning(f"Failed to load 4x6 font: {e}, using fallback")
-            body_font = self.display_manager.extra_small_font if hasattr(self.display_manager, 'extra_small_font') else ImageFont.load_default()
-        return (title_font, self.title_color, (0, 0),
-                body_font, self.subtitle_color, (0, 0))
+        fonts = getattr(self, '_classic_fonts', None)
+        if fonts is None:
+            try:
+                title_font = ImageFont.truetype('assets/fonts/PressStart2P-Regular.ttf', 8)
+            except Exception as e:
+                self.logger.warning(f"Failed to load PressStart2P font: {e}, using fallback")
+                title_font = self.display_manager.small_font if hasattr(self.display_manager, 'small_font') else ImageFont.load_default()
+            try:
+                body_font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 6)
+            except Exception as e:
+                self.logger.warning(f"Failed to load 4x6 font: {e}, using fallback")
+                body_font = self.display_manager.extra_small_font if hasattr(self.display_manager, 'extra_small_font') else ImageFont.load_default()
+            fonts = (title_font, body_font)
+            self._classic_fonts = fonts
+        return (fonts[0], self.title_color, (0, 0),
+                fonts[1], self.subtitle_color, (0, 0))
     
     def _load_data_files(self):
         """Load all data files for enabled categories."""
@@ -389,6 +393,34 @@ class OfTheDayPlugin(BasePlugin):
             lines.append(' '.join(current_line))
         return lines[:max_lines]
     
+    def _fit_title(self, title: str, font) -> str:
+        """Ellipsize the title to the panel width.
+
+        Titles that already fit are returned unchanged, so normal-width panels
+        render exactly as before; on a narrow panel (64px) a long word is
+        truncated with '...' instead of being drawn past the panel edge.
+        """
+        def _w(text: str) -> int:
+            try:
+                return self.display_manager.get_text_width(text, font)
+            except Exception:
+                try:
+                    bbox = font.getbbox(text)
+                    return bbox[2] - bbox[0]
+                except Exception:
+                    return len(text) * 6
+
+        max_width = self.display_manager.width
+        if _w(title) <= max_width:
+            return title
+        ellipsis = "..."
+        if _w(ellipsis) > max_width:
+            return ""
+        truncated = title
+        while truncated and _w(truncated + ellipsis) > max_width:
+            truncated = truncated[:-1]
+        return truncated + ellipsis
+
     def _draw_bdf_text(self, draw, font, text: str, x: int, y: int, color: tuple = (255, 255, 255)):
         """Draw text supporting both BDF (FreeType Face) and PIL TTF fonts, similar to old manager."""
         self.logger.debug(f"_draw_bdf_text: text='{text}', x={x}, y={y}, font={type(font).__name__}, color={color}")
@@ -482,8 +514,8 @@ class OfTheDayPlugin(BasePlugin):
         underline_space = 1
         
         # Get title/word (JSON uses "title" not "word")
-        title = item_data.get('title', item_data.get('word', 'N/A'))
-        
+        title = self._fit_title(item_data.get('title', item_data.get('word', 'N/A')), title_font)
+
         # Get subtitle (JSON uses "subtitle")
         subtitle = item_data.get('subtitle', item_data.get('pronunciation', item_data.get('type', '')))
         
@@ -500,6 +532,8 @@ class OfTheDayPlugin(BasePlugin):
         
         # Center the title horizontally (+ user layout offset)
         title_x = (self.display_manager.width - title_width) // 2 + title_dx
+        # A user layout offset (title_dx) must not push the title off-panel.
+        title_x = max(0, min(title_x, max(0, self.display_manager.width - title_width)))
         title_y = margin_top + title_dy
 
         # Draw title using display_manager.draw_text (proper method)
@@ -518,8 +552,9 @@ class OfTheDayPlugin(BasePlugin):
 
         # Draw underline below title (like old manager)
         underline_y = title_y + title_height + 1
-        underline_x_start = title_x
-        underline_x_end = title_x + title_width
+        underline_x_start = max(title_x, 0)
+        # PIL line endpoints are inclusive: keep the underline inside the panel
+        underline_x_end = min(title_x + title_width, self.display_manager.width - 1)
         draw.line([(underline_x_start, underline_y), (underline_x_end, underline_y)],
                  fill=title_color, width=1)
         
@@ -541,6 +576,10 @@ class OfTheDayPlugin(BasePlugin):
                 
                 for line in actual_subtitle_lines:
                     if line.strip():
+                        # Stop before drawing a line that would run past the
+                        # panel bottom (happens on short panels like 64x32).
+                        if current_y + body_dy + body_height > self.display_manager.height:
+                            break
                         # Center each line of subtitle
                         try:
                             line_width = self.display_manager.get_text_width(line, body_font)
@@ -593,7 +632,7 @@ class OfTheDayPlugin(BasePlugin):
         underline_space = 1
         
         # Get title/word (JSON uses "title")
-        title = item_data.get('title', item_data.get('word', 'N/A'))
+        title = self._fit_title(item_data.get('title', item_data.get('word', 'N/A')), title_font)
         self.logger.debug(f"Displaying content for title: {title}")
         
         # Get description (JSON uses "description")
@@ -611,6 +650,8 @@ class OfTheDayPlugin(BasePlugin):
         
         # Center the title horizontally (same position as in _display_title)
         title_x = (self.display_manager.width - title_width) // 2 + title_dx
+        # A user layout offset (title_dx) must not push the title off-panel.
+        title_x = max(0, min(title_x, max(0, self.display_manager.width - title_width)))
         title_y = margin_top + title_dy
 
         # Draw title using display_manager.draw_text (same as title screen)
@@ -624,8 +665,9 @@ class OfTheDayPlugin(BasePlugin):
 
         # Draw underline below title (same as title screen)
         underline_y = title_y + title_height + 1
-        underline_x_start = title_x
-        underline_x_end = title_x + title_width
+        underline_x_start = max(title_x, 0)
+        # PIL line endpoints are inclusive: keep the underline inside the panel
+        underline_x_end = min(title_x + title_width, self.display_manager.width - 1)
         draw.line([(underline_x_start, underline_y), (underline_x_end, underline_y)],
                  fill=title_color, width=1)
         
@@ -657,6 +699,10 @@ class OfTheDayPlugin(BasePlugin):
             
             for i, line in enumerate(actual_body_lines):
                 if line.strip():
+                    # Stop before drawing a line that would run past the
+                    # panel bottom (happens on short panels like 64x32).
+                    if current_y + body_dy + body_height > self.display_manager.height:
+                        break
                     # Center each line of body text (like old manager)
                     try:
                         line_width = self.display_manager.get_text_width(line, body_font)
