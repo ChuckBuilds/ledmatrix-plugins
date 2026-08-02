@@ -103,18 +103,42 @@ Assignment still works and overrides the resolved value, which is what
 
 ## The sunset rule
 
-A plugin may **delete** its local copy of a converged module only when both are
-true:
+A plugin may **delete** its local copy of a converged module only when all three
+are true:
 
 1. The plugin's manifest declares `ledmatrix_min_version` **at or above the
    first core release that ships the module** (check the core CHANGELOG; the
    core exposes its version as `src.__version__`).
 2. The safety harness passes with the local copy removed.
+3. The core **enforces** that floor at install/update time, and has done so long
+   enough that few users run a core without the enforcement.
 
-Until then, keep the guarded try-core/except-local import: the loader's
-compatibility check is **advisory only** (it logs a warning and never blocks),
-so the `except ImportError` fallback is the real protection for users running
-an older core.
+Condition 3 is new, and it is the one that matters. Conditions 1 and 2 were
+written as if declaring a floor protected anyone; it does not:
+
+- The loader's compatibility check is **advisory only** — it logs a warning and
+  never blocks.
+- It doesn't even warn for the users most at risk. It skips entirely when the
+  core's parsed version is below `2.0.0`, and the `v3.1.0` release ships
+  `__version__ = "1.0.0"` (tagged 2026-05-31; the string was not bumped to
+  `"3.1.0"` until 2026-07-12, six weeks later).
+- Neither `StoreManager.install_plugin` nor `.update_plugin` compares the core
+  version at all. `update_plugin` compares the plugin's manifest version against
+  the registry's `latest_version` and nothing else — so a store update happily
+  delivers a plugin that floors above the user's core.
+
+Delete the copy anyway and the plugin raises `ModuleNotFoundError` at load; the
+core catches it, marks the plugin `ERROR`, logs one line, and carries on. The
+user just loses that scoreboard with no explanation.
+
+**Until condition 3 holds, keep the guarded try-core/except-local import** — the
+fallback is the only real protection. Note that the guard must name the exact
+dotted path: a missing `src/common/sports_scroll.py` raises with
+`exc.name == 'src.common.sports_scroll'`, which `{"src"}` does not match.
+
+The core-side plan for condition 3 is phase **B6** in the core repo's
+`docs/SPORTS_UNIFICATION.md`. Keep these two documents in agreement — if you
+change the sunset rule here, change it there in the same PR.
 
 ### Worked example: the scroll display
 
