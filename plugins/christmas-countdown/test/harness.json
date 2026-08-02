@@ -1,0 +1,8 @@
+{
+  "_comment": "Deterministic harness config: clock frozen on a December morning so the days-until-Christmas figure is constant. Transitions are between-frame animation only; the harness renders single frames, and the frozen clock keeps any time-seeded variation fixed.",
+  "config": {
+    "enabled": true,
+    "high_performance_transitions": false
+  },
+  "freeze_time": "2026-12-01 09:00:00"
+}

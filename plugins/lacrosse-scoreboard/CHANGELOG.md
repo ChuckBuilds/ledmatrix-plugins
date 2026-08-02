@@ -7,6 +7,11 @@
 
 # Lacrosse Scoreboard — Changelog
 
+## 1.5.1 (2026-07-30)
+
+### Fixed
+- **The core's own `"UTC"` default no longer masks a missing global setting**: `ConfigManager.get_timezone()` is `self.config.get('timezone', 'UTC')`, so it returns `"UTC"` for a config with no `timezone` key at all. 1.5.0 took that at face value and therefore never reached the host system zone. Resolution now reads the raw config dict and treats an absent key as absent, falling through to the system timezone as designed. A plugin-level `"UTC"` set by you is still honored verbatim — this plugin never wrote one back into your config.
+
 ## 1.5.0 (2026-07-29)
 
 ### Fixed

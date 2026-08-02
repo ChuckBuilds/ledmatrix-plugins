@@ -1,9 +1,15 @@
 # Changelog
 
-## [2.10.0] - 2026-07-29
+## [2.10.0] - 2026-08-02
 
 ### Fixed
 - Explain an empty screen instead of leaving the user guessing. A favorite team code that is not a real ESPN abbreviation matched no game and showed nothing, and so did a correct code before its season started - the two were indistinguishable from the logs. The plugin now says which it is, suggests the right code for a near miss (GBP -> GB), and reports when the league's next games are. The check runs in the background, once per league, and cannot affect what is displayed.
+
+## [2.9.3] - 2026-08-02
+
+### Fixed
+- **Leftover `"timezone": "UTC"` no longer has to be removed by hand**: the write-back bug in versions before 2.9.0 persisted `"timezone": "UTC"` into the saved plugin config, where it then shadowed the real global timezone — so users who updated to 2.9.0 still saw UTC until they edited the config. That stale value is now detected and ignored automatically whenever the global or system timezone disagrees, with a warning naming what it used instead. `Etc/UTC` is the unambiguous way to ask for UTC on purpose and is always honored.
+- **The core's own `"UTC"` default no longer masks a missing global setting**: `ConfigManager.get_timezone()` is `self.config.get('timezone', 'UTC')`, so it returns `"UTC"` for a config with no `timezone` key at all. 2.9.0 took that at face value and therefore never reached the host system zone. Resolution now reads the raw config dict and treats an absent key as absent.
 
 ## [2.9.1] - 2026-07-29
 

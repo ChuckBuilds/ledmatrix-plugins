@@ -17,7 +17,18 @@ from urllib3.util.retry import Retry
 
 # Import simplified dependencies for plugin use
 from dynamic_team_resolver import DynamicTeamResolver
-from base_odds_manager import BaseOddsManager
+# Prefer the core-shipped odds manager (adds cache_ttl support); fall back to
+# the bundled copy for cores that don't ship src.base_odds_manager yet.
+# Both branches are module-level imports, so they are collision-safe under the
+# loader's bare-name isolation rules (see docs/plugin-development/08-*.md).
+try:
+    from src.base_odds_manager import BaseOddsManager
+except ModuleNotFoundError as exc:
+    # Fall back only when the CORE module is absent; an import failure from
+    # inside it (missing dependency) should surface, not be masked.
+    if exc.name not in {"src", "src.base_odds_manager"}:
+        raise
+    from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
 from soccer_timezone import resolve_timezone
 
@@ -507,6 +518,13 @@ class SportsCore(ABC):
                 fonts["status"] = ImageFont.load_default()
                 fonts["detail"] = ImageFont.load_default()
                 fonts["rank"] = ImageFont.load_default()
+        # Record/ranking annotations always use the small 4x6 face; cached here
+        # (after both branches, so it is set on every path) so the scorebug
+        # draw paths don't reload it from disk every frame.
+        try:
+            fonts["record"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+        except OSError:
+            fonts["record"] = ImageFont.load_default()
         return fonts
 
     def _draw_dynamic_odds(
@@ -1567,14 +1585,7 @@ class SportsUpcoming(SportsCore):
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
 
                 # Get team abbreviations
                 away_abbr = game.get("away_abbr", "")
@@ -2129,14 +2140,7 @@ class SportsRecent(SportsCore):
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                    self.logger.debug("Loaded 6px record font successfully")
-                except IOError:
-                    record_font = ImageFont.load_default()
-                    self.logger.warning(
-                        f"Failed to load 6px font, using default font (size: {record_font.size})"
-                    )
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
 
                 # Get team abbreviations
                 away_abbr = game.get("away_abbr", "")
@@ -2750,10 +2754,7 @@ class SportsLive(SportsCore):
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:
-                try:
-                    record_font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                except IOError:
-                    record_font = ImageFont.load_default()
+                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
 
                 away_abbr = game.get("away_abbr", "")
                 home_abbr = game.get("home_abbr", "")

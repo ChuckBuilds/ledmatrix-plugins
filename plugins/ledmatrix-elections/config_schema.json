@@ -279,6 +279,7 @@
       }
     },
     "scroll_speed": {
+      "x-advanced": true,
       "type": "number",
       "title": "Scroll Speed",
       "description": "Ticker scroll speed (pixels per frame in frame-based mode).",
@@ -287,6 +288,7 @@
       "default": 1.0
     },
     "scroll_delay": {
+      "x-advanced": true,
       "type": "number",
       "title": "Scroll Delay (seconds)",
       "description": "Delay between scroll steps; lower is faster. ~0.03 reads comfortably; 0.01 is fast.",

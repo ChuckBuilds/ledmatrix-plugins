@@ -59,7 +59,10 @@ collisions across N plugins.`
 ## The safety harness
 
 Each plugin can expose multiple screens and must render on every supported matrix
-size (64×32, 128×32, 128×64, 256×32). The harness lives in the **core** repo
+size. The harness's default test matrix covers eight sizes — 64×32, 128×32,
+64×64, 96×48, 128×64, 256×32, 128×96, and 256×128 (see `DEFAULT_TEST_SIZES` in
+the core's `src/plugin_system/testing/sizes.py`; a plugin's
+`test/harness.json` can override the list). The harness lives in the **core** repo
 (`LEDMatrix/scripts/check_plugin.py`) and renders every screen at every size,
 failing on crashes, content drawn past the panel edge, or visual drift vs.
 committed golden images.

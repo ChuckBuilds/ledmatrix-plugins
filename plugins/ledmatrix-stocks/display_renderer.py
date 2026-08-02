@@ -27,11 +27,14 @@ class StockDisplayRenderer:
         self.toggle_chart = config.get('display', {}).get('toggle_chart', True)
         self.stock_gap = int(config.get('display', {}).get('stock_gap', 32))
 
-        # Chart size as a fraction of the per-stock canvas width/height.
-        # Defaults match the previous hardcoded chart_width = width/2.5, chart_height = height/1.5.
+        # Chart size is a definite pixel value in BOTH dimensions so it stays a
+        # fixed, compact size no matter how large the panel is. Previously width
+        # was a fraction of the (display-scaled) canvas and height a fraction of
+        # the display height, so the chart ballooned on wide chains and on tall
+        # 4x panels. Both are clamped to the panel so they never overflow.
         display_cfg = config.get('display', {})
-        self.chart_width_percent = min(max(float(display_cfg.get('chart_width_percent', 0.4)), 0.1), 0.7)
-        self.chart_height_percent = min(max(float(display_cfg.get('chart_height_percent', 0.667)), 0.2), 1.0)
+        self.chart_width_px = int(min(max(int(display_cfg.get('chart_width_px', 64)), 8), 256))
+        self.chart_height_px = int(min(max(int(display_cfg.get('chart_height_px', 32)), 6), 256))
         
         # Load colors from customization structure (organized by element: symbol, price, price_delta)
         # Support both new format (customization.stocks.*) and old format (top-level) for backwards compatibility
@@ -176,38 +179,24 @@ class StockDisplayRenderer:
             return ImageFont.load_default()
     
     def create_stock_display(self, symbol: str, data: Dict[str, Any]) -> Image.Image:
-        """Create a display image for a single stock or crypto - matching old stock manager layout exactly."""
-        # Create a wider image for scrolling - adjust width based on chart toggle
-        # Match old stock_manager: width = int(self.display_manager.matrix.width * (2 if self.toggle_chart else 1.5))
-        # Canvas grows with chart_width_percent so a larger chart still has room next to the text.
-        # Ensure dimensions are integers
-        width_multiplier = (1.5 + self.chart_width_percent * 1.25) if self.toggle_chart else 1.5
-        width = int(self.display_width * width_multiplier)
+        """Create a scrolling display image for a single stock or crypto.
+
+        The per-entry canvas is sized to the actual content (logo + text +
+        fixed-size chart) so there is no dead trailing space between entries and
+        the chart sits right after the price without ever overlapping it."""
         height = int(self.display_height)
-        image = Image.new('RGB', (width, height), (0, 0, 0))
-        draw = ImageDraw.Draw(image)
-        
         is_crypto = data.get('is_crypto', False)
-        
-        # Draw large stock/crypto logo on the left
-        logo_x = 4  # Margin from left edge (used for logo_right even if logo is missing)
-        logo = self._get_stock_logo(symbol, is_crypto)
-        if logo:
-            # Position logo on the left side with minimal spacing - matching old stock_manager
-            # Ensure positions are integers
-            logo_y = int((height - logo.height) // 2)
-            image.paste(logo, (int(logo_x), int(logo_y)), logo)
-        
+
         # Use custom fonts loaded from config
         symbol_font = self.symbol_font
         price_font = self.price_font
         change_font = self.price_delta_font
-        
+
         # Create text elements
         display_symbol = symbol.replace('-USD', '') if is_crypto else symbol
         symbol_text = display_symbol
         price_text = f"${data['price']:.2f}"
-        
+
         # Build change text based on show_change and show_percentage flags
         # Get flags from config (stock-specific or crypto-specific)
         if is_crypto:
@@ -216,7 +205,7 @@ class StockDisplayRenderer:
         else:
             show_change = self.config.get('show_change', True)
             show_percentage = self.config.get('show_percentage', True)
-        
+
         # Build change text components
         change_parts = []
         if show_change:
@@ -228,89 +217,94 @@ class StockDisplayRenderer:
             elif 'open' in data and data['open'] > 0:
                 change_percent = (data['change'] / data['open']) * 100
                 change_parts.append(f"({change_percent:+.1f}%)")
-        
+
         change_text = " ".join(change_parts) if change_parts else ""
-        
+
         # Get colors based on change
         if data['change'] >= 0:
             change_color = self.positive_color if not is_crypto else self.crypto_positive_color
         else:
             change_color = self.negative_color if not is_crypto else self.crypto_negative_color
-        
+
         # Use symbol color for symbol, price color for price
         symbol_color = self.symbol_text_color if not is_crypto else self.crypto_symbol_text_color
         price_color = self.price_text_color if not is_crypto else self.crypto_price_text_color
-        
-        # Calculate text dimensions for proper spacing (matching old stock manager)
-        symbol_bbox = draw.textbbox((0, 0), symbol_text, font=symbol_font)
-        price_bbox = draw.textbbox((0, 0), price_text, font=price_font)
-        
-        # Only calculate change_bbox if change_text is not empty
+
+        # Measure the text on a scratch canvas so the real canvas can be sized to
+        # the content (rather than a display-scaled guess that then needs clamping).
+        mdraw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+        symbol_bbox = mdraw.textbbox((0, 0), symbol_text, font=symbol_font)
+        price_bbox = mdraw.textbbox((0, 0), price_text, font=price_font)
         if change_text:
-            change_bbox = draw.textbbox((0, 0), change_text, font=change_font)
+            change_bbox = mdraw.textbbox((0, 0), change_text, font=change_font)
             change_height = int(change_bbox[3] - change_bbox[1])
         else:
             change_bbox = (0, 0, 0, 0)
             change_height = 0
-        
-        # Calculate total height needed - adjust gaps based on chart toggle
+
+        # Logo (load up front so its width feeds the layout)
+        logo_x = 4  # Margin from left edge (used for logo_right even if logo is missing)
+        logo = self._get_stock_logo(symbol, is_crypto)
+        logo_right = int(logo_x + logo.width) if logo else int(logo_x)
+        logo_gap = 8  # px between logo right edge and text start
+
+        # Text column sits just right of the logo, centered on the widest line.
+        symbol_width = int(symbol_bbox[2] - symbol_bbox[0])
+        price_width = int(price_bbox[2] - price_bbox[0])
+        change_width = int(change_bbox[2] - change_bbox[0]) if change_text else 0
+        max_text_width = max(symbol_width, price_width, change_width, 1)
+        column_x = logo_right + logo_gap + (max_text_width // 2)
+        text_right = column_x + (max_text_width // 2)
+
+        # Chart sits just right of the text; size the canvas to exactly fit it.
+        chart_gap = 6      # px between the price text and the chart
+        right_margin = 4   # px of breathing room after the content
+        draw_chart = (self.toggle_chart and 'price_history' in data
+                      and len(data['price_history']) >= 2)
+        if draw_chart:
+            chart_x = text_right + chart_gap
+            content_right = chart_x + self.chart_width_px + right_margin
+        else:
+            content_right = text_right + 8  # small right margin
+        width = int(content_right)
+
+        # Real canvas, sized to the content
+        image = Image.new('RGB', (width, height), (0, 0, 0))
+        draw = ImageDraw.Draw(image)
+
+        # Draw the logo on the left, vertically centered
+        if logo:
+            logo_y = int((height - logo.height) // 2)
+            image.paste(logo, (int(logo_x), logo_y), logo)
+
+        # Vertically center the text block - adjust gaps based on chart toggle
         # Match old stock_manager: text_gap = 2 if self.toggle_chart else 1
         text_gap = 2 if self.toggle_chart else 1
-        # Only add change height and gap if change is shown
         change_gap = text_gap if change_text else 0
         symbol_height = int(symbol_bbox[3] - symbol_bbox[1])
         price_height = int(price_bbox[3] - price_bbox[1])
-        total_text_height = symbol_height + price_height + change_height + (text_gap + change_gap)  # Account for gaps between elements
-        
-        # Calculate starting y position to center all text
+        total_text_height = symbol_height + price_height + change_height + (text_gap + change_gap)
         start_y = int((height - total_text_height) // 2)
-        
-        # Position text column immediately after the logo's right edge
-        logo_right = int(logo_x + logo.width) if logo else int(logo_x)
-        logo_gap = 8  # px between logo right edge and text start
-        symbol_width_tmp = int(symbol_bbox[2] - symbol_bbox[0])
-        price_width_tmp = int(price_bbox[2] - price_bbox[0])
-        change_width_tmp = int(change_bbox[2] - change_bbox[0]) if change_text else 0
-        max_text_width = max(symbol_width_tmp, price_width_tmp, change_width_tmp, 1)
-        column_x = logo_right + logo_gap + (max_text_width // 2)
-        if self.toggle_chart:
-            # Clamp so text does not overlap the mini chart area
-            chart_width_px = int(width * self.chart_width_percent)
-            chart_start = width - chart_width_px - 4
-            column_x = min(column_x, chart_start - (max_text_width // 2) - logo_gap)
-        
+
         # Draw symbol
-        symbol_width = int(symbol_bbox[2] - symbol_bbox[0])
         symbol_x = int(column_x - (symbol_width / 2))
         draw.text((symbol_x, start_y), symbol_text, font=symbol_font, fill=symbol_color)
-        
+
         # Draw price
-        price_width = int(price_bbox[2] - price_bbox[0])
         price_x = int(column_x - (price_width / 2))
-        symbol_height = int(symbol_bbox[3] - symbol_bbox[1])
-        price_y = int(start_y + symbol_height + text_gap)  # Adjusted gap
+        price_y = int(start_y + symbol_height + text_gap)
         draw.text((price_x, price_y), price_text, font=price_font, fill=price_color)
-        
+
         # Draw change with color based on value (only if change_text is not empty)
         if change_text:
-            change_width = int(change_bbox[2] - change_bbox[0])
             change_x = int(column_x - (change_width / 2))
-            price_height = int(price_bbox[3] - price_bbox[1])
-            change_y = int(price_y + price_height + text_gap)  # Adjusted gap
+            change_y = int(price_y + price_height + text_gap)
             draw.text((change_x, change_y), change_text, font=change_font, fill=change_color)
-        
-        # Draw mini chart on the right only if toggle_chart is enabled
-        if self.toggle_chart and 'price_history' in data and len(data['price_history']) >= 2:
-            self._draw_mini_chart(draw, data['price_history'], width, height, change_color)
 
-        # When chart is disabled, trim the canvas to actual content width.
-        # The canvas is created at 1.5x display width for text room, but content
-        # typically only fills ~half that — the dead space becomes inter-symbol gap.
-        if not self.toggle_chart:
-            content_right = column_x + (max_text_width // 2) + 8  # 8px right margin
-            content_right = min(content_right, width)
-            if content_right < width:
-                image = image.crop((0, 0, content_right, height))
+        # Draw the mini chart immediately to the right of the text column.
+        if draw_chart:
+            self._draw_mini_chart(draw, data['price_history'], width, height,
+                                  change_color, chart_x=chart_x)
 
         return image
     
@@ -464,18 +458,19 @@ class StockDisplayRenderer:
         return (255, 255, 0)  # Yellow for no change
     
     def _draw_mini_chart(self, draw: ImageDraw.Draw, price_history: List[Dict],
-                        width: int, height: int, color: Tuple[int, int, int]) -> None:
-        """Draw a mini price chart on the right side of the display."""
+                        width: int, height: int, color: Tuple[int, int, int],
+                        chart_x: Optional[int] = None) -> None:
+        """Draw a mini price chart. By default it anchors to the right edge; pass
+        chart_x to place it explicitly (e.g. right after the price text)."""
         if len(price_history) < 2:
             return
 
-        # Chart dimensions - sized as a configurable fraction of the item canvas
-        # (self.chart_width_percent / self.chart_height_percent), matching the
-        # clamp used in create_stock_display so text never overlaps the chart.
+        # Chart dimensions - definite pixel sizes (self.chart_width_px /
+        # self.chart_height_px), clamped so they never exceed the panel.
         # Ensure all dimensions are integers
-        chart_width = int(width * self.chart_width_percent)
-        chart_height = int(height * self.chart_height_percent)
-        chart_x = int(width - chart_width - 4)  # 4px margin from right edge
+        chart_width = int(self.chart_width_px)
+        chart_height = int(min(self.chart_height_px, height))
+        chart_x = int(width - chart_width - 4) if chart_x is None else int(chart_x)  # default: 4px from right edge
         chart_y = int((height - chart_height) / 2)
         
         # Extract prices - match old stock_manager exactly

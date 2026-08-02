@@ -1,0 +1,204 @@
+{
+  "ncaa_mens_lacrosse_schedule_2026": {
+    "events": [
+      {
+        "id": "4001",
+        "date": "2026-04-14T18:00Z",
+        "name": "Syracuse Orange at Duke Blue Devils",
+        "shortName": "SYR @ DUKE",
+        "competitions": [
+          {
+            "id": "4001",
+            "date": "2026-04-14T18:00Z",
+            "status": {
+              "clock": 0.0,
+              "displayClock": "0:00",
+              "period": 4,
+              "type": {
+                "id": "3",
+                "name": "STATUS_FINAL",
+                "state": "post",
+                "completed": true,
+                "description": "Final",
+                "detail": "Final",
+                "shortDetail": "Final"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "150",
+                "score": "14",
+                "team": {
+                  "id": "150",
+                  "abbreviation": "DUKE",
+                  "displayName": "Duke Blue Devils",
+                  "shortDisplayName": "Duke Blue Devils",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "183",
+                "score": "11",
+                "team": {
+                  "id": "183",
+                  "abbreviation": "SYR",
+                  "displayName": "Syracuse Orange",
+                  "shortDisplayName": "Syracuse Orange",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 0.0,
+          "displayClock": "0:00",
+          "period": 4,
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          }
+        }
+      },
+      {
+        "id": "4002",
+        "date": "2026-04-15T10:30Z",
+        "name": "Virginia Cavaliers at Johns Hopkins Blue Jays",
+        "shortName": "UVA @ JHU",
+        "competitions": [
+          {
+            "id": "4002",
+            "date": "2026-04-15T10:30Z",
+            "status": {
+              "clock": 381.0,
+              "displayClock": "6:21",
+              "period": 3,
+              "type": {
+                "id": "2",
+                "name": "STATUS_IN_PROGRESS",
+                "state": "in",
+                "completed": false,
+                "description": "In Progress",
+                "detail": "Q3 6:21",
+                "shortDetail": "Q3 6:21"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "2305",
+                "score": "8",
+                "team": {
+                  "id": "2305",
+                  "abbreviation": "JHU",
+                  "displayName": "Johns Hopkins Blue Jays",
+                  "shortDisplayName": "Johns Hopkins Blue Jays",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "258",
+                "score": "7",
+                "team": {
+                  "id": "258",
+                  "abbreviation": "UVA",
+                  "displayName": "Virginia Cavaliers",
+                  "shortDisplayName": "Virginia Cavaliers",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 381.0,
+          "displayClock": "6:21",
+          "period": 3,
+          "type": {
+            "id": "2",
+            "name": "STATUS_IN_PROGRESS",
+            "state": "in",
+            "completed": false,
+            "description": "In Progress",
+            "detail": "Q3 6:21",
+            "shortDetail": "Q3 6:21"
+          }
+        }
+      },
+      {
+        "id": "4003",
+        "date": "2026-04-16T22:00Z",
+        "name": "Penn State Nittany Lions at Cornell Big Red",
+        "shortName": "PSU @ COR",
+        "competitions": [
+          {
+            "id": "4003",
+            "date": "2026-04-16T22:00Z",
+            "status": {
+              "clock": 0.0,
+              "displayClock": "0:00",
+              "period": 0,
+              "type": {
+                "id": "1",
+                "name": "STATUS_SCHEDULED",
+                "state": "pre",
+                "completed": false,
+                "description": "Scheduled",
+                "detail": "4/16 - 6:00 PM EDT",
+                "shortDetail": "4/16 - 6:00 PM EDT"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "id": "172",
+                "score": "0",
+                "team": {
+                  "id": "172",
+                  "abbreviation": "COR",
+                  "displayName": "Cornell Big Red",
+                  "shortDisplayName": "Cornell Big Red",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "id": "213",
+                "score": "0",
+                "team": {
+                  "id": "213",
+                  "abbreviation": "PSU",
+                  "displayName": "Penn State Nittany Lions",
+                  "shortDisplayName": "Penn State Nittany Lions",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 0.0,
+          "displayClock": "0:00",
+          "period": 0,
+          "type": {
+            "id": "1",
+            "name": "STATUS_SCHEDULED",
+            "state": "pre",
+            "completed": false,
+            "description": "Scheduled",
+            "detail": "4/16 - 6:00 PM EDT",
+            "shortDetail": "4/16 - 6:00 PM EDT"
+          }
+        }
+      }
+    ]
+  }
+}

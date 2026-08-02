@@ -10,7 +10,7 @@ plugin store reads.
 - `plugins/<plugin-id>/` — Each plugin's source code, manifest, config schema, README, tests
 - `plugins.json` — Central registry consumed by the LEDMatrix plugin store (auto-generated; do not hand-edit)
 - `update_registry.py` — Syncs `plugins.json` `latest_version` from local plugin manifests
-- `scripts/` — `check_module_collisions.py`, `pre-commit` hook, `archive_old_repos.sh`
+- `scripts/` — `check_module_collisions.py`, `check_team_pickers.py`, `pre-commit` hook, `archive_old_repos.sh`
 - `.github/workflows/` — CI: module-collisions, plugin safety harness, registry auto-update
 - `schema/` reference and `docs/` — supporting material; canonical `manifest_schema.json` lives in the **core** repo
 
@@ -264,6 +264,7 @@ Third-party plugins keep their own `repo` URL and empty `plugin_path`.
 - `python update_registry.py` — Update plugins.json from manifests
 - `python update_registry.py --dry-run` — Preview without writing
 - `python scripts/check_module_collisions.py` — Cross-plugin module-collision check
+- `python scripts/check_team_pickers.py` — Compare `favorite_teams` pickers against ESPN (`--apply` regenerates the enums; label differences only warn)
 - `scripts/archive_old_repos.sh` — Archive old individual repos (one-time, use `--apply`)
 
 ## Git Hooks

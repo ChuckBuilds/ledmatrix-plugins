@@ -1,9 +1,41 @@
 # Changelog
 
-## [1.21.0] - 2026-07-29
+## [1.21.0] - 2026-08-02
 
 ### Fixed
 - Explain an empty screen instead of leaving the user guessing. A favorite team code that is not a real ESPN abbreviation matched no game and showed nothing, and so did a correct code before its season started - the two were indistinguishable from the logs. The plugin now says which it is, suggests the right code for a near miss (GBP -> GB), and reports when the league's next games are. The check runs in the background, once per league, and cannot affect what is displayed.
+
+## [1.20.3] - 2026-08-02
+
+### Fixed
+- **Leftover `"timezone": "UTC"` no longer has to be removed by hand**: the write-back bug in versions before 1.20.0 persisted `"timezone": "UTC"` into the saved plugin config, where it then shadowed the real global timezone — so users who updated to 1.20.0 still saw UTC until they edited the config. That stale value is now detected and ignored automatically whenever the global or system timezone disagrees, with a warning naming what it used instead. `Etc/UTC` is the unambiguous way to ask for UTC on purpose and is always honored; it is a spelling the old bug could never have produced.
+- **The core's own `"UTC"` default no longer masks a missing global setting**: `ConfigManager.get_timezone()` is `self.config.get('timezone', 'UTC')`, so it returns `"UTC"` for a config with no `timezone` key at all. 1.20.0 took that at face value and therefore never reached the host system zone. Resolution now reads the raw config dict and treats an absent key as absent, falling through to the system timezone as designed.
+
+## [1.20.1] - 2026-07-28
+
+### Fixed
+- **Vegas scroll showed only one game**: `get_vegas_content()` returned the union
+  of every scroll display's cached items, so once the standalone rotation had
+  rendered a mode, Vegas inherited that mode's games — with a single live game in
+  progress the whole ticker entry collapsed to one card. It now reads a dedicated
+  combined slate (live + recent + upcoming, across every enabled league) that
+  cannot be clobbered by the standalone displays, and a game held by two displays
+  is no longer shown twice.
+- **Vegas content stalled the scroll**: building the Vegas slate called `update()`,
+  putting network I/O on the render path and freezing the ticker for seconds. The
+  slate is now rendered from whatever data the plugin already has, and is rebuilt
+  only when the games actually change (fingerprinted on scores, inning, count and
+  game set) instead of on every fetch.
+- **Vegas build hijacked the standalone scroll**: rendering the Vegas slate went
+  through `prepare_and_display()`, which also repoints the manager's active
+  scroll display, so the next standalone frame rendered the Vegas slate instead
+  of the game type the rotation was showing. Vegas now uses a new
+  `prepare_content()` that renders without switching the active display.
+
+### Changed
+- **`game_card_width` guidance**: the description advised lowering it on
+  multi-panel chains, which is backwards — on a wide panel cards need to be
+  *wider* to stay readable. It now suggests roughly display width / 3.
 
 ## [1.20.0] - 2026-07-28
 

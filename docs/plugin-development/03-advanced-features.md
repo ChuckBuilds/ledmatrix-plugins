@@ -109,6 +109,31 @@ Scrolling plugins also coordinate with the loop through the display manager's
 `set_scrolling_state`, `defer_update`, and `process_deferred_updates` so the core
 knows a scroll is in progress.
 
+### Scroll-speed key semantics (know which one you're using)
+
+Historically, plugins adopted `scroll_speed` with **three incompatible unit
+semantics**. They cannot be renamed without breaking users' saved configs, so
+the rule is: keep your plugin's existing semantics, document them in the key's
+`description`, and pick semantics (1) for new plugins.
+
+1. **Pixels per frame** (`scroll_speed` ≈ 0.5–5, typically `1.0`) paired with
+   `scroll_delay` in seconds per frame (`0.01` ≈ 100 FPS). Used by
+   `text-display`, `ledmatrix-elections`, `ledmatrix-stocks`, `odds-ticker`,
+   `news`, `march-madness`, `stock-news`. Effective speed =
+   `scroll_speed / scroll_delay` px/s.
+2. **Pixels per second** (`scroll_speed` ≈ 30–50). Used by the sports
+   scoreboards (their `scroll_display.py` converts internally via
+   `pixels_per_frame = scroll_speed * scroll_delay`) and `mqtt-notifications`
+   (delta-time integration).
+3. **Frames-per-step divisor** (`scroll_speed` ≈ 1–20, **higher = slower** —
+   inverted!). The marquee advances one pixel every N core frames. Used by
+   `incoming-packages`, `jellyfin-now-playing`, and `ledmatrix-music`
+   (`text_scrolling.*.speed`).
+
+`target_fps` (mechanism 1 above) is orthogonal: it paces how often frames
+render, not how far each frame moves. Mark all of these keys `x-advanced` in
+your schema — they are fine-tuning knobs.
+
 ---
 
 ## Vegas mode (continuous marquee)

@@ -17,6 +17,7 @@ API Version: 1.0.0
 """
 
 import logging
+import os
 import time
 import requests
 import xml.etree.ElementTree as ET
@@ -152,6 +153,13 @@ class NewsTickerPlugin(BasePlugin):
         self.text_color = tuple(self.feeds_config.get('text_color', [255, 255, 255]))
         self.separator_color = tuple(self.feeds_config.get('separator_color', [255, 0, 0]))
 
+        # Per-element customization block. Headline and separator colors stay on
+        # feeds.text_color / feeds.separator_color; customization only adds the
+        # per-element fonts plus the source-prefix color that was hardcoded.
+        customization = config.get('customization', {}) or {}
+        source_text_cfg = customization.get('source_text', {}) or {}
+        self.source_color = self._parse_color(source_text_cfg.get('text_color'), (150, 150, 150))
+
         # Migrate old custom_feeds format to new array format if needed
         self._migrate_custom_feeds_format()
         
@@ -190,8 +198,10 @@ class NewsTickerPlugin(BasePlugin):
         self._headline_image_cache: Dict[Tuple[str, str], Optional[Image.Image]] = {}
         self.initialized = True
 
-        # Load fonts
+        # Load fonts, then apply per-element font overrides (no-op at defaults)
+        self._font_cache: Dict[Tuple[str, int], Any] = {}
         self.fonts = self._load_fonts()
+        self._apply_font_customization(customization)
 
         # Initialize LogoHelper for news source logos
         self.logo_helper = LogoHelper(
@@ -303,6 +313,85 @@ class NewsTickerPlugin(BasePlugin):
                 'info': default_font
             }
         return fonts
+
+    @staticmethod
+    def _parse_color(color_value, default: Tuple[int, int, int]) -> Tuple[int, int, int]:
+        """Parse an RGB list from config, falling back to `default` on bad input."""
+        if color_value is None:
+            return default
+        try:
+            color = tuple(int(c) for c in color_value)
+            return color if len(color) == 3 else default
+        except (ValueError, TypeError):
+            return default
+
+    def _load_element_font(self, element_cfg: Dict[str, Any],
+                           default_name: str, default_size: int):
+        """Resolve an element's configured font, or None for "keep the default".
+
+        Returns None whenever the configured font/size equals the schema
+        defaults, so a default (or merged-defaults) `customization` block leaves
+        the fonts from _load_fonts() untouched and default rendering stays
+        byte-identical — the web UI merges schema defaults into saved configs,
+        so "key present" must not change output. Only a genuine non-default
+        selection loads a custom face; load failures fall back to None with a
+        warning rather than breaking the ticker.
+        """
+        name = element_cfg.get('font', default_name)
+        try:
+            size = int(element_cfg.get('font_size', default_size))
+        except (TypeError, ValueError):
+            size = default_size
+        if name == default_name and size == default_size:
+            return None
+        key = (name, size)
+        if key not in self._font_cache:
+            font = None
+            candidates = [
+                os.path.join('assets', 'fonts', name),
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'fonts', name),
+            ]
+            for path in candidates:
+                if not os.path.exists(path):
+                    continue
+                try:
+                    # FreeType handles .ttf and (at its native size) .bdf faces.
+                    font = ImageFont.truetype(path, size)
+                    break
+                except Exception as e:
+                    self.logger.warning(f"Could not load font {name}@{size}: {e}")
+            if font is None and not any(os.path.exists(p) for p in candidates):
+                self.logger.warning(f"Font file not found: {name}; using default font")
+            self._font_cache[key] = font
+        return self._font_cache[key]
+
+    def _apply_font_customization(self, customization: Dict[str, Any]) -> None:
+        """Apply the `customization` block's per-element font overrides.
+
+        Overrides mutate self.fonts in place, so every measurement (textbbox)
+        and draw call automatically uses the same face and scroll widths never
+        disagree with rendering. At schema defaults every override resolves to
+        None and self.fonts is left exactly as _load_fonts() built it.
+
+        Schema-default sentinels: headline_text is PressStart2P-Regular.ttf @ 12
+        (mirroring global.font_path / global.font_size defaults) and source_text
+        is PressStart2P-Regular.ttf @ 6 (the hardcoded 'info' font size).
+        """
+        if not isinstance(customization, dict):
+            return
+
+        headline_cfg = customization.get('headline_text', {}) or {}
+        headline_font = self._load_element_font(headline_cfg, 'PressStart2P-Regular.ttf', 12)
+        if headline_font is not None:
+            self.fonts['headline'] = headline_font
+            # The separator has always shared the headline's face and size
+            # (see _load_fonts); keep that pairing when the headline changes.
+            self.fonts['separator'] = headline_font
+
+        source_cfg = customization.get('source_text', {}) or {}
+        source_font = self._load_element_font(source_cfg, 'PressStart2P-Regular.ttf', 6)
+        if source_font is not None:
+            self.fonts['info'] = source_font
 
     def _migrate_custom_feeds_format(self) -> None:
         """
@@ -651,6 +740,9 @@ class NewsTickerPlugin(BasePlugin):
         # Update feed-related settings
         self.text_color = tuple(self.feeds_config.get('text_color', [255, 255, 255]))
         self.separator_color = tuple(self.feeds_config.get('separator_color', [255, 0, 0]))
+        customization = new_config.get('customization', {}) or {}
+        source_text_cfg = customization.get('source_text', {}) or {}
+        self.source_color = self._parse_color(source_text_cfg.get('text_color'), (150, 150, 150))
         self.show_logos = self.feeds_config.get('show_logos', True)
         default_logo_size = self.display_height - 4 if self.display_height > 4 else self.display_height
         self.logo_size = self.feeds_config.get('logo_size', default_logo_size)
@@ -695,7 +787,6 @@ class NewsTickerPlugin(BasePlugin):
         self.rotation_enabled = self.global_config.get('rotation_enabled', True)
         self.rotation_threshold = self.global_config.get('rotation_threshold', 3)
         self.headlines_per_feed = self.global_config.get('headlines_per_feed', 2)
-        old_font_size = getattr(self, 'font_size', 12)
         self.font_size = self.global_config.get('font_size', 12)
         self.target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps', 100)
 
@@ -717,9 +808,11 @@ class NewsTickerPlugin(BasePlugin):
             'priority': 2
         })
         
-        # Reload fonts if font size changed
-        if self.font_size != old_font_size:
-            self.fonts = self._load_fonts()
+        # Rebuild base fonts, then re-apply per-element customization. Always
+        # rebuilding (rather than only when font_size changed) also clears a
+        # stale override when customization is reset back to defaults.
+        self.fonts = self._load_fonts()
+        self._apply_font_customization(customization)
 
         # Colors and fonts are baked into the rendered headline images
         self._headline_image_cache = {}
@@ -1275,7 +1368,7 @@ class NewsTickerPlugin(BasePlugin):
             # Draw feed name (only if no logo)
             if feed_text:
                 feed_text_y = (total_height - feed_height) // 2
-                draw.text((current_x, feed_text_y), feed_text, font=self.fonts['info'], fill=(150, 150, 150))
+                draw.text((current_x, feed_text_y), feed_text, font=self.fonts['info'], fill=self.source_color)
                 current_x += feed_width
 
             # Draw title

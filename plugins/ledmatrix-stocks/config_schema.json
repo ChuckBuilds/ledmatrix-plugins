@@ -34,6 +34,7 @@
           "description": "Seconds to display each stock/crypto before switching to the next (only used in switch mode)"
         },
         "scroll_speed": {
+          "x-advanced": true,
           "type": "number",
           "description": "Scrolling speed in pixels per frame",
           "minimum": 0.5,
@@ -41,6 +42,7 @@
           "default": 1.0
         },
         "scroll_delay": {
+          "x-advanced": true,
           "type": "number",
           "description": "Delay between scroll steps in seconds",
           "minimum": 0.001,
@@ -52,19 +54,19 @@
           "description": "Enable chart display toggle",
           "default": true
         },
-        "chart_width_percent": {
-          "type": "number",
-          "description": "Width of the mini price chart as a fraction of each stock/crypto entry's canvas width",
-          "minimum": 0.1,
-          "maximum": 0.7,
-          "default": 0.4
+        "chart_width_px": {
+          "type": "integer",
+          "description": "Width of the mini price chart in pixels (fixed size, does not scale with the display width)",
+          "minimum": 8,
+          "maximum": 256,
+          "default": 64
         },
-        "chart_height_percent": {
-          "type": "number",
-          "description": "Height of the mini price chart as a fraction of the display height",
-          "minimum": 0.2,
-          "maximum": 1.0,
-          "default": 0.667
+        "chart_height_px": {
+          "type": "integer",
+          "description": "Height of the mini price chart in pixels (fixed size, does not scale with the display height; clamped to the panel)",
+          "minimum": 6,
+          "maximum": 256,
+          "default": 32
         },
         "dynamic_duration": {
           "type": "boolean",

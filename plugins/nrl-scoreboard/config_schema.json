@@ -86,6 +86,7 @@
       "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
       "properties": {
         "scroll_speed": {
+          "x-advanced": true,
           "type": "number",
           "default": 1.0,
           "minimum": 0.01,
