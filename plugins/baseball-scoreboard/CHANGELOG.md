@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.20.4] - 2026-08-02
+
+### Fixed
+- **Live games no longer flood the log**: `has_live_content()` is called from the display path — once per *frame* in Vegas mode — and it emitted a per-league INFO line for MLB, MiLB and NCAA on every call where that league had any live game. Those three lines had no throttle at all; only the final summary did, and that one skipped the throttle whenever the answer was True ("always log True immediately"), which is harmless for an occasional caller and ruinous for a per-frame one. Measured on a 512x64 device with nine live MLB games: **13,871 lines a minute, 98% of the entire journal**, which both buried every other message and put needless journald writes on the render path. The three per-league lines are now folded into the single summary, which carries the same counts, and that summary is logged when the answer *changes* — a game starting or ending, a league flipping — then at most once a minute while it holds. Same device after the fix: **3 lines a minute.** A steady state is still visible in the log; a live afternoon no longer costs tens of thousands of lines.
+
 ## [1.20.3] - 2026-08-02
 
 ### Fixed

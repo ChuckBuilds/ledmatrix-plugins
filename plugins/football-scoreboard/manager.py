@@ -207,9 +207,12 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._current_display_league: Optional[str] = None  # 'nfl' or 'ncaa_fb'
         self._current_display_mode_type: Optional[str] = None  # 'live', 'recent', 'upcoming'
         
-        # Throttle logging for has_live_content() when returning False
-        self._last_live_content_false_log: float = 0.0  # Timestamp of last False log
-        self._live_content_log_interval: float = 60.0  # Log False results every 60 seconds
+        # Throttle logging for has_live_content(). It runs on the display path --
+        # once per frame in Vegas mode -- so it logs when the answer changes and
+        # then at most once per interval while it stays the same.
+        self._last_live_content_log: float = 0.0  # Timestamp of last log
+        self._last_live_content_state: Optional[Tuple] = None  # Last logged outcome
+        self._live_content_log_interval: float = 60.0  # Re-log an unchanged result this often
         
         # Track last display mode to detect when we return after being away
         self._last_display_mode: Optional[str] = None  # Track previous display mode
@@ -1760,6 +1763,10 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         if self._get_active_celebration_manager() is not None:
             return True
 
+        # Live game counts per league, folded into the single throttled summary
+        # at the end rather than logged per league on every call.
+        league_counts: Dict[str, int] = {}
+
         # Check NFL live content
         nfl_live = False
         if (
@@ -1832,7 +1839,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                         nfl_live = True
                         self.logger.debug("[LIVE_PRIORITY_DEBUG] NFL no favorites configured, nfl_live=True")
 
-                    self.logger.info(f"has_live_content: NFL live_games={len(live_games)}, filtered_live_games={len(live_games)}, nfl_live={nfl_live}")
+                    league_counts["NFL"] = len(live_games)
                 else:
                     self.logger.debug("[LIVE_PRIORITY_DEBUG] NFL no live games after filtering")
             else:
@@ -1915,7 +1922,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                         ncaa_live = True
                         self.logger.debug("[LIVE_PRIORITY_DEBUG] NCAA FB no favorites configured, ncaa_live=True")
 
-                    self.logger.info(f"has_live_content: NCAA FB live_games={len(live_games)}, filtered_live_games={len(live_games)}, ncaa_live={ncaa_live}")
+                    league_counts["NCAA FB"] = len(live_games)
                 else:
                     self.logger.debug("[LIVE_PRIORITY_DEBUG] NCAA FB no live games after filtering")
             else:
@@ -1928,19 +1935,25 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         result = nfl_live or ncaa_live
         
-        # Throttle logging when returning False to reduce log noise
-        # Always log True immediately (important), but only log False every 60 seconds
+        # Throttle logging. The caller is the display path, which in Vegas mode
+        # runs once per frame, so logging every call buries the journal at
+        # hundreds of lines a second whenever a game is live. What is worth
+        # knowing is when the answer *changes*; an unchanged answer is re-logged
+        # every _live_content_log_interval so a steady state is still visible.
         current_time = time.time()
-        should_log = result or (current_time - self._last_live_content_false_log >= self._live_content_log_interval)
-        
-        if should_log:
-            if result:
-                # Always log True results immediately
-                self.logger.info(f"has_live_content() returning {result}: nfl_live={nfl_live}, ncaa_live={ncaa_live}")
-            else:
-                # Log False results only every 60 seconds
-                self.logger.info(f"has_live_content() returning {result}: nfl_live={nfl_live}, ncaa_live={ncaa_live}")
-                self._last_live_content_false_log = current_time
+        state = (result, nfl_live, ncaa_live, tuple(sorted(league_counts.items())))
+        changed = state != self._last_live_content_state
+        due = current_time - self._last_live_content_log >= self._live_content_log_interval
+
+        if changed or due:
+            self._last_live_content_state = state
+            self._last_live_content_log = current_time
+            counts = ", ".join(f"{league}={n}" for league, n in sorted(league_counts.items())) or "none"
+            self.logger.info(
+                f"has_live_content() returning {result}: "
+                f"nfl_live={nfl_live}, ncaa_live={ncaa_live} "
+                f"(live games: {counts})"
+            )
         
         return result
 

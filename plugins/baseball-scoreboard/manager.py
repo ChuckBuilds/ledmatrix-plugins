@@ -232,9 +232,12 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._current_display_league: Optional[str] = None  # 'mlb' or 'ncaa_baseball'
         self._current_display_mode_type: Optional[str] = None  # 'live', 'recent', 'upcoming'
         
-        # Throttle logging for has_live_content() when returning False
-        self._last_live_content_false_log: float = 0.0  # Timestamp of last False log
-        self._live_content_log_interval: float = 60.0  # Log False results every 60 seconds
+        # Throttle logging for has_live_content(). It runs on the display path --
+        # once per frame in Vegas mode -- so it logs when the answer changes and
+        # then at most once per interval while it stays the same.
+        self._last_live_content_log: float = 0.0  # Timestamp of last log
+        self._last_live_content_state: Optional[Tuple] = None  # Last logged outcome
+        self._live_content_log_interval: float = 60.0  # Re-log an unchanged result this often
         
         # Track last display mode to detect when we return after being away
         self._last_display_mode: Optional[str] = None  # Track previous display mode
@@ -1989,6 +1992,10 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             self.logger.debug("[LIVE_PRIORITY_DEBUG] has_live_content: plugin not enabled, returning False")
             return False
 
+        # Live game counts per league, folded into the single throttled summary
+        # at the end rather than logged per league on every call.
+        league_counts: Dict[str, int] = {}
+
         # Check MLB live content
         mlb_live = False
         if (
@@ -2061,7 +2068,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                         mlb_live = True
                         self.logger.debug("[LIVE_PRIORITY_DEBUG] MLB no favorites configured, mlb_live=True")
 
-                    self.logger.info(f"has_live_content: MLB live_games={len(live_games)}, filtered_live_games={len(live_games)}, mlb_live={mlb_live}")
+                    league_counts["MLB"] = len(live_games)
                 else:
                     self.logger.debug("[LIVE_PRIORITY_DEBUG] MLB no live games after filtering")
             else:
@@ -2144,7 +2151,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                         milb_live = True
                         self.logger.debug("[LIVE_PRIORITY_DEBUG] MiLB no favorites configured, milb_live=True")
 
-                    self.logger.info(f"has_live_content: MiLB live_games={len(live_games)}, filtered_live_games={len(live_games)}, milb_live={milb_live}")
+                    league_counts["MiLB"] = len(live_games)
                 else:
                     self.logger.debug("[LIVE_PRIORITY_DEBUG] MiLB no live games after filtering")
             else:
@@ -2227,7 +2234,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                         ncaa_live = True
                         self.logger.debug("[LIVE_PRIORITY_DEBUG] NCAA Baseball no favorites configured, ncaa_live=True")
 
-                    self.logger.info(f"has_live_content: NCAA Baseball live_games={len(live_games)}, filtered_live_games={len(live_games)}, ncaa_live={ncaa_live}")
+                    league_counts["NCAA"] = len(live_games)
                 else:
                     self.logger.debug("[LIVE_PRIORITY_DEBUG] NCAA Baseball no live games after filtering")
             else:
@@ -2240,20 +2247,26 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         result = mlb_live or milb_live or ncaa_live
 
-        # Throttle logging when returning False to reduce log noise
-        # Always log True immediately (important), but only log False every 60 seconds
+        # Throttle logging. The caller is the display path, which in Vegas mode
+        # runs once per frame, so logging every call buries the journal at
+        # hundreds of lines a second whenever a game is live. What is worth
+        # knowing is when the answer *changes*; an unchanged answer is re-logged
+        # every _live_content_log_interval so a steady state is still visible.
         current_time = time.time()
-        should_log = result or (current_time - self._last_live_content_false_log >= self._live_content_log_interval)
+        state = (result, mlb_live, milb_live, ncaa_live, tuple(sorted(league_counts.items())))
+        changed = state != self._last_live_content_state
+        due = current_time - self._last_live_content_log >= self._live_content_log_interval
 
-        if should_log:
-            if result:
-                # Always log True results immediately
-                self.logger.info(f"has_live_content() returning {result}: mlb_live={mlb_live}, milb_live={milb_live}, ncaa_live={ncaa_live}")
-            else:
-                # Log False results only every 60 seconds
-                self.logger.info(f"has_live_content() returning {result}: mlb_live={mlb_live}, milb_live={milb_live}, ncaa_live={ncaa_live}")
-                self._last_live_content_false_log = current_time
-        
+        if changed or due:
+            self._last_live_content_state = state
+            self._last_live_content_log = current_time
+            counts = ", ".join(f"{league}={n}" for league, n in sorted(league_counts.items())) or "none"
+            self.logger.info(
+                f"has_live_content() returning {result}: "
+                f"mlb_live={mlb_live}, milb_live={milb_live}, ncaa_live={ncaa_live} "
+                f"(live games: {counts})"
+            )
+
         return result
 
     def get_live_modes(self) -> list:
