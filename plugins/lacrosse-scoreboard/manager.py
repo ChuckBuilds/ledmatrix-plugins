@@ -54,6 +54,13 @@ from ncaaw_lacrosse_managers import (
 )
 
 from lacrosse_timezone import resolve_timezone_name
+from lacrosse_favorite_check import FavoriteTeamCheck
+
+# Which ESPN endpoint backs each league, for the favorite-team diagnostic.
+FAVORITE_CHECK_LEAGUES = {
+    'ncaa_mens': ("NCAA Men's Lacrosse", 'lacrosse/mens-college-lacrosse'),
+    'ncaa_womens': ("NCAA Women's Lacrosse", 'lacrosse/womens-college-lacrosse'),
+}
 
 logger = logging.getLogger(__name__)
 
@@ -920,10 +927,38 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         except Exception as exc:
             self.logger.debug(f"Auto-refresh failed for manager {manager}: {exc}")
 
+    def _check_favorite_teams(self) -> None:
+        """
+        Say why an enabled league is showing nothing.
+
+        A favourite that is not a real ESPN abbreviation matches no game, and so
+        does a correct one before its season starts; both look like an empty
+        screen. The check runs in the background, once per league per process,
+        and never affects what is displayed.
+        """
+        try:
+            checker = getattr(self, "_favorite_check", None)
+            if checker is None:
+                checker = FavoriteTeamCheck(self.logger, FAVORITE_CHECK_LEAGUES)
+                self._favorite_check = checker
+            for league in FAVORITE_CHECK_LEAGUES:
+                if not getattr(self, "{}_enabled".format(league), False):
+                    continue
+                for mode in ("live", "recent", "upcoming"):
+                    manager = getattr(self, "{}_{}".format(league, mode), None)
+                    favorites = getattr(manager, "favorite_teams", None)
+                    if favorites:
+                        checker.schedule(league, favorites)
+                        break
+        except Exception as exc:
+            self.logger.debug("Favorite team check skipped: %s", exc)
+
     def update(self) -> None:
         """Update lacrosse game data."""
         if not self.is_enabled:
             return
+
+        self._check_favorite_teams()
 
         current_time = time.time()
         # Log plugin update calls for debugging (every 5 minutes)

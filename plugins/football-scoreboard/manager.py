@@ -59,6 +59,13 @@ except ImportError:
     SCROLL_AVAILABLE = False
 
 from football_timezone import resolve_timezone_name
+from football_favorite_check import FavoriteTeamCheck
+
+# Which ESPN endpoint backs each league, for the favorite-team diagnostic.
+FAVORITE_CHECK_LEAGUES = {
+    'nfl': ('NFL', 'football/nfl'),
+    'ncaa_fb': ('NCAA Football', 'football/college-football'),
+}
 
 logger = logging.getLogger(__name__)
 
@@ -308,6 +315,11 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             "Football config updated live - NFL:%s NCAA_FB:%s, modes=%s",
             self.nfl_enabled, self.ncaa_fb_enabled, self.modes,
         )
+
+        # Favorites may have changed, so let the diagnostic report on them again.
+        checker = getattr(self, "_favorite_check", None)
+        if checker is not None:
+            checker.reset()
 
     def _cleanup_managers(self) -> None:
         """Close HTTP sessions / clear caches on the current league managers."""
@@ -966,10 +978,38 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         except Exception as exc:
             self.logger.debug(f"Auto-refresh failed for manager {manager}: {exc}")
 
+    def _check_favorite_teams(self) -> None:
+        """
+        Say why an enabled league is showing nothing.
+
+        A favourite that is not a real ESPN abbreviation matches no game, and so
+        does a correct one before its season starts; both look like an empty
+        screen. The check runs in the background, once per league per process,
+        and never affects what is displayed.
+        """
+        try:
+            checker = getattr(self, "_favorite_check", None)
+            if checker is None:
+                checker = FavoriteTeamCheck(self.logger, FAVORITE_CHECK_LEAGUES)
+                self._favorite_check = checker
+            for league in FAVORITE_CHECK_LEAGUES:
+                if not getattr(self, "{}_enabled".format(league), False):
+                    continue
+                for mode in ("live", "recent", "upcoming"):
+                    manager = getattr(self, "{}_{}".format(league, mode), None)
+                    favorites = getattr(manager, "favorite_teams", None)
+                    if favorites:
+                        checker.schedule(league, favorites)
+                        break
+        except Exception as exc:
+            self.logger.debug("Favorite team check skipped: %s", exc)
+
     def update(self) -> None:
         """Update football game data."""
         if not self.is_enabled:
             return
+
+        self._check_favorite_teams()
 
         try:
             # Update NFL managers if enabled
