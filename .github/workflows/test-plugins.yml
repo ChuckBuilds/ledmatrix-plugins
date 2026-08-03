@@ -97,6 +97,23 @@ jobs:
           done
           exit $fail
 
+      # The floor the store and loader actually read is versions[0]. Requiring
+      # the new spelling only on plugins that are already being bumped lets the
+      # migration finish organically, instead of rewriting 42 manifests and
+      # pushing 42 store updates for a field rename with no behaviour change.
+      - name: Check manifest version fields on changed plugins
+        if: steps.changed.outputs.ids != '' && github.event.inputs.all != 'true'
+        working-directory: plugins-repo
+        env:
+          IDS: ${{ steps.changed.outputs.ids }}
+        run: |
+          for pid in $IDS; do
+            case "$pid" in
+              '' | *[!a-z0-9._-]*) echo "::error::invalid plugin id '$pid'"; exit 1 ;;
+            esac
+          done
+          python scripts/check_manifest_version_fields.py $IDS
+
       - name: Validate manifests against schema
         if: steps.changed.outputs.ids != ''
         env:
