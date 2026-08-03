@@ -1,9 +1,13 @@
 # Changelog
 
-## [2.9.4] - 2026-08-02
+## [2.10.1] - 2026-08-03
 
 ### Fixed
 - **Live games will no longer flood the log**: `has_live_content()` is called from the display path — once per *frame* in Vegas mode — and it emitted a per-league INFO line for NFL and NCAA FB on every call where that league had any live game. Those two lines had no throttle at all; only the final summary did, and that one skipped the throttle whenever the answer was True ("always log True immediately"), which is harmless for an occasional caller and ruinous for a per-frame one. The identical defect was measured on the sibling baseball plugin at **13,871 lines a minute, 98% of the entire journal**, on a 512x64 device with nine live games; football was quiet only because this is the off-season, and would have started spamming the moment the season began. The two per-league lines are now folded into the single summary, which carries the same counts, and that summary is logged when the answer *changes* — a game starting or ending, a league flipping — then at most once a minute while it holds.
+## [2.10.0] - 2026-08-02
+
+### Fixed
+- Explain an empty screen instead of leaving the user guessing. A favorite team code that is not a real ESPN abbreviation matched no game and showed nothing, and so did a correct code before its season started - the two were indistinguishable from the logs. The plugin now says which it is, suggests the right code for a near miss (GBP -> GB), and reports when the league's next games are. The check runs in the background, once per league, and cannot affect what is displayed.
 
 ## [2.9.3] - 2026-08-02
 
