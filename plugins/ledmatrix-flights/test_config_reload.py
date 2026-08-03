@@ -91,7 +91,7 @@ def test_on_config_change_applies_live():
     renderer_before = tracker._renderer
 
     # Prime the cached map so we can confirm it is invalidated on change.
-    tracker.cached_map_bg = "SENTINEL"
+    tracker.cached_map_bgs = {(128, 64): "SENTINEL"}
     tracker.last_map_center = (27.95, -82.45)
 
     tracker.on_config_change(
@@ -114,7 +114,7 @@ def test_on_config_change_applies_live():
     check(tracker.live_priority_enabled is True, "live_priority updated live")
     check(tracker._fetcher is not fetcher_before, "fetcher rebuilt for new data source")
     check(tracker._renderer is not renderer_before, "renderer rebuilt with new config")
-    check(tracker.cached_map_bg is None, "cached map invalidated so it re-tiles")
+    check(tracker.cached_map_bgs == {}, "cached maps invalidated so they re-tile")
     check(tracker.last_map_center is None, "cached map center invalidated")
 
 

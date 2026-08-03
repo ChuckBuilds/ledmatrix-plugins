@@ -237,3 +237,104 @@ class TestNarrowerRender:
         p = make_plugin(True, one_aircraft(), one_trail(), width=width, height=height)
         img = p._render_map_image()
         assert img.size == (width, height)
+
+
+def enable_map_background(plugin, tmp_path):
+    """Turn the tile background on with a stub tiler — no network, no disk cache.
+
+    The composite path is what caches by size, so it has to actually run;
+    _fetch_tile is the only part that would reach the network.
+    """
+    plugin.map_bg_enabled = True
+    plugin.tile_size = 256
+    plugin.tile_provider = 'osm'
+    plugin.custom_tile_server = None
+    plugin.tile_cache_dir = tmp_path / 'tiles'
+    plugin.cache_ttl_hours = 24
+    plugin.fade_intensity = 1.0
+    plugin.map_brightness = 1.0
+    plugin.map_contrast = 1.0
+    plugin.map_saturation = 1.0
+    plugin.cached_map_bgs = {}
+    plugin.last_map_center = None
+    plugin.last_map_zoom = None
+
+    calls = []
+
+    def fake_fetch(x, y, zoom):
+        calls.append((x, y, zoom))
+        # A gradient rather than a flat fill, so a wrongly-scaled crop shows up.
+        tile = Image.new('RGB', (plugin.tile_size, plugin.tile_size))
+        tile.putdata([
+            ((i % plugin.tile_size), (i // plugin.tile_size), 128)
+            for i in range(plugin.tile_size ** 2)
+        ])
+        return tile
+
+    plugin._fetch_tile = fake_fetch
+    return calls
+
+
+class TestMapBackgroundCacheIsSizeAware:
+    """The composite is cropped and resized to the display before it is cached.
+
+    Vegas narrows the display manager, so rotation and the ticker ask for the
+    same view at different widths. A memo keyed only on centre and zoom handed
+    whichever path rendered second the other one's image: the wrong size, with
+    aircraft and trails projected for the size it didn't get.
+    """
+
+    def test_background_matches_the_requested_size_after_a_narrower_render(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)  # the renderer drops debug PNGs in the cwd
+        p = make_plugin(False, {}, {}, width=128, height=64)
+        enable_map_background(p, tmp_path)
+
+        wide = p._get_map_background(CENTER_LAT, CENTER_LON)
+        assert wide.size == (128, 64)
+
+        # Same centre and zoom, narrower panel — as Vegas would ask for it.
+        p.display_manager.matrix.width = 64
+        narrow = p._get_map_background(CENTER_LAT, CENTER_LON)
+        assert narrow.size == (64, 64)
+
+    def test_each_size_is_still_cached(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        p = make_plugin(False, {}, {}, width=128, height=64)
+        calls = enable_map_background(p, tmp_path)
+
+        p._get_map_background(CENTER_LAT, CENTER_LON)
+        p.display_manager.matrix.width = 64
+        p._get_map_background(CENTER_LAT, CENTER_LON)
+        after_both = len(calls)
+
+        # Re-asking for either size must not re-tile.
+        p._get_map_background(CENTER_LAT, CENTER_LON)
+        p.display_manager.matrix.width = 128
+        p._get_map_background(CENTER_LAT, CENTER_LON)
+        assert len(calls) == after_both
+
+    def test_moving_the_centre_drops_every_cached_size(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        p = make_plugin(False, {}, {}, width=128, height=64)
+        enable_map_background(p, tmp_path)
+
+        p._get_map_background(CENTER_LAT, CENTER_LON)
+        p.display_manager.matrix.width = 64
+        p._get_map_background(CENTER_LAT, CENTER_LON)
+        assert len(p.cached_map_bgs) == 2
+
+        p._get_map_background(CENTER_LAT + 5, CENTER_LON + 5)
+        assert list(p.cached_map_bgs) == [(64, 64)]
+
+    def test_rendered_map_is_the_display_size_across_a_size_switch(self, tmp_path, monkeypatch):
+        # The end-to-end symptom: _render_map_image copies the background, so a
+        # stale-size memo produced a whole frame at the wrong size.
+        monkeypatch.chdir(tmp_path)
+        p = make_plugin(True, one_aircraft(), one_trail(), width=128, height=64)
+        enable_map_background(p, tmp_path)
+
+        assert p._render_map_image().size == (128, 64)
+        p.display_manager.matrix.width = 256
+        assert p._render_map_image().size == (256, 64)
+        p.display_manager.matrix.width = 128
+        assert p._render_map_image().size == (128, 64)

@@ -149,8 +149,11 @@ class FlightTrackerPlugin(BasePlugin):
             self.tile_cache_dir.mkdir(parents=True, exist_ok=True)
             self.logger.info(f"[Flight Tracker] Using temporary map tile cache: {self.tile_cache_dir}")
         
-        # Cached map background
-        self.cached_map_bg = None
+        # Cached map backgrounds, keyed by the display size they were rendered
+        # for. Vegas narrows the display manager while requesting content, so
+        # the ticker and the rotation ask for the same map at different widths;
+        # a single slot would hand one of them the other's size.
+        self.cached_map_bgs = {}
         self.last_map_center = None
         self.last_map_zoom = None
         self.cached_pixels_per_mile = None  # Actual scale of the cached map
@@ -468,9 +471,9 @@ class FlightTrackerPlugin(BasePlugin):
                                exc_info=True)
             self._disable_metar()
 
-        # Invalidate the cached map background so center/radius/zoom/appearance
+        # Invalidate the cached map backgrounds so center/radius/zoom/appearance
         # changes are re-tiled on the next render.
-        self.cached_map_bg = None
+        self.cached_map_bgs = {}
         self.last_map_center = None
         self.last_map_zoom = None
         self.cached_pixels_per_mile = None
@@ -2047,14 +2050,21 @@ class FlightTrackerPlugin(BasePlugin):
         
         self.logger.debug(f"[Flight Tracker] Map zoom calculation: radius={self.map_radius_miles}mi, zoom_factor={self.zoom_factor}, effective_radius={effective_radius:.2f}mi, zoom={zoom}")
         
-        # Check if we can reuse the cached composite map
+        # Check if we can reuse a cached composite map. The cached image has
+        # already been cropped to the display aspect ratio and resized to the
+        # display, so the size is part of the identity — not just center and
+        # zoom. Rotation and Vegas render the same map at different widths.
         current_center = (round(center_lat, 4), round(center_lon, 4))
-        if (self.cached_map_bg is not None and 
-            self.last_map_center == current_center and 
-            self.last_map_zoom == zoom):
-            # Location and zoom haven't changed, reuse cached composite
-            return self.cached_map_bg
-        
+        current_size = (self.display_width, self.display_height)
+        if self.last_map_center != current_center or self.last_map_zoom != zoom:
+            # Moved or re-zoomed: every size we hold is stale.
+            self.cached_map_bgs.clear()
+        else:
+            cached = self.cached_map_bgs.get(current_size)
+            if cached is not None:
+                # Same view at a size we've already composed, reuse it
+                return cached
+
         # Calculate tile coordinates for center
         center_x, center_y = self._latlon_to_tile_coords(center_lat, center_lon, zoom)
         
@@ -2209,8 +2219,8 @@ class FlightTrackerPlugin(BasePlugin):
             cropped = enhancer.enhance(self.map_saturation)
             self.logger.debug(f"[Flight Tracker] Applied saturation: {self.map_saturation}")
         
-        # Cache the result
-        self.cached_map_bg = cropped
+        # Cache the result against the size it was composed for
+        self.cached_map_bgs[current_size] = cropped
         self.last_map_center = current_center
         self.last_map_zoom = zoom
         
