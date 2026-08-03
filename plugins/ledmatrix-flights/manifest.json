@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.12.6",
+  "version": "1.12.7",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -37,6 +37,12 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "released": "2026-08-03",
+      "version": "1.12.7",
+      "notes": "Fix the map background cache handing a render the wrong size. The cached composite is already cropped to the display aspect ratio and resized to the panel, but it was keyed on centre and zoom only. Vegas narrows the display manager, so rotation and the ticker request the same view at different widths and whichever rendered second was served the other's image -- a frame at the wrong size with aircraft and trails projected for the size it did not get. The cache now keys on size as well and keeps one entry per size.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-29",
       "version": "1.12.6",
@@ -197,5 +203,5 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-17"
+  "last_updated": "2026-08-03"
 }
