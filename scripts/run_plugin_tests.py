@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """Run a plugin's `test_*.py` scripts and report pass / skip / fail honestly.
 
-    python scripts/run_plugin_tests.py baseball-scoreboard
-    python scripts/run_plugin_tests.py --all
-    python scripts/run_plugin_tests.py baseball-scoreboard --core /path/to/LEDMatrix
+    <core-venv>/bin/python scripts/run_plugin_tests.py baseball-scoreboard \
+        --core /path/to/LEDMatrix
+    <core-venv>/bin/python scripts/run_plugin_tests.py --all --core /path/to/LEDMatrix
+
+Invoke it with the interpreter that has the plugins' dependencies -- the core
+checkout's venv. Scripts are spawned with `sys.executable`, so running this
+under a bare `python3` that lacks e.g. pytz reports every suite as failed, when
+the only thing wrong is the interpreter. `--core` sets PYTHONPATH; it does not
+change which Python runs.
 
 ## Why this exists
 
