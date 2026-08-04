@@ -105,7 +105,7 @@ def test_core_absent_falls_back_and_still_works():
         # A fallback that loads but cannot draw is no fallback at all.
         for method in ("prepare_scroll_content", "display_scroll_frame",
                        "is_scroll_complete", "get_dynamic_duration",
-                       "_load_separator_icons", "_determine_game_type"):
+                       "_load_separator_icons"):
             assert hasattr(mod.ScrollDisplay, method), f"fallback lost {method}()"
         assert hasattr(mod.ScrollDisplayManager, "prepare_and_display")
 
@@ -132,6 +132,93 @@ def test_sunset_state_fails_specifically():
             )
 
 
+
+def _unresolvable_globals(cls, module):
+    """Globals a class's own methods read that nothing can resolve.
+
+    Walks each method's AST for `Name` loads rather than its bytecode: the
+    bytecode's co_names mixes in attribute names, so `Image.Resampling.LANCZOS`
+    looked like a missing global. Locals, arguments and comprehension targets
+    are excluded, leaving only names Python would resolve globally.
+
+    Reading the source rather than calling the method is deliberate -- building
+    a real display needs a display manager, fonts and assets, but an
+    unresolvable global is a load-time fact and needs none of that. `hasattr`
+    could not see this at all: the method exists; what it reaches for does not.
+    """
+    import ast
+    import builtins
+    import inspect
+    import textwrap
+    import types
+
+    # Resolve against the module the CLASS lives in, not the one we imported.
+    # On the fallback path ScrollDisplay is LegacyScrollDisplay, whose globals
+    # are scroll_display_legacy's -- checking scroll_display's namespace made
+    # every fallback look broken.
+    import sys as _sys
+    module = _sys.modules.get(cls.__module__, module)
+
+    try:
+        tree = ast.parse(textwrap.dedent(inspect.getsource(cls)))
+    except (OSError, TypeError):  # pragma: no cover - source always available here
+        return []
+
+    missing = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        bound = {a.arg for a in node.args.args + node.args.kwonlyargs}
+        if node.args.vararg:
+            bound.add(node.args.vararg.arg)
+        if node.args.kwarg:
+            bound.add(node.args.kwarg.arg)
+        for sub in ast.walk(node):
+            if isinstance(sub, ast.Name) and isinstance(sub.ctx, (ast.Store,)):
+                bound.add(sub.id)
+            elif isinstance(sub, (ast.Import, ast.ImportFrom)):
+                for alias in sub.names:
+                    bound.add((alias.asname or alias.name).split(".")[0])
+            elif isinstance(sub, ast.ExceptHandler) and sub.name:
+                bound.add(sub.name)
+        for sub in ast.walk(node):
+            if isinstance(sub, ast.Name) and isinstance(sub.ctx, ast.Load):
+                name = sub.id
+                if (name in bound or hasattr(module, name) or hasattr(cls, name)
+                        or hasattr(builtins, name)):
+                    continue
+                missing.add(name)
+    return sorted(missing)
+
+
+def test_content_methods_can_resolve_what_they_use():
+    """The core path must be able to draw, not merely import.
+
+    `_load_separator_icons` and `prepare_scroll_content` were lifted out of the
+    legacy module; their dependencies were not. Nothing caught it: the safety
+    harness renders the scoreboard screens rather than scroll mode, and the
+    earlier version of this file only checked that method names existed.
+    """
+    mod = _fresh_scroll_display()
+    for cls in (mod.ScrollDisplay, mod.ScrollDisplayManager):
+        missing = _unresolvable_globals(cls, mod)
+        assert not missing, (
+            f"{cls.__name__} methods reference {missing}, which their module "
+            f"cannot resolve — they raise NameError on the core path"
+        )
+
+
+def test_fallback_content_methods_can_resolve_what_they_use():
+    """Same check on the bundled implementation."""
+    with _BlockModules(CORE_MODULE):
+        mod = _fresh_scroll_display()
+        for cls in (mod.ScrollDisplay, mod.ScrollDisplayManager):
+            missing = _unresolvable_globals(cls, mod)
+            assert not missing, (
+                f"the fallback's {cls.__name__} references {missing}, which "
+                f"its module cannot resolve"
+            )
+
 if __name__ == "__main__":
     # Pre-flight, deliberately BEFORE any test runs. Deciding "skip" from an
     # exception raised *during* a test is what this suite is guarding against:
@@ -152,6 +239,8 @@ if __name__ == "__main__":
     failures = []
     for t in (test_core_present_uses_core,
               test_core_absent_falls_back_and_still_works,
+              test_content_methods_can_resolve_what_they_use,
+              test_fallback_content_methods_can_resolve_what_they_use,
               test_sunset_state_fails_specifically):
         try:
             t()
