@@ -152,6 +152,13 @@ def _unresolvable_globals(cls, module):
     import textwrap
     import types
 
+    # Resolve against the module the CLASS lives in, not the one we imported.
+    # On the fallback path ScrollDisplay is LegacyScrollDisplay, whose globals
+    # are scroll_display_legacy's -- checking scroll_display's namespace made
+    # every fallback look broken.
+    import sys as _sys
+    module = _sys.modules.get(cls.__module__, module)
+
     try:
         tree = ast.parse(textwrap.dedent(inspect.getsource(cls)))
     except (OSError, TypeError):  # pragma: no cover - source always available here
@@ -193,22 +200,24 @@ def test_content_methods_can_resolve_what_they_use():
     earlier version of this file only checked that method names existed.
     """
     mod = _fresh_scroll_display()
-    missing = _unresolvable_globals(mod.ScrollDisplay, mod)
-    assert not missing, (
-        f"ScrollDisplay methods reference {missing}, which this module cannot "
-        f"resolve — they raise NameError on the core path"
-    )
+    for cls in (mod.ScrollDisplay, mod.ScrollDisplayManager):
+        missing = _unresolvable_globals(cls, mod)
+        assert not missing, (
+            f"{cls.__name__} methods reference {missing}, which their module "
+            f"cannot resolve — they raise NameError on the core path"
+        )
 
 
 def test_fallback_content_methods_can_resolve_what_they_use():
     """Same check on the bundled implementation."""
     with _BlockModules(CORE_MODULE):
         mod = _fresh_scroll_display()
-        missing = _unresolvable_globals(mod.ScrollDisplay, mod)
-        assert not missing, (
-            f"the fallback's methods reference {missing}, which its module "
-            f"cannot resolve"
-        )
+        for cls in (mod.ScrollDisplay, mod.ScrollDisplayManager):
+            missing = _unresolvable_globals(cls, mod)
+            assert not missing, (
+                f"the fallback's {cls.__name__} references {missing}, which "
+                f"its module cannot resolve"
+            )
 
 if __name__ == "__main__":
     # Pre-flight, deliberately BEFORE any test runs. Deciding "skip" from an
