@@ -56,7 +56,14 @@ PASS, FAIL, SKIP = 0, 1, 2
 def run_one(script: Path, core: Path | None, timeout: int) -> tuple[int, str]:
     env = dict(os.environ)
     if core:
+        core = core.resolve()
         env["PYTHONPATH"] = f"{core}{os.pathsep}{env.get('PYTHONPATH', '')}"
+        # Children run with cwd set to the plugin directory, so a script that
+        # resolves a core asset relatively -- config/config.template.json, a
+        # bundled font -- looks in the wrong place and skips even though a core
+        # was supplied. PYTHONPATH alone cannot tell it where the core is.
+        # LEDMATRIX_CORE is that contract, and it is absolute.
+        env["LEDMATRIX_CORE"] = str(core)
     try:
         proc = subprocess.run(
             [sys.executable, script.name],
@@ -91,6 +98,12 @@ def main() -> int:
            if args.all else args.plugin_ids)
     if not ids:
         ap.error("give plugin ids or --all")
+
+    # A typo used to look like success: no scripts found, nothing run, exit 0.
+    unknown = [pid for pid in ids if not (PLUGINS / pid).is_dir()]
+    if unknown:
+        print(f"Unknown plugin id(s): {', '.join(unknown)}", file=sys.stderr)
+        return 1
 
     totals = {PASS: 0, SKIP: 0, FAIL: 0}
     failures: list[str] = []

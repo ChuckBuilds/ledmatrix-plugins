@@ -390,10 +390,21 @@ if __name__ == "__main__":
     # (exit 1): reporting "not applicable" as a regression is what trained
     # everyone to ignore this plugin's results. See
     # scripts/run_plugin_tests.py for the exit-code convention.
-    if not os.path.exists(os.path.join("config", "config.template.json")):
-        print("SKIP: needs the core config template — run from a LEDMatrix "
-              "checkout (cwd is %s)" % os.getcwd())
+    # The runner passes the core checkout in LEDMATRIX_CORE; fall back to the
+    # working directory so a manual run from a core tree still works.
+    _core_root = os.environ.get("LEDMATRIX_CORE", "")
+    if not os.path.exists(os.path.join(_core_root, "config", "config.template.json")):
+        print("SKIP: needs the core config template — set LEDMATRIX_CORE or "
+              "run from a LEDMatrix checkout (looked in %s)"
+              % (_core_root or os.getcwd()))
         sys.exit(2)
+
+    if _core_root:
+        # This script drives the core's DisplayManager and CacheManager, and
+        # they resolve config/ and assets/ relative to the working directory.
+        # The runner starts us in the plugin directory, so move to the core --
+        # the plugin itself is already importable via sys.path above.
+        os.chdir(_core_root)
 
     try:
         success = main()
