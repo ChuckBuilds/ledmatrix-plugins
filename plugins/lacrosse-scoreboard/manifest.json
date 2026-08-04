@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -51,6 +51,12 @@
   ],
   "versions": [
     {
+      "released": "2026-08-04",
+      "version": "1.7.0",
+      "notes": "Scroll display now uses the core's shared sports-scroll orchestration (LEDMatrix 3.2.0) when available, falling back to the bundled implementation on older cores. No behaviour change: all harness renders are byte-for-byte identical.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "released": "2026-08-02",
       "version": "1.6.0",
       "ledmatrix_min": "2.0.0"
@@ -86,7 +92,7 @@
     {
       "released": "2026-07-02",
       "version": "1.3.0",
-      "notes": "Add exclude_teams (hide specific teams from the live rotation and recent/final scores — spoiler protection, takes precedence over favorite_teams/show_all_live) and favorite_live_boost (tune how many more turns your favorite's live game gets in the rotation vs other live games, 1 = even rotation, default 2).",
+      "notes": "Add exclude_teams (hide specific teams from the live rotation and recent/final scores \u2014 spoiler protection, takes precedence over favorite_teams/show_all_live) and favorite_live_boost (tune how many more turns your favorite's live game gets in the rotation vs other live games, 1 = even rotation, default 2).",
       "ledmatrix_min": "2.0.0"
     },
     {
