@@ -25,6 +25,8 @@ back to. Then work through these topics in order:
 | 5 | [Adaptive layout](./05-adaptive-layout.md) | `layout_mode` classic vs. adaptive, and rendering across matrix sizes |
 | 6 | [Manifest & config schema](./06-manifest-and-config-schema.md) | Manifest fields, `config_schema.json` conventions, and the version workflow |
 | 7 | [Testing, CI & the registry](./07-testing-ci-and-registry.md) | Safety harness, module-collision checks, `plugins.json`, and the CI gates |
+| 8 | [Shared sports code](./08-shared-sports-code.md) | The nine `sports.py` lineages, how they drifted, and the convergence + sunset rules |
+| 9 | [League coverage & data providers](./09-league-coverage-and-providers.md) | What it costs to add a league, non-ESPN provider adapters, and the registry proposal |
 
 ## The golden rules
 
