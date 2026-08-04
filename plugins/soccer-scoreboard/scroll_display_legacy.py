@@ -604,7 +604,7 @@ class LegacyScrollDisplayManager:
         self._plugin_dir = str(Path(__file__).parent)
 
         # Create scroll displays for each game type
-        self._scroll_displays: Dict[str, ScrollDisplay] = {}
+        self._scroll_displays: Dict[str, 'LegacyScrollDisplay'] = {}
         self._current_game_type: Optional[str] = None
 
     def get_scroll_display(self, game_type: str) -> 'LegacyScrollDisplay':
