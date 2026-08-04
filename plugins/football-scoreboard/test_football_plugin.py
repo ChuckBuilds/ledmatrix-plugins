@@ -423,5 +423,20 @@ def main():
         return 1
 
 
+def _skip_if_not_interactive(reason):
+    """Exit 2 (skip) rather than 1 (fail) when this script's prerequisites are
+    absent. It drives a real/emulated LED matrix and prompts on stdin, so a
+    headless or non-tty run is "not applicable", not "broken" -- and reporting
+    it as a failure trained everyone to ignore this plugin's test results.
+    See scripts/run_plugin_tests.py for the exit-code convention.
+    """
+    import sys as _sys
+    print(f"SKIP: {reason}")
+    _sys.exit(2)
+
+
 if __name__ == "__main__":
+    if not sys.stdin.isatty():
+        _skip_if_not_interactive(
+            "needs an interactive terminal (this script prompts on stdin)")
     sys.exit(main())

@@ -80,11 +80,16 @@ def test_test_mode_short_circuits_fetch():
     live._fetch_data = fake_fetch
     live._test_mode_update = fake_test_update
 
-    # Guard update(): without the fix it enters the live-fetch path and trips over
-    # attributes a bare instance doesn't have. Suppress only that expected
-    # AttributeError so an unrelated failure still surfaces; the invariants below
-    # assert the real behavior regardless of how far the buggy path gets.
-    with contextlib.suppress(AttributeError):
+    # Guard update() on two expected exits, and only those, so an unrelated
+    # failure still surfaces:
+    #   _StopAfterTestUpdate - the fixed path; fake_test_update raises it to stop
+    #     update() right after the short-circuit branch is taken.
+    #   AttributeError       - the buggy path; it enters the live fetch and trips
+    #     over attributes a bare instance doesn't have.
+    # The invariants below assert the real behaviour either way. Suppressing only
+    # AttributeError (as this did) meant the sentinel escaped uncaught and the
+    # test died before reaching a single assertion.
+    with contextlib.suppress(AttributeError, _StopAfterTestUpdate):
         live.update()
 
     assert called["test_update"], "expected _test_mode_update() to run in test mode"

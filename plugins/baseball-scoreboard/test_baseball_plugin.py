@@ -384,6 +384,17 @@ def main():
 
 
 if __name__ == "__main__":
+    # Pre-flight. This script drives a real or emulated matrix and loads the
+    # core's config template relative to the working directory, so outside a
+    # LEDMatrix checkout it cannot run at all. Skip (exit 2) rather than fail
+    # (exit 1): reporting "not applicable" as a regression is what trained
+    # everyone to ignore this plugin's results. See
+    # scripts/run_plugin_tests.py for the exit-code convention.
+    if not os.path.exists(os.path.join("config", "config.template.json")):
+        print("SKIP: needs the core config template — run from a LEDMatrix "
+              "checkout (cwd is %s)" % os.getcwd())
+        sys.exit(2)
+
     try:
         success = main()
         sys.exit(0 if success else 1)
@@ -391,6 +402,9 @@ if __name__ == "__main__":
         print("\n\n[STOP] Tests interrupted by user")
         sys.exit(1)
     except Exception as e:
+        if "fallback mode" in str(e).lower():
+            print(f"SKIP: needs a real or emulated LED matrix ({e})")
+            sys.exit(2)
         print(f"\n[FAIL] Unexpected error: {e}")
         import traceback
         traceback.print_exc()
