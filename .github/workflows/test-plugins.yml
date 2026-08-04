@@ -113,6 +113,10 @@ jobs:
             esac
           done
           python scripts/check_manifest_version_fields.py $IDS
+          # The gate's own regression suite -- its failure mode is silent,
+          # so a manifest that looks migrated but resolves to no floor must
+          # not slip through.
+          python scripts/test_check_manifest_version_fields.py
 
       - name: Validate manifests against schema
         if: steps.changed.outputs.ids != ''

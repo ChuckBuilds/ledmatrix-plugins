@@ -75,13 +75,22 @@ def check_plugin(plugin_id: str) -> list[str]:
     version_label = head.get("version", "?")
     problems: list[str] = []
 
-    if OLD in head and NEW not in head:
+    # Values, not key presence. The core resolves the floor with
+    # `head.get(NEW) or head.get(OLD)`, so an empty string or null under either
+    # key is no floor at all -- and a gate that accepted the key while the core
+    # saw nothing would pass exactly the manifests it exists to catch.
+    # `_declares_floor_elsewhere` already worked this way; this brings the
+    # versions[0] check into line with it.
+    new_value = head.get(NEW)
+    old_value = head.get(OLD)
+
+    if not new_value and old_value:
         problems.append(
             f"{plugin_id}: versions[0] ({version_label}) uses the deprecated "
             f"'{OLD}'. Rename it to '{NEW}' — this is the entry the store and "
             f"loader actually read. Older entries can stay as they are."
         )
-    elif NEW not in head and not _declares_floor_elsewhere(manifest):
+    elif not new_value and not _declares_floor_elsewhere(manifest):
         # Neither spelling in versions[0], and nothing above it either. The
         # core's declared_min_version() then resolves to None, so the install
         # gate has no floor to enforce and the plugin can reach a core that
