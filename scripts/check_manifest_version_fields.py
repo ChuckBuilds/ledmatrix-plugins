@@ -39,6 +39,23 @@ NEW = "ledmatrix_min_version"
 OLD = "ledmatrix_min"
 
 
+def _declares_floor_elsewhere(manifest: dict) -> bool:
+    """Does the manifest declare a floor above the `versions[]` array?
+
+    The core's `compatibility.declared_min_version` checks, in order:
+    top-level `min_ledmatrix_version`, then `requires.min_ledmatrix_version`,
+    and only then `versions[0]`. Four published plugins — flights, leaderboard,
+    music and stocks — use the top-level form, so demanding the key in
+    `versions[0]` unconditionally would fail manifests that are already
+    correct, and push them into declaring the floor twice.
+    """
+    if manifest.get("min_ledmatrix_version"):
+        return True
+    requires = manifest.get("requires")
+    return isinstance(requires, dict) and bool(
+        requires.get("min_ledmatrix_version"))
+
+
 def check_plugin(plugin_id: str) -> list[str]:
     """Problems with this plugin's newest version entry (empty when fine)."""
     path = PLUGINS / plugin_id / "manifest.json"
@@ -63,6 +80,16 @@ def check_plugin(plugin_id: str) -> list[str]:
             f"{plugin_id}: versions[0] ({version_label}) uses the deprecated "
             f"'{OLD}'. Rename it to '{NEW}' — this is the entry the store and "
             f"loader actually read. Older entries can stay as they are."
+        )
+    elif NEW not in head and not _declares_floor_elsewhere(manifest):
+        # Neither spelling in versions[0], and nothing above it either. The
+        # core's declared_min_version() then resolves to None, so the install
+        # gate has no floor to enforce and the plugin can reach a core that
+        # cannot run it — the exact failure the B6 sunset turns fatal.
+        problems.append(
+            f"{plugin_id}: versions[0] ({version_label}) declares no minimum "
+            f"core version, and neither does the manifest above it. Add "
+            f"'{NEW}' so the install gate has a floor to enforce."
         )
 
     # compatible_versions is required by the core's manifest schema and is the
