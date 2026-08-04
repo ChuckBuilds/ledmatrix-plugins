@@ -26,6 +26,45 @@ from typing import Dict, Any, List, Optional
 
 from PIL import Image
 
+from game_renderer import GameRenderer
+LEAGUE_NAMES = {
+    'eng.1': 'Premier League',
+    'esp.1': 'La Liga',
+    'ger.1': 'Bundesliga',
+    'ita.1': 'Serie A',
+    'fra.1': 'Ligue 1',
+    'usa.1': 'MLS',
+    'mex.1': 'Liga MX',
+    'ned.1': 'Eredivisie',
+    'por.1': 'Primeira Liga',
+    'sco.1': 'Scottish Premiership',
+    'bel.1': 'Belgian Pro League',
+    'tur.super_lig': 'Turkish Super Lig',
+    'eng.2': 'Championship',
+    'eng.league_cup': 'EFL Cup',
+    'eng.fa': 'FA Cup',
+    'uefa.champions': 'Champions League',
+    'uefa.europa': 'Europa League',
+    'uefa.europa.conf': 'Conference League',
+    'fifa.friendly': 'International Friendly',
+    'conmebol.libertadores': 'Copa Libertadores',
+    'fifa.worldq.uefa': 'World Cup Qualifying (UEFA)',
+    'uefa.nations': 'UEFA Nations League',
+    'fifa.world': 'FIFA World Cup',
+    'fifa.world.u20': 'FIFA U-20 World Cup',
+    'concacaf.nations.league': 'CONCACAF Nations League',
+    'concacaf.gold': 'CONCACAF Gold Cup',
+    'concacaf.champions': 'CONCACAF Champions Cup',
+    'conmebol.copa.america': 'Copa America',
+    'uefa.euro': 'UEFA Euro',
+    'club.friendly': 'Club Friendly',
+}
+
+try:
+    from src.common.scroll_helper import ScrollHelper
+except ImportError:
+    ScrollHelper = None
+
 logger = logging.getLogger(__name__)
 
 _USING_CORE_SCROLL = False

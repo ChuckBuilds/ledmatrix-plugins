@@ -26,6 +26,17 @@ from typing import Dict, Any, List, Optional
 
 from PIL import Image
 
+LEAGUE_NAMES = {
+    'afl': 'AFL',
+}
+
+from game_renderer import GameRenderer
+
+try:
+    from src.common.scroll_helper import ScrollHelper
+except ImportError:
+    ScrollHelper = None
+
 logger = logging.getLogger(__name__)
 
 _USING_CORE_SCROLL = False
