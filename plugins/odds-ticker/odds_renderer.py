@@ -19,6 +19,22 @@ from typing import Dict, Any, List, Optional
 from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 
+
+def _pixel_draw(image):
+    """ImageDraw that renders text crisply on the LED grid.
+
+    PIL anti-aliases by default, blending glyph edges into dim partial-lit
+    pixels. On a 1:1 LED matrix those read as blur rather than smoothing. The
+    ticker's default element sizes are on Press Start 2P's 8px grid and so were
+    already crisp, but any size a user picks in the customization UI was not --
+    fontmode "1" makes 1-bit rendering unconditional. Scratch canvases used only
+    to measure text go through here too, so metrics match what gets drawn.
+    """
+    draw = ImageDraw.Draw(image)
+    draw.fontmode = "1"
+    return draw
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -253,8 +269,11 @@ class OddsRenderer:
         width = self.display_manager.matrix.width
         height = self.display_manager.matrix.height
         
-        # Make logos use most of the display height, with a small margin
-        logo_size = int(height * 1.2)
+        # Fit logos inside the panel. This used to be int(height * 1.2), which
+        # with the (height - logo_size) // 2 centering below resolved to a
+        # negative y -- so the top and bottom of every team logo was cropped off
+        # the panel.
+        logo_size = height
         h_padding = 4  # Use a consistent horizontal padding
 
         # Fonts - use custom fonts from config
@@ -331,7 +350,7 @@ class OddsRenderer:
             time_text = "TBD"
 
         # Calculate column widths (like original)
-        temp_draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+        temp_draw = _pixel_draw(Image.new('RGB', (1, 1)))
         day_width = int(temp_draw.textlength(day_text, font=datetime_font))
         date_width = int(temp_draw.textlength(date_text, font=datetime_font))
         time_width = int(temp_draw.textlength(time_text, font=datetime_font))
@@ -385,7 +404,7 @@ class OddsRenderer:
         
         # Create the image
         image = Image.new('RGB', (int(total_width), height), color=(0, 0, 0))
-        draw = ImageDraw.Draw(image)
+        draw = _pixel_draw(image)
 
         # --- Draw elements (exactly like original) ---
         current_x = 0
@@ -563,7 +582,7 @@ class OddsRenderer:
         matrix_height = self.display_manager.matrix.height
         
         img = Image.new('RGB', (matrix_width, matrix_height), (0, 0, 0))
-        draw = ImageDraw.Draw(img)
+        draw = _pixel_draw(img)
         draw.text((10, 12), "No Odds Available", 
                  font=self.team_font, fill=(150, 150, 150))
         
@@ -579,7 +598,7 @@ class OddsRenderer:
             
             # Create a simple fallback image with a brighter background
             image = Image.new('RGB', (width, height), color=(50, 50, 50))  # Dark gray instead of black
-            draw = ImageDraw.Draw(image)
+            draw = _pixel_draw(image)
             
             # Draw a simple message with larger font
             message = "No odds data"
@@ -596,7 +615,7 @@ class OddsRenderer:
             # Display the fallback image
             self.display_manager.image = image
             if hasattr(self.display_manager, 'draw'):
-                self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
+                self.display_manager.draw = _pixel_draw(self.display_manager.image)
             self.display_manager.update_display()
             
         except Exception as e:
@@ -627,7 +646,7 @@ class OddsRenderer:
         matrix_height = self.display_manager.matrix.height
         
         img = Image.new('RGB', (matrix_width, matrix_height), (0, 0, 0))
-        draw = ImageDraw.Draw(img)
+        draw = _pixel_draw(img)
         draw.text((10, 12), message, 
                  font=self.team_font, fill=(255, 0, 0))
         
@@ -760,7 +779,7 @@ class OddsRenderer:
             # Display the cropped image
             self.display_manager.image = visible_image
             if hasattr(self.display_manager, 'draw'):
-                self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
+                self.display_manager.draw = _pixel_draw(self.display_manager.image)
             
             # Add timeout protection for display update to prevent hanging
             try:

@@ -633,7 +633,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.10"
+      "latest_version": "1.2.0"
     },
     {
       "id": "of-the-day",
@@ -806,10 +806,10 @@
       "plugin_path": "plugins/stock-news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.4.6"
+      "latest_version": "2.5.0"
     },
     {
       "id": "stocks",
@@ -829,10 +829,10 @@
       "plugin_path": "plugins/ledmatrix-stocks",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.6.0",
+      "latest_version": "2.7.0",
       "icon": "fas fa-chart-line"
     },
     {
