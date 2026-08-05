@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "nrl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.3.2",
+      "released": "2026-08-05",
+      "notes": "Fix ESPN 403s. Around 2026-08-04 ESPN's site.api began rejecting both browser-style and bare custom User-Agent strings, which returned 403 Forbidden for every request this plugin made. Requests now send an identifying agent with the project URL, which ESPN accepts. No behaviour change beyond the header.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.3.1",
       "released": "2026-08-05",
@@ -82,7 +88,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-31",
+  "last_updated": "2026-08-05",
   "stars": 0,
   "downloads": 0,
   "verified": true,

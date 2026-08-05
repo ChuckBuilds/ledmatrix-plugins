@@ -52,7 +52,7 @@ class F1DataSource:
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
         self.session.headers.update({
-            "User-Agent": "LEDMatrix-F1/1.0",
+            "User-Agent": "LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)",
             "Accept": "application/json",
         })
 

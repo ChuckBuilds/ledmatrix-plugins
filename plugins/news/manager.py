@@ -922,7 +922,7 @@ class NewsTickerPlugin(BasePlugin):
         try:
             self.logger.info(f"Fetching headlines from {feed_name}...")
             headers = {
-                'User-Agent': 'LEDMatrix-NewsPlugin/1.0 (RSS Reader)'
+                'User-Agent': 'LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)'
             }
             response = requests.get(feed_url, timeout=self.background_config.get('request_timeout', 30), headers=headers)
             response.raise_for_status()

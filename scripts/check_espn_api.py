@@ -10,25 +10,30 @@ This script is that answer. Run it from a host with normal internet access (a
 Pi running LEDMatrix, a laptop) and it reports, per endpoint, whether ESPN still
 serves what the plugins expect.
 
-The important trick is the second axis. The plugins do not speak to ESPN with one
-voice; they send three different ``User-Agent`` values depending on which file
-happens to make the call:
+The important trick is the second axis: each endpoint is tried under several
+``User-Agent`` values, because anti-bot filtering is the most common way an
+undocumented API "changes" and it discriminates on exactly that header.
 
-* ``python-urllib`` / ``python-requests`` — the stdlib or requests default, sent
-  by every caller that passes no headers at all (odds-ticker's data_fetcher, most
-  of the ``*_managers.py``, every ``base_odds_manager.py``, this repo's own
-  check_team_pickers.py).
-* ``LEDMatrix/1.0`` — the custom agent set by the ``data_sources.py`` family.
-* a browser string — what a handful of files already send, and what ESPN's own
-  site sends.
+Do not assume which side of that filter is the safe one. This script originally
+tested for the familiar shape — a browser agent works, a script agent is
+refused — and reported "healthy" all the way through the 2026-08-04 outage,
+where ESPN had inverted it:
 
-Anti-bot filtering is the most common way an undocumented API "changes", and it
-discriminates on exactly that header. So each endpoint is tried under all three
-profiles. That turns an ambiguous outage into a diagnosis:
+* a browser string is refused unconditionally (no other header rescues it),
+* a bare custom token like ``LEDMatrix/1.0`` is refused when the request also
+  sends no ``Accept`` header,
+* honest client tokens (``python-requests``, ``curl``, ``Python-urllib``) and a
+  token carrying a project URL are accepted.
+
+So the profiles below are split into what the plugins actually send (``shipped``)
+and controls kept only to characterise the filter, and the verdict is
+direction-agnostic — it names which agents were accepted and which refused
+rather than assuming. The diagnosis:
 
 * every profile fails  -> ESPN moved or withdrew the endpoint; the URL needs work.
-* only the non-browser profiles fail -> ESPN is filtering on User-Agent, and the
-  fix is a header change, not a URL change.
+* some accepted, some refused -> ESPN is filtering on User-Agent. It only breaks
+  the plugins if a *shipped* profile is on the refused side; the fix is then a
+  header change, not a URL change.
 * everything passes -> ESPN is fine; look at the plugin, the cache, or the
   network in front of it.
 
@@ -111,11 +116,27 @@ ENDPOINTS = [
     ),
 ]
 
-# The three voices the plugins actually use. Order matters: the browser profile
-# is last so a "browser works, ours do not" split is easy to read off the table.
+# The voices to try. `shipped` marks the ones the plugins actually send, which
+# is what decides the exit code: a control failing is information, a shipped
+# profile failing is the outage. The controls are kept because *which* agents
+# ESPN rejects is the diagnosis — on 2026-08-04 it started refusing browser
+# strings and bare custom tokens while accepting honest client tokens, the
+# reverse of the anti-bot filtering this script was first written to expect.
 PROFILES = [
-    ("default", {}),
-    ("LEDMatrix/1.0", {"User-Agent": "LEDMatrix/1.0", "Accept": "application/json"}),
+    ("default", {}, True),
+    (
+        "shipped",
+        {
+            "User-Agent": "LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)",
+            "Accept": "application/json",
+        },
+        True,
+    ),
+    (
+        "bare-custom",
+        {"User-Agent": "LEDMatrix/1.0", "Accept": "application/json"},
+        False,
+    ),
     (
         "browser",
         {
@@ -125,8 +146,11 @@ PROFILES = [
             ),
             "Accept": "application/json, text/plain, */*",
         },
+        False,
     ),
 ]
+
+SHIPPED = [name for name, _headers, shipped in PROFILES if shipped]
 
 
 def probe(url, headers, timeout):
@@ -194,7 +218,7 @@ def main():
     report = []
     for label, url, expected in ENDPOINTS:
         row = {"endpoint": label, "url": url, "profiles": {}}
-        for profile_name, headers in PROFILES:
+        for profile_name, headers, _shipped in PROFILES:
             result = check_expected_key(probe(url, headers, args.timeout), expected)
             row["profiles"][profile_name] = {
                 k: v for k, v in result.items() if k != "data"
@@ -248,18 +272,28 @@ def summarize(report, as_json):
         if all(p.get("status") is None for p in r["profiles"].values())
     ]
     all_dead = [r for r in failed if r not in unreachable]
+
+    # Direction-agnostic on purpose. The first version of this asked only
+    # "does browser work where ours does not", so when ESPN inverted the rule
+    # and began rejecting browser strings instead, every endpoint looked
+    # healthy and the advice it printed — send a browser agent — was the exact
+    # change that would have kept the plugins broken.
     ua_split = [
-        r
-        for r in report
-        if r["profiles"]["browser"]["ok"]
-        and not (r["profiles"]["default"]["ok"] and r["profiles"]["LEDMatrix/1.0"]["ok"])
+        r for r in report
+        if any(p["ok"] for p in r["profiles"].values())
+        and not all(p["ok"] for p in r["profiles"].values())
+    ]
+    # Only a shipped profile failing actually breaks a plugin.
+    broken_shipped = [
+        r for r in report
+        if r not in unreachable and not all(r["profiles"][n]["ok"] for n in SHIPPED)
     ]
 
     if as_json:
-        return 1 if failed or ua_split else 0
+        return 1 if failed or broken_shipped else 0
 
     if unreachable and len(unreachable) == total:
-        reason = unreachable[0]["profiles"]["browser"]["error"]
+        reason = next(iter(unreachable[0]["profiles"].values()))["error"]
         print(f"CANNOT REACH ESPN: all {total} endpoints failed without ever getting "
               "an HTTP response.")
         print(f"  First reason: {reason}")
@@ -274,12 +308,29 @@ def summarize(report, as_json):
         return 0
 
     if ua_split:
-        print(f"USER-AGENT FILTERING: {len(ua_split)}/{total} endpoints answer a "
-              "browser agent but reject ours.")
-        print("  ESPN is filtering on User-Agent. The fix is a header change, not a "
-              "URL change: send a browser User-Agent from every ESPN caller.")
+        # Name the agents rather than assuming which side of the split is ours.
+        accepted, rejected = set(), set()
         for row in ua_split:
-            print(f"    - {row['endpoint']}")
+            for name, result in row["profiles"].items():
+                (accepted if result["ok"] else rejected).add(name)
+
+        print(f"USER-AGENT FILTERING: {len(ua_split)}/{total} endpoints accept some "
+              "agents and reject others.")
+        print(f"  accepted: {', '.join(sorted(accepted)) or 'none'}")
+        print(f"  rejected: {', '.join(sorted(rejected)) or 'none'}")
+
+        broken_names = sorted(n for n in SHIPPED if n in rejected)
+        if broken_names:
+            print(f"  The plugins send {', '.join(broken_names)}, which ESPN is now "
+                  "rejecting. This is a header change, not a URL change: switch every "
+                  "ESPN caller to an agent in the accepted list above.")
+        else:
+            print("  Every agent the plugins actually send is still accepted, so this "
+                  "does not break them today. It is a warning: ESPN is discriminating "
+                  "on User-Agent, and which side is allowed has flipped before.")
+        for row in ua_split:
+            missing = sorted(n for n, r in row["profiles"].items() if not r["ok"])
+            print(f"    - {row['endpoint']}: rejects {', '.join(missing)}")
 
     if all_dead:
         print(f"\nENDPOINT DOWN: {len(all_dead)}/{total} endpoints fail under every "
@@ -287,15 +338,23 @@ def summarize(report, as_json):
         print("  Not a header problem — the URL moved or was withdrawn, or the "
               "response shape changed. These need per-endpoint work:")
         for row in all_dead:
-            reason = row["profiles"]["browser"]["error"]
+            reason = next(iter(row["profiles"].values()))["error"]
             print(f"    - {row['endpoint']}: {reason}")
 
     if unreachable:
         print(f"\nUNREACHABLE: {len(unreachable)}/{total} endpoints never got an HTTP "
               "response, so they are undiagnosed rather than broken:")
         for row in unreachable:
-            print(f"    - {row['endpoint']}: {row['profiles']['browser']['error']}")
+            reason = next(iter(row["profiles"].values()))["error"]
+            print(f"    - {row['endpoint']}: {reason}")
 
+    # A split that leaves every shipped agent working is a warning, not a
+    # failure: nothing is broken today, and exiting non-zero for it would train
+    # whoever runs this to ignore the one exit code that means "act now".
+    if not failed and not broken_shipped:
+        print("\nNothing the plugins send is being rejected — reporting the split "
+              "above as a warning, not a failure.")
+        return 0
     return 1
 
 

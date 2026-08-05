@@ -190,7 +190,7 @@ class MastersLogoLoader:
         if url:
             try:
                 response = requests.get(url, timeout=5, headers={
-                    "User-Agent": "LEDMatrix Masters Plugin/2.0"
+                    "User-Agent": "LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)"
                 })
                 response.raise_for_status()
 

@@ -294,7 +294,7 @@ class BaseballLogoManager:
         allowlisted by the caller."""
         resp = requests.get(
             url, timeout=5, stream=True,
-            headers={"User-Agent": "LEDMatrix Baseball Plugin/1.0"},
+            headers={"User-Agent": "LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)"},
         )
         try:
             resp.raise_for_status()

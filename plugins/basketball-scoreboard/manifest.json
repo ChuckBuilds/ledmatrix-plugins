@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.10.2",
+  "version": "1.10.3",
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -18,6 +18,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.10.3",
+      "released": "2026-08-05",
+      "notes": "Fix ESPN 403s. Around 2026-08-04 ESPN's site.api began rejecting both browser-style and bare custom User-Agent strings, which returned 403 Forbidden for every request this plugin made. Requests now send an identifying agent with the project URL, which ESPN accepts. No behaviour change beyond the header.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.10.2",
       "released": "2026-08-05",
