@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "BirdNET-Go Plugin Configuration",
-  "description": "Configuration schema for the BirdNET-Go plugin - subscribes to BirdNET-Go MQTT detections and displays the most recent bird on the LED matrix",
+  "description": "Configuration schema for the BirdNET-Go plugin - polls the BirdNET-Go REST API to display the most recent bird and today's detection stats on the LED matrix",
   "type": "object",
   "properties": {
     "enabled": {
@@ -17,10 +17,16 @@
     },
     "mqtt": {
       "type": "object",
+      "description": "Optional. Only needed for sub-second interrupt pop-ups - the REST API alone drives both screens.",
       "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Subscribe to an MQTT broker for pushed detections. Leave off to rely on REST polling alone."
+        },
         "host": {
           "type": "string",
-          "default": "localhost",
+          "default": "",
           "description": "MQTT broker hostname or IP address"
         },
         "port": {
@@ -58,23 +64,29 @@
           "description": "MQTT topic BirdNET-Go publishes detections to. Supports wildcards (+ and #)."
         }
       },
-      "required": ["host", "port", "topic"],
       "additionalProperties": false
     },
     "birdnet_api": {
       "type": "object",
+      "description": "The primary data source: detections, daily stats and species images all come from here.",
       "properties": {
         "base_url": {
           "type": "string",
           "default": "http://birdnet-go.local:8080",
-          "description": "Base URL of the BirdNET-Go web server (used for species image lookup)"
+          "description": "Base URL of the BirdNET-Go web server, e.g. http://192.168.1.20:8084"
         },
         "request_timeout": {
           "type": "number",
           "default": 5.0,
           "minimum": 1,
           "maximum": 30,
-          "description": "HTTP timeout in seconds for image requests"
+          "description": "HTTP timeout in seconds for API requests"
+        },
+        "poll_interval": {
+          "type": "number",
+          "default": 60,
+          "minimum": 5,
+          "description": "How often (seconds) to poll for new detections and refresh daily stats"
         }
       },
       "additionalProperties": false
@@ -129,6 +141,55 @@
           "type": "boolean",
           "default": true,
           "description": "Show how long ago the bird was detected"
+        },
+        "unique_species": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a different species each rotation slot instead of repeating whatever called last. On a busy feed one or two loud species would otherwise fill nearly every slot."
+        },
+        "max_species": {
+          "type": "integer",
+          "default": 8,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "How many of today's species to cycle through"
+        },
+        "species_order": {
+          "type": "string",
+          "enum": ["recent", "frequency"],
+          "default": "recent",
+          "description": "recent: most recently heard species first. frequency: most-heard species first."
+        },
+        "show_today_count": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show how many times the species has been heard today (e.g. x203)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "stats": {
+      "type": "object",
+      "description": "The birdnet_stats screen: today's species count, total detections and most-heard species.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the stats screen. When off, the plugin's stats rotation slot is skipped."
+        },
+        "top_n": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "How many of the most-heard species to keep. The panel shows as many as fit."
+        },
+        "rotation_duration": {
+          "type": "number",
+          "default": 15,
+          "minimum": 1,
+          "maximum": 300,
+          "description": "Seconds to show the stats screen during its rotation slot"
         }
       },
       "additionalProperties": false
@@ -164,6 +225,14 @@
           "default": [0, 0, 0],
           "description": "RGB background color [R, G, B]"
         },
+        "accent_color": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 190, 0],
+          "description": "RGB accent color [R, G, B] for the stats header and per-species counts"
+        },
         "scroll_speed": {
           "type": "number",
           "default": 30,
@@ -192,6 +261,6 @@
       "additionalProperties": false
     }
   },
-  "required": ["enabled", "mqtt"],
+  "required": ["enabled", "birdnet_api"],
   "additionalProperties": false
 }
