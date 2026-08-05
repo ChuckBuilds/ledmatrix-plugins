@@ -1814,6 +1814,105 @@ class WeatherPlugin(BasePlugin):
         if fetcher is not None:
             fetcher.reset_loop()
 
+    def _render_current_weather_vegas_image(self) -> Optional[Image.Image]:
+        """Current conditions sized to its content, for the Vegas ticker.
+
+        The full-screen renderer anchors the condition, temperature and
+        high/low to the *right edge of the panel* and spreads the metrics bar
+        evenly across the whole width. That is right for a screen you look at,
+        but as a ticker tile it means one display width per weather mode --
+        three of them, 1536px, of which auto_trim could only reclaim 14%
+        because the ink genuinely reaches both edges. Other plugins hand the
+        ticker tiles of 110-145px.
+
+        So the ticker gets its own left-to-right layout, measured and sized to
+        exactly what it draws. The full-screen version is untouched and still
+        serves the normal rotation slot.
+        """
+        try:
+            height = self.display_manager.matrix.height
+            layout = self._get_layout()
+
+            temp = int(self.weather_data['main']['temp'])
+            condition = self.weather_data['weather'][0]['main']
+            icon_code = self.weather_data['weather'][0]['icon']
+            humidity = self.weather_data['main']['humidity']
+            wind_speed = self.weather_data['wind'].get('speed', 0)
+            wind_deg = self.weather_data['wind'].get('deg', 0)
+            uv_index = self.weather_data['main'].get('uvi', 0)
+            temp_high = int(self.weather_data['main']['temp_max'])
+            temp_low = int(self.weather_data['main']['temp_min'])
+
+            temp_font = self.display_manager.small_font
+            small_font = self.display_manager.small_font
+            tiny_font = self.display_manager.extra_small_font
+
+            gap = max(3, round(4 * (height / 32.0)))
+            icon_size = layout['current_icon_size']
+
+            # Column 2 stacks temperature over high/low; column 3 stacks the
+            # condition over the metrics. Width is the widest line in each.
+            temp_text = f"{temp}°"
+            high_low_text = f"{temp_low}°/{temp_high}°"
+            metrics_text = (f"UV:{uv_index:.0f} H:{humidity}% "
+                            f"W:{wind_speed:.0f}{self._get_wind_direction(wind_deg)}")
+
+            measure = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+
+            def text_w(text, font):
+                return int(measure.textlength(text, font=font))
+
+            temp_w = text_w(temp_text, temp_font)
+            high_low_w = text_w(high_low_text, small_font)
+            condition_w = text_w(condition, small_font)
+            metrics_w = text_w(metrics_text, tiny_font)
+
+            col2_w = max(temp_w, high_low_w)
+            col3_w = max(condition_w, metrics_w)
+            total_width = icon_size + gap + col2_w + gap + col3_w + gap
+
+            # On a narrow panel this side-by-side arrangement is *wider* than
+            # the full-screen tile it replaces (198px against 128px at
+            # 128x32), because fixed-size bitmap fonts do not shrink with the
+            # display. Reclaiming nothing is fine; costing extra is not.
+            if total_width >= self.display_manager.matrix.width:
+                self.logger.debug(
+                    "[Weather Vegas] Compact current tile would be %dpx on a "
+                    "%dpx panel; using the full-screen layout instead",
+                    total_width, self.display_manager.matrix.width)
+                return self._render_current_weather_image()
+
+            img = Image.new('RGB', (total_width, height), (0, 0, 0))
+            draw = ImageDraw.Draw(img)
+
+            WeatherIcons.draw_weather_icon(
+                img, icon_code, 0, max(0, (height - icon_size) // 2), size=icon_size)
+
+            # Two text rows, vertically centred as a pair.
+            row_h = 8
+            top_y = max(0, (height - (row_h * 2 + 2)) // 2)
+            bottom_y = top_y + row_h + 2
+
+            x = icon_size + gap
+            draw.text((x, top_y), temp_text, font=temp_font,
+                      fill=self.COLORS['highlight'])
+            draw.text((x, bottom_y), high_low_text, font=small_font,
+                      fill=self.COLORS['dim'])
+
+            x += col2_w + gap
+            draw.text((x, top_y), condition, font=small_font,
+                      fill=self.COLORS['text'])
+            draw.text((x, bottom_y), metrics_text, font=tiny_font,
+                      fill=self.COLORS['dim'])
+
+            return img
+
+        except Exception as e:
+            self.logger.error("Error rendering compact current weather: %s", e,
+                              exc_info=True)
+            # Fall back to the full-screen tile rather than dropping the mode.
+            return self._render_current_weather_image()
+
     def get_vegas_content(self):
         """Return images for all enabled weather display modes."""
         if not self.weather_data:
@@ -1822,7 +1921,7 @@ class WeatherPlugin(BasePlugin):
         images = []
 
         if self.show_current:
-            img = self._render_current_weather_image()
+            img = self._render_current_weather_vegas_image()
             if img:
                 images.append(img)
 
