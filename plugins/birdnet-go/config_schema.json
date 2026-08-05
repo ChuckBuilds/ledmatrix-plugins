@@ -72,8 +72,8 @@
       "properties": {
         "base_url": {
           "type": "string",
-          "default": "http://birdnet-go.local:8080",
-          "description": "Base URL of the BirdNET-Go web server, e.g. http://192.168.1.20:8084"
+          "default": "",
+          "description": "Base URL of the BirdNET-Go web server, e.g. http://birdnet-go.local:8080 or http://192.168.1.20:8084. Required: a self-hosted service has no useful default, and a placeholder host would just produce repeated connection warnings."
         },
         "request_timeout": {
           "type": "number",
@@ -89,6 +89,7 @@
           "description": "How often (seconds) to poll for new detections and refresh daily stats"
         }
       },
+      "required": ["base_url"],
       "additionalProperties": false
     },
     "display": {

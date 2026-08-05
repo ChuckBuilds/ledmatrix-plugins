@@ -22,6 +22,7 @@ import os
 import threading
 import time
 import uuid
+from collections import OrderedDict
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -46,6 +47,11 @@ STATS_MODE = 'birdnet_stats'
 # A frame's delta-time feeds the scroll position. Rotation can park this plugin
 # for minutes at a time, so cap dt or the name jumps a screen-width on return.
 _MAX_FRAME_DT = 0.25
+
+# Image caches are bounded: a yard accumulates new species for months, and an
+# unbounded cache of decoded photos would grow for as long as the service runs.
+_MAX_SOURCE_IMAGES = 32
+_MAX_PANEL_IMAGES = 16
 
 # Case-insensitive fallback variants tried when a mapped field is missing.
 _FIELD_VARIANTS = {
@@ -133,7 +139,9 @@ class BirdNetGoPlugin(BasePlugin):
         self._cycle_started = 0.0
         self._cycle_key: Optional[str] = None
         self.daily_stats: Optional[Dict[str, Any]] = None
-        self._species_img_cache: Dict[str, Image.Image] = {}  # species -> source PIL
+        # species -> decoded source PIL, and (species, w, h) -> panel-sized frame.
+        self._species_img_cache: "OrderedDict[str, Image.Image]" = OrderedDict()
+        self._panel_img_cache: "OrderedDict[Tuple[str, int, int], Image.Image]" = OrderedDict()
         self._species_img_failed: set = set()  # species we already failed to fetch
         self._pending_image_fetch: Optional[str] = None
         self._scroll_pos = 0.0
@@ -388,6 +396,16 @@ class BirdNetGoPlugin(BasePlugin):
 
     def _connect_mqtt(self) -> bool:
         try:
+            # A broker drop only flips mqtt_connected; the old client keeps its
+            # network thread, socket and own reconnect loop. Without this
+            # teardown every drop leaks a thread and can double-deliver.
+            if self.mqtt_client is not None:
+                try:
+                    self.mqtt_client.loop_stop()
+                    self.mqtt_client.disconnect()
+                except Exception as e:
+                    self.logger.debug("Error stopping previous MQTT client: %s", e)
+                self.mqtt_client = None
             try:
                 self.mqtt_client = mqtt.Client(
                     callback_api_version=mqtt.CallbackAPIVersion.VERSION1,
@@ -433,8 +451,8 @@ class BirdNetGoPlugin(BasePlugin):
                     try:
                         self.mqtt_client.loop_stop()
                         self.mqtt_client.disconnect()
-                    except Exception:
-                        pass
+                    except Exception as stop_err:
+                        self.logger.debug("Error stopping MQTT client: %s", stop_err)
                     self.mqtt_client = None
                 wait = min(self.mqtt_reconnect_delay, self.mqtt_max_reconnect_delay)
                 if self.mqtt_stop_event.wait(wait):
@@ -445,8 +463,8 @@ class BirdNetGoPlugin(BasePlugin):
             try:
                 self.mqtt_client.loop_stop()
                 self.mqtt_client.disconnect()
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.debug("Error stopping MQTT client on exit: %s", e)
             self.mqtt_client = None
         self.logger.info("MQTT loop thread stopped")
 
@@ -507,6 +525,8 @@ class BirdNetGoPlugin(BasePlugin):
         stats source and a far better cycle source than the detection stream.
         """
         data = self._api_get('/api/v2/analytics/species/daily')
+        if isinstance(data, dict):
+            data = data.get('data')
         if not isinstance(data, list):
             return
         rows: List[Dict[str, Any]] = []
@@ -637,6 +657,30 @@ class BirdNetGoPlugin(BasePlugin):
             frame.paste(resized.convert('RGB'), (x, y))
         return frame
 
+    def _cache_source_image(self, species: str, img: Image.Image) -> None:
+        self._species_img_cache[species] = img
+        self._species_img_cache.move_to_end(species)
+        while len(self._species_img_cache) > _MAX_SOURCE_IMAGES:
+            self._species_img_cache.popitem(last=False)
+
+    def _panel_image(self, species: str, img: Image.Image,
+                     box_w: int, box_h: int) -> Image.Image:
+        """Panel-sized frame for a species, resized once instead of per frame.
+
+        Keyed by size as well as species: the core can hand a plugin a smaller
+        logical screen, and a frame cached at the previous size would paste wrong.
+        """
+        key = (species, box_w, box_h)
+        cached = self._panel_img_cache.get(key)
+        if cached is not None:
+            self._panel_img_cache.move_to_end(key)
+            return cached
+        cached = self._resize_image(img, box_w, box_h)
+        self._panel_img_cache[key] = cached
+        while len(self._panel_img_cache) > _MAX_PANEL_IMAGES:
+            self._panel_img_cache.popitem(last=False)
+        return cached
+
     # ----------------------------------------------------------- rendering
 
     def _format_age(self, received_at: float) -> str:
@@ -709,8 +753,8 @@ class BirdNetGoPlugin(BasePlugin):
             cached = self.cache_manager.get(f'{self.plugin_id}_last_detection', max_age=86400)
             if cached:
                 return cached
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.debug("Detection cache read failed: %s", e)
         return None
 
     def _get_daily_stats(self) -> Optional[Dict[str, Any]]:
@@ -721,8 +765,8 @@ class BirdNetGoPlugin(BasePlugin):
             cached = self.cache_manager.get(f'{self.plugin_id}_daily_stats', max_age=6 * 3600)
             if cached:
                 return cached
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.debug("Stats cache read failed: %s", e)
         return None
 
     def _today_count(self, common_name: str) -> Optional[int]:
@@ -784,7 +828,7 @@ class BirdNetGoPlugin(BasePlugin):
             if pil_img is not None:
                 box = min(h, w // 3)
                 img_box_w = box
-                frame.paste(self._resize_image(pil_img, box, h), (0, 0))
+                frame.paste(self._panel_image(species, pil_img, box, h), (0, 0))
 
         pad = 2 if img_box_w else 1
         text_x = img_box_w + pad
@@ -932,15 +976,22 @@ class BirdNetGoPlugin(BasePlugin):
             wanted.extend(d['scientific_name'] or d['common_name']
                           for d in self._recent_species)
 
+        # Cap both the count and the wall-clock. The schema allows a 30s
+        # timeout, so three sequential fetches on top of two polls could
+        # otherwise block update() for minutes against a host that accepts
+        # connections but never answers. Whatever is missed resumes next tick.
         fetched = 0
+        deadline = time.time() + max(2.0, self.api_timeout * 1.5)
         for species in wanted:
             if (not species or species in self._species_img_cache
                     or species in self._species_img_failed):
                 continue
+            if time.time() >= deadline:
+                self.logger.debug("Image warm-up budget spent; resuming next update")
+                break
             img = self._fetch_species_image(species)
             if img is not None:
-                self._species_img_cache[species] = img
-            # Cap per update() so a cold cache can't stall the display loop.
+                self._cache_source_image(species, img)
             fetched += 1
             if fetched >= 3:
                 break
@@ -1043,14 +1094,15 @@ class BirdNetGoPlugin(BasePlugin):
                 try:
                     self.mqtt_client.loop_stop()
                     self.mqtt_client.disconnect()
-                except Exception:
-                    pass
+                except Exception as e:
+                    self.logger.debug("Error stopping MQTT client on disable: %s", e)
             self.mqtt_thread.join(timeout=5.0)
             self.logger.info("MQTT client thread stopped")
 
     def cleanup(self) -> None:
         self.on_disable()
         self._species_img_cache.clear()
+        self._panel_img_cache.clear()
         self._species_img_failed.clear()
         self._scroll_cache = None
 
