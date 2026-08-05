@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.6.2",
+  "version": "2.6.3",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -27,6 +27,12 @@
   ],
   "versions": [
     {
+      "version": "2.6.3",
+      "released": "2026-08-05",
+      "notes": "Size the Vegas weather tiles to their content instead of the panel. Each mode rendered at full display width, so the ticker scrolled three display widths of mostly black -- 49% inked for current conditions, 28% hourly, 20% daily, with 91px and 136px of dead space between forecast columns, and auto_trim could reclaim only 14% because the ink reaches both edges even where the middle is empty. All three renderers now take an optional width, defaulting to the panel exactly as before, and the Vegas path passes one measured from the content; the layouts are unchanged, just drawn closer together. On a 512px panel the tiles come to 265+272+204px instead of 1536px. The metrics bar reserves a real gap between items rather than packing to the text, because the bar centres each item in an equal section: sizing to the text alone left about 6px between them against 79px at full width. Metric items are built by one helper shared with the full-screen path, keeping the show_* toggles and the UV severity colour in agreement. Where packing would not be narrower each tile falls back to the panel-width render. Normal rotation is pixel-identical for all five modes at 128x32, 256x64 and 512x64.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "released": "2026-07-21",
       "version": "2.6.2",
       "notes": "Radar default range widened slightly, from 50 to 75 miles (center to panel edge), for a more regional default view. Existing configs are unaffected: an explicit radar_range_miles is used as-is, and the deprecated radar_zoom still maps to its previous range.",
@@ -41,7 +47,7 @@
     {
       "released": "2026-07-19",
       "version": "2.6.0",
-      "notes": "Radar overhaul. (1) Real map tiles: the radar now draws over an OpenStreetMap basemap (self-hosted tile server supported via radar_tile_server, public mirrors as fallback; carto/carto_dark/esri styles too), with the classic WeatherStar vector map kept as a selectable style and as automatic fallback when tiles are unavailable — radar is no longer blank outside the US. (2) Accuracy fix: basemap and radar are now rendered through one shared Web-Mercator viewport and the radar is a mosaic of every tile in view, so precipitation finally lines up with the map on all panel sizes (previously the radar was composited at a different zoom than the map — up to 4x off on 64x32 — and cut off near tile edges). (3) Fresher data: optional RainViewer nowcast frames (~30 min of predicted radar, labeled FCST +Nm with yellow progress dots), index polled every 3 min by default with tiles only downloaded for new frames, and frames/tiles cached to disk so restarts rebuild the animation without refetching. (4) Easier config: new radar_range_miles (distance to panel edge) replaces the abstract radar_zoom (still honored for existing configs), plus map style/brightness, frame timing, and past-frame-count settings. (5) Smoother playback: time-based frame stepping with a hold on the newest frame, and optional dynamic duration to let the rotation wait for a full loop.",
+      "notes": "Radar overhaul. (1) Real map tiles: the radar now draws over an OpenStreetMap basemap (self-hosted tile server supported via radar_tile_server, public mirrors as fallback; carto/carto_dark/esri styles too), with the classic WeatherStar vector map kept as a selectable style and as automatic fallback when tiles are unavailable \u2014 radar is no longer blank outside the US. (2) Accuracy fix: basemap and radar are now rendered through one shared Web-Mercator viewport and the radar is a mosaic of every tile in view, so precipitation finally lines up with the map on all panel sizes (previously the radar was composited at a different zoom than the map \u2014 up to 4x off on 64x32 \u2014 and cut off near tile edges). (3) Fresher data: optional RainViewer nowcast frames (~30 min of predicted radar, labeled FCST +Nm with yellow progress dots), index polled every 3 min by default with tiles only downloaded for new frames, and frames/tiles cached to disk so restarts rebuild the animation without refetching. (4) Easier config: new radar_range_miles (distance to panel edge) replaces the abstract radar_zoom (still honored for existing configs), plus map style/brightness, frame timing, and past-frame-count settings. (5) Smoother playback: time-based frame stepping with a hold on the newest frame, and optional dynamic duration to let the rotation wait for a full loop.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -65,7 +71,7 @@
     {
       "released": "2026-06-10",
       "version": "2.5.0",
-      "note": "Geocode the configured location once and cache the coordinates permanently across update cycles and restarts, instead of re-resolving every refresh. Cities don't move, so the geocoding API is now only ever called on a cache miss — eliminating the per-refresh geocoding timeouts that previously aborted the whole weather update, blanked the widget, and triggered up-to-an-hour error backoff. Add optional location_latitude/location_longitude config fields to skip geocoding entirely.",
+      "note": "Geocode the configured location once and cache the coordinates permanently across update cycles and restarts, instead of re-resolving every refresh. Cities don't move, so the geocoding API is now only ever called on a cache miss \u2014 eliminating the per-refresh geocoding timeouts that previously aborted the whole weather update, blanked the widget, and triggered up-to-an-hour error backoff. Add optional location_latitude/location_longitude config fields to skip geocoding entirely.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -144,7 +150,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-19",
+  "last_updated": "2026-08-05",
   "stars": 0,
   "downloads": 0,
   "verified": true,

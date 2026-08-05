@@ -153,6 +153,11 @@ class WeatherPlugin(BasePlugin):
         # reference fitting all 7 possible items (192 // 7 ~= 27px) without
         # crowding.
         self.MIN_METRIC_ITEM_WIDTH_PX = 27
+        # Gap the compact Vegas tile keeps between metrics-bar items. This is a
+        # readability floor, not a packing minimum: MIN_METRIC_ITEM_WIDTH_PX
+        # above is the point where items start to collide, which is a long way
+        # below the point where a scrolling row is comfortable to read.
+        self.COMPACT_METRIC_GAP_PX = 24
         self.COLORS = {
             'text': (255, 255, 255),
             'highlight': (255, 200, 0),
@@ -1039,10 +1044,16 @@ class WeatherPlugin(BasePlugin):
         self.display_manager.image = img
         self.display_manager.update_display()
     
-    def _render_current_weather_image(self) -> Optional[Image.Image]:
-        """Render current weather conditions to an Image without display side effects."""
+    def _render_current_weather_image(self, width: Optional[int] = None) -> Optional[Image.Image]:
+        """Render current weather conditions to an Image without display side effects.
+
+        width defaults to the panel. The Vegas ticker passes a narrower one so
+        the tile is this same layout simply drawn closer together: the
+        condition/temperature/high-low stack right-aligns to whatever width it
+        is given, and the metrics bar divides that width rather than the panel.
+        """
         try:
-            width = self.display_manager.matrix.width
+            width = width or self.display_manager.matrix.width
             height = self.display_manager.matrix.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
@@ -1103,35 +1114,9 @@ class WeatherPlugin(BasePlugin):
             wind_dir = self._get_wind_direction(wind_deg)
             wind_gust = self.weather_data['wind'].get('gust')
 
-            # Core items (always shown) plus a droppable tag for width-aware
-            # thinning below — None means "never drop" (UV/H/W and, once
-            # enabled, feels-like are always kept; only dew point/visibility/
-            # pressure are shed as the panel gets too narrow to fit them all
-            # legibly, least-useful first).
-            uv_color = self._get_uv_color(uv_index)
-            all_items = []  # list of (text, color, drop_tag)
-            all_items.append((f"UV:{uv_index:.0f}", uv_color, None))
-            all_items.append((f"H:{humidity}%", self.COLORS['dim'], None))
-            if wind_gust and wind_gust > wind_speed * 1.3:
-                all_items.append((f"W:{wind_speed:.0f}g{wind_gust:.0f}{wind_dir}", self.COLORS['dim'], None))
-            else:
-                all_items.append((f"W:{wind_speed:.0f}{wind_dir}", self.COLORS['dim'], None))
-
-            # Extra items — merged into same row (no degree symbol, font can't render it)
-            if self.show_feels_like and feels_like is not None:
-                all_items.append((f"FL:{int(feels_like)}", self.COLORS['dim'], None))
-            if self.show_dew_point and dew_point is not None:
-                all_items.append((f"Dew:{int(dew_point)}", self.COLORS['dim'], 'dew_point'))
-            if self.show_visibility and visibility_m is not None:
-                vis_val = visibility_m / 1609.34 if self.units == 'imperial' else visibility_m / 1000
-                vis_u = "mi" if self.units == 'imperial' else "km"
-                all_items.append((f"Vis:{vis_val:.0f}{vis_u}", self.COLORS['dim'], 'visibility'))
-            if self.show_pressure and pressure is not None:
-                if self.units == 'imperial':
-                    pv = pressure * 0.02953
-                    all_items.append((f"P:{pv:.2f}\"", self.COLORS['dim'], 'pressure'))
-                else:
-                    all_items.append((f"P:{int(pressure)}hPa", self.COLORS['dim'], 'pressure'))
+            all_items = self._build_metric_items(
+                uv_index, humidity, wind_speed, wind_dir, wind_gust,
+                feels_like, dew_point, visibility_m, pressure)
 
             # Drop least-useful optional items, in this order, while an equal
             # split still leaves each item too cramped to read (below
@@ -1156,6 +1141,46 @@ class WeatherPlugin(BasePlugin):
         except Exception:
             self.logger.exception("Error rendering current weather")
             return None
+
+    def _build_metric_items(self, uv_index, humidity, wind_speed, wind_dir,
+                            wind_gust, feels_like, dew_point, visibility_m,
+                            pressure) -> List[tuple]:
+        """The bottom-bar metrics as (text, color, drop_tag) tuples.
+
+        Shared by the full-screen layout and the Vegas tile so the two cannot
+        drift: the colors carry meaning (UV is graded by severity) and the
+        show_* toggles decide what appears at all, neither of which should
+        depend on which renderer you happen to be looking at.
+
+        drop_tag None means "never drop" — UV/H/W and, once enabled,
+        feels-like are always kept; only dew point/visibility/pressure are
+        shed when the panel is too narrow to fit them all legibly.
+        """
+        items = [
+            (f"UV:{uv_index:.0f}", self._get_uv_color(uv_index), None),
+            (f"H:{humidity}%", self.COLORS['dim'], None),
+        ]
+        if wind_gust and wind_gust > wind_speed * 1.3:
+            items.append((f"W:{wind_speed:.0f}g{wind_gust:.0f}{wind_dir}",
+                          self.COLORS['dim'], None))
+        else:
+            items.append((f"W:{wind_speed:.0f}{wind_dir}", self.COLORS['dim'], None))
+
+        # No degree symbol below — the bottom-bar font can't render it.
+        if self.show_feels_like and feels_like is not None:
+            items.append((f"FL:{int(feels_like)}", self.COLORS['dim'], None))
+        if self.show_dew_point and dew_point is not None:
+            items.append((f"Dew:{int(dew_point)}", self.COLORS['dim'], 'dew_point'))
+        if self.show_visibility and visibility_m is not None:
+            vis_val = visibility_m / 1609.34 if self.units == 'imperial' else visibility_m / 1000
+            vis_u = "mi" if self.units == 'imperial' else "km"
+            items.append((f"Vis:{vis_val:.0f}{vis_u}", self.COLORS['dim'], 'visibility'))
+        if self.show_pressure and pressure is not None:
+            if self.units == 'imperial':
+                items.append((f"P:{pressure * 0.02953:.2f}\"", self.COLORS['dim'], 'pressure'))
+            else:
+                items.append((f"P:{int(pressure)}hPa", self.COLORS['dim'], 'pressure'))
+        return items
 
     def _display_current_weather(self) -> None:
         """Display current weather conditions using comprehensive layout with icons."""
@@ -1227,13 +1252,18 @@ class WeatherPlugin(BasePlugin):
             for f in self.daily_forecast[:4]
         ]
     
-    def _render_hourly_forecast_image(self) -> Optional[Image.Image]:
-        """Render hourly forecast to an Image without display side effects."""
+    def _render_hourly_forecast_image(self, width: Optional[int] = None) -> Optional[Image.Image]:
+        """Render hourly forecast to an Image without display side effects.
+
+        width defaults to the panel. The Vegas ticker passes a narrower one:
+        columns are laid out as `width // count`, so on a wide panel four
+        hours get ~128px each to hold ~36px of content.
+        """
         try:
             if not self.hourly_forecast:
                 return None
 
-            width = self.display_manager.matrix.width
+            width = width or self.display_manager.matrix.width
             height = self.display_manager.matrix.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
@@ -1299,13 +1329,18 @@ class WeatherPlugin(BasePlugin):
         except Exception as e:
             self.logger.error(f"Error displaying hourly forecast: {e}")
     
-    def _render_daily_forecast_image(self) -> Optional[Image.Image]:
-        """Render daily forecast to an Image without display side effects."""
+    def _render_daily_forecast_image(self, width: Optional[int] = None) -> Optional[Image.Image]:
+        """Render daily forecast to an Image without display side effects.
+
+        width defaults to the panel. The Vegas ticker passes a narrower one:
+        three days spread across a 512px panel leaves ~136px of black between
+        each column.
+        """
         try:
             if not self.daily_forecast:
                 return None
 
-            width = self.display_manager.matrix.width
+            width = width or self.display_manager.matrix.width
             height = self.display_manager.matrix.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
@@ -1814,6 +1849,99 @@ class WeatherPlugin(BasePlugin):
         if fetcher is not None:
             fetcher.reset_loop()
 
+    def _compact_forecast_width(self, columns: int) -> Optional[int]:
+        """Width a forecast needs for `columns`, rather than the whole panel.
+
+        The forecast renderers lay out columns as `width // count`, so they
+        inherit whatever width they are given: on a 512px panel three daily
+        columns are ~136px of black apart, and the tile measures 20% inked.
+        Sizing to the content is what stops the ticker scrolling through that.
+
+        Returns None to mean "use the panel width" when packing would not
+        actually be narrower -- a small display is already tight.
+        """
+        if columns <= 0:
+            return None
+
+        layout = self._get_layout()
+        # A column holds an icon above a short label and temperature; the icon
+        # is the wider of the two in every size we render at.
+        column_w = max(layout['forecast_icon_size'], 28) + 8
+        compact = column_w * columns
+
+        panel_w = self.display_manager.matrix.width
+        if compact >= panel_w:
+            return None
+        return compact
+
+    def _compact_current_width(self) -> Optional[int]:
+        """Width the current-conditions layout needs, rather than the panel.
+
+        Measures the two things that set it: the condition/temperature/high-low
+        stack that right-aligns after the icon, and the metrics bar, which
+        divides the width into equal sections and so needs room for its widest
+        item in every one of them.
+
+        Returns None for "use the panel width" when packing would not be
+        narrower.
+        """
+        try:
+            layout = self._get_layout()
+            small = self.display_manager.small_font
+            tiny = self.display_manager.extra_small_font
+            measure = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+
+            main = self.weather_data['main']
+            temp = int(main['temp'])
+            condition = self.weather_data['weather'][0]['main']
+            stack_w = max(
+                measure.textlength(condition, font=small),
+                measure.textlength(f"{temp}\u00b0", font=small),
+                measure.textlength(
+                    f"{int(main['temp_min'])}\u00b0/{int(main['temp_max'])}\u00b0",
+                    font=small),
+            )
+            gap = max(4, layout['right_margin'] * 2)
+            text_block = (layout['current_icon_x'] + layout['current_icon_size']
+                          + gap + int(stack_w) + layout['right_margin'])
+
+            items = self._build_metric_items(
+                main.get('uvi', 0), main['humidity'],
+                self.weather_data['wind'].get('speed', 0),
+                self._get_wind_direction(self.weather_data['wind'].get('deg', 0)),
+                self.weather_data['wind'].get('gust'), main.get('feels_like'),
+                main.get('dew_point'), main.get('visibility'), main.get('pressure'))
+            metrics_block = 0
+            if items:
+                widest = max(measure.textlength(t, font=tiny) for t, _c, _d in items)
+                # The bar centres every item in an equal section, so the gap
+                # left between neighbours is (section - widest). Sizing to the
+                # text plus a few pixels squeezed that to 15px against the
+                # 63px of the full-width bar, which is legible in a still
+                # image and tiring to read scrolling past. Reserve a real gap
+                # instead and give back the width it costs.
+                metrics_block = (int(widest) + self.COMPACT_METRIC_GAP_PX) * len(items)
+
+            compact = max(text_block, metrics_block)
+            panel_w = self.display_manager.matrix.width
+            if compact >= panel_w:
+                return None
+            return compact
+        except Exception as e:
+            self.logger.debug("Could not size the compact current tile: %s", e)
+            return None
+
+    def _render_current_weather_vegas_image(self) -> Optional[Image.Image]:
+        """Current conditions for the Vegas ticker: the same layout, packed.
+
+        Reusing the real renderer at a narrower width keeps the tile the
+        familiar screen -- icon left, condition over temperature over
+        high/low, metrics along the bottom -- instead of a second layout that
+        merely resembles it and drifts. Everything right-aligns to the width it
+        is handed, so the only change is how much black sits between the parts.
+        """
+        return self._render_current_weather_image(width=self._compact_current_width())
+
     def get_vegas_content(self):
         """Return images for all enabled weather display modes."""
         if not self.weather_data:
@@ -1822,17 +1950,19 @@ class WeatherPlugin(BasePlugin):
         images = []
 
         if self.show_current:
-            img = self._render_current_weather_image()
+            img = self._render_current_weather_vegas_image()
             if img:
                 images.append(img)
 
         if self.show_hourly and self.hourly_forecast:
-            img = self._render_hourly_forecast_image()
+            img = self._render_hourly_forecast_image(
+                width=self._compact_forecast_width(min(4, len(self.hourly_forecast))))
             if img:
                 images.append(img)
 
         if self.show_daily and self.daily_forecast:
-            img = self._render_daily_forecast_image()
+            img = self._render_daily_forecast_image(
+                width=self._compact_forecast_width(min(3, len(self.daily_forecast))))
             if img:
                 images.append(img)
 
