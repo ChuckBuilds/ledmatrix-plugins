@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.7.2",
+      "released": "2026-08-05",
+      "notes": "Housekeeping, no behaviour change: scroll_display.py carried a second, unreferenced copy of the bundled fallback classes at module level -- the file was the pre-adoption and adopted versions concatenated rather than one replacing the other. The live fallback in scroll_display_legacy.py is untouched. Removing the dead copy is what makes a missing constant visible instead of appearing defined; that dead block is where the ones that broke scroll mode were hiding.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.7.1",
       "released": "2026-08-05",
