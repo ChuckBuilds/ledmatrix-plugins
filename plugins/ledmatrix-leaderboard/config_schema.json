@@ -228,6 +228,45 @@
           "type": "boolean",
           "default": false,
           "description": "Continuously loop the leaderboard"
+        },
+        "appearance": {
+          "type": "object",
+          "description": "Pixel-perfect rendering options for text and logos",
+          "properties": {
+            "pixel_perfect_text": {
+              "type": "boolean",
+              "default": true,
+              "description": "Render text with hard pixel edges. Disable only if you prefer the older anti-aliased (softer, blurrier) look"
+            },
+            "crisp_logos": {
+              "type": "boolean",
+              "default": true,
+              "description": "Give logos hard edges instead of a ring of half-lit pixels"
+            },
+            "text_outline": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Draw a black outline around text so it stays readable over logos"
+            },
+            "logo_scale": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 1.0,
+              "minimum": 0.5,
+              "maximum": 1.5,
+              "description": "Logo height as a fraction of the panel height. 1.0 fits the panel exactly; above 1.0 crops the top and bottom of every logo"
+            },
+            "font_size": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 32,
+              "description": "Font size in pixels. 0 picks a size that suits the panel height. Values are snapped to the font's pixel grid (multiples of 8 for Press Start 2P) to keep text sharp"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -246,9 +285,9 @@
             "top_teams": {
               "type": "integer",
               "default": 10,
-              "minimum": 5,
+              "minimum": 0,
               "maximum": 32,
-              "description": "Number of top NFL teams to display"
+              "description": "Number of top NFL teams to display. 0 shows every team the standings return (up to 32). Long lists need a matching display duration - see the README"
             }
           },
           "additionalProperties": false
@@ -264,9 +303,9 @@
             "top_teams": {
               "type": "integer",
               "default": 10,
-              "minimum": 5,
+              "minimum": 0,
               "maximum": 30,
-              "description": "Number of top NBA teams to display"
+              "description": "Number of top NBA teams to display. 0 shows every team the standings return (up to 30). Long lists need a matching display duration - see the README"
             }
           },
           "additionalProperties": false
@@ -282,9 +321,9 @@
             "top_teams": {
               "type": "integer",
               "default": 10,
-              "minimum": 5,
+              "minimum": 0,
               "maximum": 30,
-              "description": "Number of top MLB teams to display"
+              "description": "Number of top MLB teams to display. 0 shows every team the standings return (up to 30). Long lists need a matching display duration - see the README"
             }
           },
           "additionalProperties": false
@@ -300,9 +339,9 @@
             "top_teams": {
               "type": "integer",
               "default": 25,
-              "minimum": 5,
+              "minimum": 0,
               "maximum": 130,
-              "description": "Number of top NCAA Football teams to display"
+              "description": "Number of top NCAA Football teams to display. 0 shows every team the standings return (up to 130). Long lists need a matching display duration - see the README"
             },
             "show_ranking": {
               "type": "boolean",
@@ -323,9 +362,9 @@
             "top_teams": {
               "type": "integer",
               "default": 10,
-              "minimum": 5,
+              "minimum": 0,
               "maximum": 32,
-              "description": "Number of top NHL teams to display"
+              "description": "Number of top NHL teams to display. 0 shows every team the standings return (up to 32). Long lists need a matching display duration - see the README"
             }
           },
           "additionalProperties": false
@@ -341,9 +380,9 @@
             "top_teams": {
               "type": "integer",
               "default": 25,
-              "minimum": 5,
+              "minimum": 0,
               "maximum": 350,
-              "description": "Number of top NCAA Men's Basketball teams to display"
+              "description": "Number of top NCAA Men's Basketball teams to display. 0 shows every team the standings return (up to 350). Long lists need a matching display duration - see the README"
             },
             "show_ranking": {
               "type": "boolean",
@@ -364,9 +403,9 @@
             "top_teams": {
               "type": "integer",
               "default": 10,
-              "minimum": 5,
+              "minimum": 0,
               "maximum": 60,
-              "description": "Number of top NCAA Men's Hockey teams to display"
+              "description": "Number of top NCAA Men's Hockey teams to display. 0 shows every team the standings return (up to 60). Long lists need a matching display duration - see the README"
             },
             "show_ranking": {
               "type": "boolean",
@@ -387,9 +426,9 @@
             "top_teams": {
               "type": "integer",
               "default": 25,
-              "minimum": 5,
+              "minimum": 0,
               "maximum": 350,
-              "description": "Number of top NCAA Women's Basketball teams to display"
+              "description": "Number of top NCAA Women's Basketball teams to display. 0 shows every team the standings return (up to 350). Long lists need a matching display duration - see the README"
             },
             "show_ranking": {
               "type": "boolean",
@@ -410,9 +449,9 @@
             "top_teams": {
               "type": "integer",
               "default": 25,
-              "minimum": 5,
+              "minimum": 0,
               "maximum": 350,
-              "description": "Number of top NCAA Baseball teams to display"
+              "description": "Number of top NCAA Baseball teams to display. 0 shows every team the standings return (up to 350). Long lists need a matching display duration - see the README"
             },
             "season": {
               "x-advanced": true,
