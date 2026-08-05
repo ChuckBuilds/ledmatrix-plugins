@@ -561,14 +561,16 @@ class GameRenderer:
             status_width = draw.textlength(status_text, font=self.fonts['time'])
             self._draw_text_with_outline(draw, status_text, ((self.display_width - status_width) // 2, 1), self.fonts['time'])
 
-            # Score (centered)
+            # Score (centered). White, matching the switch-mode recent scorebug
+            # and every other scoreboard; this card used to be alone in drawing
+            # the final score gold.
             score_text = f"{game.get('away_score', '0')}-{game.get('home_score', '0')}"
             score_width = draw.textlength(score_text, font=self.fonts['score'])
             score_x = (self.display_width - score_width) // 2
             score_y = self.display_height - 14
             self._draw_text_with_outline(draw, score_text, (score_x, score_y),
                                         self.fonts['score'],
-                                        fill=self._recent_score_color(game, (255, 200, 0)))
+                                        fill=self._recent_score_color(game, (255, 255, 255)))
 
             # Records at bottom corners
             self._draw_records(draw, game)

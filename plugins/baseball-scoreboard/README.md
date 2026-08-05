@@ -433,8 +433,10 @@ a loss.
 }
 ```
 
-- Off by default. Until you enable it the score keeps exactly the color it has
-  today.
+- Off by default. Until you enable it the score is drawn in the plain white the
+  scorebug uses everywhere else. (Before this release the scroll/Vegas recent
+  card drew the final score gold, out of step with the switch view and with
+  every other scoreboard; it is white now.)
 - Only finished games are colored. Live and upcoming cards are untouched.
 - A game needs exactly one favorite team. If neither side is a favorite, or both
   are, the score keeps its normal color.

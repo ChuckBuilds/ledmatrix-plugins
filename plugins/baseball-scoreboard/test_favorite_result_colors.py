@@ -26,7 +26,7 @@ from game_renderer import GameRenderer  # noqa: E402
 from sports import SportsCore  # noqa: E402
 
 WHITE = (255, 255, 255)
-GOLD = (255, 200, 0)
+AMBER = (255, 200, 0)   # the built-in tie color
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 
@@ -94,7 +94,7 @@ def test_switch_mode_colors():
     _check("favorite lost away",
            core._recent_score_color(_game("NYM", "ATL", "7", "1"), WHITE), RED)
     _check("tie",
-           core._recent_score_color(_game("ATL", "NYM", "3", "3"), WHITE), (255, 200, 0))
+           core._recent_score_color(_game("ATL", "NYM", "3", "3"), WHITE), AMBER)
     _check("neither team is a favorite",
            core._recent_score_color(_game("NYM", "PHI", "4", "1"), WHITE), WHITE)
 
@@ -160,18 +160,18 @@ def test_scroll_card_colors():
     renderer = _renderer({"customization": {"favorite_result_colors": {"enabled": True}},
                           "mlb": {"favorite_teams": ["ATL"]}})
 
-    # The gold default the recent card already used is what an untinted card
-    # must keep, so an existing install sees no change until it opts in.
+    # With the feature off the caller's own default is handed straight back,
+    # whatever it is, so an existing install sees no change until it opts in.
     off = _renderer({"mlb": {"favorite_teams": ["ATL"]}})
     _check("feature off keeps the card's own default",
-           off._recent_score_color(_game("ATL", "NYM", "5", "2"), GOLD), GOLD)
+           off._recent_score_color(_game("ATL", "NYM", "5", "2"), WHITE), WHITE)
 
     _check("favorite won", renderer._recent_score_color(
-        _game("ATL", "NYM", "5", "2"), GOLD), GREEN)
+        _game("ATL", "NYM", "5", "2"), WHITE), GREEN)
     _check("favorite lost", renderer._recent_score_color(
-        _game("ATL", "NYM", "2", "5"), GOLD), RED)
+        _game("ATL", "NYM", "2", "5"), WHITE), RED)
     _check("other matchup untouched", renderer._recent_score_color(
-        _game("NYM", "PHI", "4", "1"), GOLD), GOLD)
+        _game("NYM", "PHI", "4", "1"), WHITE), WHITE)
 
     # Only finished games are tinted; a live card keeps its normal color even
     # when the favorite happens to be ahead.
@@ -190,20 +190,20 @@ def test_scroll_card_favorite_sources():
     # renderer cannot find by name -- the game's stamped list carries them.
     stamped = _renderer({"customization": {"favorite_result_colors": {"enabled": True}}})
     _check("favorites stamped on the game", stamped._recent_score_color(
-        _game("ATL", "NYM", "5", "2", favorites=["ATL"]), GOLD), GREEN)
+        _game("ATL", "NYM", "5", "2", favorites=["ATL"]), WHITE), GREEN)
 
     # A league section the renderer can find, with nothing stamped (hand-built
     # game dicts, and config edits that beat the next data refresh).
     from_config = _renderer({"customization": {"favorite_result_colors": {"enabled": True}},
                              "mlb": {"favorite_teams": ["ATL"]}})
     _check("favorites read from config", from_config._recent_score_color(
-        _game("ATL", "NYM", "5", "2"), GOLD), GREEN)
+        _game("ATL", "NYM", "5", "2"), WHITE), GREEN)
 
     # NRL keys favorites by ESPN id because its abbreviations collide.
     by_id = _renderer({"customization": {"favorite_result_colors": {"enabled": True}},
                        "nrl": {"favorite_teams": ["id-ATL"]}})
     _check("favorites matched by id", by_id._recent_score_color(
-        _game("ATL", "NYM", "5", "2", league="nrl"), GOLD), GREEN)
+        _game("ATL", "NYM", "5", "2", league="nrl"), WHITE), GREEN)
 
 
 def test_scroll_card_nested_payload():
