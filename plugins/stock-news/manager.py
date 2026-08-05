@@ -136,9 +136,19 @@ class StockNewsTickerPlugin(BasePlugin):
         gc = self.global_config
         fc = self.feeds_config
 
-        # Auto font size: 0 or absent → derive from display height
+        # Auto font size: 0 or absent → derive from display height, snapped to
+        # the pixel font's 8px design grid. height//3 lands on 10 for the common
+        # 32px panel, and an off-grid size splits single design pixels across
+        # screen pixels, so strokes come out alternating 1px and 2px wide. An
+        # explicit font_size is honoured as typed -- fontmode still keeps it
+        # hard-edged, it just may have that uneven stroke width.
         raw_fs = gc.get('font_size', 0)
-        self.font_size = int(raw_fs) if raw_fs and int(raw_fs) > 0 else max(6, min(16, self.display_height // 3))
+        if raw_fs and int(raw_fs) > 0:
+            self.font_size = int(raw_fs)
+        else:
+            self.font_size = self._snap_to_font_grid(
+                max(6, min(16, self.display_height // 3))
+            )
 
         # Item gap: 0 → use full display width (clean separation between stories)
         raw_gap = gc.get('item_gap', 0)
@@ -230,6 +240,38 @@ class StockNewsTickerPlugin(BasePlugin):
     # -------------------------------------------------------------------------
     # Font / scroll
     # -------------------------------------------------------------------------
+
+    #: Press Start 2P draws on an 8px grid; the 4x6 fallback on a 7px one.
+    PIXEL_FONT_GRIDS = {'PressStart2P-Regular.ttf': 8, '4x6-font.ttf': 7}
+
+    def _snap_to_font_grid(self, size: int) -> int:
+        """Round an auto-derived size to the configured font's pixel grid."""
+        font_name = Path(
+            self.global_config.get('font_path', 'assets/fonts/PressStart2P-Regular.ttf')
+        ).name
+        grid = self.PIXEL_FONT_GRIDS.get(font_name, 0)
+        if grid <= 0:
+            return size
+        return max(grid, int(round(size / grid)) * grid)
+
+    @staticmethod
+    def _pixel_draw(image: Image.Image) -> ImageDraw.ImageDraw:
+        """
+        Build an ImageDraw that renders text crisply on the LED grid.
+
+        PIL anti-aliases by default, blending glyph edges into dim partial-lit
+        pixels. On a 1:1 LED matrix those read as blur rather than smoothing --
+        at the size this ticker auto-picks for a 32px panel, better than half of
+        the lit pixels were partial. ``fontmode = "1"`` switches FreeType to
+        1-bit rendering so every pixel is fully on or fully off.
+
+        Every draw surface in this plugin -- including the throwaway ones used
+        only to measure text -- goes through here, so measurement and rendering
+        can never disagree about glyph metrics.
+        """
+        draw = ImageDraw.Draw(image)
+        draw.fontmode = "1"
+        return draw
 
     def _load_font(self, path: str, size: int) -> Optional[ImageFont.FreeTypeFont]:
         """Two-level fallback: given TTF → 4x6 bitmap. Returns None if neither loads."""
@@ -867,7 +909,7 @@ class StockNewsTickerPlugin(BasePlugin):
                         segments.append(("  •  " + age, age_c, font_age))
 
             # Measure segments
-            draw_tmp = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+            draw_tmp = self._pixel_draw(Image.new('RGB', (1, 1)))
             widths: List[int] = []
             text_h = 1
             for text, _, font in segments:
@@ -882,7 +924,7 @@ class StockNewsTickerPlugin(BasePlugin):
             total_w = max(logo_w + sum(widths), 1)
 
             img = Image.new('RGB', (total_w, self.display_height), (0, 0, 0))
-            draw = ImageDraw.Draw(img)
+            draw = self._pixel_draw(img)
             text_y = max(0, (self.display_height - text_h) // 2)
 
             x = 0
@@ -942,7 +984,7 @@ class StockNewsTickerPlugin(BasePlugin):
 
     def _display_no_news(self) -> None:
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
-        draw = ImageDraw.Draw(img)
+        draw = self._pixel_draw(img)
         text = "No Stock News"
         font = self._fit_fallback_font(draw, text)
         try:
@@ -983,7 +1025,7 @@ class StockNewsTickerPlugin(BasePlugin):
 
     def _display_error(self, message: str) -> None:
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
-        draw = ImageDraw.Draw(img)
+        draw = self._pixel_draw(img)
         draw.text((4, self.display_height // 2 - 4), message, fill=(255, 0, 0))
         self.display_manager.image = img.copy()
         self.display_manager.update_display()

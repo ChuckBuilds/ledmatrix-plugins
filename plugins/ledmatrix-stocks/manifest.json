@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-stocks",
   "name": "Stock & Crypto Ticker",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "Displays stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies. Supports scroll and switch display modes.",
   "author": "LEDMatrix Team",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",
@@ -39,6 +39,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "2.7.0",
+      "released": "2026-08-05",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Pixel-perfect text: all draw surfaces in the display and chart renderers now render with anti-aliasing off, so custom font sizes stay hard-edged on the LED grid. Default sizes were already on the font's pixel grid, so the default look is unchanged."
+    },
     {
       "version": "2.6.0",
       "released": "2026-07-31",
@@ -104,7 +110,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-31",
+  "last_updated": "2026-08-05",
   "stars": 0,
   "downloads": 0,
   "verified": true,

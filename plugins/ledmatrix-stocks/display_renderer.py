@@ -13,6 +13,21 @@ from PIL import Image, ImageDraw, ImageFont
 from src.common import ScrollHelper, LogoHelper, TextHelper
 
 
+def _pixel_draw(image):
+    """ImageDraw that renders text crisply on the LED grid.
+
+    PIL anti-aliases by default, blending glyph edges into dim partial-lit
+    pixels. On a 1:1 LED matrix those read as blur rather than smoothing, so
+    every draw surface here -- including scratch canvases used only to measure
+    text -- sets fontmode "1" for 1-bit glyph rendering. Measuring through the
+    same helper keeps metrics and rendering in agreement.
+    """
+    draw = ImageDraw.Draw(image)
+    draw.fontmode = "1"
+    return draw
+
+
+
 class StockDisplayRenderer:
     """Handles rendering of stock and cryptocurrency displays."""
     
@@ -232,7 +247,7 @@ class StockDisplayRenderer:
 
         # Measure the text on a scratch canvas so the real canvas can be sized to
         # the content (rather than a display-scaled guess that then needs clamping).
-        mdraw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+        mdraw = _pixel_draw(Image.new('RGB', (1, 1)))
         symbol_bbox = mdraw.textbbox((0, 0), symbol_text, font=symbol_font)
         price_bbox = mdraw.textbbox((0, 0), price_text, font=price_font)
         if change_text:
@@ -270,7 +285,7 @@ class StockDisplayRenderer:
 
         # Real canvas, sized to the content
         image = Image.new('RGB', (width, height), (0, 0, 0))
-        draw = ImageDraw.Draw(image)
+        draw = _pixel_draw(image)
 
         # Draw the logo on the left, vertically centered
         if logo:
@@ -312,7 +327,7 @@ class StockDisplayRenderer:
         """Create a static display for one stock/crypto (no scrolling)."""
         # Ensure dimensions are integers
         image = Image.new('RGB', (int(self.display_width), int(self.display_height)), (0, 0, 0))
-        draw = ImageDraw.Draw(image)
+        draw = _pixel_draw(image)
         
         is_crypto = data.get('is_crypto', False)
         
@@ -512,7 +527,7 @@ class StockDisplayRenderer:
         """Create an error display when no data is available."""
         # Ensure dimensions are integers
         image = Image.new('RGB', (int(self.display_width), int(self.display_height)), (0, 0, 0))
-        draw = ImageDraw.Draw(image)
+        draw = _pixel_draw(image)
         
         # Use symbol font for error display
         error_font = self.symbol_font

@@ -13,6 +13,21 @@ from PIL import Image, ImageDraw
 from src.common import TextHelper
 
 
+def _pixel_draw(image):
+    """ImageDraw that renders text crisply on the LED grid.
+
+    PIL anti-aliases by default, blending glyph edges into dim partial-lit
+    pixels. On a 1:1 LED matrix those read as blur rather than smoothing, so
+    every draw surface here -- including scratch canvases used only to measure
+    text -- sets fontmode "1" for 1-bit glyph rendering. Measuring through the
+    same helper keeps metrics and rendering in agreement.
+    """
+    draw = ImageDraw.Draw(image)
+    draw.fontmode = "1"
+    return draw
+
+
+
 class StockChartRenderer:
     """Handles rendering of stock and cryptocurrency charts."""
     
@@ -67,7 +82,7 @@ class StockChartRenderer:
         try:
             # Create image
             image = Image.new('RGB', (self.display_width, self.display_height), self.chart_colors['background'])
-            draw = ImageDraw.Draw(image)
+            draw = _pixel_draw(image)
             
             # Get price history
             price_history = data['price_history']

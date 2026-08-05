@@ -36,6 +36,22 @@ import pytz
 from pathlib import Path
 import numpy as np
 
+
+def _pixel_draw(image):
+    """ImageDraw that renders text crisply on the LED grid.
+
+    PIL anti-aliases by default, blending glyph edges into dim partial-lit
+    pixels. On a 1:1 LED matrix those read as blur rather than smoothing. The
+    ticker's default element sizes are on Press Start 2P's 8px grid and so were
+    already crisp, but any size a user picks in the customization UI was not --
+    fontmode "1" makes 1-bit rendering unconditional. Scratch canvases used only
+    to measure text go through here too, so metrics match what gets drawn.
+    """
+    draw = ImageDraw.Draw(image)
+    draw.fontmode = "1"
+    return draw
+
+
 # Import will be handled by the plugin system
 try:
     from src.plugin_system.base_plugin import BasePlugin
@@ -1644,8 +1660,11 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         width = self.display_manager.matrix.width
         height = self.display_manager.matrix.height
         
-        # Make logos use most of the display height, with a small margin
-        logo_size = int(height * 1.2)
+        # Fit logos inside the panel. This used to be int(height * 1.2), which
+        # with the (height - logo_size) // 2 centering below resolved to a
+        # negative y -- so the top and bottom of every team logo was cropped off
+        # the panel.
+        logo_size = height
         h_padding = 4 # Use a consistent horizontal padding
 
         # Fonts - use custom fonts from config
@@ -1822,7 +1841,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                 time_text = "TBD"
         
         # Datetime column width
-        temp_draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+        temp_draw = _pixel_draw(Image.new('RGB', (1, 1)))
         day_width = int(temp_draw.textlength(day_text, font=datetime_font))
         date_width = int(temp_draw.textlength(date_text, font=datetime_font))
         time_width = int(temp_draw.textlength(time_text, font=datetime_font))
@@ -2032,7 +2051,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
 
         # --- Create final image ---
         image = Image.new('RGB', (int(total_width), height), color=(0, 0, 0))
-        draw = ImageDraw.Draw(image)
+        draw = _pixel_draw(image)
 
         # --- Draw elements ---
         current_x = 0
@@ -2202,7 +2221,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             if idx < len(game_images) - 1:
                 bar_x = current_x + gap_width // 2
                 # Use ImageDraw for more efficient drawing
-                draw = ImageDraw.Draw(self.ticker_image)
+                draw = _pixel_draw(self.ticker_image)
                 draw.line([(bar_x, 0), (bar_x, height - 1)], fill=(255, 255, 255), width=1)
             current_x += gap_width
         
@@ -2804,7 +2823,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             
             # Create a simple fallback image with a brighter background
             image = Image.new('RGB', (width, height), color=(50, 50, 50))  # Dark gray instead of black
-            draw = ImageDraw.Draw(image)
+            draw = _pixel_draw(image)
             
             # Draw a simple message with larger font
             message = "No odds data"
@@ -2820,7 +2839,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             
             # Display the fallback image
             self.display_manager.image = image
-            self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
+            self.display_manager.draw = _pixel_draw(self.display_manager.image)
             self.display_manager.update_display()
             
             logger.info("Fallback message display completed")

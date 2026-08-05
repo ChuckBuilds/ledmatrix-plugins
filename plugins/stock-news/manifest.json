@@ -1,7 +1,7 @@
 {
   "id": "stock-news",
   "name": "Stock News Ticker",
-  "version": "2.4.6",
+  "version": "2.5.0",
   "author": "ChuckBuilds",
   "description": "Live stock headlines via Yahoo Finance search API with RSS fallback, company logos, configurable display styles (logo+ticker, ticker only, logo only), Vegas scroll integration, and per-day/hour request budgeting",
   "entry_point": "manager.py",
@@ -25,6 +25,12 @@
   "branch": "main",
   "plugin_path": "plugins/stock-news",
   "versions": [
+    {
+      "version": "2.5.0",
+      "released": "2026-08-05",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Pixel-perfect text: every draw surface, including the scratch canvases used only to measure text, now renders with anti-aliasing off. The auto font size is also snapped to the pixel font's 8px grid - it previously resolved to 10 on a 32px panel, where over half the lit pixels were partial-lit greys. An explicit font_size is unchanged."
+    },
     {
       "released": "2026-07-17",
       "version": "2.4.6",
@@ -142,7 +148,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-17",
+  "last_updated": "2026-08-05",
   "stars": 0,
   "downloads": 0,
   "verified": true,
