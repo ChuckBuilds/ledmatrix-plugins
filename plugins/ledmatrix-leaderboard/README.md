@@ -38,6 +38,52 @@ A plugin for LEDMatrix that displays scrolling leaderboards and standings for mu
 - `max_duration`: Maximum display duration (30-600 seconds, default: 300)
 - `loop`: Continuously loop the leaderboard (default: true)
 
+### Appearance (`global.appearance`)
+
+The leaderboard renders for a 1:1 LED matrix, where a partially-lit pixel is a
+visibly dim LED rather than a smooth edge. These options control that:
+
+- `pixel_perfect_text` (default `true`): draw text with anti-aliasing off, so
+  every glyph pixel is fully on or fully off. Set to `false` for the older,
+  softer look.
+- `crisp_logos` (default `true`): give logos hard edges instead of a ring of
+  half-lit pixels.
+- `text_outline` (default `true`): black outline behind text so it stays
+  readable where it sits near a logo.
+- `logo_scale` (default `1.0`): logo height as a fraction of the panel height.
+  `1.0` fits the panel exactly; anything above `1.0` crops the top and bottom of
+  every logo.
+- `font_size` (default `0` = pick a size for the panel height): sizes are
+  snapped to the font's pixel grid — multiples of 8 for Press Start 2P — because
+  off-grid sizes are what make pixel fonts look blurry.
+
+### How many teams are shown
+
+Each league's `top_teams` sets how far down the standings to go. **Set it to `0`
+to show every team the league returns** (all 32 NFL teams, the full AP Top 25,
+and so on).
+
+A longer list needs proportionally more time on screen. The display controller
+gives the plugin `min(plugin cap, core cap)` seconds and then moves on
+mid-scroll, so a list longer than that budget simply stops partway through —
+which looks like the leaderboard cutting off at an arbitrary team. The relevant
+settings:
+
+| Setting | Where | Default |
+|---|---|---|
+| `global.dynamic_duration.max_duration_seconds` | this plugin | 600 |
+| `global.dynamic_duration.controller_cap_seconds` | this plugin | 600 |
+| `display.dynamic_duration.max_duration_seconds` | LEDMatrix core config | 180 |
+
+The **lowest** of the three wins, so the core's 180s default is usually the one
+that decides it. All 32 NFL teams is roughly 3,200px of ticker: about 240s at
+the default 15 px/s, or about 36s at 100 px/s.
+
+If the content will not fit the budget, the plugin logs a warning at startup
+naming which cap is limiting it and roughly how much of the list will not be
+reached. Raise that cap, increase the scroll speed
+(`global.display.scroll_speed` / `scroll_delay`), or lower `top_teams`.
+
 ### Per-League Settings
 
 #### NFL Configuration

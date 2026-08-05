@@ -52,8 +52,25 @@ class DataFetcher:
         else:
             standings = self._fetch_teams_data(league_config)
 
-        # Apply top_teams limit centrally so config changes take effect immediately
+        # Apply top_teams limit centrally so config changes take effect immediately.
+        # 0 (or any non-positive value) means "show every team the API returned".
         top_teams = league_config.get('top_teams', 10)
+        try:
+            top_teams = int(top_teams)
+        except (TypeError, ValueError):
+            top_teams = 10
+
+        if top_teams <= 0:
+            self.logger.info(
+                "Showing all %d teams for %s (top_teams=0)", len(standings), league_key
+            )
+            return standings
+
+        if len(standings) < top_teams:
+            self.logger.info(
+                "Requested top %d teams for %s but only %d available",
+                top_teams, league_key, len(standings)
+            )
         return standings[:top_teams]
     
     def _fetch_ncaa_fb_rankings(self, league_config: Dict[str, Any]) -> List[Dict[str, Any]]:

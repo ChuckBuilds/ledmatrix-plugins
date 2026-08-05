@@ -1,0 +1,20 @@
+{
+  "_comment": "Renders the leaderboard from a fixed NFL standings fixture instead of the live ESPN API, so the harness exercises the real drawing path (fonts, logos, layout) rather than only the no-data fallback. Only NFL is enabled; the other default-on leagues would need network. No freeze_time: nothing in this plugin's output depends on the clock.",
+  "config": {
+    "enabled": true,
+    "enabled_sports": {
+      "nfl": {
+        "enabled": true,
+        "top_teams": 10
+      },
+      "ncaa_fb": {
+        "enabled": false
+      },
+      "ncaam_hockey": {
+        "enabled": false
+      }
+    },
+    "global": {}
+  },
+  "mock_data": "test/fixtures/mock.json"
+}

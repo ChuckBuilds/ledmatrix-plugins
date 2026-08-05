@@ -56,6 +56,9 @@ class LeaderboardPlugin(BasePlugin):
         self.display_duration = self.global_config.get('display_duration', 30)
         
         # Scroll speed configuration - prefer display object (granular control), fallback to scroll_pixels_per_second for backward compatibility
+        # Seeded so get_info()/logging never touch an unset attribute on the
+        # time-based path, which does not assign scroll_speed.
+        self.scroll_speed = self.global_config.get('scroll_speed', 1.0)
         display_config = self.global_config.get('display', {})
         if display_config and ('scroll_speed' in display_config or 'scroll_delay' in display_config):
             # New format: use display object for granular control
@@ -89,9 +92,10 @@ class LeaderboardPlugin(BasePlugin):
         self.request_timeout = self.global_config.get('request_timeout', 30)
         
         # Initialize components
+        self.appearance = self.global_config.get('appearance', {}) or {}
         self.league_config = LeagueConfig(config, self.logger)
         self.data_fetcher = DataFetcher(cache_manager, self.logger, self.request_timeout)
-        self.image_renderer = ImageRenderer(self.display_height, self.logger)
+        self.image_renderer = ImageRenderer(self.display_height, self.logger, self.appearance)
         
         # Initialize scroll helper
         self.scroll_helper = ScrollHelper(self.display_width, self.display_height, self.logger)
@@ -335,9 +339,10 @@ class LeaderboardPlugin(BasePlugin):
                 self.scroll_helper.set_scrolling_image(leaderboard_image)
                 # Dynamic duration is automatically calculated by set_scrolling_image()
                 self._cycle_complete = False
-                
+
                 self.logger.info(f"Created leaderboard image: {leaderboard_image.width}x{leaderboard_image.height}")
                 self.logger.info(f"Dynamic duration: {self.scroll_helper.get_dynamic_duration()}s")
+                self._warn_if_content_will_be_truncated(leaderboard_image.width)
             else:
                 self.logger.error("Failed to create leaderboard image")
                 self.scroll_helper.clear_cache()
@@ -346,6 +351,97 @@ class LeaderboardPlugin(BasePlugin):
             self.logger.error(f"Error creating leaderboard image: {e}")
             self.scroll_helper.clear_cache()
     
+    #: The core's own fallback when display.dynamic_duration.max_duration_seconds
+    #: is unset (DEFAULT_DYNAMIC_DURATION_CAP in src/display_controller.py).
+    CORE_DEFAULT_DYNAMIC_CAP = 180.0
+
+    def _core_dynamic_cap(self) -> float:
+        """
+        Read the core's global dynamic-duration cap.
+
+        The display controller uses ``min(plugin cap, global cap)``, so the
+        global value is frequently the one that decides how much of the ticker
+        is actually reached. It cannot be read through ``self.global_config``
+        here because this plugin reassigns that to its own config slice, so the
+        core's config managers are consulted the same way BasePlugin does.
+        """
+        for owner in (self.plugin_manager, self.cache_manager):
+            config_manager = getattr(owner, 'config_manager', None)
+            if config_manager is None:
+                continue
+            try:
+                core_config = config_manager.get_config()
+            except Exception:
+                # An unreadable core config must not stop the plugin loading;
+                # fall through to the next source, then to the documented
+                # default. Logged rather than swallowed so a persistently
+                # broken config manager is diagnosable.
+                self.logger.debug(
+                    "Could not read core config from %s", type(owner).__name__,
+                    exc_info=True,
+                )
+                continue
+            if not isinstance(core_config, dict) or not core_config:
+                continue
+            cap = (core_config.get('display', {})
+                   .get('dynamic_duration', {})
+                   .get('max_duration_seconds'))
+            try:
+                cap = float(cap)
+            except (TypeError, ValueError):
+                return self.CORE_DEFAULT_DYNAMIC_CAP
+            return cap if cap > 0 else float('inf')
+        return self.CORE_DEFAULT_DYNAMIC_CAP
+
+    def _effective_pixels_per_second(self) -> float:
+        """Resolve the configured scroll speed to pixels per second."""
+        if getattr(self, 'scroll_pixels_per_second', None):
+            return float(self.scroll_pixels_per_second)
+        if self.scroll_delay and self.scroll_delay > 0:
+            return float(self.scroll_speed) / float(self.scroll_delay)
+        return float(self.scroll_speed) * 100.0
+
+    def _warn_if_content_will_be_truncated(self, image_width: int) -> None:
+        """
+        Warn when the ticker is longer than the display controller will show.
+
+        The controller caps a plugin's dynamic duration at
+        ``min(plugin cap, core global cap)`` and moves on when that expires,
+        mid-scroll. On a long list — a full 32-team league, say — that reads as
+        the leaderboard simply cutting off partway through, with no error
+        anywhere to explain it. Surfacing the arithmetic makes the fix obvious.
+        """
+        if not self.dynamic_duration_enabled:
+            return
+
+        try:
+            pixels_per_second = self._effective_pixels_per_second()
+            if pixels_per_second <= 0:
+                return
+
+            required = (image_width + self.display_width) / pixels_per_second
+            required *= (1.0 + self.duration_buffer)
+
+            core_cap = self._core_dynamic_cap()
+            budget = min(self.max_duration, self.dynamic_duration_cap, core_cap)
+            if required <= budget:
+                return
+
+            shown_px = budget * pixels_per_second
+            limiter = ("the core's display.dynamic_duration.max_duration_seconds"
+                       if core_cap <= min(self.max_duration, self.dynamic_duration_cap)
+                       else "this plugin's global.dynamic_duration settings")
+            self.logger.warning(
+                "Leaderboard content (%dpx) needs %.0fs to scroll at %.0f px/s but the "
+                "duration budget is only %.0fs (limited by %s) - roughly the last %.0f%% "
+                "of the list will not be reached before the display moves on. Raise that "
+                "cap, increase the scroll speed, or lower top_teams.",
+                image_width, required, pixels_per_second, budget, limiter,
+                max(0.0, 100.0 * (1.0 - shown_px / max(image_width, 1))),
+            )
+        except Exception as e:  # pragma: no cover - diagnostics only
+            self.logger.debug("Could not evaluate content duration budget: %s", e)
+
     def _display_fallback_message(self) -> None:
         """Display a fallback message when no data is available."""
         try:
@@ -583,15 +679,19 @@ class LeaderboardPlugin(BasePlugin):
         """Return plugin info for web UI."""
         info = super().get_info()
         
+        fetched_counts = {d['league']: len(d['teams']) for d in self.leaderboard_data}
         leagues_config = {}
         for league_key in self.league_config.get_enabled_leagues():
             league_config = self.league_config.get_league_config(league_key)
             if league_config:
+                top_teams = league_config.get('top_teams', 10)
                 leagues_config[league_key] = {
                     'enabled': True,
-                    'top_teams': league_config.get('top_teams', 10)
+                    'top_teams': top_teams,
+                    'show_all': not top_teams or top_teams <= 0,
+                    'teams_displayed': fetched_counts.get(league_key, 0)
                 }
-        
+
         info.update({
             'total_teams': sum(len(d['teams']) for d in self.leaderboard_data),
             'enabled_leagues': self.league_config.get_enabled_leagues(),
@@ -604,6 +704,13 @@ class LeaderboardPlugin(BasePlugin):
             'min_duration': self.min_duration,
             'max_duration': self.max_duration,
             'leagues_config': leagues_config,
+            'appearance': {
+                'pixel_perfect_text': self.image_renderer.pixel_perfect_text,
+                'crisp_logos': self.image_renderer.crisp_logos,
+                'text_outline': self.image_renderer.text_outline,
+                'logo_scale': self.image_renderer.logo_scale,
+                'font_size': self.image_renderer.fonts['large'].size,
+            },
             'scroll_info': self.scroll_helper.get_scroll_info() if self.scroll_helper else None
         })
         return info

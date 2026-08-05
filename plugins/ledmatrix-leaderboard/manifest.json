@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.2.3",
+  "version": "1.3.0",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -31,6 +31,12 @@
   "requirements_file": "requirements.txt",
   "min_ledmatrix_version": "2.0.0",
   "versions": [
+    {
+      "version": "1.3.0",
+      "released": "2026-08-05",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Pixel-perfect rendering: text is drawn with anti-aliasing off and at font sizes snapped to the pixel grid, and logos get hard alpha edges and are fitted inside the panel instead of being scaled to 120% and cropped top and bottom. Layout is now measured and drawn in a single pass so the strip width matches its contents. top_teams accepts 0 to show every team a league returns, and the plugin warns when the list is longer than the display-duration budget will reach. New global.appearance options: pixel_perfect_text, crisp_logos, text_outline, logo_scale, font_size."
+    },
     {
       "version": "1.2.3",
       "released": "2026-07-31",
@@ -73,7 +79,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-31",
+  "last_updated": "2026-08-05",
   "compatible_versions": [
     ">=2.0.0"
   ]
