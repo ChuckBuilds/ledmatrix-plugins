@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.21.1",
+  "version": "1.22.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "released": "2026-08-03",
+      "version": "1.22.0",
+      "notes": "Scroll display now uses the core's shared sports-scroll orchestration (LEDMatrix 3.2.0) when available, falling back to the bundled implementation on older cores. No behaviour change: all 24 harness renders are byte-for-byte identical.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-08-03",
       "version": "1.21.1",
