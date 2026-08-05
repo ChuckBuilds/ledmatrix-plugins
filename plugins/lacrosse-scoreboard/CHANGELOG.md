@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0] - 2026-08-04
+
+### Changed
+- **Scroll display now runs on the core's shared implementation.** Orchestration — scroll-helper configuration, frame pumping, completion, settings resolution, native `global_config['target_fps']` — moves to the core's `src.common.sports_scroll` (LEDMatrix 3.2.0). Only the sport-specific content half stays here.
+- **Nothing changes on an older core.** The import is guarded: a core without that module falls back to `scroll_display_legacy.py` and the plugin behaves exactly as before. The minimum core version is unchanged at 2.0.0 — the plugin does not *require* 3.2.0, it prefers it.
+- Verified byte-for-byte: all 16 safety-harness renders (8 panel sizes × 2 screens) are identical to 1.6.0.
+
 ## [1.6.0] - 2026-07-29
 
 ### Fixed
