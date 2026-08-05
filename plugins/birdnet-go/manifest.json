@@ -1,0 +1,53 @@
+{
+  "id": "birdnet-go",
+  "name": "BirdNET-Go",
+  "version": "1.2.0",
+  "author": "ChuckBuilds",
+  "description": "Show what BirdNET-Go is hearing. One screen cycles a different species each turn — name, confidence, how many times it has been heard today, and a photo — and a second shows today's stats: species count, total detections and the most-heard species. Polls the BirdNET-Go REST API, with optional MQTT for instant pop-ups.",
+  "category": "integration",
+  "tags": [
+    "birdnet",
+    "birds",
+    "nature",
+    "wildlife",
+    "stats",
+    "mqtt",
+    "homeassistant"
+  ],
+  "display_modes": [
+    "birdnet_go",
+    "birdnet_stats"
+  ],
+  "entry_point": "manager.py",
+  "class_name": "BirdNetGoPlugin",
+  "versions": [
+    {
+      "released": "2026-08-05",
+      "version": "1.2.0",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "released": "2026-08-05",
+      "version": "1.1.0",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "released": "2026-04-24",
+      "version": "1.0.1",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "released": "2026-04-24",
+      "version": "1.0.0",
+      "ledmatrix_min_version": "2.0.0"
+    }
+  ],
+  "last_updated": "2026-08-05",
+  "stars": 0,
+  "downloads": 0,
+  "verified": true,
+  "screenshot": "",
+  "compatible_versions": [
+    ">=2.0.0"
+  ]
+}

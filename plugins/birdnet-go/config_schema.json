@@ -1,0 +1,267 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BirdNET-Go Plugin Configuration",
+  "description": "Configuration schema for the BirdNET-Go plugin - polls the BirdNET-Go REST API to display the most recent bird and today's detection stats on the LED matrix",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable or disable the BirdNET-Go plugin"
+    },
+    "update_interval": {
+      "type": "integer",
+      "default": 30,
+      "minimum": 1,
+      "description": "How often (seconds) to run background update tasks (image warmup, connection health)"
+    },
+    "mqtt": {
+      "type": "object",
+      "description": "Optional. Only needed for sub-second interrupt pop-ups - the REST API alone drives both screens.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Subscribe to an MQTT broker for pushed detections. Leave off to rely on REST polling alone."
+        },
+        "host": {
+          "type": "string",
+          "default": "",
+          "description": "MQTT broker hostname or IP address"
+        },
+        "port": {
+          "type": "integer",
+          "default": 1883,
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "MQTT broker port"
+        },
+        "username": {
+          "type": "string",
+          "default": "",
+          "description": "MQTT broker username (optional)"
+        },
+        "password": {
+          "type": "string",
+          "default": "",
+          "description": "MQTT broker password (optional)"
+        },
+        "client_id": {
+          "type": "string",
+          "default": "ledmatrix-birdnet-go",
+          "description": "MQTT client ID"
+        },
+        "keepalive": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 10,
+          "maximum": 300,
+          "description": "MQTT keepalive interval in seconds"
+        },
+        "topic": {
+          "type": "string",
+          "default": "birdnet/detections",
+          "description": "MQTT topic BirdNET-Go publishes detections to. Supports wildcards (+ and #)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "birdnet_api": {
+      "type": "object",
+      "description": "The primary data source: detections, daily stats and species images all come from here.",
+      "properties": {
+        "base_url": {
+          "type": "string",
+          "default": "",
+          "description": "Base URL of the BirdNET-Go web server, e.g. http://birdnet-go.local:8080 or http://192.168.1.20:8084. Required: a self-hosted service has no useful default, and a placeholder host would just produce repeated connection warnings."
+        },
+        "request_timeout": {
+          "type": "number",
+          "default": 5.0,
+          "minimum": 1,
+          "maximum": 30,
+          "description": "HTTP timeout in seconds for API requests"
+        },
+        "poll_interval": {
+          "type": "number",
+          "default": 60,
+          "minimum": 5,
+          "description": "How often (seconds) to poll for new detections and refresh daily stats"
+        }
+      },
+      "required": ["base_url"],
+      "additionalProperties": false
+    },
+    "display": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["rotation", "interrupt", "both"],
+          "default": "both",
+          "description": "rotation: always shows most recent bird during plugin's rotation slot. interrupt: pops up only on new detections. both: rotation slot plus interrupt on new detections."
+        },
+        "interrupt_duration": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 300,
+          "description": "Seconds to show a pop-up detection in interrupt mode"
+        },
+        "rotation_duration": {
+          "type": "number",
+          "default": 15,
+          "minimum": 1,
+          "maximum": 300,
+          "description": "Seconds to show the bird during the plugin's rotation slot"
+        },
+        "min_confidence": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Ignore detections with confidence below this threshold (0.0-1.0)"
+        },
+        "stale_after_minutes": {
+          "type": "integer",
+          "default": 120,
+          "minimum": 1,
+          "description": "If no detection arrives within this many minutes, show a 'no recent detection' frame instead"
+        },
+        "show_image": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fetch and display the species image"
+        },
+        "show_confidence": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the confidence percentage"
+        },
+        "show_time": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show how long ago the bird was detected"
+        },
+        "unique_species": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a different species each rotation slot instead of repeating whatever called last. On a busy feed one or two loud species would otherwise fill nearly every slot."
+        },
+        "max_species": {
+          "type": "integer",
+          "default": 8,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "How many of today's species to cycle through"
+        },
+        "species_order": {
+          "type": "string",
+          "enum": ["recent", "frequency"],
+          "default": "recent",
+          "description": "recent: most recently heard species first. frequency: most-heard species first."
+        },
+        "show_today_count": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show how many times the species has been heard today (e.g. x203)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "stats": {
+      "type": "object",
+      "description": "The birdnet_stats screen: today's species count, total detections and most-heard species.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the stats screen. When off, the plugin's stats rotation slot is skipped."
+        },
+        "top_n": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "How many of the most-heard species to keep. The panel shows as many as fit."
+        },
+        "rotation_duration": {
+          "type": "number",
+          "default": 15,
+          "minimum": 1,
+          "maximum": 300,
+          "description": "Seconds to show the stats screen during its rotation slot"
+        }
+      },
+      "additionalProperties": false
+    },
+    "text": {
+      "type": "object",
+      "properties": {
+        "font_path": {
+          "type": "string",
+          "default": "assets/fonts/PressStart2P-Regular.ttf",
+          "description": "Path to font file (TTF). Relative to project root or absolute path."
+        },
+        "font_size": {
+          "type": "number",
+          "default": 8,
+          "minimum": 4,
+          "maximum": 32,
+          "description": "Font size in pixels"
+        },
+        "text_color": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 255, 255],
+          "description": "RGB text color [R, G, B]"
+        },
+        "background_color": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [0, 0, 0],
+          "description": "RGB background color [R, G, B]"
+        },
+        "accent_color": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 190, 0],
+          "description": "RGB accent color [R, G, B] for the stats header and per-species counts"
+        },
+        "scroll_speed": {
+          "type": "number",
+          "default": 30,
+          "minimum": 1,
+          "maximum": 200,
+          "description": "Scroll speed in pixels per second for long bird names"
+        },
+        "scroll_gap_width": {
+          "type": "number",
+          "default": 32,
+          "minimum": 0,
+          "description": "Gap width in pixels between scroll loops"
+        }
+      },
+      "additionalProperties": false
+    },
+    "field_mapping": {
+      "type": "object",
+      "description": "Override BirdNET-Go payload field names if your version uses different keys. Matching is case-insensitive with common variants tried automatically.",
+      "properties": {
+        "common_name": {"type": "string", "default": "CommonName"},
+        "scientific_name": {"type": "string", "default": "ScientificName"},
+        "confidence": {"type": "string", "default": "Confidence"},
+        "time": {"type": "string", "default": "Time"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["enabled", "birdnet_api"],
+  "additionalProperties": false
+}

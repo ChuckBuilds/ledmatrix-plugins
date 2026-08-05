@@ -363,6 +363,31 @@
       "icon": "fas fa-baseball-ball"
     },
     {
+      "id": "birdnet-go",
+      "name": "BirdNET-Go",
+      "description": "Show what BirdNET-Go is hearing. One screen cycles a different species each turn — name, confidence, how many times it has been heard today, and a photo — and a second shows today's stats: species count, total detections and the most-heard species. Polls the BirdNET-Go REST API, with optional MQTT for instant pop-ups.",
+      "author": "ChuckBuilds",
+      "category": "integration",
+      "tags": [
+        "birdnet",
+        "birds",
+        "nature",
+        "wildlife",
+        "stats",
+        "mqtt",
+        "homeassistant"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/birdnet-go",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-08-05",
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.2.0"
+    },
+    {
       "id": "leaderboard",
       "name": "Sports Leaderboard",
       "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
