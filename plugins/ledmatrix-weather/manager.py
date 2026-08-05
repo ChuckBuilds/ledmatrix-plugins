@@ -1103,35 +1103,9 @@ class WeatherPlugin(BasePlugin):
             wind_dir = self._get_wind_direction(wind_deg)
             wind_gust = self.weather_data['wind'].get('gust')
 
-            # Core items (always shown) plus a droppable tag for width-aware
-            # thinning below — None means "never drop" (UV/H/W and, once
-            # enabled, feels-like are always kept; only dew point/visibility/
-            # pressure are shed as the panel gets too narrow to fit them all
-            # legibly, least-useful first).
-            uv_color = self._get_uv_color(uv_index)
-            all_items = []  # list of (text, color, drop_tag)
-            all_items.append((f"UV:{uv_index:.0f}", uv_color, None))
-            all_items.append((f"H:{humidity}%", self.COLORS['dim'], None))
-            if wind_gust and wind_gust > wind_speed * 1.3:
-                all_items.append((f"W:{wind_speed:.0f}g{wind_gust:.0f}{wind_dir}", self.COLORS['dim'], None))
-            else:
-                all_items.append((f"W:{wind_speed:.0f}{wind_dir}", self.COLORS['dim'], None))
-
-            # Extra items — merged into same row (no degree symbol, font can't render it)
-            if self.show_feels_like and feels_like is not None:
-                all_items.append((f"FL:{int(feels_like)}", self.COLORS['dim'], None))
-            if self.show_dew_point and dew_point is not None:
-                all_items.append((f"Dew:{int(dew_point)}", self.COLORS['dim'], 'dew_point'))
-            if self.show_visibility and visibility_m is not None:
-                vis_val = visibility_m / 1609.34 if self.units == 'imperial' else visibility_m / 1000
-                vis_u = "mi" if self.units == 'imperial' else "km"
-                all_items.append((f"Vis:{vis_val:.0f}{vis_u}", self.COLORS['dim'], 'visibility'))
-            if self.show_pressure and pressure is not None:
-                if self.units == 'imperial':
-                    pv = pressure * 0.02953
-                    all_items.append((f"P:{pv:.2f}\"", self.COLORS['dim'], 'pressure'))
-                else:
-                    all_items.append((f"P:{int(pressure)}hPa", self.COLORS['dim'], 'pressure'))
+            all_items = self._build_metric_items(
+                uv_index, humidity, wind_speed, wind_dir, wind_gust,
+                feels_like, dew_point, visibility_m, pressure)
 
             # Drop least-useful optional items, in this order, while an equal
             # split still leaves each item too cramped to read (below
@@ -1156,6 +1130,46 @@ class WeatherPlugin(BasePlugin):
         except Exception:
             self.logger.exception("Error rendering current weather")
             return None
+
+    def _build_metric_items(self, uv_index, humidity, wind_speed, wind_dir,
+                            wind_gust, feels_like, dew_point, visibility_m,
+                            pressure) -> List[tuple]:
+        """The bottom-bar metrics as (text, color, drop_tag) tuples.
+
+        Shared by the full-screen layout and the Vegas tile so the two cannot
+        drift: the colors carry meaning (UV is graded by severity) and the
+        show_* toggles decide what appears at all, neither of which should
+        depend on which renderer you happen to be looking at.
+
+        drop_tag None means "never drop" — UV/H/W and, once enabled,
+        feels-like are always kept; only dew point/visibility/pressure are
+        shed when the panel is too narrow to fit them all legibly.
+        """
+        items = [
+            (f"UV:{uv_index:.0f}", self._get_uv_color(uv_index), None),
+            (f"H:{humidity}%", self.COLORS['dim'], None),
+        ]
+        if wind_gust and wind_gust > wind_speed * 1.3:
+            items.append((f"W:{wind_speed:.0f}g{wind_gust:.0f}{wind_dir}",
+                          self.COLORS['dim'], None))
+        else:
+            items.append((f"W:{wind_speed:.0f}{wind_dir}", self.COLORS['dim'], None))
+
+        # No degree symbol below — the bottom-bar font can't render it.
+        if self.show_feels_like and feels_like is not None:
+            items.append((f"FL:{int(feels_like)}", self.COLORS['dim'], None))
+        if self.show_dew_point and dew_point is not None:
+            items.append((f"Dew:{int(dew_point)}", self.COLORS['dim'], 'dew_point'))
+        if self.show_visibility and visibility_m is not None:
+            vis_val = visibility_m / 1609.34 if self.units == 'imperial' else visibility_m / 1000
+            vis_u = "mi" if self.units == 'imperial' else "km"
+            items.append((f"Vis:{vis_val:.0f}{vis_u}", self.COLORS['dim'], 'visibility'))
+        if self.show_pressure and pressure is not None:
+            if self.units == 'imperial':
+                items.append((f"P:{pressure * 0.02953:.2f}\"", self.COLORS['dim'], 'pressure'))
+            else:
+                items.append((f"P:{int(pressure)}hPa", self.COLORS['dim'], 'pressure'))
+        return items
 
     def _display_current_weather(self) -> None:
         """Display current weather conditions using comprehensive layout with icons."""
@@ -1843,33 +1857,38 @@ class WeatherPlugin(BasePlugin):
             temp_high = int(self.weather_data['main']['temp_max'])
             temp_low = int(self.weather_data['main']['temp_min'])
 
-            temp_font = self.display_manager.small_font
             small_font = self.display_manager.small_font
             tiny_font = self.display_manager.extra_small_font
 
             gap = max(3, round(4 * (height / 32.0)))
+            item_gap = max(3, round(4 * (height / 32.0)))
             icon_size = layout['current_icon_size']
 
-            # Column 2 stacks temperature over high/low; column 3 stacks the
-            # condition over the metrics. Width is the widest line in each.
+            # Same three rows as the full-screen layout, in the same order, so
+            # the tile reads as the familiar screen rather than a new one:
+            # condition, then temperature with its high/low, then the metrics.
             temp_text = f"{temp}°"
             high_low_text = f"{temp_low}°/{temp_high}°"
-            metrics_text = (f"UV:{uv_index:.0f} H:{humidity}% "
-                            f"W:{wind_speed:.0f}{self._get_wind_direction(wind_deg)}")
+            metric_items = self._build_metric_items(
+                uv_index, humidity, wind_speed, self._get_wind_direction(wind_deg),
+                self.weather_data['wind'].get('gust'),
+                self.weather_data['main'].get('feels_like'),
+                self.weather_data['main'].get('dew_point'),
+                self.weather_data['main'].get('visibility'),
+                self.weather_data['main'].get('pressure'))
 
             measure = ImageDraw.Draw(Image.new('RGB', (1, 1)))
 
             def text_w(text, font):
                 return int(measure.textlength(text, font=font))
 
-            temp_w = text_w(temp_text, temp_font)
-            high_low_w = text_w(high_low_text, small_font)
+            temp_row_w = text_w(temp_text, small_font) + gap + text_w(high_low_text, small_font)
             condition_w = text_w(condition, small_font)
-            metrics_w = text_w(metrics_text, tiny_font)
+            metrics_w = sum(text_w(t, tiny_font) for t, _c, _d in metric_items)
+            metrics_w += item_gap * max(0, len(metric_items) - 1)
 
-            col2_w = max(temp_w, high_low_w)
-            col3_w = max(condition_w, metrics_w)
-            total_width = icon_size + gap + col2_w + gap + col3_w + gap
+            text_col_w = max(temp_row_w, condition_w, metrics_w)
+            total_width = icon_size + gap + text_col_w + gap
 
             # On a narrow panel this side-by-side arrangement is *wider* than
             # the full-screen tile it replaces (198px against 128px at
@@ -1888,22 +1907,28 @@ class WeatherPlugin(BasePlugin):
             WeatherIcons.draw_weather_icon(
                 img, icon_code, 0, max(0, (height - icon_size) // 2), size=icon_size)
 
-            # Two text rows, vertically centred as a pair.
+            # Three rows centred as a block, spaced to whatever height allows.
+            rows = 3
             row_h = 8
-            top_y = max(0, (height - (row_h * 2 + 2)) // 2)
-            bottom_y = top_y + row_h + 2
-
+            spacing = max(1, (height - rows * row_h) // (rows + 1))
             x = icon_size + gap
-            draw.text((x, top_y), temp_text, font=temp_font,
-                      fill=self.COLORS['highlight'])
-            draw.text((x, bottom_y), high_low_text, font=small_font,
-                      fill=self.COLORS['dim'])
+            y = spacing
 
-            x += col2_w + gap
-            draw.text((x, top_y), condition, font=small_font,
-                      fill=self.COLORS['text'])
-            draw.text((x, bottom_y), metrics_text, font=tiny_font,
-                      fill=self.COLORS['dim'])
+            draw.text((x, y), condition, font=small_font, fill=self.COLORS['text'])
+
+            y += row_h + spacing
+            draw.text((x, y), temp_text, font=small_font,
+                      fill=self.COLORS['highlight'])
+            draw.text((x + text_w(temp_text, small_font) + gap, y), high_low_text,
+                      font=small_font, fill=self.COLORS['dim'])
+
+            # Metrics keep their own colors — UV is graded by severity, so
+            # flattening them to one dim string would drop the meaning.
+            y += row_h + spacing
+            mx = x
+            for text, color, _drop_tag in metric_items:
+                draw.text((mx, y), text, font=tiny_font, fill=color)
+                mx += text_w(text, tiny_font) + item_gap
 
             return img
 
