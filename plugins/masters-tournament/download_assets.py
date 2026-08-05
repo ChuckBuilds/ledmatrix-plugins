@@ -94,7 +94,7 @@ def download_player_headshots():
         url = f"https://a.espncdn.com/combiner/i?img=/i/headshots/golf/players/full/{pid}.png&w=350&h=254"
         try:
             resp = requests.get(url, timeout=10, headers={
-                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+                "User-Agent": "LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)"
             })
             resp.raise_for_status()
             img = Image.open(BytesIO(resp.content)).convert("RGBA")

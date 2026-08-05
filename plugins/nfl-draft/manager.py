@@ -278,7 +278,7 @@ class NFLDraftPlugin(BasePlugin):
 
             self.logger.info(f"Fetching draft athletes list from {athletes_url}")
 
-            req = Request(athletes_url, headers={'User-Agent': 'Mozilla/5.0'})
+            req = Request(athletes_url, headers={'User-Agent': 'LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)'})
             with urlopen(req, timeout=30) as response:
                 data = json.loads(response.read().decode())
 
@@ -298,7 +298,7 @@ class NFLDraftPlugin(BasePlugin):
             # Fetch athlete details in parallel (limit concurrency)
             def fetch_athlete(url: str) -> Optional[Dict[str, Any]]:
                 try:
-                    req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                    req = Request(url, headers={'User-Agent': 'LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)'})
                     with urlopen(req, timeout=10) as response:
                         return json.loads(response.read().decode())
                 except Exception as e:
@@ -374,7 +374,7 @@ class NFLDraftPlugin(BasePlugin):
             req = Request(
                 self.TANKATHON_MOCK_DRAFT,
                 headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                    "User-Agent": "LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)",
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                     "Accept-Language": "en-US,en;q=0.9",
                     "Referer": "https://www.tankathon.com/",
@@ -487,7 +487,7 @@ class NFLDraftPlugin(BasePlugin):
         teams: Dict[str, str] = {}
         try:
             url = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams?limit=50"
-            req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            req = Request(url, headers={'User-Agent': 'LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)'})
             with urlopen(req, timeout=15) as response:
                 data = json.loads(response.read().decode())
 
@@ -537,7 +537,7 @@ class NFLDraftPlugin(BasePlugin):
                 f"https://sports.core.api.espn.com/v2/sports/football/leagues/nfl"
                 f"/seasons/{year}/draft/rounds?lang=en&region=us&limit=10"
             )
-            req = Request(rounds_url, headers={'User-Agent': 'Mozilla/5.0'})
+            req = Request(rounds_url, headers={'User-Agent': 'LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)'})
             with urlopen(req, timeout=15) as response:
                 rounds_data = json.loads(response.read().decode())
 
@@ -559,7 +559,7 @@ class NFLDraftPlugin(BasePlugin):
                 if not url:
                     return None
                 try:
-                    req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                    req = Request(url, headers={'User-Agent': 'LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)'})
                     with urlopen(req, timeout=10) as response:
                         return json.loads(response.read().decode())
                 except Exception as e:

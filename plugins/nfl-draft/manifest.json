@@ -1,7 +1,7 @@
 {
   "id": "nfl-draft",
   "name": "NFL Draft",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": "ChuckBuilds",
   "description": "Displays projected NFL draft picks from ESPN with live draft tracking support during the annual NFL Draft event. Includes simulate_live mode to replay a completed draft using real ESPN core API data. Shows team logos, player names, positions, and pick numbers in a scrolling display.",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
   ],
   "icon": "fas fa-football-ball",
   "versions": [
+    {
+      "version": "1.4.1",
+      "released": "2026-08-05",
+      "notes": "Fix ESPN 403s. Around 2026-08-04 ESPN's site.api began rejecting both browser-style and bare custom User-Agent strings, which returned 403 Forbidden for every request this plugin made. Requests now send an identifying agent with the project URL, which ESPN accepts. No behaviour change beyond the header.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.4.0",
       "released": "2026-07-31",
@@ -112,5 +118,5 @@
     "nfl_logos": "assets/sports/nfl_logos/"
   },
   "license": "GPL-3.0",
-  "last_updated": "2026-07-31"
+  "last_updated": "2026-08-05"
 }

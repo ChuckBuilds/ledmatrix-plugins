@@ -40,7 +40,7 @@ class MastersDataSource:
     ATHLETE_URL = "https://site.web.api.espn.com/apis/common/v3/sports/golf/pga/athletes/{player_id}"
     ATHLETE_OVERVIEW_URL = "https://site.web.api.espn.com/apis/common/v3/sports/golf/pga/athletes/{player_id}/overview"
 
-    HTTP_HEADERS = {"User-Agent": "LEDMatrix Masters Plugin/2.1"}
+    HTTP_HEADERS = {"User-Agent": "LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)"}
 
     def __init__(self, cache_manager, config: Dict[str, Any]):
         self.cache_manager = cache_manager

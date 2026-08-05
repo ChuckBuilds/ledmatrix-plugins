@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.6.2",
+      "released": "2026-08-05",
+      "notes": "Fix ESPN 403s. Around 2026-08-04 ESPN's site.api began rejecting both browser-style and bare custom User-Agent strings, which returned 403 Forbidden for every request this plugin made. Requests now send an identifying agent with the project URL, which ESPN accepts. No behaviour change beyond the header.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "2.6.1",
       "released": "2026-08-05",
@@ -170,7 +176,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-31",
+  "last_updated": "2026-08-05",
   "stars": 0,
   "downloads": 0,
   "verified": true,

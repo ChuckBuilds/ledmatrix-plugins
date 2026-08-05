@@ -41,7 +41,7 @@ class HeadshotDownloader:
 
         # Set up headers
         self.headers = {
-            'User-Agent': 'LEDMatrix/1.0',
+            'User-Agent': 'LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)',
             'Accept': 'image/png,image/jpeg,image/*',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',

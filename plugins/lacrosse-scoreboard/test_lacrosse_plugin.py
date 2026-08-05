@@ -131,7 +131,7 @@ REQUIRED_FIELDS = [
 
 
 def _fetch(url: str) -> dict:
-    req = urllib.request.Request(url, headers={"User-Agent": "LEDMatrix/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)"})
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read())
 

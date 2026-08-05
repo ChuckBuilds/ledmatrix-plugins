@@ -47,7 +47,7 @@ class DataSource(ABC):
     def get_headers(self) -> Dict[str, str]:
         """Get headers for API requests."""
         return {
-            'User-Agent': 'LEDMatrix/1.0',
+            'User-Agent': 'LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)',
             'Accept': 'application/json'
         }
 

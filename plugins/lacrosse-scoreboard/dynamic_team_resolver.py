@@ -154,7 +154,7 @@ class DynamicTeamResolver:
             url = f"https://site.api.espn.com/apis/site/v2/sports/{endpoint}"
             
             headers = {
-                'User-Agent': 'LEDMatrix/1.0',
+                'User-Agent': 'LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)',
                 'Accept': 'application/json'
             }
             

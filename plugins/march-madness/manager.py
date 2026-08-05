@@ -143,7 +143,7 @@ class MarchMadnessPlugin(BasePlugin):
         adapter = HTTPAdapter(max_retries=retry)
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
-        self.headers = {"User-Agent": "LEDMatrix/2.0"}
+        self.headers = {"User-Agent": "LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)"}
 
         # ScrollHelper
         if ScrollHelper:
