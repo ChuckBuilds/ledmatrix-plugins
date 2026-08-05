@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.6.1",
+      "released": "2026-08-05",
+      "notes": "Test-only: the scroll display is now constructed on both the core and fallback paths, and its separator icons compared between them. The previous checks verified that methods existed and that their globals resolved, which could not see a constant read off self -- the miss that broke scroll mode in three sibling plugins.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-08-04",
       "version": "2.6.0",

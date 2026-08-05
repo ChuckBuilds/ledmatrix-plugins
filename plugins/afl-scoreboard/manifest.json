@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.3.1",
+      "released": "2026-08-05",
+      "notes": "Fix scroll mode rendering nothing on LEDMatrix 3.2.0. The game-renderer cache (_game_renderer/_game_renderer_card_width) was seeded by the bundled class's __init__ but not by the adopted one, so prepare_scroll_content raised AttributeError on its first line. The core base catches exceptions from that method, so there was no error on screen -- scroll mode simply stayed blank. Switch mode and the fallback path were unaffected.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-08-04",
       "version": "1.3.0",

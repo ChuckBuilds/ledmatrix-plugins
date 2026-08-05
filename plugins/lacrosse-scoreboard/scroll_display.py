@@ -718,6 +718,16 @@ else:
         # The ladder the legacy _get_scroll_settings walked, same order.
         SCROLL_LEAGUE_KEYS = ("ncaa_mens", "ncaam_lacrosse", "ncaa_womens", "ncaaw_lacrosse")
 
+        # Paths to league separator icons. Lacrosse uses a single NCAA lacrosse
+        # logo for both men's and women's since ESPN does not ship separate
+        # gendered marks for the sport. These must live on THIS class, not only
+        # on the legacy one: _load_separator_icons below was lifted verbatim and
+        # reads them off self, and the core base calls it from __init__ -- so a
+        # missing constant is not a degraded icon, it is an AttributeError that
+        # stops the scroll display being constructed at all.
+        NCAA_SEPARATOR_ICON = "assets/sports/ncaa_logos/NCAA.png"
+        NCAA_LACROSSE_SEPARATOR_ICON = "assets/sports/ncaa_logos/ncaa_lacrosse.png"
+
         def scroll_settings_defaults(self):
             # Where this plugin's defaults differ from core's.
             return {
