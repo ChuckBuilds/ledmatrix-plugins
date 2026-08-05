@@ -22,6 +22,10 @@ on:
       - 'plugins/**'
       - 'scripts/check_module_collisions.py'
       - 'scripts/check_scroll_adoption.py'
+      - 'scripts/test_check_scroll_adoption.py'
+      # Without this, a PR that only edits this workflow matches no path and
+      # the workflow never runs against its own change.
+      - '.github/workflows/module-collisions.yml'
   workflow_dispatch:
 
 jobs:
@@ -38,3 +42,9 @@ jobs:
       - name: Check scroll adoption does not inline the fallback
         if: always()
         run: python scripts/check_scroll_adoption.py
+      # The gate's own regression suite. It reports by absence -- "no legacy
+      # classes found" and "could not look" would otherwise be the same
+      # answer -- so a gate that quietly stopped detecting still exits 0.
+      - name: Test the scroll-adoption gate
+        if: always()
+        run: python scripts/test_check_scroll_adoption.py

@@ -30,21 +30,50 @@ from pathlib import Path
 PLUGINS_DIR = Path(__file__).resolve().parent.parent / "plugins"
 
 
-def offending_classes(path: Path) -> list[str]:
-    """Module-level classes named Legacy* — the ones that do not belong here.
+# Statement types whose bodies still execute in module scope, so a class
+# defined inside one is still a module global. `ast.FunctionDef` and
+# `ast.ClassDef` are deliberately absent: a Legacy* class nested in either is
+# not a module-level binding and is not what this check is looking for.
+_MODULE_SCOPE_BLOCKS = (
+    ast.If, ast.Try, ast.With, ast.AsyncWith, ast.For, ast.AsyncFor, ast.While,
+)
+_MATCH = getattr(ast, "Match", None)  # 3.10+
 
-    Only module level: the adopted file legitimately defines `ScrollDisplay`
+
+def _module_scope_statements(body: list[ast.stmt]):
+    """Yield every statement that executes in module scope, blocks included.
+
+    The guarded import in these files is an `if/else`, so a legacy class
+    tucked into either branch — or into a `try` that swallows ImportError —
+    binds a module global exactly like a top-level one does.
+    """
+    for node in body:
+        yield node
+        if isinstance(node, _MODULE_SCOPE_BLOCKS):
+            yield from _module_scope_statements(node.body)
+            yield from _module_scope_statements(getattr(node, "orelse", []))
+            yield from _module_scope_statements(getattr(node, "finalbody", []))
+            for handler in getattr(node, "handlers", []):
+                yield from _module_scope_statements(handler.body)
+        elif _MATCH is not None and isinstance(node, _MATCH):
+            for case in node.cases:
+                yield from _module_scope_statements(case.body)
+
+
+def offending_classes(path: Path) -> list[str]:
+    """Module-scope classes named Legacy* — the ones that do not belong here.
+
+    Only module scope: the adopted file legitimately defines `ScrollDisplay`
     and `ScrollDisplayManager` inside the `else:` branch of the guarded import,
     and the fallback branch legitimately *imports* the Legacy names. Defining
     them here is what signals the duplicate.
+
+    Raises SyntaxError/OSError to the caller: a file this check cannot read is
+    not a file it can clear.
     """
-    try:
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-    except SyntaxError as exc:  # pragma: no cover - a broken file fails elsewhere
-        print(f"  {path}: could not parse ({exc})")
-        return []
-    return [n.name for n in tree.body
-            if isinstance(n, ast.ClassDef) and n.name.startswith("Legacy")]
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    return sorted(n.name for n in _module_scope_statements(tree.body)
+                  if isinstance(n, ast.ClassDef) and n.name.startswith("Legacy"))
 
 
 def main(argv: list[str]) -> int:
@@ -52,12 +81,17 @@ def main(argv: list[str]) -> int:
 
     checked = 0
     problems: list[tuple[str, list[str]]] = []
+    unreadable: list[tuple[str, str]] = []
     for pid in ids:
         scroll = PLUGINS_DIR / pid / "scroll_display.py"
         if not scroll.exists():
             continue
         checked += 1
-        found = offending_classes(scroll)
+        try:
+            found = offending_classes(scroll)
+        except (SyntaxError, ValueError, OSError) as exc:
+            unreadable.append((pid, str(exc)))
+            continue
         if found:
             problems.append((pid, found))
 
@@ -67,9 +101,17 @@ def main(argv: list[str]) -> int:
               f"scroll_display_legacy.py; this file should only prefer the core "
               f"module and fall back to it.")
 
-    if problems:
-        print(f"\nFAIL: {len(problems)} of {checked} plugin(s) inline a legacy "
-              f"scroll implementation.")
+    for pid, reason in unreadable:
+        print(f"::error::{pid}/scroll_display.py could not be parsed ({reason}). "
+              f"Treating that as a pass would let a malformed file skip this "
+              f"check entirely.")
+
+    if problems or unreadable:
+        if problems:
+            print(f"\nFAIL: {len(problems)} of {checked} plugin(s) inline a legacy "
+                  f"scroll implementation.")
+        if unreadable:
+            print(f"FAIL: {len(unreadable)} of {checked} plugin(s) could not be parsed.")
         return 1
 
     print(f"OK: {checked} plugin(s) with a scroll_display.py, none inlining a "
