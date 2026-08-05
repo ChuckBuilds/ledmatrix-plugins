@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.7.3",
+  "version": "1.8.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.8.0",
+      "released": "2026-08-05",
+      "notes": "Add customization.favorite_result_colors: an optional setting that colors a recent game's final score green when your favorite team won and red when it lost. Aimed at scroll and Vegas modes, where the same matchup can go past several times and the logos alone do not say who won. Off by default; games without exactly one favorite team keep the normal score color.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.7.3",
       "released": "2026-08-05",

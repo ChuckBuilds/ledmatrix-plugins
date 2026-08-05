@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.11.2",
+  "version": "2.12.0",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.12.0",
+      "released": "2026-08-05",
+      "notes": "Add customization.favorite_result_colors: an optional setting that colors a recent game's final score green when your favorite team won and red when it lost. Aimed at scroll and Vegas modes, where the same matchup can go past several times and the logos alone do not say who won. Off by default; games without exactly one favorite team keep the normal score color.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "2.11.2",
       "released": "2026-08-05",

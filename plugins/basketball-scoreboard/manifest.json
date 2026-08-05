@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.10.3",
+  "version": "1.11.0",
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -18,6 +18,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.11.0",
+      "released": "2026-08-05",
+      "notes": "Add customization.favorite_result_colors: an optional setting that colors a recent game's final score green when your favorite team won and red when it lost. Aimed at scroll and Vegas modes, where the same matchup can go past several times and the logos alone do not say who won. Off by default; games without exactly one favorite team keep the normal score color.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.10.3",
       "released": "2026-08-05",

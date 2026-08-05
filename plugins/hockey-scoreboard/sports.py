@@ -337,6 +337,97 @@ class SportsCore(ABC):
             self.logger.debug(f"Error reading layout offset for {element}.{axis}: {e}, using default {default}")
             return default
     
+    # ------------------------------------------------------------------
+    # Favorite-team result colors for finished games.
+    #
+    # In scroll and Vegas modes the same two logos cycle past over and over --
+    # a four-game series against a division rival is four near-identical cards
+    # -- and picking out which side is yours from the digits alone is the whole
+    # problem. Tinting the final score by how the favorite did makes it
+    # readable at a glance. Off by default, so an existing install keeps the
+    # score color it has today until the user opts in.
+    # ------------------------------------------------------------------
+
+    FAVORITE_RESULT_COLOR_DEFAULTS = {
+        "win": (0, 255, 0),
+        "loss": (255, 0, 0),
+        "tie": (255, 200, 0),
+    }
+
+    @staticmethod
+    def _coerce_rgb(value, fallback):
+        """Turn a configured [R, G, B] list into a clamped (r, g, b) tuple."""
+        try:
+            r, g, b = (max(0, min(255, int(channel))) for channel in value)
+        except (TypeError, ValueError):
+            return fallback
+        return (r, g, b)
+
+    @staticmethod
+    def _side_is_favorite(game: Dict, side: str, favorites: set) -> bool:
+        """Is the home/away side of this game a favorite team?
+
+        Both the abbreviation and the ESPN id are checked, because a couple of
+        leagues (NRL) match favorites by id where abbreviations collide.
+        """
+        for key in (f"{side}_abbr", f"{side}_id"):
+            value = game.get(key)
+            if value is not None and str(value).strip().upper() in favorites:
+                return True
+        return False
+
+    def _favorite_result(self, game: Dict) -> Optional[str]:
+        """Say how the favorite team did in a finished game.
+
+        Returns 'win', 'loss' or 'tie', or None when there is no single team
+        to root for: no favorites configured, neither side is a favorite, or
+        *both* are -- a favorite-vs-favorite game has no losing side worth
+        flagging in red. Also None when the scores are not usable numbers.
+        """
+        favorites = getattr(self, "favorite_teams", None) or []
+        favorites = {str(team).strip().upper() for team in favorites if str(team).strip()}
+        if not favorites:
+            return None
+
+        home_fav = self._side_is_favorite(game, "home", favorites)
+        away_fav = self._side_is_favorite(game, "away", favorites)
+        if home_fav == away_fav:
+            return None
+
+        try:
+            home_score = int(str(game.get("home_score", "")).strip())
+            away_score = int(str(game.get("away_score", "")).strip())
+        except (TypeError, ValueError):
+            return None
+
+        if home_score == away_score:
+            return "tie"
+        favorite_score, other_score = (
+            (home_score, away_score) if home_fav else (away_score, home_score)
+        )
+        return "win" if favorite_score > other_score else "loss"
+
+    def _recent_score_color(self, game: Dict, default):
+        """Fill color for a finished game's score, per favorite_result_colors."""
+        try:
+            settings = (self.config.get("customization") or {}).get(
+                "favorite_result_colors"
+            ) or {}
+            if not settings.get("enabled", False):
+                return default
+            result = self._favorite_result(game)
+            if result is None:
+                return default
+            return self._coerce_rgb(
+                settings.get(f"{result}_color"),
+                self.FAVORITE_RESULT_COLOR_DEFAULTS[result],
+            )
+        except Exception:
+            self.logger.debug(
+                "Could not resolve favorite result color", exc_info=True
+            )
+            return default
+
     def _load_fonts(self):
         """Load fonts used by the scoreboard from config or use defaults."""
         fonts = {}
@@ -837,6 +928,11 @@ class SportsCore(ABC):
                 / Path(f"{LogoDownloader.normalize_abbreviation(away_abbr)}.png"),
                 "away_logo_url": away_team["team"].get("logo"),
                 "is_within_window": True,  # Whether game is within display window
+                # The resolved favorites for this league (dynamic groups such
+                # as AP_TOP_25 already expanded). Carried on the game so the
+                # scroll/Vegas renderer, which only ever sees the game dict and
+                # the raw config, can color a final score by the result.
+                "favorite_teams": list(self.favorite_teams or []),
             }
             return details, home_team, away_team, status, situation
         except Exception as e:
@@ -1756,7 +1852,11 @@ class SportsRecent(SportsCore):
             score_x = (self.display_width - score_width) // 2 + self._get_layout_offset('score', 'x_offset')
             score_y = self.display_height - 14 + self._get_layout_offset('score', 'y_offset')
             self._draw_text_with_outline(
-                draw_overlay, score_text, (score_x, score_y), self.fonts["score"]
+                draw_overlay,
+                score_text,
+                (score_x, score_y),
+                self.fonts["score"],
+                fill=self._recent_score_color(game, (255, 255, 255)),
             )
 
             # "Final" text (Top center) with layout offsets

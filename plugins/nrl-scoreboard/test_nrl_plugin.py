@@ -62,8 +62,11 @@ class TestConfigSchema(unittest.TestCase):
             "background_service",
         ):
             self.assertIn(key, props, f"missing schema field: {key}")
-        # customization block is a root-level sibling (parity with soccer)
-        self.assertIn("customization", s)
+        # The customization block used to sit at the schema root, a sibling of
+        # `properties` rather than one of them, so the web UI never rendered it
+        # and a config that set it tripped the root's additionalProperties.
+        self.assertNotIn("customization", s)
+        self.assertIn("customization", props)
         # display_modes toggles use live/recent/upcoming (not nrl_-prefixed)
         dm = props["display_modes"]["properties"]
         for key in ("live", "recent", "upcoming",

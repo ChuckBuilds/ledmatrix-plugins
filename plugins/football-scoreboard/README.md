@@ -34,6 +34,7 @@ Recent Game (NCAA FB):
 - **Upcoming Games**: Scheduled games with start times and odds
 - **Dynamic Team Resolution**: Support for `AP_TOP_25`, `AP_TOP_10`, `AP_TOP_5` automatic team selection
 - **Production-Ready**: Real ESPN API integration with caching and error handling
+- **Favorite Team Result Colors**: Optionally show a finished game's score in green when your favorite team won and red when it lost
 
 ### Professional Display
 - **Team Logos**: Professional team logos with automatic download fallback
@@ -398,6 +399,37 @@ Configure per league (under the `nfl` / `ncaa_fb` config sections):
 - `celebration_duration` (seconds on screen, default `8`)
 - `celebrate_opponent_scores` (also celebrate the opponent, default `false`; when
   no favorite teams are configured, any team's score celebrates)
+
+## Favorite Team Result Colors
+
+A run of games against the same opponent is hard to read at a glance: in scroll
+and Vegas mode the same two logos go past several times and only the digits
+change. Turn on **Customization -> Favorite Team Result Colors** to color a
+finished game's score by how your favorite team did - green for a win, red for
+a loss.
+
+```json
+{
+  "customization": {
+    "favorite_result_colors": {
+      "enabled": true,
+      "win_color": [0, 255, 0],
+      "loss_color": [255, 0, 0],
+      "tie_color": [255, 200, 0]
+    }
+  }
+}
+```
+
+- Off by default. Until you enable it the score keeps exactly the color it has
+  today.
+- Only finished games are colored. Live and upcoming cards are untouched.
+- A game needs exactly one favorite team. If neither side is a favorite, or both
+  are, the score keeps its normal color.
+- Applies to both the one-game-at-a-time switch view and the scroll/Vegas
+  ticker.
+- The three colors are Advanced settings; leave them alone for the defaults
+  above.
 
 ## 🏷️ Team Abbreviations
 

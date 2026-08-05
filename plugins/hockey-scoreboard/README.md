@@ -39,6 +39,7 @@ Upcoming Game:
 - **Team Logos**: Display team logos when available
 - **Background Data Fetching**: Efficient API calls with caching
 - **Font Customization**: Override fonts via Web UI
+- **Favorite Team Result Colors**: Optionally show a finished game's score in green when your favorite team won and red when it lost
 
 ## Requirements
 
@@ -369,6 +370,37 @@ Add your favorite team abbreviations to the `favorite_teams` object for each lea
 
 Make sure `enabled: true` in the configuration and the plugin is activated in the rotation.
 
+
+## Favorite Team Result Colors
+
+A run of games against the same opponent is hard to read at a glance: in scroll
+and Vegas mode the same two logos go past several times and only the digits
+change. Turn on **Customization -> Favorite Team Result Colors** to color a
+finished game's score by how your favorite team did - green for a win, red for
+a loss.
+
+```json
+{
+  "customization": {
+    "favorite_result_colors": {
+      "enabled": true,
+      "win_color": [0, 255, 0],
+      "loss_color": [255, 0, 0],
+      "tie_color": [255, 200, 0]
+    }
+  }
+}
+```
+
+- Off by default. Until you enable it the score keeps exactly the color it has
+  today.
+- Only finished games are colored. Live and upcoming cards are untouched.
+- A game needs exactly one favorite team. If neither side is a favorite, or both
+  are, the score keeps its normal color.
+- Applies to both the one-game-at-a-time switch view and the scroll/Vegas
+  ticker.
+- The three colors are Advanced settings; leave them alone for the defaults
+  above.
 
 ## Troubleshooting
 

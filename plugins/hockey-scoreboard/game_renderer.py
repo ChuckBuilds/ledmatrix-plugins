@@ -316,6 +316,139 @@ class GameRenderer:
 
         return normalized
 
+    # ------------------------------------------------------------------
+    # Favorite-team result colors for finished games.
+    #
+    # This is the scroll/Vegas path, and it is where the setting earns its
+    # keep: a series against the same opponent scrolls past as several
+    # near-identical cards, so tinting the final score green or red is the
+    # only quick way to tell a win from a loss. Off by default -- the score
+    # keeps the color it has today until the user opts in.
+    # ------------------------------------------------------------------
+
+    FAVORITE_RESULT_COLOR_DEFAULTS = {
+        "win": (0, 255, 0),
+        "loss": (255, 0, 0),
+        "tie": (255, 200, 0),
+    }
+
+    @staticmethod
+    def _coerce_rgb(value, fallback):
+        """Turn a configured [R, G, B] list into a clamped (r, g, b) tuple."""
+        try:
+            r, g, b = (max(0, min(255, int(channel))) for channel in value)
+        except (TypeError, ValueError):
+            return fallback
+        return (r, g, b)
+
+    def _favorite_teams_for(self, game: Dict[str, Any]) -> list:
+        """Favorite teams that apply to this game.
+
+        Both sources are used. Games carry the league manager's *resolved*
+        favorites, which is the only place dynamic groups such as AP_TOP_25
+        appear expanded; the config is read as well so an edit takes effect on
+        already-fetched games, and so hand-built game dicts (tests, other
+        callers) still work.
+        """
+        favorites = list(game.get("favorite_teams") or [])
+        league_config = self.config.get(str(game.get("league", "") or ""))
+        if isinstance(league_config, dict):
+            favorites += list(league_config.get("favorite_teams") or [])
+        else:
+            favorites += list(self.config.get("favorite_teams") or [])
+        return favorites
+
+    @staticmethod
+    def _side_is_favorite(game: Dict[str, Any], side: str, favorites: set) -> bool:
+        """Is the home/away side of this game a favorite team?
+
+        Reads both the flat (``home_abbr``) and nested (``home_team.abbrev``)
+        payload shapes, and matches on the ESPN id too, because a couple of
+        leagues (NRL) key favorites by id where abbreviations collide.
+        """
+        candidates = [game.get(f"{side}_abbr"), game.get(f"{side}_id")]
+        team = game.get(f"{side}_team")
+        if isinstance(team, dict):
+            candidates += [team.get("abbrev"), team.get("abbreviation"), team.get("id")]
+        for value in candidates:
+            if value is not None and str(value).strip().upper() in favorites:
+                return True
+        return False
+
+    @staticmethod
+    def _side_score(game: Dict[str, Any], side: str) -> Optional[int]:
+        """Numeric score for one side, from either payload shape."""
+        raw = None
+        team = game.get(f"{side}_team")
+        if isinstance(team, dict) and team.get("score") is not None:
+            raw = team.get("score")
+        if raw is None:
+            raw = game.get(f"{side}_score")
+        try:
+            return int(float(str(raw).strip()))
+        except (TypeError, ValueError):
+            return None
+
+    def _favorite_result(self, game: Dict[str, Any]) -> Optional[str]:
+        """Say how the favorite team did in a finished game.
+
+        Returns 'win', 'loss' or 'tie', or None when there is no single team
+        to root for: no favorites configured, neither side is a favorite, or
+        *both* are -- a favorite-vs-favorite game has no losing side worth
+        flagging in red. Also None when the scores are not usable numbers.
+        """
+        favorites = {
+            str(team).strip().upper()
+            for team in self._favorite_teams_for(game)
+            if str(team).strip()
+        }
+        if not favorites:
+            return None
+
+        home_fav = self._side_is_favorite(game, "home", favorites)
+        away_fav = self._side_is_favorite(game, "away", favorites)
+        if home_fav == away_fav:
+            return None
+
+        home_score = self._side_score(game, "home")
+        away_score = self._side_score(game, "away")
+        if home_score is None or away_score is None:
+            return None
+
+        if home_score == away_score:
+            return "tie"
+        favorite_score, other_score = (
+            (home_score, away_score) if home_fav else (away_score, home_score)
+        )
+        return "win" if favorite_score > other_score else "loss"
+
+    def _score_color_for(self, game: Dict[str, Any], game_type: str, default=(255, 255, 255)):
+        """Fill color for a game card's score. Only finished games are tinted."""
+        if game_type != "recent":
+            return default
+        return self._recent_score_color(game, default)
+
+    def _recent_score_color(self, game: Dict[str, Any], default):
+        """Fill color for a finished game's score, per favorite_result_colors."""
+        try:
+            settings = (self.config.get("customization") or {}).get(
+                "favorite_result_colors"
+            ) or {}
+            if not settings.get("enabled", False):
+                return default
+            result = self._favorite_result(game)
+            if result is None:
+                return default
+            return self._coerce_rgb(
+                settings.get(f"{result}_color"),
+                self.FAVORITE_RESULT_COLOR_DEFAULTS[result],
+            )
+        except Exception:
+            self.logger.debug(
+                "Could not resolve favorite result color", exc_info=True
+            )
+            return default
+
     def render_game_card(
         self,
         game: Dict[str, Any],
@@ -387,7 +520,10 @@ class GameRenderer:
             score_width = draw_overlay.textlength(score_text, font=self.fonts['score'])
             score_x = (self.display_width - score_width) // 2
             score_y = (self.display_height // 2) - 3
-            self._draw_text_with_outline(draw_overlay, score_text, (score_x, score_y), self.fonts['score'])
+            self._draw_text_with_outline(
+                draw_overlay, score_text, (score_x, score_y), self.fonts['score'],
+                fill=self._score_color_for(game, game_type)
+            )
         elif game_type == "upcoming":
             # Draw "VS" for upcoming games
             vs_text = "VS"

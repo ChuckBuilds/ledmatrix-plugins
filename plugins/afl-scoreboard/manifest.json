@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.4.0",
+      "released": "2026-08-05",
+      "notes": "Add customization.favorite_result_colors: an optional setting that colors a recent game's final score green when your favorite team won and red when it lost. Aimed at scroll and Vegas modes, where the same matchup can go past several times and the logos alone do not say who won. Off by default; games without exactly one favorite team keep the normal score color.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.3.2",
       "released": "2026-08-05",
