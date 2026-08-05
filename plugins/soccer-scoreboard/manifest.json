@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.5.2",
+  "version": "2.6.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -27,6 +27,12 @@
   ],
   "versions": [
     {
+      "released": "2026-08-04",
+      "version": "2.6.0",
+      "notes": "Scroll display now uses the core's shared sports-scroll orchestration (LEDMatrix 3.2.0) when available, falling back to the bundled implementation on older cores. No behaviour change: all 24 harness renders are byte-for-byte identical.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "released": "2026-08-02",
       "version": "2.5.2",
       "ledmatrix_min": "2.0.0"
@@ -45,7 +51,7 @@
     {
       "released": "2026-07-29",
       "version": "2.5.0",
-      "notes": "Corrected every team code in TEAMS.md against ESPN's live data — Manchester United is MAN (not MUN), Manchester City MNC (not MCI), Real Madrid RMA, and Ligue 1 had eight wrong codes. The plugin now also says why a league is empty: an unrecognised favorite team logs a warning naming the closest match, while a correct code in a league with no fixtures yet logs the date the season starts.",
+      "notes": "Corrected every team code in TEAMS.md against ESPN's live data \u2014 Manchester United is MAN (not MUN), Manchester City MNC (not MCI), Real Madrid RMA, and Ligue 1 had eight wrong codes. The plugin now also says why a league is empty: an unrecognised favorite team logs a warning naming the closest match, while a correct code in a league with no fixtures yet logs the date the season starts.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -69,7 +75,7 @@
     {
       "released": "2026-07-02",
       "version": "2.2.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league, including custom leagues.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u2014 spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league, including custom leagues.",
       "ledmatrix_min": "2.0.0"
     },
     {
