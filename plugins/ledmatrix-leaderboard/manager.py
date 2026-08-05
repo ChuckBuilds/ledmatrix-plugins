@@ -372,6 +372,14 @@ class LeaderboardPlugin(BasePlugin):
             try:
                 core_config = config_manager.get_config()
             except Exception:
+                # An unreadable core config must not stop the plugin loading;
+                # fall through to the next source, then to the documented
+                # default. Logged rather than swallowed so a persistently
+                # broken config manager is diagnosable.
+                self.logger.debug(
+                    "Could not read core config from %s", type(owner).__name__,
+                    exc_info=True,
+                )
                 continue
             if not isinstance(core_config, dict) or not core_config:
                 continue
