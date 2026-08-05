@@ -1241,13 +1241,18 @@ class WeatherPlugin(BasePlugin):
             for f in self.daily_forecast[:4]
         ]
     
-    def _render_hourly_forecast_image(self) -> Optional[Image.Image]:
-        """Render hourly forecast to an Image without display side effects."""
+    def _render_hourly_forecast_image(self, width: Optional[int] = None) -> Optional[Image.Image]:
+        """Render hourly forecast to an Image without display side effects.
+
+        width defaults to the panel. The Vegas ticker passes a narrower one:
+        columns are laid out as `width // count`, so on a wide panel four
+        hours get ~128px each to hold ~36px of content.
+        """
         try:
             if not self.hourly_forecast:
                 return None
 
-            width = self.display_manager.matrix.width
+            width = width or self.display_manager.matrix.width
             height = self.display_manager.matrix.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
@@ -1313,13 +1318,18 @@ class WeatherPlugin(BasePlugin):
         except Exception as e:
             self.logger.error(f"Error displaying hourly forecast: {e}")
     
-    def _render_daily_forecast_image(self) -> Optional[Image.Image]:
-        """Render daily forecast to an Image without display side effects."""
+    def _render_daily_forecast_image(self, width: Optional[int] = None) -> Optional[Image.Image]:
+        """Render daily forecast to an Image without display side effects.
+
+        width defaults to the panel. The Vegas ticker passes a narrower one:
+        three days spread across a 512px panel leaves ~136px of black between
+        each column.
+        """
         try:
             if not self.daily_forecast:
                 return None
 
-            width = self.display_manager.matrix.width
+            width = width or self.display_manager.matrix.width
             height = self.display_manager.matrix.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
@@ -1828,6 +1838,31 @@ class WeatherPlugin(BasePlugin):
         if fetcher is not None:
             fetcher.reset_loop()
 
+    def _compact_forecast_width(self, columns: int) -> Optional[int]:
+        """Width a forecast needs for `columns`, rather than the whole panel.
+
+        The forecast renderers lay out columns as `width // count`, so they
+        inherit whatever width they are given: on a 512px panel three daily
+        columns are ~136px of black apart, and the tile measures 20% inked.
+        Sizing to the content is what stops the ticker scrolling through that.
+
+        Returns None to mean "use the panel width" when packing would not
+        actually be narrower -- a small display is already tight.
+        """
+        if columns <= 0:
+            return None
+
+        layout = self._get_layout()
+        # A column holds an icon above a short label and temperature; the icon
+        # is the wider of the two in every size we render at.
+        column_w = max(layout['forecast_icon_size'], 28) + 8
+        compact = column_w * columns
+
+        panel_w = self.display_manager.matrix.width
+        if compact >= panel_w:
+            return None
+        return compact
+
     def _render_current_weather_vegas_image(self) -> Optional[Image.Image]:
         """Current conditions sized to its content, for the Vegas ticker.
 
@@ -1951,12 +1986,14 @@ class WeatherPlugin(BasePlugin):
                 images.append(img)
 
         if self.show_hourly and self.hourly_forecast:
-            img = self._render_hourly_forecast_image()
+            img = self._render_hourly_forecast_image(
+                width=self._compact_forecast_width(min(4, len(self.hourly_forecast))))
             if img:
                 images.append(img)
 
         if self.show_daily and self.daily_forecast:
-            img = self._render_daily_forecast_image()
+            img = self._render_daily_forecast_image(
+                width=self._compact_forecast_width(min(3, len(self.daily_forecast))))
             if img:
                 images.append(img)
 
