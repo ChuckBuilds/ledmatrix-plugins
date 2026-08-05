@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.1.9",
+  "version": "1.1.10",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -21,6 +21,12 @@
   "plugin_path": "plugins/odds-ticker",
   "versions": [
     {
+      "version": "1.1.10",
+      "released": "2026-08-05",
+      "notes": "Fix missing team logos for NCAA men's basketball and NCAA baseball. The renderer discarded the logo directory the data fetcher had already resolved and used a hardcoded league map instead, which had no entries for ncaam_basketball or ncaa_baseball -- those leagues resolved to no directory and rendered every game with blank gaps where the logos belong, because the layout reserves the logo width whether or not a logo loads. The renderer now trusts the directory it is passed and falls back to the map, so a league added to the fetcher no longer needs a second table updated. A missing logo also warns once per team naming the paths searched, instead of logging at debug where nothing could see it.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "version": "1.1.9",
       "released": "2026-07-31",
       "ledmatrix_min": "2.0.0"
@@ -34,7 +40,7 @@
     {
       "released": "2026-07-18",
       "version": "1.1.7",
-      "notes": "Fix config save failing with a 400 validation error. The per-league favorite-team pickers hardcoded several wrong team abbreviations that didn't match ESPN's (Rams LA→LAR, White Sox CWS→CHW, A's OAK→ATH, Warriors GSW→GS, Pelicans NOP→NO, Knicks NYK→NY, Spurs SAS→SA, Jazz UTA→UTAH, Wizards WAS→WSH, NHL Kings LAK→LA, Capitals WAS→WSH), so valid favorites were rejected on save and never matched games. Also removed the overly strict regex on the NCAA/MiLB free-text team fields so documented values like AP_TOP_25 are accepted.",
+      "notes": "Fix config save failing with a 400 validation error. The per-league favorite-team pickers hardcoded several wrong team abbreviations that didn't match ESPN's (Rams LA\u2192LAR, White Sox CWS\u2192CHW, A's OAK\u2192ATH, Warriors GSW\u2192GS, Pelicans NOP\u2192NO, Knicks NYK\u2192NY, Spurs SAS\u2192SA, Jazz UTA\u2192UTAH, Wizards WAS\u2192WSH, NHL Kings LAK\u2192LA, Capitals WAS\u2192WSH), so valid favorites were rejected on save and never matched games. Also removed the overly strict regex on the NCAA/MiLB free-text team fields so documented values like AP_TOP_25 are accepted.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -87,7 +93,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-07-31",
+  "last_updated": "2026-08-05",
   "verified": true,
   "screenshot": "",
   "display_modes": [
