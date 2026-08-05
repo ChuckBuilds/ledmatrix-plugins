@@ -131,12 +131,21 @@ PROFILES = [
 
 def probe(url, headers, timeout):
     """Fetch url and return a result dict. Never raises."""
+    # The URLs come from the table above, but pin the scheme rather than trusting
+    # them: urlopen would honour file:// or a custom scheme if an entry ever
+    # arrived from somewhere less trustworthy. Reported as an ordinary failure so
+    # the promise above holds and one bad row cannot abort the whole run.
+    if not url.startswith("https://"):
+        return {"ok": False, "status": None, "error": f"refusing non-HTTPS URL: {url!r}"}
+
     request = urllib.request.Request(url)
     for name, value in headers.items():
         request.add_header(name, value)
 
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        # B310 is a syntactic blacklist rule and fires on the call regardless of
+        # the scheme guard above, which is what actually makes this safe.
+        with urllib.request.urlopen(request, timeout=timeout) as response:  # nosec B310
             body = response.read()
             status = response.getcode()
     except urllib.error.HTTPError as exc:
