@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.11.0",
+  "version": "2.11.1",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.11.1",
+      "released": "2026-08-05",
+      "notes": "Test-only: the scroll display is now constructed on both the core and fallback paths, and its separator icons compared between them. The previous checks verified that methods existed and that their globals resolved, which could not see a constant read off self -- the miss that broke scroll mode in three sibling plugins.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-08-04",
       "version": "2.11.0",

@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.7.1",
+      "released": "2026-08-05",
+      "notes": "Fix scroll mode failing to start on LEDMatrix 3.2.0. The NHL and NCAA separator-icon paths stayed behind on the bundled fallback class when scroll display adopted the core orchestration, so building the scroll display raised AttributeError and scroll mode did not run at all on a 3.2.0 core. Switch mode and the fallback path were unaffected.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-08-04",
       "version": "1.7.0",

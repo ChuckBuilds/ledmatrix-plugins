@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -18,6 +18,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.10.1",
+      "released": "2026-08-05",
+      "notes": "Fix scroll mode failing to start on LEDMatrix 3.2.0. The NBA, WNBA and NCAA separator-icon paths stayed behind on the bundled fallback class when scroll display adopted the core orchestration, so building the scroll display raised AttributeError and scroll mode did not run at all on a 3.2.0 core. Switch mode and the fallback path were unaffected.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-08-04",
       "version": "1.10.0",

@@ -219,6 +219,141 @@ def test_fallback_content_methods_can_resolve_what_they_use():
                 f"its module cannot resolve"
             )
 
+
+class _StubMatrix:
+    width = 128
+    height = 32
+
+
+class _StubDisplayManager:
+    """The minimum a scroll display needs to be built.
+
+    Carries a `matrix` as well as bare width/height because the two lineages
+    read the size differently: the core base prefers `matrix` and falls back to
+    getattr, while the soccer lineage's bundled manager goes straight for
+    `display_manager.matrix.width`. A real display manager always has both, so
+    a stub missing one tests a configuration that never ships.
+
+    Nothing here draws, because nothing needs to: the bug this guards against
+    fires in __init__, long before a frame is rendered.
+    """
+
+    width = 128
+    height = 32
+    matrix = _StubMatrix()
+
+
+def _args_for(cls):
+    """Build kwargs for a constructor by parameter NAME.
+
+    The two implementations do not share a signature. The core base takes
+    ``(display_manager, config, custom_logger, global_config)``; the soccer
+    lineage's bundled class takes ``(display_manager, display_width,
+    display_height, config, plugin_dir, global_config)``. Both are correct for
+    their own caller, so this supplies whatever each one asks for rather than
+    assuming one shape -- which is also why it keeps working if a plugin's
+    constructor grows a parameter.
+    """
+    import inspect
+    import logging
+    import os
+
+    known = {
+        "display_manager": _StubDisplayManager(),
+        "display_width": 128,
+        "display_height": 32,
+        "config": {},
+        "custom_logger": logging.getLogger("test_core_fallback"),
+        "logger": logging.getLogger("test_core_fallback"),
+        "global_config": {},
+        "plugin_dir": os.path.dirname(os.path.abspath(__file__)),
+    }
+    # Union the named parameters across the MRO, not just the class's own
+    # __init__. Several plugins declare `__init__(self, *args, **kwargs)` purely
+    # to set an attribute before delegating up, so inspecting that one alone
+    # yields no parameters at all and constructs nothing. Passing the base's
+    # names as keywords works because those wrappers forward **kwargs.
+    kwargs = {}
+    for klass in cls.__mro__:
+        init = klass.__dict__.get("__init__")
+        if init is None:
+            continue
+        for name, param in inspect.signature(init).parameters.items():
+            if name == "self" or param.kind in (
+                    param.VAR_POSITIONAL, param.VAR_KEYWORD):
+                continue
+            if name in known:
+                kwargs.setdefault(name, known[name])
+            elif param.default is param.empty:
+                raise AssertionError(
+                    f"{klass.__name__}.__init__ needs an unrecognised argument "
+                    f"{name!r}; teach _args_for about it"
+                )
+    return kwargs
+
+
+def _build(mod):
+    """Construct both classes the way the plugin's manager does."""
+    display = mod.ScrollDisplay(**_args_for(mod.ScrollDisplay))
+    manager = mod.ScrollDisplayManager(**_args_for(mod.ScrollDisplayManager))
+    # get_scroll_display() is where the manager first builds a display, so a
+    # constructor that raises shows up here rather than at first render.
+    manager.get_scroll_display("recent")
+    return display
+
+
+def test_scroll_display_constructs_on_both_paths():
+    """Building the display must work on the core path and the fallback.
+
+    This is the check that would have caught the separator-icon constants being
+    left behind on the legacy class: `_load_separator_icons` was lifted verbatim
+    into the new class and reads them off `self`, and the core base calls it
+    from `__init__` -- so the miss was not a degraded icon, it was an
+    AttributeError that stopped the display being constructed at all. Scroll
+    mode was dead for three plugins while every other gate stayed green.
+    """
+    import logging
+
+    logging.disable(logging.CRITICAL)
+    try:
+        core_display = _build(_fresh_scroll_display())
+        core_icons = {k: v.size for k, v in core_display._separator_icons.items()}
+
+        with _BlockModules(CORE_MODULE):
+            legacy_display = _build(_fresh_scroll_display())
+            legacy_icons = {
+                k: v.size for k, v in legacy_display._separator_icons.items()
+            }
+    finally:
+        logging.disable(logging.NOTSET)
+
+    # Adopting core code must not change what gets drawn. Comparing the two
+    # paths needs no per-sport knowledge of the right answer -- only that the
+    # answer did not change.
+    assert core_icons == legacy_icons, (
+        f"separator icons differ between paths: core={core_icons} "
+        f"legacy={legacy_icons}"
+    )
+
+    # Attributes the bundled __init__ seeded but the adopted class does not.
+    # Construction alone cannot catch this: the object builds fine and only
+    # fails later, when a lifted method reads the attribute that was never set.
+    # afl shipped exactly that -- prepare_scroll_content opens with
+    # `if self._game_renderer is None`, the legacy __init__ set it to None and
+    # the new one did not, and because the core base CATCHES exceptions out of
+    # prepare_scroll_content the only symptom was scroll mode quietly drawing
+    # nothing. Checked one way only: extra attributes on the core path are the
+    # base class doing its job, not a defect.
+    missing = sorted(
+        name for name in vars(legacy_display)
+        if not hasattr(core_display, name)
+    )
+    assert not missing, (
+        f"the adopted class never sets {missing}, which the bundled one "
+        f"initialised — any lifted method that reads them raises AttributeError"
+    )
+
+
 if __name__ == "__main__":
     # Pre-flight, deliberately BEFORE any test runs. Deciding "skip" from an
     # exception raised *during* a test is what this suite is guarding against:
@@ -241,11 +376,15 @@ if __name__ == "__main__":
               test_core_absent_falls_back_and_still_works,
               test_content_methods_can_resolve_what_they_use,
               test_fallback_content_methods_can_resolve_what_they_use,
+              test_scroll_display_constructs_on_both_paths,
               test_sunset_state_fails_specifically):
         try:
             t()
             print(f"PASS {t.__name__}")
-        except (AssertionError, ModuleNotFoundError) as e:
+        # Any exception is a failure. Narrower clauses let the construction
+        # test's AttributeError escape and kill the runner mid-suite, so the
+        # bug it caught was reported as a crash rather than against its name.
+        except Exception as e:
             failures.append(t.__name__)
             print(f"FAIL {t.__name__}: {e}")
     print("=" * 55)

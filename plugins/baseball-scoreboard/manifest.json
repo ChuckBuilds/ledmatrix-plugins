@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.22.0",
+  "version": "1.22.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.22.1",
+      "released": "2026-08-05",
+      "notes": "Test-only: the scroll display is now constructed on both the core and fallback paths, and its separator icons compared between them. The previous checks verified that methods existed and that their globals resolved, which could not see a constant read off self -- the miss that broke scroll mode in three sibling plugins.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-08-03",
       "version": "1.22.0",

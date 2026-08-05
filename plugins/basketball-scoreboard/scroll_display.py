@@ -778,6 +778,16 @@ else:
         # The ladder the legacy _get_scroll_settings walked, same order.
         SCROLL_LEAGUE_KEYS = ("nba", "wnba", "ncaam", "ncaaw")
 
+        # Paths to league separator icons. These must live on THIS class, not
+        # only on the legacy one: _load_separator_icons below was lifted verbatim
+        # and reads them off self, and the core base calls it from __init__ --
+        # so a missing constant is not a degraded icon, it is an AttributeError
+        # that stops the scroll display being constructed at all.
+        NBA_SEPARATOR_ICON = "assets/sports/nba_logos/NBA.png"
+        WNBA_SEPARATOR_ICON = "assets/sports/wnba_logos/WNBA.png"
+        NCAA_SEPARATOR_ICON = "assets/sports/ncaa_logos/NCAA.png"  # Generic NCAA logo, or use league-specific if available
+        MARCH_MADNESS_SEPARATOR_ICON = "assets/sports/ncaa_logos/MARCH_MADNESS.png"
+
         def scroll_settings_defaults(self):
             # Where this plugin's defaults differ from core's.
             return {

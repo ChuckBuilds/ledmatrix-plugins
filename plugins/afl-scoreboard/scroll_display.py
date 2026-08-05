@@ -91,6 +91,13 @@ else:
             # _load_separator_icons() from its __init__.
             self.plugin_dir = kwargs.pop('plugin_dir', None) or str(Path(__file__).parent)
             super().__init__(*args, **kwargs)
+            # The renderer cache the legacy __init__ seeded. prepare_scroll_content
+            # was lifted verbatim and opens with `if self._game_renderer is None`,
+            # so without these it raises AttributeError on the very first call --
+            # and the core base catches exceptions out of prepare_scroll_content,
+            # so the only symptom was scroll mode silently rendering nothing.
+            self._game_renderer: Optional[GameRenderer] = None
+            self._game_renderer_card_width: Optional[int] = None
 
         def _load_separator_icons(self) -> None:
             """Load league separator icons from assets directory."""
