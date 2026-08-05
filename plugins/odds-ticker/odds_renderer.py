@@ -81,6 +81,9 @@ class OddsRenderer:
         
         # Resolve project root path (plugin_dir -> plugins -> project_root)
         self.project_root = Path(__file__).resolve().parent.parent.parent
+        # Teams already reported as having no logo, so the warning fires once
+        # per team rather than on every ticker rebuild.
+        self._missing_logo_warned: set = set()
         
         # Display settings
         self.scroll_speed = config.get('scroll_speed', 2)
@@ -446,38 +449,71 @@ class OddsRenderer:
 
         return image
     
-    def _get_team_logo(self, league: str, team_id: str, team_abbr: str, logo_dir: str) -> Optional[Image.Image]:
-        """Get team logo from assets directory."""
+    # Fallback only. The data fetcher already resolves a logo_dir per league
+    # and passes it in; this map exists for callers that don't. It had drifted
+    # out of sync with the fetcher — no entries for ncaam_basketball or
+    # ncaa_baseball — so those leagues resolved to '' and every game rendered
+    # with blank gaps where the logos belong, because the layout reserves the
+    # width whether or not a logo loads.
+    LEAGUE_LOGO_DIRS = {
+        'nfl': 'nfl_logos',
+        'mlb': 'mlb_logos',
+        'nba': 'nba_logos',
+        'nhl': 'nhl_logos',
+        'milb': 'milb_logos',
+        'ncaa_fb': 'ncaa_logos',
+        'ncaam_basketball': 'ncaa_logos',
+        'ncaa_baseball': 'ncaa_logos',
+    }
+
+    def _get_team_logo(self, league: str, team_id: str, team_abbr: str,
+                       logo_dir: str) -> Optional[Image.Image]:
+        """Get a team logo, preferring the directory the caller resolved.
+
+        Trusting logo_dir first is what stops this drifting again: a league
+        added to the fetcher works here without touching a second table.
+        """
+        _ = team_id  # kept for signature compatibility
         try:
-            # Suppress unused parameter warnings
-            _ = team_id
-            _ = logo_dir
-            
-            # Map league names to logo directories
-            league_logo_map = {
-                'nfl': 'nfl_logos',
-                'mlb': 'mlb_logos', 
-                'nba': 'nba_logos',
-                'nhl': 'nhl_logos',
-                'ncaa_fb': 'ncaa_logos',
-                'milb': 'milb_logos'
-            }
-            
-            logo_dir_name = league_logo_map.get(league, '')
-            if not logo_dir_name or not team_abbr:
+            if not team_abbr:
                 return None
-                
-            # Resolve path relative to project root
-            logo_path = self.project_root / "assets" / "sports" / logo_dir_name / f"{team_abbr}.png"
-            if logo_path.exists():
-                return Image.open(logo_path)
-            else:
-                logger.debug("Team logo not found: %s", logo_path)
-                return None
-                
-        except Exception as e:
-            logger.debug("Error loading team logo for %s in %s: %s", team_abbr, league, e)
+
+            candidates = []
+            if logo_dir:
+                candidates.append(self.project_root / logo_dir)
+            mapped = self.LEAGUE_LOGO_DIRS.get(league)
+            if mapped:
+                candidates.append(self.project_root / "assets" / "sports" / mapped)
+
+            for base in candidates:
+                logo_path = base / f"{team_abbr}.png"
+                if logo_path.exists():
+                    return Image.open(logo_path)
+
+            self._warn_missing_logo(league, team_abbr, candidates)
             return None
+
+        except Exception as e:
+            logger.warning("Error loading team logo for %s in %s: %s",
+                           team_abbr, league, e)
+            return None
+
+    def _warn_missing_logo(self, league: str, team_abbr: str, candidates) -> None:
+        """Report a missing logo once per team, at a level that is actually seen.
+
+        This used to log at debug. The failure is silent on screen too — the
+        layout still reserves the logo's width — so a missing logo showed up as
+        an unexplained gap with nothing in the logs to explain it.
+        """
+        key = (league, team_abbr)
+        if key in self._missing_logo_warned:
+            return
+        self._missing_logo_warned.add(key)
+        looked_in = ', '.join(str(c) for c in candidates) or '(no directory resolved)'
+        logger.warning(
+            "Team logo not found for %s in league %r; looked in: %s. "
+            "The game will render with a blank gap where the logo belongs.",
+            team_abbr, league, looked_in)
     
     def _load_broadcast_logo(self, logo_name: str) -> Optional[Image.Image]:
         """Load broadcast logo from assets."""
