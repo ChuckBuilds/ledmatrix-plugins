@@ -153,6 +153,11 @@ class WeatherPlugin(BasePlugin):
         # reference fitting all 7 possible items (192 // 7 ~= 27px) without
         # crowding.
         self.MIN_METRIC_ITEM_WIDTH_PX = 27
+        # Gap the compact Vegas tile keeps between metrics-bar items. This is a
+        # readability floor, not a packing minimum: MIN_METRIC_ITEM_WIDTH_PX
+        # above is the point where items start to collide, which is a long way
+        # below the point where a scrolling row is comfortable to read.
+        self.COMPACT_METRIC_GAP_PX = 24
         self.COLORS = {
             'text': (255, 255, 255),
             'highlight': (255, 200, 0),
@@ -1909,7 +1914,13 @@ class WeatherPlugin(BasePlugin):
             metrics_block = 0
             if items:
                 widest = max(measure.textlength(t, font=tiny) for t, _c, _d in items)
-                metrics_block = (int(widest) + 6) * len(items)
+                # The bar centres every item in an equal section, so the gap
+                # left between neighbours is (section - widest). Sizing to the
+                # text plus a few pixels squeezed that to 15px against the
+                # 63px of the full-width bar, which is legible in a still
+                # image and tiring to read scrolling past. Reserve a real gap
+                # instead and give back the width it costs.
+                metrics_block = (int(widest) + self.COMPACT_METRIC_GAP_PX) * len(items)
 
             compact = max(text_block, metrics_block)
             panel_w = self.display_manager.matrix.width
