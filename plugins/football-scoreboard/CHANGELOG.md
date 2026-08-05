@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.0] - 2026-08-04
+
+### Changed
+- **Scroll display now runs on the core's shared implementation.** The orchestration half of `scroll_display.py` — scroll-helper configuration, frame pumping, completion, settings resolution, and native `global_config['target_fps']` support — moves to the core's `src.common.sports_scroll` (LEDMatrix 3.2.0). Only the football-specific content half stays here: game cards and league separator icons. A fix to the shared behaviour now lands once in the core instead of being replicated across nine scoreboards.
+- **Nothing changes on an older core.** The import is guarded: a core without `src.common.sports_scroll` falls back to `scroll_display_legacy.py`, the previous self-contained implementation, and the plugin behaves exactly as it did. This is why the minimum core version is unchanged at 2.0.0 — the plugin does not *require* 3.2.0, it merely prefers it. The fallback goes away in a later release, and the floor rises then.
+- Verified byte-for-byte: all 16 safety-harness renders (8 panel sizes × 2 screens) are identical to 2.10.1, before and after.
+
 ## [2.10.1] - 2026-08-03
 
 ### Fixed

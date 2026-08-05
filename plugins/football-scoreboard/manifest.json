@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.10.1",
+  "version": "2.11.0",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "released": "2026-08-04",
+      "version": "2.11.0",
+      "notes": "Scroll display now uses the core's shared sports-scroll orchestration (LEDMatrix 3.2.0) when available, falling back to the bundled implementation on older cores. No behaviour change: all 16 harness renders are byte-for-byte identical.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-08-03",
       "version": "2.10.1",
