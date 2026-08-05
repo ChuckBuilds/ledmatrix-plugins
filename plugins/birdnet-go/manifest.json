@@ -1,0 +1,41 @@
+{
+  "id": "birdnet-go",
+  "name": "BirdNET-Go",
+  "version": "1.0.1",
+  "author": "ChuckBuilds",
+  "description": "Display the most recently identified bird from a BirdNET-Go MQTT feed. Shows common name, confidence, time since detection, and a species image fetched from BirdNET-Go's media API. Supports always-on rotation and interrupt pop-up modes.",
+  "category": "integration",
+  "tags": [
+    "mqtt",
+    "birdnet",
+    "birds",
+    "nature",
+    "wildlife",
+    "homeassistant"
+  ],
+  "display_modes": [
+    "birdnet_go"
+  ],
+  "entry_point": "manager.py",
+  "class_name": "BirdNetGoPlugin",
+  "versions": [
+    {
+      "released": "2026-04-24",
+      "version": "1.0.0",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "released": "2026-04-24",
+      "version": "1.0.1",
+      "ledmatrix_min_version": "2.0.0"
+    }
+  ],
+  "last_updated": "2026-04-24",
+  "stars": 0,
+  "downloads": 0,
+  "verified": true,
+  "screenshot": "",
+  "compatible_versions": [
+    ">=2.0.0"
+  ]
+}

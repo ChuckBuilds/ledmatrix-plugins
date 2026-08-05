@@ -1,0 +1,197 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BirdNET-Go Plugin Configuration",
+  "description": "Configuration schema for the BirdNET-Go plugin - subscribes to BirdNET-Go MQTT detections and displays the most recent bird on the LED matrix",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable or disable the BirdNET-Go plugin"
+    },
+    "update_interval": {
+      "type": "integer",
+      "default": 30,
+      "minimum": 1,
+      "description": "How often (seconds) to run background update tasks (image warmup, connection health)"
+    },
+    "mqtt": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string",
+          "default": "localhost",
+          "description": "MQTT broker hostname or IP address"
+        },
+        "port": {
+          "type": "integer",
+          "default": 1883,
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "MQTT broker port"
+        },
+        "username": {
+          "type": "string",
+          "default": "",
+          "description": "MQTT broker username (optional)"
+        },
+        "password": {
+          "type": "string",
+          "default": "",
+          "description": "MQTT broker password (optional)"
+        },
+        "client_id": {
+          "type": "string",
+          "default": "ledmatrix-birdnet-go",
+          "description": "MQTT client ID"
+        },
+        "keepalive": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 10,
+          "maximum": 300,
+          "description": "MQTT keepalive interval in seconds"
+        },
+        "topic": {
+          "type": "string",
+          "default": "birdnet/detections",
+          "description": "MQTT topic BirdNET-Go publishes detections to. Supports wildcards (+ and #)."
+        }
+      },
+      "required": ["host", "port", "topic"],
+      "additionalProperties": false
+    },
+    "birdnet_api": {
+      "type": "object",
+      "properties": {
+        "base_url": {
+          "type": "string",
+          "default": "http://birdnet-go.local:8080",
+          "description": "Base URL of the BirdNET-Go web server (used for species image lookup)"
+        },
+        "request_timeout": {
+          "type": "number",
+          "default": 5.0,
+          "minimum": 1,
+          "maximum": 30,
+          "description": "HTTP timeout in seconds for image requests"
+        }
+      },
+      "additionalProperties": false
+    },
+    "display": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["rotation", "interrupt", "both"],
+          "default": "both",
+          "description": "rotation: always shows most recent bird during plugin's rotation slot. interrupt: pops up only on new detections. both: rotation slot plus interrupt on new detections."
+        },
+        "interrupt_duration": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 300,
+          "description": "Seconds to show a pop-up detection in interrupt mode"
+        },
+        "rotation_duration": {
+          "type": "number",
+          "default": 15,
+          "minimum": 1,
+          "maximum": 300,
+          "description": "Seconds to show the bird during the plugin's rotation slot"
+        },
+        "min_confidence": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Ignore detections with confidence below this threshold (0.0-1.0)"
+        },
+        "stale_after_minutes": {
+          "type": "integer",
+          "default": 120,
+          "minimum": 1,
+          "description": "If no detection arrives within this many minutes, show a 'no recent detection' frame instead"
+        },
+        "show_image": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fetch and display the species image"
+        },
+        "show_confidence": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the confidence percentage"
+        },
+        "show_time": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show how long ago the bird was detected"
+        }
+      },
+      "additionalProperties": false
+    },
+    "text": {
+      "type": "object",
+      "properties": {
+        "font_path": {
+          "type": "string",
+          "default": "assets/fonts/PressStart2P-Regular.ttf",
+          "description": "Path to font file (TTF). Relative to project root or absolute path."
+        },
+        "font_size": {
+          "type": "number",
+          "default": 8,
+          "minimum": 4,
+          "maximum": 32,
+          "description": "Font size in pixels"
+        },
+        "text_color": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 255, 255],
+          "description": "RGB text color [R, G, B]"
+        },
+        "background_color": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [0, 0, 0],
+          "description": "RGB background color [R, G, B]"
+        },
+        "scroll_speed": {
+          "type": "number",
+          "default": 30,
+          "minimum": 1,
+          "maximum": 200,
+          "description": "Scroll speed in pixels per second for long bird names"
+        },
+        "scroll_gap_width": {
+          "type": "number",
+          "default": 32,
+          "minimum": 0,
+          "description": "Gap width in pixels between scroll loops"
+        }
+      },
+      "additionalProperties": false
+    },
+    "field_mapping": {
+      "type": "object",
+      "description": "Override BirdNET-Go payload field names if your version uses different keys. Matching is case-insensitive with common variants tried automatically.",
+      "properties": {
+        "common_name": {"type": "string", "default": "CommonName"},
+        "scientific_name": {"type": "string", "default": "ScientificName"},
+        "confidence": {"type": "string", "default": "Confidence"},
+        "time": {"type": "string", "default": "Time"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["enabled", "mqtt"],
+  "additionalProperties": false
+}

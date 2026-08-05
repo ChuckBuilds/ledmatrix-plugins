@@ -363,6 +363,30 @@
       "icon": "fas fa-baseball-ball"
     },
     {
+      "id": "birdnet-go",
+      "name": "BirdNET-Go",
+      "description": "Display the most recently identified bird from a BirdNET-Go MQTT feed. Shows common name, confidence, time since detection, and a species image fetched from BirdNET-Go's media API. Supports always-on rotation and interrupt pop-up modes.",
+      "author": "ChuckBuilds",
+      "category": "integration",
+      "tags": [
+        "mqtt",
+        "birdnet",
+        "birds",
+        "nature",
+        "wildlife",
+        "homeassistant"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/birdnet-go",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-04-24",
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.2.0"
+    },
+    {
       "id": "leaderboard",
       "name": "Sports Leaderboard",
       "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
