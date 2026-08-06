@@ -6,6 +6,7 @@
     "update_interval",
     "display_rotate_interval",
     "subtitle_rotate_interval",
+    "auto_fit_text",
     "category_order",
     "file_manager",
     "categories",
@@ -38,6 +39,12 @@
       "minimum": 5,
       "x-advanced": true,
       "description": "Seconds between rotating subtitle information"
+    },
+    "auto_fit_text": {
+      "type": "boolean",
+      "default": true,
+      "x-advanced": true,
+      "description": "Automatically shrink the body text font when a long definition or subtitle can't fit on the panel at the configured size (scalable fonts only; text that still can't fit is shortened with '...')"
     },
     "category_order": {
       "type": "array",

@@ -60,6 +60,7 @@ category configurations with collapsible sections.
 - `update_interval`: Seconds between checking for new day (default: 3600)
 - `display_rotate_interval`: Seconds between category rotations (default: 20)
 - `subtitle_rotate_interval`: Seconds between title/content rotation (default: 10)
+- `auto_fit_text`: Shrink the body font automatically when a long definition or subtitle can't fit the panel at the configured size (default: true). Wrapping is font-aware either way — line breaks and line count follow the actual font metrics, so custom fonts/sizes wrap correctly. Text that can't fit even at the smallest size is shortened with `...`
 - `category_order`: Order to display categories
 - `categories`: Dictionary of category configurations
 - `display_duration`: Total display duration in seconds
