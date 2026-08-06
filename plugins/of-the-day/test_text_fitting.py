@@ -95,6 +95,21 @@ class TestFitWrappedText:
         assert spans <= 11 + height  # at most max_lines = (11+1)//(h+1) lines
         assert all(p._text_width(line, fitted) <= 60 for line in lines)
 
+    def test_oversized_word_shrinks_instead_of_truncating(self):
+        """A single word wider than the panel at the configured size must
+        shrink to a size that holds it whole, not be ellipsized."""
+        p = _plugin(128, 64, {"customization": {
+            "body_text": {"font": "4x6-font.ttf", "font_size": 12}}})
+        font = _body_font(p)
+        word = "extraordinarily"
+        small = p._resized_font(font, 6)
+        max_width = p._text_width(word, small) + 4
+        # Precondition: at the configured 12px the word overflows max_width.
+        assert p._text_width(word, font) > max_width
+        fitted, lines, _ = p._fit_wrapped_text(word, font, max_width, 40)
+        assert fitted.size < font.size
+        assert lines == [word]
+
     def test_auto_fit_disabled_never_shrinks(self):
         p = _plugin(128, 64, {"auto_fit_text": False, "customization": {
             "body_text": {"font": "4x6-font.ttf", "font_size": 10}}})

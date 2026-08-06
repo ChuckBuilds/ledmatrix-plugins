@@ -477,7 +477,10 @@ class OfTheDayPlugin(BasePlugin):
             lines = self._wrap_text(text, max_width, candidate, max_lines=max_lines + 1)
             if first is None:
                 first = (candidate, lines, line_height, max_lines)
-            if len(lines) <= max_lines:
+            # A candidate only wins when every word survived intact: a word
+            # wider than max_width gets truncated by _wrap_text, and a
+            # smaller size may be able to hold it whole.
+            if len(lines) <= max_lines and " ".join(lines).split() == text.split():
                 return candidate, lines, line_height
         # No size holds everything: keep the configured font, keep the lines
         # that fit, and mark the cut with an ellipsis.
