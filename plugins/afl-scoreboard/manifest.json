@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.5.0",
+      "released": "2026-08-06",
+      "notes": "Scroll and Vegas cards: never show 0-0 before a game starts, add a centre gap so the score or VS is not drawn on top of the team logos, and write upcoming dates as \"Sep 19\". A new scroll_card config block sets what fills the middle of an upcoming card (VS, or the date and time stacked), the date format (abbrev/numeric) and the centre gap in pixels. gap_between_games is now honoured in Vegas mode, which stitches its own items and previously ignored it, and its code default moves from 24 to 48 to match the config schema. The date is positioned from its measured height rather than a fixed offset, which stops \"Sep 19\" running past the bottom of the card in the plugins whose detail font is 10px. These settings only affect the cards built for scroll and Vegas modes; the full-screen scoreboard is drawn by a separate code path and is unchanged.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.4.0",
       "released": "2026-08-05",

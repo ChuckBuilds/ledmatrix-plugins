@@ -561,12 +561,7 @@ class GameRenderer:
                 fill=self._score_color_for(game, game_type)
             )
         elif game_type == "upcoming":
-            # Draw "VS" for upcoming games
-            vs_text = "VS"
-            vs_width = draw_overlay.textlength(vs_text, font=self.fonts['score'])
-            vs_x = (self.display_width - vs_width) // 2
-            vs_y = (self.display_height // 2) - 3
-            self._draw_text_with_outline(draw_overlay, vs_text, (vs_x, vs_y), self.fonts['score'])
+            self._draw_upcoming_center(draw_overlay, game)
 
         # Draw period/status based on game type
         if game_type == "live":
@@ -676,20 +671,37 @@ class GameRenderer:
             self.logger.debug(f"Failed to parse start time '{raw_start}': {e}")
             return "", ""
 
-    # Middle strip reserved for the score / "VS", as a fraction of card width.
-    # 0.28 clears "1-2" (30px) on a 128px card with room to spare.
+    # ------------------------------------------------------------------
+    # Scroll/Vegas card options -- config["scroll_card"].
+    #
+    # These only affect the cards this renderer builds, which are used by
+    # scroll_display.py and scroll_display_legacy.py alone. The full-screen
+    # scorebug is drawn elsewhere and is deliberately left untouched.
+    # ------------------------------------------------------------------
+    # Middle strip kept clear of logos so the score / "VS" is never drawn on
+    # top of them. 0.28 of a 128px card clears "1-2" (30px) with room spare.
     CENTER_GAP_RATIO: ClassVar[float] = 0.28
     # 22 so "VS" (20px) still clears the logos on the narrowest 64px card.
     CENTER_GAP_MIN_PX: ClassVar[int] = 22
     CENTER_GAP_MAX_PX: ClassVar[int] = 40
+    _MONTH_ABBR: ClassVar[Tuple[str, ...]] = (
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    )
+
+    def _scroll_card_option(self, key: str, default: Any = None) -> Any:
+        """Read one key from the scroll_card config block."""
+        block = (self.config or {}).get("scroll_card")
+        if isinstance(block, dict) and block.get(key) is not None:
+            return block.get(key)
+        return default
 
     def _center_gap_width(self) -> int:
         """Width of the middle strip kept clear of logos.
 
-        ``customization.center_gap`` overrides it; 0 restores the old
-        edge-to-edge logos.
+        ``scroll_card.center_gap`` overrides it; 0 restores edge-to-edge logos.
         """
-        configured = (self.config or {}).get('customization', {}).get('center_gap')
+        configured = self._scroll_card_option("center_gap")
         if isinstance(configured, (int, float)) and configured >= 0:
             return int(configured)
         scaled = round(self.display_width * self.CENTER_GAP_RATIO)
@@ -698,12 +710,59 @@ class GameRenderer:
     def _logo_slot_width(self) -> int:
         """Per-side logo slot, leaving the center gap clear.
 
-        Still capped at display_height, so wide/short cards (128x32, 256x32)
-        already have a large center gap and are left exactly as they were --
-        only the sizes where the logos met in the middle (128x64, 64x32) shrink.
+        Capped at display_height, so wide/short cards (128x32, 256x32) already
+        have a large middle and come out unchanged -- only the sizes where the
+        logos used to meet (128x64, 64x32) shrink.
         """
         available = (self.display_width - self._center_gap_width()) // 2
         return max(8, min(self.display_height, available))
+
+    def _upcoming_center_mode(self) -> str:
+        """What sits in the middle of an upcoming card: 'vs' or 'date_time'."""
+        mode = str(self._scroll_card_option("upcoming_center", "vs") or "vs").lower()
+        return mode if mode in ("vs", "date_time") else "vs"
+
+    def _format_game_date(self, date_text: str) -> str:
+        """Render a date as "Sep 19" (default) or "9/19" (``date_format``)."""
+        raw = str(date_text or "").strip()
+        if not raw or self._scroll_card_option("date_format", "abbrev") == "numeric":
+            return raw
+        parts = raw.replace("-", "/").split("/")
+        if len(parts) >= 2 and parts[0].strip().isdigit() and parts[1].strip().isdigit():
+            month = int(parts[0])
+            if 1 <= month <= 12:
+                return f"{self._MONTH_ABBR[month - 1]} {int(parts[1])}"
+        return raw
+
+    def _draw_upcoming_center(self, draw: "ImageDraw.ImageDraw", game: Dict) -> None:
+        """Draw the middle of an upcoming card.
+
+        Never a score: an upcoming game has not started, so the extractor's
+        0-0 is noise. Either "VS" (default) or the date and time stacked.
+        """
+        if self._upcoming_center_mode() == "vs":
+            vs_text = "VS"
+            vs_width = draw.textlength(vs_text, font=self.fonts['score'])
+            vs_x = (self.display_width - vs_width) // 2
+            vs_y = (self.display_height // 2) - 3
+            self._draw_text_with_outline(
+                draw, vs_text, (vs_x, vs_y), self.fonts['score']
+            )
+            return
+
+        date_text, time_text = self._upcoming_date_and_time(game)
+        date_text = self._format_game_date(date_text)
+        font = self.fonts.get('detail') or self.fonts['time']
+        lines = [t for t in (date_text, time_text) if t]
+        if not lines:
+            return
+        line_h = 7
+        top = (self.display_height // 2) - (len(lines) * line_h) // 2
+        for i, line in enumerate(lines):
+            width = draw.textlength(line, font=font)
+            self._draw_text_with_outline(
+                draw, line, ((self.display_width - width) // 2, top + i * line_h), font
+            )
 
     @staticmethod
     def _compact_time(text: str) -> str:
@@ -729,13 +788,16 @@ class GameRenderer:
         return timezone.utc
 
     def _draw_upcoming_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
-        """Draw date/time for an upcoming hockey game.
+        """Draw date/time around an upcoming card: time top, date bottom.
 
-        Matches the other sports' scroll cards: time top-center, date
-        bottom-center, so the two logos are never left touching with a bare
-        "VS" between them.
+        Skipped when the date and time are stacked in the middle instead --
+        drawing both would print them twice.
         """
+        if self._upcoming_center_mode() != "vs":
+            return
+
         date_text, time_text = self._upcoming_date_and_time(game)
+        date_text = self._format_game_date(date_text)
 
         if time_text:
             time_width = draw.textlength(time_text, font=self.fonts['time'])
@@ -748,7 +810,10 @@ class GameRenderer:
             date_font = self.fonts.get('detail') or self.fonts['time']
             date_width = draw.textlength(date_text, font=date_font)
             date_x = (self.display_width - date_width) // 2
-            date_y = self.display_height - 7
+            # Measured, not a fixed -7: the detail font is 6px in most plugins
+            # but 10px in soccer and nrl, where "Sep 19" ran 5px past the card.
+            date_bottom = draw.textbbox((0, 0), date_text, font=date_font)[3]
+            date_y = max(0, self.display_height - date_bottom - 1)
             self._draw_text_with_outline(
                 draw, date_text, (date_x, date_y), date_font
             )

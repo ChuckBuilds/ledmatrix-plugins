@@ -4,6 +4,41 @@
   "description": "Configuration schema for the Football Scoreboard plugin - displays live, recent, and upcoming NFL and NCAA Football games",
   "type": "object",
   "properties": {
+    "scroll_card": {
+      "type": "object",
+      "title": "Scroll & Vegas Card Layout",
+      "description": "Layout of the game cards built for scroll and Vegas modes. The full-screen scoreboard is drawn separately and is not affected by these settings.",
+      "x-advanced": true,
+      "properties": {
+        "upcoming_center": {
+          "type": "string",
+          "title": "Middle of an Upcoming Card",
+          "description": "What to show between the two logos before a game starts: VS, or the date and time stacked in the middle. Upcoming games never show a score, since the game has not been played.",
+          "enum": [
+            "vs",
+            "date_time"
+          ],
+          "default": "vs"
+        },
+        "date_format": {
+          "type": "string",
+          "title": "Date Format",
+          "description": "How to write the date on an upcoming card: abbrev shows \"Sep 19\", numeric shows \"9/19\".",
+          "enum": [
+            "abbrev",
+            "numeric"
+          ],
+          "default": "abbrev"
+        },
+        "center_gap": {
+          "type": "integer",
+          "title": "Center Gap",
+          "description": "Pixels kept clear down the middle of a card so the score or VS is not drawn over the team logos. Leave unset to scale with the card width. Set to 0 for the old edge-to-edge logos.",
+          "minimum": 0,
+          "maximum": 64
+        }
+      }
+    },
     "enabled": {
       "type": "boolean",
       "default": true,
