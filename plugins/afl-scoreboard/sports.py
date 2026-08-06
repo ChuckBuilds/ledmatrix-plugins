@@ -7,7 +7,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
 import pytz
 import requests
@@ -487,7 +487,7 @@ class SportsCore(ABC):
     # score color it has today until the user opts in.
     # ------------------------------------------------------------------
 
-    FAVORITE_RESULT_COLOR_DEFAULTS = {
+    FAVORITE_RESULT_COLOR_DEFAULTS: ClassVar[Dict[str, Tuple[int, int, int]]] = {
         "win": (0, 255, 0),
         "loss": (255, 0, 0),
         "tie": (255, 200, 0),
@@ -496,6 +496,10 @@ class SportsCore(ABC):
     @staticmethod
     def _coerce_rgb(value, fallback):
         """Turn a configured [R, G, B] list into a clamped (r, g, b) tuple."""
+        # Checked before unpacking: a 3-character string ("123") would otherwise
+        # iterate into three digits and yield a colour rather than the fallback.
+        if not isinstance(value, (list, tuple)) or len(value) != 3:
+            return fallback
         try:
             r, g, b = (max(0, min(255, int(channel))) for channel in value)
         except (TypeError, ValueError):
@@ -534,8 +538,10 @@ class SportsCore(ABC):
             return None
 
         try:
-            home_score = int(str(game.get("home_score", "")).strip())
-            away_score = int(str(game.get("away_score", "")).strip())
+            # int(float(...)) to match GameRenderer._side_score exactly -- the
+            # two paths must agree on what counts as a usable score.
+            home_score = int(float(str(game.get("home_score", "")).strip()))
+            away_score = int(float(str(game.get("away_score", "")).strip()))
         except (TypeError, ValueError):
             return None
 

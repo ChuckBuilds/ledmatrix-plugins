@@ -128,6 +128,25 @@ def test_unusable_scores():
            core._recent_score_color(_game("ATL", "NYM", "-", "-"), WHITE), WHITE)
 
 
+def test_score_parsing_matches_across_paths():
+    """The two render paths must agree on what counts as a usable score.
+
+    They resolve the colour independently, so a value one accepts and the
+    other rejects would colour a game in the ticker but not the switch view.
+    """
+    print("\n[score parsing parity]")
+    core = _core(["ATL"])
+    renderer = _renderer({"customization": {"favorite_result_colors": {"enabled": True}},
+                          "mlb": {"favorite_teams": ["ATL"]}})
+    for home, away, expected in [("5", "2", GREEN), ("5.0", "2.0", GREEN),
+                                 ("2", "5", RED), ("", "", WHITE), ("-", "-", WHITE)]:
+        game = _game("ATL", "NYM", home, away)
+        switch = core._recent_score_color(game, WHITE)
+        scroll = renderer._recent_score_color(game, WHITE)
+        _check(f"switch and scroll agree on {home!r}-{away!r}", (switch, scroll),
+               (expected, expected))
+
+
 def test_custom_colors():
     print("\n[custom colors]")
     core = _core(["ATL"], config={"customization": {"favorite_result_colors": {
@@ -147,12 +166,16 @@ def test_custom_colors():
     _check("out-of-range channels are clamped",
            core._recent_score_color(_game("ATL", "NYM", "5", "2"), WHITE), (255, 0, 12))
 
-    core = _core(["ATL"], config={"customization": {"favorite_result_colors": {
-        "enabled": True,
-        "win_color": "not a color",
-    }}})
-    _check("garbage color falls back to the built-in win color",
-           core._recent_score_color(_game("ATL", "NYM", "5", "2"), WHITE), GREEN)
+    for junk in ("not a color", "123", [1, 2], [1, 2, 3, 4], 42, None,
+                 {"r": 1, "g": 2, "b": 3}):
+        core = _core(["ATL"], config={"customization": {"favorite_result_colors": {
+            "enabled": True,
+            "win_color": junk,
+        }}})
+        # "123" is the interesting one: it is iterable and three items long, so
+        # an unguarded unpack turns it into the near-black (1, 2, 3).
+        _check(f"malformed color {junk!r} falls back to the built-in win color",
+               core._recent_score_color(_game("ATL", "NYM", "5", "2"), WHITE), GREEN)
 
 
 def test_scroll_card_colors():
@@ -172,6 +195,17 @@ def test_scroll_card_colors():
         _game("ATL", "NYM", "2", "5"), WHITE), RED)
     _check("other matchup untouched", renderer._recent_score_color(
         _game("NYM", "PHI", "4", "1"), WHITE), WHITE)
+
+    # The renderer has its own tie branch, independent of SportsCore's.
+    _check("tie uses the built-in tie color", renderer._recent_score_color(
+        _game("ATL", "NYM", "3", "3"), WHITE), AMBER)
+    tie_configured = _renderer({
+        "customization": {"favorite_result_colors": {
+            "enabled": True, "tie_color": [80, 80, 255]}},
+        "mlb": {"favorite_teams": ["ATL"]},
+    })
+    _check("tie uses the configured tie color", tie_configured._recent_score_color(
+        _game("ATL", "NYM", "3", "3"), WHITE), (80, 80, 255))
 
     # Only finished games are tinted; a live card keeps its normal color even
     # when the favorite happens to be ahead.
@@ -228,6 +262,7 @@ def main():
         test_disabled_by_default,
         test_no_single_team_to_root_for,
         test_unusable_scores,
+        test_score_parsing_matches_across_paths,
         test_custom_colors,
         test_scroll_card_colors,
         test_scroll_card_favorite_sources,

@@ -14,7 +14,7 @@ This module provides:
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple, Union
+from typing import Any, ClassVar, Dict, Optional, Tuple, Union
 from PIL import Image, ImageDraw, ImageFont
 try:
     import freetype  # noqa: F401
@@ -382,7 +382,7 @@ class GameRenderer:
     # keeps the color it has today until the user opts in.
     # ------------------------------------------------------------------
 
-    FAVORITE_RESULT_COLOR_DEFAULTS = {
+    FAVORITE_RESULT_COLOR_DEFAULTS: ClassVar[Dict[str, Tuple[int, int, int]]] = {
         "win": (0, 255, 0),
         "loss": (255, 0, 0),
         "tie": (255, 200, 0),
@@ -391,6 +391,10 @@ class GameRenderer:
     @staticmethod
     def _coerce_rgb(value, fallback):
         """Turn a configured [R, G, B] list into a clamped (r, g, b) tuple."""
+        # Checked before unpacking: a 3-character string ("123") would otherwise
+        # iterate into three digits and yield a colour rather than the fallback.
+        if not isinstance(value, (list, tuple)) or len(value) != 3:
+            return fallback
         try:
             r, g, b = (max(0, min(255, int(channel))) for channel in value)
         except (TypeError, ValueError):
