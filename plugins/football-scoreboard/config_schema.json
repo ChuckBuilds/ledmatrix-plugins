@@ -1207,9 +1207,74 @@
         },
         "x-propertyOrder": ["home_logo", "away_logo", "score", "status_text", "date", "time", "down_distance", "timeouts", "possession", "records", "odds"],
         "additionalProperties": false
+      },
+      "favorite_result_colors": {
+        "type": "object",
+        "title": "Favorite Team Result Colors",
+        "description": "Color the final score of a recent game by how your favorite team did. Most useful in scroll and Vegas modes, where the same matchup can go past several times and the logos alone do not tell you who won.",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Color Scores by Result",
+            "description": "Show the final score in green when your favorite team won and red when it lost. Games without exactly one favorite team - neither side, or both - keep the normal score color.",
+            "default": false
+          },
+          "win_color": {
+            "type": "array",
+            "title": "Win Color",
+            "description": "Score color [R, G, B] when your favorite team won",
+            "x-widget": "color-picker",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "default": [0, 255, 0],
+            "x-advanced": true
+          },
+          "loss_color": {
+            "type": "array",
+            "title": "Loss Color",
+            "description": "Score color [R, G, B] when your favorite team lost",
+            "x-widget": "color-picker",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "default": [255, 0, 0],
+            "x-advanced": true
+          },
+          "tie_color": {
+            "type": "array",
+            "title": "Tie Color",
+            "description": "Score color [R, G, B] when the game ended level",
+            "x-widget": "color-picker",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "default": [255, 200, 0],
+            "x-advanced": true
+          }
+        },
+        "x-propertyOrder": [
+          "enabled",
+          "win_color",
+          "loss_color",
+          "tie_color"
+        ],
+        "additionalProperties": false
       }
     },
-    "x-propertyOrder": ["score_text", "period_text", "team_name", "status_text", "detail_text", "rank_text", "layout"],
+    "x-propertyOrder": ["score_text", "period_text", "team_name", "status_text", "detail_text", "rank_text", "layout", "favorite_result_colors"],
     "additionalProperties": false
   }
   },

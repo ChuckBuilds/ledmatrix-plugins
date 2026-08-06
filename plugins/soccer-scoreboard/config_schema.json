@@ -4563,370 +4563,436 @@
         ],
         "additionalProperties": false
       }
-    }
-  },
-  "customization": {
-    "type": "object",
-    "title": "Display Customization",
-    "description": "Customize fonts for different text elements on the scoreboard",
-    "properties": {
-      "score_text": {
-        "type": "object",
-        "title": "Game Score",
-        "description": "Font settings for the game score display",
-        "properties": {
-          "font": {
-            "type": "string",
-            "title": "Font Family",
-            "description": "Select the font to use for scores",
-            "enum": [
-              "PressStart2P-Regular.ttf",
-              "4x6-font.ttf",
-              "5by7.regular.ttf",
-              "5x7.bdf",
-              "4x6.bdf",
-              "cozette.bdf"
-            ],
-            "default": "PressStart2P-Regular.ttf"
-          },
-          "font_size": {
-            "type": "integer",
-            "title": "Font Size",
-            "description": "Font size in pixels",
-            "minimum": 4,
-            "maximum": 16,
-            "default": 10
-          }
-        },
-        "x-propertyOrder": [
-          "font",
-          "font_size"
-        ],
-        "additionalProperties": false
-      },
-      "period_text": {
-        "type": "object",
-        "title": "Period/Clock",
-        "description": "Font settings for period, clock, and time remaining text",
-        "properties": {
-          "font": {
-            "type": "string",
-            "title": "Font Family",
-            "description": "Select the font to use",
-            "enum": [
-              "PressStart2P-Regular.ttf",
-              "4x6-font.ttf",
-              "5by7.regular.ttf",
-              "5x7.bdf",
-              "4x6.bdf",
-              "cozette.bdf"
-            ],
-            "default": "PressStart2P-Regular.ttf"
-          },
-          "font_size": {
-            "type": "integer",
-            "title": "Font Size",
-            "description": "Font size in pixels",
-            "minimum": 4,
-            "maximum": 16,
-            "default": 8
-          }
-        },
-        "x-propertyOrder": [
-          "font",
-          "font_size"
-        ],
-        "additionalProperties": false
-      },
-      "team_name": {
-        "type": "object",
-        "title": "Team Names",
-        "description": "Font settings for team name abbreviations",
-        "properties": {
-          "font": {
-            "type": "string",
-            "title": "Font Family",
-            "description": "Select the font to use",
-            "enum": [
-              "PressStart2P-Regular.ttf",
-              "4x6-font.ttf",
-              "5by7.regular.ttf",
-              "5x7.bdf",
-              "4x6.bdf",
-              "cozette.bdf"
-            ],
-            "default": "PressStart2P-Regular.ttf"
-          },
-          "font_size": {
-            "type": "integer",
-            "title": "Font Size",
-            "description": "Font size in pixels",
-            "minimum": 4,
-            "maximum": 16,
-            "default": 8
-          }
-        },
-        "x-propertyOrder": [
-          "font",
-          "font_size"
-        ],
-        "additionalProperties": false
-      },
-      "status_text": {
-        "type": "object",
-        "title": "Status Messages",
-        "description": "Font settings for status text (e.g., 'Next Game', 'Final')",
-        "properties": {
-          "font": {
-            "type": "string",
-            "title": "Font Family",
-            "description": "Select the font to use",
-            "enum": [
-              "PressStart2P-Regular.ttf",
-              "4x6-font.ttf",
-              "5by7.regular.ttf",
-              "5x7.bdf",
-              "4x6.bdf",
-              "cozette.bdf"
-            ],
-            "default": "4x6-font.ttf"
-          },
-          "font_size": {
-            "type": "integer",
-            "title": "Font Size",
-            "description": "Font size in pixels",
-            "minimum": 4,
-            "maximum": 16,
-            "default": 6
-          }
-        },
-        "x-propertyOrder": [
-          "font",
-          "font_size"
-        ],
-        "additionalProperties": false
-      },
-      "detail_text": {
-        "type": "object",
-        "title": "Details/Odds",
-        "description": "Font settings for odds and other detail information",
-        "properties": {
-          "font": {
-            "type": "string",
-            "title": "Font Family",
-            "description": "Select the font to use",
-            "enum": [
-              "PressStart2P-Regular.ttf",
-              "4x6-font.ttf",
-              "5by7.regular.ttf",
-              "5x7.bdf",
-              "4x6.bdf",
-              "cozette.bdf"
-            ],
-            "default": "4x6-font.ttf"
-          },
-          "font_size": {
-            "type": "integer",
-            "title": "Font Size",
-            "description": "Font size in pixels",
-            "minimum": 4,
-            "maximum": 16,
-            "default": 6
-          }
-        },
-        "x-propertyOrder": [
-          "font",
-          "font_size"
-        ],
-        "additionalProperties": false
-      },
-      "rank_text": {
-        "type": "object",
-        "title": "Rankings",
-        "description": "Font settings for ranking displays",
-        "properties": {
-          "font": {
-            "type": "string",
-            "title": "Font Family",
-            "description": "Select the font to use",
-            "enum": [
-              "PressStart2P-Regular.ttf",
-              "4x6-font.ttf",
-              "5by7.regular.ttf",
-              "5x7.bdf",
-              "4x6.bdf",
-              "cozette.bdf"
-            ],
-            "default": "PressStart2P-Regular.ttf"
-          },
-          "font_size": {
-            "type": "integer",
-            "title": "Font Size",
-            "description": "Font size in pixels",
-            "minimum": 4,
-            "maximum": 16,
-            "default": 10
-          }
-        },
-        "x-propertyOrder": [
-          "font",
-          "font_size"
-        ],
-        "additionalProperties": false
-      },
-      "layout": {
-        "type": "object",
-        "title": "Layout Positioning",
-        "description": "Adjust X,Y coordinate offsets for elements. Values are relative to default positions. Use negative values to move left/up, positive to move right/down.",
-        "properties": {
-          "home_logo": {
-            "type": "object",
-            "title": "Home Team Logo",
-            "properties": {
-              "x_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Horizontal offset from default position (default: 0)"
-              },
-              "y_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Vertical offset from default position (default: 0)"
-              }
-            },
-            "additionalProperties": false
-          },
-          "away_logo": {
-            "type": "object",
-            "title": "Away Team Logo",
-            "properties": {
-              "x_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Horizontal offset from default position (default: 0)"
-              },
-              "y_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Vertical offset from default position (default: 0)"
-              }
-            },
-            "additionalProperties": false
-          },
-          "score": {
-            "type": "object",
-            "title": "Game Score",
-            "properties": {
-              "x_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Horizontal offset from center (default: 0)"
-              },
-              "y_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Vertical offset from center (default: 0)"
-              }
-            },
-            "additionalProperties": false
-          },
-          "status_text": {
-            "type": "object",
-            "title": "Status/Period Text",
-            "properties": {
-              "x_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Horizontal offset from center (default: 0)"
-              },
-              "y_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Vertical offset from top (default: 0)"
-              }
-            },
-            "additionalProperties": false
-          },
-          "date": {
-            "type": "object",
-            "title": "Game Date",
-            "properties": {
-              "x_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Horizontal offset from center (default: 0)"
-              },
-              "y_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Vertical offset from default position (default: 0)"
-              }
-            },
-            "additionalProperties": false
-          },
-          "time": {
-            "type": "object",
-            "title": "Game Time",
-            "properties": {
-              "x_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Horizontal offset from center (default: 0)"
-              },
-              "y_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Vertical offset from date position (default: 0)"
-              }
-            },
-            "additionalProperties": false
-          },
-          "records": {
-            "type": "object",
-            "title": "Records/Rankings",
-            "properties": {
-              "away_x_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Away team record horizontal offset from left (default: 0)"
-              },
-              "home_x_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Home team record horizontal offset from right (default: 0)"
-              },
-              "y_offset": {
-                "type": "integer",
-                "default": 0,
-                "description": "Vertical offset from bottom (default: 0)"
-              }
-            },
-            "additionalProperties": false
-          }
-        },
-        "x-propertyOrder": [
-          "home_logo",
-          "away_logo",
-          "score",
-          "status_text",
-          "date",
-          "time",
-          "records"
-        ],
-        "additionalProperties": false
-      }
     },
-    "x-propertyOrder": [
-      "score_text",
-      "period_text",
-      "team_name",
-      "status_text",
-      "detail_text",
-      "rank_text",
-      "layout"
-    ],
-    "additionalProperties": false
-  },
+    "customization": {
+      "type": "object",
+      "title": "Display Customization",
+      "description": "Customize fonts for different text elements on the scoreboard",
+      "properties": {
+        "score_text": {
+          "type": "object",
+          "title": "Game Score",
+          "description": "Font settings for the game score display",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use for scores",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf",
+                "cozette.bdf"
+              ],
+              "default": "PressStart2P-Regular.ttf"
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 10
+            }
+          },
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
+          "additionalProperties": false
+        },
+        "period_text": {
+          "type": "object",
+          "title": "Period/Clock",
+          "description": "Font settings for period, clock, and time remaining text",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf",
+                "cozette.bdf"
+              ],
+              "default": "PressStart2P-Regular.ttf"
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 8
+            }
+          },
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
+          "additionalProperties": false
+        },
+        "team_name": {
+          "type": "object",
+          "title": "Team Names",
+          "description": "Font settings for team name abbreviations",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf",
+                "cozette.bdf"
+              ],
+              "default": "PressStart2P-Regular.ttf"
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 8
+            }
+          },
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
+          "additionalProperties": false
+        },
+        "status_text": {
+          "type": "object",
+          "title": "Status Messages",
+          "description": "Font settings for status text (e.g., 'Next Game', 'Final')",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf",
+                "cozette.bdf"
+              ],
+              "default": "4x6-font.ttf"
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 6
+            }
+          },
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
+          "additionalProperties": false
+        },
+        "detail_text": {
+          "type": "object",
+          "title": "Details/Odds",
+          "description": "Font settings for odds and other detail information",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf",
+                "cozette.bdf"
+              ],
+              "default": "4x6-font.ttf"
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 6
+            }
+          },
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
+          "additionalProperties": false
+        },
+        "rank_text": {
+          "type": "object",
+          "title": "Rankings",
+          "description": "Font settings for ranking displays",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font Family",
+              "description": "Select the font to use",
+              "enum": [
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "5x7.bdf",
+                "4x6.bdf",
+                "cozette.bdf"
+              ],
+              "default": "PressStart2P-Regular.ttf"
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Font size in pixels",
+              "minimum": 4,
+              "maximum": 16,
+              "default": 10
+            }
+          },
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
+          "additionalProperties": false
+        },
+        "layout": {
+          "type": "object",
+          "title": "Layout Positioning",
+          "description": "Adjust X,Y coordinate offsets for elements. Values are relative to default positions. Use negative values to move left/up, positive to move right/down.",
+          "properties": {
+            "home_logo": {
+              "type": "object",
+              "title": "Home Team Logo",
+              "properties": {
+                "x_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset from default position (default: 0)"
+                },
+                "y_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Vertical offset from default position (default: 0)"
+                }
+              },
+              "additionalProperties": false
+            },
+            "away_logo": {
+              "type": "object",
+              "title": "Away Team Logo",
+              "properties": {
+                "x_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset from default position (default: 0)"
+                },
+                "y_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Vertical offset from default position (default: 0)"
+                }
+              },
+              "additionalProperties": false
+            },
+            "score": {
+              "type": "object",
+              "title": "Game Score",
+              "properties": {
+                "x_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset from center (default: 0)"
+                },
+                "y_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Vertical offset from center (default: 0)"
+                }
+              },
+              "additionalProperties": false
+            },
+            "status_text": {
+              "type": "object",
+              "title": "Status/Period Text",
+              "properties": {
+                "x_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset from center (default: 0)"
+                },
+                "y_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Vertical offset from top (default: 0)"
+                }
+              },
+              "additionalProperties": false
+            },
+            "date": {
+              "type": "object",
+              "title": "Game Date",
+              "properties": {
+                "x_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset from center (default: 0)"
+                },
+                "y_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Vertical offset from default position (default: 0)"
+                }
+              },
+              "additionalProperties": false
+            },
+            "time": {
+              "type": "object",
+              "title": "Game Time",
+              "properties": {
+                "x_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset from center (default: 0)"
+                },
+                "y_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Vertical offset from date position (default: 0)"
+                }
+              },
+              "additionalProperties": false
+            },
+            "records": {
+              "type": "object",
+              "title": "Records/Rankings",
+              "properties": {
+                "away_x_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Away team record horizontal offset from left (default: 0)"
+                },
+                "home_x_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Home team record horizontal offset from right (default: 0)"
+                },
+                "y_offset": {
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Vertical offset from bottom (default: 0)"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "x-propertyOrder": [
+            "home_logo",
+            "away_logo",
+            "score",
+            "status_text",
+            "date",
+            "time",
+            "records"
+          ],
+          "additionalProperties": false
+        },
+        "favorite_result_colors": {
+          "type": "object",
+          "title": "Favorite Team Result Colors",
+          "description": "Color the final score of a recent game by how your favorite team did. Most useful in scroll and Vegas modes, where the same matchup can go past several times and the logos alone do not tell you who won.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "title": "Color Scores by Result",
+              "description": "Show the final score in green when your favorite team won and red when it lost. Games without exactly one favorite team - neither side, or both - keep the normal score color.",
+              "default": false
+            },
+            "win_color": {
+              "type": "array",
+              "title": "Win Color",
+              "description": "Score color [R, G, B] when your favorite team won",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [0, 255, 0],
+              "x-advanced": true
+            },
+            "loss_color": {
+              "type": "array",
+              "title": "Loss Color",
+              "description": "Score color [R, G, B] when your favorite team lost",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [255, 0, 0],
+              "x-advanced": true
+            },
+            "tie_color": {
+              "type": "array",
+              "title": "Tie Color",
+              "description": "Score color [R, G, B] when the game ended level",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [255, 200, 0],
+              "x-advanced": true
+            }
+          },
+          "x-propertyOrder": [
+            "enabled",
+            "win_color",
+            "loss_color",
+            "tie_color"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "x-propertyOrder": [
+        "score_text",
+        "period_text",
+        "team_name",
+        "status_text",
+        "detail_text",
+        "rank_text",
+        "layout",
+        "favorite_result_colors"
+      ],
+      "additionalProperties": false
+    }
+},
   "additionalProperties": false,
   "required": [
     "enabled"
@@ -4949,6 +5015,7 @@
     "timezone",
     "background_service",
     "custom_leagues",
-    "leagues"
+    "leagues",
+    "customization"
   ]
 }

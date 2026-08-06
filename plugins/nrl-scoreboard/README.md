@@ -108,6 +108,37 @@ options (see `config_schema.json` for the full list, types, and defaults):
   timezone; if that isn't set, the host system's timezone is used, and only if
   neither is available do times fall back to UTC.
 
+## Favorite Team Result Colors
+
+A run of games against the same opponent is hard to read at a glance: in scroll
+and Vegas mode the same two logos go past several times and only the digits
+change. Turn on **Customization -> Favorite Team Result Colors** to color a
+finished game's score by how your favorite team did - green for a win, red for
+a loss.
+
+```json
+{
+  "customization": {
+    "favorite_result_colors": {
+      "enabled": true,
+      "win_color": [0, 255, 0],
+      "loss_color": [255, 0, 0],
+      "tie_color": [255, 200, 0]
+    }
+  }
+}
+```
+
+- Off by default. Until you enable it the score keeps exactly the color it has
+  today.
+- Only finished games are colored. Live and upcoming cards are untouched.
+- A game needs exactly one favorite team. If neither side is a favorite, or both
+  are, the score keeps its normal color.
+- Applies to both the one-game-at-a-time switch view and the scroll/Vegas
+  ticker.
+- The three colors are Advanced settings; leave them alone for the defaults
+  above.
+
 ## License
 
 See `LICENSE`.

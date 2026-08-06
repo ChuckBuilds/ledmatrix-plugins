@@ -25,6 +25,7 @@ Football League)** games with real-time scores and game status.
 - **Switch or Scroll**: Show one game at a time, or scroll all games horizontally
 - **Dynamic Duration & Live Priority**: Spend more time on live games; let live games interrupt the rotation
 - **Background Data Fetching**: Efficient API calls without blocking the display
+- **Favorite Team Result Colors**: Optionally show a finished game's score in green when your favorite team won and red when it lost
 
 ## Display Modes
 
@@ -148,6 +149,37 @@ Manual install: copy this directory into your LEDMatrix `plugins_directory`
 - `test/harness.json` — a deterministic fixture (one live, one recent, one
   upcoming game) for the core plugin safety harness
   (`LEDMatrix/scripts/check_plugin.py`).
+
+## Favorite Team Result Colors
+
+A run of games against the same opponent is hard to read at a glance: in scroll
+and Vegas mode the same two logos go past several times and only the digits
+change. Turn on **Customization -> Favorite Team Result Colors** to color a
+finished game's score by how your favorite team did - green for a win, red for
+a loss.
+
+```json
+{
+  "customization": {
+    "favorite_result_colors": {
+      "enabled": true,
+      "win_color": [0, 255, 0],
+      "loss_color": [255, 0, 0],
+      "tie_color": [255, 200, 0]
+    }
+  }
+}
+```
+
+- Off by default. Until you enable it the score keeps exactly the color it has
+  today.
+- Only finished games are colored. Live and upcoming cards are untouched.
+- A game needs exactly one favorite team. If neither side is a favorite, or both
+  are, the score keeps its normal color.
+- Applies to both the one-game-at-a-time switch view and the scroll/Vegas
+  ticker.
+- The three colors are Advanced settings; leave them alone for the defaults
+  above.
 
 ## Troubleshooting
 

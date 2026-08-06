@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.6.2",
+  "version": "2.7.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.7.0",
+      "released": "2026-08-05",
+      "notes": "Add customization.favorite_result_colors: an optional setting that colors a recent game's final score green when your favorite team won and red when it lost. Aimed at scroll and Vegas modes, where the same matchup can go past several times and the logos alone do not say who won. Off by default; games without exactly one favorite team keep the normal score color.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "2.6.2",
       "released": "2026-08-05",
