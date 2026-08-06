@@ -354,6 +354,9 @@ class LegacyScrollDisplay:
         scroll_settings = self._get_scroll_settings()
         gap_between_games = scroll_settings.get("gap_between_games", 48)
         show_separators = scroll_settings.get("show_league_separators", True)
+        # Match the gap used between game cards so the leading league
+        # icon sits in the same rhythm as the cards that follow it.
+        sep_pad = max(4, gap_between_games // 2)
         game_card_width = scroll_settings.get("game_card_width", 128)
 
         # Verify GameRenderer is available
@@ -396,10 +399,10 @@ class LegacyScrollDisplay:
                     separator = self._separator_icons.get(separator_key)
                     if separator:
                         # Create a separator image with proper background
-                        sep_img = Image.new('RGB', (separator.width + 8, self.display_height), (0, 0, 0))
+                        sep_img = Image.new('RGB', (separator.width + sep_pad * 2, self.display_height), (0, 0, 0))
                         # Center the separator vertically
                         y_offset = (self.display_height - separator.height) // 2
-                        sep_img.paste(separator, (4, y_offset), separator)
+                        sep_img.paste(separator, (sep_pad, y_offset), separator)
                         content_items.append(sep_img)
                         self.logger.debug(f"Added {separator_key} separator icon at start")
                 elif separator_key != current_league:
@@ -407,10 +410,10 @@ class LegacyScrollDisplay:
                     separator = self._separator_icons.get(separator_key)
                     if separator:
                         # Create a separator image with proper background
-                        sep_img = Image.new('RGB', (separator.width + 8, self.display_height), (0, 0, 0))
+                        sep_img = Image.new('RGB', (separator.width + sep_pad * 2, self.display_height), (0, 0, 0))
                         # Center the separator vertically
                         y_offset = (self.display_height - separator.height) // 2
-                        sep_img.paste(separator, (4, y_offset), separator)
+                        sep_img.paste(separator, (sep_pad, y_offset), separator)
                         content_items.append(sep_img)
                         self.logger.debug(f"Added {separator_key} separator icon")
 

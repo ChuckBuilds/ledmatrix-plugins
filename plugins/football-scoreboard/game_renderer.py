@@ -794,13 +794,20 @@ class GameRenderer:
                 x, y = slot.align_xy(ifit.width, ifit.height)
                 main_img.paste(ifit.image, (x, y), ifit.image)
 
-        # Score — largest crisp font that fits the center region
-        score_text = f"{game.get('away_score', '0')}-{game.get('home_score', '0')}"
+        # Score — largest crisp font that fits the center region. Only drawn
+        # once a game has started: an upcoming game has no score, so the
+        # extractor's 0-0 was a placeholder, not a result.
         score_region = self._region_for(regs.score_area, 'score')
-        score_fit = self._fit_element('score', score_text, score_region,
-                                      ADAPTIVE_LADDER_HEADLINE)
-        self._draw_fit_outline(draw_overlay, score_fit, score_region,
-                               fill=self._score_color_for(game, game_type))
+        if game_type in ("live", "recent"):
+            score_text = f"{game.get('away_score', '0')}-{game.get('home_score', '0')}"
+            score_fit = self._fit_element('score', score_text, score_region,
+                                          ADAPTIVE_LADDER_HEADLINE)
+            self._draw_fit_outline(draw_overlay, score_fit, score_region,
+                                   fill=self._score_color_for(game, game_type))
+        elif game_type == "upcoming" and self._upcoming_center_mode() == "vs":
+            vs_fit = self._fit_element('score', "VS", score_region,
+                                       ADAPTIVE_LADDER_HEADLINE)
+            self._draw_fit_outline(draw_overlay, vs_fit, score_region)
 
         if game_type == "live":
             self._draw_live_status_adaptive(draw_overlay, game, regs)
@@ -811,16 +818,26 @@ class GameRenderer:
                                     ADAPTIVE_LADDER_TEXT)
             self._draw_fit_outline(draw_overlay, fit,
                                    self._region_for(regs.status_band, 'status_text'))
-            self._draw_bottom_center_adaptive(draw_overlay, game.get("game_date", ""),
-                                              regs, 'date')
+            self._draw_bottom_center_adaptive(
+                draw_overlay, self._format_game_date(game.get("game_date", "")),
+                regs, 'date')
         elif game_type == "upcoming":
+            game_date = self._format_game_date(game.get("game_date", ""))
             game_time = game.get("game_time", "")
-            if game_time:
-                region = self._region_for(regs.status_band, 'time')
-                fit = self._fit_element('time', game_time, region, ADAPTIVE_LADDER_TEXT)
-                self._draw_fit_outline(draw_overlay, fit, region)
-            self._draw_bottom_center_adaptive(draw_overlay, game.get("game_date", ""),
-                                              regs, 'date')
+            if self._upcoming_center_mode() != "vs":
+                # Date and time stacked in the middle instead of top/bottom.
+                stacked = " ".join(t for t in (game_date, game_time) if t)
+                if stacked:
+                    fit = self._fit_element('score', stacked, score_region,
+                                            ADAPTIVE_LADDER_TEXT)
+                    self._draw_fit_outline(draw_overlay, fit, score_region)
+            else:
+                if game_time:
+                    region = self._region_for(regs.status_band, 'time')
+                    fit = self._fit_element('time', game_time, region, ADAPTIVE_LADDER_TEXT)
+                    self._draw_fit_outline(draw_overlay, fit, region)
+                self._draw_bottom_center_adaptive(draw_overlay, game_date,
+                                                  regs, 'date')
 
         game_league = game.get("league", "nfl")
         if self._get_display_option(game_league, "show_odds") and game.get('odds'):
