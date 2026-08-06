@@ -308,12 +308,35 @@ class GameRenderer:
             status = {}
         if 'status_text' in normalized and not status.get('detail'):
             status['detail'] = normalized.get('status_text', '')
+        # The extractor's status_text ("P2 12:34", "Final", "7:30 PM") is the
+        # same value data_fetcher.py stores as short_detail.
+        if 'status_text' in normalized and not status.get('short_detail'):
+            status['short_detail'] = normalized.get('status_text', '')
         if 'period' in normalized and not status.get('period'):
             status['period'] = normalized.get('period', '')
-        if 'clock' in normalized and not status.get('clock'):
-            status['clock'] = normalized.get('clock', '')
+        # display_clock is the canonical nested key (data_fetcher.py builds it,
+        # _draw_live_game_status reads it). Writing only 'clock' here left live
+        # scroll/Vegas cards rendering "P2" with the game clock silently
+        # dropped; 'clock' is kept alongside it for any external consumer.
+        if 'clock' in normalized:
+            if not status.get('clock'):
+                status['clock'] = normalized.get('clock', '')
+            if not status.get('display_clock'):
+                status['display_clock'] = normalized.get('clock', '')
+        if 'display_clock' in normalized and not status.get('display_clock'):
+            status['display_clock'] = normalized.get('display_clock', '')
         if 'state' in normalized and not status.get('state'):
             status['state'] = normalized.get('state', '')
+        # Fall back to the extractor's booleans so a card rendered outside
+        # _collect_games_for_scroll (which injects state from the mode) still
+        # picks the right live/final branch instead of drawing nothing.
+        if not status.get('state'):
+            if normalized.get('is_live'):
+                status['state'] = 'in'
+            elif normalized.get('is_final'):
+                status['state'] = 'post'
+            elif normalized.get('is_upcoming'):
+                status['state'] = 'pre'
         normalized['status'] = status
 
         return normalized

@@ -57,7 +57,7 @@
     {
       "version": "1.8.1",
       "released": "2026-08-06",
-      "notes": "Fix upcoming games showing a bare \"VS\" with no date or time on scroll and Vegas cards. The card read the start time from status.short_detail and start_time, but the scroll path is fed by the sports extractor, which emits game_date, game_time and start_time_utc instead -- so both lookups came up empty and nothing was drawn. Date and time now render top- and bottom-center, matching the other sports' scroll cards, and all three payload shapes are handled.",
+      "notes": "Fix missing text on scroll and Vegas game cards. Upcoming games showed a bare \"VS\" with no date or time: the card read status.short_detail and start_time, but the scroll path is fed by the sports extractor, which emits game_date, game_time and start_time_utc instead, so both lookups came up empty. Live games showed the period without the game clock (\"P2\" rather than \"P2 12:34\") because the payload normalizer wrote status.clock while the card reads the canonical status.display_clock. Date and time now render top- and bottom-center to match the other sports, the live clock renders again, and the normalizer fills in short_detail, display_clock and a state derived from the extractor's is_live/is_final/is_upcoming flags.",
       "ledmatrix_min_version": "2.0.0"
     },
     {
