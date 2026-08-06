@@ -19,7 +19,14 @@
             "date_time",
             "none"
           ],
-          "default": "vs"
+          "default": "vs",
+          "x-options": {
+            "labels": {
+              "vs": "Matchup separator (VS / @ / at)",
+              "date_time": "Date and time, stacked",
+              "none": "Nothing"
+            }
+          }
         },
         "vs_text": {
           "type": "string",
@@ -39,7 +46,16 @@
             "numeric_day_first",
             "weekday"
           ],
-          "default": "abbrev"
+          "default": "abbrev",
+          "x-options": {
+            "labels": {
+              "abbrev": "Sep 19",
+              "numeric": "9/19",
+              "day_first": "19 Sep",
+              "numeric_day_first": "19/9",
+              "weekday": "Fri Sep 19"
+            }
+          }
         },
         "time_format": {
           "type": "string",
@@ -49,7 +65,13 @@
             "12h",
             "24h"
           ],
-          "default": "12h"
+          "default": "12h",
+          "x-options": {
+            "labels": {
+              "12h": "7:00PM  (12-hour)",
+              "24h": "19:00  (24-hour)"
+            }
+          }
         },
         "show_date": {
           "type": "boolean",
