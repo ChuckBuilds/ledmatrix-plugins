@@ -50,8 +50,12 @@ class OfTheDayPlugin(BasePlugin):
         display_rotate_interval (float): Seconds between display rotations
         subtitle_rotate_interval (float): Seconds between subtitle rotations
         update_interval (float): Seconds between checking for new day
+        auto_fit_text (bool): Shrink text to fit long content on the panel
     """
-    
+
+    # Smallest pixel size auto-fitting will shrink a scalable font to.
+    MIN_AUTO_FONT_SIZE = 5
+
     def __init__(self, plugin_id: str, config: Dict[str, Any],
                  display_manager, cache_manager, plugin_manager):
         """Initialize the of-the-day plugin."""
@@ -61,7 +65,8 @@ class OfTheDayPlugin(BasePlugin):
         self.update_interval = config.get('update_interval', 3600)
         self.display_rotate_interval = config.get('display_rotate_interval', 20)
         self.subtitle_rotate_interval = config.get('subtitle_rotate_interval', 10)
-        
+        self.auto_fit_text = config.get('auto_fit_text', True)
+
         # Categories
         self.categories = config.get('categories', {})
         self.category_order = config.get('category_order', [])
@@ -345,8 +350,27 @@ class OfTheDayPlugin(BasePlugin):
                 self.last_displayed_category = "ERROR"
                 self._display_error()
     
+    def _text_width(self, text: str, font) -> int:
+        """Pixel width of `text` in `font` (display_manager first, PIL fallback)."""
+        try:
+            return self.display_manager.get_text_width(text, font)
+        except Exception:
+            try:
+                bbox = font.getbbox(text)
+                return bbox[2] - bbox[0]
+            except Exception:
+                return len(text) * 6
+
+    def _get_font_height(self, font, default: int = 8) -> int:
+        """Pixel height of `font`, falling back to `default` on error."""
+        try:
+            return self.display_manager.get_font_height(font)
+        except Exception as e:
+            self.logger.warning(f"Error getting font height: {e}, using default {default}")
+            return default
+
     def _wrap_text(self, text: str, max_width: int, font, max_lines: int = 10) -> List[str]:
-        """Wrap text to fit within max_width, similar to old manager."""
+        """Wrap text to fit within max_width, measuring the actual font."""
         if not text:
             return [""]
         lines = []
@@ -354,16 +378,7 @@ class OfTheDayPlugin(BasePlugin):
         words = text.split()
         for word in words:
             test_line = ' '.join(current_line + [word]) if current_line else word
-            try:
-                text_width = self.display_manager.get_text_width(test_line, font)
-            except Exception:
-                # Fallback calculation
-                if isinstance(font, ImageFont.ImageFont):
-                    bbox = font.getbbox(test_line)
-                    text_width = bbox[2] - bbox[0]
-                else:
-                    text_width = len(test_line) * 6
-            if text_width <= max_width:
+            if self._text_width(test_line, font) <= max_width:
                 current_line.append(word)
             else:
                 if current_line:
@@ -373,15 +388,7 @@ class OfTheDayPlugin(BasePlugin):
                     # Word is too long - truncate it
                     truncated = word
                     while len(truncated) > 0:
-                        try:
-                            test_width = self.display_manager.get_text_width(truncated + "...", font)
-                        except Exception:
-                            if isinstance(font, ImageFont.ImageFont):
-                                bbox = font.getbbox(truncated + "...")
-                                test_width = bbox[2] - bbox[0]
-                            else:
-                                test_width = len(truncated + "...") * 6
-                        if test_width <= max_width:
+                        if self._text_width(truncated + "...", font) <= max_width:
                             lines.append(truncated + "...")
                             break
                         truncated = truncated[:-1]
@@ -392,7 +399,19 @@ class OfTheDayPlugin(BasePlugin):
         if current_line and len(lines) < max_lines:
             lines.append(' '.join(current_line))
         return lines[:max_lines]
-    
+
+    def _ellipsize(self, text: str, font, max_width: int) -> str:
+        """Trim `text` with '...' so it fits max_width; unchanged if it fits."""
+        if self._text_width(text, font) <= max_width:
+            return text
+        ellipsis = "..."
+        if self._text_width(ellipsis, font) > max_width:
+            return ""
+        truncated = text
+        while truncated and self._text_width(truncated + ellipsis, font) > max_width:
+            truncated = truncated[:-1]
+        return truncated + ellipsis
+
     def _fit_title(self, title: str, font) -> str:
         """Ellipsize the title to the panel width.
 
@@ -400,26 +419,76 @@ class OfTheDayPlugin(BasePlugin):
         render exactly as before; on a narrow panel (64px) a long word is
         truncated with '...' instead of being drawn past the panel edge.
         """
-        def _w(text: str) -> int:
-            try:
-                return self.display_manager.get_text_width(text, font)
-            except Exception:
-                try:
-                    bbox = font.getbbox(text)
-                    return bbox[2] - bbox[0]
-                except Exception:
-                    return len(text) * 6
+        return self._ellipsize(title, font, self.display_manager.width)
 
-        max_width = self.display_manager.width
-        if _w(title) <= max_width:
-            return title
-        ellipsis = "..."
-        if _w(ellipsis) > max_width:
-            return ""
-        truncated = title
-        while truncated and _w(truncated + ellipsis) > max_width:
-            truncated = truncated[:-1]
-        return truncated + ellipsis
+    def _resized_font(self, font, size: int):
+        """The same typeface as `font` at a different pixel size, or None.
+
+        Only scalable fonts (TTF/OTF, which carry a `.path`) can be resized;
+        bitmap fonts (BDF freetype.Face, PIL's built-in default) return None.
+        """
+        path = getattr(font, 'path', None)
+        if not path or size < 1:
+            return None
+        cache = getattr(self, '_resized_font_cache', None)
+        if cache is None:
+            cache = self._resized_font_cache = {}
+        key = (path, size)
+        if key not in cache:
+            try:
+                cache[key] = ImageFont.truetype(path, size)
+            except Exception as e:
+                self.logger.warning(f"Could not load font {path} at {size}px: {e}")
+                cache[key] = None
+        return cache[key]
+
+    def _fit_wrapped_text(self, text: str, font, max_width: int, max_height: int,
+                          line_spacing: int = 1):
+        """Wrap `text` to the panel, shrinking the font when it can't fit.
+
+        Wrapping always measures the actual font, so wider fonts and larger
+        user-configured sizes wrap into fewer characters per line, and the
+        number of lines comes from the real font height and the available
+        vertical space — not a fixed count. When the wrapped text needs more
+        lines than fit and auto_fit_text is enabled, scalable fonts are
+        retried at progressively smaller sizes (down to MIN_AUTO_FONT_SIZE)
+        until the whole text fits (the largest size that fits wins). When no
+        size fits everything — or the font is a bitmap font that can't be
+        resized — the configured font is kept (crisper than a shrunken one
+        that still overflows), the text is cut to the lines that fit, and
+        the last line is ellipsized.
+
+        Returns (font, lines, line_height).
+        """
+        candidates = [font]
+        if self.auto_fit_text:
+            base_size = getattr(font, 'size', None)
+            if isinstance(base_size, (int, float)):
+                for size in range(int(base_size) - 1, self.MIN_AUTO_FONT_SIZE - 1, -1):
+                    smaller = self._resized_font(font, size)
+                    if smaller is not None:
+                        candidates.append(smaller)
+
+        first = None
+        for candidate in candidates:
+            line_height = self._get_font_height(candidate)
+            max_lines = max(1, (max_height + line_spacing) // (line_height + line_spacing))
+            # Wrap with one spare line so overflow is detectable.
+            lines = self._wrap_text(text, max_width, candidate, max_lines=max_lines + 1)
+            if first is None:
+                first = (candidate, lines, line_height, max_lines)
+            # A candidate only wins when every word survived intact: a word
+            # wider than max_width gets truncated by _wrap_text, and a
+            # smaller size may be able to hold it whole.
+            if len(lines) <= max_lines and " ".join(lines).split() == text.split():
+                return candidate, lines, line_height
+        # No size holds everything: keep the configured font, keep the lines
+        # that fit, and mark the cut with an ellipsis.
+        candidate, lines, line_height, max_lines = first
+        lines = lines[:max_lines]
+        if lines:
+            lines[-1] = self._ellipsize(lines[-1] + "...", candidate, max_width)
+        return candidate, lines, line_height
 
     def _draw_bdf_text(self, draw, font, text: str, x: int, y: int, color: tuple = (255, 255, 255)):
         """Draw text supporting both BDF (FreeType Face) and PIL TTF fonts, similar to old manager."""
@@ -497,39 +566,23 @@ class OfTheDayPlugin(BasePlugin):
          body_font, body_color, (body_dx, body_dy)) = self._element_styles()
 
         # Get font heights
-        try:
-            title_height = self.display_manager.get_font_height(title_font)
-        except Exception as e:
-            self.logger.warning(f"Error getting title font height: {e}, using default 8")
-            title_height = 8
-        try:
-            body_height = self.display_manager.get_font_height(body_font)
-        except Exception as e:
-            self.logger.warning(f"Error getting body font height: {e}, using default 8")
-            body_height = 8
-        
+        title_height = self._get_font_height(title_font)
+        body_height = self._get_font_height(body_font)
+
         # Layout matching old manager: margin_top = 8
         margin_top = 8
         margin_bottom = 1
         underline_space = 1
-        
+
         # Get title/word (JSON uses "title" not "word")
         title = self._fit_title(item_data.get('title', item_data.get('word', 'N/A')), title_font)
 
         # Get subtitle (JSON uses "subtitle")
         subtitle = item_data.get('subtitle', item_data.get('pronunciation', item_data.get('type', '')))
-        
+
         # Calculate title width for centering
-        try:
-            title_width = self.display_manager.get_text_width(title, title_font)
-        except Exception as e:
-            self.logger.warning(f"Error calculating title width using display_manager: {e}, trying fallback")
-            if isinstance(title_font, ImageFont.ImageFont):
-                bbox = title_font.getbbox(title)
-                title_width = bbox[2] - bbox[0]
-            else:
-                title_width = len(title) * 6
-        
+        title_width = self._text_width(title, title_font)
+
         # Center the title horizontally (+ user layout offset)
         title_x = (self.display_manager.width - title_width) // 2 + title_dx
         # A user layout offset (title_dx) must not push the title off-panel.
@@ -560,20 +613,29 @@ class OfTheDayPlugin(BasePlugin):
         
         # Draw subtitle below underline (centered, like old manager)
         if subtitle:
-            # Wrap subtitle text if needed
+            # Wrap the subtitle to the panel; when the configured font can't
+            # fit every line below the underline, shrink it until it does.
             available_width = self.display_manager.width - 4
-            wrapped_subtitle_lines = self._wrap_text(subtitle, available_width, body_font, max_lines=3)
+            max_subtitle_height = (self.display_manager.height - underline_y
+                                   - underline_space - 2 - margin_bottom)
+            body_font, wrapped_subtitle_lines, body_height = self._fit_wrapped_text(
+                subtitle, body_font, available_width, max_subtitle_height)
             actual_subtitle_lines = [line for line in wrapped_subtitle_lines if line.strip()]
-            
+
             if actual_subtitle_lines:
                 # Calculate spacing - similar to old manager's dynamic spacing
                 total_subtitle_height = len(actual_subtitle_lines) * body_height
                 available_space = self.display_manager.height - underline_y - margin_bottom
                 space_after_underline = max(2, (available_space - total_subtitle_height) // 2)
-                
+                # Centering must not push the last line past the panel bottom.
+                lines_span = total_subtitle_height + (len(actual_subtitle_lines) - 1)
+                max_space_after = (self.display_manager.height - underline_y
+                                   - underline_space - lines_span)
+                space_after_underline = max(2, min(space_after_underline, max_space_after))
+
                 subtitle_start_y = underline_y + space_after_underline + underline_space
                 current_y = subtitle_start_y
-                
+
                 for line in actual_subtitle_lines:
                     if line.strip():
                         # Stop before drawing a line that would run past the
@@ -581,14 +643,7 @@ class OfTheDayPlugin(BasePlugin):
                         if current_y + body_dy + body_height > self.display_manager.height:
                             break
                         # Center each line of subtitle
-                        try:
-                            line_width = self.display_manager.get_text_width(line, body_font)
-                        except Exception:
-                            if isinstance(body_font, ImageFont.ImageFont):
-                                bbox = body_font.getbbox(line)
-                                line_width = bbox[2] - bbox[0]
-                            else:
-                                line_width = len(line) * 6
+                        line_width = self._text_width(line, body_font)
                         line_x = (self.display_manager.width - line_width) // 2 + body_dx
 
                         # Use display_manager.draw_text for subtitle
@@ -617,37 +672,23 @@ class OfTheDayPlugin(BasePlugin):
          body_font, body_color, (body_dx, body_dy)) = self._element_styles()
 
         # Get font heights
-        try:
-            title_height = self.display_manager.get_font_height(title_font)
-        except Exception:
-            title_height = 8
-        try:
-            body_height = self.display_manager.get_font_height(body_font)
-        except Exception:
-            body_height = 8
-        
+        title_height = self._get_font_height(title_font)
+
         # Layout matching old manager: margin_top = 8
         margin_top = 8
         margin_bottom = 1
         underline_space = 1
-        
+
         # Get title/word (JSON uses "title")
         title = self._fit_title(item_data.get('title', item_data.get('word', 'N/A')), title_font)
         self.logger.debug(f"Displaying content for title: {title}")
-        
+
         # Get description (JSON uses "description")
         description = item_data.get('description', item_data.get('definition', item_data.get('content', item_data.get('text', 'No content'))))
-        
+
         # Calculate title width for centering (for underline placement)
-        try:
-            title_width = self.display_manager.get_text_width(title, title_font)
-        except Exception:
-            if isinstance(title_font, ImageFont.ImageFont):
-                bbox = title_font.getbbox(title)
-                title_width = bbox[2] - bbox[0]
-            else:
-                title_width = len(title) * 6
-        
+        title_width = self._text_width(title, title_font)
+
         # Center the title horizontally (same position as in _display_title)
         title_x = (self.display_manager.width - title_width) // 2 + title_dx
         # A user layout offset (title_dx) must not push the title off-panel.
@@ -671,18 +712,22 @@ class OfTheDayPlugin(BasePlugin):
         draw.line([(underline_x_start, underline_y), (underline_x_end, underline_y)],
                  fill=title_color, width=1)
         
-        # Wrap description text
+        # Wrap the description to the panel: line width and line count follow
+        # the actual font metrics, and the font shrinks when the configured
+        # size can't fit the whole text below the underline.
         available_width = self.display_manager.width - 4
-        max_lines = 10
-        wrapped_lines = self._wrap_text(description, available_width, body_font, max_lines=max_lines)
+        max_body_height = (self.display_manager.height - underline_y
+                           - underline_space - 3)
+        body_font, wrapped_lines, body_height = self._fit_wrapped_text(
+            description, body_font, available_width, max_body_height)
         actual_body_lines = [line for line in wrapped_lines if line.strip()]
-        
+
         if actual_body_lines:
             # Calculate dynamic spacing - similar to old manager
             num_body_lines = len(actual_body_lines)
             body_content_height = num_body_lines * body_height
             available_space = self.display_manager.height - underline_y - margin_bottom
-            
+
             if body_content_height < available_space:
                 # Distribute extra space: some after underline, rest between lines
                 extra_space = available_space - body_content_height
@@ -692,7 +737,18 @@ class OfTheDayPlugin(BasePlugin):
                 # Tight spacing
                 space_after_underline = 4
                 space_between_lines = 1
-            
+
+            # Rounding in the spread can land the last line past the panel
+            # bottom; tighten the spacing back in rather than dropping it.
+            if num_body_lines > 1:
+                slack = (self.display_manager.height - underline_y - underline_space
+                         - 1 - space_after_underline - body_content_height)
+                if space_between_lines * (num_body_lines - 1) > slack:
+                    space_between_lines = max(1, slack // (num_body_lines - 1))
+                    overshoot = space_between_lines * (num_body_lines - 1) - slack
+                    if overshoot > 0:
+                        space_after_underline = max(2, space_after_underline - overshoot)
+
             # Draw body text with dynamic spacing
             body_start_y = underline_y + space_after_underline + underline_space + 1  # +1 to match old manager's shift
             current_y = body_start_y
@@ -704,14 +760,7 @@ class OfTheDayPlugin(BasePlugin):
                     if current_y + body_dy + body_height > self.display_manager.height:
                         break
                     # Center each line of body text (like old manager)
-                    try:
-                        line_width = self.display_manager.get_text_width(line, body_font)
-                    except Exception:
-                        if isinstance(body_font, ImageFont.ImageFont):
-                            bbox = body_font.getbbox(line)
-                            line_width = bbox[2] - bbox[0]
-                        else:
-                            line_width = len(line) * 6
+                    line_width = self._text_width(line, body_font)
                     line_x = (self.display_manager.width - line_width) // 2 + body_dx
 
                     # Use display_manager.draw_text for description
@@ -787,6 +836,7 @@ class OfTheDayPlugin(BasePlugin):
         self.update_interval = config.get('update_interval', 3600)
         self.display_rotate_interval = config.get('display_rotate_interval', 20)
         self.subtitle_rotate_interval = config.get('subtitle_rotate_interval', 10)
+        self.auto_fit_text = config.get('auto_fit_text', True)
         self.categories = config.get('categories', {})
         self.category_order = config.get('category_order', [])
 

@@ -1,7 +1,7 @@
 {
   "id": "of-the-day",
   "name": "Of The Day Display",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "author": "ChuckBuilds",
   "description": "Display daily featured content like Word of the Day, Bible verses, or custom daily items. Supports multiple categories with rotating display and configurable data sources.",
   "category": "information",
@@ -21,6 +21,12 @@
     "of_the_day"
   ],
   "versions": [
+    {
+      "version": "1.4.0",
+      "released": "2026-08-06",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Font-aware word wrapping: long definitions and subtitles wrap into as many lines as actually fit the panel (measured from the real font metrics, including user font/size overrides), auto-shrinking scalable fonts to the largest size that fits the whole text. Text that still can't fit is ellipsized instead of silently clipped. The auto-shrink is controlled by the new advanced setting auto_fit_text (default on; turn it off to keep the configured size and ellipsize instead)."
+    },
     {
       "version": "1.3.2",
       "released": "2026-07-31",
@@ -53,7 +59,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-31",
+  "last_updated": "2026-08-06",
   "stars": 0,
   "downloads": 0,
   "verified": true,
