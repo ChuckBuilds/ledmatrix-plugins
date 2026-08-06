@@ -186,16 +186,20 @@ class GameRenderer:
         self,
         team_abbrev: str,
         logo_path: Optional[Path] = None,
-        league: str = 'nhl'
+        league: str = 'nhl',
+        max_width: Optional[int] = None
     ) -> Optional[Image.Image]:
-        """Load and resize a team logo with caching."""
-        cache_key = f"{league}_{team_abbrev}"
+        """Load and resize a team logo with caching.
+
+        max_width bounds the logo horizontally so it stays inside its slot and
+        clear of the center gap; it is part of the cache key because the same
+        cache dict is shared by renderers built for different card sizes.
+        """
+        box_w = int(max_width) if max_width else self.display_height
+        box_h = self.display_height
+        cache_key = f"{league}_{team_abbrev}_{box_w}x{box_h}"
         if cache_key in self._logo_cache:
             return self._logo_cache[cache_key]
-
-        # Also check without league prefix for backward compatibility
-        if team_abbrev in self._logo_cache:
-            return self._logo_cache[team_abbrev]
 
         try:
             # Use provided path or get from league config
@@ -211,13 +215,12 @@ class GameRenderer:
                     else:
                         logo = logo_file.copy()
 
-                # Crop transparent padding then scale so ink fills display_height.
-                # thumbnail into a display_height square box preserves aspect ratio
-                # and prevents wide logos from exceeding their half-card slot.
+                # Crop transparent padding, then thumbnail into the slot box so
+                # the logo keeps its aspect ratio and never spills past its slot.
                 bbox = logo.getbbox()
                 if bbox:
                     logo = logo.crop(bbox)
-                logo.thumbnail((self.display_height, self.display_height), RESAMPLE_FILTER)
+                logo.thumbnail((box_w, box_h), RESAMPLE_FILTER)
 
                 self._logo_cache[cache_key] = logo
                 return logo
@@ -512,16 +515,22 @@ class GameRenderer:
         home_abbr = home_team.get('abbrev', '')
         away_abbr = away_team.get('abbrev', '')
 
+        # Reserve a strip down the middle for the score/"VS" before sizing the
+        # logos, so the two never share pixels.
+        logo_slot = self._logo_slot_width()
+
         # Load logos
         home_logo = self._load_and_resize_logo(
             home_abbr,
             logo_dir / f"{home_abbr}.png",
-            league
+            league,
+            max_width=logo_slot
         )
         away_logo = self._load_and_resize_logo(
             away_abbr,
             logo_dir / f"{away_abbr}.png",
-            league
+            league,
+            max_width=logo_slot
         )
 
         if not home_logo or not away_logo:
@@ -529,9 +538,7 @@ class GameRenderer:
 
         center_y = self.display_height // 2
 
-        # Draw logos — each centered within a slot on its side; cap at half the card
-        # width so home_slot_start stays non-negative on square/tall displays
-        logo_slot = min(self.display_height, self.display_width // 2)
+        # Draw logos — each centered within its slot on its side.
         away_x = (logo_slot - away_logo.width) // 2
         away_y = center_y - (away_logo.height // 2)
         main_img.paste(away_logo, (away_x, away_y), away_logo)
@@ -668,6 +675,35 @@ class GameRenderer:
         except (ValueError, TypeError) as e:
             self.logger.debug(f"Failed to parse start time '{raw_start}': {e}")
             return "", ""
+
+    # Middle strip reserved for the score / "VS", as a fraction of card width.
+    # 0.28 clears "1-2" (30px) on a 128px card with room to spare.
+    CENTER_GAP_RATIO: ClassVar[float] = 0.28
+    # 22 so "VS" (20px) still clears the logos on the narrowest 64px card.
+    CENTER_GAP_MIN_PX: ClassVar[int] = 22
+    CENTER_GAP_MAX_PX: ClassVar[int] = 40
+
+    def _center_gap_width(self) -> int:
+        """Width of the middle strip kept clear of logos.
+
+        ``customization.center_gap`` overrides it; 0 restores the old
+        edge-to-edge logos.
+        """
+        configured = (self.config or {}).get('customization', {}).get('center_gap')
+        if isinstance(configured, (int, float)) and configured >= 0:
+            return int(configured)
+        scaled = round(self.display_width * self.CENTER_GAP_RATIO)
+        return int(max(self.CENTER_GAP_MIN_PX, min(self.CENTER_GAP_MAX_PX, scaled)))
+
+    def _logo_slot_width(self) -> int:
+        """Per-side logo slot, leaving the center gap clear.
+
+        Still capped at display_height, so wide/short cards (128x32, 256x32)
+        already have a large center gap and are left exactly as they were --
+        only the sizes where the logos met in the middle (128x64, 64x32) shrink.
+        """
+        available = (self.display_width - self._center_gap_width()) // 2
+        return max(8, min(self.display_height, available))
 
     @staticmethod
     def _compact_time(text: str) -> str:
