@@ -13,29 +13,95 @@
         "upcoming_center": {
           "type": "string",
           "title": "Middle of an Upcoming Card",
-          "description": "What to show between the two logos before a game starts: VS, or the date and time stacked in the middle. Upcoming games never show a score, since the game has not been played.",
+          "description": "What to show between the two logos before a game starts. Upcoming games never show a score, since the game has not been played.",
           "enum": [
             "vs",
-            "date_time"
+            "date_time",
+            "none"
           ],
           "default": "vs"
+        },
+        "vs_text": {
+          "type": "string",
+          "title": "Matchup Separator",
+          "description": "Text drawn between the two teams, e.g. VS, @, at, v. The away team is always on the left and the home team on the right, so \"at\" and \"@\" read correctly as \"away at home\". Leave blank to draw nothing.",
+          "default": "VS",
+          "maxLength": 4
         },
         "date_format": {
           "type": "string",
           "title": "Date Format",
-          "description": "How to write the date on an upcoming card: abbrev shows \"Sep 19\", numeric shows \"9/19\".",
+          "description": "How to write the date: abbrev \"Sep 19\", numeric \"9/19\", day_first \"19 Sep\", numeric_day_first \"19/9\", weekday \"Fri Sep 19\".",
           "enum": [
             "abbrev",
-            "numeric"
+            "numeric",
+            "day_first",
+            "numeric_day_first",
+            "weekday"
           ],
           "default": "abbrev"
+        },
+        "time_format": {
+          "type": "string",
+          "title": "Time Format",
+          "description": "12h shows \"7:00PM\"; 24h shows \"19:00\".",
+          "enum": [
+            "12h",
+            "24h"
+          ],
+          "default": "12h"
+        },
+        "show_date": {
+          "type": "boolean",
+          "title": "Show Date",
+          "description": "Draw the date on upcoming cards.",
+          "default": true
+        },
+        "show_time": {
+          "type": "boolean",
+          "title": "Show Time",
+          "description": "Draw the start time on upcoming cards.",
+          "default": true
+        },
+        "swap_date_time": {
+          "type": "boolean",
+          "title": "Swap Date and Time",
+          "description": "Put the date on top and the time along the bottom instead of the default.",
+          "default": false
         },
         "center_gap": {
           "type": "integer",
           "title": "Center Gap",
-          "description": "Pixels kept clear down the middle of a card so the score or VS is not drawn over the team logos. Leave unset to scale with the card width. Set to 0 for the old edge-to-edge logos.",
+          "description": "Pixels kept clear down the middle so the score or VS is not drawn over the team logos. Leave unset to scale with the card width. 0 restores the old edge-to-edge logos.",
           "minimum": 0,
           "maximum": 64
+        },
+        "center_gap_ratio": {
+          "type": "number",
+          "title": "Center Gap Ratio",
+          "description": "Fraction of card width used for the centre gap when it is not pinned.",
+          "minimum": 0.0,
+          "maximum": 0.6,
+          "default": 0.28,
+          "x-advanced": true
+        },
+        "center_gap_min": {
+          "type": "integer",
+          "title": "Center Gap Minimum",
+          "description": "Lower bound in pixels for the scaled centre gap.",
+          "minimum": 0,
+          "maximum": 64,
+          "default": 22,
+          "x-advanced": true
+        },
+        "center_gap_max": {
+          "type": "integer",
+          "title": "Center Gap Maximum",
+          "description": "Upper bound in pixels for the scaled centre gap.",
+          "minimum": 0,
+          "maximum": 96,
+          "default": 40,
+          "x-advanced": true
         }
       }
     },
@@ -553,7 +619,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -962,7 +1028,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1371,7 +1437,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1780,7 +1846,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2189,7 +2255,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2598,7 +2664,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3007,7 +3073,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3416,7 +3482,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3825,7 +3891,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -4234,7 +4300,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -4282,7 +4348,7 @@
     "custom_leagues": {
       "type": "array",
       "title": "Add More Leagues",
-      "description": "Add any soccer league available on ESPN. Click 'Add Item', then fill in BOTH a name and a league code. Common codes: eng.2 (English Championship), eng.3 (League One), eng.fa (FA Cup), eng.league_cup (EFL Cup), mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish Süper Lig), bel.1 (Belgian Pro League)",
+      "description": "Add any soccer league available on ESPN. Click 'Add Item', then fill in BOTH a name and a league code. Common codes: eng.2 (English Championship), eng.3 (League One), eng.fa (FA Cup), eng.league_cup (EFL Cup), mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish S\u00fcper Lig), bel.1 (Belgian Pro League)",
       "x-widget": "array-table",
       "x-columns": [
         "name",
@@ -4310,7 +4376,10 @@
             "description": "ESPN league code in dot-separated format (e.g., 'eng.2', 'mex.1', 'uefa.champions', 'eng.league_cup', 'conmebol.libertadores')"
           },
           "priority": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "default": 50,
             "minimum": 1,
             "maximum": 100,
@@ -4322,7 +4391,11 @@
             "description": "Whether this league is enabled"
           },
           "favorite_teams": {
-            "type": ["array", "string", "null"],
+            "type": [
+              "array",
+              "string",
+              "null"
+            ],
             "items": {
               "type": "string"
             },
@@ -4332,7 +4405,11 @@
             "description": "Favorite team abbreviations for this league (comma-separated when typed into the row editor)"
           },
           "exclude_teams": {
-            "type": ["array", "string", "null"],
+            "type": [
+              "array",
+              "string",
+              "null"
+            ],
             "items": {
               "type": "string",
               "description": "Custom league team name or abbreviation"
@@ -4403,7 +4480,10 @@
             "additionalProperties": false
           },
           "live_game_duration": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "default": 20,
             "minimum": 10,
             "maximum": 120,
@@ -4411,7 +4491,10 @@
             "x-advanced": true
           },
           "non_favorite_live_game_duration": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "default": 0,
             "minimum": 0,
             "maximum": 120,
@@ -4419,7 +4502,10 @@
             "x-advanced": true
           },
           "recent_game_duration": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "default": 15,
             "minimum": 5,
             "maximum": 60,
@@ -4427,7 +4513,10 @@
             "x-advanced": true
           },
           "upcoming_game_duration": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "default": 15,
             "minimum": 5,
             "maximum": 60,
@@ -4440,14 +4529,20 @@
             "description": "Control how many games to show",
             "properties": {
               "recent_games_to_show": {
-                "type": ["integer", "null"],
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "default": 1,
                 "minimum": 1,
                 "maximum": 20,
                 "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
               },
               "upcoming_games_to_show": {
-                "type": ["integer", "null"],
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "default": 10,
                 "minimum": 1,
                 "maximum": 20,
@@ -4472,7 +4567,10 @@
                 "description": "Show all live games, not just favorites"
               },
               "favorite_live_boost": {
-                "type": ["integer", "null"],
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "minimum": 1,
                 "maximum": 5,
                 "default": 2,
@@ -4494,7 +4592,10 @@
                 "x-advanced": true
               },
               "min_duration_seconds": {
-                "type": ["number", "null"],
+                "type": [
+                  "number",
+                  "null"
+                ],
                 "minimum": 10,
                 "maximum": 300,
                 "default": 30,
@@ -4502,14 +4603,20 @@
                 "x-advanced": true
               },
               "max_duration_seconds": {
-                "type": ["number", "null"],
+                "type": [
+                  "number",
+                  "null"
+                ],
                 "minimum": 60,
                 "maximum": 600,
                 "description": "Maximum total duration in seconds",
                 "x-advanced": true
               },
               "modes": {
-                "type": ["object", "null"],
+                "type": [
+                  "object",
+                  "null"
+                ],
                 "title": "Per-Mode Settings",
                 "description": "Configure dynamic duration for specific modes",
                 "properties": {
@@ -4523,13 +4630,19 @@
                         "x-advanced": true
                       },
                       "min_duration_seconds": {
-                        "type": ["number", "null"],
+                        "type": [
+                          "number",
+                          "null"
+                        ],
                         "minimum": 10,
                         "maximum": 300,
                         "x-advanced": true
                       },
                       "max_duration_seconds": {
-                        "type": ["number", "null"],
+                        "type": [
+                          "number",
+                          "null"
+                        ],
                         "minimum": 60,
                         "maximum": 600,
                         "x-advanced": true
@@ -4547,13 +4660,19 @@
                         "x-advanced": true
                       },
                       "min_duration_seconds": {
-                        "type": ["number", "null"],
+                        "type": [
+                          "number",
+                          "null"
+                        ],
                         "minimum": 10,
                         "maximum": 300,
                         "x-advanced": true
                       },
                       "max_duration_seconds": {
-                        "type": ["number", "null"],
+                        "type": [
+                          "number",
+                          "null"
+                        ],
                         "minimum": 60,
                         "maximum": 600,
                         "x-advanced": true
@@ -4571,13 +4690,19 @@
                         "x-advanced": true
                       },
                       "min_duration_seconds": {
-                        "type": ["number", "null"],
+                        "type": [
+                          "number",
+                          "null"
+                        ],
                         "minimum": 10,
                         "maximum": 300,
                         "x-advanced": true
                       },
                       "max_duration_seconds": {
-                        "type": ["number", "null"],
+                        "type": [
+                          "number",
+                          "null"
+                        ],
                         "minimum": 60,
                         "maximum": 600,
                         "x-advanced": true
@@ -4630,6 +4755,25 @@
               "minimum": 4,
               "maximum": 16,
               "default": 10
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the score text on scroll/Vegas cards.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
@@ -4664,6 +4808,25 @@
               "minimum": 4,
               "maximum": 16,
               "default": 8
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the period text on scroll/Vegas cards.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
@@ -4698,6 +4861,25 @@
               "minimum": 4,
               "maximum": 16,
               "default": 8
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the team name on scroll/Vegas cards.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
@@ -4732,6 +4914,25 @@
               "minimum": 4,
               "maximum": 16,
               "default": 6
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the status text on scroll/Vegas cards.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
@@ -4766,6 +4967,25 @@
               "minimum": 4,
               "maximum": 16,
               "default": 6
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the detail text on scroll/Vegas cards.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
@@ -4800,6 +5020,25 @@
               "minimum": 4,
               "maximum": 16,
               "default": 10
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the rank text on scroll/Vegas cards.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
@@ -4972,7 +5211,11 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [0, 255, 0],
+              "default": [
+                0,
+                255,
+                0
+              ],
               "x-advanced": true
             },
             "loss_color": {
@@ -4987,7 +5230,11 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [255, 0, 0],
+              "default": [
+                255,
+                0,
+                0
+              ],
               "x-advanced": true
             },
             "tie_color": {
@@ -5002,7 +5249,11 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [255, 200, 0],
+              "default": [
+                255,
+                200,
+                0
+              ],
               "x-advanced": true
             }
           },
@@ -5027,7 +5278,7 @@
       ],
       "additionalProperties": false
     }
-},
+  },
   "additionalProperties": false,
   "required": [
     "enabled"
