@@ -4778,7 +4778,8 @@
           },
           "x-propertyOrder": [
             "font",
-            "font_size"
+            "font_size",
+            "text_color"
           ],
           "additionalProperties": false
         },
@@ -4831,7 +4832,8 @@
           },
           "x-propertyOrder": [
             "font",
-            "font_size"
+            "font_size",
+            "text_color"
           ],
           "additionalProperties": false
         },
@@ -4884,7 +4886,8 @@
           },
           "x-propertyOrder": [
             "font",
-            "font_size"
+            "font_size",
+            "text_color"
           ],
           "additionalProperties": false
         },
@@ -4937,7 +4940,8 @@
           },
           "x-propertyOrder": [
             "font",
-            "font_size"
+            "font_size",
+            "text_color"
           ],
           "additionalProperties": false
         },
@@ -4990,7 +4994,8 @@
           },
           "x-propertyOrder": [
             "font",
-            "font_size"
+            "font_size",
+            "text_color"
           ],
           "additionalProperties": false
         },
@@ -5043,7 +5048,8 @@
           },
           "x-propertyOrder": [
             "font",
-            "font_size"
+            "font_size",
+            "text_color"
           ],
           "additionalProperties": false
         },
