@@ -7,8 +7,10 @@ Returns PIL Images instead of updating display directly.
 
 import logging
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional, Tuple
+from zoneinfo import ZoneInfo
 from PIL import Image, ImageDraw, ImageFont
 
 logger = logging.getLogger(__name__)
@@ -606,36 +608,91 @@ class GameRenderer:
         status_y = 1
         self._draw_text_with_outline(draw, status_text, (status_x, status_y), self.fonts['time'])
 
+    def _upcoming_date_and_time(self, game: Dict) -> Tuple[str, str]:
+        """Resolve (date, time) text for an upcoming game from any payload shape.
+
+        The scroll/Vegas path feeds cards straight from the sports extractor,
+        which emits flat ``game_date``/``game_time`` (already localized) and a
+        ``start_time_utc`` datetime -- it has no ``status.short_detail`` and no
+        ``start_time``. Reading only the nested keys is what left these cards
+        showing a bare "VS": both lookups missed and each branch drew nothing.
+        Prefer the flat keys, then the nested payload built by data_fetcher.py,
+        then parse the raw start time as a last resort.
+        """
+        date_text = str(game.get("game_date", "") or "")
+        time_text = str(game.get("game_time", "") or "")
+        if date_text or time_text:
+            return date_text, time_text
+
+        # Nested shape (data_fetcher.py): "9/19 - 7:00 PM EDT" carries both
+        # halves in one string, which overflows the card if drawn as-is.
+        short_detail = str(game.get("status", {}).get("short_detail", "") or "")
+        if short_detail:
+            head, sep, tail = short_detail.partition(" - ")
+            date_part, time_part = (head, tail) if sep else ("", head)
+            return date_part.strip(), self._compact_time(time_part)
+
+        raw_start = game.get("start_time_utc") or game.get("start_time") or ""
+        if not raw_start:
+            return "", ""
+        try:
+            if isinstance(raw_start, datetime):
+                start_dt = raw_start
+            else:
+                start_dt = datetime.fromisoformat(str(raw_start).replace("Z", "+00:00"))
+            local_dt = start_dt.astimezone(self._display_tzinfo())
+            return local_dt.strftime("%m/%d").lstrip("0"), local_dt.strftime("%I:%M%p").lstrip("0")
+        except (ValueError, TypeError) as e:
+            self.logger.debug(f"Failed to parse start time '{raw_start}': {e}")
+            return "", ""
+
+    @staticmethod
+    def _compact_time(text: str) -> str:
+        """Trim "7:00 PM EDT" to "7:00PM" so it fits a 64px-wide half-card."""
+        tokens = text.split()
+        if not tokens:
+            return ""
+        # Drop a trailing timezone abbreviation ("EDT"), keeping the meridiem.
+        if len(tokens) > 1 and tokens[-1].upper() not in {"AM", "PM"}:
+            tokens = tokens[:-1]
+        if len(tokens) >= 2 and tokens[-1].upper() in {"AM", "PM"}:
+            return "".join(tokens[-2:])
+        return tokens[-1]
+
+    def _display_tzinfo(self):
+        """Timezone for rendering raw start times; falls back to UTC."""
+        try:
+            configured = (self.config or {}).get("timezone")
+            if configured:
+                return ZoneInfo(configured)
+        except Exception:
+            pass
+        return timezone.utc
+
     def _draw_upcoming_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
-        """Draw status elements for an upcoming hockey game."""
-        # Get game time from status
-        status = game.get('status', {})
-        game_time = status.get('short_detail', '')
+        """Draw date/time for an upcoming hockey game.
 
-        if game_time:
-            time_width = draw.textlength(game_time, font=self.fonts['time'])
+        Matches the other sports' scroll cards: time top-center, date
+        bottom-center, so the two logos are never left touching with a bare
+        "VS" between them.
+        """
+        date_text, time_text = self._upcoming_date_and_time(game)
+
+        if time_text:
+            time_width = draw.textlength(time_text, font=self.fonts['time'])
             time_x = (self.display_width - time_width) // 2
-            time_y = 1
-            self._draw_text_with_outline(draw, game_time, (time_x, time_y), self.fonts['time'])
-        else:
-            # Fallback: try to parse start_time
-            start_time = game.get("start_time", "")
-            if start_time:
-                try:
-                    from datetime import datetime
-                    import pytz
+            self._draw_text_with_outline(
+                draw, time_text, (time_x, 1), self.fonts['time']
+            )
 
-                    dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
-                    local_dt = dt.astimezone(pytz.utc)  # Use UTC for now
-
-                    game_date = local_dt.strftime("%b %d")
-
-                    date_width = draw.textlength(game_date, font=self.fonts['time'])
-                    date_x = (self.display_width - date_width) // 2
-                    date_y = 1
-                    self._draw_text_with_outline(draw, game_date, (date_x, date_y), self.fonts['time'])
-                except (ValueError, TypeError) as e:
-                    self.logger.debug(f"Failed to parse start_time '{start_time}': {e}")
+        if date_text:
+            date_font = self.fonts.get('detail') or self.fonts['time']
+            date_width = draw.textlength(date_text, font=date_font)
+            date_x = (self.display_width - date_width) // 2
+            date_y = self.display_height - 7
+            self._draw_text_with_outline(
+                draw, date_text, (date_x, date_y), date_font
+            )
 
     def _draw_records_or_rankings(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw team records or rankings."""

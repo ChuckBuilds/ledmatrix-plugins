@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.8.1",
+      "released": "2026-08-06",
+      "notes": "Fix upcoming games showing a bare \"VS\" with no date or time on scroll and Vegas cards. The card read the start time from status.short_detail and start_time, but the scroll path is fed by the sports extractor, which emits game_date, game_time and start_time_utc instead -- so both lookups came up empty and nothing was drawn. Date and time now render top- and bottom-center, matching the other sports' scroll cards, and all three payload shapes are handled.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.8.0",
       "released": "2026-08-05",
