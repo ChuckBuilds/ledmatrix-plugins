@@ -815,12 +815,14 @@ class GameRenderer:
 
     def _card_tzinfo(self):
         """Timezone for weekday/24h conversions; falls back to UTC."""
-        try:
-            configured = (self.config or {}).get("timezone")
-            if configured:
+        configured = (self.config or {}).get("timezone")
+        if configured:
+            try:
                 return ZoneInfo(configured)
-        except Exception:
-            pass
+            except (KeyError, ValueError, TypeError, OSError) as exc:
+                # KeyError covers ZoneInfoNotFoundError. A bad zone name in
+                # config should fall back to UTC, not blank the card.
+                self.logger.debug("Unusable timezone %r: %s", configured, exc)
         return timezone.utc
 
     def _format_game_time(self, time_text: str) -> str:
@@ -902,12 +904,14 @@ class GameRenderer:
 
     def _display_tzinfo(self):
         """Timezone for rendering raw start times; falls back to UTC."""
-        try:
-            configured = (self.config or {}).get("timezone")
-            if configured:
+        configured = (self.config or {}).get("timezone")
+        if configured:
+            try:
                 return ZoneInfo(configured)
-        except Exception:
-            pass
+            except (KeyError, ValueError, TypeError, OSError) as exc:
+                # KeyError covers ZoneInfoNotFoundError. A bad zone name in
+                # config should fall back to UTC, not blank the card.
+                self.logger.debug("Unusable timezone %r: %s", configured, exc)
         return timezone.utc
 
     def _draw_upcoming_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
