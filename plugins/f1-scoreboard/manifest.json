@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.7.3",
+  "version": "1.8.0",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,12 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.8.0",
+      "released": "2026-08-07",
+      "notes": "Stop F1 taking over the Vegas marquee. get_vegas_content() contributed every prepared mode at once, which measured 114 cards / 14,592px on a 512px panel -- close to six minutes of unbroken F1 at 50px/s, because what this plugin's own rotation shows as eight separate screens the marquee splices into one block. A new \"vegas\": {\"sections\": [...]} setting picks what joins the marquee, defaulting to the next race and the last race's results (around 15 seconds). Every section remains available: add them back to get the old behaviour, or set an empty list to keep F1 out of the marquee entirely. The plugin's own display modes are unchanged and still show everything.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.7.3",
       "released": "2026-08-05",

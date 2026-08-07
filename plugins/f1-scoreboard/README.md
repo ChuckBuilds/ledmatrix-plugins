@@ -100,6 +100,34 @@ Each mode section has an `enabled` toggle and mode-specific options:
 | `calendar` | `show_qualifying` | `true` | Include qualifying in calendar |
 | `calendar` | `show_sprint` | `true` | Include sprint weekends in calendar |
 
+### Vegas marquee
+
+`vegas.sections` picks what F1 contributes to the Vegas continuous-scroll
+marquee. It does not affect the display modes above, which still show
+everything.
+
+| Key | Default | Description |
+|---|---|---|
+| `vegas.sections` | `["upcoming", "last_race"]` | Sections that join the marquee |
+
+The default is the next race (plus its circuit card) and the most recent race's
+results — around 15 seconds. Sections are always shown in the canonical order
+below, whatever order you list them in:
+
+`leaders` · `battles` · `spotlight` · `upcoming` · `last_race` ·
+`driver_standings` · `constructor_standings` · `recent_races` · `qualifying` ·
+`practice` · `sprint` · `calendar`
+
+`last_race` is the most recent race only; `recent_races` is all of the races
+`recent_races.number_of_races` covers. Cards within a section still honour that
+section's own settings, so `recent_races.show_gap_chart` and
+`show_points_haul` apply to `last_race` too.
+
+Adding sections back makes F1 hold the marquee for longer — listing all twelve
+measured 114 cards on a 512px panel, close to six minutes of unbroken F1 at
+50px/s. Set an empty list to keep F1 out of the marquee entirely while leaving
+its own display modes running.
+
 ### Scroll & timing
 
 | Key | Default | Description |
