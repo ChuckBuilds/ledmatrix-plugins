@@ -179,6 +179,13 @@ p = _Plugin(config={})
 check("no vegas block -> default", p._vegas_sections(),
       ["upcoming", "last_race"])
 
+# The schema forbids these, but config.json is hand-edited often enough that
+# the marquee's render path must not raise on them.
+for bad in (None, [], ["upcoming"], "upcoming", 7):
+    p = _Plugin(config={"vegas": bad})
+    check("vegas=%r -> default, no raise" % (bad,), p._vegas_sections(),
+          ["upcoming", "last_race"])
+
 print("\nevery section in the order is resolvable")
 p = _Plugin(modes=ALL_MODES)
 unresolvable = [s for s in F1ScoreboardPlugin._VEGAS_SECTION_ORDER

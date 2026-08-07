@@ -411,7 +411,7 @@
             "enum": ["leaders", "battles", "spotlight", "upcoming", "last_race", "driver_standings", "constructor_standings", "recent_races", "qualifying", "practice", "sprint", "calendar"]
           },
           "default": ["upcoming", "last_race"],
-          "description": "Which sections join the marquee, shown in the order listed here. Default is the next race and the last race's results. Adding more makes F1 hold the marquee for longer — every section at once measured 114 cards, close to six minutes of unbroken F1 on a 512px panel. 'last_race' is the most recent race only; 'recent_races' is all of them. Leave empty to keep F1 out of the marquee entirely."
+          "description": "Which sections join the marquee. The order you list them in does not matter — they are always shown in the fixed order leaders, battles, spotlight, upcoming, last_race, driver_standings, constructor_standings, recent_races, qualifying, practice, sprint, calendar. Default is the next race and the last race's results. Adding more makes F1 hold the marquee for longer — every section at once measured 114 cards, close to six minutes of unbroken F1 on a 512px panel. 'last_race' is the most recent race only; 'recent_races' is all of them. Leave empty to keep F1 out of the marquee entirely."
         }
       },
       "x-propertyOrder": ["sections"],

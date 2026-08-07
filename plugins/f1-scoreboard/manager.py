@@ -848,8 +848,17 @@ class F1ScoreboardPlugin(BasePlugin):
         Unknown names are dropped with a warning rather than failing the whole
         list, so one typo costs the user that section and not the plugin.
         """
-        raw = self.config.get("vegas", {}).get(
-            "sections", self._VEGAS_DEFAULT_SECTIONS)
+        # The schema forbids a non-object here, but config.json is hand-edited
+        # often enough that a null or a stray list must not raise on the
+        # marquee's render path.
+        vegas_cfg = self.config.get("vegas") or {}
+        if not isinstance(vegas_cfg, dict):
+            self.logger.warning(
+                "vegas should be an object, got %r — using the default sections",
+                vegas_cfg)
+            return list(self._VEGAS_DEFAULT_SECTIONS)
+
+        raw = vegas_cfg.get("sections", self._VEGAS_DEFAULT_SECTIONS)
         if isinstance(raw, str):
             raw = [raw]
         if not isinstance(raw, (list, tuple)):
