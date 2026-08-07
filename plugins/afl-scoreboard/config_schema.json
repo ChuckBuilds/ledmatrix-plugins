@@ -4,6 +4,129 @@
   "description": "Configuration schema for the AFL (Australian Football League) Scoreboard plugin",
   "type": "object",
   "properties": {
+    "scroll_card": {
+      "type": "object",
+      "title": "Scroll & Vegas Card Layout",
+      "description": "Layout of the game cards built for scroll and Vegas modes. The full-screen scoreboard is drawn separately and is not affected by these settings.",
+      "x-advanced": true,
+      "properties": {
+        "upcoming_center": {
+          "type": "string",
+          "title": "Middle of an Upcoming Card",
+          "description": "What to show between the two logos before a game starts. Upcoming games never show a score, since the game has not been played.",
+          "enum": [
+            "vs",
+            "date_time",
+            "none"
+          ],
+          "default": "vs",
+          "x-options": {
+            "labels": {
+              "vs": "Matchup separator (VS / @ / at)",
+              "date_time": "Date and time, stacked",
+              "none": "Nothing"
+            }
+          }
+        },
+        "vs_text": {
+          "type": "string",
+          "title": "Matchup Separator",
+          "description": "Text drawn between the two teams, e.g. VS, @, at, v. The away team is always on the left and the home team on the right, so \"at\" and \"@\" read correctly as \"away at home\". Leave blank to draw nothing.",
+          "default": "VS",
+          "maxLength": 4
+        },
+        "date_format": {
+          "type": "string",
+          "title": "Date Format",
+          "description": "How to write the date: abbrev \"Sep 19\", numeric \"9/19\", day_first \"19 Sep\", numeric_day_first \"19/9\", weekday \"Fri Sep 19\".",
+          "enum": [
+            "abbrev",
+            "numeric",
+            "day_first",
+            "numeric_day_first",
+            "weekday"
+          ],
+          "default": "abbrev",
+          "x-options": {
+            "labels": {
+              "abbrev": "Sep 19",
+              "numeric": "9/19",
+              "day_first": "19 Sep",
+              "numeric_day_first": "19/9",
+              "weekday": "Fri Sep 19"
+            }
+          }
+        },
+        "time_format": {
+          "type": "string",
+          "title": "Time Format",
+          "description": "12h shows \"7:00PM\"; 24h shows \"19:00\".",
+          "enum": [
+            "12h",
+            "24h"
+          ],
+          "default": "12h",
+          "x-options": {
+            "labels": {
+              "12h": "7:00PM  (12-hour)",
+              "24h": "19:00  (24-hour)"
+            }
+          }
+        },
+        "show_date": {
+          "type": "boolean",
+          "title": "Show Date",
+          "description": "Draw the date on upcoming cards.",
+          "default": true
+        },
+        "show_time": {
+          "type": "boolean",
+          "title": "Show Time",
+          "description": "Draw the start time on upcoming cards.",
+          "default": true
+        },
+        "swap_date_time": {
+          "type": "boolean",
+          "title": "Swap Date and Time",
+          "description": "Put the date on top and the time along the bottom instead of the default.",
+          "default": false
+        },
+        "center_gap": {
+          "type": "integer",
+          "title": "Center Gap",
+          "description": "Pixels kept clear down the middle so the score or VS is not drawn over the team logos. Leave unset to scale with the card width. 0 restores the old edge-to-edge logos.",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "center_gap_ratio": {
+          "type": "number",
+          "title": "Center Gap Ratio",
+          "description": "Fraction of card width used for the centre gap when it is not pinned.",
+          "minimum": 0.0,
+          "maximum": 0.6,
+          "default": 0.28,
+          "x-advanced": true
+        },
+        "center_gap_min": {
+          "type": "integer",
+          "title": "Center Gap Minimum",
+          "description": "Lower bound in pixels for the scaled centre gap.",
+          "minimum": 0,
+          "maximum": 64,
+          "default": 22,
+          "x-advanced": true
+        },
+        "center_gap_max": {
+          "type": "integer",
+          "title": "Center Gap Maximum",
+          "description": "Upper bound in pixels for the scaled centre gap.",
+          "minimum": 0,
+          "maximum": 96,
+          "default": 40,
+          "x-advanced": true
+        }
+      }
+    },
     "enabled": {
       "type": "boolean",
       "default": true,
@@ -557,11 +680,31 @@
               "maximum": 16,
               "default": 10,
               "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the score text on scroll/Vegas cards.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
             "font",
-            "font_size"
+            "font_size",
+            "text_color"
           ],
           "additionalProperties": false
         },
@@ -593,11 +736,31 @@
               "maximum": 16,
               "default": 8,
               "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the period text on scroll/Vegas cards.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
             "font",
-            "font_size"
+            "font_size",
+            "text_color"
           ],
           "additionalProperties": false
         },
@@ -629,11 +792,31 @@
               "maximum": 16,
               "default": 8,
               "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the team name on scroll/Vegas cards.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
             "font",
-            "font_size"
+            "font_size",
+            "text_color"
           ],
           "additionalProperties": false
         },
@@ -665,11 +848,31 @@
               "maximum": 16,
               "default": 6,
               "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the status text on scroll/Vegas cards.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
             "font",
-            "font_size"
+            "font_size",
+            "text_color"
           ],
           "additionalProperties": false
         },
@@ -701,11 +904,31 @@
               "maximum": 16,
               "default": 6,
               "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the detail text on scroll/Vegas cards.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
             "font",
-            "font_size"
+            "font_size",
+            "text_color"
           ],
           "additionalProperties": false
         },
@@ -737,11 +960,31 @@
               "maximum": 16,
               "default": 10,
               "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the rank text on scroll/Vegas cards.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-advanced": true
             }
           },
           "x-propertyOrder": [
             "font",
-            "font_size"
+            "font_size",
+            "text_color"
           ],
           "additionalProperties": false
         },
@@ -924,7 +1167,11 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [0, 255, 0],
+              "default": [
+                0,
+                255,
+                0
+              ],
               "x-advanced": true
             },
             "loss_color": {
@@ -939,7 +1186,11 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [255, 0, 0],
+              "default": [
+                255,
+                0,
+                0
+              ],
               "x-advanced": true
             },
             "tie_color": {
@@ -954,7 +1205,11 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [255, 200, 0],
+              "default": [
+                255,
+                200,
+                0
+              ],
               "x-advanced": true
             }
           },

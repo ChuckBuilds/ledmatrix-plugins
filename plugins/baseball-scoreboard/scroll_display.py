@@ -202,8 +202,11 @@ else:
 
             # Get scroll settings
             scroll_settings = self._get_scroll_settings()
-            gap_between_games = scroll_settings.get("gap_between_games", 24)
+            gap_between_games = scroll_settings.get("gap_between_games", 48)
             show_separators = scroll_settings.get("show_league_separators", True)
+            # Match the gap used between game cards so the leading league
+            # icon sits in the same rhythm as the cards that follow it.
+            sep_pad = max(4, gap_between_games // 2)
             game_card_width = scroll_settings.get("game_card_width", self.display_width)
 
             # Get or create cached game renderer; default card width is the full display width
@@ -228,10 +231,10 @@ else:
                     separator = self._separator_icons.get(game_league)
                     if separator:
                         # Create a separator image with proper background
-                        sep_img = Image.new('RGB', (separator.width + 8, self.display_height), (0, 0, 0))
+                        sep_img = Image.new('RGB', (separator.width + sep_pad * 2, self.display_height), (0, 0, 0))
                         # Center the separator vertically
                         y_offset = (self.display_height - separator.height) // 2
-                        sep_img.paste(separator, (4, y_offset), separator)
+                        sep_img.paste(separator, (sep_pad, y_offset), separator)
                         content_items.append(sep_img)
                         context = "at start" if current_league is None else ""
                         self.logger.debug(f"Added {game_league} separator icon {context}".strip())
@@ -245,7 +248,10 @@ else:
 
                     # Only pad when card is narrower than the viewport; full-width cards
                     # need no padding or the card becomes wider than the display.
-                    padding = 0 if game_img.width >= self.display_width else 12
+                    # Half the gap each side so Vegas, which stitches its own
+                    # items, separates cards by exactly gap_between_games.
+                    padding = (0 if game_img.width >= self.display_width
+                               else max(4, gap_between_games // 2))
                     padded_width = game_img.width + (padding * 2)
                     padded_img = Image.new('RGB', (padded_width, game_img.height), (0, 0, 0))
                     padded_img.paste(game_img, (padding, 0))
@@ -267,7 +273,7 @@ else:
             # Create scrolling image using ScrollHelper
             self.scroll_helper.create_scrolling_image(
                 content_items,
-                item_gap=gap_between_games,
+                item_gap=0,  # spacing already baked into each card
                 element_gap=0  # No element gap - each item is a complete game card
             )
 

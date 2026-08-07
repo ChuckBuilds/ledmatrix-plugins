@@ -299,8 +299,11 @@ class LegacyScrollDisplay:
 
         # Get scroll settings
         scroll_settings = self._get_scroll_settings()
-        gap_between_games = scroll_settings.get("gap_between_games", 24)
+        gap_between_games = scroll_settings.get("gap_between_games", 48)
         show_separators = scroll_settings.get("show_league_separators", True)
+        # Match the gap used between game cards so the leading league
+        # icon sits in the same rhythm as the cards that follow it.
+        sep_pad = max(4, gap_between_games // 2)
         game_card_width = scroll_settings.get("game_card_width", 128)
 
         # Reuse the cached renderer (rebuilding it -- and reloading its
@@ -334,9 +337,9 @@ class LegacyScrollDisplay:
                     # First league - add separator
                     separator = self._separator_icons.get(game_league)
                     if separator:
-                        sep_img = Image.new('RGB', (separator.width + 8, self.display_height), (0, 0, 0))
+                        sep_img = Image.new('RGB', (separator.width + sep_pad * 2, self.display_height), (0, 0, 0))
                         y_offset = (self.display_height - separator.height) // 2
-                        sep_img.paste(separator, (4, y_offset), separator)
+                        sep_img.paste(separator, (sep_pad, y_offset), separator)
                         content_items.append(sep_img)
                         self.logger.debug(f"Added {LEAGUE_NAMES.get(game_league, game_league)} separator icon (first league)")
                 elif game_league != current_league:
@@ -344,10 +347,10 @@ class LegacyScrollDisplay:
                     separator = self._separator_icons.get(game_league)
                     if separator:
                         # Create a separator image with proper background
-                        sep_img = Image.new('RGB', (separator.width + 8, self.display_height), (0, 0, 0))
+                        sep_img = Image.new('RGB', (separator.width + sep_pad * 2, self.display_height), (0, 0, 0))
                         # Center the separator vertically
                         y_offset = (self.display_height - separator.height) // 2
-                        sep_img.paste(separator, (4, y_offset), separator)
+                        sep_img.paste(separator, (sep_pad, y_offset), separator)
                         content_items.append(sep_img)
                         self.logger.debug(f"Added {LEAGUE_NAMES.get(game_league, game_league)} separator icon")
 
@@ -362,7 +365,10 @@ class LegacyScrollDisplay:
 
                 # Add horizontal padding to prevent logos from being cut off at edges
                 # Logos are positioned at -10 and display_width+10, so we need padding
-                padding = 12  # Padding on each side to ensure logos aren't cut off
+                # Half the gap each side, so adjacent cards are separated by exactly
+                # gap_between_games. Baking it into the card matters for Vegas, which
+                # stitches its own items and never sees the scroll helper item_gap.
+                padding = max(4, gap_between_games // 2)
                 padded_width = game_img.width + (padding * 2)
                 padded_img = Image.new('RGB', (padded_width, game_img.height), (0, 0, 0))
                 padded_img.paste(game_img, (padding, 0))
@@ -384,7 +390,7 @@ class LegacyScrollDisplay:
         # Create scrolling image using ScrollHelper
         self.scroll_helper.create_scrolling_image(
             content_items,
-            item_gap=gap_between_games,
+            item_gap=0,  # spacing already baked into each card
             element_gap=0  # No element gap - each item is a complete game card
         )
 
