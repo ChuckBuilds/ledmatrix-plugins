@@ -113,84 +113,89 @@ def check(name, actual, expected):
         failures.append(name)
 
 
-print("default is the next race and the last race's results")
-p = _Plugin(modes=ALL_MODES)
-check("default sections", p._vegas_sections(), ["upcoming", "last_race"])
-check("default content", p.get_vegas_content(),
-      ["upcoming:MONZA", "circuit:MONZA", "last:result", "last:gaps"])
-check("everything else is left out", 4, len(p.get_vegas_content()))
+def main():
+    print("default is the next race and the last race's results")
+    p = _Plugin(modes=ALL_MODES)
+    check("default sections", p._vegas_sections(), ["upcoming", "last_race"])
+    check("default content", p.get_vegas_content(),
+          ["upcoming:MONZA", "circuit:MONZA", "last:result", "last:gaps"])
+    check("everything else is left out", 4, len(p.get_vegas_content()))
 
-print("\nthe old behaviour is still reachable by naming every section")
-p = _Plugin(config={"vegas": {"sections": list(
-    F1ScoreboardPlugin._VEGAS_SECTION_ORDER)}}, modes=ALL_MODES)
-everything = p.get_vegas_content()
-check("all sections emit", len(everything), 2 + 2 + sum(
-    len(v) for v in ALL_MODES.values()))
-check("leaders still lead", everything[0], "leaders")
+    print("\nthe old behaviour is still reachable by naming every section")
+    p = _Plugin(config={"vegas": {"sections": list(
+        F1ScoreboardPlugin._VEGAS_SECTION_ORDER)}}, modes=ALL_MODES)
+    everything = p.get_vegas_content()
+    check("all sections emit", len(everything), 2 + 2 + sum(
+        len(v) for v in ALL_MODES.values()))
+    check("leaders still lead", everything[0], "leaders")
 
-print("\nemission follows _VEGAS_SECTION_ORDER, not the user's ordering")
-p = _Plugin(config={"vegas": {"sections": ["last_race", "upcoming"]}})
-check("reversed input, canonical output", p.get_vegas_content(),
-      ["upcoming:MONZA", "circuit:MONZA", "last:result", "last:gaps"])
+    print("\nemission follows _VEGAS_SECTION_ORDER, not the user's ordering")
+    p = _Plugin(config={"vegas": {"sections": ["last_race", "upcoming"]}})
+    check("reversed input, canonical output", p.get_vegas_content(),
+          ["upcoming:MONZA", "circuit:MONZA", "last:result", "last:gaps"])
 
-print("\nsections with no data contribute nothing")
-p = _Plugin(config={"vegas": {"sections": ["upcoming", "last_race"]}},
-            upcoming=False, last_race=False)
-check("no data at all -> None", p.get_vegas_content(), None)
-p = _Plugin(config={"vegas": {"sections": ["qualifying"]}}, modes={})
-check("unprepared mode -> None", p.get_vegas_content(), None)
+    print("\nsections with no data contribute nothing")
+    p = _Plugin(config={"vegas": {"sections": ["upcoming", "last_race"]}},
+                upcoming=False, last_race=False)
+    check("no data at all -> None", p.get_vegas_content(), None)
+    p = _Plugin(config={"vegas": {"sections": ["qualifying"]}}, modes={})
+    check("unprepared mode -> None", p.get_vegas_content(), None)
 
-print("\ncircuit card follows the renderer's own toggle")
-p = _Plugin(config={"vegas": {"sections": ["upcoming"]}})
-p._scroll_renderer.show_circuit_info = False
-check("circuit card suppressed", p.get_vegas_content(), ["upcoming:MONZA"])
+    print("\ncircuit card follows the renderer's own toggle")
+    p = _Plugin(config={"vegas": {"sections": ["upcoming"]}})
+    p._scroll_renderer.show_circuit_info = False
+    check("circuit card suppressed", p.get_vegas_content(), ["upcoming:MONZA"])
 
-print("\nlast_race is the most recent race, recent_races is all of them")
-p = _Plugin(config={"vegas": {"sections": ["last_race"]}}, modes=ALL_MODES)
-check("last_race", p.get_vegas_content(), ["last:result", "last:gaps"])
-p = _Plugin(config={"vegas": {"sections": ["recent_races"]}}, modes=ALL_MODES)
-check("recent_races", len(p.get_vegas_content()), 7)
+    print("\nlast_race is the most recent race, recent_races is all of them")
+    p = _Plugin(config={"vegas": {"sections": ["last_race"]}}, modes=ALL_MODES)
+    check("last_race", p.get_vegas_content(), ["last:result", "last:gaps"])
+    p = _Plugin(config={"vegas": {"sections": ["recent_races"]}}, modes=ALL_MODES)
+    check("recent_races", len(p.get_vegas_content()), 7)
 
-print("\nan empty list keeps F1 out of the marquee")
-p = _Plugin(config={"vegas": {"sections": []}}, modes=ALL_MODES)
-check("empty stays empty", p._vegas_sections(), [])
-check("empty -> None", p.get_vegas_content(), None)
+    print("\nan empty list keeps F1 out of the marquee")
+    p = _Plugin(config={"vegas": {"sections": []}}, modes=ALL_MODES)
+    check("empty stays empty", p._vegas_sections(), [])
+    check("empty -> None", p.get_vegas_content(), None)
 
-print("\nbad input degrades to something usable")
-p = _Plugin(config={"vegas": {"sections": ["upcoming", "bogus"]}})
-check("unknown name dropped", p._vegas_sections(), ["upcoming"])
-check("and warned about", len(p.logger.warnings), 1)
+    print("\nbad input degrades to something usable")
+    p = _Plugin(config={"vegas": {"sections": ["upcoming", "bogus"]}})
+    check("unknown name dropped", p._vegas_sections(), ["upcoming"])
+    check("and warned about", len(p.logger.warnings), 1)
 
-p = _Plugin(config={"vegas": {"sections": ["nope", "also-nope"]}})
-check("nothing usable -> default", p._vegas_sections(),
-      ["upcoming", "last_race"])
-
-p = _Plugin(config={"vegas": {"sections": "upcoming"}})
-check("a bare string is taken as one entry", p._vegas_sections(), ["upcoming"])
-
-p = _Plugin(config={"vegas": {"sections": 42}})
-check("a non-list -> default", p._vegas_sections(), ["upcoming", "last_race"])
-check("and warned about", len(p.logger.warnings), 1)
-
-p = _Plugin(config={"vegas": {"sections": ["  UPCOMING  "]}})
-check("case and whitespace tolerated", p._vegas_sections(), ["upcoming"])
-
-p = _Plugin(config={})
-check("no vegas block -> default", p._vegas_sections(),
-      ["upcoming", "last_race"])
-
-# The schema forbids these, but config.json is hand-edited often enough that
-# the marquee's render path must not raise on them.
-for bad in (None, [], ["upcoming"], "upcoming", 7):
-    p = _Plugin(config={"vegas": bad})
-    check("vegas=%r -> default, no raise" % (bad,), p._vegas_sections(),
+    p = _Plugin(config={"vegas": {"sections": ["nope", "also-nope"]}})
+    check("nothing usable -> default", p._vegas_sections(),
           ["upcoming", "last_race"])
 
-print("\nevery section in the order is resolvable")
-p = _Plugin(modes=ALL_MODES)
-unresolvable = [s for s in F1ScoreboardPlugin._VEGAS_SECTION_ORDER
-                if not p._vegas_section_images(s)]
-check("no dead section keys", unresolvable, [])
+    p = _Plugin(config={"vegas": {"sections": "upcoming"}})
+    check("a bare string is taken as one entry", p._vegas_sections(), ["upcoming"])
 
-print("\n%s" % ("FAILED: %d" % len(failures) if failures else "All checks passed"))
-sys.exit(1 if failures else 0)
+    p = _Plugin(config={"vegas": {"sections": 42}})
+    check("a non-list -> default", p._vegas_sections(), ["upcoming", "last_race"])
+    check("and warned about", len(p.logger.warnings), 1)
+
+    p = _Plugin(config={"vegas": {"sections": ["  UPCOMING  "]}})
+    check("case and whitespace tolerated", p._vegas_sections(), ["upcoming"])
+
+    p = _Plugin(config={})
+    check("no vegas block -> default", p._vegas_sections(),
+          ["upcoming", "last_race"])
+
+    # The schema forbids these, but config.json is hand-edited often enough that
+    # the marquee's render path must not raise on them.
+    for bad in (None, [], ["upcoming"], "upcoming", 7):
+        p = _Plugin(config={"vegas": bad})
+        check("vegas=%r -> default, no raise" % (bad,), p._vegas_sections(),
+              ["upcoming", "last_race"])
+
+    print("\nevery section in the order is resolvable")
+    p = _Plugin(modes=ALL_MODES)
+    unresolvable = [s for s in F1ScoreboardPlugin._VEGAS_SECTION_ORDER
+                    if not p._vegas_section_images(s)]
+    check("no dead section keys", unresolvable, [])
+
+    print("\n%s" % ("FAILED: %d" % len(failures) if failures else "All checks passed"))
+    sys.exit(1 if failures else 0)
+
+
+if __name__ == "__main__":
+    main()
