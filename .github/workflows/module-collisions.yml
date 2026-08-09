@@ -23,6 +23,8 @@ on:
       - 'scripts/check_module_collisions.py'
       - 'scripts/check_scroll_adoption.py'
       - 'scripts/test_check_scroll_adoption.py'
+      - 'scripts/check_sports_display_contract.py'
+      - 'scripts/test_check_sports_display_contract.py'
       # Without this, a PR that only edits this workflow matches no path and
       # the workflow never runs against its own change.
       - '.github/workflows/module-collisions.yml'
