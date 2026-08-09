@@ -94,32 +94,37 @@ def check(name, actual, expected):
         failures.append(name)
 
 
-print("an empty mode reports no content, so the controller can skip it")
-for label, display in CASES:
-    mgr = _Manager([])
-    result = display(mgr, force_clear=False)
-    check("%s with no games returns False" % label, result, False)
-    check("%s with no games draws nothing" % label, mgr.draws, 0)
+def main():
+    print("an empty mode reports no content, so the controller can skip it")
+    for label, display in CASES:
+        mgr = _Manager([])
+        result = display(mgr, force_clear=False)
+        check("%s with no games returns False" % label, result, False)
+        check("%s with no games draws nothing" % label, mgr.draws, 0)
 
-print("\nthe same is true when the manager is disabled")
-for label, display in CASES:
-    mgr = _Manager([GAME], enabled=False)
-    check("%s disabled returns False" % label, display(mgr), False)
+    print("\nthe same is true when the manager is disabled")
+    for label, display in CASES:
+        mgr = _Manager([GAME], enabled=False)
+        check("%s disabled returns False" % label, display(mgr), False)
 
-print("\na mode that does have a game still reports success")
-for label, display in CASES:
-    mgr = _Manager([GAME])
-    result = display(mgr, force_clear=False)
-    check("%s with a game returns True" % label, result, True)
-    check("%s with a game draws it" % label, mgr.draws, 1)
+    print("\na mode that does have a game still reports success")
+    for label, display in CASES:
+        mgr = _Manager([GAME])
+        result = display(mgr, force_clear=False)
+        check("%s with a game returns True" % label, result, True)
+        check("%s with a game draws it" % label, mgr.draws, 1)
 
-print("\nthe result is a real bool, not something merely truthy")
-# The dispatcher branches on `result is True` / `result is False`, so a truthy
-# non-bool would fall through to the "assume success" path and reintroduce this.
-for label, display in CASES:
-    check("%s empty -> bool" % label, type(display(_Manager([]))), bool)
-    check("%s populated -> bool" % label,
-          type(display(_Manager([GAME]))), bool)
+    print("\nthe result is a real bool, not something merely truthy")
+    # The dispatcher branches on `result is True` / `result is False`, so a truthy
+    # non-bool would fall through to the "assume success" path and reintroduce this.
+    for label, display in CASES:
+        check("%s empty -> bool" % label, type(display(_Manager([]))), bool)
+        check("%s populated -> bool" % label,
+              type(display(_Manager([GAME]))), bool)
 
-print("\n%s" % ("FAILED: %d" % len(failures) if failures else "All checks passed"))
-sys.exit(1 if failures else 0)
+    print("\n%s" % ("FAILED: %d" % len(failures) if failures else "All checks passed"))
+    sys.exit(1 if failures else 0)
+
+
+if __name__ == "__main__":
+    main()
