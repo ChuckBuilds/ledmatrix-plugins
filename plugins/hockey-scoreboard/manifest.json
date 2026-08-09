@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.9.1",
+      "released": "2026-08-09",
+      "notes": "Stop an out-of-season or empty mode holding a blank panel for its full display duration. This plugin's bundled sports.py was a stale fork of the core's and its three display() methods had lost their return values (the base was annotated -> None). The manager's dispatcher treats a non-boolean as success, so every mode reported content whether or not it had any, and the display controller -- which skips a mode whose display() returns False -- never skipped it. The no-games branch clears the display, so the result was a blank screen held for the whole duration. Reported against NHL recent and live in August, when both are empty while upcoming still has the preseason schedule. The methods now return True when a game was drawn and False when there was nothing to show, matching the core and the six other sports plugins.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.9.0",
       "released": "2026-08-06",

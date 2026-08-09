@@ -209,10 +209,18 @@ class SportsCore(ABC):
                 f"Error in base _draw_scorebug_layout: {e}", exc_info=True
             )
 
-    def display(self, force_clear: bool = False) -> None:
-        """Common display method for all NCAA FB managers"""  # Updated docstring
+    def display(self, force_clear: bool = False) -> bool:
+        """
+        Common display method for all managers.
+
+        Returns True when a game was drawn and False when there was nothing to
+        show. The caller uses that to skip an empty mode: returning None here
+        left the display controller unable to tell "drew a game" from "drew
+        nothing", so an out-of-season league held a blank panel for its whole
+        display duration instead of being rotated past.
+        """
         if not self.is_enabled:  # Check if module is enabled
-            return
+            return False
 
         if not self.current_game:
             # Clear the display so old content doesn't persist
@@ -227,17 +235,19 @@ class SportsCore(ABC):
                     f"No game data available to display in {self.__class__.__name__}"
                 )
                 setattr(self, "_last_warning_time", current_time)
-            return
+            return False
 
         try:
             self._draw_scorebug_layout(self.current_game, force_clear)
             # display_manager.update_display() should be called within subclass draw methods
             # or after calling display() in the main loop. Let's keep it out of the base display.
+            return True
         except Exception as e:
             self.logger.error(
                 f"Error during display call in {self.__class__.__name__}: {e}",
                 exc_info=True,
             )
+            return False
 
     def _load_custom_font_from_element_config(
         self,
@@ -1480,10 +1490,16 @@ class SportsUpcoming(SportsCore):
                 f"Error displaying upcoming game: {e}", exc_info=True
             )  # Changed log prefix
 
-    def display(self, force_clear=False):
-        """Display upcoming games, handling switching."""
+    def display(self, force_clear=False) -> bool:
+        """
+        Display upcoming games, handling switching.
+
+        Returns True when a game was drawn, False when there was nothing to
+        show, so the caller can rotate past an empty mode instead of holding a
+        blank panel for its full display duration.
+        """
         if not self.is_enabled:
-            return
+            return False
 
         if not self.games_list:
             # Clear the display so old content doesn't persist
@@ -1499,7 +1515,7 @@ class SportsUpcoming(SportsCore):
                     "No upcoming games found for favorite teams to display."
                 )  # Changed log prefix
                 self.last_warning_time = current_time
-            return  # Skip display update
+            return False  # Skip display update
 
         try:
             current_time = time.time()
@@ -1536,12 +1552,15 @@ class SportsUpcoming(SportsCore):
 
             if self.current_game:
                 self._draw_scorebug_layout(self.current_game, force_clear)
-            # update_display() is called within _draw_scorebug_layout for upcoming
+                # update_display() is called within _draw_scorebug_layout
+                return True
+            return False
 
         except Exception as e:
             self.logger.error(
                 f"Error in display loop: {e}", exc_info=True
             )  # Changed log prefix
+            return False
 
 
 class SportsRecent(SportsCore):
@@ -1983,8 +2002,14 @@ class SportsRecent(SportsCore):
                 f"Error displaying recent game: {e}", exc_info=True
             )  # Changed log prefix
 
-    def display(self, force_clear=False):
-        """Display recent games, handling switching."""
+    def display(self, force_clear=False) -> bool:
+        """
+        Display recent games, handling switching.
+
+        Returns True when a game was drawn, False when there was nothing to
+        show, so the caller can rotate past an empty mode instead of holding a
+        blank panel for its full display duration.
+        """
         if not self.is_enabled or not self.games_list:
             # If disabled or no games, clear the display so old content doesn't persist
             if force_clear or not self.games_list:
@@ -1992,7 +2017,7 @@ class SportsRecent(SportsCore):
                 self.display_manager.update_display()
             if not self.games_list and self.current_game:
                 self.current_game = None  # Clear internal state if list becomes empty
-            return
+            return False
 
         try:
             current_time = time.time()
@@ -2029,12 +2054,15 @@ class SportsRecent(SportsCore):
 
             if self.current_game:
                 self._draw_scorebug_layout(self.current_game, force_clear)
-            # update_display() is called within _draw_scorebug_layout for recent
+                # update_display() is called within _draw_scorebug_layout
+                return True
+            return False
 
         except Exception as e:
             self.logger.error(
                 f"Error in display loop: {e}", exc_info=True
             )  # Changed log prefix
+            return False
 
 
 class SportsLive(SportsCore):
