@@ -174,8 +174,17 @@ def test_plugin_initialization():
             print(f"[FAIL] Plugin is missing expected attributes: {missing}")
             return None
 
-        enabled = [k for k, v in plugin._league_registry.items()
-                   if v.get("enabled", False)]
+        enabled = sorted(k for k, v in plugin._league_registry.items()
+                         if v.get("enabled", False))
+        # Assert, don't just report. The config used to be flat, so nothing was
+        # enabled and the whole suite ran green over a plugin doing nothing --
+        # printing "Enabled leagues: []" as it went. A silent return to that
+        # state is the regression most worth catching here.
+        if enabled != ["mlb"]:
+            print(f"[FAIL] expected MLB to be the only enabled league, got "
+                  f"{enabled}; the test config is not reaching the plugin")
+            return None
+
         print("[OK] Plugin initialized successfully")
         print(f"     Enabled leagues: {enabled}")
         return plugin

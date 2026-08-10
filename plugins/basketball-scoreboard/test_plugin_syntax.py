@@ -32,7 +32,13 @@ if core:
 
 try:
     import src.plugin_system.base_plugin  # noqa: F401
-except ImportError as exc:
+except ModuleNotFoundError as exc:
+    # Skip only when the core itself is absent. A ModuleNotFoundError raised
+    # from *inside* the core -- a missing dependency, a broken import in
+    # base_plugin -- is a real failure, and reporting it as "no core here"
+    # would hide it behind a skip nobody reads.
+    if exc.name not in ("src", "src.plugin_system", "src.plugin_system.base_plugin"):
+        raise
     print(f"SKIP: needs a LEDMatrix core on the path ({exc}); "
           f"set LEDMATRIX_CORE or run via scripts/run_plugin_tests.py --core")
     sys.exit(2)

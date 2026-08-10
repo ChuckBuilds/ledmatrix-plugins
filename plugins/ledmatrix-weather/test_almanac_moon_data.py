@@ -28,10 +28,14 @@ from manager import WeatherPlugin  # noqa: E402
 
 try:
     from astral import moon as astral_moon, Observer  # noqa: E402
-except ImportError:
+except ModuleNotFoundError as exc:
     # Declared in the plugin's requirements.txt, so CI installs it and this
     # runs for real there. Locally it is often absent; exit 2 is the runner's
     # "prerequisites absent" code, which keeps that distinct from a failure.
+    # Only astral's own absence counts -- an import error from inside astral
+    # is a real problem and must not be filed as "not installed".
+    if exc.name != "astral":
+        raise
     print("SKIP: astral not installed (see plugins/ledmatrix-weather/"
           "requirements.txt); pip install astral to run this test")
     sys.exit(2)
