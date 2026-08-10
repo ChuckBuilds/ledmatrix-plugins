@@ -59,16 +59,34 @@ jobs:
         run: |
           if [ "$ALL_INPUT" = "true" ]; then
             ids=$(ls plugins)
+            all_ids="$ids"
           else
-            # Plugins with a changed file outside their test/ dir.
+            # Two lists, because the consumers want different things.
+            #
+            # ids -- plugins whose *shipped* code changed. Drives the version
+            # bump gate and the safety harness. Test-only edits are excluded:
+            # they change nothing a user receives, so demanding a version bump
+            # for them is noise. The root-level test_*.py exclusion matters as
+            # much as the test/ one -- most plugins keep their tests there, so
+            # without it "test-only change" was never actually true.
             ids=$(git diff --name-only "$BASE_SHA"...HEAD -- 'plugins/*' \
               | grep -vE '^plugins/[^/]+/test/' \
+              | grep -vE '^plugins/[^/]+/test_[^/]+\.py$' \
+              | sed -E 's#^plugins/([^/]+)/.*#\1#' | sort -u)
+            # all_ids -- any change at all, tests included. Drives the unit-test
+            # run: a PR that only edits a test still has to prove the test
+            # passes, which is exactly when it most needs checking.
+            all_ids=$(git diff --name-only "$BASE_SHA"...HEAD -- 'plugins/*' \
               | sed -E 's#^plugins/([^/]+)/.*#\1#' | sort -u)
           fi
           echo "ids<<EOF" >> "$GITHUB_OUTPUT"
           echo "$ids" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
-          echo "Changed plugins:"; echo "$ids"
+          echo "all_ids<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$all_ids" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "Changed plugins (shipped code):"; echo "$ids"
+          echo "Changed plugins (including tests):"; echo "$all_ids"
 
       - name: Enforce version bump on changed plugins
         if: steps.changed.outputs.ids != '' && github.event.inputs.all != 'true'
@@ -175,6 +193,49 @@ jobs:
           fi
           exit $fail
 
+      # The plugins' own test_*.py. Nothing ran these until now: this workflow
+      # was the harness plus manifest checks, so a plugin unit test guarded
+      # nothing unless somebody ran it by hand. That is how a display() that
+      # returned None on every path survived from February to August -- the
+      # harness renders screens and cannot see a return value, and its fixtures
+      # seed data so an empty-state path never executes.
+      #
+      # Runs with if: always() so a harness failure does not hide these, and
+      # vice versa -- one PR should surface every problem it has.
+      #
+      # run_plugin_tests.py separates "prerequisites absent" (exit 2, reported
+      # as a skip) from a real failure, which is what makes this gateable: a
+      # script wanting a tty or an out-of-season feed no longer looks like a
+      # regression. Adding a plugin test that cannot pass here will now fail
+      # CI, so make it skip deliberately rather than leaving it red.
+      - name: Run plugin unit tests on changed plugins
+        if: always() && steps.changed.outputs.all_ids != ''
+        working-directory: plugins-repo
+        env:
+          IDS: ${{ steps.changed.outputs.all_ids }}
+        run: |
+          set -e
+          present=""
+          for pid in $IDS; do
+            case "$pid" in
+              '' | *[!a-z0-9._-]*) echo "::error::invalid plugin id (redacted)"; exit 1 ;;
+            esac
+            # A plugin deleted in this PR is still a "changed" id; the runner
+            # treats an unknown id as an error, so drop it here.
+            [ -d "plugins/$pid" ] || { echo "::notice::$pid removed, skipping"; continue; }
+            # The harness step installs these too, but this step runs even when
+            # that one failed, so it cannot rely on having got that far.
+            if [ -f "plugins/$pid/requirements.txt" ]; then
+              pip install -r "plugins/$pid/requirements.txt"
+            fi
+            present="$present $pid"
+          done
+          if [ -z "$present" ]; then
+            echo "No changed plugin still present; nothing to test."
+            exit 0
+          fi
+          python scripts/run_plugin_tests.py $present --core "$GITHUB_WORKSPACE/core"
+
       - name: Nothing to check
         if: steps.changed.outputs.ids == ''
-        run: echo "No plugin code changed (test-only or docs change) — safety harness skipped."
+        run: echo "No shipped plugin code changed (test-only or docs change) — version gate and safety harness skipped; plugin unit tests still ran if any test changed."

@@ -26,7 +26,15 @@ import zoneinfo
 sys.path.insert(0, os.path.dirname(__file__))
 from manager import WeatherPlugin  # noqa: E402
 
-from astral import moon as astral_moon, Observer  # noqa: E402
+try:
+    from astral import moon as astral_moon, Observer  # noqa: E402
+except ImportError:
+    # Declared in the plugin's requirements.txt, so CI installs it and this
+    # runs for real there. Locally it is often absent; exit 2 is the runner's
+    # "prerequisites absent" code, which keeps that distinct from a failure.
+    print("SKIP: astral not installed (see plugins/ledmatrix-weather/"
+          "requirements.txt); pip install astral to run this test")
+    sys.exit(2)
 
 
 # Federal Way, WA — the board's configured location.
