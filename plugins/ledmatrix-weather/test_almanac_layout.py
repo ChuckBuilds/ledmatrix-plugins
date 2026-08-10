@@ -20,13 +20,26 @@ sys.path.insert(0, os.path.dirname(__file__))
 from manager import WeatherPlugin  # noqa: E402
 
 
+class _FontsUnavailable(Exception):
+    """The core's production fonts are not on this machine."""
+
+
 def _font(name, size):
-    for base in ("assets/fonts", "../assets/fonts",
-                 os.path.join(os.path.dirname(__file__), "assets/fonts")):
+    # LEDMATRIX_CORE is the runner's contract for "here is the core", and it is
+    # absolute -- the relative paths below only resolve when the process
+    # happens to start in the right directory, which is why this used to fail
+    # rather than skip whenever it ran from the plugin dir.
+    core = os.environ.get("LEDMATRIX_CORE")
+    bases = ["assets/fonts", "../assets/fonts",
+             os.path.join(os.path.dirname(__file__), "assets/fonts")]
+    if core:
+        bases.insert(0, os.path.join(core, "assets", "fonts"))
+    for base in bases:
         p = os.path.join(base, name)
         if os.path.exists(p):
             return ImageFont.truetype(p, size)
-    raise FileNotFoundError(f"{name} not found; run from a LEDMatrix checkout")
+    raise _FontsUnavailable(
+        f"{name} not found (looked in: {', '.join(bases)})")
 
 
 class _FakeMatrix:
@@ -290,4 +303,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except _FontsUnavailable as exc:
+        # Exit 2 is the runner's "prerequisites absent" code. These are the
+        # core's production fonts, deliberately not bundled with the plugin, so
+        # their absence says nothing about the plugin -- and a failure nobody
+        # can act on is how a real one gets ignored.
+        print(f"SKIP: {exc}; set LEDMATRIX_CORE or run from a LEDMatrix checkout")
+        sys.exit(2)

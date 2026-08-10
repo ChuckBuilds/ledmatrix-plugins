@@ -112,6 +112,14 @@ def test_rankings_resolver() -> None:
     print(f"  [ok] dynamic resolver — men={men[:3]}..., women={women[:3]}...")
 
 
+class _NoFixtureData(Exception):
+    """ESPN answered, but had nothing scheduled in any window we asked for.
+
+    Distinct from _NetworkUnavailable: the API is reachable and behaving, there
+    is just no data this time of year. Neither is a plugin failure.
+    """
+
+
 class _NetworkUnavailable(Exception):
     """Raised by a test when it detects the network/external feed is down."""
 
@@ -166,14 +174,28 @@ def _make_test_instance():
     return inst
 
 
-def test_extraction(label: str, league_slug: str, date_window: str) -> None:
-    url = (
-        f"https://site.api.espn.com/apis/site/v2/sports/lacrosse/"
-        f"{league_slug}/scoreboard?dates={date_window}&limit=50"
-    )
-    data = _fetch(url)
-    events = data.get("events", [])
-    assert events, f"{label}: no events returned by ESPN for {date_window}"
+def test_extraction(label: str, league_slug: str, date_windows) -> None:
+    tried = []
+    events = []
+    for date_window in date_windows:
+        url = (
+            f"https://site.api.espn.com/apis/site/v2/sports/lacrosse/"
+            f"{league_slug}/scoreboard?dates={date_window}&limit=50"
+        )
+        data = _fetch(url)
+        events = data.get("events", [])
+        tried.append(f"{date_window} ({len(events)} events)")
+        if events:
+            break
+
+    if not events:
+        # Every window came back empty. ESPN answered, so this is not a
+        # network problem and not a plugin fault -- there is simply nothing
+        # scheduled to extract. Skip rather than fail: a red test nobody can
+        # act on is how a real regression gets ignored.
+        raise _NoFixtureData(
+            f"{label}: ESPN returned no events for any window tried: "
+            f"{', '.join(tried)}")
 
     inst = _make_test_instance()
     extracted = 0
@@ -204,22 +226,28 @@ def test_extraction(label: str, league_slug: str, date_window: str) -> None:
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
-def _build_season_window() -> str:
-    """Build a rolling scoreboard date window for the current season.
+def _season_windows() -> list:
+    """Scoreboard date windows to try, most relevant first.
 
-    NCAA lacrosse runs January through late May. From January through June we
-    query the current calendar year; from July onward we query the upcoming
-    season. Returned format is 'YYYYMMDD-YYYYMMDD' as ESPN expects.
+    NCAA lacrosse runs January through late May, so from July onward the
+    interesting season is next year's. ESPN does not publish that schedule
+    months ahead, though: asking in August returns a perfectly valid response
+    with zero events, which is not a plugin fault but used to fail this test
+    every summer. So the upcoming season is tried first and the last completed
+    one is the fallback -- what these tests actually need is some real events
+    to drive the extraction pipeline, and either season provides them.
+
+    Returned format is 'YYYYMMDD-YYYYMMDD' as ESPN expects.
     """
     now = datetime.now()
-    year = now.year if now.month < 7 else now.year + 1
-    return f"{year}0101-{year}0601"
+    upcoming = now.year if now.month < 7 else now.year + 1
+    return [f"{year}0101-{year}0601" for year in (upcoming, upcoming - 1)]
 
 
 def main() -> int:
     print("Lacrosse Scoreboard plugin — smoke test")
 
-    season_window = _build_season_window()
+    season_windows = _season_windows()
 
     tests = [
         ("imports", test_imports, ()),
@@ -227,12 +255,12 @@ def main() -> int:
         (
             "men's extraction",
             test_extraction,
-            ("men's", "mens-college-lacrosse", season_window),
+            ("men's", "mens-college-lacrosse", season_windows),
         ),
         (
             "women's extraction",
             test_extraction,
-            ("women's", "womens-college-lacrosse", season_window),
+            ("women's", "womens-college-lacrosse", season_windows),
         ),
     ]
 
@@ -251,6 +279,8 @@ def main() -> int:
         except AssertionError as e:
             print(f"  [FAIL] {name}: {e}")
             failed += 1
+        except _NoFixtureData as e:
+            print(f"  [skip] {name}: {e}")
         except _NetworkUnavailable as e:
             print(f"  [skip] {name}: {e}")
         except network_errors as e:

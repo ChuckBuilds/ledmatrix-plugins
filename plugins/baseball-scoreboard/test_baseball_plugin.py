@@ -80,28 +80,38 @@ def create_mock_cache_manager():
 
 
 def create_test_config() -> Dict[str, Any]:
-    """Create test configuration for baseball scoreboard plugin."""
+    """Test configuration for the baseball scoreboard plugin.
+
+    Nested per league, which is the shape the plugin reads
+    (``config["mlb"]["enabled"]``, see manager.py). It used to be flat
+    (``mlb_enabled``), which the plugin never looked at, so every league
+    resolved to disabled and the suite reported success while exercising
+    almost nothing -- "Enabled leagues: []" on a passing run.
+
+    MLB on, the other two off: one enabled league is enough to drive the
+    update / display / info path for real, and the whole suite still finishes
+    in about 25s.
+    """
     return {
-        'mlb_enabled': True,
-        'mlb_favorite_teams': ['TEX', 'NYM'],
-        'mlb_display_modes_live': True,
-        'mlb_display_modes_recent': True,
-        'mlb_display_modes_upcoming': True,
-        'mlb_live_priority': True,
-        'mlb_live_update_interval': 15,
-        'mlb_recent_update_interval': 3600,
-        'mlb_upcoming_update_interval': 3600,
-        'mlb_recent_games_to_show': 5,
-        'mlb_upcoming_games_to_show': 10,
-        'mlb_show_records': False,
-        'mlb_show_ranking': False,
-        'mlb_show_odds': False,
-        'mlb_test_mode': False,  # Set to True for test mode
-        
-        'milb_enabled': False,
-        'ncaa_baseball_enabled': False,
-        
+        'enabled': True,
         'display_duration': 15,
+        'mlb': {
+            'enabled': True,
+            'favorite_teams': ['TEX', 'NYM'],
+            'display_modes': {
+                'show_live': True,
+                'show_recent': True,
+                'show_upcoming': True,
+            },
+            'live_priority': True,
+            'recent_games_to_show': 5,
+            'upcoming_games_to_show': 10,
+            'show_records': False,
+            'show_ranking': False,
+            'show_odds': False,
+        },
+        'milb': {'enabled': False},
+        'ncaa_baseball': {'enabled': False},
     }
 
 
@@ -153,13 +163,31 @@ def test_plugin_initialization():
             plugin_manager=plugin_manager
         )
         
-        if plugin.initialized:
-            print("[OK] Plugin initialized successfully")
-            print(f"     Enabled leagues: {[k for k, v in plugin.leagues.items() if v.get('enabled', False)]}")
-            return plugin
-        else:
-            print("[FAIL] Plugin initialization failed")
+        # Construction not raising is the real signal. This used to gate on
+        # `plugin.initialized`, an attribute neither this plugin nor BasePlugin
+        # has ever defined, so the check raised AttributeError and reported
+        # "initialization error" on a plugin that had in fact just initialised
+        # fine. Assert the surface the rest of this suite goes on to use.
+        missing = [name for name in ("display", "update", "_league_registry")
+                   if not hasattr(plugin, name)]
+        if missing:
+            print(f"[FAIL] Plugin is missing expected attributes: {missing}")
             return None
+
+        enabled = sorted(k for k, v in plugin._league_registry.items()
+                         if v.get("enabled", False))
+        # Assert, don't just report. The config used to be flat, so nothing was
+        # enabled and the whole suite ran green over a plugin doing nothing --
+        # printing "Enabled leagues: []" as it went. A silent return to that
+        # state is the regression most worth catching here.
+        if enabled != ["mlb"]:
+            print(f"[FAIL] expected MLB to be the only enabled league, got "
+                  f"{enabled}; the test config is not reaching the plugin")
+            return None
+
+        print("[OK] Plugin initialized successfully")
+        print(f"     Enabled leagues: {enabled}")
+        return plugin
             
     except Exception as e:
         print(f"[FAIL] Plugin initialization error: {e}")
@@ -179,17 +207,22 @@ def test_plugin_update(plugin):
         plugin.update()
         print("[OK] Plugin update completed")
         
-        # Check league states
-        for league_key, league_config in plugin.leagues.items():
-            if league_config.get('enabled', False):
-                live_state = plugin.league_state[league_key]['live']
-                recent_state = plugin.league_state[league_key]['recent']
-                upcoming_state = plugin.league_state[league_key]['upcoming']
-                
-                print(f"   {league_key}:")
-                print(f"     Live games: {len(live_state['games_list'])}")
-                print(f"     Recent games: {len(recent_state['games_list'])}")
-                print(f"     Upcoming games: {len(upcoming_state['games_list'])}")
+        # Report what each enabled league loaded. This used to read
+        # plugin.leagues / plugin.league_state, neither of which the plugin has
+        # -- the games are reachable through the per-mode managers held in
+        # _league_registry, so the whole block raised AttributeError and
+        # reported an update failure on an update that had succeeded.
+        for league_key, entry in plugin._league_registry.items():
+            if not entry.get('enabled', False):
+                continue
+            print(f"   {league_key}:")
+            for mode in ('live', 'recent', 'upcoming'):
+                mgr = entry.get('managers', {}).get(mode)
+                if mgr is None:
+                    print(f"     {mode.capitalize()} games: (no manager)")
+                    continue
+                games = getattr(mgr, 'games_list', None) or []
+                print(f"     {mode.capitalize()} games: {len(games)}")
         
         return True
     except Exception as e:
@@ -269,11 +302,11 @@ def run_emulator_test(plugin, duration=30):
                 if cycle_count % 5 == 0:
                     print(f"   Cycle {cycle_count}: {elapsed:.1f}s elapsed")
                     # Print current game info
-                    for league_key, league_config in plugin.leagues.items():
-                        if league_config.get('enabled', False):
-                            live_state = plugin.league_state[league_key]['live']
-                            if live_state['current_game']:
-                                game = live_state['current_game']
+                    for league_key, entry in plugin._league_registry.items():
+                        if entry.get('enabled', False):
+                            live_mgr = entry.get('managers', {}).get('live')
+                            game = getattr(live_mgr, 'current_game', None)
+                            if game:
                                 print(f"     {league_key} live: {game.get('away_abbr', '?')} @ {game.get('home_abbr', '?')}")
                 
                 # Short delay between cycles
