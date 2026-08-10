@@ -72,12 +72,15 @@ def create_cache_manager():
     try:
         from src.cache_manager import CacheManager
         from src.config_manager import ConfigManager
-        
-        # Create config manager
-        config_manager = ConfigManager()
-        
-        # Create cache manager
-        cache_manager = CacheManager(config_manager=config_manager)
+
+        # CacheManager takes no arguments on a current core; it used to be
+        # constructed with config_manager=. Passing it raised a TypeError that
+        # aborted this script before its first real check. Attach the config
+        # manager afterwards, which is where plugins read it from
+        # (cache_manager.config_manager), and only when the core still wants it.
+        cache_manager = CacheManager()
+        if not hasattr(cache_manager, "config_manager"):
+            cache_manager.config_manager = ConfigManager()
         print("[OK] Created cache manager")
         return cache_manager
     except Exception as e:
@@ -323,6 +326,25 @@ def main():
 
 
 if __name__ == "__main__":
+    # Pre-flight, mirroring test_baseball_plugin.py. This script drives the
+    # core's DisplayManager, CacheManager and ConfigManager, all of which
+    # resolve config/ and assets/ relative to the working directory -- and the
+    # runner starts us in the plugin directory. Without this it died on a
+    # missing config template before reaching a single real check, which is
+    # indistinguishable from a regression at a glance.
+    #
+    # Skip (exit 2) rather than fail (exit 1) when there is no core: reporting
+    # "not applicable" as a regression is what trains people to ignore results.
+    _core_root = os.environ.get("LEDMATRIX_CORE", "")
+    if not os.path.exists(os.path.join(_core_root, "config", "config.template.json")):
+        print("SKIP: needs the core config template — set LEDMATRIX_CORE or "
+              "run from a LEDMatrix checkout (looked in %s)"
+              % (_core_root or os.getcwd()))
+        sys.exit(2)
+
+    # The plugin itself stays importable via the sys.path entry set above.
+    os.chdir(_core_root)
+
     try:
         exit_code = main()
         sys.exit(exit_code)

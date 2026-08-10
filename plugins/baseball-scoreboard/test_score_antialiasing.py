@@ -35,6 +35,14 @@ def _find_pixel_font():
     """
     name = "PressStart2P-Regular.ttf"
     candidates = []
+    # LEDMATRIX_CORE is the runner's contract for "the core is here", and it is
+    # absolute. Walking up from the plugin only finds the fonts when the plugin
+    # happens to sit inside a core checkout (LEDMatrix/plugin-repos/<id>/); from
+    # a standalone plugins repo it never does, so this skipped every run even
+    # when a core was supplied.
+    core = os.environ.get("LEDMATRIX_CORE")
+    if core:
+        candidates.append(os.path.join(core, "assets", "fonts", name))
     d = PLUGIN_DIR
     for _ in range(6):
         candidates.append(os.path.join(d, "assets", "fonts", name))

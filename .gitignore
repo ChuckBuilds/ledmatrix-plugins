@@ -41,3 +41,9 @@ plugins/**/config_secrets.json
 
 # Asset backups (local working copies)
 plugins/*/assets/**/*_backup/
+
+# RGBMatrixEmulator writes this into the working directory on first run,
+# so the plugin test suites drop one wherever they are invoked from.
+# ledmatrix-music/emulator_config.json is committed on purpose and stays
+# tracked -- .gitignore does not apply to files already in the index.
+emulator_config.json

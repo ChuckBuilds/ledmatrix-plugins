@@ -133,7 +133,13 @@ def test_scroll_passes_real_logo_cache_to_renderer():
     assert ok, "prepare_scroll_content returned False (no cards rendered)"
     # A correct call shares the dict cache, so loaded logos land in it. The bug
     # passed plugin_dir instead, leaving this dict untouched.
-    assert "MCI" in sd._logo_cache and "LIV" in sd._logo_cache, (
+    #
+    # Match on the team rather than the whole key: GameRenderer._logo_cache_key
+    # scopes entries by slot size ("MCI@32x32") so one team cached at two panel
+    # sizes cannot collide. What this test guards is that the shared dict is
+    # populated at all, which the size suffix does not change.
+    cached_teams = {key.split("@", 1)[0] for key in sd._logo_cache}
+    assert {"MCI", "LIV"} <= cached_teams, (
         f"logos not loaded into shared cache: {list(sd._logo_cache)}"
     )
     print("PASS: scroll passes a real dict logo cache (logos load, no placeholder)")

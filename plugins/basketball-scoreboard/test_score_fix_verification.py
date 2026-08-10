@@ -16,11 +16,46 @@ if project_dir not in sys.path:
 
 # Mock logger
 class MockLogger:
-    def debug(self, msg):
+    """Stands in for the core logger.
+
+    Accepts *args/**kwargs and the configuration methods because production
+    code calls this like a real ``logging.Logger`` -- lazy `%s` formatting,
+    `setLevel`, `exc_info=True`. A stub that only took `(self, msg)` turned any
+    such call into an AttributeError or TypeError inside the code under test,
+    which read as a plugin failure rather than a gap in the stub.
+    """
+
+    def debug(self, msg, *args, **kwargs):
         pass
-    def warning(self, msg):
-        print(f"WARNING: {msg}")
-    def info(self, msg):
+
+    def info(self, msg, *args, **kwargs):
+        pass
+
+    def warning(self, msg, *args, **kwargs):
+        print("WARNING: " + (msg % args if args else str(msg)))
+
+    def error(self, msg, *args, **kwargs):
+        print("ERROR: " + (msg % args if args else str(msg)))
+
+    def exception(self, msg, *args, **kwargs):
+        self.error(msg, *args, **kwargs)
+
+    def critical(self, msg, *args, **kwargs):
+        self.error(msg, *args, **kwargs)
+
+    def log(self, level, msg, *args, **kwargs):
+        pass
+
+    def setLevel(self, level):
+        pass
+
+    def isEnabledFor(self, level):
+        return False
+
+    def addHandler(self, handler):
+        pass
+
+    def removeHandler(self, handler):
         pass
 
 def test_score_extraction_with_mock_api_data():
@@ -126,8 +161,21 @@ def test_score_extraction_with_mock_api_data():
             # Create a mock game event
             game_event = {
                 "id": f"test_{i}",
+                # Each competitor needs a `team` block: the extractor reads
+                # team.abbreviation (falling back to team.name) before it ever
+                # looks at the score, so a competitor carrying only a score
+                # makes extraction return None and every case below fail for a
+                # reason that has nothing to do with score parsing -- which is
+                # the only thing this test is about.
                 "competitions": [{
-                    "competitors": [test_case["home_team"], test_case["away_team"]],
+                    "competitors": [
+                        {"id": "1", **test_case["home_team"],
+                         "team": {"abbreviation": "HOM", "name": "Home Team",
+                                  "displayName": "Home Team", "id": "1"}},
+                        {"id": "2", **test_case["away_team"],
+                         "team": {"abbreviation": "AWY", "name": "Away Team",
+                                  "displayName": "Away Team", "id": "2"}},
+                    ],
                     "status": {
                         "type": {
                             "name": "STATUS_FINAL",
