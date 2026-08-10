@@ -23,6 +23,8 @@ on:
       - 'scripts/check_module_collisions.py'
       - 'scripts/check_scroll_adoption.py'
       - 'scripts/test_check_scroll_adoption.py'
+      - 'scripts/check_sports_display_contract.py'
+      - 'scripts/test_check_sports_display_contract.py'
       # Without this, a PR that only edits this workflow matches no path and
       # the workflow never runs against its own change.
       - '.github/workflows/module-collisions.yml'
@@ -48,3 +50,14 @@ jobs:
       - name: Test the scroll-adoption gate
         if: always()
         run: python scripts/test_check_scroll_adoption.py
+      # A sports display() that returns None reports content it does not have,
+      # so an out-of-season mode is never skipped and holds a blank panel for
+      # its whole duration. Source-level, so unlike the safety harness it needs
+      # no data -- and the harness seeds games, so it never renders the empty
+      # path this protects.
+      - name: Check sports display() returns a bool on every path
+        if: always()
+        run: python scripts/check_sports_display_contract.py
+      - name: Test the sports display()-contract gate
+        if: always()
+        run: python scripts/test_check_sports_display_contract.py
