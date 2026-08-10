@@ -101,6 +101,11 @@ class F1ScoreboardPlugin(BasePlugin):
         self._calendar: List[Dict] = []
         self._pole_positions: Dict[str, int] = {}
 
+        # Cards for the most recent race only. The marquee's "last_race"
+        # section shows just that race, while the recent_races scroll mode
+        # shows several, so the two need separate lists.
+        self._vegas_last_race_cards: List[Image.Image] = []
+
         # Live session state
         self._is_live: bool = False
         self._live_session: str = ""
@@ -559,30 +564,23 @@ class F1ScoreboardPlugin(BasePlugin):
 
         # Recent races (winners summary + podium cards + favorite highlight + points haul + gap chart)
         rr_cfg = self.config.get("recent_races", {})
-        show_haul = rr_cfg.get("show_points_haul", True)
-        haul_top_n = rr_cfg.get("points_haul_drivers", 5)
         show_winners = rr_cfg.get("show_winners_summary", True)
-        show_gap_chart = rr_cfg.get("show_gap_chart", True)
-        gap_chart_n = rr_cfg.get("gap_chart_drivers", 5)
+        self._vegas_last_race_cards = []
         if self._recent_races:
             cards = []
             # Winners summary at the top (only if showing 2+ races)
             if show_winners and len(self._recent_races) > 1:
                 cards.append(r.render_recent_winners_card(self._recent_races))
-            for race in self._recent_races:
-                cards.append(r.render_race_result(race))
-                # If favorite outside podium: results[3] is the appended favorite
-                results = race.get("results", [])
-                if self.favorite_driver and len(results) > 3:
-                    fav = results[3]
-                    if fav.get("code", "").upper() == self.favorite_driver:
-                        cards.append(r.render_favorite_race_card(race, fav))
-                # Gap chart bar visualization (skip if no result data available)
-                if show_gap_chart and race.get("all_results"):
-                    cards.append(r.render_race_gap_chart(race, top_n=gap_chart_n))
-                # Points haul bar chart (uses full unfiltered results)
-                if show_haul:
-                    cards.append(r.render_race_points_haul(race, top_n=haul_top_n))
+            for index, race in enumerate(self._recent_races):
+                race_cards = self._build_race_cards(race)
+                # _recent_races is most-recent-first, so index 0 is the race the
+                # marquee's "last_race" section shows. Captured here rather than
+                # re-rendered later, and rather than sliced back out of `cards`
+                # below — the per-race card count varies with config and with
+                # whether the favorite finished off the podium.
+                if index == 0:
+                    self._vegas_last_race_cards = list(race_cards)
+                cards.extend(race_cards)
             self._scroll_manager.prepare_and_display(
                 "recent_races", cards, separator)
 
@@ -614,6 +612,44 @@ class F1ScoreboardPlugin(BasePlugin):
                     for e in self._calendar]
             self._scroll_manager.prepare_and_display(
                 "calendar", cards, separator)
+
+    def _build_race_cards(self, race: Dict) -> List[Image.Image]:
+        """
+        Build the cards for a single race: the result, then whichever extras
+        are enabled.
+
+        Shared by the recent_races scroll mode and the marquee's "last_race"
+        section so a race is presented the same way in both, and so the
+        recent_races toggles keep applying in the marquee.
+
+        Args:
+            race: One entry from self._recent_races
+
+        Returns:
+            Cards for that race, in display order
+        """
+        r = self._scroll_renderer
+        rr_cfg = self.config.get("recent_races", {})
+        cards = [r.render_race_result(race)]
+
+        # If favorite outside podium: results[3] is the appended favorite
+        results = race.get("results", [])
+        if self.favorite_driver and len(results) > 3:
+            fav = results[3]
+            if fav.get("code", "").upper() == self.favorite_driver:
+                cards.append(r.render_favorite_race_card(race, fav))
+
+        # Gap chart bar visualization (skip if no result data available)
+        if rr_cfg.get("show_gap_chart", True) and race.get("all_results"):
+            cards.append(r.render_race_gap_chart(
+                race, top_n=rr_cfg.get("gap_chart_drivers", 5)))
+
+        # Points haul bar chart (uses full unfiltered results)
+        if rr_cfg.get("show_points_haul", True):
+            cards.append(r.render_race_points_haul(
+                race, top_n=rr_cfg.get("points_haul_drivers", 5)))
+
+        return cards
 
     def _build_qualifying_cards(self) -> List[Image.Image]:
         """Build qualifying result cards grouped by Q session."""
@@ -766,60 +802,121 @@ class F1ScoreboardPlugin(BasePlugin):
 
     # ─── Vegas Mode ────────────────────────────────────────────────────
 
-    def get_vegas_content(self) -> Optional[List[Image.Image]]:
-        """Return rendered cards for modes that have data."""
-        images = []
+    # Sections the marquee can show, in the order they are emitted. The keys
+    # are what a user puts in `vegas.sections`.
+    #
+    # Deliberately a small default. Contributing every prepared mode measured
+    # 114 cards / 14,592px on a 512px panel — near six minutes of uninterrupted
+    # F1 at 50px/s, because what the plugin's own rotation shows as eight
+    # separate screens the marquee splices into one unbroken block.
+    _VEGAS_SECTION_ORDER = (
+        "leaders",
+        "battles",
+        "spotlight",
+        "upcoming",
+        "last_race",
+        "driver_standings",
+        "constructor_standings",
+        "recent_races",
+        "qualifying",
+        "practice",
+        "sprint",
+        "calendar",
+    )
+    _VEGAS_DEFAULT_SECTIONS = ("upcoming", "last_race")
 
-        # Championship leaders overview card (very first)
-        if self._scroll_manager.is_mode_prepared("championship_leaders"):
-            images.extend(
-                self._scroll_manager.get_vegas_items_for_mode(
-                    "championship_leaders"))
+    # Sections that are just one or more prepared scroll modes, concatenated.
+    # "upcoming" and "last_race" are not here: the first renders fresh so its
+    # countdown is current, the second comes from its own card list.
+    _VEGAS_SECTION_MODES = {
+        "leaders": ("championship_leaders",),
+        "battles": ("championship_battle", "constructor_battle"),
+        "spotlight": ("driver_spotlight", "team_spotlight"),
+        "driver_standings": ("driver_standings",),
+        "constructor_standings": ("constructor_standings",),
+        "recent_races": ("recent_races",),
+        "qualifying": ("qualifying",),
+        "practice": ("practice",),
+        "sprint": ("sprint",),
+        "calendar": ("calendar",),
+    }
 
-        # Championship battle card (P1 vs P2 title fight)
-        if self._scroll_manager.is_mode_prepared("championship_battle"):
-            images.extend(
-                self._scroll_manager.get_vegas_items_for_mode(
-                    "championship_battle"))
+    def _vegas_sections(self) -> List[str]:
+        """
+        Which sections this plugin contributes to the marquee.
 
-        # Constructor championship battle card
-        if self._scroll_manager.is_mode_prepared("constructor_battle"):
-            images.extend(
-                self._scroll_manager.get_vegas_items_for_mode(
-                    "constructor_battle"))
+        Unknown names are dropped with a warning rather than failing the whole
+        list, so one typo costs the user that section and not the plugin.
+        """
+        # The schema forbids a non-object here, but config.json is hand-edited
+        # often enough that a null or a stray list must not raise on the
+        # marquee's render path.
+        vegas_cfg = self.config.get("vegas") or {}
+        if not isinstance(vegas_cfg, dict):
+            self.logger.warning(
+                "vegas should be an object, got %r — using the default sections",
+                vegas_cfg)
+            return list(self._VEGAS_DEFAULT_SECTIONS)
 
-        # Spotlight cards go first (most important, followed driver/team)
-        for spotlight_key in ("driver_spotlight", "team_spotlight"):
-            if self._scroll_manager.is_mode_prepared(spotlight_key):
-                images.extend(
-                    self._scroll_manager.get_vegas_items_for_mode(
-                        spotlight_key))
+        raw = vegas_cfg.get("sections", self._VEGAS_DEFAULT_SECTIONS)
+        if isinstance(raw, str):
+            raw = [raw]
+        if not isinstance(raw, (list, tuple)):
+            self.logger.warning(
+                "vegas.sections should be a list, got %r — using the default",
+                raw)
+            return list(self._VEGAS_DEFAULT_SECTIONS)
 
-        # Upcoming race card (second — before standings)
-        if self._upcoming_race:
-            upcoming_card = self._scroll_renderer.render_upcoming_race(
-                self._enrich_upcoming_with_countdown(self._upcoming_race))
-            images.append(upcoming_card)
-            # Circuit stats card (immediately after upcoming race card)
+        wanted, unknown = [], []
+        for name in raw:
+            key = str(name).strip().lower()
+            if key in self._VEGAS_SECTION_ORDER:
+                wanted.append(key)
+            elif key:
+                unknown.append(key)
+
+        if unknown:
+            self.logger.warning(
+                "Ignoring unknown vegas.sections entries: %s (valid: %s)",
+                ", ".join(unknown), ", ".join(self._VEGAS_SECTION_ORDER))
+
+        # An empty list is a deliberate "keep F1 out of the marquee", so it is
+        # honoured; only a list with nothing usable in it falls back.
+        if not wanted and unknown:
+            return list(self._VEGAS_DEFAULT_SECTIONS)
+        return wanted
+
+    def _vegas_section_images(self, section: str) -> List[Image.Image]:
+        """Rendered cards for one marquee section, empty when it has no data."""
+        if section == "upcoming":
+            if not self._upcoming_race:
+                return []
+            # Rendered per call, not taken from a prepared mode, so the
+            # countdown is current every time the marquee rebuilds the strip.
+            images = [self._scroll_renderer.render_upcoming_race(
+                self._enrich_upcoming_with_countdown(self._upcoming_race))]
             if self._scroll_renderer.show_circuit_info:
-                circuit_card = self._scroll_renderer.render_circuit_info_card(
-                    self._upcoming_race)
-                images.append(circuit_card)
+                images.append(self._scroll_renderer.render_circuit_info_card(
+                    self._upcoming_race))
+            return images
 
-        # Standings and results
-        mode_data = {
-            "driver_standings": self._driver_standings,
-            "constructor_standings": self._constructor_standings,
-            "recent_races": self._recent_races,
-            "qualifying": self._qualifying,
-            "practice": self._practice_results,
-            "sprint": self._sprint,
-            "calendar": self._calendar,
-        }
-        for mode_key, data in mode_data.items():
-            if data and self._scroll_manager.is_mode_prepared(mode_key):
+        if section == "last_race":
+            return list(self._vegas_last_race_cards)
+
+        images = []
+        for mode_key in self._VEGAS_SECTION_MODES.get(section, ()):
+            if self._scroll_manager.is_mode_prepared(mode_key):
                 images.extend(
                     self._scroll_manager.get_vegas_items_for_mode(mode_key))
+        return images
+
+    def get_vegas_content(self) -> Optional[List[Image.Image]]:
+        """Return rendered cards for the configured marquee sections."""
+        wanted = set(self._vegas_sections())
+        images = []
+        for section in self._VEGAS_SECTION_ORDER:
+            if section in wanted:
+                images.extend(self._vegas_section_images(section))
 
         return images if images else None
 

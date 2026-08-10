@@ -397,6 +397,26 @@
       "x-propertyOrder": ["enabled", "show_practice", "show_qualifying", "show_sprint", "max_events"],
       "additionalProperties": false
     },
+    "vegas": {
+      "type": "object",
+      "title": "Vegas Marquee",
+      "description": "What F1 contributes to the Vegas continuous-scroll marquee. Does not affect the plugin's own display modes, which still show everything.",
+      "properties": {
+        "sections": {
+          "type": "array",
+          "title": "Marquee Sections",
+          "x-widget": "checkbox-group",
+          "items": {
+            "type": "string",
+            "enum": ["leaders", "battles", "spotlight", "upcoming", "last_race", "driver_standings", "constructor_standings", "recent_races", "qualifying", "practice", "sprint", "calendar"]
+          },
+          "default": ["upcoming", "last_race"],
+          "description": "Which sections join the marquee. The order you list them in does not matter — they are always shown in the fixed order leaders, battles, spotlight, upcoming, last_race, driver_standings, constructor_standings, recent_races, qualifying, practice, sprint, calendar. Default is the next race and the last race's results. Adding more makes F1 hold the marquee for longer — every section at once measured 114 cards, close to six minutes of unbroken F1 on a 512px panel. 'last_race' is the most recent race only; 'recent_races' is all of them. Leave empty to keep F1 out of the marquee entirely."
+        }
+      },
+      "x-propertyOrder": ["sections"],
+      "additionalProperties": false
+    },
     "dynamic_duration": {
       "type": "object",
       "title": "Dynamic Duration",
@@ -739,7 +759,7 @@
       "additionalProperties": false
     }
   },
-  "x-propertyOrder": ["enabled", "display_duration", "update_interval", "favorite_team", "favorite_driver", "timezone", "driver_standings", "constructor_standings", "recent_races", "upcoming", "qualifying", "practice", "sprint", "calendar", "dynamic_duration", "scroll", "visual", "customization"],
+  "x-propertyOrder": ["enabled", "display_duration", "update_interval", "favorite_team", "favorite_driver", "timezone", "driver_standings", "constructor_standings", "recent_races", "upcoming", "qualifying", "practice", "sprint", "calendar", "vegas", "dynamic_duration", "scroll", "visual", "customization"],
   "additionalProperties": false,
   "required": ["enabled"]
 }
