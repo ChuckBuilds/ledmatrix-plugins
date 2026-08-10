@@ -59,6 +59,40 @@ CLEAN = [
         "        return True")),
     ("a class the gate does not police is ignored", _wrap(
         "        return", cls="SomeOtherHelper")),
+    # ast.walk is flat, so a guard that skips the nested FunctionDef node does
+    # nothing -- its children are already queued. These three shapes were all
+    # reported as violations until the traversal became scope-aware.
+    ("nested helper with a bare return", _wrap(
+        "        def _fmt(x):\n"
+        "            if not x:\n"
+        "                return\n"
+        "            return str(x)\n"
+        "        return True")),
+    ("nested class whose method returns None", _wrap(
+        "        class _Tmp:\n"
+        "            def helper(self):\n"
+        "                return\n"
+        "        return True")),
+    ("break in an inner loop does not escape while True", _wrap(
+        "        while True:\n"
+        "            for g in self.games:\n"
+        "                break\n"
+        "            return True")),
+    # A trailing match is exhaustive when an unguarded irrefutable case is
+    # present and every case exits; treating all of them as fall-through
+    # failed valid code.
+    ("exhaustive match with a wildcard", _wrap(
+        "        match self.mode:\n"
+        "            case 'empty':\n"
+        "                return False\n"
+        "            case _:\n"
+        "                return True")),
+    ("exhaustive match with a bare capture", _wrap(
+        "        match self.mode:\n"
+        "            case 'empty':\n"
+        "                return False\n"
+        "            case other:\n"
+        "                return True")),
 ]
 
 DIRTY = [
@@ -89,6 +123,28 @@ DIRTY = [
         "            return True\n"
         "        except Exception:\n"
         "            self.logger.error('x')"), "fall off the end"),
+    # The scope- and exhaustiveness-awareness above must not blunt the check.
+    ("a break that really does escape while True", _wrap(
+        "        while True:\n"
+        "            break"), "fall off the end"),
+    ("match with no irrefutable case", _wrap(
+        "        match self.mode:\n"
+        "            case 'empty':\n"
+        "                return False"), "fall off the end"),
+    ("a guarded wildcard is still refutable", _wrap(
+        "        match self.mode:\n"
+        "            case _ if self.x:\n"
+        "                return True"), "fall off the end"),
+    ("match whose wildcard case falls through", _wrap(
+        "        match self.mode:\n"
+        "            case 'empty':\n"
+        "                self._log()\n"
+        "            case _:\n"
+        "                return True"), "fall off the end"),
+    ("a nested helper does not excuse the outer function", _wrap(
+        "        def _fmt(x):\n"
+        "            return str(x)\n"
+        "        self._draw()"), "fall off the end"),
 ]
 
 failures = []

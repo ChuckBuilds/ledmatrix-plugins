@@ -81,6 +81,37 @@ def _is_super_display_call(node: Optional[ast.expr]) -> bool:
             and func.value.func.id == "super")
 
 
+# Constructs that open a new scope. A `return` inside one belongs to that
+# scope, not to the display() being checked.
+_NESTED_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
+
+# Constructs a `break` binds to. A break inside one of these does not leave an
+# enclosing loop.
+_LOOPS = (ast.For, ast.AsyncFor, ast.While)
+
+
+def _walk_scope(node: ast.AST, stop_at: tuple = ()) -> "object":
+    """
+    Yield descendants of ``node`` without crossing into a nested scope.
+
+    ``ast.walk`` is a flat traversal of every descendant, so it happily reports
+    a nested helper's ``return`` as the outer function's, and an inner loop's
+    ``break`` as breaking the outer one. Skipping the nested node when it comes
+    round does nothing -- its children are already queued. Recursing manually
+    and refusing to enter is what actually scopes the search.
+    """
+    for child in ast.iter_child_nodes(node):
+        if isinstance(child, _NESTED_SCOPES) or (stop_at and isinstance(child, stop_at)):
+            continue
+        yield child
+        yield from _walk_scope(child, stop_at)
+
+
+def _breaks_out_of(loop: ast.AST) -> bool:
+    """Whether a ``break`` in this loop's own body targets it."""
+    return any(isinstance(n, ast.Break) for n in _walk_scope(loop, stop_at=_LOOPS))
+
+
 def _terminates(body: List[ast.stmt]) -> bool:
     """Whether a statement list always exits, so control cannot fall off it.
 
@@ -118,14 +149,22 @@ def _terminates(body: List[ast.stmt]) -> bool:
         # falls through; anything else may run zero times or break out.
         if isinstance(last, ast.While) and _is_bool_literal(last.test) \
                 and last.test.value is True and not last.orelse:
-            return not any(isinstance(n, ast.Break) for n in ast.walk(last))
+            return not _breaks_out_of(last)
         return False
 
     match_cls = getattr(ast, "Match", None)
     if match_cls is not None and isinstance(last, match_cls):
-        # Only exhaustive when a wildcard case is present, which we cannot
-        # tell cheaply; treat as falling through.
-        return False
+        # Exhaustive when some case cannot fail to match and every case exits.
+        # An irrefutable case is an unguarded `case _:` or a bare capture
+        # (`case other:`) -- both are ast.MatchAs carrying no sub-pattern. A
+        # guard makes even those refutable, so the match can fall through.
+        irrefutable = any(
+            case.guard is None
+            and isinstance(case.pattern, ast.MatchAs)
+            and case.pattern.pattern is None
+            for case in last.cases
+        )
+        return irrefutable and all(_terminates(case.body) for case in last.cases)
 
     return False
 
@@ -134,11 +173,9 @@ def _check_function(fn: ast.FunctionDef) -> List[str]:
     """Reasons this display() can hand back something other than a bool."""
     problems = []
 
-    for node in ast.walk(fn):
-        # Skip returns belonging to a nested function -- they are not this
-        # function's result.
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node is not fn:
-            continue
+    # Scoped to this function: a nested helper's `return` is that helper's
+    # result, and flagging it would fail a perfectly correct display().
+    for node in _walk_scope(fn):
         if isinstance(node, ast.Return) and not (
                 _is_bool_literal(node.value) or _is_super_display_call(node.value)):
             if node.value is None:
