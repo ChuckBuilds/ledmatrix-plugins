@@ -593,6 +593,13 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         filtering = league_config.get("filtering", {})
         display_modes_config = league_config.get("display_modes", {})
 
+        # test_mode drives the built-in simulated live game. Without passing it
+        # through, SportsLive.test_mode could never be set from config, so the
+        # seeded game in NFLLiveManager.__init__ and the whole
+        # _test_mode_update() path were unreachable -- which is why the safety
+        # harness has to disable live mode and never renders that screen.
+        manager_test_mode = league_config.get("test_mode", False)
+
         manager_display_modes = {
             f"{league}_live": display_modes_config.get("show_live", True),
             f"{league}_recent": display_modes_config.get("show_recent", True),
@@ -645,6 +652,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "favorite_teams": league_config.get("favorite_teams", []),
                 "exclude_teams": league_config.get("exclude_teams", []),
                 "display_modes": manager_display_modes,
+                "test_mode": manager_test_mode,
                 "recent_games_to_show": game_limits.get("recent_games_to_show", 5),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", 10),
                 "show_records": display_options.get("show_records", False),

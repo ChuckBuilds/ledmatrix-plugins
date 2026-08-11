@@ -1,5 +1,5 @@
 {
-  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the NFL season-schedule cache (key nfl_schedule_2025) with one final, one in-progress, and one scheduled game so recent/upcoming render real game cards without network access. Live mode is disabled: NFLLiveManager._fetch_data() -> _fetch_todays_games() is a direct network call with no cache read and no test_mode passthrough in _adapt_config_for_manager, so the live screen can never be fed from mock data. The huge live_update_interval keeps the always-instantiated live manager from attempting that doomed network fetch on every update() (under freeze_time, now - last_update stays below it), keeping CI runs fast.",
+  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the NFL season-schedule cache (key nfl_schedule_2025) with one final, one in-progress and one scheduled game so recent/upcoming render real game cards without network access. Live mode uses the plugin's built-in simulated game (nfl.test_mode): NFLLiveManager seeds a full Q4 scorebug -- score, clock, down and distance, possession, timeouts -- and SportsLive.update() short-circuits to _test_mode_update() rather than fetching, so the live screen renders offline like every other mode. It previously could not: the fetch was unconditional and test_mode was never passed through from config, so live was disabled here and was the only screen the harness never rendered.",
   "config": {
     "enabled": true,
     "timezone": "UTC",
@@ -7,7 +7,7 @@
       "enabled": true,
       "favorite_teams": [],
       "display_modes": {
-        "show_live": false,
+        "show_live": true,
         "show_recent": true,
         "show_upcoming": true,
         "live_display_mode": "switch",
@@ -23,7 +23,8 @@
       "filtering": {
         "show_favorite_teams_only": false,
         "show_all_live": true
-      }
+      },
+      "test_mode": true
     },
     "ncaa_fb": {
       "enabled": false
