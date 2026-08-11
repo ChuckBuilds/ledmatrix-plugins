@@ -1,5 +1,5 @@
 {
-  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the NFL season-schedule cache (key nfl_schedule_2025) with one final, one in-progress and one scheduled game so recent/upcoming render real game cards without network access. Live mode uses the plugin's built-in simulated game (nfl.test_mode): NFLLiveManager seeds a full Q4 scorebug -- score, clock, down and distance, possession, timeouts -- and SportsLive.update() short-circuits to _test_mode_update() rather than fetching, so the live screen renders offline like every other mode. It previously could not: the fetch was unconditional and test_mode was never passed through from config, so live was disabled here and was the only screen the harness never rendered.",
+  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the NFL season-schedule cache (key nfl_schedule_2025) with one final, one in-progress and one scheduled game so recent/upcoming render real game cards without network access. Live mode uses the plugin's built-in simulated game (nfl.test_mode): NFLLiveManager seeds a full Q4 scorebug -- score, clock, down and distance, possession, timeouts -- and SportsLive.update() short-circuits to _test_mode_update() rather than fetching, so the live screen renders offline like every other mode. live_update_interval is a normal 30s: it was 9999999999 to stop the always-instantiated live manager attempting a doomed network fetch, which also meant the first update was never overdue and the no-fetch path never ran. test_mode returns before any fetch, so the guard is no longer needed and the fixture now exercises the path it is meant to cover.",
   "config": {
     "enabled": true,
     "timezone": "UTC",
@@ -14,7 +14,7 @@
         "recent_display_mode": "switch",
         "upcoming_display_mode": "switch"
       },
-      "live_update_interval": 9999999999,
+      "live_update_interval": 30,
       "display_options": {
         "show_records": false,
         "show_ranking": false,

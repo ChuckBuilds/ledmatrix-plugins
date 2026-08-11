@@ -32,6 +32,13 @@ from pathlib import Path
 PLUGIN_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(PLUGIN_DIR))
 
+class _Silent:
+    """Swallow log records; this test is about control flow, not output."""
+
+    def __getattr__(self, _name):
+        return lambda *a, **k: None
+
+
 failures = []
 
 
@@ -64,6 +71,57 @@ def test_update_short_circuits_in_test_mode():
           idx_guard != -1 and idx_fetch != -1 and idx_guard < idx_fetch)
 
 
+def test_update_really_simulates_and_keeps_the_game():
+    """Drive the real update() and prove it neither fetches nor loses the game.
+
+    The source checks above say the branch exists; this says it executes. The
+    fixture used live_update_interval=9999999999 to stop the live manager
+    attempting a doomed network fetch, which also meant the first update was
+    never overdue -- so the harness rendered the seeded game without the
+    no-fetch path ever running.
+    """
+    import sports
+
+    # SportsLive is abstract; a concrete stub is the smallest way to reach the
+    # real update() without constructing a whole plugin.
+    class _Concrete(sports.SportsLive):
+        def _fetch_data(self, *a, **k):
+            calls["fetch"] += 1
+            return None
+
+        def _extract_game_details(self, *a, **k):
+            return None
+
+    calls = {"test_update": 0, "fetch": 0}
+    live = _Concrete.__new__(_Concrete)
+
+    live.is_enabled = True
+    live.test_mode = True
+    live.live_games = [{"id": "test001", "is_live": True}]
+    live.last_update = 0
+    live.update_interval = 30
+    live.no_data_interval = 300
+    live.show_ranking = False
+    live.logger = _Silent()
+    live._games_lock = __import__("threading").Lock()
+    live.current_game = live.live_games[0]
+    live._test_mode_update = lambda: calls.__setitem__("test_update",
+                                                       calls["test_update"] + 1)
+
+    try:
+        sports.SportsLive.update(live)
+    except Exception as exc:            # noqa: BLE001 - reported, not hidden
+        check("update() ran without raising", False, repr(exc))
+        return
+
+    check("the simulated update ran", calls["test_update"] == 1,
+          "called %d times" % calls["test_update"])
+    check("and no network fetch happened", calls["fetch"] == 0,
+          "fetched %d times" % calls["fetch"])
+    check("the seeded game survived", live.live_games and
+          live.live_games[0]["id"] == "test001")
+
+
 def test_harness_covers_live():
     """The fixture must actually exercise the screen."""
     spec = json.loads((PLUGIN_DIR / "test" / "harness.json").read_text(encoding="utf-8"))
@@ -71,6 +129,12 @@ def test_harness_covers_live():
     check("harness enables live",
           nfl.get("display_modes", {}).get("show_live") is True)
     check("harness turns on the simulated game", nfl.get("test_mode") is True)
+    interval = nfl.get("live_update_interval")
+    # Must be small enough that the very first update is overdue, or update()
+    # returns before reaching the simulated path.
+    check("the first update is overdue",
+          isinstance(interval, (int, float)) and interval < 10 ** 6,
+          "live_update_interval=%r" % (interval,))
 
 
 def test_seeded_live_game_is_complete():
@@ -98,6 +162,9 @@ def main():
 
     print("\nand simulating means simulating, not fetching")
     test_update_short_circuits_in_test_mode()
+
+    print("\nupdate() simulates rather than fetching")
+    test_update_really_simulates_and_keeps_the_game()
 
     print("\nthe harness renders the live screen")
     test_harness_covers_live()
