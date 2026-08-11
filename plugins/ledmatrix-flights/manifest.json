@@ -40,6 +40,7 @@
     {
       "released": "2026-08-11",
       "version": "1.12.8",
+      "ledmatrix_min_version": "2.0.0",
       "notes": "Stop the SkyAware poll writing to the SD card. The last good payload only ever covered a failed poll, and the reader is this same process seconds later, so it is now held in memory instead of round-tripping through the cache -- measured on a live rig at 12 rewrites/minute of a 55KB payload, around 928 MB/day and this plugin's largest single source of card wear. The fallback now also expires after 30s: reading it back through the cache applied that call's 300s default, so a receiver outage could hand back a five-minute-old sky and the map would draw aircraft some forty miles from where they actually were. Applied to both fetch paths."
     },
     {
