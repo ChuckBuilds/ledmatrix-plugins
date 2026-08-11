@@ -78,7 +78,7 @@ def odds_y(width, height, over_under, inning_half="top", inning=3,
         "spread": -1.5, "over_under": over_under,
         "home_team_odds": {"spread_odds": -1.5},
         "away_team_odds": {"spread_odds": 1.5},
-    }, game)
+    }, game=game)
     if not drawn:
         return None, drawn
     return max(y for _t, _x, y in drawn), drawn
@@ -128,7 +128,7 @@ def main():
     r._get_layout_offset = lambda e, a, default=0: 0
     got = []
     r._draw_text_with_outline = lambda *a, **k: got.append(a)
-    r._draw_dynamic_odds(ImageDraw.Draw(Image.new("RGB", (64, 64))), {}, {})
+    r._draw_dynamic_odds(ImageDraw.Draw(Image.new("RGB", (64, 64))), {}, game={})
     check("empty odds draw nothing", not got, "%d draws" % len(got))
 
     print("\n%s" % ("FAILED: %d" % len(failures) if failures
