@@ -445,7 +445,11 @@ class MusicPlugin(BasePlugin):
         # Initialize YTM Client if needed
         if self.preferred_source == "ytm":
             try:
-                self.ytm = YTMClient(update_callback=self._handle_ytm_direct_update)
+                # Pass the plugin logger so YTM records land under
+                # plugin.ledmatrix-music and obey its log level, rather
+                # than on the root logger where a user cannot quiet them.
+                self.ytm = YTMClient(update_callback=self._handle_ytm_direct_update,
+                                     logger=self.logger)
                 self.logger.info(f"YTMClient initialized. Connection will be managed on-demand. Configured URL: {self.ytm.base_url}")
             except Exception as e:
                 self.logger.error(f"Failed to initialize YTM client: {e}")
@@ -771,14 +775,16 @@ class MusicPlugin(BasePlugin):
                 else:
                     self.logger.debug("Skipping YTM poll: Client not connected. Will attempt reconnect on next cycle if display active.")
                     if self.is_music_display_active:
-                        self.logger.info("YTM is preferred and display active, attempting reconnect during poll cycle.")
+                        self.logger.debug("YTM is preferred and display active, attempting reconnect during poll cycle.")
                         if self.ytm.connect_client(timeout=5):
                             self.logger.info("YTM reconnected during poll cycle. Will process data on next poll/event.")
                             latest_data = self.ytm.get_current_track()
                             if latest_data:
                                 simplified_info_for_callback, significant_change_for_callback = self._process_ytm_data_update(latest_data, "YTM Poll Reconnect Sync")
                         else:
-                            self.logger.warning("YTM failed to reconnect during poll cycle.")
+                            # The client logs the first failure and backs off;
+                            # repeating it here per cycle just doubles the noise.
+                            self.logger.debug("YTM failed to reconnect during poll cycle.")
                             with self.track_info_lock:
                                 if self.current_source == MusicSource.YTM:
                                     simplified_info_for_callback = self.get_simplified_track_info(None, MusicSource.NONE)
