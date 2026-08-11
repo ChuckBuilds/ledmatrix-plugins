@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.14.0",
+      "released": "2026-08-11",
+      "notes": "Make the live screen renderable offline, so it is covered before the season rather than during it. Live was the one screen the safety harness never rendered, and two latent bugs are why: _adapt_config_for_manager() never passed test_mode into the per-manager config, so SportsLive.test_mode could not be set at all and the fully seeded simulated game in NFLLiveManager.__init__ was unreachable; and SportsLive.update() fetched unconditionally, so even with the flag set the seeded game was overwritten on the first tick -- _test_mode_update() was defined and never called. Both are fixed, the second by porting the short-circuit baseball-scoreboard already uses. The harness now renders nfl_live at every panel size (16 renders to 24, none blank). No behaviour change for real users: test_mode defaults to False on both paths, so live fetches exactly as before.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "2.13.0",
       "released": "2026-08-06",

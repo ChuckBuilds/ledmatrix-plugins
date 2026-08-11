@@ -2774,6 +2774,16 @@ class SportsLive(SportsCore):
         if current_time - self.last_update >= interval:
             self.last_update = current_time
 
+            # Test mode: advance the simulated game instead of fetching real API
+            # data, which would overwrite the seeded live game with an empty
+            # list. Without this the seeded game survives only until the first
+            # update tick, so live mode could never be rendered from a fixture
+            # -- _test_mode_update() was defined and never called. Ported from
+            # baseball-scoreboard, which fixed the same gap.
+            if _test_mode_attr:
+                self._test_mode_update()
+                return
+
             # Fetch rankings if enabled
             if self.show_ranking:
                 self._fetch_team_rankings()
