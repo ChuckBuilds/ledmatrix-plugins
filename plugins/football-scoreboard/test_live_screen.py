@@ -45,8 +45,6 @@ def check(name, cond, detail=""):
 
 def test_config_passthrough():
     """test_mode must survive the trip from league config to manager config."""
-    import manager as mgr_mod
-
     src = (PLUGIN_DIR / "manager.py").read_text(encoding="utf-8")
     check("_adapt_config_for_manager reads test_mode",
           'league_config.get("test_mode"' in src)
@@ -56,8 +54,6 @@ def test_config_passthrough():
 
 def test_update_short_circuits_in_test_mode():
     """update() must simulate, not fetch, or the seeded game is lost."""
-    import sports
-
     src = (PLUGIN_DIR / "sports.py").read_text(encoding="utf-8")
     idx_guard = src.find("if _test_mode_attr:")
     idx_fetch = src.find("data = self._fetch_data()", idx_guard if idx_guard >= 0 else 0)
@@ -84,8 +80,6 @@ def test_seeded_live_game_is_complete():
     distance are the parts that only appear in this mode, so a fixture missing
     them would render something that passes without covering what matters.
     """
-    import nfl_managers
-
     src = (PLUGIN_DIR / "nfl_managers.py").read_text(encoding="utf-8")
     start = src.find("if self.test_mode:")
     end = src.find("self.live_games = [self.current_game]", start)
