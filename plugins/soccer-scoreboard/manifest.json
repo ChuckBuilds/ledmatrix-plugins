@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.9.0",
+      "released": "2026-08-11",
+      "notes": "Add layout offsets for the betting odds. The spread and over/under were pinned to the top corners with no way to nudge them, while baseball, basketball, football and ufc all expose customization.layout.odds. Same element and same card, so it now takes the same knob.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "2.8.0",
       "released": "2026-08-06",

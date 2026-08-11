@@ -1100,6 +1100,25 @@
                 }
               },
               "additionalProperties": false
+            },
+            "odds": {
+              "type": "object",
+              "title": "Betting Odds",
+              "properties": {
+                "x_offset": {
+                  "x-advanced": true,
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset from default position (default: 0)"
+                },
+                "y_offset": {
+                  "x-advanced": true,
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Vertical offset from default position (default: 0)"
+                }
+              },
+              "additionalProperties": false
             }
           },
           "x-propertyOrder": [
@@ -1109,7 +1128,8 @@
             "status_text",
             "date",
             "time",
-            "records"
+            "records",
+            "odds"
           ],
           "additionalProperties": false
         },

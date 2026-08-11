@@ -531,7 +531,7 @@ class GameRenderer:
 
             # Odds
             if game.get('odds'):
-                self._draw_dynamic_odds(draw, game['odds'])
+                self._draw_dynamic_odds(draw, game['odds'], game)
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -587,7 +587,7 @@ class GameRenderer:
 
             # Odds
             if game.get('odds'):
-                self._draw_dynamic_odds(draw, game['odds'])
+                self._draw_dynamic_odds(draw, game['odds'], game)
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -920,7 +920,7 @@ class GameRenderer:
 
             # Odds
             if game.get('odds'):
-                self._draw_dynamic_odds(draw, game['odds'])
+                self._draw_dynamic_odds(draw, game['odds'], game)
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -994,8 +994,51 @@ class GameRenderer:
         except (TypeError, ValueError):
             return default
 
-    def _draw_dynamic_odds(self, draw, odds: Dict) -> None:
-        """Draw odds with dynamic positioning based on favored team."""
+    def _inning_text(self, game: Optional[Dict]) -> str:
+        """The centred top-row text, built exactly as the scorebug draws it."""
+        if not game:
+            return ""
+        inning_half = game.get('inning_half', 'top')
+        inning_num = game.get('inning', 1)
+        if game.get('is_final'):
+            return "FINAL"
+        if inning_half == 'end':
+            return f"E{inning_num}"
+        if inning_half == 'mid':
+            return f"M{inning_num}"
+        symbol = "\u25b2" if inning_half == 'top' else "\u25bc"
+        return f"{symbol}{inning_num}"
+
+    def _odds_would_hit_inning(self, draw, game: Optional[Dict], placements) -> bool:
+        """Whether any odds text overlaps the centred inning text on the top row.
+
+        Baseball is the only scoreboard with something centred on that row, so
+        it is the only one that can collide. Deciding by measurement rather
+        than by panel size keeps the rule honest: what matters is whether these
+        particular strings fit beside each other, and a two-digit over/under is
+        several pixels wider than a one-digit one.
+        """
+        text = self._inning_text(game)
+        if not text:
+            return False
+        try:
+            inning_font = self.fonts['time']
+            inning_width = draw.textbbox((0, 0), text, font=inning_font)[2]
+        except Exception:
+            return False
+        left = (self.display_width - inning_width) // 2
+        right = left + inning_width
+        # One pixel of breathing room either side, so glyphs do not touch.
+        return any(x < right + 1 and x + width > left - 1
+                   for _text, x, width in placements)
+
+    def _draw_dynamic_odds(self, draw, odds: Dict, game: Optional[Dict] = None) -> None:
+        """Draw odds with dynamic positioning based on favored team.
+
+        `game` is optional and used only to measure the centred inning text,
+        so the odds can step down a row on a panel too narrow to fit beside
+        it. Omitting it simply skips that check.
+        """
         try:
             if not odds:
                 return
@@ -1031,12 +1074,19 @@ class GameRenderer:
             odds_x_offset = self._get_layout_offset('odds', 'x_offset')
             odds_y_offset = self._get_layout_offset('odds', 'y_offset')
 
-            # Odds row below the status/inning text row
-            status_bbox = draw.textbbox((0, 0), "A", font=self.fonts['detail'])
-            odds_y = status_bbox[3] + 2 + odds_y_offset
-
-            # Show the negative spread on the appropriate side
+            # Top edge, matching every other scoreboard. This used to sit a
+            # whole text row lower (status_bbox[3] + 2, which measured 8-10px
+            # depending on the detail font) to clear the centred inning text,
+            # but that made baseball the odd one out: the same element landed a
+            # third of a 32px card lower here than on football, basketball,
+            # soccer and the rest. Odds are drawn hard left and hard right
+            # while the inning sits centred, so they only meet on a narrow
+            # panel -- and odds_y_offset is there to nudge it when they do.
             font = self.fonts['detail']
+
+            # Work out both texts and their spans before drawing either, so the
+            # row can be chosen once with full knowledge of what has to fit.
+            placements = []
             if favored_spread is not None:
                 spread_text = str(favored_spread)
                 spread_width = draw.textlength(spread_text, font=font)
@@ -1044,9 +1094,8 @@ class GameRenderer:
                     spread_x = self.display_width - spread_width + odds_x_offset
                 else:
                     spread_x = 0 + odds_x_offset
-                self._draw_text_with_outline(draw, spread_text, (spread_x, odds_y), font, fill=(0, 255, 0))
+                placements.append((spread_text, spread_x, spread_width))
 
-            # Show over/under on opposite side
             over_under = odds.get('over_under')
             if over_under is not None and isinstance(over_under, (int, float)):
                 ou_text = f"O/U: {over_under}"
@@ -1057,7 +1106,23 @@ class GameRenderer:
                     ou_x = self.display_width - ou_width + odds_x_offset
                 else:
                     ou_x = (self.display_width - ou_width) // 2 + odds_x_offset
-                self._draw_text_with_outline(draw, ou_text, (ou_x, odds_y), font, fill=(0, 255, 0))
+                placements.append((ou_text, ou_x, ou_width))
+
+            if not placements:
+                return
+
+            odds_y = 0 + odds_y_offset
+            if self._odds_would_hit_inning(draw, game, placements):
+                # Step down one text row, which is where these used to live
+                # unconditionally. Measured rather than keyed to a panel size:
+                # it is the text widths that decide, and a two-digit over/under
+                # ("O/U: 12.5") overlaps on a 64px panel where "O/U: 8.5" clears
+                # it by 2px. Wider panels never reach the centre and never move.
+                row = draw.textbbox((0, 0), "A", font=font)[3] + 2
+                odds_y += row
+
+            for text, x, _width in placements:
+                self._draw_text_with_outline(draw, text, (x, odds_y), font, fill=(0, 255, 0))
 
         except Exception:
             self.logger.exception("Error drawing odds")

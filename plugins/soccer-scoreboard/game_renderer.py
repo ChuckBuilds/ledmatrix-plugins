@@ -883,13 +883,18 @@ class GameRenderer:
                 spread_text = str(favored_spread)
                 font = self.fonts["detail"]
                 
+                # Odds had no layout control at all here, while baseball,
+                # basketball, football and ufc all expose one. Same element,
+                # same card, so it gets the same knob.
+                odds_x_offset = self._layout_offset('odds', 'x_offset')
+                odds_y_offset = self._layout_offset('odds', 'y_offset')
+
                 if favored_side == "home":
                     spread_width = draw.textlength(spread_text, font=font)
-                    spread_x = self.display_width - spread_width
-                    spread_y = 0
+                    spread_x = self.display_width - spread_width + odds_x_offset
                 else:
-                    spread_x = 0
-                    spread_y = 0
+                    spread_x = 0 + odds_x_offset
+                spread_y = 0 + odds_y_offset
                 
                 self._draw_text_with_outline(draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0))
             
@@ -901,12 +906,12 @@ class GameRenderer:
                 ou_width = draw.textlength(ou_text, font=font)
                 
                 if favored_side == "home":
-                    ou_x = 0
+                    ou_x = 0 + odds_x_offset
                 elif favored_side == "away":
-                    ou_x = self.display_width - ou_width
+                    ou_x = self.display_width - ou_width + odds_x_offset
                 else:
-                    ou_x = (self.display_width - ou_width) // 2
-                ou_y = 0
+                    ou_x = (self.display_width - ou_width) // 2 + odds_x_offset
+                ou_y = 0 + odds_y_offset
                 
                 self._draw_text_with_outline(draw, ou_text, (ou_x, ou_y), font, fill=(0, 255, 0))
                 

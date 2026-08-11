@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.24.0",
+  "version": "1.24.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.24.1",
+      "released": "2026-08-11",
+      "notes": "Draw betting odds at the top edge, matching every other scoreboard. They sat a whole text row lower (8px with the 4x6 font, 10px with PressStart2P), so the same element landed a third of a 32px card lower here than on football, basketball, soccer, afl, nrl and ufc. The lower row existed to clear the centred inning text, which baseball alone draws on that row, so the odds now step down only when they would genuinely collide -- measured from the actual strings rather than keyed to a panel size, because it is the text widths that decide: on a 64px panel \"O/U: 8.5\" clears the inning by 2px while \"O/U: 12.5\" overlaps it. Every panel 128px and wider uses the top edge unconditionally.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.24.0",
       "released": "2026-08-06",

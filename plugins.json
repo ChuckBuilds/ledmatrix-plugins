@@ -76,7 +76,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.24.0"
+      "latest_version": "1.24.1"
     },
     {
       "id": "basketball-scoreboard",
@@ -240,7 +240,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.14.0"
+      "latest_version": "2.14.1"
     },
     {
       "id": "geochron",
@@ -760,7 +760,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.8.0"
+      "latest_version": "2.9.0"
     },
     {
       "id": "static-image",
@@ -905,7 +905,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.3",
+      "latest_version": "1.3.4",
       "icon": "fas fa-fist-raised"
     },
     {
@@ -1048,7 +1048,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.0",
+      "latest_version": "1.6.0",
       "last_updated": "2026-08-05"
     },
     {
@@ -1095,7 +1095,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.0"
+      "latest_version": "1.6.0"
     },
     {
       "id": "jellyfin-now-playing",
