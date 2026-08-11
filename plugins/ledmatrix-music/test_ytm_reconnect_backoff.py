@@ -164,7 +164,7 @@ def main():
               repr(c4._log.records["error"]))
         check("and it says what to do",
               "authentication" in (c4._log.records["warning"] or [""])[0].lower())
-        c4.ytm_token = "later-obtained"
+        c4.ytm_token = PLACEHOLDER      # a token turns up
         c4._warned_missing_token = False       # load_config() does this
         c4.ytm_token = None
         c4.connect_client(timeout=1)
