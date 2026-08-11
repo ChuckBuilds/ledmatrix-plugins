@@ -73,6 +73,7 @@ def _client(monotonic):
     # the test measures the wrong path.
     c._connection_event = threading.Event()
     c._data_lock = threading.Lock()
+    c._warned_missing_token = False
 
     class _Sio:
         def connect(self, *a, **k):
@@ -149,6 +150,39 @@ def main():
         check("failure count reset", c3._consecutive_failures == 0)
         check("recovery is announced",
               any("reachable again" in m for m in c3._log.records["info"]))
+
+        print("\na missing token warns once, not every cycle")
+        c4 = _client(clock)
+        c4.ytm_token = None
+        for _ in range(50):
+            clock["t"] += 2.0
+            c4.connect_client(timeout=1)
+        check("one warning across 50 cycles",
+              len(c4._log.records["warning"]) == 1,
+              "%d warnings" % len(c4._log.records["warning"]))
+        check("no errors either", not c4._log.records["error"],
+              repr(c4._log.records["error"]))
+        check("and it says what to do",
+              "authentication" in (c4._log.records["warning"] or [""])[0].lower())
+        c4.ytm_token = "later-obtained"
+        c4._warned_missing_token = False       # load_config() does this
+        c4.ytm_token = None
+        c4.connect_client(timeout=1)
+        check("warns again after a token comes and goes",
+              len(c4._log.records["warning"]) == 2,
+              "%d warnings" % len(c4._log.records["warning"]))
+
+        print("\nsocketio does not run a retry loop behind the backoff")
+        src_client = (PLUGIN_DIR / "ytm_client.py").read_text(encoding="utf-8")
+        check("reconnection disabled", "reconnection=False" in src_client)
+        check("no infinite attempt setting left",
+              "reconnection_attempts=0" not in src_client)
+
+        print("\na malformed payload cannot drop the callback")
+        check("diagnostic fields assigned before the try",
+              "title = author = 'N/A'" in src_client)
+        check("nested values validated before use",
+              "isinstance(video, dict)" in src_client)
 
         print("\nnothing logs through the root logger any more")
         src = (PLUGIN_DIR / "ytm_client.py").read_text(encoding="utf-8")

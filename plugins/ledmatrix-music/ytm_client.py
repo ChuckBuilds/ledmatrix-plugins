@@ -47,16 +47,21 @@ class YTMClient:
         self._log = logger or logging.getLogger(__name__)
         self._consecutive_failures = 0
         self._next_retry_at = 0.0
+        self._warned_missing_token = False
         self.base_url = None
         self.ytm_token = None
         self.load_config() # Loads URL and token
+        # Reconnection is disabled deliberately. socketio.Client runs its own
+        # infinite reconnect loop after an established connection drops, at
+        # 1-10s intervals, which knows nothing about _next_retry_at -- so a
+        # companion that quit mid-session would be retried on a schedule this
+        # class had no say in. connect_client() owns retry timing; the poll
+        # loop calls it, and the backoff applies uniformly whether the
+        # connection never came up or came up and went away.
         self.sio = socketio.Client(
-            logger=False, 
+            logger=False,
             engineio_logger=False,
-            reconnection=True,
-            reconnection_attempts=0,  # Infinite attempts
-            reconnection_delay=1,     # Initial delay in seconds
-            reconnection_delay_max=10 # Maximum delay in seconds
+            reconnection=False,
         )
         self.last_known_track_data = None
         self.is_connected = False
@@ -95,14 +100,25 @@ class YTMClient:
             with self._data_lock:
                 self.last_known_track_data = data
 
-            # Rich diagnostic logging of incoming event
+            # Rich diagnostic logging of incoming event. Assigned before the
+            # try: a payload carrying "video": null makes .get() return None
+            # rather than {}, so the nested .get() raised, the bare except
+            # swallowed it, and `title` below was never bound -- an
+            # UnboundLocalError that skipped the callback entirely and silently
+            # dropped the track change. Diagnostics must not gate delivery.
+            title = author = 'N/A'
+            is_playing = None
             try:
-                title = data.get('video', {}).get('title', 'N/A') if isinstance(data, dict) else 'N/A'
-                author = data.get('video', {}).get('author', 'N/A') if isinstance(data, dict) else 'N/A'
-                is_playing = (data.get('player', {}).get('trackState') == 1) if isinstance(data, dict) else None
+                video = data.get('video') if isinstance(data, dict) else None
+                player = data.get('player') if isinstance(data, dict) else None
+                if isinstance(video, dict):
+                    title = video.get('title', 'N/A')
+                    author = video.get('author', 'N/A')
+                if isinstance(player, dict):
+                    is_playing = player.get('trackState') == 1
                 self._log.debug(f"[YTMClient] socket event received: title='{title}', artist='{author}', is_playing={is_playing}")
-            except Exception:
-                pass
+            except Exception as diag_ex:
+                self._log.debug("Could not read YTM event for logging: %s", diag_ex)
 
             if self.external_update_callback:
                 self._log.debug(f"--> Submitting YTM external_update_callback for title: {title} to executor")
@@ -148,6 +164,10 @@ class YTMClient:
                 with open(YTM_AUTH_CONFIG_PATH, 'r') as f:
                     auth_data = json.load(f)
                     self.ytm_token = auth_data.get("YTM_COMPANION_TOKEN")
+                    if self.ytm_token:
+                        # A token appeared; allow the missing-token
+                        # warning to fire again if it later goes away.
+                        self._warned_missing_token = False
                 if self.ytm_token:
                     self._log.info(f"YTM Companion token loaded from {YTM_AUTH_CONFIG_PATH}.")
                 else:
@@ -195,7 +215,17 @@ class YTMClient:
 
     def connect_client(self, timeout=10):
         if not self.ytm_token:
-            self._log.warning("No YTM token loaded. Cannot connect to YTM Socket.IO. Run authentication script.")
+            # Once per client, not once per poll cycle. This branch sits ahead
+            # of the backoff gate below, so warning here every time recreated
+            # the very flood this class now avoids -- just for "not
+            # authenticated" instead of "not reachable".
+            if not self._warned_missing_token:
+                self._warned_missing_token = True
+                self._log.warning(
+                    "No YTM token loaded, so YouTube Music cannot be reached. Run "
+                    "the authentication script to generate one. Not repeating this.")
+            else:
+                self._log.debug("Still no YTM token loaded; skipping connect.")
             self.is_connected = False
             return False
 
