@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -66,6 +66,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.2.1",
+      "released": "2026-08-11",
+      "notes": "Stop an unreachable YTM Companion flooding the log, and stop a malformed event dropping a track change. Measured on a device whose companion was not running: 13,298 error lines in twelve hours, 99.8% of everything the device logged, which buries every other error. Three causes. The poll loop asked for a reconnect every cycle and the client always tried, with no backoff. Each attempt logged two ERROR records, though \"YouTube Music is not open\" is an ordinary state. And the records went out through bare logging.error(), landing on the root logger, so they showed as \"root\" and ignored the plugin's log level -- a user could not quiet them. Reconnects now back off from 5s to a 5-minute cap; the first failure is one WARNING naming the endpoint and what to check, repeats are debug; and the client takes the plugin logger. Over the same twelve hours that is a single warning line, from at most 149 connection attempts rather than one per two-second poll cycle. A missing auth token now warns once per client instead of once per cycle, which was the same flood by another name. Socket.IO's own reconnect loop is disabled so it cannot retry behind the backoff after an established connection drops. Separately, an event carrying \"video\": null raised inside the diagnostic logging, was swallowed, and left a variable unbound, so the update callback was never submitted and the track change was silently lost; the diagnostic fields are now assigned up front and nested values validated.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-07-29",
       "version": "1.2.0",

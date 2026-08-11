@@ -3,6 +3,7 @@ import logging
 import json
 import os
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 # Ensure application-level logging is configured (as it is)
@@ -29,17 +30,38 @@ YTM_AUTH_CONFIG_PATH = os.path.join(CONFIG_DIR, 'ytm_auth.json')
 YTM_AUTH_CONFIG_PATH = os.path.abspath(YTM_AUTH_CONFIG_PATH)
 
 class YTMClient:
-    def __init__(self, update_callback=None):
+    # Reconnect backoff. The companion app not running is an ordinary state --
+    # the user simply does not have YouTube Music open -- but the poll loop
+    # asked for a reconnect every cycle regardless, so an unreachable server
+    # was retried every ~2s forever. Measured on a live device that was 13,298
+    # error lines in 12 hours, roughly 34,000 a day, which buries every other
+    # error in the journal.
+    _RECONNECT_BACKOFF_BASE = 5.0     # seconds, after the first failure
+    _RECONNECT_BACKOFF_MAX = 300.0    # cap: retry at least every 5 minutes
+
+    def __init__(self, update_callback=None, logger=None):
+        # Default to this module's logger, never the root one. Logging through
+        # `self._log.error(...)` put these records on the root logger, which is
+        # why they appeared as "root" in the journal: outside the plugin's
+        # logger, so a user could not lower their level to quiet them.
+        self._log = logger or logging.getLogger(__name__)
+        self._consecutive_failures = 0
+        self._next_retry_at = 0.0
+        self._warned_missing_token = False
         self.base_url = None
         self.ytm_token = None
         self.load_config() # Loads URL and token
+        # Reconnection is disabled deliberately. socketio.Client runs its own
+        # infinite reconnect loop after an established connection drops, at
+        # 1-10s intervals, which knows nothing about _next_retry_at -- so a
+        # companion that quit mid-session would be retried on a schedule this
+        # class had no say in. connect_client() owns retry timing; the poll
+        # loop calls it, and the backoff applies uniformly whether the
+        # connection never came up or came up and went away.
         self.sio = socketio.Client(
-            logger=False, 
+            logger=False,
             engineio_logger=False,
-            reconnection=True,
-            reconnection_attempts=0,  # Infinite attempts
-            reconnection_delay=1,     # Initial delay in seconds
-            reconnection_delay_max=10 # Maximum delay in seconds
+            reconnection=False,
         )
         self.last_known_track_data = None
         self.is_connected = False
@@ -51,19 +73,22 @@ class YTMClient:
 
         @self.sio.event(namespace='/api/v1/realtime')
         def connect():
-            logging.info(f"Successfully connected to YTM Companion Socket.IO server at {self.base_url} on namespace /api/v1/realtime")
+            self._log.info(f"Successfully connected to YTM Companion Socket.IO server at {self.base_url} on namespace /api/v1/realtime")
             self.is_connected = True
             self._connection_event.set()
 
         @self.sio.event(namespace='/api/v1/realtime')
         def connect_error(data):
-            logging.error(f"YTM Companion Socket.IO connection failed for namespace /api/v1/realtime: {data}")
+            # Debug only: connect_client() reports the failure once, with
+            # backoff. Logging here as well produced two ERROR lines per
+            # attempt for a condition that is usually just "app not running".
+            self._log.debug("YTM Companion Socket.IO connection failed for namespace /api/v1/realtime: %s", data)
             self.is_connected = False
             self._connection_event.set()
 
         @self.sio.event(namespace='/api/v1/realtime')
         def disconnect():
-            logging.info(f"Disconnected from YTM Companion Socket.IO server at {self.base_url} on namespace /api/v1/realtime")
+            self._log.info(f"Disconnected from YTM Companion Socket.IO server at {self.base_url} on namespace /api/v1/realtime")
             self.is_connected = False
 
         @self.sio.on('state-update', namespace='/api/v1/realtime')
@@ -75,22 +100,33 @@ class YTMClient:
             with self._data_lock:
                 self.last_known_track_data = data
 
-            # Rich diagnostic logging of incoming event
+            # Rich diagnostic logging of incoming event. Assigned before the
+            # try: a payload carrying "video": null makes .get() return None
+            # rather than {}, so the nested .get() raised, the bare except
+            # swallowed it, and `title` below was never bound -- an
+            # UnboundLocalError that skipped the callback entirely and silently
+            # dropped the track change. Diagnostics must not gate delivery.
+            title = author = 'N/A'
+            is_playing = None
             try:
-                title = data.get('video', {}).get('title', 'N/A') if isinstance(data, dict) else 'N/A'
-                author = data.get('video', {}).get('author', 'N/A') if isinstance(data, dict) else 'N/A'
-                is_playing = (data.get('player', {}).get('trackState') == 1) if isinstance(data, dict) else None
-                logging.debug(f"[YTMClient] socket event received: title='{title}', artist='{author}', is_playing={is_playing}")
-            except Exception:
-                pass
+                video = data.get('video') if isinstance(data, dict) else None
+                player = data.get('player') if isinstance(data, dict) else None
+                if isinstance(video, dict):
+                    title = video.get('title', 'N/A')
+                    author = video.get('author', 'N/A')
+                if isinstance(player, dict):
+                    is_playing = player.get('trackState') == 1
+                self._log.debug(f"[YTMClient] socket event received: title='{title}', artist='{author}', is_playing={is_playing}")
+            except Exception as diag_ex:
+                self._log.debug("Could not read YTM event for logging: %s", diag_ex)
 
             if self.external_update_callback:
-                logging.debug(f"--> Submitting YTM external_update_callback for title: {title} to executor")
+                self._log.debug(f"--> Submitting YTM external_update_callback for title: {title} to executor")
                 try:
                     # Offload the callback to the executor
                     self._callback_executor.submit(self.external_update_callback, data)
                 except Exception as cb_ex:
-                    logging.error(f"Error submitting YTMClient external_update_callback to executor: {cb_ex}")
+                    self._log.error(f"Error submitting YTMClient external_update_callback to executor: {cb_ex}")
 
     def load_config(self):
         default_url = "http://localhost:9863"
@@ -98,7 +134,7 @@ class YTMClient:
         
         # Load base_url from main config.json
         if not os.path.exists(CONFIG_PATH):
-            logging.warning(f"Main config file not found at {CONFIG_PATH}. Using default YTM URL: {self.base_url}")
+            self._log.warning(f"Main config file not found at {CONFIG_PATH}. Using default YTM URL: {self.base_url}")
         else:
             try:
                 with open(CONFIG_PATH, 'r') as f:
@@ -107,14 +143,14 @@ class YTMClient:
                     plugin_cfg = loaded_config.get("ledmatrix-music", {})
                     self.base_url = plugin_cfg.get("ytm_companion_url", default_url)
                     if not self.base_url:
-                        logging.warning("ytm_companion_url missing or empty in config.json ledmatrix-music section, using default.")
+                        self._log.warning("ytm_companion_url missing or empty in config.json ledmatrix-music section, using default.")
                         self.base_url = default_url
             except json.JSONDecodeError:
-                logging.error(f"Error decoding JSON from main config {CONFIG_PATH}. Using default YTM URL.")
+                self._log.error(f"Error decoding JSON from main config {CONFIG_PATH}. Using default YTM URL.")
             except Exception as e:
-                logging.error(f"Error loading ytm_companion_url from main config {CONFIG_PATH}: {e}. Using default YTM URL.")
+                self._log.error(f"Error loading ytm_companion_url from main config {CONFIG_PATH}: {e}. Using default YTM URL.")
 
-        logging.debug(f"YTM Companion URL set to: {self.base_url}")
+        self._log.debug(f"YTM Companion URL set to: {self.base_url}")
 
         if self.base_url and self.base_url.startswith("ws://"):
             self.base_url = "http://" + self.base_url[5:]
@@ -128,28 +164,85 @@ class YTMClient:
                 with open(YTM_AUTH_CONFIG_PATH, 'r') as f:
                     auth_data = json.load(f)
                     self.ytm_token = auth_data.get("YTM_COMPANION_TOKEN")
+                    if self.ytm_token:
+                        # A token appeared; allow the missing-token
+                        # warning to fire again if it later goes away.
+                        self._warned_missing_token = False
                 if self.ytm_token:
-                    logging.info(f"YTM Companion token loaded from {YTM_AUTH_CONFIG_PATH}.")
+                    self._log.info(f"YTM Companion token loaded from {YTM_AUTH_CONFIG_PATH}.")
                 else:
-                    logging.warning(f"YTM_COMPANION_TOKEN not found in {YTM_AUTH_CONFIG_PATH}. YTM features may be limited or disabled.")
+                    self._log.warning(f"YTM_COMPANION_TOKEN not found in {YTM_AUTH_CONFIG_PATH}. YTM features may be limited or disabled.")
             except json.JSONDecodeError:
-                logging.error(f"Error decoding JSON from YTM auth file {YTM_AUTH_CONFIG_PATH}. YTM features may be limited or disabled.")
+                self._log.error(f"Error decoding JSON from YTM auth file {YTM_AUTH_CONFIG_PATH}. YTM features may be limited or disabled.")
             except Exception as e:
-                logging.error(f"Error loading YTM auth config {YTM_AUTH_CONFIG_PATH}: {e}. YTM features may be limited or disabled.")
+                self._log.error(f"Error loading YTM auth config {YTM_AUTH_CONFIG_PATH}: {e}. YTM features may be limited or disabled.")
         else:
-            logging.warning(f"YTM auth file not found at {YTM_AUTH_CONFIG_PATH}. Run the authentication script to generate it. YTM features may be limited or disabled.")
+            self._log.warning(f"YTM auth file not found at {YTM_AUTH_CONFIG_PATH}. Run the authentication script to generate it. YTM features may be limited or disabled.")
+
+    def _note_connect_failure(self, reason):
+        """Record a failed attempt and schedule the next one.
+
+        The first failure is worth a warning -- something the user asked for is
+        not working. Repeats are not: they say nothing new, and at one every
+        couple of seconds they drown the log. Subsequent failures go to debug
+        and the retry interval grows, so a companion that is simply not running
+        costs a handful of lines an hour instead of thousands.
+        """
+        self._consecutive_failures += 1
+        delay = min(
+            self._RECONNECT_BACKOFF_BASE * (2 ** (self._consecutive_failures - 1)),
+            self._RECONNECT_BACKOFF_MAX,
+        )
+        self._next_retry_at = time.monotonic() + delay
+        if self._consecutive_failures == 1:
+            self._log.warning(
+                "Could not reach the YTM Companion at %s (%s). Is YouTube Music "
+                "Desktop running with the companion server enabled? Retrying in "
+                "%.0fs, backing off to %.0fs while it stays unreachable.",
+                self.base_url, reason, delay, self._RECONNECT_BACKOFF_MAX)
+        else:
+            self._log.debug(
+                "YTM still unreachable (%s), attempt %d; next retry in %.0fs",
+                reason, self._consecutive_failures, delay)
+
+    def _note_connect_success(self):
+        """Clear the backoff, and say so if we had been failing."""
+        if self._consecutive_failures:
+            self._log.info("YTM Companion reachable again after %d failed attempt(s)",
+                           self._consecutive_failures)
+        self._consecutive_failures = 0
+        self._next_retry_at = 0.0
 
     def connect_client(self, timeout=10):
         if not self.ytm_token:
-            logging.warning("No YTM token loaded. Cannot connect to YTM Socket.IO. Run authentication script.")
+            # Once per client, not once per poll cycle. This branch sits ahead
+            # of the backoff gate below, so warning here every time recreated
+            # the very flood this class now avoids -- just for "not
+            # authenticated" instead of "not reachable".
+            if not self._warned_missing_token:
+                self._warned_missing_token = True
+                self._log.warning(
+                    "No YTM token loaded, so YouTube Music cannot be reached. Run "
+                    "the authentication script to generate one. Not repeating this.")
+            else:
+                self._log.debug("Still no YTM token loaded; skipping connect.")
             self.is_connected = False
             return False
 
         if self.is_connected:
-            logging.debug("YTM client already connected.")
+            self._log.debug("YTM client already connected.")
             return True
 
-        logging.info(f"Attempting to connect to YTM Socket.IO server: {self.base_url}")
+        # Honour the backoff. The poll loop asks every cycle whether it can
+        # reconnect; without this it would retry every couple of seconds for as
+        # long as the companion stays down.
+        remaining = self._next_retry_at - time.monotonic()
+        if remaining > 0:
+            self._log.debug("Skipping YTM reconnect for another %.0fs (backing off)",
+                            remaining)
+            return False
+
+        self._log.debug("Attempting to connect to YTM Socket.IO server: %s", self.base_url)
         auth_payload = {"token": self.ytm_token}
 
         try:
@@ -163,18 +256,25 @@ class YTMClient:
             )
             event_wait_timeout = timeout + 5
             if not self._connection_event.wait(timeout=event_wait_timeout):
-                logging.warning(f"YTM Socket.IO connection event not received within {event_wait_timeout}s (connect timeout was {timeout}s).")
                 self.is_connected = False
+                self._note_connect_failure(
+                    f"no connection event within {event_wait_timeout}s")
                 return False
-            # Connection success/failure is logged by connect/connect_error events
+            if self.is_connected:
+                self._note_connect_success()
+            else:
+                # connect_error fired; it recorded the reason.
+                self._note_connect_failure("server rejected the connection")
             return self.is_connected
         except socketio.exceptions.ConnectionError as e:
-            logging.error(f"YTM Socket.IO connection error: {e}")
             self.is_connected = False
+            self._note_connect_failure(e)
             return False
         except Exception as e:
-            logging.error(f"Unexpected error during YTM Socket.IO connection: {e}")
             self.is_connected = False
+            self._log.error("Unexpected error during YTM Socket.IO connection: %s",
+                            e, exc_info=True)
+            self._note_connect_failure(e)
             return False
 
     def is_available(self):
@@ -195,20 +295,20 @@ class YTMClient:
     def disconnect_client(self):
         if self.is_connected:
             self.sio.disconnect()
-            logging.info("YTM Socket.IO client disconnected.")
+            self._log.info("YTM Socket.IO client disconnected.")
             self.is_connected = False
         else:
-            logging.debug("YTM Socket.IO client already disconnected or not connected.")
+            self._log.debug("YTM Socket.IO client already disconnected or not connected.")
 
     def shutdown(self):
         """Shuts down the callback executor."""
-        logging.info("YTMClient: Shutting down callback executor...")
+        self._log.info("YTMClient: Shutting down callback executor...")
         if self._callback_executor:
             self._callback_executor.shutdown(wait=True) # Wait for pending tasks to complete
             self._callback_executor = None # Clear reference
-            logging.info("YTMClient: Callback executor shut down.")
+            self._log.info("YTMClient: Callback executor shut down.")
         else:
-            logging.debug("YTMClient: Callback executor already None or not initialized.")
+            self._log.debug("YTMClient: Callback executor already None or not initialized.")
 
 # Example Usage (for testing - needs to be adapted for Socket.IO async nature)
 # if __name__ == '__main__':
