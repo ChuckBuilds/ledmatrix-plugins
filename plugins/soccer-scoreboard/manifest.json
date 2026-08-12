@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.9.1",
+  "version": "2.9.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,11 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.9.2",
+      "released": "2026-08-12",
+      "notes": "Fix blurry score digits on the LED matrix: the outline-drawing helper used PIL's default anti-aliased text rendering, which blends pixel-font (PressStart2P) glyph edges into dim partial-lit pixels on a 1:1 matrix, muddying numbers (a \"6\" could read as a \"G\"). Text now draws in 1-bit font mode so every glyph -- scores, clocks, team names, status text -- renders crisp with no anti-aliasing."
+    },
     {
       "released": "2026-08-12",
       "version": "2.9.1",

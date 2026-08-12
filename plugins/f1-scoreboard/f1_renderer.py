@@ -499,6 +499,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         # Dark background
         draw.rectangle([0, 0, self.display_width - 1, self.display_height - 1], fill=(8, 8, 8))
@@ -563,6 +567,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         cid = entry.get("constructor_id", "")
         is_fav = entry.get("is_favorite", False)
@@ -658,6 +666,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         cid = entry.get("constructor_id", "")
         is_fav = entry.get("is_favorite", False)
@@ -771,6 +783,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         results = race.get("results", [])
         race_name = race.get("race_name", "Grand Prix")
@@ -925,6 +941,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         cid = result.get("constructor_id", "")
         pos = result.get("position", 0)
@@ -1056,6 +1076,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         all_results = race.get("all_results", race.get("results", []))
         # Only drivers who scored points, sorted by points descending
@@ -1154,6 +1178,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         n = len(recent_races)
 
@@ -1236,6 +1264,10 @@ class F1Renderer:
         """Driver row used by qualifying, practice, sprint."""
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         cid = entry.get("constructor_id", "")
         tc = get_team_color(cid)
@@ -1340,6 +1372,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         results = qualifying.get("results", [])
         race_name = qualifying.get("race_name", "")
@@ -1448,6 +1484,10 @@ class F1Renderer:
         so the header fills the height instead of clustering at the top."""
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         title_h = self._th(draw, "Ay", self.fonts["detail"])
         sub_h = self._th(draw, "Ay", self.fonts["small"]) if subtitle else 0
@@ -1509,6 +1549,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         # Circuit map on the RIGHT — a bigger outline that fills the height, so
         # the course is the visual anchor rather than a small side thumbnail.
@@ -1620,6 +1664,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         circuit_name = race.get("circuit_name", "")
         city = race.get("city", "")
@@ -1711,6 +1759,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         date_str = entry.get("date", "")
         date_disp = day_disp = ""
@@ -1832,6 +1884,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         cid = driver_entry.get("constructor_id", "")
         tc = get_team_color(cid)
@@ -1977,6 +2033,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         cid = team_entry.get("constructor_id", "")
         tc = get_team_color(cid)
@@ -2062,6 +2122,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         # Build position history per driver code from all race results
         pos_history: Dict[str, List] = {}
@@ -2161,6 +2225,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         drv_id = driver_leader.get("constructor_id", "")
         con_id = constructor_leader.get("constructor_id", "")
@@ -2260,6 +2328,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         p1_cid = p1.get("constructor_id", "")
         p2_cid = p2.get("constructor_id", "")
@@ -2427,6 +2499,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         p1_cid = p1.get("constructor_id", "")
         p2_cid = p2.get("constructor_id", "")
@@ -2579,6 +2655,10 @@ class F1Renderer:
         """
         img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
 
         all_results = race.get("all_results", [])
         # Use top_n finishers by position; skip DNFs / retirements with no time gap

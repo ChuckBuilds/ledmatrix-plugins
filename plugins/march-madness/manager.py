@@ -512,6 +512,10 @@ class MarchMadnessPlugin(BasePlugin):
         fill: tuple = COLOR_WHITE,
         outline: tuple = COLOR_BLACK,
     ) -> None:
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
         x, y = xy
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):

@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,11 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.8.1",
+      "released": "2026-08-12",
+      "notes": "Fix blurry score digits on the LED matrix: the outline-drawing helper used PIL's default anti-aliased text rendering, which blends pixel-font (PressStart2P) glyph edges into dim partial-lit pixels on a 1:1 matrix, muddying numbers (a \"6\" could read as a \"G\"). Text now draws in 1-bit font mode so every glyph -- scores, clocks, team names, status text -- renders crisp with no anti-aliasing."
+    },
     {
       "version": "1.8.0",
       "released": "2026-08-07",

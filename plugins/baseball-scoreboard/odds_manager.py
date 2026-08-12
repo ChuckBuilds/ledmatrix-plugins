@@ -206,6 +206,10 @@ class BaseballOddsManager:
             fill: Text color (default: white)
             outline_color: Outline color (default: black)
         """
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
         x, y = position
         # Draw outline
         for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:

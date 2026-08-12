@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.14.1",
+  "version": "2.14.2",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,11 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.14.2",
+      "released": "2026-08-12",
+      "notes": "Fix blurry score digits on the LED matrix: the outline-drawing helper used PIL's default anti-aliased text rendering, which blends pixel-font (PressStart2P) glyph edges into dim partial-lit pixels on a 1:1 matrix, muddying numbers (a \"6\" could read as a \"G\"). Text now draws in 1-bit font mode so every glyph -- scores, clocks, team names, status text -- renders crisp with no anti-aliasing."
+    },
     {
       "version": "2.14.1",
       "released": "2026-08-12",
