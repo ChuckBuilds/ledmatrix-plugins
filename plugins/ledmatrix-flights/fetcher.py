@@ -17,6 +17,18 @@ from utils import haversine_miles, altitude_to_color
 
 logger = logging.getLogger(__name__)
 
+# How long a payload may stand in for a live one after a failed poll.
+#
+# Aircraft move, so a fallback is only honest for a short while: an airliner
+# covers roughly seven miles in 30s, which is already visible on the map but
+# not yet a lie. The previous behaviour read the payload back from the shared
+# cache, which applied cache_manager.get's default max_age of 300s -- five
+# minutes, some forty miles, aircraft drawn where they plainly were not.
+#
+# Generous enough that one dropped poll (default update_interval is 5s) never
+# blanks the display, short enough that an outage does.
+FALLBACK_MAX_AGE_SECONDS = 30.0
+
 
 class AircraftFetcher(ABC):
     """Base class for aircraft data source fetchers."""
@@ -48,6 +60,11 @@ class SkyAwareFetcher(AircraftFetcher):
         self.url = skyaware_url
         self.cache_manager = cache_manager
         self.timeout = request_timeout
+        # Held in memory, not in cache_manager: this only ever covers a failed
+        # poll, and the reader is this same object seconds later. Persisting it
+        # wrote 55KB per update_interval to the SD card for nothing.
+        self._last_payload = None
+        self._last_payload_at = 0.0
 
     def fetch_raw(self) -> Optional[Dict]:
         """Fetch the raw JSON payload from SkyAware."""
@@ -55,18 +72,24 @@ class SkyAwareFetcher(AircraftFetcher):
             response = requests.get(self.url, timeout=self.timeout)
             response.raise_for_status()
             data = response.json()
-            if self.cache_manager:
-                self.cache_manager.set('flight_tracker_data', data)
+            self._last_payload = data
+            self._last_payload_at = time.time()
             logger.debug(f"[Flight Tracker] SkyAware: {len(data.get('aircraft', []))} aircraft")
             return data
         except requests.exceptions.RequestException as e:
             logger.error(f"[Flight Tracker] SkyAware fetch failed: {e}")
-            if self.cache_manager:
-                cached = self.cache_manager.get('flight_tracker_data')
-                if cached:
-                    logger.info("[Flight Tracker] Using cached SkyAware data")
-                    return cached
-            return None
+            if self._last_payload is None:
+                return None
+            age = time.time() - self._last_payload_at
+            if age > FALLBACK_MAX_AGE_SECONDS:
+                logger.info(
+                    "[Flight Tracker] Last known SkyAware data is %.0fs old; showing "
+                    "nothing rather than a stale sky", age)
+                self._last_payload = None
+                return None
+            logger.info(
+                "[Flight Tracker] Using last known SkyAware data (%.0fs old)", age)
+            return self._last_payload
 
     def fetch(self, center_lat, center_lon, radius_miles, altitude_colors):
         data = self.fetch_raw()

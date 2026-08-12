@@ -29,7 +29,7 @@ from aircraft_database import AircraftDatabase
 # Import extracted utility modules
 from utils import haversine_miles, altitude_to_color, categorize_aircraft, is_callsign_worth_fetching
 from units import format_distance
-from fetcher import create_fetcher, FR24DetailFetcher
+from fetcher import create_fetcher, FR24DetailFetcher, FALLBACK_MAX_AGE_SECONDS
 from enrichment import create_enrichment_provider
 from renderer import FlightRenderer
 from data_model import TrackedFlight
@@ -205,6 +205,14 @@ class FlightTrackerPlugin(BasePlugin):
         # this is safe; idle fetches stay at update_interval.
         self.live_update_interval = self.config.get('live_update_interval', 2)
         
+        # Last good SkyAware payload, held in memory rather than on disk.
+        # It exists only to cover a failed poll, and the reader is this same
+        # process a few seconds later -- persisting it bought nothing and cost
+        # 55KB of SD-card writes every update_interval (~928 MB/day at the
+        # default 5s). See _fetch_aircraft_data.
+        self._last_raw_payload = None
+        self._last_raw_payload_at = 0.0
+
         # Runtime data
         self.aircraft_data = {}  # ICAO -> aircraft dict (within map_radius_miles)
         self.all_aircraft_data = {}  # ICAO -> aircraft dict (all with position, for stats)
@@ -867,27 +875,48 @@ class FlightTrackerPlugin(BasePlugin):
     
     
     def _fetch_aircraft_data(self) -> Optional[Dict]:
-        """Fetch aircraft data from SkyAware API."""
+        """Fetch aircraft data from SkyAware API.
+
+        The last good payload is kept in memory, not on disk. It is only ever
+        read to cover a failed poll, by this same process seconds after it was
+        written, so the round-trip through the cache was pure SD-card wear --
+        and it is the plugin's largest single write by a wide margin.
+
+        It also expires quickly. The old on-disk read took cache_manager.get's
+        default max_age of 300s, so a receiver outage could hand back a
+        five-minute-old sky and the map would draw aircraft where they
+        demonstrably were not; a jet covers some 40 miles in that time.
+        """
         try:
             response = requests.get(self.skyaware_url, timeout=5)
             response.raise_for_status()
             data = response.json()
-            
-            # Cache the data
-            self.cache_manager.set('flight_tracker_data', data)
-            
+
+            self._last_raw_payload = data
+            self._last_raw_payload_at = time.time()
+
             self.logger.debug(f"[Flight Tracker] Fetched data: {len(data.get('aircraft', []))} aircraft")
             return data
         except requests.exceptions.RequestException as e:
             self.logger.error(f"[Flight Tracker] Failed to fetch aircraft data: {e}")
-            
-            # Try to use cached data
-            cached_data = self.cache_manager.get('flight_tracker_data')
-            if cached_data:
-                self.logger.info("[Flight Tracker] Using cached aircraft data")
-                return cached_data
-            
+            return self._recent_raw_payload()
+
+    def _recent_raw_payload(self) -> Optional[Dict]:
+        """The last payload, if it is still recent enough to stand in for now."""
+        if self._last_raw_payload is None:
             return None
+
+        age = time.time() - self._last_raw_payload_at
+        if age > FALLBACK_MAX_AGE_SECONDS:
+            self.logger.info(
+                "[Flight Tracker] Last known aircraft data is %.0fs old; showing "
+                "nothing rather than a stale sky", age)
+            self._last_raw_payload = None
+            return None
+
+        self.logger.info(
+            "[Flight Tracker] Using last known aircraft data (%.0fs old)", age)
+        return self._last_raw_payload
     
     # -------------------------------------------------------------------------
     # FlightRadar24 data source methods
