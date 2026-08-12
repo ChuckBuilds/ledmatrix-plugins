@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.9.2",
+  "version": "1.10.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.10.0",
+      "released": "2026-08-12",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Ask for more turns in the Vegas ticker while a game is live, and more again when a favorite team is playing. Only takes effect with the core's display.vegas_scroll.live_in_ticker set, which keeps the marquee running instead of handing the display to a full-screen scoreboard. The core grants a live plugin live_weight on its own; this reports the favorite case, which the core cannot see -- it knows a game is live but not whose."
+    },
     {
       "version": "1.9.2",
       "released": "2026-08-12",

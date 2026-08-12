@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.3.5",
+  "version": "1.4.0",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.4.0",
+      "released": "2026-08-12",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Ask for more turns in the Vegas ticker while a game is live, and more again when a favorite team is playing. Only takes effect with the core's display.vegas_scroll.live_in_ticker set, which keeps the marquee running instead of handing the display to a full-screen scoreboard. The core grants a live plugin live_weight on its own; this reports the favorite case, which the core cannot see -- it knows a game is live but not whose."
+    },
     {
       "version": "1.3.5",
       "released": "2026-08-12",

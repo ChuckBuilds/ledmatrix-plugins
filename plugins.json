@@ -27,7 +27,7 @@
       "last_updated": "2026-07-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.4"
+      "latest_version": "1.1.0"
     },
     {
       "id": "7-segment-clock",
@@ -76,7 +76,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.24.4"
+      "latest_version": "1.25.0"
     },
     {
       "id": "basketball-scoreboard",
@@ -101,7 +101,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.12.1"
+      "latest_version": "1.13.0"
     },
     {
       "id": "calendar",
@@ -240,7 +240,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.14.2"
+      "latest_version": "2.15.0"
     },
     {
       "id": "geochron",
@@ -335,7 +335,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.9.2",
+      "latest_version": "1.10.0",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -359,7 +359,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.9.2",
+      "latest_version": "1.10.0",
       "icon": "fas fa-baseball-ball"
     },
     {
@@ -760,7 +760,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.9.2"
+      "latest_version": "2.10.0"
     },
     {
       "id": "static-image",
@@ -905,7 +905,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.5",
+      "latest_version": "1.4.0",
       "icon": "fas fa-fist-raised"
     },
     {
@@ -1048,7 +1048,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.6.2",
+      "latest_version": "1.7.0",
       "last_updated": "2026-08-05"
     },
     {
@@ -1095,7 +1095,7 @@
       "last_updated": "2026-08-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.6.2"
+      "latest_version": "1.7.0"
     },
     {
       "id": "jellyfin-now-playing",

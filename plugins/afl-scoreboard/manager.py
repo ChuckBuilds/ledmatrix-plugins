@@ -727,6 +727,58 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
             )
         return False
 
+    # --- Vegas ticker weighting ------------------------------------------
+    #
+    # With display.vegas_scroll.live_in_ticker set, the marquee keeps running
+    # through a live game and plugins can claim more than one slot per cycle.
+    # The core already gives any plugin with live content `live_weight`; this
+    # exists for the one thing the core cannot work out for itself, which is
+    # *whose* game is live. See the core's PLUGIN_API_REFERENCE, "Vegas scroll
+    # hooks", and ADVANCED_FEATURES, "Live content in the ticker".
+
+    def get_vegas_priority_weight(self):
+        """Slots per Vegas cycle: more when a favorite team is playing.
+
+        Returns None when nothing is live, which leaves the decision to the
+        core rather than asserting a weight of 1 -- the core may have its own
+        reason to boost this plugin later.
+        """
+        try:
+            if not (self.has_live_priority() and self.has_live_content()):
+                return None
+            vegas = (self.global_config or {}).get('display', {}).get(
+                'vegas_scroll', {})
+            if self._favorite_team_is_live():
+                return vegas.get('favorite_live_weight', 5)
+            return vegas.get('live_weight', 3)
+        except Exception:
+            # Never let a weighting question break the rotation; the core
+            # treats an exception as weight 1 anyway, and None says the same
+            # thing more cheaply.
+            return None
+
+    def _favorite_team_is_live(self):
+        """Whether any live game involves a configured favorite team.
+
+        Walks this plugin's own league managers rather than taking a league
+        argument: each sport registers one per league under its own attribute
+        name, and every one of them carries `live_games` and `favorite_teams`.
+        Looking for that pair is what makes this identical across sports.
+        """
+        for value in list(vars(self).values()):
+            games = getattr(value, 'live_games', None)
+            favorites = getattr(value, 'favorite_teams', None)
+            if not games or not favorites:
+                continue
+            wanted = {str(t).upper() for t in favorites if t}
+            for game in games:
+                if not isinstance(game, dict):
+                    continue
+                for side in ('home_abbr', 'away_abbr'):
+                    if str(game.get(side) or '').upper() in wanted:
+                        return True
+        return False
+
     def has_live_content(self) -> bool:
         """Whether there is live content worth showing."""
         if not self.is_enabled:

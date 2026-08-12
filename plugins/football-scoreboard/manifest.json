@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.14.2",
+  "version": "2.15.0",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.15.0",
+      "released": "2026-08-12",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Ask for more turns in the Vegas ticker while a game is live, and more again when a favorite team is playing. Only takes effect with the core's display.vegas_scroll.live_in_ticker set, which keeps the marquee running instead of handing the display to a full-screen scoreboard. The core grants a live plugin live_weight on its own; this reports the favorite case, which the core cannot see -- it knows a game is live but not whose."
+    },
     {
       "version": "2.14.2",
       "released": "2026-08-12",
