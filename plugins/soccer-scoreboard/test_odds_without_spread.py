@@ -22,7 +22,7 @@ except ImportError:
     print("SKIP: Pillow not installed")
     sys.exit(2)
 
-import game_renderer as gr  # noqa: E402
+import game_renderer as gr  # noqa: E402  # pylint: disable=wrong-import-position
 
 failures = []
 

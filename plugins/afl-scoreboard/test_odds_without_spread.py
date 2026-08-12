@@ -10,6 +10,7 @@ it, so the card drew no odds at all rather than drawing the total.
 Run: <core-venv>/bin/python plugins/afl-scoreboard/test_odds_without_spread.py
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -18,7 +19,6 @@ sys.path.insert(0, str(PLUGIN_DIR))
 
 # This renderer imports src.logo_downloader at module scope, so the core tree
 # has to be importable. LEDMATRIX_CORE points at a checkout.
-import os
 _core = os.environ.get('LEDMATRIX_CORE', '')
 for _candidate in (_core, str(PLUGIN_DIR.parents[2] / 'LEDMatrix')):
     if _candidate and (Path(_candidate) / 'src').is_dir():
@@ -34,7 +34,7 @@ except ImportError:
     print("SKIP: Pillow not installed")
     sys.exit(2)
 
-import game_renderer as gr  # noqa: E402
+import game_renderer as gr  # noqa: E402  # pylint: disable=wrong-import-position
 
 failures = []
 
