@@ -21,7 +21,8 @@
     {
       "version": "1.12.1",
       "released": "2026-08-12",
-      "notes": "Fix blurry score digits on the LED matrix: the outline-drawing helper used PIL's default anti-aliased text rendering, which blends pixel-font (PressStart2P) glyph edges into dim partial-lit pixels on a 1:1 matrix, muddying numbers (a \"6\" could read as a \"G\"). Text now draws in 1-bit font mode so every glyph -- scores, clocks, team names, status text -- renders crisp with no anti-aliasing."
+      "notes": "Fix blurry score digits on the LED matrix: the outline-drawing helper used PIL's default anti-aliased text rendering, which blends pixel-font (PressStart2P) glyph edges into dim partial-lit pixels on a 1:1 matrix, muddying numbers (a \"6\" could read as a \"G\"). Text now draws in 1-bit font mode so every glyph -- scores, clocks, team names, status text -- renders crisp with no anti-aliasing.",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.12.0",
