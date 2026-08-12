@@ -307,8 +307,15 @@ class ImageRenderer:
             self._logo_cache[key] = prepared
         return prepared
 
-    def _get_team_logo(self, league: str, team_id: str, team_abbr: str, logo_dir: str) -> Optional[Image.Image]:
-        """Get team logo from the configured directory, downloading if missing."""
+    def _get_team_logo(self, team_abbr: str, logo_dir: str) -> Optional[Image.Image]:
+        """
+        Get team logo from the configured directory.
+
+        Local files only -- this runs from layout construction on the render
+        thread, and a network download there would block the Vegas scroll.
+        Missing logos are backfilled by ``download_missing_logos()``, which
+        the plugin calls from ``update()`` instead.
+        """
         if not team_abbr or not logo_dir:
             self.logger.debug("Cannot get team logo with missing team_abbr or logo_dir")
             return None
@@ -318,22 +325,41 @@ class ImageRenderer:
                 logo = Image.open(logo_path)
                 self.logger.debug(f"Successfully loaded logo for {team_abbr}")
                 return logo
-            else:
-                self.logger.warning(f"Logo not found at path: {logo_path}")
-
-                # Try to download the missing logo
-                if league:
-                    self.logger.info(f"Attempting to download missing logo for {team_abbr} in league {league}")
-                    success = download_missing_logo(league, team_id, team_abbr, logo_path, None)
-                    if success and os.path.exists(logo_path):
-                        logo = Image.open(logo_path)
-                        self.logger.info(f"Successfully downloaded and loaded logo for {team_abbr}")
-                        return logo
-
-                return None
+            self.logger.debug(f"Logo not found at path: {logo_path}")
+            return None
         except Exception as e:
             self.logger.error(f"Error loading logo for {team_abbr}: {e}")
             return None
+
+    def download_missing_logos(self, leaderboard_data: List[Dict[str, Any]]) -> None:
+        """
+        Backfill any missing team logo files from the network.
+
+        Intended to be called from ``update()``, off the render thread, so a
+        download never blocks ``display()``. Once a file lands on disk,
+        ``_get_team_logo`` picks it up on the next rebuild.
+        """
+        for league_data in leaderboard_data:
+            league_key = league_data.get('league')
+            league_config = league_data.get('league_config') or {}
+            logo_dir = league_config.get('logo_dir')
+            if not league_key or not logo_dir:
+                continue
+            for team in league_data.get('teams', []):
+                team_abbr = team.get('abbreviation', '')
+                if not team_abbr:
+                    continue
+                logo_path = Path(logo_dir, f"{team_abbr}.png")
+                if os.path.exists(logo_path):
+                    continue
+                try:
+                    self.logger.info(
+                        "Attempting to download missing logo for %s in league %s",
+                        team_abbr, league_key
+                    )
+                    download_missing_logo(league_key, team.get('id'), team_abbr, logo_path, None)
+                except Exception as e:
+                    self.logger.error("Error downloading missing logo for %s: %s", team_abbr, e)
 
     def _get_league_logo(self, league_logo_path: str) -> Optional[Image.Image]:
         """Get league logo from the configured path."""
@@ -397,8 +423,7 @@ class ImageRenderer:
                     str(Path(team_logo_dir, f"{team_text}.png"))
                     if (team_text and team_logo_dir) else None,
                     logo_box, logo_box,
-                    lambda: self._get_team_logo(
-                        league_key, team.get('id'), team_text, team_logo_dir),
+                    lambda: self._get_team_logo(team_text, team_logo_dir),
                 )
 
                 width = number_width + text_width + self.TEAM_GAP + self.LOGO_TEXT_GAP

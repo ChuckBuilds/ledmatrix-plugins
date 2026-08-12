@@ -246,7 +246,11 @@ class LeaderboardPlugin(BasePlugin):
                     self.logger.warning(f"No standings data returned for {league_key}")
             
             self.last_update = current_time
-            
+
+            # Backfill any missing team logos here, off the render thread --
+            # display() only ever reads local files, never downloads.
+            self.image_renderer.download_missing_logos(self.leaderboard_data)
+
             # Clear scroll cache when data updates
             self.scroll_helper.clear_cache()
             
