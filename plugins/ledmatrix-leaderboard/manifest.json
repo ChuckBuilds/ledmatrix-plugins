@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -31,6 +31,12 @@
   "requirements_file": "requirements.txt",
   "min_ledmatrix_version": "2.0.0",
   "versions": [
+    {
+      "released": "2026-08-12",
+      "version": "1.3.1",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Decode and resize each team logo once instead of once per rebuild. Image.open defers the PNG decode to first access, so it landed inside _prepare_logo's convert(), with a LANCZOS resize after it, for every team on every rebuild of files that had not changed. Measured on real assets: 25 logos cost 276ms uncached and 0.3ms warm. This matters because leaderboard scroll content is built on the render thread -- the adapter's capture path needs the shared canvas -- so the cost lands directly on the Vegas scroll. Cached on path plus mtime, so a logo the downloader backfills is picked up rather than served stale, and a missing one is retried rather than remembered as absent."
+    },
     {
       "version": "1.3.0",
       "released": "2026-08-05",

@@ -89,6 +89,14 @@ class ImageRenderer:
         appearance = appearance or {}
         self.pixel_perfect_text = bool(appearance.get('pixel_perfect_text', True))
         self.crisp_logos = bool(appearance.get('crisp_logos', True))
+        # Prepared logos, keyed by file identity and target box. Both halves
+        # of preparing one are expensive and neither varies between rebuilds:
+        # Image.open defers the PNG decode to first access, so the decode lands
+        # inside _prepare_logo's convert(), and a LANCZOS resize follows it. A
+        # rebuild did that for every team, every time, for files that had not
+        # changed. On a live rig this ran on the render thread and was the
+        # largest single contributor to a 3.2s freeze of the scroll.
+        self._logo_cache: Dict[Any, Optional[Image.Image]] = {}
         self.text_outline = bool(appearance.get('text_outline', True))
         self.logo_scale = self._clamp_float(appearance.get('logo_scale', 1.0), 0.5, 1.5, 1.0)
         self.font_size_override = self._clamp_int(appearance.get('font_size', 0), 0, 32, 0)
@@ -261,6 +269,44 @@ class ImageRenderer:
             self.logger.error("Error preparing logo: %s", e)
             return None
 
+    # Logos are small; the ceiling only exists so a long-running process with
+    # many leagues cannot grow this without bound. Clearing wholesale on
+    # overflow keeps it predictable -- the next rebuild simply repopulates
+    # what it needs, which is a handful of entries.
+    _LOGO_CACHE_MAX = 512
+
+    def _cached_prepared_logo(self, path: Optional[str], max_width: int,
+                              max_height: int, load) -> Optional[Image.Image]:
+        """A prepared logo, decoded and resized at most once per file version.
+
+        Keyed on the file's mtime as well as its path, so a logo replaced on
+        disk (the downloader backfills missing ones) is picked up rather than
+        served stale forever.
+
+        The result is shared, not copied: callers only ever paste from it, and
+        copying per team would put back a slice of the cost this removes.
+        """
+        stamp = None
+        if path:
+            try:
+                stamp = os.path.getmtime(path)
+            except OSError:
+                stamp = None
+
+        key = (path, stamp, max_width, max_height, self.crisp_logos)
+        if stamp is not None and key in self._logo_cache:
+            return self._logo_cache[key]
+
+        prepared = self._prepare_logo(load(), max_width, max_height)
+
+        # Only a file that exists is cacheable. Caching a miss would make a
+        # logo that is downloaded a moment later invisible until restart.
+        if stamp is not None:
+            if len(self._logo_cache) >= self._LOGO_CACHE_MAX:
+                self._logo_cache.clear()
+            self._logo_cache[key] = prepared
+        return prepared
+
     def _get_team_logo(self, league: str, team_id: str, team_abbr: str, logo_dir: str) -> Optional[Image.Image]:
         """Get team logo from the configured directory, downloading if missing."""
         if not team_abbr or not logo_dir:
@@ -332,8 +378,9 @@ class ImageRenderer:
             if league_data.get('is_tournament') and league_key in ('ncaam_basketball', 'ncaaw_basketball'):
                 if os.path.exists(self.MARCH_MADNESS_LOGO_PATH):
                     league_logo_path = self.MARCH_MADNESS_LOGO_PATH
-            league_logo = self._prepare_logo(
-                self._get_league_logo(league_logo_path), self.LEAGUE_LOGO_WIDTH, height
+            league_logo = self._cached_prepared_logo(
+                league_logo_path or None, self.LEAGUE_LOGO_WIDTH, height,
+                lambda: self._get_league_logo(league_logo_path),
             )
 
             teams = []
@@ -345,10 +392,13 @@ class ImageRenderer:
                 team_text = team.get('abbreviation', '')
                 text_width = self._text_advance(team_text, self.fonts['large'])
 
-                team_logo = self._prepare_logo(
-                    self._get_team_logo(league_key, team.get('id'), team_text,
-                                        league_config.get('logo_dir')),
-                    logo_box, logo_box
+                team_logo_dir = league_config.get('logo_dir')
+                team_logo = self._cached_prepared_logo(
+                    str(Path(team_logo_dir, f"{team_text}.png"))
+                    if (team_text and team_logo_dir) else None,
+                    logo_box, logo_box,
+                    lambda: self._get_team_logo(
+                        league_key, team.get('id'), team_text, team_logo_dir),
                 )
 
                 width = number_width + text_width + self.TEAM_GAP + self.LOGO_TEXT_GAP
