@@ -59,7 +59,7 @@ def check(name, cond, detail=""):
 
 
 def odds_y(width, height, over_under, inning_half="top", inning=3,
-           y_offset=0, x_offset=0):
+           y_offset=0, x_offset=0, top_text=None):
     """Render the odds and report the y they landed on."""
     r = gr.GameRenderer.__new__(gr.GameRenderer)
     r.display_width, r.display_height = width, height
@@ -78,7 +78,7 @@ def odds_y(width, height, over_under, inning_half="top", inning=3,
         "spread": -1.5, "over_under": over_under,
         "home_team_odds": {"spread_odds": -1.5},
         "away_team_odds": {"spread_odds": 1.5},
-    }, game=game)
+    }, game=game, top_text=top_text)
     if not drawn:
         return None, drawn
     return max(y for _t, _x, y in drawn), drawn
@@ -107,6 +107,30 @@ def main():
     y_final, _ = odds_y(64, 32, 8.5, inning_half="top")
     check("a narrow panel with short strings still uses the top edge",
           y_final == 0, "y=%s" % y_final)
+
+    print("\neach card type is measured against the text it actually draws")
+    # _draw_dynamic_odds is called from the live, recent and upcoming
+    # renderers, and they do not centre the same string on the top row: the
+    # inning, "Final", and a time or date respectively. Measuring the inning
+    # for all three checked a string that was not on the panel.
+    y_live, _ = odds_y(64, 32, 12.5)
+    y_final, _ = odds_y(64, 32, 12.5, top_text="Final")
+    check("a wide O/U still steps down beside the inning", y_live > 0,
+          "y=%s" % y_live)
+    check("and beside a recent card's 'Final'", y_final > 0, "y=%s" % y_final)
+
+    y_time, _ = odds_y(64, 32, 12.5, top_text="7:05 PM")
+    check("and beside an upcoming card's time", y_time > 0, "y=%s" % y_time)
+
+    # Nothing centred on the top row means nothing to avoid.
+    y_clear, _ = odds_y(64, 32, 12.5, top_text="")
+    check("but an empty top row leaves the odds at the edge", y_clear == 0,
+          "y=%s" % y_clear)
+
+    # A wide panel has room beside any of them.
+    for label, t in (("inning", None), ("Final", "Final"), ("time", "7:05 PM")):
+        y, _ = odds_y(256, 64, 12.5, top_text=t)
+        check("256x64 clears the %s" % label, y == 0, "y=%s" % y)
 
     print("\nthe manual offsets still apply")
     y0, _ = odds_y(256, 64, 8.5)

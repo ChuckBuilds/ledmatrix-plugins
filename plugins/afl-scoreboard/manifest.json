@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "released": "2026-08-12",
+      "version": "1.6.1",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Draw the odds when a game is priced with a total and no spread. The layout offsets were read inside the spread branch while the over/under below uses them too, so such a game raised UnboundLocalError and the surrounding except swallowed it -- the card drew no odds at all."
+    },
     {
       "version": "1.6.0",
       "released": "2026-08-11",

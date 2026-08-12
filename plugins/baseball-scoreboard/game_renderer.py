@@ -587,7 +587,7 @@ class GameRenderer:
 
             # Odds
             if game.get('odds'):
-                self._draw_dynamic_odds(draw, game['odds'], game)
+                self._draw_dynamic_odds(draw, game['odds'], game, top_text="Final")
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -815,6 +815,28 @@ class GameRenderer:
             str(game.get("game_time", "") or ""),
         )
 
+    def _upcoming_date_time_texts(self, game: Dict):
+        """The date and time strings an upcoming card would draw."""
+        date_raw, time_raw = self._upcoming_date_and_time(game)
+        date_text = (self._format_game_date(date_raw, game)
+                     if self._scroll_card_option("show_date", True) else "")
+        time_text = (self._format_game_time(time_raw)
+                     if self._scroll_card_option("show_time", True) else "")
+        return date_text, time_text
+
+    def _upcoming_top_row_text(self, game: Dict) -> str:
+        """Whatever an upcoming card centres on its top row, or "".
+
+        Read by the odds collision check, which has to measure the string that
+        is actually on the panel. Derived here rather than in the caller so it
+        cannot drift from _draw_upcoming_game_status, which makes the same
+        choice a few lines below.
+        """
+        if self._upcoming_center_mode() == "date_time":
+            return ""      # both are stacked in the middle; the top row is free
+        date_text, time_text = self._upcoming_date_time_texts(game)
+        return date_text if self._scroll_card_option("swap_date_time", False) else time_text
+
     def _draw_upcoming_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw the date and time around an upcoming card.
 
@@ -825,11 +847,7 @@ class GameRenderer:
         if self._upcoming_center_mode() == "date_time":
             return
 
-        date_raw, time_raw = self._upcoming_date_and_time(game)
-        date_text = (self._format_game_date(date_raw, game)
-                     if self._scroll_card_option("show_date", True) else "")
-        time_text = (self._format_game_time(time_raw)
-                     if self._scroll_card_option("show_time", True) else "")
+        date_text, time_text = self._upcoming_date_time_texts(game)
 
         if self._scroll_card_option("swap_date_time", False):
             top_text, top_el, bottom_text, bottom_el = (
@@ -920,7 +938,8 @@ class GameRenderer:
 
             # Odds
             if game.get('odds'):
-                self._draw_dynamic_odds(draw, game['odds'], game)
+                self._draw_dynamic_odds(draw, game['odds'], game,
+                                        top_text=self._upcoming_top_row_text(upcoming))
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -1009,21 +1028,25 @@ class GameRenderer:
         symbol = "\u25b2" if inning_half == 'top' else "\u25bc"
         return f"{symbol}{inning_num}"
 
-    def _odds_would_hit_inning(self, draw, game: Optional[Dict], placements) -> bool:
-        """Whether any odds text overlaps the centred inning text on the top row.
+    def _odds_would_hit_top_row(self, draw, text: str, placements) -> bool:
+        """Whether any odds text overlaps the centred text on the top row.
 
         Baseball is the only scoreboard with something centred on that row, so
         it is the only one that can collide. Deciding by measurement rather
         than by panel size keeps the rule honest: what matters is whether these
         particular strings fit beside each other, and a two-digit over/under is
         several pixels wider than a one-digit one.
+
+        The text is passed in rather than derived, because the three cards do
+        not draw the same thing there: a live card shows the inning, a recent
+        card "Final", and an upcoming card a time or a date. Measuring the
+        inning for all three checked a string that was not on the panel.
         """
-        text = self._inning_text(game)
         if not text:
             return False
         try:
-            inning_font = self.fonts['time']
-            inning_width = draw.textbbox((0, 0), text, font=inning_font)[2]
+            top_font = self.fonts['time']
+            inning_width = draw.textbbox((0, 0), text, font=top_font)[2]
         except Exception:
             return False
         left = (self.display_width - inning_width) // 2
@@ -1032,12 +1055,16 @@ class GameRenderer:
         return any(x < right + 1 and x + width > left - 1
                    for _text, x, width in placements)
 
-    def _draw_dynamic_odds(self, draw, odds: Dict, game: Optional[Dict] = None) -> None:
+    def _draw_dynamic_odds(self, draw, odds: Dict, game: Optional[Dict] = None,
+                           top_text: Optional[str] = None) -> None:
         """Draw odds with dynamic positioning based on favored team.
 
-        `game` is optional and used only to measure the centred inning text,
-        so the odds can step down a row on a panel too narrow to fit beside
-        it. Omitting it simply skips that check.
+        `top_text` is whatever this card centres on the top row, so the odds
+        can step down a row on a panel too narrow to fit beside it. Callers
+        should pass what they actually draw -- "Final" on a recent card, the
+        time or date on an upcoming one. When omitted it falls back to the
+        live card's inning indicator, which is what `game` is for; passing
+        neither simply skips the check.
         """
         try:
             if not odds:
@@ -1112,7 +1139,8 @@ class GameRenderer:
                 return
 
             odds_y = 0 + odds_y_offset
-            if self._odds_would_hit_inning(draw, game, placements):
+            obstacle = top_text if top_text is not None else self._inning_text(game)
+            if self._odds_would_hit_top_row(draw, obstacle, placements):
                 # Step down one text row, which is where these used to live
                 # unconditionally. Measured rather than keyed to a panel size:
                 # it is the text widths that decide, and a two-digit over/under

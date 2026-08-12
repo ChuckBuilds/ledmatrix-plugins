@@ -878,16 +878,17 @@ class GameRenderer:
                 favored_spread = away_spread
                 favored_side = "away"
             
+            # Read once, before either branch. These used to be read inside
+            # the spread branch, but the over/under below uses them too -- so
+            # a game with a total and no spread raised UnboundLocalError, and
+            # the except swallowed it, drawing no odds at all.
+            odds_x_offset = self._layout_offset('odds', 'x_offset')
+            odds_y_offset = self._layout_offset('odds', 'y_offset')
+
             # Show the negative spread
             if favored_spread is not None:
                 spread_text = str(favored_spread)
                 font = self.fonts["detail"]
-                
-                # Odds had no layout control at all here, while baseball,
-                # basketball, football and ufc all expose one. Same element,
-                # same card, so it gets the same knob.
-                odds_x_offset = self._layout_offset('odds', 'x_offset')
-                odds_y_offset = self._layout_offset('odds', 'y_offset')
 
                 if favored_side == "home":
                     spread_width = draw.textlength(spread_text, font=font)
