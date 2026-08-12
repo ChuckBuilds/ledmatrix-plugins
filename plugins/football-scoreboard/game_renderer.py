@@ -366,7 +366,11 @@ class GameRenderer:
             # Fall back to default font for rendering
             self.logger.warning("BDF font detected but ImageDraw.text() doesn't support freetype.Face - using default font for rendering")
             font = ImageFont.load_default()
-        
+
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
         x, y = position
         for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
             draw.text((x + dx, y + dy), text, font=font, fill=outline_color)

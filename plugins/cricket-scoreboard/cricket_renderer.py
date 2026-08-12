@@ -131,7 +131,12 @@ class CricketRenderer:
 
     def _blank(self) -> Tuple[Image.Image, ImageDraw.ImageDraw]:
         img = Image.new("RGB", (self.width, self.height), BLACK)
-        return img, ImageDraw.Draw(img)
+        draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
+        # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
+        # glyphs. 1-bit mode keeps strokes crisp.
+        draw.fontmode = "1"
+        return img, draw
 
     # ---- team crest (flag / logo / placeholder) --------------------------- #
 
