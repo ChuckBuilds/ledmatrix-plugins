@@ -148,9 +148,7 @@ def main():
     calls = {'n': 0}
     ir.download_missing_logo = lambda *a, **k: calls.__setitem__('n', calls['n'] + 1) or True
     r4 = _renderer()
-    missing_team = str(tmp / 'ZZZ.png')  # already unlinked-equivalent: never created here
-    logo_dir = tmp
-    result = r4._get_team_logo('NOPE', str(logo_dir))
+    result = r4._get_team_logo('NOPE', str(tmp))  # no NOPE.png on disk
     check("returns None for a missing local file", result is None)
     check("without ever invoking the downloader", calls['n'] == 0, "%d calls" % calls['n'])
 
