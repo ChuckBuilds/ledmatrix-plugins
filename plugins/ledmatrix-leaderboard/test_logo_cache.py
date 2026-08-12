@@ -141,6 +141,43 @@ def main():
     check("a warm rebuild is far cheaper", warm * 10 < uncached,
           "%.2fms cached vs %.2fms uncached" % (warm * 1e3, uncached * 1e3))
 
+    print("\na missing team logo is not downloaded from the render path")
+    # _get_team_logo runs from layout construction on the render thread; a
+    # network call there would block the Vegas scroll. Downloading is
+    # update()'s job (download_missing_logos), not the renderer's.
+    calls = {'n': 0}
+    ir.download_missing_logo = lambda *a, **k: calls.__setitem__('n', calls['n'] + 1) or True
+    r4 = _renderer()
+    result = r4._get_team_logo('NOPE', str(tmp))  # no NOPE.png on disk
+    check("returns None for a missing local file", result is None)
+    check("without ever invoking the downloader", calls['n'] == 0, "%d calls" % calls['n'])
+
+    print("\nupdate()'s backfill downloads missing logos and a later render sees them")
+    downloaded = {'n': 0}
+
+    def fake_download(league, team_id, team_abbr, logo_path, session):
+        downloaded['n'] += 1
+        _png(logo_path)  # simulate the downloader writing the file
+        return True
+
+    ir.download_missing_logo = fake_download
+    r5 = _renderer()
+    leaderboard_data = [{
+        'league': 'nfl',
+        'league_config': {'logo_dir': str(tmp)},
+        'teams': [{'id': '1', 'abbreviation': 'BFL'}],
+    }]
+    bfl_path = tmp / 'BFL.png'
+    check("logo does not exist yet", not bfl_path.exists())
+    r5.download_missing_logos(leaderboard_data)
+    check("update()'s backfill invoked the downloader once", downloaded['n'] == 1,
+          "%d calls" % downloaded['n'])
+    check("and the file now exists locally", bfl_path.exists())
+    check("so a later render finds it without downloading",
+          r5._get_team_logo('BFL', str(tmp)) is not None)
+    check("still without the render path calling the downloader",
+          downloaded['n'] == 1, "%d calls" % downloaded['n'])
+
     print("\n%s" % ("FAILED: %d" % len(failures) if failures
                     else "All checks passed"))
     return 1 if failures else 0

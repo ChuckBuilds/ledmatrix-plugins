@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -31,6 +31,12 @@
   "requirements_file": "requirements.txt",
   "min_ledmatrix_version": "2.0.0",
   "versions": [
+    {
+      "released": "2026-08-12",
+      "version": "1.3.2",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Missing team logos are no longer downloaded from the render path. A network call inside layout construction (display()) could stall the Vegas scroll; the download now happens in update(), and the render path only ever reads local files, picking up a backfilled logo on the next rebuild."
+    },
     {
       "released": "2026-08-12",
       "version": "1.3.1",
