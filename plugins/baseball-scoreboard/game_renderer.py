@@ -39,6 +39,12 @@ except AttributeError:
     RESAMPLE_FILTER = Image.LANCZOS
 
 
+# Distinguishes "the caller did not say" from "the caller says the top row is
+# empty". Both were None, so a card that genuinely centres nothing up there
+# fell back to measuring an inning it does not draw.
+_DERIVE_TOP_SPAN = object()
+
+
 class GameRenderer:
     """Renders individual baseball game cards as PIL Images."""
 
@@ -531,7 +537,9 @@ class GameRenderer:
 
             # Odds
             if game.get('odds'):
-                self._draw_dynamic_odds(draw, game['odds'], game=game)
+                self._draw_dynamic_odds(
+                    draw, game['odds'], game=game,
+                    top_span=self._top_row_span(draw, inning_text, inning_font))
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -587,7 +595,9 @@ class GameRenderer:
 
             # Odds
             if game.get('odds'):
-                self._draw_dynamic_odds(draw, game['odds'], game=game, top_text="Final")
+                self._draw_dynamic_odds(
+                    draw, game['odds'], game=game,
+                    top_span=self._top_row_span(draw, "Final", self.fonts['time']))
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -824,18 +834,6 @@ class GameRenderer:
                      if self._scroll_card_option("show_time", True) else "")
         return date_text, time_text
 
-    def _upcoming_top_row_text(self, game: Dict) -> str:
-        """Whatever an upcoming card centres on its top row, or "".
-
-        Read by the odds collision check, which has to measure the string that
-        is actually on the panel. Derived here rather than in the caller so it
-        cannot drift from _draw_upcoming_game_status, which makes the same
-        choice a few lines below.
-        """
-        if self._upcoming_center_mode() == "date_time":
-            return ""      # both are stacked in the middle; the top row is free
-        date_text, time_text = self._upcoming_date_time_texts(game)
-        return date_text if self._scroll_card_option("swap_date_time", False) else time_text
 
     def _draw_upcoming_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw the date and time around an upcoming card.
@@ -938,8 +936,9 @@ class GameRenderer:
 
             # Odds
             if game.get('odds'):
-                self._draw_dynamic_odds(draw, game['odds'], game=game,
-                                        top_text=self._upcoming_top_row_text(upcoming))
+                self._draw_dynamic_odds(
+                    draw, game['odds'], game=game,
+                    top_span=self._upcoming_top_row_span(draw, upcoming))
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -1028,7 +1027,43 @@ class GameRenderer:
         symbol = "\u25b2" if inning_half == 'top' else "\u25bc"
         return f"{symbol}{inning_num}"
 
-    def _odds_would_hit_top_row(self, draw, text: str, placements) -> bool:
+    def _top_row_span(self, draw, text: str, font, x_offset: int = 0):
+        """The horizontal span a centred top-row string occupies, or None.
+
+        Mirrors how the cards place that text: centred, then nudged by the
+        element's configured x_offset. Returned as pixels rather than derived
+        from the text again later, because the three cards do not agree on the
+        font either -- an upcoming card with swap_date_time draws the date in
+        `detail`, not `time`.
+        """
+        if not text:
+            return None
+        try:
+            width = draw.textlength(text, font=font)
+        except Exception:
+            return None
+        left = int((self.display_width - width) // 2 + x_offset)
+        return left, int(left + width)
+
+    def _upcoming_top_row_span(self, draw, game: Dict):
+        """The span an upcoming card's top-row text occupies, or None.
+
+        Font and offset are chosen exactly as _draw_upcoming_game_status does,
+        so the odds are measured against what is really on the panel.
+        """
+        if self._upcoming_center_mode() == "date_time":
+            return None      # both are stacked in the middle; the top row is free
+        date_text, time_text = self._upcoming_date_time_texts(game)
+        if self._scroll_card_option("swap_date_time", False):
+            text, element = date_text, 'date'
+            font = self.fonts.get('detail') or self.fonts['time']
+        else:
+            text, element = time_text, 'time'
+            font = self.fonts['time']
+        return self._top_row_span(draw, text, font,
+                                  self._layout_offset(element, 'x_offset'))
+
+    def _odds_would_hit_top_row(self, span, placements) -> bool:
         """Whether any odds text overlaps the centred text on the top row.
 
         Baseball is the only scoreboard with something centred on that row, so
@@ -1042,29 +1077,26 @@ class GameRenderer:
         card "Final", and an upcoming card a time or a date. Measuring the
         inning for all three checked a string that was not on the panel.
         """
-        if not text:
+        if not span:
             return False
-        try:
-            top_font = self.fonts['time']
-            inning_width = draw.textbbox((0, 0), text, font=top_font)[2]
-        except Exception:
-            return False
-        left = (self.display_width - inning_width) // 2
-        right = left + inning_width
+        left, right = span
         # One pixel of breathing room either side, so glyphs do not touch.
         return any(x < right + 1 and x + width > left - 1
                    for _text, x, width in placements)
 
     def _draw_dynamic_odds(self, draw, odds: Dict, game: Optional[Dict] = None,
-                           top_text: Optional[str] = None) -> None:
+                           top_span=_DERIVE_TOP_SPAN) -> None:
         """Draw odds with dynamic positioning based on favored team.
 
-        `top_text` is whatever this card centres on the top row, so the odds
-        can step down a row on a panel too narrow to fit beside it. Callers
-        should pass what they actually draw -- "Final" on a recent card, the
-        time or date on an upcoming one. When omitted it falls back to the
-        live card's inning indicator, which is what `game` is for; passing
-        neither simply skips the check.
+        `top_span` is the (left, right) the card's own top-row text occupies,
+        so the odds can step down a row when they would not fit beside it.
+        Callers pass the span they actually drew rather than a string, because
+        the three cards agree on neither the text, the font, nor the centring:
+        a recent card draws "Final" in `time`, an upcoming card a time in
+        `time` or -- with swap_date_time -- a date in `detail`, shifted by
+        that element's configured x_offset. When omitted it falls back to
+        measuring the live card's inning indicator, which is what `game` is
+        for; passing neither simply skips the check.
         """
         try:
             if not odds:
@@ -1139,8 +1171,11 @@ class GameRenderer:
                 return
 
             odds_y = 0 + odds_y_offset
-            obstacle = top_text if top_text is not None else self._inning_text(game)
-            if self._odds_would_hit_top_row(draw, obstacle, placements):
+            obstacle = top_span
+            if obstacle is _DERIVE_TOP_SPAN:
+                obstacle = self._top_row_span(
+                    draw, self._inning_text(game), self.fonts['time'])
+            if self._odds_would_hit_top_row(obstacle, placements):
                 # Step down one text row, which is where these used to live
                 # unconditionally. Measured rather than keyed to a panel size:
                 # it is the text widths that decide, and a two-digit over/under

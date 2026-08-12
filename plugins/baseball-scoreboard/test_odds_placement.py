@@ -47,6 +47,17 @@ def _font():
 
 
 FONT = _font()
+
+
+def _font_at(size):
+    """The core's 4x6 at a given size, or PIL's default."""
+    import os
+    core = os.environ.get("LEDMATRIX_CORE", "")
+    for base in (core, "."):
+        p = Path(base) / "assets" / "fonts" / "4x6-font.ttf"
+        if p.exists():
+            return ImageFont.truetype(str(p), size)
+    return ImageFont.load_default()
 failures = []
 
 
@@ -59,7 +70,8 @@ def check(name, cond, detail=""):
 
 
 def odds_y(width, height, over_under, inning_half="top", inning=3,
-           y_offset=0, x_offset=0, top_text=None):
+           y_offset=0, x_offset=0, top_text=None, top_font=None,
+           top_x_offset=0):
     """Render the odds and report the y they landed on."""
     r = gr.GameRenderer.__new__(gr.GameRenderer)
     r.display_width, r.display_height = width, height
@@ -78,7 +90,8 @@ def odds_y(width, height, over_under, inning_half="top", inning=3,
         "spread": -1.5, "over_under": over_under,
         "home_team_odds": {"spread_odds": -1.5},
         "away_team_odds": {"spread_odds": 1.5},
-    }, game=game, top_text=top_text)
+    }, game=game, **({} if top_text is None else {'top_span':
+        r._top_row_span(draw, top_text, top_font or FONT, top_x_offset)}))
     if not drawn:
         return None, drawn
     return max(y for _t, _x, y in drawn), drawn
@@ -131,6 +144,31 @@ def main():
     for label, t in (("inning", None), ("Final", "Final"), ("time", "7:05 PM")):
         y, _ = odds_y(256, 64, 12.5, top_text=t)
         check("256x64 clears the %s" % label, y == 0, "y=%s" % y)
+
+    print("\nthe span is measured with the font and offset actually used")
+    # An upcoming card with swap_date_time draws the date in `detail`, not
+    # `time`, and shifts it by that element's x_offset. Measuring a centred
+    # `time` string instead can both miss a real overlap and invent one.
+    r = gr.GameRenderer.__new__(gr.GameRenderer)
+    r.display_width, r.display_height = 128, 32
+    d = ImageDraw.Draw(Image.new("RGB", (128, 32)))
+
+    small = r._top_row_span(d, "Sep 19", FONT)
+    big = r._top_row_span(d, "Sep 19", _font_at(10))
+    check("a wider font gives a wider span",
+          (big[1] - big[0]) > (small[1] - small[0]),
+          "%r vs %r" % (big, small))
+    # Within a couple of pixels: the width is fractional and both ends are
+    # truncated to int, so the midpoint can sit just under centre.
+    check("and both stay centred", abs((small[0] + small[1]) - 128) <= 2
+          and abs((big[0] + big[1]) - 128) <= 2, "%r %r" % (small, big))
+
+    shifted = r._top_row_span(d, "Sep 19", FONT, x_offset=-20)
+    check("an x_offset moves the span with the text",
+          shifted[0] == small[0] - 20 and shifted[1] == small[1] - 20,
+          "%r vs %r" % (shifted, small))
+
+    check("an empty top row has no span", r._top_row_span(d, "", FONT) is None)
 
     print("\nthe manual offsets still apply")
     y0, _ = odds_y(256, 64, 8.5)

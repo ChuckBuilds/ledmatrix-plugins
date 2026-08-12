@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.24.2",
+  "version": "1.24.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.24.3",
+      "released": "2026-08-12",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Measure the top row by the span the card actually draws, not by a re-derived string. The check assumed one font and pure centring, but an upcoming card with swap_date_time draws the date in `detail` rather than `time` and shifts it by that element's x_offset, so the odds could be moved down when nothing was in the way or left overlapping when something was."
+    },
     {
       "released": "2026-08-12",
       "version": "1.24.2",
