@@ -531,7 +531,7 @@ class GameRenderer:
 
             # Odds
             if game.get('odds'):
-                self._draw_dynamic_odds(draw, game['odds'], game)
+                self._draw_dynamic_odds(draw, game['odds'], game=game)
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -587,7 +587,7 @@ class GameRenderer:
 
             # Odds
             if game.get('odds'):
-                self._draw_dynamic_odds(draw, game['odds'], game, top_text="Final")
+                self._draw_dynamic_odds(draw, game['odds'], game=game, top_text="Final")
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -938,7 +938,7 @@ class GameRenderer:
 
             # Odds
             if game.get('odds'):
-                self._draw_dynamic_odds(draw, game['odds'], game,
+                self._draw_dynamic_odds(draw, game['odds'], game=game,
                                         top_text=self._upcoming_top_row_text(upcoming))
 
             main_img = Image.alpha_composite(main_img, overlay)
