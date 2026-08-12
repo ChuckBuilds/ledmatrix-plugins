@@ -15,6 +15,17 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
+
+# Tile fetching happens on the render thread, so these bound how long the
+# scroll can freeze on an unreachable tile server.
+#
+# The timeout was 10s, tried against each of two URLs, for every tile in the
+# grid -- profiled on a live rig the loop sat 5.3s in a single getaddrinfo.
+# Three seconds is generous for a tile that normally arrives in tens of
+# milliseconds, and the cooldown means a server that is down costs one such
+# wait every five minutes rather than one per URL per tile.
+_TILE_TIMEOUT_SECONDS = 3
+_TILE_FAILURE_COOLDOWN = 300.0
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 
 # Import base plugin class
@@ -212,6 +223,14 @@ class FlightTrackerPlugin(BasePlugin):
         # default 5s). See _fetch_aircraft_data.
         self._last_raw_payload = None
         self._last_raw_payload_at = 0.0
+
+        # Set when a tile fetch fails; until it passes, tiles come from cache
+        # only. Tile fetching runs on the render thread -- get_vegas_content()
+        # composites the map inline -- so an unreachable tile server froze the
+        # scroll for as long as it took to give up. Profiled on a live rig:
+        # 5.3s stuck in a single getaddrinfo, and the loop below pays that per
+        # URL per tile, across a whole grid of them.
+        self._tile_network_blocked_until = 0.0
 
         # Runtime data
         self.aircraft_data = {}  # ICAO -> aircraft dict (within map_radius_miles)
@@ -1970,6 +1989,12 @@ class FlightTrackerPlugin(BasePlugin):
             except Exception as e:
                 self.logger.warning(f"[Flight Tracker] Failed to load cached tile {x},{y},{zoom}: {e}")
         
+        # Uncached, so the only way to get it is the network -- which this
+        # code path cannot afford to wait on. Give up immediately while the
+        # server is known bad; the map renders with the tiles it does have.
+        if time.time() < self._tile_network_blocked_until:
+            return None
+
         # Fetch from server - try multiple URLs
         urls = self._get_tile_urls(x, y, zoom)
         
@@ -1977,7 +2002,7 @@ class FlightTrackerPlugin(BasePlugin):
             try:
                 self.logger.debug(f"[Flight Tracker] Fetching tile {x},{y} at zoom {zoom} from: {url}")
                 
-                response = requests.get(url, timeout=10)
+                response = requests.get(url, timeout=_TILE_TIMEOUT_SECONDS)
                 response.raise_for_status()
                 
                 # Check if we got an error page instead of a tile
@@ -2057,11 +2082,27 @@ class FlightTrackerPlugin(BasePlugin):
             except Exception as e:
                 self.logger.warning(f"[Flight Tracker] Failed to fetch tile from {url}: {e}")
                 if i == len(urls) - 1:  # Last URL failed
+                    self._block_tile_network()
                     return None
                 continue  # Try next URL
-        
+
         # If we get here, all URLs failed
+        self._block_tile_network()
         return None
+
+    def _block_tile_network(self) -> None:
+        """Serve tiles from cache alone for a while after a failure.
+
+        One tile failing means the server or the network is unavailable, and
+        every other tile in the grid is about to discover the same thing at
+        the same price. Since this runs on the render thread, paying it once
+        is a frozen scroll and paying it per tile is a stopped one.
+        """
+        self._tile_network_blocked_until = time.time() + _TILE_FAILURE_COOLDOWN
+        self.logger.warning(
+            "[Flight Tracker] Tile fetch failed; using cached tiles only for "
+            "%.0fs so the scroll does not stall on every remaining tile",
+            _TILE_FAILURE_COOLDOWN)
     
     def _get_map_background(self, center_lat: float, center_lon: float) -> Optional[Image.Image]:
         """Get the map background for the current view."""

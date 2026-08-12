@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.12.8",
+  "version": "1.12.9",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -37,6 +37,12 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "released": "2026-08-12",
+      "version": "1.12.9",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop an unreachable tile server freezing the Vegas scroll. Tiles are fetched from inside get_vegas_content(), which runs on the render thread, with a 10s timeout tried against each of two URLs for every tile in the grid and nothing bounding the total. Profiled with py-spy on a live rig, the render thread sat 5.30s in a single getaddrinfo. The timeout is now 3s and one failure switches tiles to cache-only for five minutes, so a dead server costs one short wait rather than one per URL per tile; the map simply draws with the tiles it already has."
+    },
     {
       "released": "2026-08-11",
       "version": "1.12.8",
