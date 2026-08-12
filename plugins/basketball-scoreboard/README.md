@@ -458,11 +458,13 @@ this scoreboard shows full screen until the game ends. If you would rather keep
 the marquee scrolling and still see scores, set this in the core config:
 
 ```json
-"display": {
-  "vegas_scroll": {
-    "live_in_ticker": true,
-    "live_weight": 3,
-    "favorite_live_weight": 5
+{
+  "display": {
+    "vegas_scroll": {
+      "live_in_ticker": true,
+      "live_weight": 3,
+      "favorite_live_weight": 5
+    }
   }
 }
 ```

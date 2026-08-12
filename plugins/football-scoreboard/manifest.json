@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.15.0",
+  "version": "2.15.1",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.15.1",
+      "released": "2026-08-12",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Match favorites against this plugin's real live-data shape. The first cut looked for an attribute holding live_games beside favorite_teams, which is true of five scoreboards and quietly false for four: cricket keeps live_matches, nrl and afl hold their managers in a dict rather than as attributes, and ufc has favorite_fighters and fighter names. Those four reported every live game as non-favorite. A celebrating game is searched too, since the live manager snapshots it out of live_games while the celebration is on screen."
+    },
     {
       "version": "2.15.0",
       "released": "2026-08-12",

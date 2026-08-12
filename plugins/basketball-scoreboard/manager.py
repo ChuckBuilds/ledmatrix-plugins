@@ -1375,25 +1375,82 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
             return None
 
     def _favorite_team_is_live(self):
-        """Whether any live game involves a configured favorite team.
+        """Whether any live game or fight involves a configured favorite.
 
-        Walks this plugin's own league managers rather than taking a league
-        argument: each sport registers one per league under its own attribute
-        name, and every one of them carries `live_games` and `favorite_teams`.
-        Looking for that pair is what makes this identical across sports.
+        The sports plugins do not share one data shape, so this enumerates the
+        real ones rather than assuming. An earlier version looked only for an
+        attribute holding `live_games` alongside `favorite_teams`, which was
+        true of five plugins and quietly false for four others -- they simply
+        never reported a favorite, and no test noticed because the tests used
+        the assumed shape rather than each plugin's own.
+
+        Handled:
+
+        * managers held directly on the plugin *and* inside a dict such as
+          ``self._managers`` (nrl, afl)
+        * ``live_games`` (most) and ``live_matches`` (cricket)
+        * ``favorite_teams`` (most) and ``favorite_fighters`` (ufc)
+        * identifiers ``home_abbr``/``away_abbr``, ``home_id``/``away_id``,
+          ``fighter1_name``/``fighter2_name``, and cricket's nested
+          ``teams: [{name, abbr, short_name}]``
+        * ``active_celebration["game"]``, a snapshot the live manager keeps
+          precisely because the game leaves ``live_games`` while the
+          celebration is still on screen
+        """
+        for holder in self._favorite_scan_targets():
+            favorites = (getattr(holder, 'favorite_teams', None)
+                         or getattr(holder, 'favorite_fighters', None))
+            if not favorites:
+                continue
+            wanted = {str(f).strip().lower() for f in favorites if f}
+            if not wanted:
+                continue
+            for game in self._favorite_scan_games(holder):
+                if self._game_involves(game, wanted):
+                    return True
+        return False
+
+    def _favorite_scan_targets(self):
+        """Objects that might carry live content: attributes, and dict values.
+
+        nrl and afl keep their per-league managers in a ``self._managers``
+        dict, so walking attribute values alone finds the dict and stops.
         """
         for value in list(vars(self).values()):
-            games = getattr(value, 'live_games', None)
-            favorites = getattr(value, 'favorite_teams', None)
-            if not games or not favorites:
+            yield value
+            if isinstance(value, dict):
+                for nested in list(value.values()):
+                    yield nested
+
+    @staticmethod
+    def _favorite_scan_games(holder):
+        """Every game/fight on a holder that a favorite could be playing in."""
+        for attr in ('live_games', 'live_matches'):
+            for game in (getattr(holder, attr, None) or []):
+                if isinstance(game, dict):
+                    yield game
+        celebration = getattr(holder, 'active_celebration', None)
+        if isinstance(celebration, dict) and isinstance(celebration.get('game'), dict):
+            yield celebration['game']
+
+    @staticmethod
+    def _game_involves(game, wanted):
+        """Whether a game/fight involves one of the wanted names."""
+        for field in ('home_abbr', 'away_abbr', 'home_id', 'away_id',
+                      'fighter1_name', 'fighter2_name'):
+            value = game.get(field)
+            if value is not None and str(value).strip().lower() in wanted:
+                return True
+        # Cricket nests its sides and matches on any of three names, by
+        # substring -- "india" should match "India Women". Mirrors that
+        # plugin's own _match_has_team rather than inventing a second rule.
+        for team in (game.get('teams') or []):
+            if not isinstance(team, dict):
                 continue
-            wanted = {str(t).upper() for t in favorites if t}
-            for game in games:
-                if not isinstance(game, dict):
-                    continue
-                for side in ('home_abbr', 'away_abbr'):
-                    if str(game.get(side) or '').upper() in wanted:
-                        return True
+            hay = " ".join(str(team.get(k) or '') for k in
+                           ('name', 'abbr', 'short_name')).lower()
+            if any(name in hay for name in wanted):
+                return True
         return False
 
     def has_live_content(self) -> bool:

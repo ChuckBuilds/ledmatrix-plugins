@@ -91,11 +91,13 @@ this scoreboard shows full screen until the game ends. If you would rather keep
 the marquee scrolling and still see scores, set this in the core config:
 
 ```json
-"display": {
-  "vegas_scroll": {
-    "live_in_ticker": true,
-    "live_weight": 3,
-    "favorite_live_weight": 5
+{
+  "display": {
+    "vegas_scroll": {
+      "live_in_ticker": true,
+      "live_weight": 3,
+      "favorite_live_weight": 5
+    }
   }
 }
 ```
@@ -106,16 +108,15 @@ weights let this plugin claim several slots per cycle, spaced evenly through
 it rather than bunched together.
 
 `live_weight` applies whenever this scoreboard has a live game.
-`favorite_live_weight` applies when one of your `favorite_teams` is playing, so
-your team's game comes round more often than other live games. That distinction
+`favorite_live_weight` applies when one of your `ufc.favorite_fighters` is in a
+live fight, so your fighter's bout comes round more often than other live fights. That distinction
 has to be made here rather than in the core, which can tell *that* a game is
 live but not *whose*.
 
 Two things to keep in mind:
 
-- The weight is per **plugin**, not per game. With four games live this
-  scoreboard still occupies one slot at a time and picks between its own games
-  using `favorite_live_boost`; these weights control how often the scoreboard
+- The weight is per **plugin**, not per game. With four fights live this
+  scoreboard still occupies one slot at a time and picks between its own fights; these weights control how often the scoreboard
   itself comes round.
 - More slots make the cycle **longer**, not faster — everything else appears
   proportionally less often. And appearing more often only helps if the data is

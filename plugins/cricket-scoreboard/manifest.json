@@ -1,7 +1,7 @@
 {
   "id": "cricket-scoreboard",
   "name": "Cricket Scoreboard",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming cricket matches across international tours (Test/ODI/T20I) and major domestic T20 leagues including the IPL, Big Bash League, The Hundred, PSL, CPL, SA20 and more. Shows runs/wickets/overs, run rates, targets, and match results.",
   "category": "sports",
@@ -22,6 +22,12 @@
     "cricket_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.1.1",
+      "released": "2026-08-12",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Match favorites against this plugin's real live-data shape. The first cut looked for an attribute holding live_games beside favorite_teams, which is true of five scoreboards and quietly false for four: cricket keeps live_matches, nrl and afl hold their managers in a dict rather than as attributes, and ufc has favorite_fighters and fighter names. Those four reported every live game as non-favorite. A celebrating game is searched too, since the live manager snapshots it out of live_games while the celebration is on screen."
+    },
     {
       "version": "1.1.0",
       "released": "2026-08-12",
