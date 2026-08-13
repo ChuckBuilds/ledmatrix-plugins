@@ -18,11 +18,22 @@
         "plugin_id": "calendar",
         "max_files": 1,
         "max_size_mb": 1,
-        "allowed_types": ["application/json"],
-        "allowed_extensions": [".json"],
+        "allowed_types": [
+          "application/json"
+        ],
+        "allowed_extensions": [
+          ".json"
+        ],
         "upload_endpoint": "/api/v3/plugins/calendar/upload-credentials",
         "target_filename": "credentials.json"
       }
+    },
+    "google_auth": {
+      "type": "string",
+      "title": "Step 2: Connect Your Google Account",
+      "default": "",
+      "description": "Authorize this device to read your calendars. Opens Google's consent screen; afterwards your browser lands on a page that fails to load, which is expected -- copy that address back here to finish. Requires Step 1 first.",
+      "x-widget": "google-oauth"
     },
     "calendars": {
       "type": "array",
@@ -31,7 +42,9 @@
       "items": {
         "type": "string"
       },
-      "default": ["primary"],
+      "default": [
+        "primary"
+      ],
       "description": "After authenticating, click 'Load My Calendars' to select which calendars to display."
     },
     "max_events": {
@@ -108,7 +121,10 @@
               "x-advanced": true
             }
           },
-          "x-propertyOrder": ["font", "font_size"],
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
           "additionalProperties": false
         },
         "title_text": {
@@ -141,17 +157,24 @@
               "x-advanced": true
             }
           },
-          "x-propertyOrder": ["font", "font_size"],
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
           "additionalProperties": false
         }
       },
-      "x-propertyOrder": ["datetime_text", "title_text"],
+      "x-propertyOrder": [
+        "datetime_text",
+        "title_text"
+      ],
       "additionalProperties": false
     }
   },
   "x-propertyOrder": [
     "enabled",
     "credentials_file",
+    "google_auth",
     "calendars",
     "max_events",
     "show_all_day_events",
@@ -160,6 +183,8 @@
     "update_interval",
     "customization"
   ],
-  "required": ["enabled"],
+  "required": [
+    "enabled"
+  ],
   "additionalProperties": true
 }
