@@ -38,8 +38,8 @@
     {
       "version": "1.2.0",
       "released": "2026-08-13",
-      "ledmatrix_min_version": "2.0.0",
-      "notes": "Add the missing Step 2 to the setup. The config advertised Step 1 (upload credentials) and Step 3 (pick calendars) with nothing between them, so there was no way to actually authorize the device from the web UI -- and Step 3 could only ever fail, since it needs the token Step 2 produces. calendar_registration.py already handled this flow; it simply had no field to drive it."
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Add the missing Step 2 to the setup. The config advertised Step 1 (upload credentials) and Step 3 (pick calendars) with nothing between them, so there was no way to actually authorize the device from the web UI -- and Step 3 could only ever fail, since it needs the token Step 2 produces. calendar_registration.py already handled this flow; it simply had no field to drive it. Requires the core endpoints from LEDMatrix#458; the floor assumes they ship in 3.3.0, the next minor after the current 3.2.0."
     },
     {
       "released": "2026-07-28",
