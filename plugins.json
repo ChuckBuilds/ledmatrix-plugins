@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-08-12",
+  "last_updated": "2026-08-13",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -806,10 +806,10 @@
       "plugin_path": "plugins/stock-news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-08-05",
+      "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.5.0"
+      "latest_version": "2.6.0"
     },
     {
       "id": "stocks",

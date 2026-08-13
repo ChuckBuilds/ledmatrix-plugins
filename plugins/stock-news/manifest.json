@@ -1,7 +1,7 @@
 {
   "id": "stock-news",
   "name": "Stock News Ticker",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "author": "ChuckBuilds",
   "description": "Live stock headlines via Yahoo Finance search API with RSS fallback, company logos, configurable display styles (logo+ticker, ticker only, logo only), Vegas scroll integration, and per-day/hour request budgeting",
   "entry_point": "manager.py",
@@ -25,6 +25,12 @@
   "branch": "main",
   "plugin_path": "plugins/stock-news",
   "versions": [
+    {
+      "version": "2.6.0",
+      "released": "2026-08-13",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Publisher and age now default to a small, pixel-perfect size (the 4x6 font's crisp 7px grid) instead of matching the headline's font_size, so they read as a quiet afterthought instead of taking up as much space as the headline. Each segment is also vertically centered on its own text height (previously all segments shared the tallest segment's centering, so the smaller text floated instead of sitting level with the headline), and the '  •  ' separator is now a tighter ' - ' (the small pixel font has no bullet glyph). publisher_font_size/age_font_size/publisher_font_path/age_font_path still override the auto default."
+    },
     {
       "version": "2.5.0",
       "released": "2026-08-05",
@@ -148,7 +154,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-05",
+  "last_updated": "2026-08-13",
   "stars": 0,
   "downloads": 0,
   "verified": true,

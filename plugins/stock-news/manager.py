@@ -196,17 +196,21 @@ class StockNewsTickerPlugin(BasePlugin):
         # per-symbol spacing. See update().
         self.eager_fetch_on_startup = gc.get('eager_fetch_on_startup', True)
 
-        # Independent publisher / age styling — 0 or '' falls back to the main
-        # headline font_size / font_path so existing configs render unchanged.
+        # Independent publisher / age styling — 0/'' auto-defaults to a small,
+        # pixel-perfect size and font rather than matching the headline, so
+        # the source/age read as a quiet afterthought instead of competing
+        # with it for space. The 4x6 bitmap font rasterizes crisply at its
+        # native 7px grid (see PIXEL_FONT_GRIDS) -- much cleaner at small
+        # sizes than scaling PressStart2P down off its own 8px grid.
         raw_pub_fs = gc.get('publisher_font_size', 0)
-        self.publisher_font_size = int(raw_pub_fs) if raw_pub_fs and int(raw_pub_fs) > 0 else self.font_size
-        self.publisher_font_path = gc.get('publisher_font_path') or gc.get(
-            'font_path', 'assets/fonts/PressStart2P-Regular.ttf')
+        self.publisher_font_path = gc.get('publisher_font_path') or 'assets/fonts/4x6-font.ttf'
+        self.publisher_font_size = (int(raw_pub_fs) if raw_pub_fs and int(raw_pub_fs) > 0
+                                     else self._default_small_font_size(self.publisher_font_path))
 
         raw_age_fs = gc.get('age_font_size', 0)
-        self.age_font_size = int(raw_age_fs) if raw_age_fs and int(raw_age_fs) > 0 else self.font_size
-        self.age_font_path = gc.get('age_font_path') or gc.get(
-            'font_path', 'assets/fonts/PressStart2P-Regular.ttf')
+        self.age_font_path = gc.get('age_font_path') or 'assets/fonts/4x6-font.ttf'
+        self.age_font_size = (int(raw_age_fs) if raw_age_fs and int(raw_age_fs) > 0
+                               else self._default_small_font_size(self.age_font_path))
 
         # Price coloring: 'fixed' always uses text_color; 'change' colors the
         # price green/red based on movement since market open.
@@ -253,6 +257,13 @@ class StockNewsTickerPlugin(BasePlugin):
         if grid <= 0:
             return size
         return max(grid, int(round(size / grid)) * grid)
+
+    def _default_small_font_size(self, font_path: str) -> int:
+        """Small pixel-perfect default size for the publisher/age segments:
+        the font's own design grid when known (crisp, no partial-pixel
+        strokes), else half the headline size."""
+        grid = self.PIXEL_FONT_GRIDS.get(Path(font_path).name, 0)
+        return grid if grid > 0 else max(5, self.font_size // 2)
 
     @staticmethod
     def _pixel_draw(image: Image.Image) -> ImageDraw.ImageDraw:
@@ -358,9 +369,9 @@ class StockNewsTickerPlugin(BasePlugin):
             fm.register_manager_font(self.plugin_id, f"{self.plugin_id}.symbol",
                                      "press_start", self.font_size, self.symbol_color)
             fm.register_manager_font(self.plugin_id, f"{self.plugin_id}.publisher",
-                                     "press_start", self.publisher_font_size, self.publisher_color)
+                                     "four_by_six", self.publisher_font_size, self.publisher_color)
             fm.register_manager_font(self.plugin_id, f"{self.plugin_id}.age",
-                                     "press_start", self.age_font_size, self.age_color)
+                                     "four_by_six", self.age_font_size, self.age_color)
         except Exception as e:
             self.logger.warning("[Stock News] Font registration error: %s", e)
 
@@ -900,32 +911,40 @@ class StockNewsTickerPlugin(BasePlugin):
                 if title:
                     segments.append((title, txt_c, font_hl))
                 # Publisher and age are independently styled (colour, font, size) —
-                # rendered as separate segments, each with its own bullet prefix.
+                # rendered as separate segments, each with its own separator
+                # prefix. Single-space padding keeps them a tight, closely-spaced
+                # afterthought rather than a wide gap. A plain hyphen is used
+                # (not a bullet glyph) since the small 4x6 pixel font -- the
+                # default for these segments -- has no "•"/"·" in its glyph set.
                 if self.show_publisher and publisher:
-                    segments.append(("  •  " + publisher, pub_c, font_pub))
+                    segments.append((" - " + publisher, pub_c, font_pub))
                 if self.show_age and pub_ts:
                     age = self._format_age(pub_ts)
                     if age:
-                        segments.append(("  •  " + age, age_c, font_age))
+                        segments.append((" - " + age, age_c, font_age))
 
-            # Measure segments
+            # Measure segments. Each segment's own text height is kept (not
+            # just the tallest one) so smaller publisher/age text can be
+            # vertically centered on its own -- centering everything on the
+            # headline's height would leave the smaller text hugging the top
+            # instead of sitting level with it.
             draw_tmp = self._pixel_draw(Image.new('RGB', (1, 1)))
             widths: List[int] = []
-            text_h = 1
+            heights: List[int] = []
             for text, _, font in segments:
                 if text:
                     bb = draw_tmp.textbbox((0, 0), text, font=font)
                     widths.append(bb[2] - bb[0])
-                    text_h = max(text_h, bb[3] - bb[1])
+                    heights.append(bb[3] - bb[1])
                 else:
                     widths.append(0)
+                    heights.append(0)
 
             logo_w = (logo.width + 4) if logo else 0
             total_w = max(logo_w + sum(widths), 1)
 
             img = Image.new('RGB', (total_w, self.display_height), (0, 0, 0))
             draw = self._pixel_draw(img)
-            text_y = max(0, (self.display_height - text_h) // 2)
 
             x = 0
             if logo:
@@ -934,9 +953,10 @@ class StockNewsTickerPlugin(BasePlugin):
                 img.paste(logo, (x, logo_y), mask)
                 x += logo.width + 4
 
-            for (text, color, font), w in zip(segments, widths):
+            for (text, color, font), w, h in zip(segments, widths, heights):
                 if text and w > 0:
-                    draw.text((x, text_y), text, fill=color, font=font)
+                    y = max(0, (self.display_height - h) // 2)
+                    draw.text((x, y), text, fill=color, font=font)
                     x += w
 
             return img
