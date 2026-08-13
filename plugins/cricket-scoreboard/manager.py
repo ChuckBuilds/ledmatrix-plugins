@@ -384,6 +384,115 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
     def has_live_priority(self) -> bool:
         return self.is_enabled and self.live_priority
 
+    # --- Vegas ticker weighting ------------------------------------------
+    #
+    # With display.vegas_scroll.live_in_ticker set, the marquee keeps running
+    # through a live game and plugins can claim more than one slot per cycle.
+    # The core already gives any plugin with live content `live_weight`; this
+    # exists for the one thing the core cannot work out for itself, which is
+    # *whose* game is live. See the core's PLUGIN_API_REFERENCE, "Vegas scroll
+    # hooks", and ADVANCED_FEATURES, "Live content in the ticker".
+
+    def get_vegas_priority_weight(self):
+        """Slots per Vegas cycle: more when a favorite team is playing.
+
+        Returns None when nothing is live, which leaves the decision to the
+        core rather than asserting a weight of 1 -- the core may have its own
+        reason to boost this plugin later.
+        """
+        try:
+            if not (self.has_live_priority() and self.has_live_content()):
+                return None
+            vegas = (self.global_config or {}).get('display', {}).get(
+                'vegas_scroll', {})
+            if self._favorite_team_is_live():
+                return vegas.get('favorite_live_weight', 5)
+            return vegas.get('live_weight', 3)
+        except Exception:
+            # Never let a weighting question break the rotation; the core
+            # treats an exception as weight 1 anyway, and None says the same
+            # thing more cheaply.
+            return None
+
+    def _favorite_team_is_live(self):
+        """Whether any live game or fight involves a configured favorite.
+
+        The sports plugins do not share one data shape, so this enumerates the
+        real ones rather than assuming. An earlier version looked only for an
+        attribute holding `live_games` alongside `favorite_teams`, which was
+        true of five plugins and quietly false for four others -- they simply
+        never reported a favorite, and no test noticed because the tests used
+        the assumed shape rather than each plugin's own.
+
+        Handled:
+
+        * managers held directly on the plugin *and* inside a dict such as
+          ``self._managers`` (nrl, afl)
+        * ``live_games`` (most) and ``live_matches`` (cricket)
+        * ``favorite_teams`` (most) and ``favorite_fighters`` (ufc)
+        * identifiers ``home_abbr``/``away_abbr``, ``home_id``/``away_id``,
+          ``fighter1_name``/``fighter2_name``, and cricket's nested
+          ``teams: [{name, abbr, short_name}]``
+        * ``active_celebration["game"]``, a snapshot the live manager keeps
+          precisely because the game leaves ``live_games`` while the
+          celebration is still on screen
+        """
+        for holder in self._favorite_scan_targets():
+            favorites = (getattr(holder, 'favorite_teams', None)
+                         or getattr(holder, 'favorite_fighters', None))
+            if not favorites:
+                continue
+            wanted = {str(f).strip().lower() for f in favorites if f}
+            if not wanted:
+                continue
+            for game in self._favorite_scan_games(holder):
+                if self._game_involves(game, wanted):
+                    return True
+        return False
+
+    def _favorite_scan_targets(self):
+        """Objects that might carry live content: attributes, and dict values.
+
+        nrl and afl keep their per-league managers in a ``self._managers``
+        dict, so walking attribute values alone finds the dict and stops.
+        """
+        for value in list(vars(self).values()):
+            yield value
+            if isinstance(value, dict):
+                for nested in list(value.values()):
+                    yield nested
+
+    @staticmethod
+    def _favorite_scan_games(holder):
+        """Every game/fight on a holder that a favorite could be playing in."""
+        for attr in ('live_games', 'live_matches'):
+            for game in (getattr(holder, attr, None) or []):
+                if isinstance(game, dict):
+                    yield game
+        celebration = getattr(holder, 'active_celebration', None)
+        if isinstance(celebration, dict) and isinstance(celebration.get('game'), dict):
+            yield celebration['game']
+
+    @staticmethod
+    def _game_involves(game, wanted):
+        """Whether a game/fight involves one of the wanted names."""
+        for field in ('home_abbr', 'away_abbr', 'home_id', 'away_id',
+                      'fighter1_name', 'fighter2_name'):
+            value = game.get(field)
+            if value is not None and str(value).strip().lower() in wanted:
+                return True
+        # Cricket nests its sides and matches on any of three names, by
+        # substring -- "india" should match "India Women". Mirrors that
+        # plugin's own _match_has_team rather than inventing a second rule.
+        for team in (game.get('teams') or []):
+            if not isinstance(team, dict):
+                continue
+            hay = " ".join(str(team.get(k) or '') for k in
+                           ('name', 'abbr', 'short_name')).lower()
+            if any(name in hay for name in wanted):
+                return True
+        return False
+
     def has_live_content(self) -> bool:
         if not self.is_enabled or not self.mode_enabled.get(MODE_LIVE, True):
             return False
