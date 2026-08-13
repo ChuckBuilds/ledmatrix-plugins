@@ -187,10 +187,10 @@
       "plugin_path": "plugins/countdown",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.2.0",
+      "latest_version": "3.2.1",
       "icon": "fa-clock"
     },
     {
@@ -757,10 +757,10 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-08-05",
+      "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.10.1"
+      "latest_version": "2.10.2"
     },
     {
       "id": "static-image",
