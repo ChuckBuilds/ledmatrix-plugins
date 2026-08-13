@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-08-12",
+  "last_updated": "2026-08-13",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -124,7 +124,7 @@
       "last_updated": "2026-07-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.6"
+      "latest_version": "1.2.0"
     },
     {
       "id": "christmas-countdown",
