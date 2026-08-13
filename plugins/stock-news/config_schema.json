@@ -63,13 +63,13 @@
           "default": 0,
           "minimum": 0,
           "maximum": 24,
-          "description": "Font size for the publisher segment (e.g. 'Reuters'). Set to 0 to match the main font_size."
+          "description": "Font size for the publisher segment (e.g. 'Reuters'). Set to 0 for a small pixel-perfect auto default (independent of the headline's font_size), or set an explicit size to override."
         },
         "publisher_font_path": {
           "x-advanced": true,
           "type": "string",
           "default": "",
-          "description": "Optional separate TTF for the publisher segment. Empty = use the main font_path."
+          "description": "Optional separate TTF for the publisher segment. Empty = use the small 4x6 pixel font by default, which stays crisp at small sizes."
         },
         "age_font_size": {
           "x-advanced": true,
@@ -77,13 +77,13 @@
           "default": 0,
           "minimum": 0,
           "maximum": 24,
-          "description": "Font size for the relative-age segment (e.g. '2h ago'). Set to 0 to match the main font_size."
+          "description": "Font size for the relative-age segment (e.g. '2h ago'). Set to 0 for a small pixel-perfect auto default (independent of the headline's font_size), or set an explicit size to override."
         },
         "age_font_path": {
           "x-advanced": true,
           "type": "string",
           "default": "",
-          "description": "Optional separate TTF for the relative-age segment. Empty = use the main font_path."
+          "description": "Optional separate TTF for the relative-age segment. Empty = use the small 4x6 pixel font by default, which stays crisp at small sizes."
         },
         "eager_fetch_on_startup": {
           "x-advanced": true,
