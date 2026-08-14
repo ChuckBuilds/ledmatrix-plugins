@@ -8,6 +8,7 @@ Migrated from feature/flight-tracker-manager branch with flattened configuration
 import json
 import logging
 import math
+import threading
 import time
 import os
 from datetime import datetime
@@ -231,6 +232,11 @@ class FlightTrackerPlugin(BasePlugin):
         # 5.3s stuck in a single getaddrinfo, and the loop below pays that per
         # URL per tile, across a whole grid of them.
         self._tile_network_blocked_until = 0.0
+        # Tiles the render path asked for and could not serve from cache.
+        # Drained by the prefetch on the update worker. Bounded, because a
+        # map that keeps moving would otherwise grow this without limit.
+        self._tiles_wanted: set = set()
+        self._tiles_wanted_lock = threading.Lock()
 
         # Runtime data
         self.aircraft_data = {}  # ICAO -> aircraft dict (within map_radius_miles)
@@ -1976,8 +1982,59 @@ class FlightTrackerPlugin(BasePlugin):
         tile_age = time.time() - cache_path.stat().st_mtime
         return tile_age < (self.cache_ttl_hours * 3600)
     
-    def _fetch_tile(self, x: int, y: int, zoom: int) -> Optional[Image.Image]:
-        """Fetch a map tile, using cache if available."""
+    _MAX_TILES_WANTED = 64
+
+    def _note_tile_wanted(self, x: int, y: int, zoom: int) -> None:
+        """Record a cache miss the render thread refused to wait for."""
+        with self._tiles_wanted_lock:
+            if len(self._tiles_wanted) < self._MAX_TILES_WANTED:
+                self._tiles_wanted.add((x, y, zoom))
+
+    def _prefetch_map_tiles(self) -> None:
+        """Fetch the tiles the render path went without, off the render thread.
+
+        Called from update(), which the plugin manager runs on its update
+        worker. A tile that times out here costs nothing visible; the same
+        fetch on the render thread froze the marquee for three seconds.
+
+        The existing failure cooldown still applies, so an unreachable server
+        is not hammered -- it just stops being the display's problem.
+        """
+        with self._tiles_wanted_lock:
+            wanted = sorted(self._tiles_wanted)
+            self._tiles_wanted.clear()
+        if not wanted:
+            return
+        if time.time() < self._tile_network_blocked_until:
+            return
+
+        fetched = 0
+        for x, y, zoom in wanted:
+            if time.time() < self._tile_network_blocked_until:
+                # The cooldown tripped mid-run; stop rather than queue behind
+                # a server that has already said no.
+                break
+            if self._fetch_tile(x, y, zoom, allow_network=True) is not None:
+                fetched += 1
+        if fetched:
+            self.logger.info(
+                "[Flight Tracker] Prefetched %d/%d map tile(s) off the render "
+                "thread", fetched, len(wanted))
+
+    def _fetch_tile(self, x: int, y: int, zoom: int,
+                    allow_network: bool = True) -> Optional[Image.Image]:
+        """Fetch a map tile, using cache if available.
+
+        allow_network=False serves the cache only and never opens a socket.
+        The render thread passes False: a tile normally arrives in tens of
+        milliseconds, but an unreachable one costs the full timeout, and on
+        the render thread that is a frozen marquee. Measured on a live rig at
+        3458ms, 3377ms and 3479ms in one session -- the cooldown below bounded
+        it to one such freeze per five minutes rather than removing it.
+
+        Prefetching from update() (see _prefetch_map_tiles) fills the cache on
+        the worker thread instead, so the render path finds what it needs.
+        """
         from PIL import Image as PILImage
         
         cache_path = self._get_tile_cache_path(x, y, zoom)
@@ -1989,9 +2046,14 @@ class FlightTrackerPlugin(BasePlugin):
             except Exception as e:
                 self.logger.warning(f"[Flight Tracker] Failed to load cached tile {x},{y},{zoom}: {e}")
         
-        # Uncached, so the only way to get it is the network -- which this
-        # code path cannot afford to wait on. Give up immediately while the
-        # server is known bad; the map renders with the tiles it does have.
+        # Uncached. Callers on the render thread never wait for the network;
+        # the map renders with the tiles it does have and the prefetch fills
+        # the gap for next time.
+        if not allow_network:
+            self._note_tile_wanted(x, y, zoom)
+            return None
+
+        # Give up immediately while the server is known bad.
         if time.time() < self._tile_network_blocked_until:
             return None
 
@@ -2104,7 +2166,8 @@ class FlightTrackerPlugin(BasePlugin):
             "%.0fs so the scroll does not stall on every remaining tile",
             _TILE_FAILURE_COOLDOWN)
     
-    def _get_map_background(self, center_lat: float, center_lon: float) -> Optional[Image.Image]:
+    def _get_map_background(self, center_lat: float, center_lon: float,
+                            allow_network: bool = True) -> Optional[Image.Image]:
         """Get the map background for the current view."""
         if not self.map_bg_enabled:
             return None
@@ -2182,7 +2245,8 @@ class FlightTrackerPlugin(BasePlugin):
                 tile_y = start_y + ty
                 
                 # Fetch tile (reduced logging for performance)
-                tile_img = self._fetch_tile(tile_x, tile_y, zoom)
+                tile_img = self._fetch_tile(tile_x, tile_y, zoom,
+                                            allow_network=allow_network)
                 if tile_img:
                     # Ensure tile is in RGB mode for proper compositing
                     if tile_img.mode != 'RGB':
@@ -2438,6 +2502,13 @@ class FlightTrackerPlugin(BasePlugin):
         # more than a single request.
         if self.metar_enabled and self.metar_airports and is_visible:
             self._service_metar(current_time)
+
+        # The render path never waits on the network for a tile; anything it
+        # went without is fetched here instead, on the update worker.
+        try:
+            self._prefetch_map_tiles()
+        except Exception as e:  # pylint: disable=broad-except
+            self.logger.warning("[Flight Tracker] Tile prefetch failed: %s", e)
 
     def _service_metar(self, now: float) -> None:
         """Drive the weather refresh incrementally: refill a small work queue when the
@@ -2980,7 +3051,9 @@ class FlightTrackerPlugin(BasePlugin):
             The composed map as a new RGB image at the current display size
         """
         # Get map background if enabled
-        map_bg = self._get_map_background(self.center_lat, self.center_lon)
+        # Render path: cache only. update() prefetches on the worker thread.
+        map_bg = self._get_map_background(self.center_lat, self.center_lon,
+                                          allow_network=False)
 
         # Create image with background
         if map_bg:
