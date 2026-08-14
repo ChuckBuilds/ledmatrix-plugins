@@ -1087,6 +1087,7 @@ class F1ScoreboardPlugin(BasePlugin):
             self.display_manager, render_config, self.logger,
             global_config=getattr(self, 'global_config', {}) or {})
         self.enable_scrolling = self._scroll_manager is not None
+        self._scroll_content_sig = None
 
         # Force data refresh
         self._last_update = 0

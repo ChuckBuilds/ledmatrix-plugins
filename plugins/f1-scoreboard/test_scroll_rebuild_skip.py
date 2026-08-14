@@ -186,6 +186,17 @@ def main():
     check("force=True rebuilds despite a matching signature",
           rebuilt(plugin, force=True) is True)
 
+    # Regression test: on_config_change resets _scroll_content_sig to None and
+    # swaps in a fresh scroll manager. The rebuild must run even when F1 data
+    # hasn't changed, otherwise the old scroll content remains bound to the
+    # destroyed old manager.
+    plugin._scroll_content_sig = None
+    plugin._scroll_renderer = _TripRenderer()  # fresh manager stand-in
+    check("signature reset (config change) rebuilds despite unchanged data",
+          rebuilt(plugin) is True)
+    check("and then settles again after the reset-forced rebuild",
+          rebuilt(plugin) is False)
+
     print("\n%s" % ("FAILED: %d" % len(failures) if failures
                     else "All checks passed"))
     return 1 if failures else 0
