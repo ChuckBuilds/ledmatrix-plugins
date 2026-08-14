@@ -641,7 +641,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1050,7 +1050,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1459,7 +1459,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1868,7 +1868,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2277,7 +2277,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2686,7 +2686,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3095,7 +3095,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3504,7 +3504,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3913,7 +3913,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -4322,7 +4322,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -4370,7 +4370,7 @@
     "custom_leagues": {
       "type": "array",
       "title": "Add More Leagues",
-      "description": "Add any soccer league available on ESPN. Click 'Add Item', then fill in BOTH a name and a league code. Common codes: eng.2 (English Championship), eng.3 (League One), eng.fa (FA Cup), eng.league_cup (EFL Cup), mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish S\u00fcper Lig), bel.1 (Belgian Pro League)",
+      "description": "Add any soccer league available on ESPN. Click 'Add Item', then fill in BOTH a name and a league code. Common codes: eng.2 (English Championship), eng.3 (League One), eng.fa (FA Cup), eng.league_cup (EFL Cup), mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish Süper Lig), bel.1 (Belgian Pro League)",
       "x-widget": "array-table",
       "x-columns": [
         "name",
@@ -4449,9 +4449,13 @@
             "x-advanced": true
           },
           "display_modes": {
-            "type": "object",
+            "type": [
+              "object",
+              "string",
+              "null"
+            ],
             "title": "Display Modes",
-            "description": "Control which game types to show and how they are displayed",
+            "description": "Control which game types to show and how they are displayed Accepts null or an empty string as well as an object: the array-table editor keeps non-column properties in a hidden input, and an untouched row sends that back empty.",
             "properties": {
               "live": {
                 "type": "boolean",
@@ -4546,9 +4550,13 @@
             "x-advanced": true
           },
           "game_limits": {
-            "type": "object",
+            "type": [
+              "object",
+              "string",
+              "null"
+            ],
             "title": "Game Limits",
-            "description": "Control how many games to show",
+            "description": "Control how many games to show Accepts null or an empty string as well as an object: the array-table editor keeps non-column properties in a hidden input, and an untouched row sends that back empty.",
             "properties": {
               "recent_games_to_show": {
                 "type": [
@@ -4574,9 +4582,13 @@
             "additionalProperties": false
           },
           "filtering": {
-            "type": "object",
+            "type": [
+              "object",
+              "string",
+              "null"
+            ],
             "title": "Filtering Options",
-            "description": "Control which teams are shown",
+            "description": "Control which teams are shown Accepts null or an empty string as well as an object: the array-table editor keeps non-column properties in a hidden input, and an untouched row sends that back empty.",
             "properties": {
               "show_favorite_teams_only": {
                 "type": "boolean",
@@ -4603,9 +4615,13 @@
             "additionalProperties": false
           },
           "dynamic_duration": {
-            "type": "object",
+            "type": [
+              "object",
+              "string",
+              "null"
+            ],
             "title": "Dynamic Duration Settings",
-            "description": "Configure dynamic duration settings for this custom league",
+            "description": "Configure dynamic duration settings for this custom league Accepts null or an empty string as well as an object: the array-table editor keeps non-column properties in a hidden input, and an untouched row sends that back empty.",
             "properties": {
               "enabled": {
                 "type": "boolean",

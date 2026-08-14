@@ -3,7 +3,21 @@
   "title": "Countdown Plugin Configuration",
   "description": "Configuration schema for the Countdown plugin - create and manage multiple countdowns with custom images, fonts, and layouts",
   "type": "object",
-  "x-propertyOrder": ["enabled", "countdowns", "font_family", "font_size", "font_color", "name_font_family", "name_font_size", "name_font_color", "background_color", "display_duration", "show_expired", "fit_to_display", "preserve_aspect_ratio"],
+  "x-propertyOrder": [
+    "enabled",
+    "countdowns",
+    "font_family",
+    "font_size",
+    "font_color",
+    "name_font_family",
+    "name_font_size",
+    "name_font_color",
+    "background_color",
+    "display_duration",
+    "show_expired",
+    "fit_to_display",
+    "preserve_aspect_ratio"
+  ],
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -16,7 +30,16 @@
       "title": "Countdowns",
       "description": "Manage your countdown entries. Each countdown can have a custom image, name, target date/time, and style overrides.",
       "x-widget": "array-table",
-      "x-columns": ["enabled", "name", "target_date", "target_time", "mode", "layout_preset", "text_align", "image_path"],
+      "x-columns": [
+        "enabled",
+        "name",
+        "target_date",
+        "target_time",
+        "mode",
+        "layout_preset",
+        "text_align",
+        "image_path"
+      ],
       "default": [],
       "items": {
         "type": "object",
@@ -59,30 +82,50 @@
           "mode": {
             "type": "string",
             "title": "Mode",
-            "enum": ["until", "since"],
+            "enum": [
+              "until",
+              "since"
+            ],
             "default": "until",
             "description": "'until' counts down to the date (Days Until); 'since' counts up from it (Days Since / elapsed)"
           },
           "layout_preset": {
             "type": "string",
             "title": "Layout",
-            "enum": ["image-left", "image-right", "text-only", "image-only"],
+            "enum": [
+              "image-left",
+              "image-right",
+              "text-only",
+              "image-only"
+            ],
             "default": "image-left",
             "description": "Where to place the image relative to the text. 'text-only' ignores any image; 'image-only' hides text."
           },
           "text_align": {
             "type": "string",
             "title": "Text Align",
-            "enum": ["left", "center", "right"],
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ],
             "default": "center",
             "description": "Horizontal alignment of the countdown name and value within the text area"
           },
           "image_path": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "title": "Image",
             "x-widget": "file-upload-single",
             "x-upload-config": {
-              "allowed_types": ["image/png", "image/jpeg", "image/bmp", "image/gif"],
+              "allowed_types": [
+                "image/png",
+                "image/jpeg",
+                "image/bmp",
+                "image/gif"
+              ],
               "max_size_mb": 5
             },
             "description": "Optional image displayed alongside this countdown"
@@ -96,9 +139,13 @@
             "minimum": 0
           },
           "layout": {
-            "type": "object",
+            "type": [
+              "object",
+              "string",
+              "null"
+            ],
             "title": "Layout",
-            "description": "Pixel position and size overrides. Leave at 0 or null to use smart defaults (image on left 1/3, text on right 2/3).",
+            "description": "Pixel position and size overrides. Leave at 0 or null to use smart defaults (image on left 1/3, text on right 2/3). Accepts null or an empty string as well as an object: the array-table editor keeps non-column properties in a hidden input, and an untouched row sends that back empty.",
             "properties": {
               "image_x": {
                 "x-advanced": true,
@@ -134,28 +181,40 @@
               },
               "name_x": {
                 "x-advanced": true,
-                "type": ["integer", "null"],
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "title": "Name X",
                 "default": null,
                 "description": "Name text X position (null = auto-center in text area)"
               },
               "name_y": {
                 "x-advanced": true,
-                "type": ["integer", "null"],
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "title": "Name Y",
                 "default": null,
                 "description": "Name text Y position (null = auto: upper 1/3)"
               },
               "value_x": {
                 "x-advanced": true,
-                "type": ["integer", "null"],
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "title": "Value X",
                 "default": null,
                 "description": "Countdown value text X position (null = auto-center in text area)"
               },
               "value_y": {
                 "x-advanced": true,
-                "type": ["integer", "null"],
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "title": "Value Y",
                 "default": null,
                 "description": "Countdown value text Y position (null = auto: lower 2/3)"
@@ -163,21 +222,38 @@
             }
           },
           "style": {
-            "type": "object",
+            "type": [
+              "object",
+              "string",
+              "null"
+            ],
             "title": "Style",
-            "description": "Per-countdown font and color overrides. null values inherit global settings.",
+            "description": "Per-countdown font and color overrides. null values inherit global settings. Accepts null or an empty string as well as an object: the array-table editor keeps non-column properties in a hidden input, and an untouched row sends that back empty.",
             "properties": {
               "font_family": {
                 "x-advanced": true,
-                "type": ["string", "null"],
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "title": "Font Family",
-                "enum": ["press_start", "four_by_six", "tom_thumb", "tiny", "picopixel", null],
+                "enum": [
+                  "press_start",
+                  "four_by_six",
+                  "tom_thumb",
+                  "tiny",
+                  "picopixel",
+                  null
+                ],
                 "default": null,
                 "description": "Font family override (null = use global)"
               },
               "font_size": {
                 "x-advanced": true,
-                "type": ["integer", "null"],
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "title": "Value Font Size",
                 "minimum": 4,
                 "maximum": 16,
@@ -186,7 +262,10 @@
               },
               "font_color": {
                 "x-advanced": true,
-                "type": ["array", "null"],
+                "type": [
+                  "array",
+                  "null"
+                ],
                 "title": "Value Color",
                 "x-widget": "color-picker",
                 "items": {
@@ -201,15 +280,28 @@
               },
               "name_font_family": {
                 "x-advanced": true,
-                "type": ["string", "null"],
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "title": "Name Font Family",
-                "enum": ["press_start", "four_by_six", "tom_thumb", "tiny", "picopixel", null],
+                "enum": [
+                  "press_start",
+                  "four_by_six",
+                  "tom_thumb",
+                  "tiny",
+                  "picopixel",
+                  null
+                ],
                 "default": null,
                 "description": "Font family override for the countdown name (null = use global name font family, which itself falls back to the shared font family)"
               },
               "name_font_size": {
                 "x-advanced": true,
-                "type": ["integer", "null"],
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "title": "Name Font Size",
                 "minimum": 4,
                 "maximum": 16,
@@ -218,7 +310,10 @@
               },
               "name_font_color": {
                 "x-advanced": true,
-                "type": ["array", "null"],
+                "type": [
+                  "array",
+                  "null"
+                ],
                 "title": "Name Color",
                 "x-widget": "color-picker",
                 "items": {
@@ -233,7 +328,10 @@
               },
               "background_color": {
                 "x-advanced": true,
-                "type": ["array", "null"],
+                "type": [
+                  "array",
+                  "null"
+                ],
                 "title": "Background Color",
                 "x-widget": "color-picker",
                 "items": {
@@ -249,13 +347,22 @@
             }
           }
         },
-        "required": ["name", "target_date"]
+        "required": [
+          "name",
+          "target_date"
+        ]
       }
     },
     "font_family": {
       "type": "string",
       "title": "Default Font Family",
-      "enum": ["press_start", "four_by_six", "tom_thumb", "tiny", "picopixel"],
+      "enum": [
+        "press_start",
+        "four_by_six",
+        "tom_thumb",
+        "tiny",
+        "picopixel"
+      ],
       "default": "press_start",
       "description": "Global font family for countdown text (can be overridden per countdown)"
     },
@@ -280,14 +387,28 @@
       },
       "minItems": 3,
       "maxItems": 3,
-      "default": [255, 255, 255],
+      "default": [
+        255,
+        255,
+        255
+      ],
       "description": "Global RGB color for countdown value text [R, G, B]"
     },
     "name_font_family": {
       "x-advanced": true,
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "title": "Default Name Font Family",
-      "enum": ["press_start", "four_by_six", "tom_thumb", "tiny", "picopixel", null],
+      "enum": [
+        "press_start",
+        "four_by_six",
+        "tom_thumb",
+        "tiny",
+        "picopixel",
+        null
+      ],
       "default": null,
       "description": "Font family for countdown name text (null = use Default Font Family, matching previous behavior; can be overridden per countdown)"
     },
@@ -312,7 +433,11 @@
       },
       "minItems": 3,
       "maxItems": 3,
-      "default": [200, 200, 200],
+      "default": [
+        200,
+        200,
+        200
+      ],
       "description": "Global RGB color for countdown name text [R, G, B]"
     },
     "background_color": {
@@ -327,7 +452,11 @@
       },
       "minItems": 3,
       "maxItems": 3,
-      "default": [0, 0, 0],
+      "default": [
+        0,
+        0,
+        0
+      ],
       "description": "Global RGB background color [R, G, B]"
     },
     "display_duration": {
@@ -360,5 +489,7 @@
       "description": "Preserve image aspect ratio when scaling"
     }
   },
-  "required": ["enabled"]
+  "required": [
+    "enabled"
+  ]
 }

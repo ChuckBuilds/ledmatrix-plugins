@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.10.1",
+  "version": "2.10.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.10.2",
+      "released": "2026-08-13",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Let a custom league save when its advanced sections were never opened. PR #238 fixed the same HTTP 400 for priority, favorite_teams, exclude_teams and the durations, but left display_modes, game_limits, filtering and dynamic_duration declared as strict objects. The array-table editor keeps those in a hidden input, so an untouched row sends null and a cleared one sends an empty string -- both rejected, blocking the save with no sign of which field was at fault. Reported as being unable to add eng.2."
+    },
     {
       "version": "2.10.1",
       "released": "2026-08-12",
@@ -218,7 +224,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-05",
+  "last_updated": "2026-08-13",
   "stars": 0,
   "downloads": 0,
   "verified": true,
