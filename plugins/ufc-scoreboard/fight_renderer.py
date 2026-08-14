@@ -8,10 +8,53 @@ Based on GameRenderer pattern from football-scoreboard plugin.
 UFC/MMA adaptation based on work by Alex Resnick (legoguy1000) - PR #137
 """
 
+import os
 import logging
 from pathlib import Path
 from typing import Dict, Any, Optional, Union
 from PIL import Image, ImageDraw, ImageFont
+
+
+def _resolve_font_path(path: str) -> str:
+    """Resolve a bundled font path without depending on the process cwd.
+
+    These fonts ship with the LEDMatrix core, and every call site here named
+    them relative to the working directory. That holds under the packaged
+    systemd unit, whose WorkingDirectory is the install root, and breaks
+    everywhere else -- the plugin safety harness, a manual run from $HOME, a
+    unit file written without WorkingDirectory. The failure is quiet: the
+    load raises, the caller falls back, and the scoreboard renders in PIL's
+    default face instead of the pixel font it was laid out for.
+
+    Resolution order matches the core's own resolver: the path as given
+    first, so behaviour is unchanged wherever it already worked and a
+    configured absolute path is returned untouched, then the core install
+    root, then the original string so callers still raise and fall back
+    exactly as they do today.
+    """
+    if os.path.exists(path):
+        return path
+    try:
+        import src.font_manager as _core_fonts
+
+        # The core grew this resolver in ChuckBuilds/LEDMatrix#425. Use it
+        # when it is there so both repos stay on one definition of "install
+        # root"; older cores fall through to the equivalent derivation below.
+        resolver = getattr(_core_fonts.FontManager, "_resolve_asset_path", None)
+        if resolver is not None:
+            resolved = resolver(path)
+            if resolved and os.path.exists(resolved):
+                return resolved
+        root = os.path.dirname(os.path.dirname(os.path.abspath(_core_fonts.__file__)))
+        candidate = os.path.join(root, path)
+        if os.path.exists(candidate):
+            return candidate
+    except Exception:
+        # No core on the path (standalone tooling) or an unreadable install.
+        # Returning the original keeps the caller's existing fallback.
+        pass
+    return path
+
 
 # Pillow < 9.1.0 compat: Image.Resampling.LANCZOS was added in 9.1.0
 LANCZOS = getattr(Image, "Resampling", Image).LANCZOS
@@ -74,22 +117,22 @@ class FightRenderer:
                 detail_config, default_path="assets/fonts/4x6-font.ttf", default_size=6
             )
             # Additional fonts
-            fonts["time"] = ImageFont.truetype("assets/fonts/tom-thumb.bdf", 8)
-            fonts["score"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
-            fonts["odds"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-            fonts["record"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+            fonts["time"] = ImageFont.truetype(_resolve_font_path("assets/fonts/tom-thumb.bdf"), 8)
+            fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+            fonts["odds"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+            fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
             self.logger.debug("Successfully loaded fight renderer fonts")
         except Exception as e:
             self.logger.error(f"Error loading fonts: {e}, using defaults")
             try:
-                fonts["fighter_name"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                fonts["status"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                fonts["result"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
-                fonts["detail"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                fonts["time"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                fonts["score"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
-                fonts["odds"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                fonts["record"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+                fonts["fighter_name"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+                fonts["result"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+                fonts["time"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["odds"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+                fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
             except IOError:
                 self.logger.warning("Fonts not found, using default PIL font.")
                 default_font = ImageFont.load_default()
@@ -108,11 +151,14 @@ class FightRenderer:
         font_path = element_config.get("font", default_path)
         font_size = element_config.get("font_size", default_size)
         try:
-            return ImageFont.truetype(font_path, font_size)
+            # Both paths go through the resolver: default_path is one of the
+            # bundled cwd-relative names, and a configured font may be a bare
+            # bundled filename just as easily as an absolute path.
+            return ImageFont.truetype(_resolve_font_path(font_path), font_size)
         except (IOError, OSError):
             self.logger.warning(f"Could not load font {font_path}, trying default")
             try:
-                return ImageFont.truetype(default_path, default_size)
+                return ImageFont.truetype(_resolve_font_path(default_path), default_size)
             except (IOError, OSError):
                 return ImageFont.load_default()
 
