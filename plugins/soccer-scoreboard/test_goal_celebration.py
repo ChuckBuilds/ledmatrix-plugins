@@ -22,6 +22,7 @@ import sys
 import types
 import logging
 import tempfile
+import threading
 
 from PIL import Image, ImageChops
 
@@ -82,6 +83,13 @@ def _make_live(favorite_teams=None, opponent_goals=False, duration=8, enabled=Tr
     live.active_celebration = None
     live.current_game = None
     live.logger = logging.getLogger("t")
+    # display() also checks whether the live game's dwell has elapsed, so the
+    # fake needs the rotation state a real manager builds in __init__. Empty
+    # live_games means "nothing to rotate to", which is what these tests want.
+    live._games_lock = threading.RLock()
+    live.live_games = []
+    live._rotation_schedule = []
+    live.last_game_switch = 0.0
     return live
 
 

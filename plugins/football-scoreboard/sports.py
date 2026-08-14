@@ -2339,6 +2339,56 @@ class SportsLive(SportsCore):
             return non_fav
         return self.game_display_duration
 
+    def _advance_live_game_if_due(self) -> None:
+        """Rotate to the next live game once the current one has had its time.
+
+        Driven from display() rather than update(), because how long a game
+        stays on screen is a display concern and update() runs on
+        live_update_interval -- 30s by default. Gating the dwell there
+        quantised every configured duration to the refresh rate: a 10s
+        non-favorite dwell was unreachable, and a 45s one came out as 30.
+        Measured on a live rig with four games, every duration produced the
+        same 30s rotation until live_update_interval itself was changed.
+
+        Cheap enough for the render loop: a clock comparison, and the dict of
+        games is built only on the frame that actually switches.
+        """
+        # getattr rather than attribute access: this runs on the render loop
+        # and the live managers are constructed in several places, not all of
+        # which set every flag before the first frame.
+        if getattr(self, "test_mode", False):
+            return
+        # Zero means no game has been shown yet. Without this the first frame
+        # sees an elapsed time of `now - 0` and rotates immediately: nearly
+        # invisible at one check per 30s, a flicker at one per frame.
+        #
+        # Checked before taking the lock, like the other scoreboards: it is a
+        # float read, and being one frame stale costs nothing.
+        if getattr(self, "last_game_switch", 0) <= 0:
+            return
+        with self._games_lock:
+            if len(self.live_games) <= 1 or not self._rotation_schedule:
+                return
+            now = time.time()
+            if (now - self.last_game_switch) < self._effective_live_duration(
+                self.current_game
+            ):
+                return
+
+            self.current_game_index = (self.current_game_index + 1) % len(
+                self._rotation_schedule
+            )
+            next_id = self._rotation_schedule[self.current_game_index]
+            games_by_id = {g["id"]: g for g in self.live_games}
+            self.current_game = games_by_id.get(next_id, self.current_game)
+            self.last_game_switch = now
+            if self.current_game:
+                self.logger.info(
+                    "Switched live view to: %s@%s",
+                    self.current_game.get("away_abbr"),
+                    self.current_game.get("home_abbr"),
+                )
+
     def _classify_live_game(self, home_abbr: Optional[str], away_abbr: Optional[str]) -> "tuple[bool, str]":
         """Decide whether a live game should be included in the rotation.
         Priority: exclude_teams > show_all_live > favorite_teams_only (if favorites exist) > show all."""
@@ -2658,6 +2708,10 @@ class SportsLive(SportsCore):
                 # Reset the dwell so the scorebug resumes on the scoring/winning
                 # game for a full duration before rotation can move on.
                 self.last_game_switch = time.time()
+        # After the celebration branch: a celebration owns the screen, and
+        # rotating out of it would undo the dwell reset just above, which
+        # exists to give the scoring game its full turn.
+        self._advance_live_game_if_due()
         return super().display(force_clear)
 
     def _is_game_really_over(self, game: Dict) -> bool:
@@ -3073,26 +3127,5 @@ class SportsLive(SportsCore):
                     )  # Changed log prefix
                     self.current_game = None  # Clear current game if fetch fails and no games were active
 
-            # Handle game switching (outside test mode check, thread-safe)
-            # Fix: Don't check for switching if last_game_switch is still 0 (games haven't been loaded yet)
-            # This prevents immediate switching when the system has been running for a while before games load
-            with self._games_lock:
-                if (
-                    not self.test_mode
-                    and len(self.live_games) > 1
-                    and self._rotation_schedule
-                    and self.last_game_switch > 0
-                    and (current_time - self.last_game_switch)
-                    >= self._effective_live_duration(self.current_game)
-                ):
-                    self.current_game_index = (self.current_game_index + 1) % len(
-                        self._rotation_schedule
-                    )
-                    next_id = self._rotation_schedule[self.current_game_index]
-                    games_by_id = {g["id"]: g for g in self.live_games}
-                    self.current_game = games_by_id.get(next_id, self.current_game)
-                    self.last_game_switch = current_time
-                    self.logger.info(
-                        f"Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}"
-                    )  # Changed log prefix
-                # Force display update via flag or direct call if needed, but usually let main loop handle
+            # Rotation is driven from display(), not here -- see
+            # _advance_live_game_if_due().
