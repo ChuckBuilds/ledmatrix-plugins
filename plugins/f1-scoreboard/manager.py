@@ -6,6 +6,8 @@ Displays driver standings, constructor standings, race results, qualifying,
 practice, sprint results, upcoming races, and race calendar.
 """
 
+import hashlib
+import json
 import logging
 import time
 from datetime import datetime, timezone
@@ -99,6 +101,9 @@ class F1ScoreboardPlugin(BasePlugin):
         self._practice_results: Dict[str, Dict] = {}  # FP1/FP2/FP3
         self._sprint: Optional[Dict] = None
         self._calendar: List[Dict] = []
+        # Fingerprint of the data the scroll images were last built from, so a
+        # refresh that returned identical data does not re-render them.
+        self._scroll_content_sig: Optional[str] = None
         self._pole_positions: Dict[str, int] = {}
 
         # Cards for the most recent race only. The marquee's "last_race"
@@ -425,8 +430,60 @@ class F1ScoreboardPlugin(BasePlugin):
 
     # ─── Scroll Content Preparation ────────────────────────────────────
 
-    def _prepare_scroll_content(self):
-        """Pre-render all scroll mode content."""
+    def _scroll_content_signature(self) -> str:
+        """Fingerprint every input _prepare_scroll_content renders from.
+
+        Rendering all twelve scroll modes is the single most expensive thing
+        this plugin does -- measured at 12.46s on a Pi, one image of which was
+        11250x64px -- and update() ran it unconditionally on every refresh.
+        Outside a race weekend the refreshed data is byte-identical to the last
+        one, so nearly all of that work rebuilt images that were already
+        correct. The plugin update runs on a worker thread, but the render loop
+        shares the interpreter with it, and the marquee visibly stalled.
+
+        Anything a card is drawn from belongs here. A field left out means the
+        panel keeps showing stale content, so this errs toward including too
+        much: the hash costs microseconds against seconds of rendering.
+        """
+        r = self._scroll_renderer
+        payload = {
+            "live": [self._is_live, self._live_session],
+            "driver_standings": self._driver_standings,
+            "constructor_standings": self._constructor_standings,
+            "driver_battle": [self._driver_battle_p1, self._driver_battle_p2],
+            "constructor_battle": [self._constructor_battle_p1,
+                                   self._constructor_battle_p2],
+            "recent_races": self._recent_races,
+            "upcoming_race": self._upcoming_race,
+            "qualifying": self._qualifying,
+            "practice": self._practice_results,
+            "sprint": self._sprint,
+            "calendar": self._calendar,
+            "favorites": [self.favorite_driver, self.favorite_team],
+            # Renderer toggles decide which cards exist at all.
+            "flags": {name: getattr(r, name, None)
+                      for name in sorted(dir(r)) if name.startswith("show_")},
+            "recent_races_cfg": self.config.get("recent_races", {}),
+        }
+        blob = json.dumps(payload, sort_keys=True, default=str)
+        return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+    def _prepare_scroll_content(self, force: bool = False):
+        """Pre-render all scroll mode content.
+
+        Skips the work when the underlying data is unchanged since the last
+        build. Pass force=True when a mode is known to be unprepared -- the
+        signature can match while the images themselves are missing, e.g. on
+        the first display after a mode was added.
+        """
+        signature = self._scroll_content_signature()
+        if not force and signature == self._scroll_content_sig:
+            self.logger.debug(
+                "F1 data unchanged since the last build; keeping the "
+                "prepared scroll content")
+            return
+        self._scroll_content_sig = signature
+
         r = self._scroll_renderer
         separator = r.render_f1_separator()
         is_live = self._is_live
@@ -792,7 +849,8 @@ class F1ScoreboardPlugin(BasePlugin):
         mode_key = self._MODE_KEY_MAP.get(display_mode, display_mode)
 
         if not self._scroll_manager.is_mode_prepared(mode_key):
-            self._prepare_scroll_content()
+            # Unprepared despite a matching signature -- force past the skip.
+            self._prepare_scroll_content(force=True)
 
         if not self._scroll_manager.is_mode_prepared(mode_key):
             return False
