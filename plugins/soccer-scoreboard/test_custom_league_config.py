@@ -263,6 +263,45 @@ check("supports_dynamic_duration survives a cleared row",
 check("get_dynamic_duration_cap survives a cleared row",
       plugin.get_dynamic_duration_cap() is None)
 
+
+# --- Case 6: a row whose advanced sections were never opened ---------------
+# The 400 that PR #238 fixed came back for anyone adding a league without
+# touching its advanced settings. That change relaxed priority, favorite_teams,
+# exclude_teams and the durations, but left display_modes, game_limits,
+# filtering and dynamic_duration declared as strict "object". The widget keeps
+# those in a hidden input, so an untouched row sends null and a cleared one
+# sends "" -- Draft-7 rejected both, and the save failed with nothing to say
+# which field was at fault.
+CONTAINERS = ("display_modes", "game_limits", "filtering", "dynamic_duration")
+
+for label, blank in (("null", None), ("empty string", "")):
+    untouched = {"name": "Championship", "league_code": "eng.2",
+                 "priority": 50, "enabled": True}
+    for key in CONTAINERS:
+        untouched[key] = blank
+    if HAVE_JSONSCHEMA:
+        errs = schema_errors({"enabled": True, "custom_leagues": [untouched]})
+        check(f"untouched advanced sections save ({label})", not errs)
+        if errs:
+            print(f"        {errs[:2]}")
+
+# The schema now lets a string through, so the plugin must not hand one to a
+# .get() chain that expects a mapping.
+blank_plugin = make_plugin([{
+    "name": "Championship", "league_code": "eng.2",
+    "display_modes": "", "game_limits": "", "filtering": "",
+    "dynamic_duration": "",
+}])
+blank_plugin._normalize_custom_leagues()
+blank_league = blank_plugin.config["custom_leagues"][0]
+check("blank-string containers dropped",
+      not any(k in blank_league for k in CONTAINERS))
+blank_adapted = blank_plugin._adapt_config_for_custom_league(
+    blank_league)["soccer_eng.2_scoreboard"]
+check("adapter still yields a usable league",
+      blank_adapted["favorite_teams"] == [])
+
+
 print()
 failed = [case for case, passed in results if not passed]
 print(f"{len(results) - len(failed)}/{len(results)} passed")

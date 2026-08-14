@@ -488,10 +488,25 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         custom_leagues = self.config.get('custom_leagues') or []
 
+        # Container properties the array-table editor keeps in a hidden input.
+        # An untouched row sends them back as null, and a cleared one as an
+        # empty string -- neither of which downstream .get() chains survive.
+        _CONTAINER_KEYS = ('display_modes', 'game_limits', 'filtering',
+                           'dynamic_duration')
+
         def _strip_nulls(value: Any) -> Any:
             if isinstance(value, dict):
                 return {k: _strip_nulls(v) for k, v in value.items() if v is not None}
             return value
+
+        def _drop_blank_containers(row: Dict[str, Any]) -> Dict[str, Any]:
+            for key in _CONTAINER_KEYS:
+                held = row.get(key)
+                if held is not None and not isinstance(held, dict):
+                    # A string here means "the user never opened this"; the
+                    # defaults are better than a value nothing can read.
+                    row.pop(key, None)
+            return row
 
         normalized: List[Dict[str, Any]] = []
         for custom_league in custom_leagues:
@@ -499,7 +514,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 self.logger.warning("Skipping malformed custom league entry: %r", custom_league)
                 continue
 
-            cleaned = _strip_nulls(custom_league)
+            cleaned = _drop_blank_containers(_strip_nulls(custom_league))
 
             # "ARS, CHE" (row editor) -> ["ARS", "CHE"]
             for key in ('favorite_teams', 'exclude_teams'):
