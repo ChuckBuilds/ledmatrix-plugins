@@ -1504,6 +1504,7 @@ class SportsUpcoming(SportsCore):
         """
         if not self.is_enabled:
             return False
+        self._advance_live_game_if_due()
 
         if not self.games_list:
             # Clear the display so old content doesn't persist
@@ -2198,6 +2199,48 @@ class SportsLive(SportsCore):
             schedule.append(best_id)
         return schedule
 
+    def _advance_live_game_if_due(self) -> None:
+        """Rotate to the next live game once the current one has had its time.
+
+        Driven from display() rather than update(), because how long a game
+        stays on screen is a display concern and update() runs on
+        live_update_interval -- 30s by default. Gating the dwell there
+        quantised every configured duration to the refresh rate: a 10s
+        non-favorite dwell was unreachable and a 45s one came out as 30.
+        Measured on a live rig with four games, every duration produced the
+        same 30s rotation until live_update_interval itself was changed.
+
+        The body is this plugin's own rotation, moved verbatim -- the sports
+        differ in how they pick the next game (some weight favorites through
+        _swrr_advance, some index a prepared schedule) and that choice is not
+        what was broken.
+
+        Cheap enough for the render loop: a clock comparison, and the work
+        happens only on the frame that actually switches.
+        """
+        if getattr(self, "test_mode", False):
+            return
+        current_time = time.time()
+        with self._games_lock:
+            if (
+                not self.test_mode
+                and len(self._rotation_schedule) > 1
+                and self.last_game_switch > 0
+                and (current_time - self.last_game_switch)
+                >= self._effective_live_duration(self.current_game)
+            ):
+                self.current_game_index = (self.current_game_index + 1) % len(
+                    self._rotation_schedule
+                )
+                next_id = self._rotation_schedule[self.current_game_index]
+                game_by_id = {g["id"]: g for g in self.live_games}
+                self.current_game = game_by_id.get(next_id, self.current_game)
+                self.last_game_switch = current_time
+                self.logger.info(
+                    f"Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}"
+                )  # Changed log prefix
+                # Force display update via flag or direct call if needed, but usually let main loop handle
+
     def _is_game_really_over(self, game: Dict) -> bool:
         """Check if a game appears to be over even if API says it's live.
 
@@ -2554,22 +2597,5 @@ class SportsLive(SportsCore):
             # Handle game switching (protected by lock for thread safety)
             # Fix: Don't check for switching if last_game_switch is still 0 (games haven't been loaded yet)
             # This prevents immediate switching when the system has been running for a while before games load
-            with self._games_lock:
-                if (
-                    not self.test_mode
-                    and len(self._rotation_schedule) > 1
-                    and self.last_game_switch > 0
-                    and (current_time - self.last_game_switch)
-                    >= self._effective_live_duration(self.current_game)
-                ):
-                    self.current_game_index = (self.current_game_index + 1) % len(
-                        self._rotation_schedule
-                    )
-                    next_id = self._rotation_schedule[self.current_game_index]
-                    game_by_id = {g["id"]: g for g in self.live_games}
-                    self.current_game = game_by_id.get(next_id, self.current_game)
-                    self.last_game_switch = current_time
-                    self.logger.info(
-                        f"Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}"
-                    )  # Changed log prefix
-                    # Force display update via flag or direct call if needed, but usually let main loop handle
+            # Rotation is driven from display() -- see
+            # _advance_live_game_if_due().

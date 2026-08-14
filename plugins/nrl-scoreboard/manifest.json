@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "nrl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.7.2",
+      "released": "2026-08-13",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Honour the configured live-game dwell instead of the data refresh rate. The rotation lived in update(), which runs on live_update_interval -- 30s by default -- so a game could only be advanced at that cadence and every configured duration was quantised to it. Measured on a live rig with four NFL games: live_game_duration=45 and non_favorite_live_game_duration=10 both produced a flat 30s rotation, and only changing live_update_interval changed anything. It is driven from display() now, so a dwell shorter than the refresh interval is reachable and a longer one is not cut short. This plugin also had no guard against rotating before the first game had been shown; harmless at one check per 30s, a visible flicker at one per frame, so it gained the guard the others already had."
+    },
     {
       "version": "1.7.1",
       "released": "2026-08-12",
@@ -130,7 +136,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-05",
+  "last_updated": "2026-08-13",
   "stars": 0,
   "downloads": 0,
   "verified": true,

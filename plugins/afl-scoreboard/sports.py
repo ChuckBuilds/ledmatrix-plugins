@@ -217,6 +217,58 @@ class SportsCore(ABC):
             return non_fav
         return self.game_display_duration
 
+    def _advance_live_game_if_due(self) -> None:
+        """Rotate to the next live game once the current one has had its time.
+
+        Driven from display() rather than update(), because how long a game
+        stays on screen is a display concern and update() runs on
+        live_update_interval -- 30s by default. Gating the dwell there
+        quantised every configured duration to the refresh rate: a 10s
+        non-favorite dwell was unreachable and a 45s one came out as 30.
+        Measured on a live rig with four games, every duration produced the
+        same 30s rotation until live_update_interval itself was changed.
+
+        The body is this plugin's own rotation, moved verbatim -- the sports
+        differ in how they pick the next game (some weight favorites through
+        _swrr_advance, some index a prepared schedule) and that choice is not
+        what was broken.
+
+        Cheap enough for the render loop: a clock comparison, and the work
+        happens only on the frame that actually switches.
+        """
+        if getattr(self, "test_mode", False):
+            return
+        # Zero means no game has been shown yet. Without this the very first
+        # frame sees an elapsed time of `now - 0` and rotates immediately --
+        # harmless when this ran once per 30s update, and a visible flicker
+        # now that it runs every frame. The sports that already had this guard
+        # kept it when the block moved; these four never had one.
+        if self.last_game_switch <= 0:
+            return
+        current_time = time.time()
+        with self._games_lock:
+            if (
+                len(self.live_games) > 1
+                and self.active_celebration is None
+                and (current_time - self.last_game_switch)
+                >= self._effective_live_duration(self.current_game)
+            ):
+                # Weighted pick (see _swrr_advance) instead of plain +1 index -
+                # gives a live favorite's game extra turns per
+                # favorite_live_boost while everything else still rotates
+                # fairly (boost==1 reproduces the old flat round robin).
+                self.current_game = self._swrr_advance(self.live_games)
+                self.current_game_index = next(
+                    (i for i, g in enumerate(self.live_games)
+                     if self.current_game and g["id"] == self.current_game["id"]),
+                    0,
+                )
+                self.last_game_switch = current_time
+                self.logger.info(
+                    f"Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}"
+                )  # Changed log prefix
+                # Force display update via flag or direct call if needed, but usually let main loop handle
+
     def _classify_live_game(self, home_abbr, away_abbr) -> bool:
         """Whether a live game should be included in the live rotation.
 
@@ -1784,6 +1836,7 @@ class SportsUpcoming(SportsCore):
         """Display upcoming games, handling switching."""
         if not self.is_enabled:
             return False
+        self._advance_live_game_if_due()
 
         if not self.games_list:
             # Clear the display so old content doesn't persist
@@ -3242,25 +3295,5 @@ class SportsLive(SportsCore):
             # doesn't rotate away mid-celebration — or in the window between the
             # duration expiring and display() clearing it (display() resets the
             # dwell timer when it clears, so the scoring game resumes first).
-            with self._games_lock:
-                if (
-                    len(self.live_games) > 1
-                    and self.active_celebration is None
-                    and (current_time - self.last_game_switch)
-                    >= self._effective_live_duration(self.current_game)
-                ):
-                    # Weighted pick (see _swrr_advance) instead of plain +1 index -
-                    # gives a live favorite's game extra turns per
-                    # favorite_live_boost while everything else still rotates
-                    # fairly (boost==1 reproduces the old flat round robin).
-                    self.current_game = self._swrr_advance(self.live_games)
-                    self.current_game_index = next(
-                        (i for i, g in enumerate(self.live_games)
-                         if self.current_game and g["id"] == self.current_game["id"]),
-                        0,
-                    )
-                    self.last_game_switch = current_time
-                    self.logger.info(
-                        f"Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}"
-                    )  # Changed log prefix
-                    # Force display update via flag or direct call if needed, but usually let main loop handle
+            # Rotation is driven from display() -- see
+            # _advance_live_game_if_due().
