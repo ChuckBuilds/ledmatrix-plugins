@@ -14,6 +14,7 @@ refresh rate is just the refresh rate.
 Run: <core-venv>/bin/python plugins/afl-scoreboard/test_live_dwell.py
 """
 
+import ast
 import sys
 import time
 from pathlib import Path
@@ -147,14 +148,48 @@ def main():
     m._advance_live_game_if_due()
     check("test mode is left alone", m.last_game_switch == stamp)
 
-    print("\nthe rotation no longer sits in update()")
+    print("\nSportsLive owns the rotation")
+    # Resolved through the class, not by searching the file. An earlier
+    # revision of this change put the call in SportsUpcoming.display(): a
+    # file-wide substring search accepts that, and live games never rotate,
+    # because upcoming display() is not on the live path at all.
     source = (PLUGIN_DIR / "sports.py").read_text(encoding="utf-8")
-    after_update = source.split("def update(self)", 1)[-1]
-    upto_method = after_update.split("def _advance_live_game_if_due", 1)[0]
+    live_cls = next(c for c in ast.walk(ast.parse(source))
+                    if isinstance(c, ast.ClassDef) and c.name == "SportsLive")
+
+    def method(name):
+        return next((m for m in live_cls.body
+                     if isinstance(m, ast.FunctionDef) and m.name == name), None)
+
+    def advance_calls(node):
+        if node is None:
+            return []
+        return [n for n in ast.walk(node)
+                if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                and n.func.attr == "_advance_live_game_if_due"]
+
+    check("the helper is defined on SportsLive",
+          method("_advance_live_game_if_due") is not None)
+    display_method = method("display")
+    check("SportsLive.display() drives it",
+          len(advance_calls(display_method)) == 1)
+    update_method = method("update")
+    check("SportsLive.update() does not drive it",
+          not advance_calls(update_method))
     check("update() does not switch the live view",
-          "Switched live view to" not in upto_method)
-    check("display() drives it",
-          "self._advance_live_game_if_due()" in source)
+          update_method is not None
+          and "Switched live view to" not in (
+              ast.get_source_segment(source, update_method) or ""))
+
+    # A celebration owns the screen and resets the dwell when it expires;
+    # rotating above it would switch away from the scoring game and undo
+    # that reset. Only meaningful where display() handles celebrations.
+    celebration_lines = [n.lineno for n in ast.walk(display_method)
+                         if isinstance(n, ast.Attribute)
+                         and n.attr == "active_celebration"]
+    if celebration_lines and advance_calls(display_method):
+        check("rotation is checked below the celebration branch",
+              advance_calls(display_method)[0].lineno > max(celebration_lines))
 
     print("\n%s" % ("FAILED: %d" % len(failures) if failures
                     else "All checks passed"))
