@@ -183,6 +183,8 @@ class NewsTickerPlugin(BasePlugin):
 
         # State
         self.current_headlines = []
+        # Headline set the current scroll strip was rendered from
+        self._headlines_signature = None
         self.last_update = 0
         self.rotation_count = 0
         self._cycle_complete = False
@@ -728,6 +730,7 @@ class NewsTickerPlugin(BasePlugin):
             # Clear headlines cache to force refresh
             self.current_headlines = []
             self._headline_image_cache = {}
+            self._headlines_signature = None
             # A different feed set means the old page window means nothing
             self._page_start = 0
             self._page_count = 0
@@ -816,6 +819,20 @@ class NewsTickerPlugin(BasePlugin):
 
         # Colors and fonts are baked into the rendered headline images
         self._headline_image_cache = {}
+        # ...and into the strip, so the same headlines must render again
+        self._headlines_signature = None
+
+    def _headline_signature(self) -> tuple:
+        """Identify the headline set the current strip was rendered from.
+
+        Feed name and title, in order: the two fields the rendered text is
+        built from. Order matters -- rotation reorders the list without
+        changing its contents, and that does need a rebuild.
+        """
+        return tuple(
+            (headline.get('feed_name', ''), headline.get('title', ''))
+            for headline in self.current_headlines
+        )
 
     def update(self) -> None:
         """Update news headlines from all enabled feeds."""
@@ -887,8 +904,18 @@ class NewsTickerPlugin(BasePlugin):
             if len(self.current_headlines) > max_headlines:
                 self.current_headlines = self.current_headlines[:max_headlines]
 
-            # Reset rotation tracking for new content
-            if self.current_headlines:
+            # Reset rotation tracking for new content.
+            #
+            # Only when the headlines actually differ from the ones already
+            # rendered. A refresh lands every update_interval and an RSS feed
+            # mostly returns what it returned last time, so discarding here
+            # unconditionally threw away a strip that was still correct and
+            # made the next Vegas fetch rebuild it: measured on a 512x64 rig
+            # at 427ms for a 10220x64 image, roughly every fifteen minutes,
+            # on the render thread. The panel visibly stalled for it.
+            signature = self._headline_signature()
+            if self.current_headlines and signature != self._headlines_signature:
+                self._headlines_signature = signature
                 self.rotation_count = 0
                 # Rendered text is tied to the headlines it came from
                 self._headline_image_cache = {}
