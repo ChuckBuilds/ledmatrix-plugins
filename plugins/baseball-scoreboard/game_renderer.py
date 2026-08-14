@@ -41,7 +41,8 @@ def _resolve_font_path(path: str) -> str:
         # The core grew this resolver in ChuckBuilds/LEDMatrix#425. Use it
         # when it is there so both repos stay on one definition of "install
         # root"; older cores fall through to the equivalent derivation below.
-        resolver = getattr(_core_fonts.FontManager, "_resolve_asset_path", None)
+        manager = getattr(_core_fonts, "FontManager", None)
+        resolver = getattr(manager, "_resolve_asset_path", None)
         if resolver is not None:
             resolved = resolver(path)
             if resolved and os.path.exists(resolved):
@@ -50,10 +51,11 @@ def _resolve_font_path(path: str) -> str:
         candidate = os.path.join(root, path)
         if os.path.exists(candidate):
             return candidate
-    except Exception:
-        # No core on the path (standalone tooling) or an unreadable install.
-        # Returning the original keeps the caller's existing fallback.
-        pass
+    except (ImportError, AttributeError, OSError):
+        # No core on the path (standalone tooling), a core laid out
+        # differently, or an unreadable install. Returning the original keeps
+        # the caller's existing fallback intact.
+        return path
     return path
 
 
