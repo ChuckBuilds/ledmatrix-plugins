@@ -2353,16 +2353,21 @@ class SportsLive(SportsCore):
         Cheap enough for the render loop: a clock comparison, and the dict of
         games is built only on the frame that actually switches.
         """
-        if self.test_mode:
+        # getattr rather than attribute access: this runs on the render loop
+        # and the live managers are constructed in several places, not all of
+        # which set every flag before the first frame.
+        if getattr(self, "test_mode", False):
+            return
+        # Zero means no game has been shown yet. Without this the first frame
+        # sees an elapsed time of `now - 0` and rotates immediately: nearly
+        # invisible at one check per 30s, a flicker at one per frame.
+        #
+        # Checked before taking the lock, like the other scoreboards: it is a
+        # float read, and being one frame stale costs nothing.
+        if getattr(self, "last_game_switch", 0) <= 0:
             return
         with self._games_lock:
-            if (
-                len(self.live_games) <= 1
-                or not self._rotation_schedule
-                # Zero means the games have not loaded yet. Rotating from that
-                # would switch away the instant the first one appeared.
-                or self.last_game_switch <= 0
-            ):
+            if len(self.live_games) <= 1 or not self._rotation_schedule:
                 return
             now = time.time()
             if (now - self.last_game_switch) < self._effective_live_duration(
@@ -2688,7 +2693,6 @@ class SportsLive(SportsCore):
         defer to the normal live scorebug."""
         if not self.is_enabled:
             return False
-        self._advance_live_game_if_due()
         celebration = self.active_celebration
         if celebration:
             if time.time() - celebration["started_at"] < self.celebration_duration:
@@ -2704,6 +2708,10 @@ class SportsLive(SportsCore):
                 # Reset the dwell so the scorebug resumes on the scoring/winning
                 # game for a full duration before rotation can move on.
                 self.last_game_switch = time.time()
+        # After the celebration branch: a celebration owns the screen, and
+        # rotating out of it would undo the dwell reset just above, which
+        # exists to give the scoring game its full turn.
+        self._advance_live_game_if_due()
         return super().display(force_clear)
 
     def _is_game_really_over(self, game: Dict) -> bool:

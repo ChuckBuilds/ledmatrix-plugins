@@ -1859,7 +1859,6 @@ class SportsUpcoming(SportsCore):
         """Display upcoming games, handling switching."""
         if not self.is_enabled:
             return False
-        self._advance_live_game_if_due()
 
         if not self.games_list:
             # Clear the display so old content doesn't persist
@@ -2565,54 +2564,6 @@ class SportsLive(SportsCore):
             return non_fav
         return self.game_display_duration
 
-    def _advance_live_game_if_due(self) -> None:
-        """Rotate to the next live game once the current one has had its time.
-
-        Driven from display() rather than update(), because how long a game
-        stays on screen is a display concern and update() runs on
-        live_update_interval -- 30s by default. Gating the dwell there
-        quantised every configured duration to the refresh rate: a 10s
-        non-favorite dwell was unreachable and a 45s one came out as 30.
-        Measured on a live rig with four games, every duration produced the
-        same 30s rotation until live_update_interval itself was changed.
-
-        The body is this plugin's own rotation, moved verbatim -- the sports
-        differ in how they pick the next game (some weight favorites through
-        _swrr_advance, some index a prepared schedule) and that choice is not
-        what was broken.
-
-        Cheap enough for the render loop: a clock comparison, and the work
-        happens only on the frame that actually switches.
-        """
-        if getattr(self, "test_mode", False):
-            return
-        # Zero means no game has been shown yet. Without this the very first
-        # frame sees an elapsed time of `now - 0` and rotates immediately --
-        # harmless when this ran once per 30s update, and a visible flicker
-        # now that it runs every frame. The sports that already had this guard
-        # kept it when the block moved; these four never had one.
-        if self.last_game_switch <= 0:
-            return
-        current_time = time.time()
-        with self._games_lock:
-            if (
-                len(self.live_games) > 1
-                and len(self._rotation_schedule) > 1
-                and (current_time - self.last_game_switch)
-                >= self._effective_live_duration(self.current_game)
-            ):
-                self.current_game_index = (self.current_game_index + 1) % len(
-                    self._rotation_schedule
-                )
-                next_id = self._rotation_schedule[self.current_game_index]
-                games_by_id = {g["id"]: g for g in self.live_games}
-                self.current_game = games_by_id.get(next_id, self.current_game)
-                self.last_game_switch = current_time
-                self.logger.info(
-                    f"Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}"
-                )  # Changed log prefix
-                # Force display update via flag or direct call if needed, but usually let main loop handle
-
     def _classify_live_game(self, home_abbr, away_abbr, is_tournament=False) -> bool:
         """Whether a live game should be included in the live rotation.
 
@@ -3009,7 +2960,63 @@ class SportsLive(SportsCore):
                         gid: ts for gid, ts in self.game_update_timestamps.items()
                         if gid in active_ids
                     }
+    def display(self, force_clear: bool = False) -> bool:
+        """Advance the live rotation, then render as usual.
+
+        This class has no display() of its own; the rotation has to be driven
+        from the display path rather than update(), so the override exists to
+        do that and delegate.
+        """
+        if not self.is_enabled:
+            return False
+        self._advance_live_game_if_due()
+        return super().display(force_clear)
+
 
             # Handle game switching (protected by lock for thread safety)
             # Rotation is driven from display() -- see
             # _advance_live_game_if_due().
+    def _advance_live_game_if_due(self) -> None:
+        """Rotate to the next live game once the current one has had its time.
+
+        Driven from display() rather than update(). How long a game stays on
+        screen is a display concern, and update() runs on live_update_interval
+        -- 30s by default -- so gating the dwell there quantised every
+        configured duration to the refresh rate. Measured on a live rig with
+        four NFL games, live_game_duration=45 and
+        non_favorite_live_game_duration=10 both produced a flat 30s rotation;
+        only changing live_update_interval changed anything.
+
+        The body below is this sport's own rotation, moved verbatim: the
+        sports differ in how they choose the next game and that part worked.
+
+        Cheap enough for the render loop -- a clock comparison, with work only
+        on the frame that switches.
+        """
+        if getattr(self, "test_mode", False):
+            return
+        # Zero means no game has been shown yet. Without this the first frame
+        # sees an elapsed time of `now - 0` and rotates immediately: nearly
+        # invisible at one check per 30s, a flicker at one per frame.
+        if getattr(self, "last_game_switch", 0) <= 0:
+            return
+        current_time = time.time()
+        with self._games_lock:
+            if (
+                len(self.live_games) > 1
+                and len(self._rotation_schedule) > 1
+                and (current_time - self.last_game_switch)
+                >= self._effective_live_duration(self.current_game)
+            ):
+                self.current_game_index = (self.current_game_index + 1) % len(
+                    self._rotation_schedule
+                )
+                next_id = self._rotation_schedule[self.current_game_index]
+                games_by_id = {g["id"]: g for g in self.live_games}
+                self.current_game = games_by_id.get(next_id, self.current_game)
+                self.last_game_switch = current_time
+                self.logger.info(
+                    f"Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}"
+                )  # Changed log prefix
+
+                    # Force display update via flag or direct call if needed, but usually let main loop handle
