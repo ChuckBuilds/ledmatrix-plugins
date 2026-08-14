@@ -38,6 +38,50 @@ if str(project_root) not in sys.path:
 from src.logo_downloader import LogoDownloader, download_missing_logo
 
 
+def _resolve_font_path(path: str) -> str:
+    """Resolve a bundled font path without depending on the process cwd.
+
+    These fonts ship with the LEDMatrix core, and every call site here named
+    them relative to the working directory. That holds under the packaged
+    systemd unit, whose WorkingDirectory is the install root, and breaks
+    everywhere else -- the plugin safety harness, a manual run from $HOME, a
+    unit file written without WorkingDirectory. The failure is quiet: the
+    load raises, the caller falls back, and the scoreboard renders in PIL's
+    default face instead of the pixel font it was laid out for.
+
+    Resolution order matches the core's own resolver: the path as given
+    first, so behaviour is unchanged wherever it already worked and a
+    configured absolute path is returned untouched, then the core install
+    root, then the original string so callers still raise and fall back
+    exactly as they do today.
+    """
+    if os.path.exists(path):
+        return path
+    try:
+        import src.font_manager as _core_fonts
+
+        # The core grew this resolver in ChuckBuilds/LEDMatrix#425. Use it
+        # when it is there so both repos stay on one definition of "install
+        # root"; older cores fall through to the equivalent derivation below.
+        manager = getattr(_core_fonts, "FontManager", None)
+        resolver = getattr(manager, "_resolve_asset_path", None)
+        if resolver is not None:
+            resolved = resolver(path)
+            if resolved and os.path.exists(resolved):
+                return resolved
+        root = os.path.dirname(os.path.dirname(os.path.abspath(_core_fonts.__file__)))
+        candidate = os.path.join(root, path)
+        if os.path.exists(candidate):
+            return candidate
+    except (ImportError, AttributeError, OSError):
+        # No core on the path (standalone tooling), a core laid out
+        # differently, or an unreadable install. Returning the original keeps
+        # the caller's existing fallback intact.
+        return path
+    return path
+
+
+
 class SportsCore(ABC):
     def __init__(
         self,
@@ -247,7 +291,7 @@ class SportsCore(ABC):
         font_size = int(element_config.get('font_size', default_size))  # Ensure integer for PIL
 
         # Build font path
-        font_path = os.path.join('assets', 'fonts', font_name)
+        font_path = _resolve_font_path(os.path.join('assets', 'fonts', font_name))
 
         # Try to load the font
         try:
@@ -275,7 +319,7 @@ class SportsCore(ABC):
             self.logger.error(f"Error loading font {font_name}: {e}, using default")
 
         # Fall back to default font
-        default_font_path = os.path.join('assets', 'fonts', 'PressStart2P-Regular.ttf')
+        default_font_path = _resolve_font_path(os.path.join('assets', 'fonts', 'PressStart2P-Regular.ttf'))
         try:
             if os.path.exists(default_font_path):
                 return ImageFont.truetype(default_font_path, font_size)
@@ -350,13 +394,13 @@ class SportsCore(ABC):
             self.logger.error(f"Error loading fonts: {e}, using defaults")
             # Fallback to hardcoded defaults
             try:
-                fonts["score"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
-                fonts["time"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 8)
-                fonts["team"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 8)
-                fonts["status"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                fonts["detail"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
-                fonts["rank"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
-                fonts["record"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["time"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
+                fonts["team"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
+                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+                fonts["rank"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
             except IOError:
                 self.logger.warning("Fonts not found, using default PIL font.")
                 fonts["score"] = ImageFont.load_default()

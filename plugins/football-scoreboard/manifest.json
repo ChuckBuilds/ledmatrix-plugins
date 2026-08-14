@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.15.2",
+  "version": "2.15.3",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.15.3",
+      "released": "2026-08-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Load the bundled fonts without depending on the process working directory. Every font this scoreboard draws with ships in the LEDMatrix core and was named relative to the cwd, which resolves only under the packaged systemd unit, whose WorkingDirectory is the install root. Anywhere else -- the plugin safety harness, a manual run from a home directory, a unit file written without WorkingDirectory -- the load raised, the caller's fallback caught it, and the scoreboard rendered in PIL's default face at the wrong metrics instead of the pixel font its layout was built around. Every direct load now goes through a resolver that tries the path as given, then the core install root, then returns the original so existing fallbacks are untouched; a configured absolute path still passes through unchanged."
+    },
     {
       "version": "2.15.2",
       "released": "2026-08-13",
