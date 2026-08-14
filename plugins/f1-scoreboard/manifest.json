@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.8.1",
+  "version": "1.8.3",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,18 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.8.3",
+      "released": "2026-08-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fix stale scroll content after config changes. on_config_change replaces the scroll renderer and manager with new instances, but did not reset the scroll content signature. When a config change didn't alter F1 data fields (e.g., adjusting game_card_width or other rendering settings), the signature remained unchanged, causing _prepare_scroll_content to skip rebuilding content into the brand-new manager. This left the new manager with no prepared modes, resulting in missing or stale scroll content in Vegas mode and scroll displays until the next data update. The signature is now cleared on every config change to force a rebuild."
+    },
+    {
+      "version": "1.8.2",
+      "released": "2026-08-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop re-rendering the scroll images when the data has not changed. update() rebuilt all twelve scroll modes on every refresh, measured at 12.46s on a Pi with one image of 11250x64px. Outside a race weekend the refreshed data is byte-identical to the previous one, so nearly all of that rebuilt images that were already correct; the render loop shares the interpreter with the update worker, and the marquee stalled for up to half a second at a time. The build now runs only when a fingerprint of everything it draws from has moved, and the display path forces past the check if a mode is somehow unprepared."
+    },
     {
       "version": "1.8.1",
       "released": "2026-08-12",
