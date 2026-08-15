@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.16.0",
+  "version": "2.17.0",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.17.0",
+      "released": "2026-08-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop polling for live games on a live cadence when a league has nothing on. The interval was chosen by asking whether the last check happened within the last 300 seconds, and only then using no_data_interval -- but once 300s had elapsed the answer became no, the interval fell back to live_update_interval, and it fetched. no_data_interval could therefore never delay anything past 300s whatever it was set to. Measured on a live rig in mid-August: an out-of-season NHL fetched 0 games every ~5.5 minutes around the clock, roughly 264 wasted requests a day for one league. The interval now comes from a streak of empty looks, escalating 300s to 600s to 900s and capped, which any live game resets immediately -- about 96 checks a day out of season instead of 288, with the first game after a quiet spell still noticed within the cap. Both the idle interval and its ceiling are advanced settings."
+    },
     {
       "version": "2.16.0",
       "released": "2026-08-15",

@@ -1240,6 +1240,24 @@
       "title": "Schedule lookahead (days)",
       "description": "How far ahead to fetch games for the Upcoming screen. Raise it for a league that plays weekly: a fixture just beyond this horizon is not fetched at all, so it never reaches the board even though the date is known.",
       "x-advanced": true
+    },
+    "no_data_interval_seconds": {
+      "type": "integer",
+      "default": 300,
+      "minimum": 5,
+      "maximum": 86400,
+      "title": "Idle live-check interval (seconds)",
+      "description": "How long to wait between checks for live games when there are none. Backs off further the longer nothing is found, up to the cap below.",
+      "x-advanced": true
+    },
+    "live_idle_max_interval_seconds": {
+      "type": "integer",
+      "default": 900,
+      "minimum": 5,
+      "maximum": 86400,
+      "title": "Maximum idle live-check interval (seconds)",
+      "description": "Ceiling for the back-off above. Raise it to poll an out-of-season league even less; lower it to notice the first game after a quiet spell sooner.",
+      "x-advanced": true
     }
   },
   "additionalProperties": false,
