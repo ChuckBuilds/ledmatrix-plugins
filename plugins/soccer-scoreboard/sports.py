@@ -87,12 +87,19 @@ def _resolve_font_path(path: str) -> str:
 
 
 
-# How far either side of now the schedule is fetched. The partial fetch that
-# serves the display until the background fetch lands must not be narrower
-# than the fetch it substitutes for, or a game inside the real window is
-# missing from the panel until that completes.
-_SCHEDULE_WINDOW_BACK = timedelta(days=14)
-_SCHEDULE_WINDOW_FORWARD = timedelta(days=14)
+_DEFAULT_LOOKBACK_DAYS = 14
+_DEFAULT_LOOKAHEAD_DAYS = 14
+_MIN_WINDOW_DAYS = 1
+_MAX_WINDOW_DAYS = 60
+
+
+def _clamp_window(value: Any, fallback: int) -> int:
+    """Days for one side of the schedule window, or the default if unusable."""
+    try:
+        days = int(value)
+    except (TypeError, ValueError):
+        return fallback
+    return max(_MIN_WINDOW_DAYS, min(_MAX_WINDOW_DAYS, days))
 
 
 class SportsCore(ABC):
@@ -129,6 +136,15 @@ class SportsCore(ABC):
         self.sport_config = None
         # Initialize data source
         self.data_source = ESPNDataSource(logger)
+        # How far either side of now the schedule is fetched, in days.
+        # Advanced: a league that plays weekly can have a whole matchweek fall
+        # just outside a short horizon, which reads on the panel as "my team
+        # never appears" while other clubs do. Bounded so a stray value cannot
+        # turn one refresh into a season-wide request against the API.
+        self.schedule_lookback_days: int = _clamp_window(
+            config.get("schedule_lookback_days"), _DEFAULT_LOOKBACK_DAYS)
+        self.schedule_lookahead_days: int = _clamp_window(
+            config.get("schedule_lookahead_days"), _DEFAULT_LOOKAHEAD_DAYS)
         self.mode_config = config.get(
             f"{sport_key}_scoreboard", {}
         )  # Changed config key
@@ -1332,8 +1348,8 @@ class SportsCore(ABC):
             # returned exactly one fixture (COV @ ARS on the 21st) and hid the
             # other nine, including Man Utd on the 22nd. Reported as a
             # favourite team never appearing while other clubs did.
-            start_date = now - _SCHEDULE_WINDOW_BACK
-            end_date = now + _SCHEDULE_WINDOW_FORWARD
+            start_date = now - timedelta(days=self.schedule_lookback_days)
+            end_date = now + timedelta(days=self.schedule_lookahead_days)
             date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
             url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
             response = self.session.get(

@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.5.0",
+      "released": "2026-08-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Make the schedule fetch window configurable. How far back and forward games are fetched was hard-coded at 14 days back and 7 forward. Days is the wrong unit for a league that plays weekly -- a whole matchweek can fall just past a short horizon and never reach the board -- so both are now advanced settings, bounded 1-60 days, with a stray or non-numeric value falling back to the default rather than raising. Defaults keep today's behaviour."
+    },
     {
       "version": "1.4.2",
       "released": "2026-08-14",
