@@ -139,6 +139,7 @@
       "default": "",
       "title": "Password",
       "description": "MQTT broker password. Leave blank if your broker does not require authentication.",
+      "x-secret": true,
       "x-sensitive": true
     },
     "command_topic": {

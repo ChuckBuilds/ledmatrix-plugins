@@ -26,6 +26,7 @@
     "api_key": {
       "x-advanced": true,
       "x-display": "hidden",
+      "x-secret": true,
       "type": "string",
       "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs.",
       "title": "API Key (deprecated)"

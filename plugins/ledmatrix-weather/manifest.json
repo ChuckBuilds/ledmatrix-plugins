@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.6.3",
+  "version": "2.6.4",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -26,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "version": "2.6.4",
+      "released": "2026-08-15",
+      "notes": "Mark the deprecated api_key config field x-secret so any leftover value is masked in the web UI.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "2.6.3",
       "released": "2026-08-05",

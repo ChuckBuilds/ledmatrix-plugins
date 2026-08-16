@@ -47,7 +47,8 @@
         "password": {
           "type": "string",
           "default": "",
-          "description": "MQTT broker password (optional)"
+          "description": "MQTT broker password (optional)",
+          "x-secret": true
         },
         "client_id": {
           "type": "string",

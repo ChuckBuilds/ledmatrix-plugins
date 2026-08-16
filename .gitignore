@@ -33,17 +33,17 @@ ehthumbs.db
 *.bak
 *~
 
-# Secrets (contains API tokens)
+# Secrets (contains API tokens) — real values live on the Pi / core runtime,
+# not in this monorepo. Keep only config_secrets.template.json in git.
 config_secrets.json
 
 # Secrets (plugin-level)
 plugins/**/config_secrets.json
 
+# OAuth / local auth artifacts (Google Calendar and similar)
+**/credentials.json
+**/token.pickle
+**/*.pickle
+
 # Asset backups (local working copies)
 plugins/*/assets/**/*_backup/
-
-# RGBMatrixEmulator writes this into the working directory on first run,
-# so the plugin test suites drop one wherever they are invoked from.
-# ledmatrix-music/emulator_config.json is committed on purpose and stays
-# tracked -- .gitignore does not apply to files already in the index.
-emulator_config.json

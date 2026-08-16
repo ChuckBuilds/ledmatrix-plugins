@@ -1,9 +1,9 @@
 {
   "id": "on-air",
   "name": "On Air Light",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "author": "ChuckBuilds",
-  "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live — stays on until you turn it off.",
+  "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u2014 stays on until you turn it off.",
   "entry_point": "manager.py",
   "class_name": "OnAirPlugin",
   "category": "utility",
@@ -22,6 +22,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.2.5",
+      "released": "2026-08-15",
+      "notes": "Also mark mqtt_password as x-secret (in addition to x-sensitive) so the web UI masks it consistently with other plugins.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "version": "1.2.4",
       "released": "2026-07-31",
