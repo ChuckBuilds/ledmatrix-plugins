@@ -1,9 +1,9 @@
 {
   "id": "pomodoro-timer",
   "name": "Pomodoro Timer",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "author": "ChuckBuilds",
-  "description": "A configurable Pomodoro focus/break timer for your matrix. Set the work and break lengths, then start, pause, skip, or reset it over MQTT — with Home Assistant auto-discovery so the whole timer shows up as a device with no YAML.",
+  "description": "A configurable Pomodoro focus/break timer for your matrix. Set the work and break lengths, then start, pause, skip, or reset it over MQTT \u2014 with Home Assistant auto-discovery so the whole timer shows up as a device with no YAML.",
   "entry_point": "manager.py",
   "class_name": "PomodoroTimerPlugin",
   "category": "productivity",
@@ -23,9 +23,15 @@
   ],
   "versions": [
     {
+      "released": "2026-08-15",
+      "version": "1.3.4",
+      "notes": "Also mark mqtt_password as x-secret (in addition to x-sensitive) so the web UI masks it consistently with other plugins.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "released": "2026-07-29",
       "version": "1.3.3",
-      "notes": "Review fixes. A label sent with START is now applied when the command resumes a paused timer, which was the one remaining branch that silently dropped it. Labels from a command payload are bounded to 32 characters and coerced to text, matching the task label — an unbounded string was paying for itself in the renderer's trim-to-fit loop on every frame, and a non-string reached the draw call untouched. Renaming only the state topic now clears the retained payload on the one being abandoned; it is settable independently of the command topic, so the old topic would otherwise sit on the broker forever showing a timer that no longer exists.",
+      "notes": "Review fixes. A label sent with START is now applied when the command resumes a paused timer, which was the one remaining branch that silently dropped it. Labels from a command payload are bounded to 32 characters and coerced to text, matching the task label \u2014 an unbounded string was paying for itself in the renderer's trim-to-fit loop on every frame, and a non-string reached the draw call untouched. Renaming only the state topic now clears the retained payload on the one being abandoned; it is settable independently of the command topic, so the old topic would otherwise sit on the broker forever showing a timer that no longer exists.",
       "ledmatrix_min_version": "2.0.0"
     },
     {
@@ -37,7 +43,7 @@
     {
       "released": "2026-07-28",
       "version": "1.3.1",
-      "notes": "Crispness and bounds. The phase label is now rendered through a thresholded mask instead of PIL's antialiased text, so a frame contains only the palette colours rather than a grey halo around every glyph — 26-36 distinct colours per frame drops to 6, all intentional. Fixes content drawn past the bottom edge on panels under about 16px tall: the countdown box had a hard 6px floor that pushed the digits off-panel once the label had taken its row, so the label is now dropped instead when both cannot fit. Swept 256 panel shapes from 32x8 to 384x128 with no overflow, no crashes, and no blank frames.",
+      "notes": "Crispness and bounds. The phase label is now rendered through a thresholded mask instead of PIL's antialiased text, so a frame contains only the palette colours rather than a grey halo around every glyph \u2014 26-36 distinct colours per frame drops to 6, all intentional. Fixes content drawn past the bottom edge on panels under about 16px tall: the countdown box had a hard 6px floor that pushed the digits off-panel once the label had taken its row, so the label is now dropped instead when both cannot fit. Swept 256 panel shapes from 32x8 to 384x128 with no overflow, no crashes, and no blank frames.",
       "ledmatrix_min_version": "2.0.0"
     },
     {
