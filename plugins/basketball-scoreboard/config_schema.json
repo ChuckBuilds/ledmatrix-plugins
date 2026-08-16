@@ -204,11 +204,80 @@
         },
         "favorite_teams": {
           "type": "array",
+          "title": "Favorite Teams",
+          "description": "Select your favorite NBA teams.",
           "items": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "ATL",
+              "BKN",
+              "BOS",
+              "CHA",
+              "CHI",
+              "CLE",
+              "DAL",
+              "DEN",
+              "DET",
+              "GS",
+              "HOU",
+              "IND",
+              "LAC",
+              "LAL",
+              "MEM",
+              "MIA",
+              "MIL",
+              "MIN",
+              "NO",
+              "NY",
+              "OKC",
+              "ORL",
+              "PHI",
+              "PHX",
+              "POR",
+              "SA",
+              "SAC",
+              "TOR",
+              "UTAH",
+              "WSH"
+            ]
           },
           "default": [],
-          "description": "List of favorite NBA team abbreviations (e.g., LAL, BOS, GS). Use 2-3 letter codes. These are ESPN's codes, which are not always the ones you would guess: Golden State is GS, not GSW."
+          "uniqueItems": true,
+          "x-widget": "checkbox-group",
+          "x-options": {
+            "labels": {
+              "ATL": "Atlanta Hawks",
+              "BKN": "Brooklyn Nets",
+              "BOS": "Boston Celtics",
+              "CHA": "Charlotte Hornets",
+              "CHI": "Chicago Bulls",
+              "CLE": "Cleveland Cavaliers",
+              "DAL": "Dallas Mavericks",
+              "DEN": "Denver Nuggets",
+              "DET": "Detroit Pistons",
+              "GS": "Golden State Warriors",
+              "HOU": "Houston Rockets",
+              "IND": "Indiana Pacers",
+              "LAC": "LA Clippers",
+              "LAL": "Los Angeles Lakers",
+              "MEM": "Memphis Grizzlies",
+              "MIA": "Miami Heat",
+              "MIL": "Milwaukee Bucks",
+              "MIN": "Minnesota Timberwolves",
+              "NO": "New Orleans Pelicans",
+              "NY": "New York Knicks",
+              "OKC": "Oklahoma City Thunder",
+              "ORL": "Orlando Magic",
+              "PHI": "Philadelphia 76ers",
+              "PHX": "Phoenix Suns",
+              "POR": "Portland Trail Blazers",
+              "SA": "San Antonio Spurs",
+              "SAC": "Sacramento Kings",
+              "TOR": "Toronto Raptors",
+              "UTAH": "Utah Jazz",
+              "WSH": "Washington Wizards"
+            }
+          }
         },
         "exclude_teams": {
           "x-advanced": true,
@@ -551,7 +620,7 @@
         "mode_durations": {
           "type": "object",
           "title": "Mode-Level Durations",
-          "description": "Control total duration for each mode type for NBA. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+          "description": "Control total duration for each mode type for NBA. If not set, uses dynamic calculation (total_games × per_game_duration).",
           "properties": {
             "recent_mode_duration": {
               "x-advanced": true,
@@ -591,11 +660,50 @@
         },
         "favorite_teams": {
           "type": "array",
+          "title": "Favorite Teams",
+          "description": "Select your favorite WNBA teams.",
           "items": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "ATL",
+              "CHI",
+              "CON",
+              "DAL",
+              "GS",
+              "IND",
+              "LA",
+              "LV",
+              "MIN",
+              "NY",
+              "PHX",
+              "POR",
+              "SEA",
+              "TOR",
+              "WSH"
+            ]
           },
           "default": [],
-          "description": "List of favorite WNBA team abbreviations (e.g., NY, LA, SEA). Use 2-3 letter codes. These are ESPN's codes: New York Liberty is NY and Los Angeles Sparks is LA."
+          "uniqueItems": true,
+          "x-widget": "checkbox-group",
+          "x-options": {
+            "labels": {
+              "ATL": "Atlanta Dream",
+              "CHI": "Chicago Sky",
+              "CON": "Connecticut Sun",
+              "DAL": "Dallas Wings",
+              "GS": "Golden State Valkyries",
+              "IND": "Indiana Fever",
+              "LA": "Los Angeles Sparks",
+              "LV": "Las Vegas Aces",
+              "MIN": "Minnesota Lynx",
+              "NY": "New York Liberty",
+              "PHX": "Phoenix Mercury",
+              "POR": "Portland Fire",
+              "SEA": "Seattle Storm",
+              "TOR": "Toronto Tempo",
+              "WSH": "Washington Mystics"
+            }
+          }
         },
         "exclude_teams": {
           "x-advanced": true,
@@ -938,7 +1046,7 @@
         "mode_durations": {
           "type": "object",
           "title": "Mode-Level Durations",
-          "description": "Control total duration for each mode type for WNBA. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+          "description": "Control total duration for each mode type for WNBA. If not set, uses dynamic calculation (total_games × per_game_duration).",
           "properties": {
             "recent_mode_duration": {
               "x-advanced": true,
@@ -1363,7 +1471,7 @@
         "mode_durations": {
           "type": "object",
           "title": "Mode-Level Durations",
-          "description": "Control total duration for each mode type for NCAA Men's Basketball. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+          "description": "Control total duration for each mode type for NCAA Men's Basketball. If not set, uses dynamic calculation (total_games × per_game_duration).",
           "properties": {
             "recent_mode_duration": {
               "x-advanced": true,
@@ -1788,7 +1896,7 @@
         "mode_durations": {
           "type": "object",
           "title": "Mode-Level Durations",
-          "description": "Control total duration for each mode type for NCAA Women's Basketball. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+          "description": "Control total duration for each mode type for NCAA Women's Basketball. If not set, uses dynamic calculation (total_games × per_game_duration).",
           "properties": {
             "recent_mode_duration": {
               "x-advanced": true,

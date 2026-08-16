@@ -566,7 +566,7 @@
     "mode_durations": {
       "type": "object",
       "title": "Mode-Level Durations",
-      "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+      "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
       "properties": {
         "recent_mode_duration": {
           "type": [

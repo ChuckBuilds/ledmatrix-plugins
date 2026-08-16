@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.13.0",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Turn the favorite-teams field into a checkbox picker. It was a free-text array with only a description telling you to use 2-3 letter codes and nothing validating what you typed, so a wrong or stale code saved cleanly and then matched nothing -- an empty screen with no error anywhere. The roster is now an enum with display names, rendered as the same checkbox-group the odds ticker already uses, and scripts/check_team_pickers.py keeps it in step with ESPN. Existing configurations are unaffected: the codes were already ESPN's, so anything valid today stays valid. Applies to NHL; the college leagues keep the text field, since a checkbox grid of several hundred teams is worse than typing. Codes ESPN no longer uses cannot be offered by a picker, so if one is already saved the config will not save until it is replaced: ARI (Coyotes (pre-2024)), LAK (Kings), MON (Canadiens), NJD (Devils), PHX (Coyotes (pre-2014)), SJS (Sharks), TBL (Lightning), UTA (Mammoth), WAS (Capitals). The web UI reports which value it rejected."
+    },
     {
       "version": "1.12.0",
       "released": "2026-08-19",
