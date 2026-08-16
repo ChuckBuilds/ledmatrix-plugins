@@ -140,7 +140,8 @@ Cold-start facts that are easy to rediscover the hard way:
   manifests for monorepo plugins; third-party entries keep their own `repo` URL
   and empty `plugin_path`.
 
-More: `CONTRIBUTING.md`, `SUBMISSION.md`, `VERIFICATION.md`.
+More: [CONTRIBUTING.md](./CONTRIBUTING.md), [SUBMISSION.md](./SUBMISSION.md),
+[VERIFICATION.md](./VERIFICATION.md).
 
 ---
 
@@ -155,7 +156,7 @@ A change is **correct** only if all of the following hold for touched plugins:
 | Manifest valid | Missing required fields / schema drift | CI vs core `schema/manifest_schema.json` |
 | Renders on panels | Crash, draw past edge, or golden drift | Core `check_plugin.py` + CI harness |
 | Config UI ↔ runtime | Schema default ≠ `config.get` default; README tables lie | Manual + PR checklist; prefer matching schema |
-| No secret leak | Key/token committed | `.gitignore` + PR template / VERIFICATION |
+| No secret leak | Key/token committed | `.gitignore` + PR template / [VERIFICATION.md](./VERIFICATION.md) |
 
 Optional but strong: commit `plugins/<id>/test/harness.json` + golden PNGs so
 visual drift fails CI instead of showing up on a Pi.

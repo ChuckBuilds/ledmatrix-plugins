@@ -66,8 +66,10 @@ For monorepo submissions (Option A), CI runs automatically on your PR:
 1. **Automated CI gates**:
    - **Version bump** enforced on any changed plugin code
    - **Manifest schema validation** against the core `manifest_schema.json`
-   - **Safety harness** — renders every screen at every matrix size (64×32,
-     128×32, 128×64, 256×32), failing on crashes or content past the edge
+   - **Safety harness** — renders every screen across the harness size matrix
+     (design for 64×32, 128×32, 128×64, 256×32; CI may include additional sizes —
+     see `docs/plugin-development/07-testing-ci-and-registry.md`), failing on
+     crashes or content past the edge
    - **Module-collision check** across all plugins
 2. **Code Review**: Manual review of plugin code
 3. **Testing**: Installation and basic functionality

@@ -36,7 +36,7 @@ Decay stale/duplicated rules. Don’t leave load-bearing facts only in chat.
 
 | Need | Where |
 |------|--------|
-| Dense harness | `CLAUDE.md` |
-| Human guide | `docs/plugin-development/` |
-| Contribute / symlink setup | `CONTRIBUTING.md` |
-| Submit / verify plugin | `SUBMISSION.md`, `VERIFICATION.md` |
+| Dense harness | [CLAUDE.md](./CLAUDE.md) |
+| Human guide | [docs/plugin-development/](./docs/plugin-development/) |
+| Contribute / symlink setup | [CONTRIBUTING.md](./CONTRIBUTING.md) |
+| Submit / verify plugin | [SUBMISSION.md](./SUBMISSION.md), [VERIFICATION.md](./VERIFICATION.md) |
