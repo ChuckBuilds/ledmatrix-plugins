@@ -94,8 +94,9 @@ module-collision check. Use this list for the human judgment CI can't make
 ## Testing
 
 - [ ] Tested on Raspberry Pi
-- [ ] Renders correctly at all four harness sizes (64×32, 128×32, 128×64,
-      256×32) — the safety harness checks this automatically
+- [ ] Renders correctly across the safety harness sizes (design for the classic
+      four — 64×32, 128×32, 128×64, 256×32; CI also covers additional panels —
+      see [docs/plugin-development/07-testing-ci-and-registry.md](docs/plugin-development/07-testing-ci-and-registry.md))
 - [ ] No excessive CPU/memory usage
 - [ ] No crashes or freezes
 

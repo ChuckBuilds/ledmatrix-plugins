@@ -45,7 +45,8 @@ These trip up nearly every first plugin. Each is expanded in the topic pages:
 5. **Give deferred/subpackage modules plugin-unique names.** Two plugins sharing
    a bare module name (`data_model.py`) can bind each other's module and fail to
    load. See [topic 7](./07-testing-ci-and-registry.md#module-collisions).
-6. **Render correctly at every matrix size** (64×32, 128×32, 128×64, 256×32).
+6. **Render correctly at every matrix size** (start with 64×32, 128×32, 128×64,
+   256×32; the harness may test more — see topic 07).
    The safety harness enforces it. See [topic 5](./05-adaptive-layout.md) and
    [topic 7](./07-testing-ci-and-registry.md#the-safety-harness).
 

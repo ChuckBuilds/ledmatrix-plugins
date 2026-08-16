@@ -2,11 +2,12 @@
 
 [← Guide index](./README.md) · [← Styling & skins](./04-styling-and-skins.md)
 
-Every plugin must render correctly on **all four supported panel sizes** —
+Every plugin must render correctly on the **classic panel sizes** —
 64×32, 128×32, 128×64, and 256×32 — with nothing drawn past the edge. The
 [safety harness](./07-testing-ci-and-registry.md#the-safety-harness) enforces
-this on every PR. This page covers how plugins adapt to size, from simple
-tier-branching up to the core's opt-in `adaptive` layout engine.
+this on every PR (and by default also exercises additional sizes — see topic 07).
+This page covers how plugins adapt to size, from simple tier-branching up to the
+core's opt-in `adaptive` layout engine.
 
 ---
 
