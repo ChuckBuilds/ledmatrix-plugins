@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.15.3",
+  "version": "2.15.4",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.15.4",
+      "released": "2026-08-15",
+      "notes": "Fix live scorebug overlap during games (e.g. favorite DAL). Classic logos were sized to 1.5x the panel and shifted inward, so live-only chrome (down/distance, possession, timeouts, records) painted on top of them \u2014 upcoming/recent looked fine with less center ink. Live logos now fit a reserved center column; records sit above the timeout strip in classic and adaptive layouts.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "2.15.3",
       "released": "2026-08-14",
@@ -144,7 +150,7 @@
       "released": "2026-07-10",
       "version": "2.8.0",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" — rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
+      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" \u2014 rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
     },
     {
       "released": "2026-07-08",
