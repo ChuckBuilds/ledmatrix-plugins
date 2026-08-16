@@ -171,7 +171,9 @@ class GeochronPlugin(BasePlugin):
             self._darkness = darkness
 
             # Whatever sizes have been asked for so far, plus the live panel.
-            sizes = set(self._map_cache)
+            # Copy first: display() inserts a newly-seen size from the render
+            # thread, and iterating the live dict could catch it mid-write.
+            sizes = set(self._map_cache.copy())
             sizes.add((self.display_manager.width, self.display_manager.height))
             for size in sizes:
                 self._render_for_size(size, darkness)
