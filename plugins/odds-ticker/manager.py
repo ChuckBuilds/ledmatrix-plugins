@@ -25,6 +25,7 @@ API Version: 1.1.0
 
 import time
 import logging
+import queue
 import requests
 import json
 import threading
@@ -202,6 +203,9 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         self.games_per_favorite_team = get_config(filtering, 'games_per_favorite_team', 1)
         self.max_games_per_league = get_config(filtering, 'max_games_per_league', 5)
         self.show_odds_only = get_config(filtering, 'show_odds_only', False)
+        # game_id -> the arguments its odds request would need. Filled while
+        # the schedule is parsed, drained for the display candidates only.
+        self._odds_pending: Dict[str, Dict[str, Any]] = {}
         self.sort_order = get_config(filtering, 'sort_order', 'soonest')
 
         # Data settings
@@ -1036,6 +1040,164 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             logger.warning(f"No games found for any of the {len(self.enabled_leagues)} enabled leagues")
         return games_data
 
+    # How many extra games to price when show_odds_only is on, so the filter
+    # has alternatives when the nearest games have no lines posted yet.
+    _ODDS_CANDIDATE_HEADROOM = 3
+
+    def _collection_limit(self) -> int:
+        """How many games the schedule pass must keep before odds are attached.
+
+        Collection used to stop at max_games_per_league, which is the *display*
+        limit -- five by default. That capped the pool before _odds_candidates
+        ever saw it, so show_odds_only could not widen its window and the
+        headroom below was inert: five games in, five considered, and if none
+        of them had odds posted the ticker went empty with nothing to fall
+        back on. Keep enough for the widest window the candidate selection can
+        ask for; the display limit is applied afterwards, once games without
+        usable odds have been dropped.
+        """
+        limit = max(1, self.max_games_per_league)
+        if self.show_odds_only:
+            limit *= self._ODDS_CANDIDATE_HEADROOM
+        return limit
+
+    def _odds_candidates(self, games: List[Dict[str, Any]],
+                         league_config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """The games worth spending an ESPN request on.
+
+        The ticker shows at most ``max_games_per_league`` per league (five by
+        default), but odds used to be fetched for every game in the
+        ``future_fetch_days`` window. On a college-football weekend that was
+        1,281 requests in twenty minutes, roughly one CPU core spent on odds
+        for games that would never reach the screen.
+
+        Selection mirrors what the caller does with the list afterwards, so
+        the games that survive its filters are the ones that have odds.
+        """
+        headroom = self._ODDS_CANDIDATE_HEADROOM if self.show_odds_only else 1
+        return self._select_games(games, league_config, headroom=headroom)
+
+    def _select_games(self, games: List[Dict[str, Any]],
+                      league_config: Dict[str, Any],
+                      headroom: int = 1) -> List[Dict[str, Any]]:
+        """Choose which games matter, soonest first.
+
+        One implementation for two callers -- the odds fetch and the display
+        list -- because they have to agree. Picking candidates by a plain
+        count while the display picks them by a per-team quota lets the two
+        diverge: if the earliest games all involve one favourite, the count
+        spends the whole budget on that team, and a later game for a
+        different favourite reaches the screen with no odds attached.
+
+        ``headroom`` widens the selection for the odds fetch only. Odds are
+        often unposted more than a day out, so ``show_odds_only`` needs
+        alternatives to fall back on rather than an empty ticker.
+        """
+        ordered = sorted(games, key=lambda g: g.get('start_time') or datetime.max)
+
+        if not self.show_favorite_teams_only:
+            return ordered[:max(1, self.max_games_per_league) * headroom]
+
+        favorites = list(league_config.get('favorite_teams') or [])
+        if not favorites:
+            return []
+
+        # Per-team quota, matching the display path: each favourite gets up to
+        # games_per_favorite_team, and a game involving two favourites counts
+        # for both.
+        per_team = max(1, self.games_per_favorite_team) * headroom
+        counts = {team: 0 for team in favorites}
+        seen = set()
+        chosen = []
+        for game in ordered:
+            home, away = game.get('home_team'), game.get('away_team')
+            home_fav, away_fav = home in counts, away in counts
+            if not home_fav and not away_fav:
+                continue
+            needed = ((home_fav and counts[home] < per_team)
+                      or (away_fav and counts[away] < per_team))
+            if not needed or game.get('id') in seen:
+                continue
+            chosen.append(game)
+            seen.add(game.get('id'))
+            if home_fav:
+                counts[home] += 1
+            if away_fav:
+                counts[away] += 1
+            if all(c >= per_team for c in counts.values()):
+                break
+
+        return chosen[:max(1, self.max_games_per_league) * headroom]
+
+    def _attach_odds_to_candidates(self, games: List[Dict[str, Any]],
+                                   league_config: Dict[str, Any]) -> None:
+        """Fetch odds for the display candidates and attach them in place."""
+        if not self.fetch_odds:
+            self._odds_pending.clear()
+            return
+
+        candidates = self._odds_candidates(games, league_config)
+        skipped = len(games) - len(candidates)
+        if skipped > 0:
+            logger.debug(
+                "Odds: fetching for %d of %d games (%d out of display range)",
+                len(candidates), len(games), skipped)
+
+        for game in candidates:
+            request = self._odds_pending.get(game.get('id'))
+            if not request:
+                continue
+            odds_data = self._fetch_one_game_odds(game['id'], request)
+            game['odds'] = odds_data if self._odds_are_usable(odds_data) else None
+
+        self._odds_pending.clear()
+
+    @staticmethod
+    def _odds_are_usable(odds_data: Optional[Dict[str, Any]]) -> bool:
+        """Whether a response carries anything the ticker can render."""
+        if not odds_data or odds_data.get('no_odds'):
+            return False
+        if odds_data.get('spread') is not None:
+            return True
+        if (odds_data.get('home_team_odds') or {}).get('spread_odds') is not None:
+            return True
+        if (odds_data.get('away_team_odds') or {}).get('spread_odds') is not None:
+            return True
+        return odds_data.get('over_under') is not None
+
+    def _fetch_one_game_odds(self, game_id: str,
+                             request: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """One odds request, bounded by the same 3s timeout as before."""
+        result_queue: "queue.Queue" = queue.Queue()
+
+        def fetch():
+            try:
+                result_queue.put(('success', self.get_odds(
+                    sport=request['sport'],
+                    league=request['league'],
+                    event_id=game_id,
+                    update_interval_seconds=request['update_interval_seconds'],
+                    is_live=request['is_live'],
+                )))
+            except Exception as exc:  # noqa: BLE001 - reported, not raised
+                result_queue.put(('error', exc))
+
+        try:
+            thread = threading.Thread(target=fetch, daemon=True)
+            thread.start()
+            kind, payload = result_queue.get(timeout=3)
+        except queue.Empty:
+            logger.warning("Odds fetch timed out for game %s", game_id)
+            return None
+        except Exception as exc:  # noqa: BLE001 - thread start can fail
+            logger.warning("Odds fetch failed for game %s: %s", game_id, exc)
+            return None
+
+        if kind == 'success':
+            return payload
+        logger.warning("Odds fetch failed for game %s: %s", game_id, payload)
+        return None
+
     def _fetch_league_games(self, league_config: Dict[str, Any], now: datetime, canonical_league_key: str) -> List[Dict[str, Any]]:
         """Fetch upcoming games for a specific league using day-by-day approach."""
         yesterday = now - timedelta(days=1)
@@ -1071,13 +1233,18 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             for date in dates:
                 # Stop if we have enough games for favorite teams OR hit max games safety limit
                 if self.show_favorite_teams_only and favorite_teams:
-                    all_teams_satisfied = all(team_games_found.get(t, 0) >= max_games for t in favorite_teams)
-                    max_reached = max_games_per_league and games_found >= max_games_per_league
+                    quota = max_games * (self._ODDS_CANDIDATE_HEADROOM
+                                         if self.show_odds_only else 1)
+                    all_teams_satisfied = all(team_games_found.get(t, 0) >= quota
+                                              for t in favorite_teams)
+                    max_reached = (max_games_per_league
+                                   and games_found >= self._collection_limit())
                     if all_teams_satisfied or max_reached:
                         break  # All favorite teams satisfied or max limit reached
                 # Stop if we have enough games for the league (when not showing favorite teams only)
-                if not self.show_favorite_teams_only and max_games_per_league and games_found >= max_games_per_league:
-                    break  # We have enough games for this league, stop searching
+                if (not self.show_favorite_teams_only and max_games_per_league
+                        and games_found >= self._collection_limit()):
+                    break  # Enough for the widest candidate window; stop searching
                 try:
                     cache_key = f"scoreboard_data_{sport}_{league}_{date}"
 
@@ -1115,7 +1282,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
 
                     for event in data.get('events', []):
                         # Stop if we have enough games for the league (when not showing favorite teams only)
-                        if not self.show_favorite_teams_only and max_games_per_league and games_found >= max_games_per_league:
+                        if (not self.show_favorite_teams_only and max_games_per_league
+                                and games_found >= self._collection_limit()):
                             break
                         game_id = event['id']
                         status = event['status']['type']['name'].lower()
@@ -1231,64 +1399,22 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                                 
                                 logger.debug(f"Game {game_id} starts in {time_until_game}. Setting odds update interval to {update_interval_seconds}s.")
                                 
-                                # Fetch odds with timeout protection to prevent freezing (if enabled)
-                                # Determine if game is live for cache strategy
                                 is_live_game = status_state == 'in'
-                                if self.fetch_odds:
-                                    try:
-                                        import threading
-                                        import queue
-
-                                        result_queue = queue.Queue()
-
-                                        def fetch_odds():
-                                            try:
-                                                odds_result = self.get_odds(
-                                                    sport=sport,
-                                                    league=league,
-                                                    event_id=game_id,
-                                                    update_interval_seconds=update_interval_seconds,
-                                                    is_live=is_live_game
-                                                )
-                                                result_queue.put(('success', odds_result))
-                                            except Exception as e:
-                                                result_queue.put(('error', e))
-                                        
-                                        # Start odds fetch in a separate thread
-                                        odds_thread = threading.Thread(target=fetch_odds)
-                                        odds_thread.daemon = True
-                                        odds_thread.start()
-                                        
-                                        # Wait for result with 3-second timeout
-                                        try:
-                                            result_type, result_data = result_queue.get(timeout=3)
-                                            if result_type == 'success':
-                                                odds_data = result_data
-                                            else:
-                                                logger.warning(f"Odds fetch failed for game {game_id}: {result_data}")
-                                                odds_data = None
-                                        except queue.Empty:
-                                            logger.warning(f"Odds fetch timed out for game {game_id}")
-                                            odds_data = None
-                                        
-                                    except Exception as e:
-                                        logger.warning(f"Odds fetch failed for game {game_id}: {e}")
-                                        odds_data = None
-                                else:
-                                    # Odds fetching is disabled
-                                    odds_data = None
-                                
-                                has_odds = False
-                                if odds_data and not odds_data.get('no_odds'):
-                                    if odds_data.get('spread') is not None:
-                                        has_odds = True
-                                    if odds_data.get('home_team_odds', {}).get('spread_odds') is not None:
-                                        has_odds = True
-                                    if odds_data.get('away_team_odds', {}).get('spread_odds') is not None:
-                                        has_odds = True
-                                    if odds_data.get('over_under') is not None:
-                                        has_odds = True
-                                
+                                # Odds are fetched after this loop, for the
+                                # handful of games that can actually be shown.
+                                # See _attach_odds_to_candidates(): fetching
+                                # here meant one ESPN request per game in the
+                                # whole future_fetch_days window, which on a
+                                # college-football weekend measured 1,281
+                                # requests in twenty minutes for a ticker that
+                                # displays five.
+                                odds_data = None
+                                self._odds_pending[game_id] = {
+                                    'sport': sport,
+                                    'league': league,
+                                    'update_interval_seconds': update_interval_seconds,
+                                    'is_live': is_live_game,
+                                }
                                 # Extract live game information if the game is in progress
                                 live_info = None
                                 if status_state == 'in':
@@ -1305,7 +1431,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                                     'start_time': game_time,
                                     'home_record': home_record,
                                     'away_record': away_record,
-                                    'odds': odds_data if has_odds else None,
+                                    'odds': None,  # filled by _attach_odds_to_candidates()
                                     'broadcast_info': broadcast_info,
                                     'logo_dir': league_config.get('logo_dir', f'assets/sports/{league.lower()}_logos'),
                                     'league': canonical_league_key,  # Canonical lookup key (e.g., 'nfl', 'nba', 'soccer')
@@ -1347,6 +1473,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                     logger.error(f"Unexpected error fetching games for {league_config.get('league', 'unknown')} on {date}: {e}", exc_info=True)
             if not self.show_favorite_teams_only and max_games_per_league and games_found >= max_games_per_league:
                 break
+        self._attach_odds_to_candidates(all_games, league_config)
         return all_games
 
     def _extract_live_game_info(self, event: Dict[str, Any], sport: str) -> Dict[str, Any]:

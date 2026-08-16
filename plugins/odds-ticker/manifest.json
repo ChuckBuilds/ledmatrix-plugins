@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.3.0",
+      "released": "2026-08-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Request odds only for the games the ticker can actually show. Odds were fetched inline for every game in the future_fetch_days window, and the list was trimmed to max_games_per_league afterwards -- five by default. Measured on a live rig during a college-football weekend that was 1,281 ESPN requests in twenty minutes, around 600/min, holding roughly a CPU core on a Pi and stalling the display loop it shares an interpreter with. The schedule pass now records what each request would need and the fetch runs afterwards for the display candidates only, picked the same way the caller picks what to show. show_odds_only widens that window threefold so the filter still has games to fall back on when the nearest ones have no lines posted yet. Candidate selection and display selection now share one implementation, so the games priced are the games shown -- picking candidates by a plain count while the display used a per-team quota could spend the whole budget on one favourite and leave another's game on screen without odds. Schedule collection also keeps enough games for the widest candidate window instead of stopping at the display limit, which had made the show_odds_only headroom inert."
+    },
     {
       "version": "1.2.0",
       "released": "2026-08-05",
