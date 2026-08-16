@@ -1044,6 +1044,23 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
     # has alternatives when the nearest games have no lines posted yet.
     _ODDS_CANDIDATE_HEADROOM = 3
 
+    def _collection_limit(self) -> int:
+        """How many games the schedule pass must keep before odds are attached.
+
+        Collection used to stop at max_games_per_league, which is the *display*
+        limit -- five by default. That capped the pool before _odds_candidates
+        ever saw it, so show_odds_only could not widen its window and the
+        headroom below was inert: five games in, five considered, and if none
+        of them had odds posted the ticker went empty with nothing to fall
+        back on. Keep enough for the widest window the candidate selection can
+        ask for; the display limit is applied afterwards, once games without
+        usable odds have been dropped.
+        """
+        limit = max(1, self.max_games_per_league)
+        if self.show_odds_only:
+            limit *= self._ODDS_CANDIDATE_HEADROOM
+        return limit
+
     def _odds_candidates(self, games: List[Dict[str, Any]],
                          league_config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """The games worth spending an ESPN request on.
@@ -1057,27 +1074,60 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         Selection mirrors what the caller does with the list afterwards, so
         the games that survive its filters are the ones that have odds.
         """
+        headroom = self._ODDS_CANDIDATE_HEADROOM if self.show_odds_only else 1
+        return self._select_games(games, league_config, headroom=headroom)
+
+    def _select_games(self, games: List[Dict[str, Any]],
+                      league_config: Dict[str, Any],
+                      headroom: int = 1) -> List[Dict[str, Any]]:
+        """Choose which games matter, soonest first.
+
+        One implementation for two callers -- the odds fetch and the display
+        list -- because they have to agree. Picking candidates by a plain
+        count while the display picks them by a per-team quota lets the two
+        diverge: if the earliest games all involve one favourite, the count
+        spends the whole budget on that team, and a later game for a
+        different favourite reaches the screen with no odds attached.
+
+        ``headroom`` widens the selection for the odds fetch only. Odds are
+        often unposted more than a day out, so ``show_odds_only`` needs
+        alternatives to fall back on rather than an empty ticker.
+        """
         ordered = sorted(games, key=lambda g: g.get('start_time') or datetime.max)
 
-        if self.show_favorite_teams_only:
-            favorites = set(league_config.get('favorite_teams') or [])
-            if not favorites:
-                return []
-            ordered = [g for g in ordered
-                       if g.get('home_team') in favorites
-                       or g.get('away_team') in favorites]
-            limit = max(1, self.games_per_favorite_team) * max(1, len(favorites))
-        else:
-            limit = max(1, self.max_games_per_league)
+        if not self.show_favorite_teams_only:
+            return ordered[:max(1, self.max_games_per_league) * headroom]
 
-        # show_odds_only drops games whose odds have not been posted yet, which
-        # is common for anything more than a day or two out. Widening the
-        # window gives that filter something to fall back on instead of an
-        # empty ticker, at a bounded cost.
-        if self.show_odds_only:
-            limit *= self._ODDS_CANDIDATE_HEADROOM
+        favorites = list(league_config.get('favorite_teams') or [])
+        if not favorites:
+            return []
 
-        return ordered[:limit]
+        # Per-team quota, matching the display path: each favourite gets up to
+        # games_per_favorite_team, and a game involving two favourites counts
+        # for both.
+        per_team = max(1, self.games_per_favorite_team) * headroom
+        counts = {team: 0 for team in favorites}
+        seen = set()
+        chosen = []
+        for game in ordered:
+            home, away = game.get('home_team'), game.get('away_team')
+            home_fav, away_fav = home in counts, away in counts
+            if not home_fav and not away_fav:
+                continue
+            needed = ((home_fav and counts[home] < per_team)
+                      or (away_fav and counts[away] < per_team))
+            if not needed or game.get('id') in seen:
+                continue
+            chosen.append(game)
+            seen.add(game.get('id'))
+            if home_fav:
+                counts[home] += 1
+            if away_fav:
+                counts[away] += 1
+            if all(c >= per_team for c in counts.values()):
+                break
+
+        return chosen[:max(1, self.max_games_per_league) * headroom]
 
     def _attach_odds_to_candidates(self, games: List[Dict[str, Any]],
                                    league_config: Dict[str, Any]) -> None:
@@ -1183,13 +1233,18 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             for date in dates:
                 # Stop if we have enough games for favorite teams OR hit max games safety limit
                 if self.show_favorite_teams_only and favorite_teams:
-                    all_teams_satisfied = all(team_games_found.get(t, 0) >= max_games for t in favorite_teams)
-                    max_reached = max_games_per_league and games_found >= max_games_per_league
+                    quota = max_games * (self._ODDS_CANDIDATE_HEADROOM
+                                         if self.show_odds_only else 1)
+                    all_teams_satisfied = all(team_games_found.get(t, 0) >= quota
+                                              for t in favorite_teams)
+                    max_reached = (max_games_per_league
+                                   and games_found >= self._collection_limit())
                     if all_teams_satisfied or max_reached:
                         break  # All favorite teams satisfied or max limit reached
                 # Stop if we have enough games for the league (when not showing favorite teams only)
-                if not self.show_favorite_teams_only and max_games_per_league and games_found >= max_games_per_league:
-                    break  # We have enough games for this league, stop searching
+                if (not self.show_favorite_teams_only and max_games_per_league
+                        and games_found >= self._collection_limit()):
+                    break  # Enough for the widest candidate window; stop searching
                 try:
                     cache_key = f"scoreboard_data_{sport}_{league}_{date}"
 
@@ -1227,7 +1282,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
 
                     for event in data.get('events', []):
                         # Stop if we have enough games for the league (when not showing favorite teams only)
-                        if not self.show_favorite_teams_only and max_games_per_league and games_found >= max_games_per_league:
+                        if (not self.show_favorite_teams_only and max_games_per_league
+                                and games_found >= self._collection_limit()):
                             break
                         game_id = event['id']
                         status = event['status']['type']['name'].lower()

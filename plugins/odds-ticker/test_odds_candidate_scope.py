@@ -60,6 +60,8 @@ class _Ticker:
 
     _ODDS_CANDIDATE_HEADROOM = OddsTickerPlugin._ODDS_CANDIDATE_HEADROOM
     _odds_candidates = OddsTickerPlugin._odds_candidates
+    _select_games = OddsTickerPlugin._select_games
+    _collection_limit = OddsTickerPlugin._collection_limit
     _attach_odds_to_candidates = OddsTickerPlugin._attach_odds_to_candidates
     # Re-wrap: reading a staticmethod off the class yields a plain function,
     # which would bind as an instance method on this stand-in.
@@ -141,6 +143,46 @@ def main():
     t._attach_odds_to_candidates(with_pending(t, season), {})
     check("nothing is fetched", t.requested == [])
     check("the pending map is still drained", t._odds_pending == {})
+
+    print("\ncandidate selection matches what the display will pick")
+    # The two must agree. Selecting candidates by a plain count while the
+    # display uses a per-team quota lets them diverge: if the earliest games
+    # all involve one favourite, a count spends the whole budget there and a
+    # later game for another favourite reaches the screen with no odds.
+    crowded = ([game(i, home="UGA", away="X") for i in range(20)]
+               + [game(500 + i, home="BAMA", away="Y") for i in range(3)])
+    t = _Ticker(favorites_only=True, per_favorite=2)
+    cfg = {"favorite_teams": ["UGA", "BAMA"]}
+    picked = t._select_games(crowded, cfg)
+    teams = {g["home_team"] for g in picked}
+    check("both favourites are represented, not just the earliest one",
+          teams == {"UGA", "BAMA"})
+    check("each favourite is held to its quota (%d games)" % len(picked),
+          len(picked) <= 2 * 2)
+
+    t2 = _Ticker(favorites_only=True, per_favorite=2)
+    t2._attach_odds_to_candidates(with_pending(t2, crowded), cfg)
+    priced = {g["id"] for g in crowded if g.get("odds")}
+    check("the games priced are exactly the games selected",
+          priced == {g["id"] for g in picked})
+
+    print("\nshow_odds_only keeps enough games to fall back on")
+    # The headroom is only real if collection kept more than the display
+    # limit. Capping collection at max_games_per_league made it inert.
+    plain = _Ticker(max_games=5)
+    wide = _Ticker(max_games=5, odds_only=True)
+    check("collection keeps the display limit when odds are not required",
+          plain._collection_limit() == 5)
+    check("...and the wider window when they are (%d)" % wide._collection_limit(),
+          wide._collection_limit() == 5 * _Ticker._ODDS_CANDIDATE_HEADROOM)
+    # Via the real entry point, which is what applies the headroom.
+    pool = [game(i) for i in range(40)]
+    check("the odds fetch considers the wider window (%d)"
+          % len(wide._odds_candidates(pool, {})),
+          len(wide._odds_candidates(pool, {}))
+          == 5 * _Ticker._ODDS_CANDIDATE_HEADROOM)
+    check("...while the display limit itself is unchanged",
+          len(plain._odds_candidates(pool, {})) == 5)
 
     print("\nunusable responses are not attached as odds")
     for label, payload in (("no_odds", {"no_odds": True}),
