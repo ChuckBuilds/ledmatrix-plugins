@@ -1,7 +1,7 @@
 {
   "id": "news",
   "name": "News Ticker",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
   "author": "ChuckBuilds",
   "category": "content",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/news",
   "versions": [
+    {
+      "version": "1.3.2",
+      "released": "2026-08-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Keep the rendered ticker when a refresh returns the same headlines. update() discarded the scroll image and the rendered headline images on every refresh regardless of whether anything had changed, and an RSS feed mostly returns what it returned last time. The next Vegas fetch then rebuilt a strip that was still correct: measured on a 512x64 rig at 427ms for a 10220x64 image, on the render thread, which is where the marquee's stutter came from. The discard is now gated on the headline set actually differing. Font, colour and feed-set changes still force a re-render, since those alter the drawing without altering the headlines."
+    },
     {
       "version": "1.3.1",
       "released": "2026-08-05",
