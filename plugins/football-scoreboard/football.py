@@ -189,14 +189,32 @@ class FootballLive(Football, SportsLive):
                 self.display_manager.update_display()
                 return
 
+            # Classic live logos are thumbnailed to 1.5x the panel and shifted
+            # inward (+10 / -10), so on many assets (and especially with live-only
+            # chrome — down/distance, possession, timeouts, records) the logos
+            # swallow the center and the scorebug text paints on top of them.
+            # Upcoming/recent have less center ink so the same bleed looks fine;
+            # live is where users report the recurring "overlapping" mess.
+            # Reserve a center column and fit each logo into the side that remains.
+            min_center = max(44, int(display_width * 0.34))
+            max_logo_w = max(16, (display_width - min_center) // 2)
+            max_logo_h = display_height
+            if away_logo.width > max_logo_w or away_logo.height > max_logo_h:
+                away_logo = away_logo.copy()
+                away_logo.thumbnail((max_logo_w, max_logo_h), Image.Resampling.LANCZOS)
+            if home_logo.width > max_logo_w or home_logo.height > max_logo_h:
+                home_logo = home_logo.copy()
+                home_logo.thumbnail((max_logo_w, max_logo_h), Image.Resampling.LANCZOS)
+
             center_y = display_height // 2
 
-            # Draw logos (shifted slightly more inward than NHL perhaps) with layout offsets
-            home_x = display_width - home_logo.width + 10 + self._get_layout_offset('home_logo', 'x_offset') #adjusted from 18 # Adjust position as needed
+            # Mild inward bleed only — keep logos from claiming the reserved center.
+            bleed = min(4, max_logo_w // 8)
+            home_x = display_width - home_logo.width + bleed + self._get_layout_offset('home_logo', 'x_offset')
             home_y = center_y - (home_logo.height // 2) + self._get_layout_offset('home_logo', 'y_offset')
             main_img.paste(home_logo, (home_x, home_y), home_logo)
 
-            away_x = -10 + self._get_layout_offset('away_logo', 'x_offset') #adjusted from 18 # Adjust position as needed
+            away_x = -bleed + self._get_layout_offset('away_logo', 'x_offset')
             away_y = center_y - (away_logo.height // 2) + self._get_layout_offset('away_logo', 'y_offset')
             main_img.paste(away_logo, (away_x, away_y), away_logo)
 
@@ -291,7 +309,10 @@ class FootballLive(Football, SportsLive):
                             fill=lace_color, width=1
                         )
 
-            # Timeouts (Bottom corners) - 3 small bars per team
+            # Timeouts (Bottom corners) - 3 small bars per team.
+            # Live-only chrome: records/rankings used to share this same strip and
+            # painted on top of the bars every live game (upcoming/recent looked
+            # fine because they have no timeout row).
             timeout_bar_width = 4
             timeout_bar_height = 2
             timeout_spacing = 1
@@ -325,7 +346,10 @@ class FootballLive(Football, SportsLive):
                 
                 record_bbox = draw_overlay.textbbox((0,0), "0-0", font=record_font)
                 record_height = record_bbox[3] - record_bbox[1]
-                record_y = display_height - record_height - 4
+                # Sit above the timeout strip so live games don't stack ink.
+                record_y = timeout_y - record_height - 1
+                if record_y < 0:
+                    record_y = 0
                 self.logger.debug(f"Record positioning: height={record_height}, record_y={record_y}, display_height={display_height}")
 
                 # Display away team info

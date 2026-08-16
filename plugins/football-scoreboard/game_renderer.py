@@ -696,9 +696,13 @@ class GameRenderer:
         if show_odds and 'odds' in game and game['odds']:
             self._draw_dynamic_odds(draw_overlay, game['odds'])
         
-        # Draw records or rankings if enabled
+        # Draw records or rankings if enabled. Live cards also paint timeout
+        # bars in these corners — keep records above that strip.
         if show_records or show_ranking:
-            self._draw_records_or_rankings(draw_overlay, game, show_records, show_ranking)
+            self._draw_records_or_rankings(
+                draw_overlay, game, show_records, show_ranking,
+                reserve_timeout_strip=(game_type == "live"),
+            )
         
         # Composite the overlay onto main image
         main_img = Image.alpha_composite(main_img, overlay)
@@ -945,8 +949,10 @@ class GameRenderer:
         show_records = self._get_display_option(game_league, "show_records")
         show_ranking = self._get_display_option(game_league, "show_ranking")
         if show_records or show_ranking:
-            self._draw_records_adaptive(draw_overlay, game, regs,
-                                        show_records, show_ranking)
+            self._draw_records_adaptive(
+                draw_overlay, game, regs, show_records, show_ranking,
+                reserve_timeout_strip=(game_type == "live"),
+            )
 
         main_img = Image.alpha_composite(main_img, overlay)
         return main_img.convert('RGB')
@@ -1054,8 +1060,17 @@ class GameRenderer:
                            fill=color, outline=(0, 0, 0))
 
     def _draw_records_adaptive(self, draw: ImageDraw.Draw, game: Dict, regs,
-                               show_records: bool, show_ranking: bool) -> None:
-        """Records/rankings in the bottom corners, ladder-fitted."""
+                               show_records: bool, show_ranking: bool,
+                               reserve_timeout_strip: bool = False) -> None:
+        """Records/rankings in the bottom corners, ladder-fitted.
+
+        When ``reserve_timeout_strip`` is set (live cards), shrink the region
+        from the bottom so records sit above the timeout bars that share these
+        corners — otherwise the two layers paint on top of each other.
+        """
+        strip = 0
+        if reserve_timeout_strip:
+            strip = self._ctx.px(2, minimum=2) + 2  # bar height + gap
         for abbr_key, record_key, region, element, align in (
             ('away_abbr', 'away_record', regs.bottom_left, 'records', 'left'),
             ('home_abbr', 'home_record', regs.bottom_right, 'records', 'right'),
@@ -1068,6 +1083,9 @@ class GameRenderer:
             if not text:
                 continue
             region = self._region_for(region, element).inset(2, 0)
+            if strip:
+                region = Region(region.x, region.y, region.w,
+                                max(1, region.h - strip))
             fit = self._fit_element('detail', text, region, ADAPTIVE_LADDER_TEXT)
             self._draw_fit_outline(draw, fit, region, align=align, valign="bottom")
 
@@ -1623,8 +1641,16 @@ class GameRenderer:
         
         return bool(value)
     
-    def _draw_records_or_rankings(self, draw: ImageDraw.Draw, game: Dict, show_records: bool, show_ranking: bool) -> None:
-        """Draw team records or rankings."""
+    def _draw_records_or_rankings(self, draw: ImageDraw.Draw, game: Dict,
+                                  show_records: bool, show_ranking: bool,
+                                  reserve_timeout_strip: bool = False) -> None:
+        """Draw team records or rankings.
+
+        Live cards also draw timeout bars along the bottom edge of these
+        corners. When ``reserve_timeout_strip`` is True, place the record text
+        above that strip so the two don't overlap (upcoming/recent have no
+        timeouts, so they keep the original bottom padding).
+        """
         record_font = getattr(self, '_record_font', None)
         if record_font is None:
             try:
@@ -1638,7 +1664,12 @@ class GameRenderer:
         
         record_bbox = draw.textbbox((0, 0), "0-0", font=record_font)
         record_height = record_bbox[3] - record_bbox[1]
-        record_y = self.display_height - record_height - 4
+        if reserve_timeout_strip:
+            timeout_bar_height = 2
+            timeout_y = self.display_height - timeout_bar_height - 1
+            record_y = max(0, timeout_y - record_height - 1)
+        else:
+            record_y = self.display_height - record_height - 4
         
         # Away team info
         if away_abbr:
