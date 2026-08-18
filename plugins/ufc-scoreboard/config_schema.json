@@ -84,70 +84,79 @@
             },
             "live_display_mode": {
               "type": "string",
-              "enum": ["switch", "scroll"],
+              "enum": [
+                "switch",
+                "scroll"
+              ],
               "default": "switch",
               "description": "Display mode for live fights: 'switch' rotates fights one at a time, 'scroll' scrolls all fights horizontally"
             },
             "recent_display_mode": {
               "type": "string",
-              "enum": ["switch", "scroll"],
+              "enum": [
+                "switch",
+                "scroll"
+              ],
               "default": "switch",
               "description": "Display mode for recent fights"
             },
             "upcoming_display_mode": {
               "type": "string",
-              "enum": ["switch", "scroll"],
+              "enum": [
+                "switch",
+                "scroll"
+              ],
               "default": "switch",
               "description": "Display mode for upcoming fights"
             }
           }
         },
         "scroll_settings": {
-              "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "x-advanced": true,
-                  "type": "number",
-                  "default": 50.0,
-                  "minimum": 1.0,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
-                },
-                "scroll_delay": {
-                  "x-advanced": true,
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between fight cards when scrolling"
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues"
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width"
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each fight card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more fights simultaneously."
-                }
-              }
+          "type": "object",
+          "title": "Scroll Settings",
+          "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
+          "properties": {
+            "scroll_speed": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 50.0,
+              "minimum": 1.0,
+              "maximum": 200.0,
+              "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
+            },
+            "scroll_delay": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 0.01,
+              "minimum": 0.001,
+              "maximum": 0.1,
+              "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
+            },
+            "gap_between_games": {
+              "type": "integer",
+              "default": 48,
+              "minimum": 8,
+              "maximum": 128,
+              "description": "Gap in pixels between fight cards when scrolling"
+            },
+            "show_league_separators": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show league icons between different leagues"
+            },
+            "dynamic_duration": {
+              "type": "boolean",
+              "default": true,
+              "description": "Automatically calculate display duration based on content width"
+            },
+            "game_card_width": {
+              "type": "integer",
+              "default": 128,
+              "minimum": 32,
+              "maximum": 512,
+              "description": "Width of each fight card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more fights simultaneously."
+            }
+          }
         },
         "live_priority": {
           "type": "boolean",
@@ -621,14 +630,51 @@
               "additionalProperties": false
             }
           },
-          "x-propertyOrder": ["fighter1_image", "fighter2_image", "status_text", "result_text", "fight_class", "date", "time", "records", "odds", "fighter_names"],
+          "x-propertyOrder": [
+            "fighter1_image",
+            "fighter2_image",
+            "status_text",
+            "result_text",
+            "fight_class",
+            "date",
+            "time",
+            "records",
+            "odds",
+            "fighter_names"
+          ],
           "additionalProperties": false
         }
       },
-      "x-propertyOrder": ["fighter_name_text", "status_text", "result_text", "detail_text", "layout"],
+      "x-propertyOrder": [
+        "fighter_name_text",
+        "status_text",
+        "result_text",
+        "detail_text",
+        "layout"
+      ],
       "additionalProperties": false
+    },
+    "schedule_lookback_days": {
+      "type": "integer",
+      "default": 14,
+      "minimum": 1,
+      "maximum": 60,
+      "title": "Schedule lookback (days)",
+      "description": "How far back to fetch games for the Recent screen. Raise it if finished games disappear sooner than you want.",
+      "x-advanced": true
+    },
+    "schedule_lookahead_days": {
+      "type": "integer",
+      "default": 7,
+      "minimum": 1,
+      "maximum": 60,
+      "title": "Schedule lookahead (days)",
+      "description": "How far ahead to fetch games for the Upcoming screen. Raise it for a league that plays weekly: a fixture just beyond this horizon is not fetched at all, so it never reaches the board even though the date is known.",
+      "x-advanced": true
     }
   },
   "additionalProperties": false,
-  "required": ["enabled"]
+  "required": [
+    "enabled"
+  ]
 }

@@ -917,13 +917,13 @@
         "adaptive"
       ],
       "default": "classic",
-      "description": "Layout engine. 'classic' is the original fixed layout (unchanged). 'adaptive' (beta) scales fonts, logos, and element regions to the panel size \u2014 content grows on large panels and degrades gracefully on small ones. Your customization fonts and x/y offsets still apply in adaptive mode. Requires LEDMatrix core with the adaptive layout system; falls back to classic on older cores. Switch back to 'classic' at any time to restore the original rendering."
+      "description": "Layout engine. 'classic' is the original fixed layout (unchanged). 'adaptive' (beta) scales fonts, logos, and element regions to the panel size — content grows on large panels and degrades gracefully on small ones. Your customization fonts and x/y offsets still apply in adaptive mode. Requires LEDMatrix core with the adaptive layout system; falls back to classic on older cores. Switch back to 'classic' at any time to restore the original rendering."
     },
     "timezone": {
       "x-advanced": true,
       "type": "string",
       "default": "",
-      "description": "IANA timezone used to display event start times (e.g. America/Chicago). Leave blank to follow the LEDMatrix global timezone, or the system timezone if none is set. A bare \"UTC\" here is treated as a leftover from the old write-back bug and ignored when your global or system timezone disagrees \u2014 use \"Etc/UTC\" if you really want UTC."
+      "description": "IANA timezone used to display event start times (e.g. America/Chicago). Leave blank to follow the LEDMatrix global timezone, or the system timezone if none is set. A bare \"UTC\" here is treated as a leftover from the old write-back bug and ignored when your global or system timezone disagrees — use \"Etc/UTC\" if you really want UTC."
     },
     "customization": {
       "type": "object",
@@ -1591,6 +1591,24 @@
         "favorite_result_colors"
       ],
       "additionalProperties": false
+    },
+    "schedule_lookback_days": {
+      "type": "integer",
+      "default": 14,
+      "minimum": 1,
+      "maximum": 60,
+      "title": "Schedule lookback (days)",
+      "description": "How far back to fetch games for the Recent screen. Raise it if finished games disappear sooner than you want.",
+      "x-advanced": true
+    },
+    "schedule_lookahead_days": {
+      "type": "integer",
+      "default": 7,
+      "minimum": 1,
+      "maximum": 60,
+      "title": "Schedule lookahead (days)",
+      "description": "How far ahead to fetch games for the Upcoming screen. Raise it for a league that plays weekly: a fixture just beyond this horizon is not fetched at all, so it never reaches the board even though the date is known.",
+      "x-advanced": true
     }
   },
   "additionalProperties": false,

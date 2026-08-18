@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.15.3",
+  "version": "2.16.0",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.16.0",
+      "released": "2026-08-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Make the schedule fetch window configurable. How far back and forward games are fetched was hard-coded at 14 days back and 7 forward. Days is the wrong unit for a league that plays weekly -- a whole matchweek can fall just past a short horizon and never reach the board -- so both are now advanced settings, bounded 1-60 days, with a stray or non-numeric value falling back to the default rather than raising. Defaults keep today's behaviour."
+    },
     {
       "version": "2.15.3",
       "released": "2026-08-14",
