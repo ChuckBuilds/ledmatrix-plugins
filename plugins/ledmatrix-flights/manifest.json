@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.12.9",
+  "version": "1.12.10",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -37,6 +37,12 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "version": "1.12.10",
+      "released": "2026-08-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Never wait on the network for a map tile from the render thread. A cache miss used to fetch inline, and the render path reaches that through get_vegas_content(); a tile normally arrives in tens of milliseconds but an unreachable one costs the full timeout. Measured on a live rig at 3458ms, 3377ms and 3479ms in one session -- the existing 3s timeout and 300s cooldown bounded that to one frozen marquee per five minutes rather than removing it. The render path now serves the tile cache only and records what it went without; update() fetches those on the plugin manager's update worker, where a timeout costs nothing visible, and the cache fills for the next pass. The failure cooldown still applies, and the pending list is capped so a map that keeps moving cannot grow it without bound."
+    },
     {
       "released": "2026-08-12",
       "version": "1.12.9",
