@@ -27,6 +27,9 @@ import requests
 # wait every five minutes rather than one per URL per tile.
 _TILE_TIMEOUT_SECONDS = 3
 _TILE_FAILURE_COOLDOWN = 300.0
+# How long the tile prefetch may spend in one update() call. PluginExecutor
+# allows an update 30s in total and the aircraft/METAR work needs its share.
+_PREFETCH_BUDGET_SECONDS = 10.0
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 
 # Import base plugin class
@@ -1982,7 +1985,12 @@ class FlightTrackerPlugin(BasePlugin):
         tile_age = time.time() - cache_path.stat().st_mtime
         return tile_age < (self.cache_ttl_hours * 3600)
     
-    _MAX_TILES_WANTED = 64
+    # The grid can reach max_tiles(16) per axis, i.e. 16x16, and a default
+    # config already needs 110 tiles. A cap below that means the render path
+    # can never queue a full map in one pass, so the map stays partial across
+    # several update cycles -- which is what made the partial-composite and
+    # failure-rate bugs above reachable in the first place.
+    _MAX_TILES_WANTED = 256
 
     def _note_tile_wanted(self, x: int, y: int, zoom: int) -> None:
         """Record a cache miss the render thread refused to wait for."""
@@ -2008,18 +2016,36 @@ class FlightTrackerPlugin(BasePlugin):
         if time.time() < self._tile_network_blocked_until:
             return
 
+        # Bounded per cycle. Each fetch waits up to _TILE_TIMEOUT_SECONDS, and
+        # PluginExecutor gives update() 30s in total, so draining a full queue
+        # of slow-but-succeeding fetches would overrun the budget and be logged
+        # as a failed update. The cooldown below only rescues us from a server
+        # that *fails*, not one that is merely slow. Whatever is left over goes
+        # back on the queue for the next cycle.
+        deadline = time.time() + _PREFETCH_BUDGET_SECONDS
         fetched = 0
-        for x, y, zoom in wanted:
+        remaining = []
+        for i, (x, y, zoom) in enumerate(wanted):
             if time.time() < self._tile_network_blocked_until:
                 # The cooldown tripped mid-run; stop rather than queue behind
                 # a server that has already said no.
+                remaining = wanted[i:]
+                break
+            if time.time() >= deadline:
+                remaining = wanted[i:]
                 break
             if self._fetch_tile(x, y, zoom, allow_network=True) is not None:
                 fetched += 1
+        if remaining:
+            with self._tiles_wanted_lock:
+                for item in remaining:
+                    if len(self._tiles_wanted) < self._MAX_TILES_WANTED:
+                        self._tiles_wanted.add(item)
         if fetched:
             self.logger.info(
                 "[Flight Tracker] Prefetched %d/%d map tile(s) off the render "
-                "thread", fetched, len(wanted))
+                "thread%s", fetched, len(wanted),
+                f" ({len(remaining)} left for the next cycle)" if remaining else "")
 
     def _fetch_tile(self, x: int, y: int, zoom: int,
                     allow_network: bool = True) -> Optional[Image.Image]:
@@ -2235,9 +2261,18 @@ class FlightTrackerPlugin(BasePlugin):
         composite_height = tiles_y * self.tile_size
         composite = Image.new('RGB', (composite_width, composite_height), (0, 0, 0))
         
-        # Fetch and composite tiles
+        # Fetch and composite tiles.
+        #
+        # A tile the render thread declined to wait for is *deferred*, not
+        # failed: the prefetch in update() will fetch it a moment later. The
+        # two have to be counted separately, because the failure branch below
+        # disables the map background for the rest of the session above 50%
+        # -- and on a cold cache every tile is a deferral, so counting them as
+        # failures switched the map off permanently on the second frame after
+        # startup.
         tiles_fetched = 0
         failed_tiles = []
+        deferred_tiles = []
         
         for ty in range(tiles_y):
             for tx in range(tiles_x):
@@ -2258,12 +2293,18 @@ class FlightTrackerPlugin(BasePlugin):
                     composite.paste(tile_img, (paste_x, paste_y))
                     tiles_fetched += 1
                     self.logger.debug(f"[Flight Tracker] ✓ Placed tile {tile_x},{tile_y} at ({paste_x},{paste_y})")
-                else:
+                elif allow_network:
                     failed_tiles.append((tile_x, tile_y))
                     self.logger.warning(f"[Flight Tracker] ✗ Failed to fetch tile {tile_x},{tile_y}")
+                else:
+                    # Cache miss on the render path: _fetch_tile has queued it
+                    # for the prefetch rather than blocking the marquee.
+                    deferred_tiles.append((tile_x, tile_y))
         
         if tiles_fetched == 0:
-            self.logger.warning("[Flight Tracker] No map tiles could be fetched")
+            self.logger.debug(
+                "[Flight Tracker] No map tiles available yet (%d deferred to the "
+                "prefetch)", len(deferred_tiles))
             return None
         
         # Log summary of failed tiles
@@ -2353,10 +2394,23 @@ class FlightTrackerPlugin(BasePlugin):
             cropped = enhancer.enhance(self.map_saturation)
             self.logger.debug(f"[Flight Tracker] Applied saturation: {self.map_saturation}")
         
-        # Cache the result against the size it was composed for
-        self.cached_map_bgs[current_size] = cropped
-        self.last_map_center = current_center
-        self.last_map_zoom = zoom
+        # Cache the result against the size it was composed for -- but only
+        # when every tile was present. The cache key is (centre, zoom, size),
+        # all of which come from static config, so the invalidation above never
+        # fires on its own: a composite stored with holes in it would be
+        # returned unchanged for the rest of the session, and the prefetch
+        # filling the tile cache would have no way to dislodge it. Leaving an
+        # incomplete map uncached costs one recomposition per frame from
+        # already-cached tiles, and only until the prefetch catches up.
+        if deferred_tiles or failed_tiles:
+            self.logger.debug(
+                "[Flight Tracker] Composed a partial map (%d deferred, %d failed) "
+                "- not caching it so it recomposes once the tiles arrive",
+                len(deferred_tiles), len(failed_tiles))
+        else:
+            self.cached_map_bgs[current_size] = cropped
+            self.last_map_center = current_center
+            self.last_map_zoom = zoom
         
         # Calculate the geographic height coverage
         desired_miles_high = crop_height_needed / pixels_per_mile_at_zoom
