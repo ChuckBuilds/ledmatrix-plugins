@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.10.4",
+  "version": "2.10.5",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.10.5",
+      "released": "2026-08-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Show fixtures up to two weeks out instead of one. The partial fetch that serves the display until the background fetch lands looked ahead seven days, while the full fetch it stands in for looks ahead fourteen, so a fixture inside the real window was missing from the board. Invisible in a league that plays daily and severe in one that plays weekly, where a whole matchweek can fall in the gap: on 14 August the Premier League's opening matchweek was 21-24 August, so the board showed exactly one game (Arsenal v Coventry on the 21st) and hid the other nine, including Manchester United on the 22nd. Reported by a user whose favourite team never appeared while other clubs did. Both horizons now come from one pair of constants so they cannot drift apart again."
+    },
     {
       "version": "2.10.4",
       "released": "2026-08-14",

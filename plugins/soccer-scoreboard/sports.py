@@ -87,6 +87,14 @@ def _resolve_font_path(path: str) -> str:
 
 
 
+# How far either side of now the schedule is fetched. The partial fetch that
+# serves the display until the background fetch lands must not be narrower
+# than the fetch it substitutes for, or a game inside the real window is
+# missing from the panel until that completes.
+_SCHEDULE_WINDOW_BACK = timedelta(days=14)
+_SCHEDULE_WINDOW_FORWARD = timedelta(days=14)
+
+
 class SportsCore(ABC):
     def __init__(
         self,
@@ -1316,8 +1324,16 @@ class SportsCore(ABC):
             now = datetime.now(pytz.utc)
             immediate_events = []
 
-            start_date = now + timedelta(weeks=-2)
-            end_date = now + timedelta(weeks=1)
+            # Same horizon as the full fetch this stands in for
+            # (_fetch_soccer_api_data, -14d..+14d). It used to end a week
+            # earlier, which is invisible in a league that plays daily and
+            # severe in one that plays weekly: on 2026-08-14 the Premier
+            # League's opening matchweek was 21-24 August, so a +7d horizon
+            # returned exactly one fixture (COV @ ARS on the 21st) and hid the
+            # other nine, including Man Utd on the 22nd. Reported as a
+            # favourite team never appearing while other clubs did.
+            start_date = now - _SCHEDULE_WINDOW_BACK
+            end_date = now + _SCHEDULE_WINDOW_FORWARD
             date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
             url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
             response = self.session.get(
