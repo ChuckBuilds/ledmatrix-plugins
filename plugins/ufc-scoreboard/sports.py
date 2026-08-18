@@ -1694,11 +1694,21 @@ class SportsRecent(SportsCore):
                 f"Processing {len(events)} events from shared data."
             )  # Changed log prefix
 
-            # Define date range for "recent" games (last 21 days to capture games from 3 weeks ago)
+            # How far back the Recent screen looks. This used to be a fixed 21
+            # days, which quietly capped schedule_lookback_days: the schema
+            # allows up to 60 and tells the user to "raise it if finished games
+            # disappear sooner than you want", but anything above 21 only
+            # enlarged the ESPN payload and changed nothing on screen.
             now = datetime.now(timezone.utc)
-            recent_cutoff = now - timedelta(days=21)
+            # getattr, because managers are also built without __init__ (the
+            # plugin tests do exactly that) and a missing attribute here would
+            # raise into the surrounding except and silently skip the filter.
+            lookback_days = getattr(
+                self, "schedule_lookback_days", _DEFAULT_LOOKBACK_DAYS)
+            recent_cutoff = now - timedelta(days=lookback_days)
             self.logger.info(
-                f"Current time: {now}, Recent cutoff: {recent_cutoff} (21 days ago)"
+                f"Current time: {now}, Recent cutoff: {recent_cutoff} "
+                f"({lookback_days} days ago)"
             )
 
             # Process games and filter for final games, date range & favorite teams

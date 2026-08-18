@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -18,6 +18,13 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.14.1",
+      "released": "2026-08-18",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Make the schedule fetch window configurable. How far back and forward games are fetched was hard-coded at 14 days back and 7 forward. Days is the wrong unit for a league that plays weekly -- a whole matchweek can fall just past a short horizon and never reach the board -- so both are now advanced settings, bounded 1-60 days, with a stray or non-numeric value falling back to the default rather than raising. Defaults keep today's behaviour.",
+      "changes": "Make the schedule-window settings actually take effect: they were dropped by each plugin's config adapter, so every user stayed on the defaults. The authoritative fetch now uses the configured window too, the Recent cutoff follows it instead of a fixed 21 days, and the fields render in the web UI for every plugin."
+    },
     {
       "version": "1.14.0",
       "released": "2026-08-15",
@@ -132,7 +139,7 @@
     {
       "released": "2026-07-02",
       "version": "1.6.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u2014 spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
       "ledmatrix_min": "2.0.0"
     },
     {

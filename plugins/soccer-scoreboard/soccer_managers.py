@@ -137,9 +137,12 @@ class BaseSoccerManager(SportsCore):
         """
         now = datetime.now(pytz.utc)
         
-        # For soccer, fetch a date range (past 2 weeks to future 2 weeks)
-        start_date = now - timedelta(days=14)
-        end_date = now + timedelta(days=14)
+        # The window the user configured, not a fixed fortnight. This is the
+        # authoritative fetch; leaving it hard-coded meant a widened setting
+        # showed briefly from the stand-in fetch and then vanished when this
+        # one completed and replaced the data.
+        start_date = now - timedelta(days=self.schedule_lookback_days)
+        end_date = now + timedelta(days=self.schedule_lookahead_days)
         date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
         
         cache_key = f"soccer_{self.league_key}_schedule_{date_str}"

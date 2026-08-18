@@ -55,24 +55,28 @@ def main():
                  and n.name == "_fetch_soccer_api_data"), None)
     check("_fetch_soccer_api_data exists", full is not None)
 
-    deltas = []
-    for node in ast.walk(full):
-        if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "timedelta":
-            for kw in node.keywords:
-                if isinstance(kw.value, ast.Constant):
-                    deltas.append((kw.arg, kw.value.value))
-    full_days = max((v for unit, v in deltas if unit == "days"), default=None)
-    check("its horizon is discoverable (%s)" % deltas, full_days is not None)
+    # The two fetches can no longer drift apart by construction: the full fetch
+    # reads the same two configured values the partial does, rather than
+    # carrying its own literals. Assert that shape -- comparing numbers would
+    # only work while both were hard-coded, which was the original problem.
+    full_src = ast.get_source_segment(managers_src, full) or ""
+    literals = [(kw.arg, kw.value.value)
+                for node in ast.walk(full)
+                if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "timedelta"
+                for kw in node.keywords
+                if isinstance(kw.value, ast.Constant)]
+    window_literals = [d for d in literals if d[0] in ("days", "weeks")]
+    check("the full fetch carries no hard-coded window (%s)" % window_literals,
+          not window_literals)
+    for attr in ("schedule_lookback_days", "schedule_lookahead_days"):
+        check(f"the full fetch reads {attr}", attr in full_src)
 
     forward = timedelta(days=sports._DEFAULT_LOOKAHEAD_DAYS)
     back = timedelta(days=sports._DEFAULT_LOOKBACK_DAYS)
     check("the partial's forward horizon is a timedelta",
           isinstance(forward, timedelta))
-    if full_days is not None:
-        check("partial forward (%dd) >= full forward (%dd)"
-              % (forward.days, full_days), forward.days >= full_days)
-        check("partial back (%dd) >= full back (%dd)"
-              % (back.days, full_days), back.days >= full_days)
+    check("the partial's back horizon is a timedelta",
+          isinstance(back, timedelta))
 
     print("\nthe reported fixture falls inside the horizon")
     # The user's case, as dates rather than a live API call so the test stays

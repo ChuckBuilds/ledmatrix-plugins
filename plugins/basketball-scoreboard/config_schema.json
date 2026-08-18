@@ -551,7 +551,7 @@
         "mode_durations": {
           "type": "object",
           "title": "Mode-Level Durations",
-          "description": "Control total duration for each mode type for NBA. If not set, uses dynamic calculation (total_games × per_game_duration).",
+          "description": "Control total duration for each mode type for NBA. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
           "properties": {
             "recent_mode_duration": {
               "x-advanced": true,
@@ -938,7 +938,7 @@
         "mode_durations": {
           "type": "object",
           "title": "Mode-Level Durations",
-          "description": "Control total duration for each mode type for WNBA. If not set, uses dynamic calculation (total_games × per_game_duration).",
+          "description": "Control total duration for each mode type for WNBA. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
           "properties": {
             "recent_mode_duration": {
               "x-advanced": true,
@@ -1363,7 +1363,7 @@
         "mode_durations": {
           "type": "object",
           "title": "Mode-Level Durations",
-          "description": "Control total duration for each mode type for NCAA Men's Basketball. If not set, uses dynamic calculation (total_games × per_game_duration).",
+          "description": "Control total duration for each mode type for NCAA Men's Basketball. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
           "properties": {
             "recent_mode_duration": {
               "x-advanced": true,
@@ -1788,7 +1788,7 @@
         "mode_durations": {
           "type": "object",
           "title": "Mode-Level Durations",
-          "description": "Control total duration for each mode type for NCAA Women's Basketball. If not set, uses dynamic calculation (total_games × per_game_duration).",
+          "description": "Control total duration for each mode type for NCAA Women's Basketball. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
           "properties": {
             "recent_mode_duration": {
               "x-advanced": true,
@@ -2430,6 +2430,8 @@
     "wnba",
     "ncaam",
     "ncaaw",
-    "customization"
+    "customization",
+    "schedule_lookback_days",
+    "schedule_lookahead_days"
   ]
 }

@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,13 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.11.1",
+      "released": "2026-08-18",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Make the schedule fetch window configurable. How far back and forward games are fetched was hard-coded at 14 days back and 7 forward. Days is the wrong unit for a league that plays weekly -- a whole matchweek can fall just past a short horizon and never reach the board -- so both are now advanced settings, bounded 1-60 days, with a stray or non-numeric value falling back to the default rather than raising. Defaults keep today's behaviour.",
+      "changes": "Make the schedule-window settings actually take effect: they were dropped by each plugin's config adapter, so every user stayed on the defaults. The authoritative fetch now uses the configured window too, the Recent cutoff follows it instead of a fixed 21 days, and the fields render in the web UI for every plugin."
+    },
     {
       "version": "1.11.0",
       "released": "2026-08-15",
@@ -164,7 +171,7 @@
     {
       "released": "2026-07-02",
       "version": "1.3.0",
-      "notes": "Add exclude_teams (hide specific teams from the live rotation and recent/final scores — spoiler protection, takes precedence over favorite_teams/show_all_live) and favorite_live_boost (tune how many more turns your favorite's live game gets in the rotation vs other live games, 1 = even rotation, default 2).",
+      "notes": "Add exclude_teams (hide specific teams from the live rotation and recent/final scores \u2014 spoiler protection, takes precedence over favorite_teams/show_all_live) and favorite_live_boost (tune how many more turns your favorite's live game gets in the rotation vs other live games, 1 = even rotation, default 2).",
       "ledmatrix_min": "2.0.0"
     },
     {

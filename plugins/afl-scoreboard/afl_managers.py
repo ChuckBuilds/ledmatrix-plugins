@@ -84,8 +84,11 @@ class BaseAflManager(SportsCore):
         now = datetime.now(pytz.utc)
 
         # Fetch a date range (past 2 weeks to future 2 weeks)
-        start_date = now - timedelta(days=14)
-        end_date = now + timedelta(days=14)
+        # The window the user configured, not a fixed fortnight -- this is
+        # the authoritative fetch, so a hard-coded range here silently
+        # overrode the setting.
+        start_date = now - timedelta(days=self.schedule_lookback_days)
+        end_date = now + timedelta(days=self.schedule_lookahead_days)
         date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
 
         cache_key = f"afl_schedule_{date_str}"

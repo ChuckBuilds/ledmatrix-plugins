@@ -343,6 +343,13 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         )
 
         self.logger.debug(f"Using timezone: {timezone_str} for {league} managers")
+        # The schedule-window settings live at the plugin config root, and
+        # SportsCore reads them from the root of the config it is handed. This
+        # adapter builds its output key by key, so anything not named here is
+        # dropped -- which silently pinned every user to the defaults.
+        for _window_key in ("schedule_lookback_days", "schedule_lookahead_days"):
+            if _window_key in self.config:
+                manager_config[_window_key] = self.config[_window_key]
         return manager_config
 
     def _parse_display_mode_settings(self) -> Dict[str, Dict[str, str]]:
