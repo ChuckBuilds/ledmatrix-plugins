@@ -1,16 +1,35 @@
 {
   "id": "geochron",
   "name": "Geochron World Clock",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "ChuckBuilds",
   "description": "High-fidelity world map clock showing the real-time day/night terminator with civil/nautical/astronomical twilight bands, the subsolar point, configurable city markers, and a digital UTC/local clock - a classic Geochron, reimagined for LED matrix panels of any size.",
   "entry_point": "manager.py",
   "class_name": "GeochronPlugin",
   "category": "time",
-  "tags": ["clock", "world map", "geochron", "sun", "terminator", "astronomy", "time", "globe"],
-  "display_modes": ["geochron"],
-  "compatible_versions": [">=2.0.0"],
+  "tags": [
+    "clock",
+    "world map",
+    "geochron",
+    "sun",
+    "terminator",
+    "astronomy",
+    "time",
+    "globe"
+  ],
+  "display_modes": [
+    "geochron"
+  ],
+  "compatible_versions": [
+    ">=2.0.0"
+  ],
   "versions": [
+    {
+      "version": "1.0.3",
+      "released": "2026-08-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Cache the rendered map per panel size instead of holding one image and re-rendering whenever the size changes. The Vegas marquee captures this plugin at a narrower width than the panel -- 153px against 512px on the rig this was measured on -- so the single entry alternated between the two and every switch re-rendered from scratch on the render thread: 105ms recomputing a terminator that does not depend on size, plus ~150ms drawing the map, about 290ms of stalled marquee each pass. The terminator is now computed once and shared across sizes, and update() refreshes every size in use on the worker thread so the render thread finds a warm image. The clock is untouched -- it is drawn after the map on every frame, so nothing about it goes stale."
+    },
     {
       "released": "2026-07-17",
       "version": "1.0.2",

@@ -53,6 +53,11 @@ class GeochronPlugin(BasePlugin):
 
         self._cached_map = None
         self._cached_layout = None
+        # Rendered map per (width, height). Vegas captures at a different
+        # width than the panel, and a single entry thrashed between the two.
+        self._map_cache = {}
+        # Terminator grid, shared across sizes -- it is lat/lon, not pixels.
+        self._darkness = None
         self._subsolar_lat = 0.0
         self._subsolar_lon = 0.0
         self._last_update_utc = None
@@ -140,6 +145,21 @@ class GeochronPlugin(BasePlugin):
     # ------------------------------------------------------------------
 
     def update(self):
+        """Recompute the terminator and re-render every panel size in use.
+
+        The map is cached per (width, height) rather than as a single image.
+        The Vegas marquee captures this plugin through the display-capture
+        fallback at a narrower width than the panel -- 153px against 512px on
+        the rig this was measured on -- and the old single-entry cache
+        mismatched on every switch. display() then re-rendered inline, which
+        for a capture means on the render thread: 105ms recomputing a
+        terminator that does not depend on size at all, plus ~150ms rendering
+        the map, roughly 290ms of stalled marquee every time round.
+
+        Re-rendering the sizes here, on the update worker, means the render
+        thread finds a warm entry and pays nothing. The terminator is computed
+        once and shared across sizes, since it is a lat/lon grid.
+        """
         try:
             now_utc = datetime.now(timezone.utc)
             darkness, sub_lat, sub_lon = solar.compute_terminator(
@@ -148,16 +168,33 @@ class GeochronPlugin(BasePlugin):
             self._subsolar_lat = sub_lat
             self._subsolar_lon = sub_lon
             self._last_update_utc = now_utc
+            self._darkness = darkness
 
-            dw = self.display_manager.width
-            dh = self.display_manager.height
-            layout = gr._layout(dw, dh, map_center_lon=self.map_center_longitude)
-            self._cached_layout = layout
-            self._cached_map = gr.render_map_image(
-                self._base_map, darkness, layout, self.night_brightness, self.colors["night_tint_color"]
-            )
+            # Whatever sizes have been asked for so far, plus the live panel.
+            # Copy first: display() inserts a newly-seen size from the render
+            # thread, and iterating the live dict could catch it mid-write.
+            sizes = set(self._map_cache.copy())
+            sizes.add((self.display_manager.width, self.display_manager.height))
+            for size in sizes:
+                self._render_for_size(size, darkness)
         except Exception as e:
             self.logger.error("Error updating geochron: %s", e, exc_info=True)
+
+    def _render_for_size(self, size, darkness):
+        """Render and cache the map for one panel size."""
+        dw, dh = size
+        layout = gr._layout(dw, dh, map_center_lon=self.map_center_longitude)
+        image = gr.render_map_image(
+            self._base_map, darkness, layout, self.night_brightness,
+            self.colors["night_tint_color"]
+        )
+        self._map_cache[size] = (layout, image)
+        # Keep the single-entry attributes pointing at the live panel so
+        # anything still reading them (get_info, tests) sees what is on screen.
+        if (dw, dh) == (self.display_manager.width, self.display_manager.height):
+            self._cached_layout = layout
+            self._cached_map = image
+        return layout, image
 
     def display(self, force_clear=False):
         try:
@@ -167,20 +204,22 @@ class GeochronPlugin(BasePlugin):
             dw = self.display_manager.width
             dh = self.display_manager.height
 
-            layout = self._cached_layout
-            if (
-                layout is None
-                or self._cached_map is None
-                or layout["dw"] != dw
-                or layout["dh"] != dh
-            ):
-                self.update()
-                layout = self._cached_layout
+            cached = self._map_cache.get((dw, dh))
+            if cached is None:
+                # First time at this size. If the terminator has never been
+                # computed there is nothing to render from, so fall back to a
+                # full update; otherwise reuse it and render just this size.
+                if self._darkness is None:
+                    self.update()
+                    cached = self._map_cache.get((dw, dh))
+                else:
+                    cached = self._render_for_size((dw, dh), self._darkness)
 
-            if layout is None or self._cached_map is None:
+            if cached is None:
                 return
+            layout, map_image = cached
 
-            self.display_manager.image.paste(self._cached_map, (layout["map_x"], layout["map_y"]))
+            self.display_manager.image.paste(map_image, (layout["map_x"], layout["map_y"]))
             draw = self.display_manager.draw
 
             if layout["sidebar_w"]:

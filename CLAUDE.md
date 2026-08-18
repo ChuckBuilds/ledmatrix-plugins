@@ -41,7 +41,9 @@ The plugin class **inherits from `BasePlugin`** (`src.plugin_system.base_plugin.
 in the core repo) and is constructed as
 `__init__(self, plugin_id, config, display_manager, cache_manager, plugin_manager)`.
 Key methods (see `plugins/hello-world/manager.py` for a minimal reference):
-- `update(self)` — fetch/refresh data (called on `update_interval`); never draw here
+- `update(self)` — fetch/refresh data (called on `update_interval`); never draw to
+  `self.display_manager` here. Pre-rendering *offscreen* images into your own cache
+  does belong here — see "Pre-rendering" below
 - `display(self, force_clear=False)` — render via `self.display_manager` then call `update_display()`
 - `validate_config(self)` — call `super().validate_config()` then check plugin-specific keys
 - `get_info(self)` / `cleanup(self)` — web-UI info and unload teardown
@@ -105,6 +107,26 @@ fixed `display_duration`. The plugin implements
 settings). Typical use: size the on-screen time to the width of scrolling content,
 or extend live games. See `plugins/football-scoreboard/DYNAMIC_DURATION.md` and
 the `supports_dynamic_duration` implementations in the sports managers.
+
+### Pre-rendering (expensive images belong in `update()`)
+"Never draw in `update()`" means never touch `self.display_manager` there — not
+that `update()` may not build images. Building a PIL image into the plugin's own
+cache is expensive work, and expensive work is exactly what `update()` is for:
+it runs on the update worker, while `display()` runs on the render thread, where
+a stall shows up as a frozen panel or a stuttering marquee. So a plugin whose
+frame costs real time should render offscreen in `update()` and have `display()`
+do nothing but paste the result and draw the parts that must be live (a clock, a
+countdown). Precedent: `plugins/f1-scoreboard/manager.py`
+(`_prepare_scroll_content`, 12.46s of scroll images), `plugins/ledmatrix-elections`
+(`_build_scroll_image`), `plugins/geochron` (`_render_for_size`).
+
+Two things make this safe:
+- **Key the cache on `(width, height)`.** Vegas captures plugins at a narrower
+  width than the panel (`vegas_width_pct`), so the same plugin is asked to render
+  at two sizes and a single-entry cache thrashes between them. Re-render every
+  cached size in `update()`.
+- **Keep a lazy path in `display()`.** A size that has never been rendered has to
+  be built on demand; that's a one-off, not the steady state.
 
 ### High-FPS / smooth scrolling
 Scrolling plugins render far faster than the default loop for smooth motion.

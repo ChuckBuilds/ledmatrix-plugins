@@ -67,19 +67,27 @@ mandatory, but a useful plugin implements at least `update` and `display`.
 | Method | Signature | When the core calls it | Rule |
 |--------|-----------|------------------------|------|
 | `__init__` | `(self, plugin_id, config, display_manager, cache_manager, plugin_manager)` | Once, at load | Call `super().__init__`; set up state; **don't** fetch or draw |
-| `update` | `(self)` | Every `update_interval` seconds | Fetch/refresh data only — **never draw** |
+| `update` | `(self)` | Every `update_interval` seconds | Fetch/refresh data and pre-render offscreen — **never touch `display_manager`** |
 | `display` | `(self, force_clear=False)` | Every render turn | Draw via `self.display_manager`, then call `self.display_manager.update_display()` |
 | `validate_config` | `(self)` | When validating config | Call `super().validate_config()` first, then check your keys; return `bool` |
 | `get_info` | `(self)` | For the web UI | `info = super().get_info()`; add keys; return the dict |
 | `cleanup` | `(self)` | On unload/teardown | Release resources; call `super().cleanup()` |
 
-### `update(self)` — fetch, don't draw
+### `update(self)` — fetch and prepare, don't touch the display
 
 Called on the interval you set via the `update_interval` config key. This is the
 **only** place you should hit the network or do expensive work. Store results on
 `self` for `display()` to render. Cache network responses through
 `self.cache_manager` (see [topic 2](./02-core-api.md#cache-manager)) so a restart
 or a second plugin doesn't re-hit the API.
+
+"Don't draw here" means **don't touch `self.display_manager`** — don't paste into
+its image, don't call `update_display()`. It does *not* mean `update()` may not
+build images. `update()` runs on the update worker; `display()` runs on the render
+thread, where a slow frame freezes the panel and stalls the Vegas marquee. So if
+your frame is expensive to build, build it here, offscreen, into your own cache,
+and let `display()` paste it. See [pre-rendering](#pre-rendering-expensive-frames)
+below.
 
 ```python
 def update(self):
@@ -114,6 +122,50 @@ def display(self, force_clear=False):
 > passes `force_clear` positionally and `display_mode` as an optional keyword.
 > Returning `False` lets some plugins signal "nothing to show, skip me." See
 > [`plugins/hockey-scoreboard/manager.py`](../../plugins/hockey-scoreboard/manager.py).
+
+### Pre-rendering expensive frames
+
+If building your frame costs real time — stitching a long scroll image, drawing a
+world map, compositing dozens of cards — build it in `update()` and paste it in
+`display()`. The split is about *which thread pays*: `update()` runs on the
+update worker, `display()` on the render thread, so an expensive `display()`
+freezes the panel and stalls the Vegas marquee for everyone.
+
+Two details make this work:
+
+**Key the cache on `(width, height)`.** Vegas captures plugins at a narrower width
+than the panel (`vegas_width_pct`, see [topic 3](./03-advanced-features.md)), so the same
+plugin gets asked for the same content at two different sizes. A single-entry
+cache misses on every switch and rebuilds from scratch each time — the exact
+thrash `plugins/geochron` hit, at ~290 ms per pass on the render thread. Cache per
+size, and re-render every cached size in `update()`:
+
+```python
+def update(self):
+    self.data = self._fetch()            # size-independent, computed once
+    sizes = set(self._frame_cache)       # every size asked for so far...
+    sizes.add((self.display_manager.width, self.display_manager.height))  # ...plus the live panel
+    for size in sizes:
+        self._render_for_size(size, self.data)
+
+def display(self, force_clear=False):
+    size = (self.display_manager.width, self.display_manager.height)
+    frame = self._frame_cache.get(size)
+    if frame is None:                    # never rendered at this size: one-off, not steady state
+        frame = self._render_for_size(size, self.data)
+    self.display_manager.image.paste(frame, (0, 0))
+    self._draw_clock()                   # live parts stay in display(), outside the cache
+    self.display_manager.update_display()
+```
+
+**Keep live parts out of the cached image.** Anything that must be current on
+every frame — a clock, a countdown, a "LIVE" pulse — is drawn in `display()`
+*after* the paste. Folding it into the cached image freezes it at render time.
+
+Worked examples: `plugins/f1-scoreboard/manager.py` (`_prepare_scroll_content`,
+which also fingerprints its inputs so it can skip an unchanged rebuild),
+`plugins/ledmatrix-elections/manager.py` (`_build_scroll_image`), and
+`plugins/geochron/manager.py` (`_render_for_size`).
 
 ### `validate_config(self)` — fail loudly, early
 
