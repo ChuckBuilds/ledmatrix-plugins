@@ -462,6 +462,13 @@ class ElectionPlugin(BasePlugin):
 
     def _display_ticker(self, force_clear: bool) -> bool:
         self._showing_called = False
+        # Vegas clears scroll_helper.cached_image whenever this plugin reports
+        # an update (PluginAdapter.invalidate_plugin_scroll_cache) and cannot
+        # clear this plugin's own flag, so the two can disagree. Rebuild on the
+        # cache, which is what the frame is actually drawn from.
+        if self._scroll_ready and self.scroll_helper.cached_image is None:
+            self._build_scroll_image()
+
         if not self._scroll_ready:
             return False  # nothing to show; controller skips to the next mode
 
