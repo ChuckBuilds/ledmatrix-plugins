@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-A schedule-window setting the user saves has to survive the config adapter.
+A plugin-root setting the user saves has to survive the config adapter.
 
 Every scoreboard plugin hands its managers a config built by
 _adapt_config_for_manager, and each of those adapters constructs its output key
@@ -38,7 +38,13 @@ for _candidate in (os.environ.get("LEDMATRIX_CORE", ""),
 if not _CORE:
     print("SKIP: no LEDMatrix core checkout found (set LEDMATRIX_CORE)")
     sys.exit(2)
-WINDOW_KEYS = ("schedule_lookback_days", "schedule_lookahead_days")
+# Every plugin-root setting SportsCore reads. They share one failure mode: the
+# adapter builds its output key by key, so a key it does not name is dropped and
+# the user silently keeps the default.
+WINDOW_KEYS = (
+    "schedule_lookback_days", "schedule_lookahead_days",
+    "no_data_interval_seconds", "live_idle_max_interval_seconds",
+)
 
 # (plugin directory, a league key that plugin's adapter understands)
 PLUGINS = [
@@ -106,6 +112,8 @@ def adapted_config(cls, league):
         "enabled": True,
         "schedule_lookback_days": 30,
         "schedule_lookahead_days": 21,
+        "no_data_interval_seconds": 1800,
+        "live_idle_max_interval_seconds": 7200,
         league: {"enabled": True, "display_modes": {"live": True}},
     }
     adapter = cls._adapt_config_for_manager
@@ -139,8 +147,36 @@ def main():
             continue
         for key in WINDOW_KEYS:
             # SportsCore reads these off the root of the config it is handed.
+            # That "root is where they are read" half is asserted directly, per
+            # plugin, by test_idle_league_backoff.py -- this file only proves
+            # the adapters get them there.
             check(f"{name}: {key} reaches the config root",
                   where(config, key) == "root")
+
+    print("\nsoccer's custom leagues go through a second adapter:")
+    soccer = REPO / "plugins" / "soccer-scoreboard"
+    if soccer.is_dir():
+        try:
+            cls = load_plugin_class(soccer)
+            probe = object.__new__(type("Probe", (cls,),
+                                       {"__getattr__": lambda self, n: 0}))
+            probe.logger = logging.getLogger("plumbing-test")
+            probe.config = {
+                "schedule_lookback_days": 30,
+                "schedule_lookahead_days": 21,
+                "no_data_interval_seconds": 1800,
+                "live_idle_max_interval_seconds": 7200,
+            }
+            custom = cls._adapt_config_for_custom_league(
+                probe, {"league_code": "epl2", "enabled": True,
+                        "display_modes": {"live": True}})
+        except (ImportError, AttributeError, TypeError, KeyError, ValueError) as exc:
+            check("soccer: custom-league adapter ran", False)
+            print(f"        {type(exc).__name__}: {exc}")
+        else:
+            for key in WINDOW_KEYS:
+                check(f"soccer custom league: {key} reaches the config root",
+                      where(custom, key) == "root")
 
     print(f"\n{'FAILED: ' + str(len(FAILURES)) + ' check(s)' if FAILURES else 'All checks passed.'}")
     return 1 if FAILURES else 0

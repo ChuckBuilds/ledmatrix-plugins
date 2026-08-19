@@ -58,6 +58,15 @@ from ncaaw_basketball_managers import (
 from basketball_timezone import resolve_timezone_name
 from basketball_favorite_check import FavoriteTeamCheck
 
+
+_ROOT_CONFIG_KEYS = (
+    "schedule_lookback_days",
+    "schedule_lookahead_days",
+    "no_data_interval_seconds",
+    "live_idle_max_interval_seconds",
+)
+
+
 # Which ESPN endpoint backs each league, for the favorite-team diagnostic.
 FAVORITE_CHECK_LEAGUES = {
     'nba': ('NBA', 'basketball/nba'),
@@ -845,13 +854,15 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         self.logger.debug(f"Using timezone: {timezone_str} for {league} managers")
 
-        # The schedule-window settings live at the plugin config root, and
-        # SportsCore reads them from the root of the config it is handed. This
-        # adapter builds its output key by key, so anything not named here is
-        # dropped -- which silently pinned every user to the defaults.
-        for _window_key in ("schedule_lookback_days", "schedule_lookahead_days"):
-            if _window_key in self.config:
-                manager_config[_window_key] = self.config[_window_key]
+        # Plugin-root settings that SportsCore reads from the root of the config
+        # it is handed. This adapter builds its output key by key, so anything
+        # not named here is dropped -- which is how the schedule window silently
+        # pinned every user to the defaults, and would have done the same to the
+        # idle-poll settings. Generalised to a list so the next one added to
+        # SportsCore only has to be named once.
+        for _root_key in _ROOT_CONFIG_KEYS:
+            if _root_key in self.config:
+                manager_config[_root_key] = self.config[_root_key]
         return manager_config
 
     def _get_available_modes(self) -> list:

@@ -104,6 +104,28 @@ def _clamp_window(value: Any, fallback: int) -> int:
     return max(_MIN_WINDOW_DAYS, min(_MAX_WINDOW_DAYS, days))
 
 
+# Backing off the live poll while a league has nothing on. Gentle at first --
+# a gap between games in a live season should cost little -- then firmer, so a
+# league months out of season stops polling on a live cadence altogether.
+_IDLE_SHORT_STREAK = 6
+_IDLE_SHORT_FACTOR = 2
+_IDLE_LONG_STREAK = 24
+_IDLE_LONG_FACTOR = 6
+_DEFAULT_LIVE_IDLE_MAX_SECONDS = 900
+
+
+def _clamp_seconds(value: Any, fallback: int, low: int = 5,
+                   high: int = 86400) -> int:
+    """An interval in seconds, or the fallback when the value is unusable."""
+    try:
+        seconds = int(value)
+    except (TypeError, ValueError, OverflowError):
+        # OverflowError: json parses bare Infinity by default and int(inf)
+        # raises -- the same gap _clamp_window above already covers.
+        return fallback
+    return max(low, min(high, seconds))
+
+
 class SportsCore(ABC):
     def __init__(
         self,
@@ -2322,7 +2344,20 @@ class SportsLive(SportsCore):
     ):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
         self.update_interval = self.mode_config.get("live_update_interval", 15)
-        self.no_data_interval = 300
+        # Read from the config root, where the schema declares them and the web
+        # UI writes them -- not from mode_config, which is the per-league block
+        # ({sport}_scoreboard) and never carries these keys. Looking them up
+        # there meant the saved value was invisible and every user silently kept
+        # the default. mode_config is still consulted as a fallback so a
+        # hand-placed per-league value keeps working.
+        self.no_data_interval = _clamp_seconds(
+            self.config.get("no_data_interval_seconds",
+                            self.mode_config.get("no_data_interval_seconds")), 300)
+        self.live_idle_max_interval = _clamp_seconds(
+            self.config.get("live_idle_max_interval_seconds",
+                            self.mode_config.get("live_idle_max_interval_seconds")),
+            _DEFAULT_LIVE_IDLE_MAX_SECONDS)
+        self._empty_live_streak = 0
         # Log the configured interval for debugging
         self.logger.info(
             f"SportsLive initialized: live_update_interval={self.update_interval}s, "
@@ -2866,6 +2901,43 @@ class SportsLive(SportsCore):
                 if game_id in self.game_update_timestamps:
                     del self.game_update_timestamps[game_id]
 
+    def _idle_live_interval(self) -> int:
+        """How long to wait before looking for live games again, when there are none.
+
+        Escalates the longer nothing turns up, and any live game resets it, so
+        an in-season gap between games costs at most one escalated wait while
+        an out-of-season league stops polling on a live cadence entirely.
+
+        Capped rather than unbounded: the cost of backing off is how late the
+        first game after a quiet spell is noticed, and past the cap the saving
+        stops being worth that.
+        """
+        streak = getattr(self, "_empty_live_streak", 0)
+        base = self.no_data_interval
+        ceiling = getattr(self, "live_idle_max_interval",
+                          _DEFAULT_LIVE_IDLE_MAX_SECONDS)
+        # The ceiling bounds the un-escalated interval too. The two settings are
+        # independent integers with no cross-validation, so base > ceiling is a
+        # reachable config -- and returning base unclamped there made the wait
+        # *shrink* as the streak grew (3600s at streak 0, 900s at streak 24),
+        # the opposite of what the setting named "maximum" promises.
+        if streak >= _IDLE_LONG_STREAK:
+            return min(int(base * _IDLE_LONG_FACTOR), ceiling)
+        if streak >= _IDLE_SHORT_STREAK:
+            return min(int(base * _IDLE_SHORT_FACTOR), ceiling)
+        return min(base, ceiling)
+
+    def _note_live_fetch(self, found_live: bool) -> None:
+        """Record whether a look for live games found any."""
+        if found_live:
+            if getattr(self, "_empty_live_streak", 0):
+                self.logger.info(
+                    "Live games found after %d empty check(s); back to the "
+                    "live update interval", self._empty_live_streak)
+            self._empty_live_streak = 0
+        else:
+            self._empty_live_streak = getattr(self, "_empty_live_streak", 0) + 1
+
     def update(self):
         """Update live game data and handle game switching."""
         if not self.is_enabled:
@@ -2893,21 +2965,25 @@ class SportsLive(SportsCore):
         # Only use no_data_interval if we've recently checked and confirmed there are no live games.
         # This ensures we check for live games frequently even if the list is temporarily empty.
         # Only use no_data_interval if we have no live games AND we've checked recently (within last 5 minutes)
-        time_since_last_update = current_time - self.last_update
-        has_recently_checked = self.last_update > 0 and time_since_last_update < 300
-        
+        # Whether the last look found anything, tracked explicitly rather than
+        # inferred from how long ago it was. The old form asked "did we check
+        # within the last 300s?" and only then used no_data_interval -- but
+        # once 300s had elapsed the answer became no, the interval dropped
+        # back to live_update_interval, and it fetched. no_data_interval could
+        # therefore never delay anything past 300s whatever it was set to.
+        # Measured on a live rig: an out-of-season NHL polled every ~5.5
+        # minutes around the clock, returning nothing every time.
         if _live_games_attr or _test_mode_attr:
-            # We have live games or are in test mode, use the configured update interval
             interval = _update_interval_attr
-        elif has_recently_checked:
-            # We've checked recently and found no live games, use longer interval
-            interval = _no_data_interval_attr
         else:
-            # First check or haven't checked in a while, use update interval to check for live games
-            interval = _update_interval_attr
+            interval = self._idle_live_interval()
 
         # Original line from traceback (line 455), now with variables defined:
         if current_time - self.last_update >= interval:
+            # What the previous look found, recorded before this one
+            # replaces it. The streak is what drives the back-off, and
+            # any live game resets it.
+            self._note_live_fetch(bool(_live_games_attr))
             self.last_update = current_time
 
             # Test mode: advance the simulated game instead of fetching real API
