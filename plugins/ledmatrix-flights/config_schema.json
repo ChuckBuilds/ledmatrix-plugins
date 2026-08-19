@@ -388,7 +388,10 @@
           "type": "string",
           "title": "Altimeter Unit",
           "description": "Altimeter setting display: 'inhg' shows US style (A30.01), 'hpa' shows international style (Q1016).",
-          "enum": ["inhg", "hpa"],
+          "enum": [
+            "inhg",
+            "hpa"
+          ],
           "default": "inhg"
         },
         "temp_unit": {
@@ -396,7 +399,10 @@
           "type": "string",
           "title": "Temperature Unit",
           "description": "Temperature/dewpoint unit on the decoded card.",
-          "enum": ["c", "f"],
+          "enum": [
+            "c",
+            "f"
+          ],
           "default": "c"
         },
         "wind_unit": {
@@ -404,7 +410,12 @@
           "type": "string",
           "title": "Wind Speed Unit",
           "description": "Wind speed unit. Aviation standard is knots (kt).",
-          "enum": ["kt", "mph", "kmh", "ms"],
+          "enum": [
+            "kt",
+            "mph",
+            "kmh",
+            "ms"
+          ],
           "default": "kt"
         },
         "visibility_unit": {
@@ -412,7 +423,11 @@
           "type": "string",
           "title": "Visibility Unit",
           "description": "Visibility unit: statute miles (US), metres or kilometres (international).",
-          "enum": ["sm", "m", "km"],
+          "enum": [
+            "sm",
+            "m",
+            "km"
+          ],
           "default": "sm"
         }
       },
@@ -690,7 +705,7 @@
       "x-advanced": true,
       "type": "boolean",
       "title": "Show Airline Logos",
-      "description": "Show airline logos in area mode (8\u00d78 pixel sprites next to callsigns). Flight detail layouts always show logos in the logo zone when available (52 airlines included as PNG assets).",
+      "description": "Show airline logos in area mode (8×8 pixel sprites next to callsigns). Flight detail layouts always show logos in the logo zone when available (52 airlines included as PNG assets).",
       "default": true
     },
     "scroll_speed": {
@@ -730,17 +745,17 @@
     "flightaware": {
       "type": "object",
       "title": "FlightAware AeroAPI (Paid - Optional)",
-      "description": "OPTIONAL PAID SERVICE \u2014 skip this section entirely unless you have a FlightAware AeroAPI subscription. Enabling this will make API calls that are billed at $0.005 each. Free route data via FR24 enrichment (above) works well for most users without any cost.",
+      "description": "OPTIONAL PAID SERVICE — skip this section entirely unless you have a FlightAware AeroAPI subscription. Enabling this will make API calls that are billed at $0.005 each. Free route data via FR24 enrichment (above) works well for most users without any cost.",
       "properties": {
         "api_key": {
           "type": "string",
-          "description": "Your FlightAware AeroAPI key. Leave blank if you are not using FlightAware \u2014 the plugin works fully without this.",
+          "description": "Your FlightAware AeroAPI key. Leave blank if you are not using FlightAware — the plugin works fully without this.",
           "x-secret": true,
           "default": ""
         },
         "enabled": {
           "type": "boolean",
-          "description": "Enable paid FlightAware API calls. Must be true AND api_key must be set for FlightAware to be used. Disabled by default \u2014 do not enable unless you have a paid subscription.",
+          "description": "Enable paid FlightAware API calls. Must be true AND api_key must be set for FlightAware to be used. Disabled by default — do not enable unless you have a paid subscription.",
           "default": false
         },
         "max_api_calls_per_hour": {
@@ -966,6 +981,14 @@
     "offline_database_update_interval_days",
     "opensky_username",
     "opensky_password",
-    "flightaware"
+    "flightaware",
+    "flightaware_api_key",
+    "flight_plan_enabled",
+    "max_api_calls_per_hour",
+    "daily_api_budget",
+    "flight_plan_cache_ttl_hours",
+    "min_callsign_length",
+    "airline_callsign_prefixes",
+    "background_service"
   ]
 }

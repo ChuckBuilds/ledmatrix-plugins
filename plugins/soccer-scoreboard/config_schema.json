@@ -641,7 +641,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1050,7 +1050,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1459,7 +1459,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1868,7 +1868,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2277,7 +2277,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2686,7 +2686,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3095,7 +3095,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3504,7 +3504,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3913,7 +3913,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -4322,7 +4322,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -4370,7 +4370,7 @@
     "custom_leagues": {
       "type": "array",
       "title": "Add More Leagues",
-      "description": "Add any soccer league available on ESPN. Click 'Add Item', then fill in BOTH a name and a league code. Common codes: eng.2 (English Championship), eng.3 (League One), eng.fa (FA Cup), eng.league_cup (EFL Cup), mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish S\u00fcper Lig), bel.1 (Belgian Pro League)",
+      "description": "Add any soccer league available on ESPN. Click 'Add Item', then fill in BOTH a name and a league code. Common codes: eng.2 (English Championship), eng.3 (League One), eng.fa (FA Cup), eng.league_cup (EFL Cup), mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish Süper Lig), bel.1 (Belgian Pro League)",
       "x-widget": "array-table",
       "x-columns": [
         "name",
@@ -5404,6 +5404,9 @@
     "leagues",
     "customization",
     "schedule_lookback_days",
-    "schedule_lookahead_days"
+    "schedule_lookahead_days",
+    "scroll_card",
+    "no_data_interval_seconds",
+    "live_idle_max_interval_seconds"
   ]
 }

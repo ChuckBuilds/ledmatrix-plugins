@@ -178,7 +178,11 @@
                 "minimum": 1,
                 "maximum": 18
               },
-              "default": [12, 13, 16],
+              "default": [
+                12,
+                13,
+                16
+              ],
               "description": "Featured holes to highlight (Amen Corner, par 3s)"
             }
           }
@@ -451,7 +455,11 @@
         "color_scheme": {
           "x-advanced": true,
           "type": "string",
-          "enum": ["classic", "bright", "subdued"],
+          "enum": [
+            "classic",
+            "bright",
+            "subdued"
+          ],
           "default": "classic",
           "description": "Masters color palette variant"
         }
@@ -459,7 +467,9 @@
     }
   },
   "additionalProperties": false,
-  "required": ["enabled"],
+  "required": [
+    "enabled"
+  ],
   "x-propertyOrder": [
     "enabled",
     "display_duration",
@@ -469,6 +479,10 @@
     "favorite_players",
     "display_modes",
     "notifications",
-    "branding"
+    "branding",
+    "player_card_duration",
+    "hole_display_duration",
+    "page_display_duration",
+    "scroll_card_width"
   ]
 }

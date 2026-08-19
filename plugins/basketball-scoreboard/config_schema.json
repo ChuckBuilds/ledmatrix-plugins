@@ -2558,6 +2558,10 @@
     "ncaaw",
     "customization",
     "schedule_lookback_days",
-    "schedule_lookahead_days"
+    "schedule_lookahead_days",
+    "scroll_card",
+    "background_service",
+    "no_data_interval_seconds",
+    "live_idle_max_interval_seconds"
   ]
 }
