@@ -22,7 +22,10 @@
       "properties": {
         "display_mode": {
           "type": "string",
-          "enum": ["scroll", "switch"],
+          "enum": [
+            "scroll",
+            "switch"
+          ],
           "default": "scroll",
           "description": "Display mode: 'scroll' shows all tickers in a continuous horizontal scroll, 'switch' shows one ticker at a time rotating on a timer"
         },
@@ -115,12 +118,21 @@
         },
         "symbols": {
           "type": "array",
-          "description": "List of stock symbols to track. More symbols increase fetch time at each update_interval (~0.1s per symbol plus a 1s pause every 15 symbols).",
+          "description": "List of Yahoo Finance symbols to track. Plain tickers (AAPL), indexes with a leading caret (^GSPC, ^DJI, ^VIX), futures and commodities with =F (GC=F gold, CL=F crude), class shares with a hyphen (BRK-B), and non-US listings with an exchange suffix (7203.T). More symbols increase fetch time at each update_interval (~0.1s per symbol plus a 1s pause every 15 symbols).",
           "items": {
             "type": "string",
-            "pattern": "^\\^?[A-Z]{1,5}$"
+            "pattern": "^\\^?[A-Z0-9]{1,12}([.=-][A-Z0-9]{1,5})*$",
+            "maxLength": 20
           },
-          "default": ["ASTS", "SCHD", "INTC", "NVDA", "T", "VOO", "SMCI"],
+          "default": [
+            "ASTS",
+            "SCHD",
+            "INTC",
+            "NVDA",
+            "T",
+            "VOO",
+            "SMCI"
+          ],
           "maxItems": 50
         },
         "display_format": {
@@ -129,7 +141,9 @@
           "default": "{symbol}: ${price} ({change}%)"
         }
       },
-      "required": ["enabled"],
+      "required": [
+        "enabled"
+      ],
       "additionalProperties": false
     },
     "crypto": {
@@ -150,12 +164,16 @@
         },
         "symbols": {
           "type": "array",
-          "description": "List of cryptocurrency symbols to track. Each symbol adds to the total fetch time per update_interval.",
+          "description": "List of cryptocurrency symbols to track. A bare symbol (BTC) is quoted in USD automatically; name the quote currency explicitly to use another (BTC-EUR). Each symbol adds to the total fetch time per update_interval.",
           "items": {
             "type": "string",
-            "pattern": "^[A-Z]{2,10}(-USD)?$"
+            "pattern": "^[A-Z0-9]{2,10}(-[A-Z]{3,4})?$",
+            "maxLength": 15
           },
-          "default": ["BTC-USD", "ETH-USD"],
+          "default": [
+            "BTC-USD",
+            "ETH-USD"
+          ],
           "maxItems": 15
         },
         "display_format": {
@@ -164,7 +182,9 @@
           "default": "{symbol}: ${price} ({change}%)"
         }
       },
-      "required": ["enabled"],
+      "required": [
+        "enabled"
+      ],
       "additionalProperties": false
     },
     "customization": {
@@ -209,7 +229,11 @@
                   },
                   "minItems": 3,
                   "maxItems": 3,
-                  "default": [255, 255, 255]
+                  "default": [
+                    255,
+                    255,
+                    255
+                  ]
                 }
               },
               "additionalProperties": false
@@ -248,7 +272,11 @@
                   },
                   "minItems": 3,
                   "maxItems": 3,
-                  "default": [255, 255, 255]
+                  "default": [
+                    255,
+                    255,
+                    255
+                  ]
                 }
               },
               "additionalProperties": false
@@ -287,7 +315,11 @@
                   },
                   "minItems": 3,
                   "maxItems": 3,
-                  "default": [0, 255, 0]
+                  "default": [
+                    0,
+                    255,
+                    0
+                  ]
                 },
                 "negative_color": {
                   "type": "array",
@@ -299,7 +331,11 @@
                   },
                   "minItems": 3,
                   "maxItems": 3,
-                  "default": [255, 0, 0]
+                  "default": [
+                    255,
+                    0,
+                    0
+                  ]
                 }
               },
               "additionalProperties": false
@@ -345,7 +381,11 @@
                   },
                   "minItems": 3,
                   "maxItems": 3,
-                  "default": [255, 215, 0]
+                  "default": [
+                    255,
+                    215,
+                    0
+                  ]
                 }
               },
               "additionalProperties": false
@@ -384,7 +424,11 @@
                   },
                   "minItems": 3,
                   "maxItems": 3,
-                  "default": [255, 215, 0]
+                  "default": [
+                    255,
+                    215,
+                    0
+                  ]
                 }
               },
               "additionalProperties": false
@@ -423,7 +467,11 @@
                   },
                   "minItems": 3,
                   "maxItems": 3,
-                  "default": [0, 255, 0]
+                  "default": [
+                    0,
+                    255,
+                    0
+                  ]
                 },
                 "negative_color": {
                   "type": "array",
@@ -435,7 +483,11 @@
                   },
                   "minItems": 3,
                   "maxItems": 3,
-                  "default": [255, 0, 0]
+                  "default": [
+                    255,
+                    0,
+                    0
+                  ]
                 }
               },
               "additionalProperties": false
@@ -447,6 +499,8 @@
       "additionalProperties": false
     }
   },
-  "required": ["enabled"],
+  "required": [
+    "enabled"
+  ],
   "additionalProperties": false
 }

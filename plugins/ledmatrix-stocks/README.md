@@ -56,7 +56,7 @@ generated from it. The most-used keys, with their actual nesting:
 | Key | Default | Notes |
 |---|---|---|
 | `stocks.enabled` | `true` | Enable the stocks list |
-| `stocks.symbols` | `["ASTS","SCHD","INTC","NVDA","T","VOO","SMCI"]` | Yahoo Finance ticker symbols |
+| `stocks.symbols` | `["ASTS","SCHD","INTC","NVDA","T","VOO","SMCI"]` | Yahoo Finance symbols — stocks, indexes (`^GSPC`), commodities (`GC=F`), share classes (`BRK-B`), non-US listings (`7203.T`). See [Symbol format](#symbol-format) |
 | `stocks.display_format` | `"{symbol}: ${price} ({change}%)"` | Placeholders: `{symbol}`, `{price}`, `{change}` |
 
 ### `crypto.*`
@@ -65,7 +65,7 @@ generated from it. The most-used keys, with their actual nesting:
 |---|---|---|
 | `crypto.enabled` | `false` | Enable the crypto list |
 | `crypto.update_interval` | `600` | Seconds between crypto fetches |
-| `crypto.symbols` | `["BTC-USD","ETH-USD"]` | Yahoo Finance pair symbols (always end in `-USD` etc.) |
+| `crypto.symbols` | `["BTC-USD","ETH-USD"]` | Coin pairs. A bare symbol (`BTC`) is quoted in USD; name another currency to override (`BTC-EUR`) |
 | `crypto.display_format` | `"{symbol}: ${price} ({change}%)"` | Same placeholders as stocks |
 
 ### `customization.*`
@@ -77,12 +77,54 @@ with green for positive deltas and red for negative.
 
 ## Symbol format
 
-The plugin uses Yahoo Finance symbols directly:
+Symbols are passed to Yahoo Finance exactly as you type them, so **whatever
+works in the search box on [finance.yahoo.com](https://finance.yahoo.com)
+works here** — copy the symbol from the top of the quote page. It is not
+limited to plain stock tickers.
 
-- **Stocks**: plain ticker, e.g. `AAPL`, `GOOGL`, `MSFT`, `TSLA`,
-  `AMZN`, `META`, `NVDA`
-- **Crypto**: pair with the quote currency, e.g. `BTC-USD`, `ETH-USD`,
-  `SOL-USD`, `DOGE-USD`. Without the `-USD` suffix Yahoo returns no data.
+| You want | Enter | Examples |
+|---|---|---|
+| A stock | the ticker | `AAPL`, `NVDA`, `VOO`, `SCHD` |
+| A market index | `^` + code | `^GSPC` (S&P 500), `^DJI` (Dow), `^IXIC` (Nasdaq), `^VIX`, `^RUT` (Russell 2000), `^N225` (Nikkei), `^FTSE` |
+| A commodity / future | code + `=F` | `GC=F` (gold), `SI=F` (silver), `CL=F` (crude oil), `NG=F` (natural gas), `ZC=F` (corn), `HG=F` (copper) |
+| A share class | ticker + `-` + class | `BRK-B` (Berkshire B), `BF-B` (Brown-Forman B) |
+| A non-US listing | ticker + exchange suffix | `7203.T` (Toyota, Tokyo), `005930.KS` (Samsung, Korea), `SHEL.L` (Shell, London) |
+| Crypto | pair, or bare symbol | `BTC-USD`, `ETH-USD`, `SOL-USD`; a bare `BTC` is quoted in USD for you |
+
+Commodities and indexes go in **`stocks.symbols`**, not `crypto.symbols` —
+the crypto list is only for coin pairs.
+
+```json
+{
+  "stocks": {
+    "enabled": true,
+    "symbols": ["AAPL", "NVDA", "^GSPC", "^VIX", "GC=F", "CL=F", "BRK-B"]
+  },
+  "crypto": {
+    "enabled": true,
+    "symbols": ["BTC-USD", "ETH-USD"]
+  }
+}
+```
+
+### Non-USD crypto
+
+Name the quote currency to price a coin in something other than dollars:
+`BTC-EUR`, `ETH-GBP`. A symbol with no quote currency (`BTC`) is sent as
+`BTC-USD`.
+
+### What is not accepted
+
+Symbols are upper-case only (`aapl` is rejected — use `AAPL`), and cannot
+contain spaces. If the field refuses what you typed, the web UI names the
+value it rejected.
+
+### A note on display width
+
+Longer symbols take more room on the panel. `^GSPC` and `GC=F` are five and
+four characters, so they behave like any ticker, but if a symbol looks
+cropped on a narrow panel, `display.display_mode: "switch"` shows one at a
+time instead of scrolling.
 
 ## Pairing with the Stock News plugin
 
