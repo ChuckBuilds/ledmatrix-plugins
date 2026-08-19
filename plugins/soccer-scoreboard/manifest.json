@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.11.1",
+  "version": "2.12.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,13 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.12.0",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Make the schedule fetch window configurable. How far back and forward games are fetched was hard-coded at 14 days back and 7 forward. Days is the wrong unit for a league that plays weekly -- a whole matchweek can fall just past a short horizon and never reach the board -- so both are now advanced settings, bounded 1-60 days, with a stray or non-numeric value falling back to the default rather than raising. Defaults keep today's behaviour, except this plugin's lookahead which moves to 14 so a fixture eight days out is fetched at all.",
+      "changes": "Back off the live-game poll while a league has nothing on, and let both the idle interval and its ceiling be configured. Saves API calls out of season and between games without delaying an in-progress game, which still resets the interval on the first fetch that finds one."
+    },
     {
       "version": "2.11.1",
       "released": "2026-08-18",
