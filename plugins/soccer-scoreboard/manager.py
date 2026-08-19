@@ -780,6 +780,14 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             "customization": customization_config,
         })
 
+        # Custom leagues go through their own whitelist adapter, so they need
+        # the same root-key forwarding the predefined leagues get above --
+        # otherwise a user's schedule-window and idle-poll settings apply to
+        # every built-in league but silently not to their custom ones.
+        for _root_key in _ROOT_CONFIG_KEYS:
+            if _root_key in self.config:
+                manager_config[_root_key] = self.config[_root_key]
+
         return manager_config
 
     def _initialize_league_registry(self) -> None:

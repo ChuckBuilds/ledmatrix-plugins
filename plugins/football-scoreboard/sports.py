@@ -119,7 +119,9 @@ def _clamp_seconds(value: Any, fallback: int, low: int = 5,
     """An interval in seconds, or the fallback when the value is unusable."""
     try:
         seconds = int(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
+        # OverflowError: json parses bare Infinity by default and int(inf)
+        # raises -- the same gap _clamp_window above already covers.
         return fallback
     return max(low, min(high, seconds))
 
@@ -2342,10 +2344,18 @@ class SportsLive(SportsCore):
     ):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
         self.update_interval = self.mode_config.get("live_update_interval", 15)
+        # Read from the config root, where the schema declares them and the web
+        # UI writes them -- not from mode_config, which is the per-league block
+        # ({sport}_scoreboard) and never carries these keys. Looking them up
+        # there meant the saved value was invisible and every user silently kept
+        # the default. mode_config is still consulted as a fallback so a
+        # hand-placed per-league value keeps working.
         self.no_data_interval = _clamp_seconds(
-            self.mode_config.get("no_data_interval_seconds"), 300)
+            self.config.get("no_data_interval_seconds",
+                            self.mode_config.get("no_data_interval_seconds")), 300)
         self.live_idle_max_interval = _clamp_seconds(
-            self.mode_config.get("live_idle_max_interval_seconds"),
+            self.config.get("live_idle_max_interval_seconds",
+                            self.mode_config.get("live_idle_max_interval_seconds")),
             _DEFAULT_LIVE_IDLE_MAX_SECONDS)
         self._empty_live_streak = 0
         # Log the configured interval for debugging

@@ -147,8 +147,36 @@ def main():
             continue
         for key in WINDOW_KEYS:
             # SportsCore reads these off the root of the config it is handed.
+            # That "root is where they are read" half is asserted directly, per
+            # plugin, by test_idle_league_backoff.py -- this file only proves
+            # the adapters get them there.
             check(f"{name}: {key} reaches the config root",
                   where(config, key) == "root")
+
+    print("\nsoccer's custom leagues go through a second adapter:")
+    soccer = REPO / "plugins" / "soccer-scoreboard"
+    if soccer.is_dir():
+        try:
+            cls = load_plugin_class(soccer)
+            probe = object.__new__(type("Probe", (cls,),
+                                       {"__getattr__": lambda self, n: 0}))
+            probe.logger = logging.getLogger("plumbing-test")
+            probe.config = {
+                "schedule_lookback_days": 30,
+                "schedule_lookahead_days": 21,
+                "no_data_interval_seconds": 1800,
+                "live_idle_max_interval_seconds": 7200,
+            }
+            custom = cls._adapt_config_for_custom_league(
+                probe, {"league_code": "epl2", "enabled": True,
+                        "display_modes": {"live": True}})
+        except (ImportError, AttributeError, TypeError, KeyError, ValueError) as exc:
+            check("soccer: custom-league adapter ran", False)
+            print(f"        {type(exc).__name__}: {exc}")
+        else:
+            for key in WINDOW_KEYS:
+                check(f"soccer custom league: {key} reaches the config root",
+                      where(custom, key) == "root")
 
     print(f"\n{'FAILED: ' + str(len(FAILURES)) + ' check(s)' if FAILURES else 'All checks passed.'}")
     return 1 if FAILURES else 0
