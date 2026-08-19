@@ -1,7 +1,7 @@
 {
   "id": "march-madness",
   "name": "March Madness",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "NCAA March Madness tournament bracket tracker with round branding, seeded matchups, live scores, and upset highlighting",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.0.6",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Rebuild the ticker when something else clears its scroll cache. Same defect as odds-ticker: display() decided whether to rebuild by testing its own ticker_image, which Vegas cannot clear when it invalidates the cached scroll image, so the fallback message could be drawn over bracket data the plugin was still holding."
+    },
     {
       "version": "1.0.5",
       "released": "2026-08-12",

@@ -2843,8 +2843,17 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                 self._display_fallback_message()
                 return
         
-        if self.ticker_image is None:
-            logger.warning("Ticker image is not available. Attempting to create it.")
+        # Rebuild when *either* our composite or the ScrollHelper's cache is
+        # gone. Testing ticker_image alone was not enough: Vegas invalidates the
+        # helper's cached_image/cached_array whenever this plugin reports an
+        # update (PluginAdapter.invalidate_plugin_scroll_cache, which is what
+        # stops last night's live game being redrawn), and it cannot clear
+        # ticker_image because that attribute is private to this plugin. The
+        # helper then returned None for the visible portion and the fallback
+        # drew "No odds data" over perfectly good games -- once a minute on a
+        # live rig, until the next hourly rebuild happened to land.
+        if self.ticker_image is None or self.scroll_helper.cached_image is None:
+            logger.warning("Ticker image or scroll cache is not available. Attempting to create it.")
             try:
                 import threading
                 import queue
@@ -2873,7 +2882,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             except Exception as e:
                 logger.error(f"Error during image creation: {e}")
             
-            if self.ticker_image is None:
+            if self.ticker_image is None or self.scroll_helper.cached_image is None:
                 logger.error("Failed to create ticker image.")
                 self._display_fallback_message()
                 return

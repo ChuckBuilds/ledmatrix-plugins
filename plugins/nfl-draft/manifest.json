@@ -1,7 +1,7 @@
 {
   "id": "nfl-draft",
   "name": "NFL Draft",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "author": "ChuckBuilds",
   "description": "Displays projected NFL draft picks from ESPN with live draft tracking support during the annual NFL Draft event. Includes simulate_live mode to replay a completed draft using real ESPN core API data. Shows team logos, player names, positions, and pick numbers in a scrolling display.",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
   ],
   "icon": "fas fa-football-ball",
   "versions": [
+    {
+      "version": "1.4.2",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Rebuild the scroll image when something else clears its cache. display() drew straight from the ScrollHelper, whose cache Vegas invalidates whenever the plugin reports an update, so a frame could be skipped while picks were loaded. The silent-mode early returns in _create_draft_scroll_image are preserved, so suppressed frames stay suppressed."
+    },
     {
       "version": "1.4.1",
       "released": "2026-08-05",

@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-elections",
   "name": "Election Results",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "rpierce99",
   "description": "Live election results: a scrolling ticker of important races plus a full-screen interrupt when a race is newly called. Auto-activates for your state's primary + general (dormant otherwise), drains stale calls from the ticker, and survives restarts. Filterable to your state. NYT baseline provider + optional California SoS county/city rollup.",
   "entry_point": "manager.py",
@@ -22,6 +22,12 @@
     "cache_manager"
   ],
   "versions": [
+    {
+      "version": "1.2.1",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Rebuild the ticker when something else clears its scroll cache. _display_ticker() gated on its own _scroll_ready flag, which Vegas cannot clear when it invalidates the cached scroll image, so the mode could yield an empty frame while still holding race data."
+    },
     {
       "version": "1.2.0",
       "released": "2026-07-31",

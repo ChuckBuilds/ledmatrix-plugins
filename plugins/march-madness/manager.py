@@ -788,6 +788,14 @@ class MarchMadnessPlugin(BasePlugin):
                 self.scroll_helper.reset_scroll()
             self._end_reached_logged = False
 
+        # Vegas clears scroll_helper.cached_image whenever this plugin reports
+        # an update (PluginAdapter.invalidate_plugin_scroll_cache) and cannot
+        # clear this plugin's own flag, so the two can disagree. Rebuild on the
+        # cache, which is what the frame is actually drawn from.
+        if (self.games_data and self.scroll_helper
+                and self.scroll_helper.cached_image is None):
+            self._create_ticker_image()
+
         if not self.games_data or self.ticker_image is None:
             self._display_fallback()
             return

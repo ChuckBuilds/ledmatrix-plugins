@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.3.1",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Rebuild the ticker when something else clears its scroll cache. Vegas invalidates a plugin's cached scroll image whenever the plugin reports an update -- that is what stops last night's live game being redrawn -- but it cannot clear this plugin's own ticker_image, which is what display() tested to decide whether a rebuild was needed. Between the invalidation (about once a minute on a live rig) and this plugin's own next rebuild (an hour, whenever no game is live) the helper returned nothing and the panel showed \"No odds data\" over games it was holding perfectly well: ten such frames in three days of logs, with the games list never once actually empty."
+    },
     {
       "version": "1.3.0",
       "released": "2026-08-14",

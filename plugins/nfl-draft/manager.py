@@ -1222,6 +1222,15 @@ class NFLDraftPlugin(BasePlugin):
             return
 
         try:
+            # Vegas clears scroll_helper.cached_image whenever this plugin reports
+        # an update (PluginAdapter.invalidate_plugin_scroll_cache) and cannot
+        # clear this plugin's own flag, so the two can disagree. Rebuild on the
+        # cache, which is what the frame is actually drawn from.
+            # _create_draft_scroll_image keeps its own silent-mode early returns,
+            # so this cannot resurrect a frame those modes deliberately suppress.
+            if self.scroll_helper.cached_image is None:
+                self._create_draft_scroll_image()
+
             # Update scroll position
             self.scroll_helper.update_scroll_position()
 
