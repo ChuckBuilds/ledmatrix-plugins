@@ -2099,48 +2099,32 @@ class FlightTrackerPlugin(BasePlugin):
                     self.logger.debug(f"[Flight Tracker] Got HTML/text response from {url}")
                     continue  # Try next URL
                 
-                # Check if response is too small (likely an error page)
-                if len(response.content) < 2000:  # Tiles are usually much larger
-                    self.logger.debug(f"[Flight Tracker] Tile response too small ({len(response.content)} bytes) from {url}")
-                    # Try to read the error message
-                    try:
-                        error_text = response.content.decode('utf-8', errors='ignore')[:200]
-                        self.logger.debug(f"[Flight Tracker] Error content: {error_text}")
-                    except Exception:
-                        pass
-                    continue  # Try next URL
-                
-                # Additional validation: try to load as image and check for text artifacts
+                # Validate by decoding the body, not by measuring it. A tile
+                # that is entirely one colour -- open water, desert, any square
+                # with no features in it -- is a valid tile that compresses to
+                # around 100 bytes. Rejecting bodies under 2KB, and rejecting
+                # images that were more than 80% a single colour, discarded
+                # exactly those tiles: a coastal or rural view could never
+                # fetch the empty half of its grid.
+                #
+                # That mattered more than a missing tile, because with a custom
+                # tile server _get_tile_urls() returns a single URL. One
+                # rejected ocean tile exhausted the list, tripped
+                # _block_tile_network(), and every remaining tile in the grid
+                # then returned None for the whole cooldown -- so the map
+                # rendered with no background at all rather than with one gap.
                 try:
                     import io
-                    test_img = PILImage.open(io.BytesIO(response.content))
-                    
-                    # Check if image is too small (likely an error page rendered as image)
-                    if test_img.size[0] < 100 or test_img.size[1] < 100:
-                        self.logger.debug(f"[Flight Tracker] Tile image too small: {test_img.size}")
-                        continue
-                    
-                    # Check for suspiciously uniform colors (error pages often have solid colors)
-                    if test_img.mode == 'RGB':
-                        # Convert to grayscale for analysis
-                        gray_img = test_img.convert('L')
-                        # Get pixel data
-                        pixels = list(gray_img.getdata())
-                        if len(pixels) > 0:
-                            # Check if image is mostly one color (suspicious for error pages)
-                            color_counts = {}
-                            for pixel in pixels[::100]:  # Sample every 100th pixel for performance
-                                color_counts[pixel] = color_counts.get(pixel, 0) + 1
-                            
-                            # If more than 80% of pixels are the same color, it's likely an error page
-                            max_count = max(color_counts.values())
-                            if max_count > len(pixels[::100]) * 0.8:
-                                self.logger.debug("[Flight Tracker] Tile appears to be solid color (error page)")
-                                continue
-                    
+                    tile_img = PILImage.open(io.BytesIO(response.content))
+                    tile_img.load()  # force decode now: truncated bodies raise here
                 except Exception as e:
-                    self.logger.debug(f"[Flight Tracker] Could not validate tile image: {e}")
-                    # Continue anyway if we can't validate
+                    self.logger.debug(f"[Flight Tracker] Not a decodable image from {url}: {e}")
+                    continue  # Try next URL
+
+                # An error page rendered as an image would not be tile-shaped.
+                if tile_img.size[0] < 100 or tile_img.size[1] < 100:
+                    self.logger.debug(f"[Flight Tracker] Tile image too small: {tile_img.size}")
+                    continue  # Try next URL
                 
                 # If we get here, we have a valid tile
                 self.logger.debug(f"[Flight Tracker] ✓ Successfully fetched tile from URL {i+1}: {url}")
