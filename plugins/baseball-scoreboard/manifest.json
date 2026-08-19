@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.28.0",
+  "version": "1.28.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
   "category": "sports",
@@ -30,6 +30,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.28.1",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Request odds only for the games that will be shown. The upcoming-games loop fetched odds for every game it collected and the caller then kept upcoming_games_to_show of them (10 by default). The loop's own comment claimed odds were fetched only for games that would be displayed, but the filter it referred to applies only when show_favorite_teams_only is set AND favourite teams are configured, and neither is the default -- so in the usual case nothing narrowed it. A live rig running college football logged 946 upcoming games in one cycle and displayed 1 of them, having made 946 separate ESPN odds requests to do it, from a Pi that is also driving the panel. The odds cache only absorbs repeats of the same event, so a wide schedule never benefited from it. Nothing about what reaches the screen changes."
+    },
     {
       "version": "1.28.0",
       "released": "2026-08-19",

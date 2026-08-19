@@ -1639,8 +1639,6 @@ class SportsUpcoming(SportsCore):
                         or game["away_abbr"] in self.favorite_teams
                     ):
                         favorite_games_found += 1
-                    if self.show_odds:
-                        self._fetch_odds(game)
 
             # Enhanced logging for debugging
             self.logger.info(f"Found {all_upcoming_games} total upcoming games in data")
@@ -1701,6 +1699,21 @@ class SportsUpcoming(SportsCore):
                 self.logger.info(
                     f"No favorites configured: showing {len(team_games)} total upcoming games"
                 )
+
+            # Odds are fetched here, for the games that survived selection,
+            # rather than inside the loop that collects them. That loop runs
+            # over every upcoming game in the schedule window, and the window
+            # for a college league is enormous: a live rig logged 946 upcoming
+            # games in one cycle and displayed 1 of them, having requested odds
+            # for all 946. The comment there already claimed odds were fetched
+            # "only for games that will be displayed", but the filter above it
+            # applies only when show_favorite_teams_only is set AND favourites
+            # are configured -- neither is the default -- so in the usual case
+            # nothing narrowed it. Each request is a separate ESPN call on a Pi
+            # that is also driving the panel.
+            if self.show_odds:
+                for game in team_games:
+                    self._fetch_odds(game)
 
             # Log changes or periodically
             should_log = (
