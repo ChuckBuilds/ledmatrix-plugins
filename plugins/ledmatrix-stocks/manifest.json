@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-stocks",
   "name": "Stock & Crypto Ticker",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "description": "Displays stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies. Supports scroll and switch display modes.",
   "author": "LEDMatrix Team",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",
@@ -39,6 +39,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "2.8.0",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Accept the symbols Yahoo actually serves. The field was validated against ^\\^?[A-Z]{1,5}$ -- letters only -- so a commodity (GC=F gold, CL=F crude), a share class (BRK-B), a non-US listing (7203.T) or an index containing a digit (^N225) was rejected at the config form and never reached the API. Nothing else validated symbols and the fetcher passes them through verbatim, so the pattern was the only obstacle: every one of those returns live data from the endpoint this plugin already calls. Indexes with a plain caret (^GSPC, ^DJI, ^VIX) were always accepted and still are. Crypto is no longer hard-coded to USD either -- BTC-EUR previously became BTC-EUR-USD, which has no data; a symbol with no quote currency is still sent as -USD. The README documents each form with worked examples."
+    },
     {
       "version": "2.7.0",
       "released": "2026-08-05",

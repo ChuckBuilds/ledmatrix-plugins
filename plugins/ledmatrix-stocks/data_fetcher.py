@@ -114,8 +114,11 @@ class StockDataFetcher:
         # Fetch crypto data
         for i, symbol in enumerate(self.crypto_symbols):
             try:
-                # Add -USD suffix for Yahoo Finance API if not already present
-                api_symbol = symbol if symbol.endswith('-USD') else f"{symbol}-USD"
+                # Quote in USD unless the symbol already names a quote
+                # currency. Testing for '-USD' specifically turned BTC-EUR into
+                # BTC-EUR-USD, which Yahoo has no data for; any pair already
+                # carries its quote after the hyphen.
+                api_symbol = symbol if '-' in symbol else f"{symbol}-USD"
                 data = self.fetch_stock_data(api_symbol, is_crypto=True)
                 if data:
                     all_data[symbol] = data  # Store with original symbol name
