@@ -96,6 +96,21 @@ def _resolve_font_path(path: str) -> str:
 
 
 
+_DEFAULT_LOOKBACK_DAYS = 14
+_DEFAULT_LOOKAHEAD_DAYS = 7
+_MIN_WINDOW_DAYS = 1
+_MAX_WINDOW_DAYS = 60
+
+
+def _clamp_window(value: Any, fallback: int) -> int:
+    """Days for one side of the schedule window, or the default if unusable."""
+    try:
+        days = int(value)
+    except (TypeError, ValueError):
+        return fallback
+    return max(_MIN_WINDOW_DAYS, min(_MAX_WINDOW_DAYS, days))
+
+
 class SportsCore(ABC):
     def __init__(
         self,
@@ -130,6 +145,15 @@ class SportsCore(ABC):
         self.sport_config = None
         # Initialize data source
         self.data_source = ESPNDataSource(logger)
+        # How far either side of now the schedule is fetched, in days.
+        # Advanced: a league that plays weekly can have a whole matchweek fall
+        # just outside a short horizon, which reads on the panel as "my team
+        # never appears" while other clubs do. Bounded so a stray value cannot
+        # turn one refresh into a season-wide request against the API.
+        self.schedule_lookback_days: int = _clamp_window(
+            config.get("schedule_lookback_days"), _DEFAULT_LOOKBACK_DAYS)
+        self.schedule_lookahead_days: int = _clamp_window(
+            config.get("schedule_lookahead_days"), _DEFAULT_LOOKAHEAD_DAYS)
         self.mode_config = config.get(
             f"{sport_key}_scoreboard", {}
         )  # Changed config key
@@ -1182,8 +1206,8 @@ class SportsCore(ABC):
             now = datetime.now(pytz.utc)
             immediate_events = []
 
-            start_date = now + timedelta(weeks=-2)
-            end_date = now + timedelta(weeks=1)
+            start_date = now - timedelta(days=self.schedule_lookback_days)
+            end_date = now + timedelta(days=self.schedule_lookahead_days)
             date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
             url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
             response = self.session.get(
@@ -1870,11 +1894,21 @@ class SportsRecent(SportsCore):
                 f"Processing {len(events)} events from shared data."
             )  # Changed log prefix
 
-            # Define date range for "recent" games (last 21 days to capture games from 3 weeks ago)
+            # How far back the Recent screen looks. This used to be a fixed 21
+            # days, which quietly capped schedule_lookback_days: the schema
+            # allows up to 60 and tells the user to "raise it if finished games
+            # disappear sooner than you want", but anything above 21 only
+            # enlarged the ESPN payload and changed nothing on screen.
             now = datetime.now(timezone.utc)
-            recent_cutoff = now - timedelta(days=21)
+            # getattr, because managers are also built without __init__ (the
+            # plugin tests do exactly that) and a missing attribute here would
+            # raise into the surrounding except and silently skip the filter.
+            lookback_days = getattr(
+                self, "schedule_lookback_days", _DEFAULT_LOOKBACK_DAYS)
+            recent_cutoff = now - timedelta(days=lookback_days)
             self.logger.info(
-                f"Current time: {now}, Recent cutoff: {recent_cutoff} (21 days ago)"
+                f"Current time: {now}, Recent cutoff: {recent_cutoff} "
+                f"({lookback_days} days ago)"
             )
 
             # Process games and filter for final games, date range & favorite teams

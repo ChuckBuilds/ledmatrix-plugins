@@ -1222,6 +1222,24 @@
         "favorite_result_colors"
       ],
       "additionalProperties": false
+    },
+    "schedule_lookback_days": {
+      "type": "integer",
+      "default": 14,
+      "minimum": 1,
+      "maximum": 60,
+      "title": "Schedule lookback (days)",
+      "description": "How far back to fetch games for the Recent screen. Raise it if finished games disappear sooner than you want.",
+      "x-advanced": true
+    },
+    "schedule_lookahead_days": {
+      "type": "integer",
+      "default": 7,
+      "minimum": 1,
+      "maximum": 60,
+      "title": "Schedule lookahead (days)",
+      "description": "How far ahead to fetch games for the Upcoming screen. Raise it for a league that plays weekly: a fixture just beyond this horizon is not fetched at all, so it never reaches the board even though the date is known.",
+      "x-advanced": true
     }
   },
   "additionalProperties": false,
@@ -1261,6 +1279,8 @@
     "dynamic_duration",
     "mode_durations",
     "background_service",
-    "customization"
+    "customization",
+    "schedule_lookback_days",
+    "schedule_lookahead_days"
   ]
 }

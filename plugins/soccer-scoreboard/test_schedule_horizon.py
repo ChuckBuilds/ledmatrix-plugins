@@ -55,24 +55,28 @@ def main():
                  and n.name == "_fetch_soccer_api_data"), None)
     check("_fetch_soccer_api_data exists", full is not None)
 
-    deltas = []
-    for node in ast.walk(full):
-        if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "timedelta":
-            for kw in node.keywords:
-                if isinstance(kw.value, ast.Constant):
-                    deltas.append((kw.arg, kw.value.value))
-    full_days = max((v for unit, v in deltas if unit == "days"), default=None)
-    check("its horizon is discoverable (%s)" % deltas, full_days is not None)
+    # The two fetches can no longer drift apart by construction: the full fetch
+    # reads the same two configured values the partial does, rather than
+    # carrying its own literals. Assert that shape -- comparing numbers would
+    # only work while both were hard-coded, which was the original problem.
+    full_src = ast.get_source_segment(managers_src, full) or ""
+    literals = [(kw.arg, kw.value.value)
+                for node in ast.walk(full)
+                if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "timedelta"
+                for kw in node.keywords
+                if isinstance(kw.value, ast.Constant)]
+    window_literals = [d for d in literals if d[0] in ("days", "weeks")]
+    check("the full fetch carries no hard-coded window (%s)" % window_literals,
+          not window_literals)
+    for attr in ("schedule_lookback_days", "schedule_lookahead_days"):
+        check(f"the full fetch reads {attr}", attr in full_src)
 
-    forward = sports._SCHEDULE_WINDOW_FORWARD
-    back = sports._SCHEDULE_WINDOW_BACK
+    forward = timedelta(days=sports._DEFAULT_LOOKAHEAD_DAYS)
+    back = timedelta(days=sports._DEFAULT_LOOKBACK_DAYS)
     check("the partial's forward horizon is a timedelta",
           isinstance(forward, timedelta))
-    if full_days is not None:
-        check("partial forward (%dd) >= full forward (%dd)"
-              % (forward.days, full_days), forward.days >= full_days)
-        check("partial back (%dd) >= full back (%dd)"
-              % (back.days, full_days), back.days >= full_days)
+    check("the partial's back horizon is a timedelta",
+          isinstance(back, timedelta))
 
     print("\nthe reported fixture falls inside the horizon")
     # The user's case, as dates rather than a live API call so the test stays
@@ -90,18 +94,36 @@ def main():
     check("the matchweek's last day is inside the horizon",
           today + forward >= matchweek_end)
 
-    print("\n_get_weeks_data uses the constants rather than its own numbers")
+    print("\nthe horizon is configurable, and bounded")
+    # Advanced setting, so a user hitting this on another weekly league can
+    # widen it without a code change.
+    check("a configured value is used",
+          sports._clamp_window(30, sports._DEFAULT_LOOKAHEAD_DAYS) == 30)
+    check("an absent value falls back to the default",
+          sports._clamp_window(None, sports._DEFAULT_LOOKAHEAD_DAYS)
+          == sports._DEFAULT_LOOKAHEAD_DAYS)
+    check("nonsense falls back rather than raising",
+          sports._clamp_window("soon", sports._DEFAULT_LOOKAHEAD_DAYS)
+          == sports._DEFAULT_LOOKAHEAD_DAYS)
+    check("a huge value is clamped, not sent to the API",
+          sports._clamp_window(3650, 7) == sports._MAX_WINDOW_DAYS)
+    check("zero or negative is clamped up to the minimum",
+          sports._clamp_window(0, 7) == sports._MIN_WINDOW_DAYS
+          and sports._clamp_window(-5, 7) == sports._MIN_WINDOW_DAYS)
+
+    print("\n_get_weeks_data uses the setting rather than its own numbers")
     src = (plugin_dir / "sports.py").read_text(encoding="utf-8")
     fn = next((n for n in ast.walk(ast.parse(src)) if isinstance(n, ast.FunctionDef)
                and n.name == "_get_weeks_data"), None)
     check("_get_weeks_data exists", fn is not None)
     literal_deltas = [n for n in ast.walk(fn)
                       if isinstance(n, ast.Call)
-                      and getattr(n.func, "id", "") == "timedelta"]
+                      and getattr(n.func, "id", "") == "timedelta"
+                      and any(isinstance(kw.value, ast.Constant) for kw in n.keywords)]
     check("no hard-coded window remains in it", not literal_deltas)
-    names = {n.id for n in ast.walk(fn) if isinstance(n, ast.Name)}
-    check("it references both constants",
-          {"_SCHEDULE_WINDOW_BACK", "_SCHEDULE_WINDOW_FORWARD"} <= names)
+    attrs = {n.attr for n in ast.walk(fn) if isinstance(n, ast.Attribute)}
+    check("it reads both configured horizons",
+          {"schedule_lookback_days", "schedule_lookahead_days"} <= attrs)
 
     print("\n%s" % ("FAILED: %d" % len(failures) if failures
                     else "All checks passed"))

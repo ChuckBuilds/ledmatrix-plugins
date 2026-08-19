@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 LANCZOS = getattr(Image, "Resampling", Image).LANCZOS
 
 from data_sources import ESPNDataSource
-from sports import SportsCore, SportsLive, SportsRecent, SportsUpcoming
+from sports import SportsCore, SportsLive, SportsRecent, SportsUpcoming, _DEFAULT_LOOKBACK_DAYS
 
 
 class MMA(SportsCore):
@@ -444,11 +444,18 @@ class MMARecent(MMA, SportsRecent):
             events = data["events"]
             self.logger.info(f"Processing {len(events)} events from shared data.")
 
-            # Define date range for "recent" fights (last 21 days)
+            # How far back the Recent screen looks, from the configured window
+            # rather than a fixed 21 days -- see the note in sports.py.
             now = datetime.now(timezone.utc)
-            recent_cutoff = now - timedelta(days=21)
+            # getattr, because managers are also built without __init__ (the
+            # plugin tests do exactly that) and a missing attribute here would
+            # raise into the surrounding except and silently skip the filter.
+            lookback_days = getattr(
+                self, "schedule_lookback_days", _DEFAULT_LOOKBACK_DAYS)
+            recent_cutoff = now - timedelta(days=lookback_days)
             self.logger.info(
-                f"Current time: {now}, Recent cutoff: {recent_cutoff} (21 days ago)"
+                f"Current time: {now}, Recent cutoff: {recent_cutoff} "
+                f"({lookback_days} days ago)"
             )
 
             # Process games and filter for final fights within date range
