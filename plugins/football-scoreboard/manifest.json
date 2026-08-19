@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.17.0",
+  "version": "2.18.0",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.18.0",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Turn the favorite-teams field into a checkbox picker. It was a free-text array with only a description telling you to use 2-3 letter codes and nothing validating what you typed, so a wrong or stale code saved cleanly and then matched nothing -- an empty screen with no error anywhere. The roster is now an enum with display names, rendered as the same checkbox-group the odds ticker already uses, and scripts/check_team_pickers.py keeps it in step with ESPN. Existing configurations are unaffected: the codes were already ESPN's, so anything valid today stays valid. Applies to NFL; the college leagues keep the text field, since a checkbox grid of several hundred teams is worse than typing. Codes ESPN no longer uses cannot be offered by a picker, so if one is already saved the config will not save until it is replaced: JAC (Jaguars), LA (Rams), OAK (Raiders (pre-2020)), SD (Chargers (pre-2017)), STL (Rams (pre-2016)), TAM (Buccaneers), WAS (Commanders). The web UI reports which value it rejected."
+    },
     {
       "version": "2.17.0",
       "released": "2026-08-19",
@@ -164,7 +170,7 @@
       "released": "2026-07-10",
       "version": "2.8.0",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" \u2014 rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
+      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" — rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
     },
     {
       "released": "2026-07-08",

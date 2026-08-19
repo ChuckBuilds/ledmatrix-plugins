@@ -80,8 +80,14 @@ def find_pickers(schema):
         if isinstance(node, dict):
             if (node.get("x-widget") == "checkbox-group"
                     and trail and trail[-1] == "favorite_teams"):
-                # .../leagues/properties/<league>/properties/favorite_teams
-                league = trail[-3] if len(trail) >= 3 else None
+                # Usually .../<league>/properties/favorite_teams, but hockey
+                # and lacrosse group theirs one level deeper, under
+                # .../<league>/properties/teams/properties/favorite_teams.
+                # Taking a fixed offset reported that as league "teams", so
+                # walk back to the nearest segment that names a league.
+                league = next(
+                    (part for part in reversed(trail) if part in LEAGUE_PATHS),
+                    trail[-3] if len(trail) >= 3 else None)
                 yield league, node
             for key, value in node.items():
                 for hit in walk(value, trail + [key]):

@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -18,6 +18,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.16.0",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Turn the favorite-teams field into a checkbox picker. It was a free-text array with only a description telling you to use 2-3 letter codes and nothing validating what you typed, so a wrong or stale code saved cleanly and then matched nothing -- an empty screen with no error anywhere. The roster is now an enum with display names, rendered as the same checkbox-group the odds ticker already uses, and scripts/check_team_pickers.py keeps it in step with ESPN. Existing configurations are unaffected: the codes were already ESPN's, so anything valid today stays valid. Applies to NBA and WNBA; the college leagues keep the text field, since a checkbox grid of several hundred teams is worse than typing. Codes ESPN no longer uses cannot be offered by a picker, so if one is already saved the config will not save until it is replaced: GSW (Warriors), NOP (Pelicans), NYK (Knicks), PHO (Suns), SAS (Spurs), UTA (Jazz), WAS (Wizards). The web UI reports which value it rejected."
+    },
     {
       "version": "1.15.0",
       "released": "2026-08-19",
@@ -146,7 +152,7 @@
     {
       "released": "2026-07-02",
       "version": "1.6.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u2014 spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
       "ledmatrix_min": "2.0.0"
     },
     {
