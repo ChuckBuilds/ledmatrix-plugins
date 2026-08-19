@@ -73,7 +73,11 @@
           "description": "Always include favorite driver even if outside top N"
         }
       },
-      "x-propertyOrder": ["enabled", "top_n", "always_show_favorite"],
+      "x-propertyOrder": [
+        "enabled",
+        "top_n",
+        "always_show_favorite"
+      ],
       "additionalProperties": false
     },
     "constructor_standings": {
@@ -111,7 +115,12 @@
           "description": "Show each constructor's two drivers and their individual point contributions (e.g. NOR 189 | PIA 145)"
         }
       },
-      "x-propertyOrder": ["enabled", "top_n", "always_show_favorite", "show_driver_split"],
+      "x-propertyOrder": [
+        "enabled",
+        "top_n",
+        "always_show_favorite",
+        "show_driver_split"
+      ],
       "additionalProperties": false
     },
     "recent_races": {
@@ -204,7 +213,19 @@
           "description": "Number of drivers to show on the race gap bar chart (3-10)"
         }
       },
-      "x-propertyOrder": ["enabled", "number_of_races", "top_finishers", "always_show_favorite", "show_position_delta", "show_dnf_status", "show_points_haul", "points_haul_drivers", "show_winners_summary", "show_gap_chart", "gap_chart_drivers"],
+      "x-propertyOrder": [
+        "enabled",
+        "number_of_races",
+        "top_finishers",
+        "always_show_favorite",
+        "show_position_delta",
+        "show_dnf_status",
+        "show_points_haul",
+        "points_haul_drivers",
+        "show_winners_summary",
+        "show_gap_chart",
+        "gap_chart_drivers"
+      ],
       "additionalProperties": false
     },
     "upcoming": {
@@ -240,7 +261,12 @@
           "description": "Show a circuit facts card after the upcoming race card: laps, distance, and lap record"
         }
       },
-      "x-propertyOrder": ["enabled", "show_session_times", "countdown_enabled", "show_circuit_info"],
+      "x-propertyOrder": [
+        "enabled",
+        "show_session_times",
+        "countdown_enabled",
+        "show_circuit_info"
+      ],
       "additionalProperties": false
     },
     "qualifying": {
@@ -290,7 +316,14 @@
           "description": "Show a summary card at the start of qualifying with each team's intra-team battle (which driver outqualified their teammate and by how many positions)"
         }
       },
-      "x-propertyOrder": ["enabled", "show_q3", "show_q2", "show_q1", "show_gaps", "show_team_duel"],
+      "x-propertyOrder": [
+        "enabled",
+        "show_q3",
+        "show_q2",
+        "show_q1",
+        "show_gaps",
+        "show_team_duel"
+      ],
       "additionalProperties": false
     },
     "practice": {
@@ -310,9 +343,17 @@
           "x-widget": "checkbox-group",
           "items": {
             "type": "string",
-            "enum": ["FP1", "FP2", "FP3"]
+            "enum": [
+              "FP1",
+              "FP2",
+              "FP3"
+            ]
           },
-          "default": ["FP1", "FP2", "FP3"],
+          "default": [
+            "FP1",
+            "FP2",
+            "FP3"
+          ],
           "description": "Which free practice sessions to display"
         },
         "top_n": {
@@ -325,7 +366,11 @@
           "description": "Number of top drivers to show per practice session"
         }
       },
-      "x-propertyOrder": ["enabled", "sessions_to_show", "top_n"],
+      "x-propertyOrder": [
+        "enabled",
+        "sessions_to_show",
+        "top_n"
+      ],
       "additionalProperties": false
     },
     "sprint": {
@@ -349,7 +394,10 @@
           "description": "Number of top finishers to display"
         }
       },
-      "x-propertyOrder": ["enabled", "top_finishers"],
+      "x-propertyOrder": [
+        "enabled",
+        "top_finishers"
+      ],
       "additionalProperties": false
     },
     "calendar": {
@@ -394,7 +442,13 @@
           "description": "Maximum number of upcoming race weekends to show"
         }
       },
-      "x-propertyOrder": ["enabled", "show_practice", "show_qualifying", "show_sprint", "max_events"],
+      "x-propertyOrder": [
+        "enabled",
+        "show_practice",
+        "show_qualifying",
+        "show_sprint",
+        "max_events"
+      ],
       "additionalProperties": false
     },
     "vegas": {
@@ -408,13 +462,31 @@
           "x-widget": "checkbox-group",
           "items": {
             "type": "string",
-            "enum": ["leaders", "battles", "spotlight", "upcoming", "last_race", "driver_standings", "constructor_standings", "recent_races", "qualifying", "practice", "sprint", "calendar"]
+            "enum": [
+              "leaders",
+              "battles",
+              "spotlight",
+              "upcoming",
+              "last_race",
+              "driver_standings",
+              "constructor_standings",
+              "recent_races",
+              "qualifying",
+              "practice",
+              "sprint",
+              "calendar"
+            ]
           },
-          "default": ["upcoming", "last_race"],
+          "default": [
+            "upcoming",
+            "last_race"
+          ],
           "description": "Which sections join the marquee. The order you list them in does not matter — they are always shown in the fixed order leaders, battles, spotlight, upcoming, last_race, driver_standings, constructor_standings, recent_races, qualifying, practice, sprint, calendar. Default is the next race and the last race's results. Adding more makes F1 hold the marquee for longer — every section at once measured 114 cards, close to six minutes of unbroken F1 on a 512px panel. 'last_race' is the most recent race only; 'recent_races' is all of them. Leave empty to keep F1 out of the marquee entirely."
         }
       },
-      "x-propertyOrder": ["sections"],
+      "x-propertyOrder": [
+        "sections"
+      ],
       "additionalProperties": false
     },
     "dynamic_duration": {
@@ -439,7 +511,10 @@
           "description": "Maximum seconds before forcing rotation even if scroll is incomplete"
         }
       },
-      "x-propertyOrder": ["enabled", "max_duration_seconds"],
+      "x-propertyOrder": [
+        "enabled",
+        "max_duration_seconds"
+      ],
       "additionalProperties": false
     },
     "scroll": {
@@ -498,14 +573,25 @@
               "x-advanced": true,
               "type": "array",
               "title": "Color (RGB)",
-              "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
               "minItems": 3,
               "maxItems": 3,
-              "default": [180, 0, 255],
+              "default": [
+                180,
+                0,
+                255
+              ],
               "description": "RGB color of the fastest lap dot (default: purple [180, 0, 255])"
             }
           },
-          "x-propertyOrder": ["enabled", "color"],
+          "x-propertyOrder": [
+            "enabled",
+            "color"
+          ],
           "additionalProperties": false
         },
         "gap_bar": {
@@ -521,7 +607,9 @@
               "description": "Show the points gap bar in driver and constructor standings"
             }
           },
-          "x-propertyOrder": ["enabled"],
+          "x-propertyOrder": [
+            "enabled"
+          ],
           "additionalProperties": false
         },
         "standings_header": {
@@ -544,7 +632,10 @@
               "description": "Show current round number and season progress bar on the header card"
             }
           },
-          "x-propertyOrder": ["enabled", "show_round"],
+          "x-propertyOrder": [
+            "enabled",
+            "show_round"
+          ],
           "additionalProperties": false
         },
         "circuit_map": {
@@ -560,7 +651,9 @@
               "description": "Show circuit layout diagram on the upcoming race card"
             }
           },
-          "x-propertyOrder": ["enabled"],
+          "x-propertyOrder": [
+            "enabled"
+          ],
           "additionalProperties": false
         },
         "championship_leaders": {
@@ -576,7 +669,9 @@
               "description": "Show the championship leaders intro card in the scroll sequence"
             }
           },
-          "x-propertyOrder": ["enabled"],
+          "x-propertyOrder": [
+            "enabled"
+          ],
           "additionalProperties": false
         },
         "championship_battle": {
@@ -592,7 +687,9 @@
               "description": "Show the driver championship battle card in the scroll sequence"
             }
           },
-          "x-propertyOrder": ["enabled"],
+          "x-propertyOrder": [
+            "enabled"
+          ],
           "additionalProperties": false
         },
         "constructor_battle": {
@@ -608,7 +705,9 @@
               "description": "Show the constructor championship battle card in the scroll sequence"
             }
           },
-          "x-propertyOrder": ["enabled"],
+          "x-propertyOrder": [
+            "enabled"
+          ],
           "additionalProperties": false
         },
         "driver_form": {
@@ -624,7 +723,9 @@
               "description": "Show the driver form guide card at the start of the driver standings section"
             }
           },
-          "x-propertyOrder": ["enabled"],
+          "x-propertyOrder": [
+            "enabled"
+          ],
           "additionalProperties": false
         },
         "last_race_points": {
@@ -640,11 +741,23 @@
               "description": "Show last-race points (+N) in the stat zone of each driver and constructor standings card"
             }
           },
-          "x-propertyOrder": ["enabled"],
+          "x-propertyOrder": [
+            "enabled"
+          ],
           "additionalProperties": false
         }
       },
-      "x-propertyOrder": ["fastest_lap_dot", "gap_bar", "standings_header", "circuit_map", "championship_leaders", "championship_battle", "constructor_battle", "driver_form", "last_race_points"],
+      "x-propertyOrder": [
+        "fastest_lap_dot",
+        "gap_bar",
+        "standings_header",
+        "circuit_map",
+        "championship_leaders",
+        "championship_battle",
+        "constructor_battle",
+        "driver_form",
+        "last_race_points"
+      ],
       "additionalProperties": false
     },
     "customization": {
@@ -667,7 +780,18 @@
               "x-advanced": true,
               "type": "string",
               "title": "Font",
-              "enum": ["", "4x6.bdf", "5x8.bdf", "6x10.bdf", "7x13.bdf", "9x15.bdf", "10x20.bdf", "PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
+              "enum": [
+                "",
+                "4x6.bdf",
+                "5x8.bdf",
+                "6x10.bdf",
+                "7x13.bdf",
+                "9x15.bdf",
+                "10x20.bdf",
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf"
+              ],
               "default": ""
             },
             "font_size": {
@@ -679,7 +803,10 @@
               "default": 8
             }
           },
-          "x-propertyOrder": ["font", "font_size"],
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
           "additionalProperties": false
         },
         "position_text": {
@@ -691,7 +818,18 @@
               "x-advanced": true,
               "type": "string",
               "title": "Font",
-              "enum": ["", "4x6.bdf", "5x8.bdf", "6x10.bdf", "7x13.bdf", "9x15.bdf", "10x20.bdf", "PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
+              "enum": [
+                "",
+                "4x6.bdf",
+                "5x8.bdf",
+                "6x10.bdf",
+                "7x13.bdf",
+                "9x15.bdf",
+                "10x20.bdf",
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf"
+              ],
               "default": ""
             },
             "font_size": {
@@ -703,7 +841,10 @@
               "default": 8
             }
           },
-          "x-propertyOrder": ["font", "font_size"],
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
           "additionalProperties": false
         },
         "detail_text": {
@@ -715,7 +856,18 @@
               "x-advanced": true,
               "type": "string",
               "title": "Font",
-              "enum": ["", "4x6.bdf", "5x8.bdf", "6x10.bdf", "7x13.bdf", "9x15.bdf", "10x20.bdf", "PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
+              "enum": [
+                "",
+                "4x6.bdf",
+                "5x8.bdf",
+                "6x10.bdf",
+                "7x13.bdf",
+                "9x15.bdf",
+                "10x20.bdf",
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf"
+              ],
               "default": ""
             },
             "font_size": {
@@ -727,7 +879,10 @@
               "default": 6
             }
           },
-          "x-propertyOrder": ["font", "font_size"],
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
           "additionalProperties": false
         },
         "small_text": {
@@ -739,7 +894,18 @@
               "x-advanced": true,
               "type": "string",
               "title": "Font",
-              "enum": ["", "4x6.bdf", "5x8.bdf", "6x10.bdf", "7x13.bdf", "9x15.bdf", "10x20.bdf", "PressStart2P-Regular.ttf", "4x6-font.ttf", "5by7.regular.ttf"],
+              "enum": [
+                "",
+                "4x6.bdf",
+                "5x8.bdf",
+                "6x10.bdf",
+                "7x13.bdf",
+                "9x15.bdf",
+                "10x20.bdf",
+                "PressStart2P-Regular.ttf",
+                "4x6-font.ttf",
+                "5by7.regular.ttf"
+              ],
               "default": ""
             },
             "font_size": {
@@ -751,15 +917,46 @@
               "default": 6
             }
           },
-          "x-propertyOrder": ["font", "font_size"],
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
           "additionalProperties": false
         }
       },
-      "x-propertyOrder": ["header_text", "position_text", "detail_text", "small_text"],
+      "x-propertyOrder": [
+        "header_text",
+        "position_text",
+        "detail_text",
+        "small_text",
+        "auto_scale"
+      ],
       "additionalProperties": false
     }
   },
-  "x-propertyOrder": ["enabled", "display_duration", "update_interval", "favorite_team", "favorite_driver", "timezone", "driver_standings", "constructor_standings", "recent_races", "upcoming", "qualifying", "practice", "sprint", "calendar", "vegas", "dynamic_duration", "scroll", "visual", "customization"],
+  "x-propertyOrder": [
+    "enabled",
+    "display_duration",
+    "update_interval",
+    "favorite_team",
+    "favorite_driver",
+    "timezone",
+    "driver_standings",
+    "constructor_standings",
+    "recent_races",
+    "upcoming",
+    "qualifying",
+    "practice",
+    "sprint",
+    "calendar",
+    "vegas",
+    "dynamic_duration",
+    "scroll",
+    "visual",
+    "customization"
+  ],
   "additionalProperties": false,
-  "required": ["enabled"]
+  "required": [
+    "enabled"
+  ]
 }

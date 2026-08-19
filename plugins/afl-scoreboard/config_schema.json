@@ -566,7 +566,7 @@
     "mode_durations": {
       "type": "object",
       "title": "Mode-Level Durations",
-      "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+      "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
       "properties": {
         "recent_mode_duration": {
           "type": [
@@ -1330,6 +1330,9 @@
     "background_service",
     "customization",
     "schedule_lookback_days",
-    "schedule_lookahead_days"
+    "schedule_lookahead_days",
+    "scroll_card",
+    "no_data_interval_seconds",
+    "live_idle_max_interval_seconds"
   ]
 }

@@ -1,7 +1,7 @@
 {
   "id": "masters-tournament",
   "name": "Masters Tournament",
-  "version": "2.5.4",
+  "version": "2.5.5",
   "description": "Broadcast-quality Masters Tournament display with real ESPN player headshots, accurate Augusta National hole layouts, fun facts, past champions, live leaderboards, and pixel-perfect LED matrix rendering",
   "author": "ChuckBuilds",
   "class_name": "MastersTournamentPlugin",
@@ -43,6 +43,12 @@
     "height": 64
   },
   "versions": [
+    {
+      "version": "2.5.5",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Make the player-card, hole, page and scroll-card sizing settings reachable in the web UI. The config form renders only the properties named in x-propertyOrder, so a setting the schema declares but that list omits was never drawn -- no field, no error, no hint it existed, and the only way to set it was to hand-edit config.json on the device. The values already validated on save and the plugin already read them; only the form was missing them."
+    },
     {
       "version": "2.5.4",
       "released": "2026-08-05",
