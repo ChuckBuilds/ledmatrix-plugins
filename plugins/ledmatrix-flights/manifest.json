@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.12.12",
+  "version": "1.12.13",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -37,6 +37,12 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "version": "1.12.13",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop rejecting solid-colour map tiles as error pages. A tile covering open water, desert, or any square with no features is a valid tile that compresses to about 100 bytes, and _fetch_tile discarded any body under 2KB plus any image more than 80% one colour -- both describe an ocean tile exactly. Because a configured custom tile server yields a single URL with no fallback, one rejected water tile exhausted the URL list and tripped the 300s network cooldown, after which every uncached tile in the grid returned nothing and the map drew with no background at all rather than with a gap. Measured on a coastal install at zoom 11: 9 of 30 tiles came back as valid 103-byte PNGs of OSM's water blue, and the background never drew. Tiles are now validated by decoding them -- the content-type check already rejects HTML error pages -- so how well a tile compressed no longer decides whether it is real."
+    },
     {
       "version": "1.12.12",
       "released": "2026-08-19",
