@@ -199,8 +199,9 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._current_active_display_mode: Optional[str] = None  # Currently active external display mode
         
         # Throttle logging for has_live_content() when returning False
-        self._last_live_content_false_log: float = 0.0  # Timestamp of last False log
-        self._live_content_log_interval: float = 60.0  # Log False results every 60 seconds
+        self._last_live_content_log: float = 0.0  # Timestamp of last log
+        self._last_live_content_state = None  # Last logged outcome, for change detection
+        self._live_content_log_interval: float = 60.0  # Re-log an unchanged result this often
         
         # Track current game for transition detection
         # Format: {display_mode: {'game_id': str, 'league': str, 'last_log_time': float}}
@@ -2165,18 +2166,24 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         result = ncaa_mens_live or ncaa_womens_live
 
-        # Throttle logging when returning False to reduce log noise
-        # Always log True immediately (important), but only log False every 60 seconds
+        # has_live_content() is called once per frame on the display path, so
+        # anything logged unconditionally here lands at frame rate. The old
+        # throttle only covered the False answer -- "always log True
+        # immediately" meant a single live game flooded the journal for as
+        # long as it ran. Log when the answer changes, and otherwise once per
+        # interval so a steady state stays visible.
         current_time = time.time()
-        should_log = result or (current_time - self._last_live_content_false_log >= self._live_content_log_interval)
+        state = (ncaa_mens_live, ncaa_womens_live)
+        changed = state != self._last_live_content_state
+        due = current_time - self._last_live_content_log >= self._live_content_log_interval
 
-        if should_log:
+        if changed or due:
+            self._last_live_content_state = state
+            self._last_live_content_log = current_time
             self.logger.info(
                 f"has_live_content() returning {result}: "
                 f"ncaa_mens_live={ncaa_mens_live}, ncaa_womens_live={ncaa_womens_live}"
             )
-            if not result:
-                self._last_live_content_false_log = current_time
 
         return result
 
