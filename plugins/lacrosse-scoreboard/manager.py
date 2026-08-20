@@ -2758,9 +2758,9 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         Returns:
             Total expected duration in seconds, or None if not applicable
         """
-        self.logger.info(f"get_cycle_duration() called with display_mode={display_mode}, is_enabled={self.is_enabled}")
+        self.logger.debug(f"get_cycle_duration() called with display_mode={display_mode}, is_enabled={self.is_enabled}")
         if not self.is_enabled or not display_mode:
-            self.logger.info(f"get_cycle_duration() returning None: is_enabled={self.is_enabled}, display_mode={display_mode}")
+            self.logger.debug(f"get_cycle_duration() returning None: is_enabled={self.is_enabled}, display_mode={display_mode}")
             return None
         
         # Extract mode type and league (if granular mode)
@@ -2802,7 +2802,7 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         if league:
             effective_mode_duration = self._get_mode_duration(league, mode_type)
             if effective_mode_duration is not None:
-                self.logger.info(
+                self.logger.debug(
                     f"get_cycle_duration: using mode-level duration for {display_mode} = {effective_mode_duration}s"
                 )
                 return effective_mode_duration
@@ -2810,7 +2810,7 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Fall through to dynamic calculation based on game count (priority 2)
         
         try:
-            self.logger.info(f"get_cycle_duration: extracted mode_type={mode_type}, league={league} from display_mode={display_mode}")
+            self.logger.debug(f"get_cycle_duration: extracted mode_type={mode_type}, league={league} from display_mode={display_mode}")
 
             total_games = 0
             total_duration = 0.0  # Accumulate duration per-league to handle different per_game_durations
@@ -2832,7 +2832,7 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                             managers_to_check.append((lg, mgr))
             
             # CRITICAL: Update managers BEFORE checking game counts!
-            self.logger.info(f"get_cycle_duration: updating {len(managers_to_check)} manager(s) before counting games")
+            self.logger.debug(f"get_cycle_duration: updating {len(managers_to_check)} manager(s) before counting games")
             for league_name, manager in managers_to_check:
                 if manager:
                     self._ensure_manager_updated(manager)
@@ -2883,16 +2883,16 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                         f"{per_game_duration}s = {game_count * per_game_duration}s"
                     )
             
-            self.logger.info(f"get_cycle_duration: found {total_games} total games for {display_mode}")
+            self.logger.debug(f"get_cycle_duration: found {total_games} total games for {display_mode}")
             
             if total_games == 0:
                 # If no games found yet (managers still fetching data), return a default duration
                 # This allows the display to start while data is loading
                 default_duration = 45.0  # 3 games × 15s per game (reasonable default)
-                self.logger.info(f"get_cycle_duration: {display_mode} has no games yet, returning default {default_duration}s")
+                self.logger.debug(f"get_cycle_duration: {display_mode} has no games yet, returning default {default_duration}s")
                 return default_duration
 
-            self.logger.info(
+            self.logger.debug(
                 f"get_cycle_duration({display_mode}): {total_games} total games = {total_duration}s"
             )
 
