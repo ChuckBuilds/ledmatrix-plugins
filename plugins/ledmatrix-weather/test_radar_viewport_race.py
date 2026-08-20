@@ -149,6 +149,100 @@ def main():
     check("and its image is kept, not discarded",
           all(fr.image is not None for fr in f2._frames.values()))
 
+    print("\nthe update thread may null a frame image mid-render")
+    # Raised in review: refresh_data() can clear frame.image between the guard
+    # selecting the frame and reading its size, so re-reading the attribute
+    # would raise AttributeError instead of the ValueError the guard exists
+    # for. The image must be read once and held.
+    f3 = _fetcher()
+    vp3 = f3._ensure_viewport(204, 64)
+    bg3 = f3._get_background(vp3)
+
+    class _VanishingFrame(_Frame):
+        """Returns an image once, then reports None, as the other thread would."""
+
+        def __init__(self, image):
+            super().__init__(image)
+            self._reads = 0
+
+        @property
+        def image(self):
+            self._reads += 1
+            return self._image if self._reads <= 1 else None
+
+        @image.setter
+        def image(self, value):
+            self._image = value
+
+    f3._frames = {1: _VanishingFrame(Image.new("RGBA", bg3.size, (0, 0, 0, 0)))}
+    try:
+        img3 = f3.get_radar_image(204, 64)
+        raised3 = None
+    except Exception as exc:  # noqa: BLE001
+        img3, raised3 = None, exc
+    check("a frame image nulled mid-render does not raise (%s)"
+          % (type(raised3).__name__ if raised3 else "no exception"),
+          raised3 is None)
+    check("and a frame is still returned", img3 is not None)
+
+    print("\nthe frame map may be mutated while it is read")
+    # Also raised in review. Tested with real threads rather than a fake dict:
+    # the failure is CPython raising "dictionary changed size during iteration"
+    # when another thread inserts mid-iteration, and only a real dict under a
+    # real interleaving demonstrates that a snapshot is taken atomically.
+    import threading
+
+    f4 = _fetcher()
+    f4._ensure_viewport(204, 64)
+    bg4 = f4._get_background(f4._viewport)
+    f4._frames = {i: _Frame(Image.new("RGBA", bg4.size, (0, 0, 0, 0)), ts=i)
+                  for i in range(1, 9)}
+
+    errors = []
+    stop = threading.Event()
+
+    def churn():
+        n = 10_000
+        while not stop.is_set():
+            n += 1
+            f4._frames[n] = _Frame(None, ts=n)
+            f4._frames.pop(n - 1, None)
+
+    def render():
+        try:
+            for _ in range(400):
+                f4.get_radar_image(204, 64)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(exc)
+
+    churner = threading.Thread(target=churn, daemon=True)
+    renderer = threading.Thread(target=render)
+    churner.start(); renderer.start()
+    renderer.join(30)
+    stop.set(); churner.join(2)
+
+    check("400 renders against a concurrently mutated frame map raise nothing "
+          "(%s)" % (f"{type(errors[0]).__name__}: {errors[0]}" if errors else "none"),
+          not errors)
+
+    # The stress above is a smoke check and cannot prove absence: the
+    # interleaving needs the other thread to insert between two nexts, which
+    # the GIL makes rare enough that 400 renders routinely miss it. Reverting
+    # to lazy iteration still passes it. So pin the property structurally --
+    # this is what actually catches a regression.
+    import inspect
+
+    import weather_radar as wr
+    for name, fn in (("_playback_frames", wr.RadarFetcher._playback_frames),
+                     ("get_radar_image", wr.RadarFetcher.get_radar_image)):
+        src = inspect.getsource(fn)
+        if "_frames" not in src:
+            continue
+        lazy = [ln.strip() for ln in src.splitlines()
+                if "self._frames.values()" in ln and ".copy()" not in ln]
+        check(f"{name}() snapshots the frame map instead of iterating it live"
+              + (f" ({lazy[0]})" if lazy else ""), not lazy)
+
     print("\n%s" % ("FAILED: %d" % len(failures) if failures
                     else "All checks passed"))
     return 1 if failures else 0
