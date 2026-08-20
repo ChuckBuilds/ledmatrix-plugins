@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.12.13",
+  "version": "1.12.14",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -37,6 +37,12 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "version": "1.12.14",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop writing debug images on every map composite. Two PNGs were saved unconditionally -- no debug flag, no config check, under a comment reading \"Debug: Save composite image to see what's happening\". Measured on a live rig they are 5.36 MB and 0.04 MB, written five times in six hours: about 108 MB a day onto an SD card for files nothing reads. They also landed in the process working directory, which is the install root. They are now written only when debug logging is enabled, and into the plugin's own tile cache directory."
+    },
     {
       "version": "1.12.13",
       "released": "2026-08-19",
