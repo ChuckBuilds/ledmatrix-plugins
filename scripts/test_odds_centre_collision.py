@@ -24,12 +24,13 @@ longer and less useful of the two -- when it will not fit.
 Run: <core-venv>/bin/python scripts/test_odds_centre_collision.py
 """
 
+import importlib.util
 import inspect
-import json
 import logging
-import subprocess
 import sys
 from pathlib import Path
+
+from PIL import Image, ImageDraw
 
 REPO = Path(__file__).resolve().parent.parent
 failures = []
@@ -44,40 +45,11 @@ ODDS = {
     "away_team_odds": {"money_line": None, "spread_odds": None},
 }
 
-# A wide detail font, which is what exposes the collision. PressStart2P is what
-# the rig that hit this has configured.
+# A wide detail font is what exposes the collision; PressStart2P is what the
+# rig that hit this has configured.
 CFG = {"customization": {"detail_text": {"font": "PressStart2P-Regular.ttf",
                                          "font_size": 6},
                          "time": {}}}
-
-PROBE = r'''
-import json, logging, inspect, sys
-from PIL import Image, ImageDraw
-logging.basicConfig(level=logging.CRITICAL)
-from game_renderer import GameRenderer
-cfg = json.loads(sys.argv[1]); odds = json.loads(sys.argv[2])
-res = {}
-for w in (int(sys.argv[3]), int(sys.argv[4])):
-    r = GameRenderer(w, 64, cfg, {}, logging.getLogger("q")); r.display_width = w
-    img = Image.new("RGB", (w, 64)); dr = ImageDraw.Draw(img)
-    # Dispatch on parameter NAMES, not count: baseball's fourth parameter is
-    # `top_span`, not `height`, and passing the width into it draws nothing at
-    # all -- which reads as a defect when it is only a bad call.
-    params = inspect.signature(r._draw_dynamic_odds).parameters
-    kwargs = {}
-    if "width" in params:
-        kwargs["width"] = w
-    if "height" in params:
-        kwargs["height"] = 64
-    r._draw_dynamic_odds(dr, odds, **kwargs)
-    px = img.load()
-    tw = dr.textlength("12:00 PM", font=r.fonts.get("time", r.fonts["detail"]))
-    c0, c1 = int((w - tw) / 2), int((w + tw) / 2)
-    green = lambda xs: sum(1 for y in range(64) for x in xs
-                           if px[x, y][1] > 150 and px[x, y][0] < 100 and px[x, y][2] < 100)
-    res[w] = {"total": green(range(w)), "centre": green(range(c0, c1 + 1))}
-print(json.dumps(res))
-'''
 
 
 def check(label, ok):
@@ -86,23 +58,79 @@ def check(label, ok):
         failures.append(label)
 
 
-def probe(plugin_dir):
-    out = subprocess.run(
-        [sys.executable, "-c", PROBE, json.dumps(CFG), json.dumps(ODDS),
-         str(CARD_WIDTH), str(PANEL_WIDTH)],
-        cwd=plugin_dir, capture_output=True, text=True,
-        env={"PYTHONPATH": f"{_core()}:{plugin_dir}", "PATH": "/usr/bin:/bin"},
-    )
-    if out.returncode != 0:
-        return None, (out.stderr or "").strip().splitlines()[-1:] or ["no output"]
-    return json.loads(out.stdout.strip().splitlines()[-1]), None
-
-
 def _core():
-    for candidate in (Path("/home/rackpi/projects/LEDMatrix"), REPO.parent / "LEDMatrix"):
+    for candidate in (Path("/home/rackpi/projects/LEDMatrix"),
+                      REPO.parent / "LEDMatrix"):
         if (candidate / "src" / "common" / "__init__.py").exists():
             return str(candidate)
     return ""
+
+
+def load_renderer(plugin_dir):
+    """Import one plugin's game_renderer, isolated from the previous one's.
+
+    Every plugin ships its own game_renderer.py, so a module cached from the
+    last plugin would be handed to the next -- the same collision the core
+    solves with per-plugin namespace isolation. Same approach as
+    scripts/test_schedule_window_plumbing.py: drop anything previously imported
+    out of a plugin directory and keep only this plugin on the path.
+
+    In-process rather than a subprocess per plugin: it is faster, and it does
+    not hand a built command line to subprocess, which the static analysis
+    flags on sight.
+    """
+    plugins_root = str(REPO / "plugins")
+    for name, module in list(sys.modules.items()):
+        origin = getattr(module, "__file__", None) or ""
+        if origin.startswith(plugins_root):
+            del sys.modules[name]
+    sys.path[:] = [q for q in sys.path if not q.startswith(plugins_root)]
+    for path in (str(plugin_dir), _core()):
+        if path and path not in sys.path:
+            sys.path.insert(0, path)
+    spec = importlib.util.spec_from_file_location(
+        f"gr_{plugin_dir.name.replace('-', '_')}",
+        plugin_dir / "game_renderer.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.GameRenderer
+
+
+def probe(plugin_dir):
+    """Green-pixel counts for one plugin's odds, at card and panel width."""
+    renderer_cls = load_renderer(plugin_dir)
+    out = {}
+    for width in (CARD_WIDTH, PANEL_WIDTH):
+        renderer = renderer_cls(width, 64, CFG, {}, logging.getLogger("probe"))
+        renderer.display_width = width
+        img = Image.new("RGB", (width, 64))
+        draw = ImageDraw.Draw(img)
+
+        # Dispatch on parameter NAMES, not count: baseball's fourth parameter
+        # is `top_span`, not `height`, and passing the width into it draws
+        # nothing at all -- which reads as a defect when it is only a bad call.
+        params = inspect.signature(renderer._draw_dynamic_odds).parameters
+        kwargs = {}
+        if "width" in params:
+            kwargs["width"] = width
+        if "height" in params:
+            kwargs["height"] = 64
+        renderer._draw_dynamic_odds(draw, ODDS, **kwargs)
+
+        px = img.load()
+        time_font = renderer.fonts.get("time", renderer.fonts["detail"])
+        reserve = draw.textlength("12:00 PM", font=time_font)
+        c0, c1 = int((width - reserve) / 2), int((width + reserve) / 2)
+
+        def green(xs, pixels=px):
+            return sum(1 for y in range(64) for x in xs
+                       if pixels[x, y][1] > 150 and pixels[x, y][0] < 100
+                       and pixels[x, y][2] < 100)
+
+        out[width] = {"total": green(range(width)),
+                      "centre": green(range(c0, c1 + 1))}
+    return out
 
 
 def main():
@@ -123,17 +151,18 @@ def main():
             # baseball-scoreboard already solves this, and better: rather than
             # dropping a label it measures the card's own top-row text and
             # steps the odds down a row when they would collide, keeping both.
-            # Its answer puts the labels in the same columns but a row lower,
-            # so the column test below would fail a correct implementation.
+            # Its answer puts the labels in the same columns, so the
+            # column-based check below would fail a correct implementation.
             print(f"  SKIP  {plugin}: solves this by stepping down a row, not "
                   "by dropping a label")
             continue
-        res, err = probe(str(path.parent))
-        if res is None:
+        try:
+            res = probe(path.parent)
+        except Exception as exc:  # noqa: BLE001  # pylint: disable=broad-except
             check(f"{plugin}: renders odds", False)
-            print(f"        {err[0]}")
+            print(f"        {type(exc).__name__}: {exc}")
             continue
-        card, panel = res[str(CARD_WIDTH)], res[str(PANEL_WIDTH)]
+        card, panel = res[CARD_WIDTH], res[PANEL_WIDTH]
         check(f"{plugin}: nothing green in the centre of a {CARD_WIDTH}px card "
               f"({card['centre']}px there)", card["centre"] == 0)
         check(f"{plugin}: a {CARD_WIDTH}px card still shows the spread "
@@ -141,7 +170,8 @@ def main():
         check(f"{plugin}: a {PANEL_WIDTH}px panel still shows both labels "
               f"({panel['total']}px green)", panel["total"] > card["total"])
 
-    print("\n%s" % ("FAILED: %d" % len(failures) if failures else "All checks passed"))
+    print("\n%s" % ("FAILED: %d" % len(failures) if failures
+                    else "All checks passed"))
     return 1 if failures else 0
 
 
