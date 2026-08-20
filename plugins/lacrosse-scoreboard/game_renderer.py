@@ -981,7 +981,8 @@ class GameRenderer:
                 if home_spread is None or home_spread == 0.0:
                     home_spread = top_level_spread
                 if away_spread is None:
-                    away_spread = -top_level_spread
+                    away_spread = -top_level_spread if isinstance(
+                        top_level_spread, (int, float)) else None
 
             home_favored = isinstance(home_spread, (int, float)) and home_spread < 0
             away_favored = isinstance(away_spread, (int, float)) and away_spread < 0
