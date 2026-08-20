@@ -591,6 +591,29 @@ class FlightTrackerPlugin(BasePlugin):
 
     @property
     def display_width(self) -> int:
+        """Width to render at: the panel, or the slice Vegas asked for.
+
+        Vegas requests a narrower render so a layout built for the full panel
+        does not read as sparse in the ticker. It normally delivers that by
+        narrowing the shared canvas for the duration of the call, which this
+        property picks up for free through matrix.width -- but it cannot narrow
+        the canvas in offscreen mode, where it only sets the hint. Reading the
+        hint covers both paths.
+
+        Without this the map was composed at the full panel width and then
+        cropped by the adapter: on one rig, of twelve narrow requests only
+        three were honoured and nine rendered full width. The composite cache
+        below is already keyed by size and expects both widths, so honouring
+        the request adds an entry rather than thrashing.
+        """
+        hint = getattr(self, "get_vegas_render_width", None)
+        if callable(hint):
+            try:
+                requested = int(hint())
+                if requested > 0:
+                    return requested
+            except (TypeError, ValueError):
+                pass
         return self._display_manager_ref.matrix.width
 
     @property

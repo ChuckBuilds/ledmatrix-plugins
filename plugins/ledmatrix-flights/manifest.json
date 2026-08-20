@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.12.13",
+  "version": "1.12.14",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -37,6 +37,12 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "version": "1.12.14",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Compose the map at the width the ticker asked for. Vegas requests a narrower render so a layout built for the full panel does not read as sparse in the scroll, and normally delivers it by narrowing the shared canvas -- which this plugin picked up for free through matrix.width. It cannot narrow the canvas in offscreen mode, though, where it only sets the hint, so the same map came back at two different widths depending on which path the adapter took: on one rig only three of twelve narrow requests were honoured and the other nine rendered the full panel and were cropped afterwards. The width property now reads the hint, which covers both paths and falls back to the panel width outside a Vegas request. The composite cache is already keyed by size and expects both widths, so this adds an entry rather than invalidating one."
+    },
     {
       "version": "1.12.13",
       "released": "2026-08-19",
