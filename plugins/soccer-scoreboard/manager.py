@@ -421,7 +421,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_ranking": self.config.get("show_ranking", False),
                 "show_odds": self.config.get("show_odds", False),
                 "update_interval_seconds": league_config.get(
-                    "update_interval_seconds", 300
+                    "update_interval_seconds", 3600
                 ),
                 "live_update_interval": league_config.get("live_update_interval", 30),
                 "live_game_duration": league_config.get("live_game_duration", 20),
@@ -723,7 +723,13 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_records": self.config.get("show_records", False),
                 "show_ranking": self.config.get("show_ranking", False),
                 "show_odds": self.config.get("show_odds", False),
-                "update_interval_seconds": custom_league.get("update_interval_seconds", 300),
+                # 3600 to match the built-in leagues and the schema. This
+                # was 300, and custom_leagues declared no such key, so a
+                # custom league fetched twelve times as often as every
+                # built-in one with nothing in the UI to show it or change
+                # it. The key is declared now, so a user who wants a faster
+                # league can ask for one.
+                "update_interval_seconds": custom_league.get("update_interval_seconds", 3600),
                 "live_update_interval": custom_league.get("live_update_interval", 30),
                 "live_game_duration": custom_league.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": custom_league.get(
