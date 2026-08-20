@@ -30,7 +30,10 @@ dropping the stale frame images so the next tick rebuilds them consistently.
 Run: <core-venv>/bin/python plugins/ledmatrix-weather/test_radar_viewport_race.py
 """
 
+import ast
+import inspect
 import sys
+import threading
 from pathlib import Path
 
 from PIL import Image
@@ -69,8 +72,6 @@ def _fetcher():
     hand, so a new attribute there cannot leave this harness silently stale.
     """
     f = object.__new__(RadarFetcher)
-    import ast
-    import inspect
     tree = ast.parse(inspect.getsource(RadarFetcher.__init__).lstrip())
     for node in ast.walk(tree):
         if (isinstance(node, ast.Assign) and len(node.targets) == 1
@@ -190,8 +191,6 @@ def main():
     # the failure is CPython raising "dictionary changed size during iteration"
     # when another thread inserts mid-iteration, and only a real dict under a
     # real interleaving demonstrates that a snapshot is taken atomically.
-    import threading
-
     f4 = _fetcher()
     f4._ensure_viewport(204, 64)
     bg4 = f4._get_background(f4._viewport)
@@ -230,11 +229,8 @@ def main():
     # the GIL makes rare enough that 400 renders routinely miss it. Reverting
     # to lazy iteration still passes it. So pin the property structurally --
     # this is what actually catches a regression.
-    import inspect
-
-    import weather_radar as wr
-    for name, fn in (("_playback_frames", wr.RadarFetcher._playback_frames),
-                     ("get_radar_image", wr.RadarFetcher.get_radar_image)):
+    for name, fn in (("_playback_frames", weather_radar.RadarFetcher._playback_frames),
+                     ("get_radar_image", weather_radar.RadarFetcher.get_radar_image)):
         src = inspect.getsource(fn)
         if "_frames" not in src:
             continue
