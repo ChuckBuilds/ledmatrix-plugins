@@ -197,6 +197,33 @@ class GameRenderer:
         # Rankings cache (populated externally)
         self._team_rankings_cache: Dict[str, int] = {}
         
+    #: Panel height the classic font sizes were chosen against.
+    _FONT_BASELINE_HEIGHT: ClassVar[int] = 32
+
+    def _detail_font_size(self, base: int = 6) -> int:
+        """Odds/detail size, scaled to the panel height.
+
+        The odds are drawn in the detail font, pinned at 6px because that is
+        what suited a 32-tall panel. On a 64-tall one everything around them
+        doubled -- logos, card, score -- and the odds stayed 6px, which is why
+        they read as an afterthought squeezed into the corners rather than
+        part of the card.
+
+        Scaled by height and capped, so a 32-tall panel keeps exactly the 6px
+        it always had and only taller panels move. A user-configured size is
+        untouched; this only moves the default.
+
+        The cap is 1.75x rather than the 2x the height ratio would give. At 2x
+        (12px on a 64-tall panel) the over/under no longer fits beside the
+        centre text and the collision guard drops it altogether -- the odds
+        would get bigger by losing half of themselves. 1.75x (10px) was the
+        largest size measured to still render both over/under and spread.
+        """
+        if self.display_height <= self._FONT_BASELINE_HEIGHT:
+            return base
+        scaled = round(base * self.display_height / self._FONT_BASELINE_HEIGHT)
+        return int(min(round(base * 1.75), scaled))
+
     def _load_fonts(self) -> Dict[str, Union[ImageFont.FreeTypeFont, Any]]:
         """
         Load fonts used by the scoreboard from config or use defaults.
@@ -210,6 +237,8 @@ class GameRenderer:
         if self._style_resolver is not None:
             for font_key, (loader_font, loader_size) in self._LOADER_DEFAULTS.items():
                 element = self._FONT_ELEMENT_KEYS.get(font_key, font_key)
+                if font_key == 'detail':
+                    loader_size = self._detail_font_size(loader_size)
                 fonts[font_key] = self._style_resolver.style(
                     element, classic_font=loader_font,
                     classic_size=loader_size).font
@@ -232,7 +261,9 @@ class GameRenderer:
             fonts["time"] = self._load_custom_font(period_config, default_size=8)
             fonts["team"] = self._load_custom_font(team_config, default_size=8)
             fonts["status"] = self._load_custom_font(status_config, default_size=6)
-            fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6-font.ttf')
+            fonts["detail"] = self._load_custom_font(
+                detail_config, default_size=self._detail_font_size(),
+                default_font='4x6-font.ttf')
             fonts["rank"] = self._load_custom_font(rank_config, default_size=10)
             self.logger.debug("Successfully loaded fonts from config")
         except Exception as e:
@@ -339,7 +370,7 @@ class GameRenderer:
         for game in games:
             for team_key in ['home_abbr', 'away_abbr']:
                 abbr = game.get(team_key, '')
-                if abbr and abbr not in self._logo_cache:
+                if abbr and self._logo_cache_key(abbr) not in self._logo_cache:
                     logo_path = game.get(f'{team_key.replace("abbr", "logo_path")}')
                     if logo_path:
                         logo = self._load_and_resize_logo(
@@ -361,8 +392,14 @@ class GameRenderer:
         logo_url: Optional[str] = None
     ) -> Optional[Image.Image]:
         """Load and resize a team logo with caching."""
-        if team_abbrev in self._logo_cache:
-            return self._logo_cache[self._logo_cache_key(team_abbrev)]
+        # Look up under the same size-scoped key the entries are stored under.
+        # This checked the bare abbreviation while every write used
+        # "<abbr>@<slot>x<height>", so the lookup never matched and each card
+        # re-opened and re-resized both PNGs -- on the scroll path, once per
+        # game per rebuild.
+        cache_key = self._logo_cache_key(team_abbrev)
+        if cache_key in self._logo_cache:
+            return self._logo_cache[cache_key]
         
         try:
             # Try to load from path
@@ -1100,7 +1137,16 @@ class GameRenderer:
         if game_date:
             date_width = draw.textlength(game_date, font=self.fonts['detail'])
             date_x = (self.display_width - date_width) // 2
-            date_y = self.display_height - 7
+            # Sit the date on the bottom edge by its own measured height. This
+            # was a hardcoded `height - 7`, which fitted the 6px detail font
+            # and clipped anything taller -- the same font now scales with the
+            # panel, so the offset has to follow it.
+            try:
+                bbox = draw.textbbox((0, 0), game_date, font=self.fonts['detail'])
+                date_h = bbox[3] - bbox[1]
+            except (AttributeError, TypeError, ValueError):
+                date_h = 6
+            date_y = max(0, self.display_height - date_h - 2)
             self._draw_text_with_outline(draw, game_date, (date_x, date_y), self.fonts['detail'])
     
     # ------------------------------------------------------------------
