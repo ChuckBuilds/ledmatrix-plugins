@@ -47,3 +47,8 @@ plugins/*/assets/**/*_backup/
 # ledmatrix-music/emulator_config.json is committed on purpose and stays
 # tracked -- .gitignore does not apply to files already in the index.
 emulator_config.json
+
+# Debug output the flights map composer writes when debug logging is on.
+# It lands in the process CWD, which on an install is the core checkout.
+debug_composite.png
+debug_cropped.png
