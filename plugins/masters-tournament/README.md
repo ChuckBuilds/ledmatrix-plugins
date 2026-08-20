@@ -101,7 +101,6 @@ Enable/disable specific modes and configure their settings:
     },
     "course_tour": {
       "enabled": true,
-      "show_animations": true,
       "duration_per_hole": 15,
       "featured_holes": [12, 13, 16]
     }

@@ -173,6 +173,14 @@ class F1Renderer:
 
         up = self.config.get("upcoming", {})
         self.show_circuit_info = up.get("show_circuit_info", True)
+        # Declared in the config schema and documented in the README, so the
+        # web UI has always offered these; nothing read them, so turning them
+        # off did nothing.
+        self.show_session_times = up.get("show_session_times", True)
+        self.countdown_enabled = up.get("countdown_enabled", True)
+
+        qual = self.config.get("qualifying", {})
+        self.show_qualifying_gaps = qual.get("show_gaps", True)
 
         lrp = vis.get("last_race_points", {})
         self.show_last_race_pts = lrp.get("enabled", True)
@@ -1472,8 +1480,11 @@ class F1Renderer:
 
     def render_qualifying_entry(self, entry: Dict, session_label: str = "Q3") -> Image.Image:
         session_key = session_label.lower()
+        # An empty gap_key is how _render_driver_row is told to omit the
+        # gap column, so this needs no separate branch downstream.
+        gap_key = f"{session_key}_gap" if self.show_qualifying_gaps else ""
         return self._render_driver_row(entry, time_key=session_key,
-                                       gap_key=f"{session_key}_gap",
+                                       gap_key=gap_key,
                                        show_eliminated=True, session_label=session_label)
 
     def _render_session_header(self, title: str, subtitle: str,
@@ -1600,7 +1611,7 @@ class F1Renderer:
         next_type = race.get("next_session_type", "")
         next_date = next((s["date"] for s in race.get("sessions", [])
                           if s.get("type_abbr") == next_type and s.get("date")), "")
-        if next_type and next_date:
+        if self.show_session_times and next_type and next_date:
             abbrs = {"FP1": "FP1", "FP2": "FP2", "FP3": "FP3",
                      "Qual": "QUALI", "Race": "RACE", "SS": "S.Q", "SR": "SPR"}
             sess_label = abbrs.get(next_type, next_type)
@@ -1616,7 +1627,8 @@ class F1Renderer:
         # Reserve a bottom strip for the countdown, then spread the info rows to
         # fill the remaining height on tall panels (packed from top on 32-high).
         countdown = race.get("countdown_seconds")
-        has_countdown = countdown is not None and countdown >= 0
+        has_countdown = (self.countdown_enabled
+                         and countdown is not None and countdown >= 0)
         bottom_reserve = (self._th(draw, "A", self.fonts["detail"]) + 4) if has_countdown else 0
         avail_h = self.display_height - bottom_reserve
         row_heights = [self._th(draw, t, f) for t, f, _ in rows]
@@ -1628,7 +1640,10 @@ class F1Renderer:
                 self._draw_text_outlined(draw, (x, ry), text, font, fill=fill)
 
         # Countdown (bottom, green)
-        if countdown is not None and countdown >= 0:
+        # Same condition that reserved the strip above -- gating only the
+        # reserve left the countdown drawing into the rows that expanded to
+        # fill the space it had given up.
+        if has_countdown:
             cnt_y = self.display_height - self._th(draw, "A", self.fonts["detail"]) - 2
             if countdown < 3600:
                 sess_type = race.get("next_session_type", "Race")

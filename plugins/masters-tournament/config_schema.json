@@ -150,12 +150,6 @@
               "default": true,
               "description": "Show rotating hole maps with course imagery"
             },
-            "show_animations": {
-              "x-advanced": true,
-              "type": "boolean",
-              "default": true,
-              "description": "Enable transitions and animations"
-            },
             "duration_per_hole": {
               "x-advanced": true,
               "type": "number",

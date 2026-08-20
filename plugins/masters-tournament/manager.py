@@ -133,7 +133,13 @@ class MastersTournamentPlugin(BasePlugin):
 
         # Internal timers for modes that rotate content within a display cycle
         self._last_hole_advance = {}  # per-mode hole timers
-        self._hole_switch_interval = config.get("hole_display_duration", 15)
+        # display_modes.course_tour.duration_per_hole is the schema's per-mode
+        # control and was never read; hole_display_duration is the flat key
+        # that was. The per-mode value wins when set so the documented control
+        # works, and the flat key keeps its meaning for configs that use it.
+        _tour = (config.get("display_modes") or {}).get("course_tour") or {}
+        self._hole_switch_interval = _tour.get(
+            "duration_per_hole", config.get("hole_display_duration", 15))
         self._last_fact_advance = 0
         self._fact_advance_interval = 3  # seconds between scroll steps
         self._last_page_advance = {}  # per-mode page timers
@@ -142,7 +148,9 @@ class MastersTournamentPlugin(BasePlugin):
         # Player card rotation — dwell on each card for N seconds.
         self._player_card_index = 0
         self._last_player_card_advance = 0.0
-        self._player_card_interval = config.get("player_card_duration", 8)
+        _cards = (config.get("display_modes") or {}).get("player_cards") or {}
+        self._player_card_interval = _cards.get(
+            "duration_per_player", config.get("player_card_duration", 8))
 
         # Live alert detection — track score and hole state between updates
         self._previous_scores: Dict[str, int] = {}  # player_name -> score
@@ -786,9 +794,13 @@ class MastersTournamentPlugin(BasePlugin):
         super().on_config_change(new_config)
         self._update_interval = new_config.get("update_interval", 30)
         self.display_duration = new_config.get("display_duration", 20)
-        self._hole_switch_interval = new_config.get("hole_display_duration", 15)
+        _tour = (new_config.get("display_modes") or {}).get("course_tour") or {}
+        self._hole_switch_interval = _tour.get(
+            "duration_per_hole", new_config.get("hole_display_duration", 15))
         self._page_interval = new_config.get("page_display_duration", 15)
-        self._player_card_interval = new_config.get("player_card_duration", 8)
+        _cards = (new_config.get("display_modes") or {}).get("player_cards") or {}
+        self._player_card_interval = _cards.get(
+            "duration_per_player", new_config.get("player_card_duration", 8))
         self._scroll_card_width = new_config.get("scroll_card_width", 128)
         self._post_tournament_display_days = new_config.get("post_tournament_display_days", 1)
         self._last_hole_advance.clear()

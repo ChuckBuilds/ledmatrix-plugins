@@ -310,6 +310,17 @@ class MastersRenderer:
             flag_h = max(6, min(self.row_height, 7))
             self.flag_size = (int(flag_h * 1.4), flag_h)
 
+        # display_modes.player_cards.show_headshots is declared in the config
+        # schema and documented in the README, so the web UI has always
+        # offered it; nothing read it. Applied after the size tiers because
+        # it can only take a headshot away: the tiers decide whether one
+        # fits at all, and forcing one onto a panel with no room would
+        # overwrite the text it displaces.
+        if not ((self.config.get("display_modes") or {})
+                .get("player_cards", {}).get("show_headshots", True)):
+            self.show_headshot = False
+            self.headshot_size = 0
+
         # Compute max_players from actual available vertical space.
         available_h = self.height - self.header_height - self.footer_height - 2
         slot_h = self.row_height + self.row_gap
