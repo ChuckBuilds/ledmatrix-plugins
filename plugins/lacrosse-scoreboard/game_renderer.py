@@ -209,7 +209,7 @@ class GameRenderer:
             for team_key in ['home_abbr', 'away_abbr']:
                 abbr = game.get(team_key, '')
                 # Use league-aware cache key to avoid collisions across leagues
-                cache_key = f"{league}_{abbr}"
+                cache_key = self._logo_cache_key(f"{league}_{abbr}")
                 if abbr and cache_key not in self._logo_cache:
                     # Get logo path from game or resolve from logo_dir
                     logo_path_str = game.get(f'{team_key.replace("abbr", "logo_path")}')
@@ -236,13 +236,20 @@ class GameRenderer:
         league: str = 'ncaa_mens'
     ) -> Optional[Image.Image]:
         """Load and resize a team logo with caching."""
+        # Look up under the same size-scoped key the writes use. This tested
+        # the bare abbreviation while every store used "<abbr>@<slot>x<height>",
+        # so the lookup never matched and each card re-decoded and re-resized
+        # the source PNG. Some shipped logos are 4096x4096, which is most of a
+        # second per logo on a Pi.
         cache_key = f"{league}_{team_abbrev}"
-        if cache_key in self._logo_cache:
-            return self._logo_cache[self._logo_cache_key(cache_key)]
+        scoped = self._logo_cache_key(cache_key)
+        if scoped in self._logo_cache:
+            return self._logo_cache[scoped]
 
         # Also check without league prefix for backward compatibility
-        if team_abbrev in self._logo_cache:
-            return self._logo_cache[self._logo_cache_key(team_abbrev)]
+        legacy = self._logo_cache_key(team_abbrev)
+        if legacy in self._logo_cache:
+            return self._logo_cache[legacy]
 
         try:
             # Use provided path or get from league config
@@ -266,7 +273,7 @@ class GameRenderer:
                     logo = logo.crop(bbox)
                 logo.thumbnail((self._logo_slot_width(), self.display_height), RESAMPLE_FILTER)
 
-                self._logo_cache[self._logo_cache_key(cache_key)] = logo
+                self._logo_cache[scoped] = logo
                 return logo
             else:
                 self.logger.debug(f"Logo not found at {logo_path}")

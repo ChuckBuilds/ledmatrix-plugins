@@ -231,13 +231,13 @@ class GameRenderer:
                 abbr = game.get(team_key, '')
                 if abbr:
                     # Use league+abbrev as cache key to avoid cross-league collisions
-                    cache_key = f"{league}:{abbr}"
+                    cache_key = self._logo_cache_key(f"{league}:{abbr}")
                     if cache_key not in self._logo_cache:
                         logo_path = game.get(f'{team_key.replace("abbr", "logo_path")}', '')
                         if logo_path:
                             logo = self._load_and_resize_logo(abbr, logo_path, league)
                             if logo:
-                                self._logo_cache[self._logo_cache_key(cache_key)] = logo
+                                self._logo_cache[cache_key] = logo
         
         self.logger.debug(f"Preloaded {len(self._logo_cache)} team logos")
     
@@ -259,9 +259,12 @@ class GameRenderer:
             PIL Image of the logo, or None if loading failed
         """
         # Use league+abbrev as cache key to avoid cross-league collisions
-        cache_key = f"{league}:{team_abbrev}"
+        # Read with the key the writes use. This tested the unscoped
+        # "<league>:<abbr>" while every store used the slot-scoped form, so the
+        # guard never matched and each card re-decoded its source PNGs.
+        cache_key = self._logo_cache_key(f"{league}:{team_abbrev}")
         if cache_key in self._logo_cache:
-            return self._logo_cache[self._logo_cache_key(cache_key)]
+            return self._logo_cache[cache_key]
         
         try:
             # Try to load from path
@@ -281,7 +284,7 @@ class GameRenderer:
                     # Copy before context manager closes file handle
                     logo = img.copy()
 
-                self._logo_cache[self._logo_cache_key(cache_key)] = logo
+                self._logo_cache[cache_key] = logo
                 return logo
             else:
                 # Try to load from league-specific logo directory
@@ -300,7 +303,7 @@ class GameRenderer:
                         # Copy before context manager closes file handle
                         logo = img.copy()
 
-                    self._logo_cache[self._logo_cache_key(cache_key)] = logo
+                    self._logo_cache[cache_key] = logo
                     return logo
                 else:
                     self.logger.debug(f"Logo not found at {logo_path} or {logo_file}")

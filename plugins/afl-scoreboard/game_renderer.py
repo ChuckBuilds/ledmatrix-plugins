@@ -206,7 +206,7 @@ class GameRenderer:
         for game in games:
             for team_key in ['home_abbr', 'away_abbr']:
                 abbr = game.get(team_key, '')
-                if abbr and abbr not in self._logo_cache:
+                if abbr and self._logo_cache_key(abbr) not in self._logo_cache:
                     logo_path = game.get(f'{team_key.replace("abbr", "logo_path")}')
                     if logo_path:
                         logo = self._load_and_resize_logo(
@@ -228,8 +228,14 @@ class GameRenderer:
         logo_url: Optional[str] = None
     ) -> Optional[Image.Image]:
         """Load and resize a team logo with caching."""
-        if team_abbrev in self._logo_cache:
-            return self._logo_cache[self._logo_cache_key(team_abbrev)]
+        # Look up under the same size-scoped key the writes use. This tested
+        # the bare abbreviation while every store used "<abbr>@<slot>x<height>",
+        # so the lookup never matched and each card re-decoded and re-resized
+        # the source PNG. Some shipped logos are 4096x4096, which is most of a
+        # second per logo on a Pi.
+        cache_key = self._logo_cache_key(team_abbrev)
+        if cache_key in self._logo_cache:
+            return self._logo_cache[cache_key]
         
         try:
             # If the local copy is missing, try downloading it before giving
