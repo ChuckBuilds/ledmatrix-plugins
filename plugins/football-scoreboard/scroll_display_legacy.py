@@ -182,6 +182,23 @@ class LegacyScrollDisplay:
                 self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
                 self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
 
+    def _default_game_card_width(self) -> int:
+        """Card width that lets the logos reach full height.
+
+        The card was a flat 128px whatever the panel was. GameRenderer gives
+        each logo (width - centre gap) / 2, capped at the card height, so on a
+        64-tall panel that worked out at (128 - 36) / 2 = 46px -- logos stuck
+        at 71% of the height they had room for, while the same game on the
+        regular display rendered them at a full 64px. Scroll and Vegas cards
+        looked shrunken next to everything else on the marquee.
+
+        Sizing the card as "two full-height logos plus the gap" makes the
+        height the binding constraint again, which is what the renderer's cap
+        already assumes. A 32-tall panel computes 104 and keeps the 128 it
+        always had, so only the tall panels move.
+        """
+        return max(128, self.display_height * 2 + 40)
+
     def _get_scroll_settings(self, league: str = None) -> Dict[str, Any]:
         """Get scroll settings, optionally for a specific league."""
         # Default scroll settings
@@ -191,7 +208,7 @@ class LegacyScrollDisplay:
             "gap_between_games": 48,
             "show_league_separators": True,
             "dynamic_duration": True,
-            "game_card_width": 128,
+            "game_card_width": self._default_game_card_width(),
         }
 
         # Try to get league-specific settings first
@@ -318,7 +335,8 @@ class LegacyScrollDisplay:
         # Match the gap used between game cards so the leading league
         # icon sits in the same rhythm as the cards that follow it.
         sep_pad = max(4, gap_between_games // 2)
-        game_card_width = scroll_settings.get("game_card_width", 128)
+        game_card_width = scroll_settings.get(
+            "game_card_width", self._default_game_card_width())
 
         # Create game renderer using game_card_width so cards are a fixed size
         # regardless of the full chain width (display_width may span multiple panels)
