@@ -2429,17 +2429,29 @@ class FlightTrackerPlugin(BasePlugin):
         self.logger.debug(f"[Flight Tracker] Map displays {desired_miles_wide:.1f} miles wide x {desired_miles_high:.1f} miles high (no stretching)")
         self.logger.debug(f"[Flight Tracker] Native tile scale: {pixels_per_mile_at_zoom:.3f} pixels/mile, cropped {crop_width_needed}x{crop_height_needed} pixels, scaled to {self.display_width}x{self.display_height}")
         
-        # Debug: Save composite image to see what's happening
-        try:
-            debug_composite = Path("debug_composite.png")
-            composite.save(debug_composite)
-            self.logger.debug(f"[Flight Tracker] Saved composite to: {debug_composite}")
-            
-            debug_cropped = Path("debug_cropped.png")
-            cropped.save(debug_cropped)
-            self.logger.debug(f"[Flight Tracker] Saved cropped to: {debug_cropped}")
-        except Exception as e:
-            self.logger.debug(f"[Flight Tracker] Could not save debug images: {e}")
+        # Debug aid, off unless debug logging is on. This used to run
+        # unconditionally, writing both PNGs on every composite: measured on a
+        # live rig at 5.36 MB for the composite and 0.04 MB for the crop, five
+        # composites in six hours -- about 108 MB a day written to an SD card
+        # for files nothing reads. They also landed in the process's working
+        # directory, which is the install root, where a pre-commit hook has
+        # previously swept them into a commit.
+        if self.logger.isEnabledFor(logging.DEBUG):
+            debug_dir = getattr(self, "tile_cache_dir", None)
+            if debug_dir is None:
+                self.logger.debug(
+                    "[Flight Tracker] No cache directory; skipping debug images")
+            else:
+                try:
+                    composite_path = Path(debug_dir) / "debug_composite.png"
+                    composite.save(composite_path)
+                    cropped_path = Path(debug_dir) / "debug_cropped.png"
+                    cropped.save(cropped_path)
+                    self.logger.debug(
+                        "[Flight Tracker] Saved debug images to: %s", debug_dir)
+                except OSError as e:
+                    self.logger.debug(
+                        f"[Flight Tracker] Could not save debug images: {e}")
         
         return cropped
     

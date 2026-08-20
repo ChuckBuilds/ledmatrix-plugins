@@ -41,7 +41,7 @@
       "version": "1.12.14",
       "released": "2026-08-19",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Compose the map at the width the ticker asked for. Vegas requests a narrower render so a layout built for the full panel does not read as sparse in the scroll, and normally delivers it by narrowing the shared canvas -- which this plugin picked up for free through matrix.width. It cannot narrow the canvas in offscreen mode, though, where it only sets the hint, so the same map came back at two different widths depending on which path the adapter took: on one rig only three of twelve narrow requests were honoured and the other nine rendered the full panel and were cropped afterwards. The width property now reads the hint, which covers both paths and falls back to the panel width outside a Vegas request. The composite cache is already keyed by size and expects both widths, so this adds an entry rather than invalidating one."
+      "notes": "Stop writing debug images on every map composite. Two PNGs were saved unconditionally -- no debug flag, no config check, under a comment reading \"Debug: Save composite image to see what's happening\". Measured on a live rig they are 5.36 MB and 0.04 MB, written five times in six hours: about 108 MB a day onto an SD card for files nothing reads. They also landed in the process working directory, which is the install root. They are now written only when debug logging is enabled, and into the plugin's own tile cache directory."
     },
     {
       "version": "1.12.13",
