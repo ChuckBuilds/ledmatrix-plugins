@@ -258,8 +258,22 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         else:
             # Legacy flat format: use scroll_pixels_per_second (backward compatibility)
             self.scroll_pixels_per_second = self.odds_ticker_config.get('scroll_pixels_per_second')
-            self.scroll_speed = self.odds_ticker_config.get('scroll_speed', 2)
-            self.scroll_delay = self.odds_ticker_config.get('scroll_delay', 0.05)
+            # This branch is both "the user is on a legacy flat config" and
+            # "nothing is configured at all", and those want different
+            # defaults. The legacy pair (2px @ 0.05s, 20fps) is right for a
+            # config that predates display_options -- it keeps that rig
+            # scrolling exactly as it did. It is wrong for an unconfigured
+            # plugin, which inherited a 20fps ticker while the schema's own
+            # display_options defaults describe 1px @ 0.02s, 50fps. A rig
+            # whose odds-ticker config is just {"enabled": true} landed here.
+            legacy_keys_present = (
+                'scroll_speed' in self.odds_ticker_config
+                or 'scroll_delay' in self.odds_ticker_config
+                or self.scroll_pixels_per_second is not None)
+            self.scroll_speed = self.odds_ticker_config.get(
+                'scroll_speed', 2 if legacy_keys_present else 1.0)
+            self.scroll_delay = self.odds_ticker_config.get(
+                'scroll_delay', 0.05 if legacy_keys_present else 0.02)
             if self.scroll_pixels_per_second is not None:
                 self.logger.info(f"Using scroll_pixels_per_second={self.scroll_pixels_per_second} px/s (time-based mode, backward compatibility)")
             else:
