@@ -514,6 +514,31 @@ class RadarFetcher:
 
         idx = self._advance_frame(len(frames))
         frame = frames[idx]
+
+        # The background and the frame can come from different viewports.
+        # refresh_data() runs on the update thread and get_radar_image() on the
+        # display thread, both call _ensure_viewport(), and both are called
+        # with different sizes: the plugin renders the full panel while the
+        # Vegas adapter asks for a narrower slice (512x64 and 204x64 on the rig
+        # this was found on). If the viewport is swapped between one thread
+        # building a frame and the other compositing it, the two images differ
+        # in size and alpha_composite raises ValueError("images do not match").
+        # That propagates out of display(), so nothing new is drawn and the
+        # panel sits on whatever was last composited -- the radar appears
+        # frozen at an old timestamp, which is exactly how it was reported.
+        # Showing the background alone for one tick is a far better outcome
+        # than raising: the next tick has a consistent pair.
+        if frame.image.size != background.size:
+            logger.info(
+                "[Radar] Frame %dx%d does not match background %dx%d "
+                "(viewport changed mid-render); showing the map for this tick",
+                frame.image.size[0], frame.image.size[1],
+                background.size[0], background.size[1])
+            for stale in self._frames.values():
+                stale.image = None
+            img = background.resize((width, height), Image.Resampling.LANCZOS)
+            return self._add_overlay(img, None, [], width, height, viewport)
+
         composite = Image.alpha_composite(background.convert("RGBA"), frame.image)
         img = composite.convert("RGB").resize((width, height),
                                               Image.Resampling.LANCZOS)
