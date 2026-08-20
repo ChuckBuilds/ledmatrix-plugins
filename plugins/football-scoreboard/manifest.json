@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.18.1",
+  "version": "2.18.2",
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
   "description": "Standalone plugin for live, recent, and upcoming football games across NFL and NCAA Football with real-time scores, down/distance, possession, and game status. Now with organized nested config!",
@@ -24,6 +24,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.18.2",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the green odds labels overprinting the time in the middle of the card. Both labels are anchored to the edges of the top row and the card centres its time text on that same row; on a full-width panel there is room for all three, but on a Vegas game card -- pinned to 128px whatever the panel width -- \"O/U: 60.5\" ran from x=0 to x=54 while the time occupied 36..92, an 18px overprint that left both unreadable. Reproduced by rendering the same upcoming game at 128px and at 512px with a live rig's own config. Each side is now budgeted against the widest time string the centre can hold, measured in the font the renderer will actually use, and the O/U -- the longer label and the less useful number -- gives way when it will not fit. Full-width output is unchanged. The odds values themselves were never wrong: the spread and the favoured side were checked against ten live games and were correct every time."
+    },
     {
       "version": "2.18.1",
       "released": "2026-08-19",

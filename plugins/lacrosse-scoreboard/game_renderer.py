@@ -989,19 +989,32 @@ class GameRenderer:
                 favored_side = "away"
 
             font = self.fonts["detail"]
+            # Edge-anchored labels share this row with the centred time text,
+            # so on a narrow Vegas card (pinned to 128px) they overprint.
+            # Budget each side against the widest time string the centre holds.
+            time_font = self.fonts.get("time", font)
+            centre_reserve = draw.textlength("12:00 PM", font=time_font)
+            side_budget = max(0.0, (width - centre_reserve) / 2)
 
             if favored_spread is not None:
                 spread_text = str(favored_spread)
-                if favored_side == "home":
-                    spread_x = width - int(draw.textlength(spread_text, font=font))
-                else:
-                    spread_x = 0
-                self._draw_text_with_outline(draw, spread_text, (spread_x, 0), font, fill=(0, 255, 0))
+                spread_width = int(draw.textlength(spread_text, font=font))
+                if spread_width <= side_budget:
+                    if favored_side == "home":
+                        # -1 keeps the outline stroke inside the canvas.
+                        spread_x = width - spread_width - 1
+                    else:
+                        spread_x = 0
+                    self._draw_text_with_outline(draw, spread_text, (spread_x, 0), font, fill=(0, 255, 0))
 
             over_under = odds.get("over_under")
             if over_under is not None and isinstance(over_under, (int, float)):
                 ou_text = f"O/U: {over_under}"
                 ou_width = int(draw.textlength(ou_text, font=font))
+
+                # The longer label gives way on a narrow card.
+                if ou_width > side_budget:
+                    return
                 if favored_side == "home":
                     ou_x = 0
                 elif favored_side == "away":

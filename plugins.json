@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-08-20",
+  "last_updated": "2026-08-19",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -101,7 +101,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.16.2"
+      "latest_version": "1.16.3"
     },
     {
       "id": "calendar",
@@ -240,7 +240,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.18.1"
+      "latest_version": "2.18.2"
     },
     {
       "id": "geochron",
@@ -359,7 +359,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.12.1",
+      "latest_version": "1.12.2",
       "icon": "fas fa-baseball-ball"
     },
     {
@@ -760,7 +760,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.12.2"
+      "latest_version": "2.12.3"
     },
     {
       "id": "static-image",
@@ -1048,7 +1048,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.9.2",
+      "latest_version": "1.9.3",
       "last_updated": "2026-08-13"
     },
     {
@@ -1095,7 +1095,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.9.2"
+      "latest_version": "1.9.3"
     },
     {
       "id": "jellyfin-now-playing",

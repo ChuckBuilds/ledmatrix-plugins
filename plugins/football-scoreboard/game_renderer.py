@@ -1493,26 +1493,48 @@ class GameRenderer:
             odds_x_offset = self._layout_offset('odds', 'x_offset')
             odds_y_offset = self._layout_offset('odds', 'y_offset')
 
+            # Both labels are anchored to the edges of this row, and the card
+            # centres the kickoff time on the same row. On a full-width panel
+            # there is room for all three; on a Vegas game card, which this
+            # plugin pins to 128px whatever the panel width, "O/U: 60.5" runs
+            # from x=0 to x=54 while the time occupies 36..92 -- an 18px
+            # overprint that renders both unreadable. Budget each side against
+            # the widest time string the centre can hold, measured in the same
+            # font the renderer will use, so this tracks font changes instead
+            # of hard-coding a width.
+            font = self.fonts["detail"]
+            time_font = self.fonts.get("time", font)
+            centre_reserve = draw.textlength("12:00 PM", font=time_font)
+            side_budget = max(0.0, (self.display_width - centre_reserve) / 2)
+
             if favored_spread is not None:
                 spread_text = str(favored_spread)
-                font = self.fonts["detail"]
+                spread_width = draw.textlength(spread_text, font=font)
 
-                if favored_side == "home":
-                    spread_width = draw.textlength(spread_text, font=font)
-                    spread_x = self.display_width - spread_width + odds_x_offset
-                else:
-                    spread_x = 0 + odds_x_offset
-                spread_y = 0 + odds_y_offset
+                if spread_width <= side_budget:
+                    if favored_side == "home":
+                        # -1 so the outline stroke stays inside the canvas
+                        # rather than being clipped by the right edge.
+                        spread_x = (self.display_width - spread_width - 1
+                                    + odds_x_offset)
+                    else:
+                        spread_x = 0 + odds_x_offset
+                    spread_y = 0 + odds_y_offset
 
-                self._draw_text_with_outline(draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0))
+                    self._draw_text_with_outline(draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0))
             
             # Show over/under on opposite side
             over_under = odds.get("over_under")
             if over_under is not None and isinstance(over_under, (int, float)):
                 ou_text = f"O/U: {over_under}"
-                font = self.fonts["detail"]
                 ou_width = draw.textlength(ou_text, font=font)
-                
+
+                # The longer of the two labels; on a narrow card it is the one
+                # that collides, so it is the one that gives way. The spread is
+                # the more useful number, and it is kept.
+                if ou_width > side_budget:
+                    return
+
                 if favored_side == "home":
                     ou_x = 0 + odds_x_offset
                 elif favored_side == "away":

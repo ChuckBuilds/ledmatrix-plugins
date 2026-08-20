@@ -958,26 +958,41 @@ class GameRenderer:
             odds_x_offset = self._get_layout_offset('odds', 'x_offset')
             odds_y_offset = self._get_layout_offset('odds', 'y_offset')
 
+            # Both labels are anchored to the edges of this row and the card
+            # centres its time text on the same row, so on a narrow Vegas game
+            # card (pinned to 128px whatever the panel width) they overprint.
+            # Budget each side against the widest time string the centre can
+            # hold, in the font the renderer will use.
+            font = self.fonts["detail"]
+            time_font = self.fonts.get("time", font)
+            centre_reserve = draw.textlength("12:00 PM", font=time_font)
+            side_budget = max(0.0, (self.display_width - centre_reserve) / 2)
+
             # Show the negative spread
             if favored_spread is not None:
                 spread_text = str(favored_spread)
-                font = self.fonts["detail"]
+                spread_width = draw.textlength(spread_text, font=font)
 
-                if favored_side == "home":
-                    spread_width = draw.textlength(spread_text, font=font)
-                    spread_x = self.display_width - spread_width + odds_x_offset
-                    spread_y = 0 + odds_y_offset
-                else:
-                    spread_x = 0 + odds_x_offset
+                if spread_width <= side_budget:
+                    if favored_side == "home":
+                        # -1 keeps the outline stroke inside the canvas.
+                        spread_x = (self.display_width - spread_width - 1
+                                    + odds_x_offset)
+                    else:
+                        spread_x = 0 + odds_x_offset
                     spread_y = 0 + odds_y_offset
 
-                self._draw_text_with_outline(draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0))
+                    self._draw_text_with_outline(draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0))
 
             # Show over/under on opposite side
             over_under = odds.get("over_under")
             if over_under is not None and isinstance(over_under, (int, float)):
                 ou_text = f"O/U: {over_under}"
-                font = self.fonts["detail"]
+
+                # The longer label gives way on a narrow card; the spread is
+                # the more useful number and is kept.
+                if draw.textlength(ou_text, font=font) > side_budget:
+                    return
                 ou_width = draw.textlength(ou_text, font=font)
 
                 if favored_side == "home":

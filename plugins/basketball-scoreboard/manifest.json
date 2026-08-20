@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.16.2",
+  "version": "1.16.3",
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -18,6 +18,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.16.3",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the green odds labels overprinting the time in the middle of the card. Both labels are anchored to the edges of the top row and the card centres its time text on that same row; on a full-width panel there is room for all three, but on a Vegas game card -- pinned to 128px whatever the panel width -- \"O/U: 60.5\" ran from x=0 to x=54 while the time occupied 36..92, an 18px overprint that left both unreadable. Reproduced by rendering the same upcoming game at 128px and at 512px with a live rig's own config. Each side is now budgeted against the widest time string the centre can hold, measured in the font the renderer will actually use, and the O/U -- the longer label and the less useful number -- gives way when it will not fit. Full-width output is unchanged. The odds values themselves were never wrong: the spread and the favoured side were checked against ten live games and were correct every time."
+    },
     {
       "version": "1.16.2",
       "released": "2026-08-19",
