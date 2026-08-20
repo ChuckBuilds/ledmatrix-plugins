@@ -1703,7 +1703,11 @@ class FlightTrackerPlugin(BasePlugin):
             return
         
         total_aircraft = len(data['aircraft'])
-        self.logger.info(f"[Flight Tracker] Processing {total_aircraft} aircraft from SkyAware")
+        # Trace, not news: the Summary line below reports the same total, and
+        # this pair ran every few seconds. Lazy %-args so a disabled level
+        # costs nothing.
+        self.logger.debug("[Flight Tracker] Processing %d aircraft from SkyAware",
+                          total_aircraft)
         
         current_time = time.time()
         active_icao = set()
@@ -1820,7 +1824,30 @@ class FlightTrackerPlugin(BasePlugin):
         for icao in stale_all:
             del self.all_aircraft_data[icao]
         
-        self.logger.info(f"[Flight Tracker] Summary - Total: {total_aircraft}, With position: {aircraft_with_position}, In range ({self.map_radius_miles}mi): {aircraft_in_range}, Tracking: {len(self.aircraft_data)}, Removed stale: {len(stale_icao)}")
+        # This ran on every poll -- roughly every five seconds, so ~690 lines
+        # per half hour, most of the device's log volume and a steady trickle
+        # of SD writes for a line that usually repeats itself.
+        #
+        # Keyed on what the plugin actually shows: aircraft in range and
+        # tracked. Total and With-position jitter every poll as distant
+        # traffic drifts in and out of the receiver, so keying on them
+        # collapsed almost nothing (343 lines -> 210 on measured data);
+        # keying on these two gives 343 -> 67. The jittery counts still ride
+        # along in the message, where they cost nothing.
+        summary = (aircraft_in_range, len(self.aircraft_data))
+        last_logged = getattr(self, '_last_summary_log', 0.0)
+        message = ("[Flight Tracker] Summary - Total: %d, With position: %d, "
+                   "In range (%smi): %d, Tracking: %d, Removed stale: %d")
+        args = (total_aircraft, aircraft_with_position, self.map_radius_miles,
+                aircraft_in_range, len(self.aircraft_data), len(stale_icao))
+        # The heartbeat keeps a quiet sky from looking like a stalled tracker.
+        if summary != getattr(self, '_last_summary', None) or \
+                current_time - last_logged >= 300:
+            self.logger.info(message, *args)
+            self._last_summary_log = current_time
+        else:
+            self.logger.debug(message, *args)
+        self._last_summary = summary
         self._update_flight_records()
     
     def _altitude_to_color(self, altitude: float) -> Tuple[int, int, int]:
