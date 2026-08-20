@@ -545,7 +545,8 @@ class RadarFetcher:
             logger.info(
                 "[Radar] Frame %s does not match background %dx%d "
                 "(viewport changed mid-render); showing the map for this tick",
-                "%dx%d" % frame_image.size if frame_image is not None else "gone",
+                (f"{frame_image.size[0]}x{frame_image.size[1]}"
+                 if frame_image is not None else "gone"),
                 background.size[0], background.size[1])
             for stale in self._frames.copy().values():
                 stale.image = None

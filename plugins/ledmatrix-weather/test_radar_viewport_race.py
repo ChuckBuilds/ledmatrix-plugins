@@ -43,8 +43,8 @@ for candidate in (Path("/home/rackpi/projects/LEDMatrix"),
         sys.path.insert(0, str(candidate))
         break
 
-import weather_radar  # noqa: E402
-from weather_radar import RadarFetcher  # noqa: E402
+import weather_radar  # noqa: E402  # pylint: disable=wrong-import-position
+from weather_radar import RadarFetcher  # noqa: E402  # pylint: disable=wrong-import-position
 
 failures = []
 
