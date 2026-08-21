@@ -50,7 +50,17 @@ def test_classic_live_records_sit_above_timeout_strip():
 
     def capture(draw_obj, text, pos, font, fill=(255, 255, 255)):
         if text in ("1-0", "0-1"):
-            ys.append(pos[1])
+            # Measure the glyphs rather than assuming a height. The renderer
+            # loads real fonts when the core is importable and falls back to
+            # PIL's default otherwise, and the two differ by a couple of
+            # pixels -- so a hardcoded height passes locally and fails in CI,
+            # where the core is on PYTHONPATH.
+            try:
+                top, bottom = font.getbbox(text)[1], font.getbbox(text)[3]
+                height = bottom - top
+            except AttributeError:            # very old PIL
+                height = font.getsize(text)[1]
+            ys.append(pos[1] + height + 1)    # +1 for the outline
         return original(draw_obj, text, pos, font, fill=fill)
 
     r._draw_text_with_outline = capture
@@ -61,9 +71,8 @@ def test_classic_live_records_sit_above_timeout_strip():
 
     assert ys, "expected record text to be drawn"
     timeout_y = 32 - 2 - 1  # matches _draw_timeouts
-    # 4x6-ish fonts are ~6-8px tall; outline can add 1px.
-    assert all(y + 9 <= timeout_y for y in ys), (
-        f"record bottoms must clear timeout_y={timeout_y}, got ys={ys}"
+    assert all(bottom <= timeout_y for bottom in ys), (
+        f"record bottoms must clear timeout_y={timeout_y}, got bottoms={ys}"
     )
 
 
