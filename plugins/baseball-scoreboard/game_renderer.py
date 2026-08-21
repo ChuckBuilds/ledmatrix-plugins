@@ -1157,7 +1157,8 @@ class GameRenderer:
                 if home_spread is None:
                     home_spread = top_level_spread
                 if away_spread is None:
-                    away_spread = -top_level_spread
+                    away_spread = -top_level_spread if isinstance(
+                        top_level_spread, (int, float)) else None
 
             # Determine favored team
             home_favored = isinstance(home_spread, (int, float)) and home_spread < 0
@@ -1208,7 +1209,13 @@ class GameRenderer:
                 elif favored_side == 'away':
                     ou_x = self.display_width - ou_width + odds_x_offset
                 else:
-                    ou_x = (self.display_width - ou_width) // 2 + odds_x_offset
+                    # No favourite: anchor to the same left edge the
+                    # home-favoured case uses. Centring put it on top of the
+                    # status text, which the card also centres on this row --
+                    # "Final" and "O/U: 47.5" rendered through each other. It
+                    # is also the assumption the side budget above is measured
+                    # against, which only holds for an edge-anchored label.
+                    ou_x = 0 + odds_x_offset
                 placements.append((ou_text, ou_x, ou_width))
 
             if not placements:

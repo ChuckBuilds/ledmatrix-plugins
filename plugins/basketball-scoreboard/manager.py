@@ -229,8 +229,9 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._sticky_manager_start_time: Dict[str, float] = {}  # {display_mode: timestamp}
         
         # Throttle logging for has_live_content() when returning False
-        self._last_live_content_false_log: float = 0.0  # Timestamp of last False log
-        self._live_content_log_interval: float = 60.0  # Log False results every 60 seconds
+        self._last_live_content_log: float = 0.0  # Timestamp of last log
+        self._last_live_content_state = None  # Last logged outcome, for change detection
+        self._live_content_log_interval: float = 60.0  # Re-log an unchanged result this often
         
         # Track current game for transition detection
         # Format: {display_mode: {'game_id': str, 'league': str, 'last_log_time': float}}
@@ -1593,20 +1594,26 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         result = nba_live or wnba_live or ncaam_live or ncaaw_live
         
-        # Throttle logging when returning False to reduce log noise
-        # Always log True immediately (important), but only log False every 60 seconds
+        # has_live_content() is called once per frame on the display path, so
+        # anything logged unconditionally here lands at frame rate. The old
+        # throttle only covered the False answer -- "always log True
+        # immediately" meant a single live game flooded the journal for as
+        # long as it ran. Log when the answer changes, and otherwise once per
+        # interval so a steady state stays visible.
         current_time = time.time()
-        should_log = result or (current_time - self._last_live_content_false_log >= self._live_content_log_interval)
-        
-        if should_log:
-            if result:
-                # Always log True results immediately
-                self.logger.info(f"has_live_content() returning {result}: nba_live={nba_live}, wnba_live={wnba_live}, ncaam_live={ncaam_live}, ncaaw_live={ncaaw_live}")
-            else:
-                # Log False results only every 60 seconds
-                self.logger.info(f"has_live_content() returning {result}: nba_live={nba_live}, wnba_live={wnba_live}, ncaam_live={ncaam_live}, ncaaw_live={ncaaw_live}")
-                self._last_live_content_false_log = current_time
-        
+        state = (nba_live, wnba_live, ncaam_live, ncaaw_live)
+        changed = state != self._last_live_content_state
+        due = current_time - self._last_live_content_log >= self._live_content_log_interval
+
+        if changed or due:
+            self._last_live_content_state = state
+            self._last_live_content_log = current_time
+            self.logger.info(
+                f"has_live_content() returning {result}: "
+                f"nba_live={nba_live}, wnba_live={wnba_live}, "
+                f"ncaam_live={ncaam_live}, ncaaw_live={ncaaw_live}"
+            )
+
         return result
 
     def get_live_modes(self) -> list:
@@ -2270,9 +2277,9 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         Returns:
             Total expected duration in seconds, or None if not applicable
         """
-        self.logger.info(f"get_cycle_duration() called with display_mode={display_mode}, is_enabled={self.is_enabled}")
+        self.logger.debug(f"get_cycle_duration() called with display_mode={display_mode}, is_enabled={self.is_enabled}")
         if not self.is_enabled or not display_mode:
-            self.logger.info(f"get_cycle_duration() returning None: is_enabled={self.is_enabled}, display_mode={display_mode}")
+            self.logger.debug(f"get_cycle_duration() returning None: is_enabled={self.is_enabled}, display_mode={display_mode}")
             return None
         
         # Extract mode type and league (if granular mode)
@@ -2321,7 +2328,7 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         if league:
             effective_mode_duration = self._get_mode_duration(league, mode_type)
             if effective_mode_duration is not None:
-                self.logger.info(
+                self.logger.debug(
                     f"get_cycle_duration: using mode-level duration for {display_mode} = {effective_mode_duration}s"
                 )
                 return effective_mode_duration
@@ -2329,7 +2336,7 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Fall through to dynamic calculation based on game count (priority 2)
         
         try:
-            self.logger.info(f"get_cycle_duration: extracted mode_type={mode_type}, league={league} from display_mode={display_mode}")
+            self.logger.debug(f"get_cycle_duration: extracted mode_type={mode_type}, league={league} from display_mode={display_mode}")
             
             total_games = 0
             per_game_duration = self.game_display_duration  # Default fallback (will be overridden per league)
@@ -2397,7 +2404,7 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
                             managers_to_check.append(('ncaaw', ncaaw_manager))
             
             # CRITICAL: Update managers BEFORE checking game counts!
-            self.logger.info(f"get_cycle_duration: updating {len(managers_to_check)} manager(s) before counting games")
+            self.logger.debug(f"get_cycle_duration: updating {len(managers_to_check)} manager(s) before counting games")
             for league_name, manager in managers_to_check:
                 if manager:
                     self._ensure_manager_updated(manager)
@@ -2446,18 +2453,18 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
                         f"per_game_duration={per_game_duration}s"
                     )
             
-            self.logger.info(f"get_cycle_duration: found {total_games} total games for {display_mode}")
+            self.logger.debug(f"get_cycle_duration: found {total_games} total games for {display_mode}")
             
             if total_games == 0:
                 # If no games found yet (managers still fetching data), return a default duration
                 # This allows the display to start while data is loading
                 default_duration = 45.0  # 3 games × 15s per game (reasonable default)
-                self.logger.info(f"get_cycle_duration: {display_mode} has no games yet, returning default {default_duration}s")
+                self.logger.debug(f"get_cycle_duration: {display_mode} has no games yet, returning default {default_duration}s")
                 return default_duration
             
             # Calculate total duration: num_games × per_game_duration
             total_duration = total_games * per_game_duration
-            self.logger.info(
+            self.logger.debug(
                 f"get_cycle_duration({display_mode}): {total_games} games × {per_game_duration}s = {total_duration}s"
             )
             

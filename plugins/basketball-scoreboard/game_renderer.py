@@ -231,13 +231,13 @@ class GameRenderer:
                 abbr = game.get(team_key, '')
                 if abbr:
                     # Use league+abbrev as cache key to avoid cross-league collisions
-                    cache_key = f"{league}:{abbr}"
+                    cache_key = self._logo_cache_key(f"{league}:{abbr}")
                     if cache_key not in self._logo_cache:
                         logo_path = game.get(f'{team_key.replace("abbr", "logo_path")}', '')
                         if logo_path:
                             logo = self._load_and_resize_logo(abbr, logo_path, league)
                             if logo:
-                                self._logo_cache[self._logo_cache_key(cache_key)] = logo
+                                self._logo_cache[cache_key] = logo
         
         self.logger.debug(f"Preloaded {len(self._logo_cache)} team logos")
     
@@ -259,9 +259,12 @@ class GameRenderer:
             PIL Image of the logo, or None if loading failed
         """
         # Use league+abbrev as cache key to avoid cross-league collisions
-        cache_key = f"{league}:{team_abbrev}"
+        # Read with the key the writes use. This tested the unscoped
+        # "<league>:<abbr>" while every store used the slot-scoped form, so the
+        # guard never matched and each card re-decoded its source PNGs.
+        cache_key = self._logo_cache_key(f"{league}:{team_abbrev}")
         if cache_key in self._logo_cache:
-            return self._logo_cache[self._logo_cache_key(cache_key)]
+            return self._logo_cache[cache_key]
         
         try:
             # Try to load from path
@@ -281,7 +284,7 @@ class GameRenderer:
                     # Copy before context manager closes file handle
                     logo = img.copy()
 
-                self._logo_cache[self._logo_cache_key(cache_key)] = logo
+                self._logo_cache[cache_key] = logo
                 return logo
             else:
                 # Try to load from league-specific logo directory
@@ -300,7 +303,7 @@ class GameRenderer:
                         # Copy before context manager closes file handle
                         logo = img.copy()
 
-                    self._logo_cache[self._logo_cache_key(cache_key)] = logo
+                    self._logo_cache[cache_key] = logo
                     return logo
                 else:
                     self.logger.debug(f"Logo not found at {logo_path} or {logo_file}")
@@ -939,7 +942,8 @@ class GameRenderer:
                 if home_spread is None or home_spread == 0.0:
                     home_spread = top_level_spread
                 if away_spread is None:
-                    away_spread = -top_level_spread
+                    away_spread = -top_level_spread if isinstance(
+                        top_level_spread, (int, float)) else None
 
             # Determine favored team
             home_favored = home_spread is not None and isinstance(home_spread, (int, float)) and home_spread < 0
@@ -958,26 +962,41 @@ class GameRenderer:
             odds_x_offset = self._get_layout_offset('odds', 'x_offset')
             odds_y_offset = self._get_layout_offset('odds', 'y_offset')
 
+            # Both labels are anchored to the edges of this row and the card
+            # centres its time text on the same row, so on a narrow Vegas game
+            # card (pinned to 128px whatever the panel width) they overprint.
+            # Budget each side against the widest time string the centre can
+            # hold, in the font the renderer will use.
+            font = self.fonts["detail"]
+            time_font = self.fonts.get("time", font)
+            centre_reserve = draw.textlength("12:00 PM", font=time_font)
+            side_budget = max(0.0, (self.display_width - centre_reserve) / 2)
+
             # Show the negative spread
             if favored_spread is not None:
                 spread_text = str(favored_spread)
-                font = self.fonts["detail"]
+                spread_width = draw.textlength(spread_text, font=font)
 
-                if favored_side == "home":
-                    spread_width = draw.textlength(spread_text, font=font)
-                    spread_x = self.display_width - spread_width + odds_x_offset
-                    spread_y = 0 + odds_y_offset
-                else:
-                    spread_x = 0 + odds_x_offset
+                if spread_width <= side_budget:
+                    if favored_side == "home":
+                        # -1 keeps the outline stroke inside the canvas.
+                        spread_x = (self.display_width - spread_width - 1
+                                    + odds_x_offset)
+                    else:
+                        spread_x = 0 + odds_x_offset
                     spread_y = 0 + odds_y_offset
 
-                self._draw_text_with_outline(draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0))
+                    self._draw_text_with_outline(draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0))
 
             # Show over/under on opposite side
             over_under = odds.get("over_under")
             if over_under is not None and isinstance(over_under, (int, float)):
                 ou_text = f"O/U: {over_under}"
-                font = self.fonts["detail"]
+
+                # The longer label gives way on a narrow card; the spread is
+                # the more useful number and is kept.
+                if draw.textlength(ou_text, font=font) > side_budget:
+                    return
                 ou_width = draw.textlength(ou_text, font=font)
 
                 if favored_side == "home":
@@ -985,7 +1004,13 @@ class GameRenderer:
                 elif favored_side == "away":
                     ou_x = self.display_width - ou_width + odds_x_offset
                 else:
-                    ou_x = (self.display_width - ou_width) // 2 + odds_x_offset
+                    # No favourite: anchor to the same left edge the
+                    # home-favoured case uses. Centring put it on top of the
+                    # status text, which the card also centres on this row --
+                    # "Final" and "O/U: 47.5" rendered through each other. It
+                    # is also the assumption the side budget above is measured
+                    # against, which only holds for an edge-anchored label.
+                    ou_x = 0 + odds_x_offset
                 ou_y = 0 + odds_y_offset
 
                 self._draw_text_with_outline(draw, ou_text, (ou_x, ou_y), font, fill=(0, 255, 0))
