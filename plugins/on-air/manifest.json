@@ -26,7 +26,7 @@
       "version": "1.2.5",
       "released": "2026-08-15",
       "notes": "Also mark mqtt_password as x-secret (in addition to x-sensitive) so the web UI masks it consistently with other plugins.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.2.4",

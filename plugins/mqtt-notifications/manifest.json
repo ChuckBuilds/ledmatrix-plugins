@@ -22,7 +22,7 @@
       "version": "1.1.1",
       "released": "2026-08-15",
       "notes": "Mark MQTT broker password as x-secret so the web UI masks it.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.1.0",
