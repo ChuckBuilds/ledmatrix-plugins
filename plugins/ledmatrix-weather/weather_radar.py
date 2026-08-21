@@ -466,7 +466,13 @@ class RadarFetcher:
 
     def _playback_frames(self) -> List[RadarFrame]:
         """Complete frames in chronological order (past ... nowcast)."""
-        frames = [f for f in self._frames.values() if f.image is not None]
+        # dict.copy() first, not a comprehension over .values():
+        # _reconcile_frames() runs on the update thread and can add or drop
+        # entries while this iterates, and any lazy iteration -- including
+        # list(d.values()) -- raises "dictionary changed size during iteration"
+        # when that happens. copy() completes in one bytecode under the GIL,
+        # so the other thread cannot interleave inside it.
+        frames = [f for f in self._frames.copy().values() if f.image is not None]
         frames.sort(key=lambda f: f.ts)
         return frames
 
@@ -514,7 +520,40 @@ class RadarFetcher:
 
         idx = self._advance_frame(len(frames))
         frame = frames[idx]
-        composite = Image.alpha_composite(background.convert("RGBA"), frame.image)
+
+        # The background and the frame can come from different viewports.
+        # refresh_data() runs on the update thread and get_radar_image() on the
+        # display thread, both call _ensure_viewport(), and both are called
+        # with different sizes: the plugin renders the full panel while the
+        # Vegas adapter asks for a narrower slice (512x64 and 204x64 on the rig
+        # this was found on). If the viewport is swapped between one thread
+        # building a frame and the other compositing it, the two images differ
+        # in size and alpha_composite raises ValueError("images do not match").
+        # That propagates out of display(), so nothing new is drawn and the
+        # panel sits on whatever was last composited -- the radar appears
+        # frozen at an old timestamp, which is exactly how it was reported.
+        # Showing the background alone for one tick is a far better outcome
+        # than raising: the next tick has a consistent pair.
+        # One read, held locally. refresh_data() can set frame.image to None
+        # between the check and the composite, and re-reading the attribute
+        # would then raise AttributeError instead of the ValueError this guard
+        # was added for -- trading one crash for a narrower one. A local
+        # reference keeps the image alive for the rest of this call whatever
+        # the other thread does to the attribute.
+        frame_image = frame.image
+        if frame_image is None or frame_image.size != background.size:
+            logger.info(
+                "[Radar] Frame %s does not match background %dx%d "
+                "(viewport changed mid-render); showing the map for this tick",
+                (f"{frame_image.size[0]}x{frame_image.size[1]}"
+                 if frame_image is not None else "gone"),
+                background.size[0], background.size[1])
+            for stale in self._frames.copy().values():
+                stale.image = None
+            img = background.resize((width, height), Image.Resampling.LANCZOS)
+            return self._add_overlay(img, None, [], width, height, viewport)
+
+        composite = Image.alpha_composite(background.convert("RGBA"), frame_image)
         img = composite.convert("RGB").resize((width, height),
                                               Image.Resampling.LANCZOS)
         return self._add_overlay(img, frame, frames, width, height, viewport)
