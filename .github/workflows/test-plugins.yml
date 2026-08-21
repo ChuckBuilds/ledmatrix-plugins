@@ -241,16 +241,35 @@ jobs:
             exit 1
           fi
           failed=""
+          skipped=""
           for guard in "${guards[@]}"; do
             echo "::group::$guard"
-            if python "$guard"; then
-              echo "::endgroup::"
-            else
-              echo "::endgroup::"
-              echo "::error file=$guard::guard failed"
-              failed="$failed $guard"
-            fi
+            # Status 2 is "skipped, and said why" -- test_schedule_window_plumbing.py
+            # exits 2 when it cannot find a LEDMatrix core checkout. The core is
+            # checked out above, so that should not happen here; but this step is
+            # `if: always()`, so a failed checkout would otherwise surface as
+            # "guard failed" and point at the guard instead of at the checkout.
+            # Anything else nonzero is a real failure.
+            set +e
+            python "$guard"
+            status=$?
+            set -e
+            echo "::endgroup::"
+            case "$status" in
+              0) ;;
+              2)
+                echo "::notice file=$guard::guard skipped (exit 2)"
+                skipped="$skipped $guard"
+                ;;
+              *)
+                echo "::error file=$guard::guard failed (exit $status)"
+                failed="$failed $guard"
+                ;;
+            esac
           done
+          if [ -n "$skipped" ]; then
+            echo "skipped:$skipped"
+          fi
           if [ -n "$failed" ]; then
             echo "failed:$failed"
             exit 1
