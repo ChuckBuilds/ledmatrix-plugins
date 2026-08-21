@@ -105,6 +105,26 @@ class F1DataSource:
         else:
             self._mem_cache[key] = (time.time(), data)
 
+    @staticmethod
+    def _is_openf1_empty_result(url: str, response: Any) -> bool:
+        """True only for OpenF1's "no rows matched" 404.
+
+        _fetch_json is shared with ESPN and Jolpi, where a 404 means a resource
+        is genuinely missing and is worth an ERROR. Only OpenF1 uses 404 to say
+        an empty result set, so the downgrade is scoped to it -- by host, and
+        by the body it sends -- rather than applied to every 404.
+        """
+        if getattr(response, "status_code", None) != 404:
+            return False
+        if not url.startswith(OPENF1_BASE):
+            return False
+        try:
+            detail = (response.json() or {}).get("detail", "")
+        except (ValueError, AttributeError):
+            # A 404 with an unreadable body is not a known empty result.
+            return False
+        return isinstance(detail, str) and "no results found" in detail.lower()
+
     def _fetch_json(self, url: str, params: Dict = None,
                     timeout: int = 30) -> Optional[Dict]:
         """Fetch JSON from a URL with error handling.
@@ -123,8 +143,7 @@ class F1DataSource:
             return response.json()
         except requests.HTTPError as e:
             # Must precede RequestException -- HTTPError is a subclass.
-            status = getattr(e.response, "status_code", None)
-            if status == 404:
+            if self._is_openf1_empty_result(url, e.response):
                 logger.debug("No data available yet for %s: %s", url, e)
             else:
                 logger.error("API request failed for %s: %s", url, e)
