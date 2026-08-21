@@ -107,11 +107,28 @@ class F1DataSource:
 
     def _fetch_json(self, url: str, params: Dict = None,
                     timeout: int = 30) -> Optional[Dict]:
-        """Fetch JSON from a URL with error handling."""
+        """Fetch JSON from a URL with error handling.
+
+        OpenF1 answers an *empty result set* with ``404 {"detail": "No results
+        found."}`` rather than an empty list, so a 404 is the normal reply for
+        a session that has not run yet -- every practice session is a 404 until
+        cars are on track. Logging that at ERROR meant a rig sitting between
+        race weekends wrote ~60 spurious ERROR lines a day to the journal,
+        which both buries genuine failures and is pointless SD-card wear.
+        Real failures (5xx, timeouts, connection errors) still log at ERROR.
+        """
         try:
             response = self.session.get(url, params=params, timeout=timeout)
             response.raise_for_status()
             return response.json()
+        except requests.HTTPError as e:
+            # Must precede RequestException -- HTTPError is a subclass.
+            status = getattr(e.response, "status_code", None)
+            if status == 404:
+                logger.debug("No data available yet for %s: %s", url, e)
+            else:
+                logger.error("API request failed for %s: %s", url, e)
+            return None
         except requests.RequestException as e:
             logger.error("API request failed for %s: %s", url, e)
             return None
