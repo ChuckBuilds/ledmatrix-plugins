@@ -2725,10 +2725,18 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
     def validate_config(self) -> bool:
         """Validate plugin configuration."""
         try:
-            # Check that at least one league is enabled
+            # Having no league switched on is a valid state, not a broken
+            # config. Returning False here made load_plugin() fail, so the
+            # plugin the user had just enabled never loaded at all -- no
+            # modes, no health record, absent from the plugin list, and the
+            # only explanation a single line at startup. Enabling a league
+            # afterwards could not help either, because nothing was loaded to
+            # re-evaluate it. Warn and load; the plugin contributes nothing
+            # until a league is turned on, which is what "no leagues" should
+            # look like.
             if not (self.ncaa_mens_enabled or self.ncaa_womens_enabled):
-                self.logger.warning("No leagues enabled in lacrosse scoreboard plugin")
-                return False
+                self.logger.warning(
+                    "No leagues enabled in lacrosse scoreboard plugin - it will load but show nothing until one is enabled")
 
             return True
         except Exception as e:
