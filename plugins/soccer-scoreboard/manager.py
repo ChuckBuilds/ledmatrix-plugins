@@ -823,7 +823,16 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         This design allows the display logic to iterate through leagues in priority
         order without hardcoding league names throughout the codebase.
+
+        Built into a local and swapped in with a single assignment. The display
+        thread iterates ``self._league_registry`` (via
+        ``_get_enabled_leagues_for_mode``) while ``on_config_change`` rebuilds it
+        on the ConfigService-Watcher thread; mutating the live dict in place let
+        a frame observe it empty or half-populated, or raise "dictionary changed
+        size during iteration". Rebinding the attribute is atomic, so a reader
+        gets either the whole old registry or the whole new one.
         """
+        registry: Dict[str, Dict[str, Any]] = {}
         # Add predefined leagues to registry
         for league_key in PREDEFINED_LEAGUE_KEYS:
             attr_tuple = PREDEFINED_LEAGUE_ATTR_MAP.get(league_key)
@@ -831,7 +840,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 continue
             live_attr, recent_attr, upcoming_attr = attr_tuple
 
-            self._league_registry[league_key] = {
+            registry[league_key] = {
                 'enabled': self.league_enabled.get(league_key, False),
                 'priority': PREDEFINED_LEAGUE_PRIORITIES.get(league_key, 99),
                 'live_priority': self.league_live_priority.get(league_key, False),
@@ -857,7 +866,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             recent_attr = f'custom_{safe_key}_recent'
             upcoming_attr = f'custom_{safe_key}_upcoming'
 
-            self._league_registry[league_code] = {
+            registry[league_code] = {
                 'enabled': self.league_enabled.get(league_code, False),
                 'priority': custom_priorities.get(league_code, 50),
                 'live_priority': self.league_live_priority.get(league_code, False),
@@ -869,8 +878,11 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 }
             }
 
+        # Publish the finished registry in one atomic rebind (see docstring).
+        self._league_registry = registry
+
         # Log registry state for debugging
-        enabled_leagues = [lid for lid, data in self._league_registry.items() if data['enabled']]
+        enabled_leagues = [lid for lid, data in registry.items() if data['enabled']]
         custom_count = len([lid for lid, data in self._league_registry.items() if data.get('is_custom', False)])
         self.logger.info(
             f"League registry initialized: {len(self._league_registry)} league(s) registered "
@@ -1343,8 +1355,10 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                     thread.join(timeout=10.0)
             self._active_update_threads.clear()
 
-            # Clear stale runtime caches before rebuilding
-            self._league_registry.clear()
+            # Clear stale runtime caches before rebuilding. _league_registry is
+            # deliberately NOT cleared here: _initialize_league_registry() below
+            # rebuilds it into a local and swaps it in atomically, so the display
+            # thread never sees it empty.
             self._scroll_prepared.clear()
             self._scroll_active.clear()
             # Re-verify team codes against ESPN, so a corrected code is
