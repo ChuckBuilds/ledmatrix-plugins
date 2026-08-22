@@ -1,7 +1,7 @@
 {
   "id": "youtube-stats",
   "name": "YouTube Stats",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "ChuckBuilds",
   "description": "Display YouTube channel statistics including subscriber count, total views, and channel name on your LED matrix",
   "category": "social",
@@ -33,6 +33,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.1.1",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop retrying a failing YouTube API once per rendered frame. display() re-ran update() whenever channel_stats was empty, and update() leaves it empty on any failure, so a bad key or an exhausted quota produced one requests.get(timeout=10) per frame on the render thread. display() now gates on whether a fetch was attempted rather than on its result, and update() is throttled to update_interval, so a broken API costs one request per interval instead of one per frame."
+    },
     {
       "version": "1.1.0",
       "released": "2026-07-31",

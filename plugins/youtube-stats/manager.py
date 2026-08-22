@@ -8,6 +8,7 @@ API Version: 1.0.0
 """
 
 import os
+import time
 from pathlib import Path
 from typing import Dict, Any, Optional
 from PIL import Image, ImageDraw, ImageFont
@@ -72,6 +73,11 @@ class YouTubeStatsPlugin(BasePlugin):
         self.font = None
         self.youtube_logo = None
         self.last_displayed_stats: Optional[Dict[str, Any]] = None  # Track last displayed to prevent unnecessary redraws
+        # A fetch has been attempted at least once, and when. display() used to
+        # retry on an empty result, so a failing API meant a request per FRAME;
+        # these gate on "did we try" and "how long ago" instead.
+        self._has_fetched: bool = False
+        self._last_attempt: float = 0.0
         self._api_key_error: Optional[str] = None  # Set on any config/auth problem that
         # prevents fetching stats (missing/invalid API key, missing channel ID) -- display()
         # shows this on-screen instead of leaving a blank canvas when it's set.
@@ -325,10 +331,30 @@ class YouTubeStatsPlugin(BasePlugin):
             return None
     
     def update(self) -> None:
-        """Fetch/update data for this plugin."""
+        """Fetch/update data for this plugin.
+
+        Throttled to update_interval. The core already calls this on roughly
+        that cadence, so this changes nothing for it -- it exists because
+        display() also calls update() for the first paint, and a failing fetch
+        leaves channel_stats empty. Without the throttle that combination
+        issued one YouTube API request per rendered frame, on the render
+        thread, each able to block for the full 10s timeout. The Data API's
+        default quota is 10k units/day, so a broken key burned through it in
+        minutes -- and quota exhaustion is itself an error, which kept the
+        result empty and the loop fed.
+
+        monotonic(), not time(): these Pis have no RTC, so a wall-clock jump
+        at NTP sync must not make the next attempt look due (or centuries away).
+        """
         if not self.enabled:
             return
-        
+
+        now = time.monotonic()
+        if self._has_fetched and (now - self._last_attempt) < self.update_interval_config:
+            return
+        self._has_fetched = True
+        self._last_attempt = now
+
         self.channel_stats = self._get_channel_stats()
     
     def display(self, force_clear: bool = False) -> None:
@@ -336,8 +362,10 @@ class YouTubeStatsPlugin(BasePlugin):
         if not self.enabled:
             return
         
-        # Fetch stats if we don't have them yet
-        if not self.channel_stats:
+        # First paint can land before the core's first update() tick. Gate on
+        # whether a fetch has been ATTEMPTED, not on whether it produced data:
+        # gating on the result meant a failing API was retried every frame.
+        if not self._has_fetched:
             self.update()
         
         if self.channel_stats:
