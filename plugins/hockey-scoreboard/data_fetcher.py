@@ -54,23 +54,29 @@ class HockeyDataFetcher:
     
     def _get_season_date_range(self, league_key: str) -> str:
         """Get the date range for the current season."""
-        from datetime import datetime
-        
+        # datetime is imported at module scope; a function-local re-import here
+        # shadowed it and made the derivation untestable (a patched module
+        # attribute was ignored).
         now = datetime.now()
 
-        # For 2025, we want the 2025-26 season (October 2025 to end of season 2026)
+        # Derive the season from the current date rather than pinning it.
+        # A hockey season spans two calendar years, so anything from August
+        # onwards belongs to the season labelled with this year; before that
+        # we are still inside the season that started last year. Same rule
+        # nhl_managers.py uses, so both agree on which season is current.
+        season_year = now.year if now.month >= 8 else now.year - 1
+
         if league_key == 'nhl':
-            # NHL 2025-26 season: October 2025 to June 2026
-            season_start = datetime(2025, 10, 1)
-            season_end = datetime(2026, 6, 30)
+            # NHL: October through June (playoffs run into June)
+            season_start = datetime(season_year, 10, 1)
+            season_end = datetime(season_year + 1, 6, 30)
         elif league_key in ['ncaa_mens', 'ncaa_womens']:
-            # NCAA 2025-26 season: October 2025 to March 2026
-            season_start = datetime(2025, 10, 1)
-            season_end = datetime(2026, 3, 31)
+            # NCAA: October through March (tournament ends in March)
+            season_start = datetime(season_year, 10, 1)
+            season_end = datetime(season_year + 1, 3, 31)
         else:
-            # Default to 2025-26 season
-            season_start = datetime(2025, 10, 1)
-            season_end = datetime(2026, 6, 30)
+            season_start = datetime(season_year, 10, 1)
+            season_end = datetime(season_year + 1, 6, 30)
         
         # Format as YYYYMMDD-YYYYMMDD
         start_str = season_start.strftime('%Y%m%d')
