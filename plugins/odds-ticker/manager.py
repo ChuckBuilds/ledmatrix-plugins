@@ -2781,8 +2781,26 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         current_interval = self._get_current_update_interval()
         if current_time - self.last_update >= current_interval:
             logger.info(f"Live game update interval reached ({current_interval}s), refreshing data...")
-            # Preserve scroll position during live updates so ticker doesn't jump back
-            self._perform_update(preserve_scroll=True)
+            # _perform_update reaches ESPN -- _fetch_league_games and, below it,
+            # _fetch_team_rankings both make blocking HTTP calls. display() runs
+            # on the render thread, so doing that inline stalls the marquee for
+            # the length of the round trip.
+            #
+            # update() already guards against exactly this: it checks
+            # is_currently_scrolling() and hands the work to defer_update()
+            # instead. Calling _perform_update() directly here defeated that --
+            # the refresh simply moved to the one thread it must not block.
+            # Same guard, same deferral; preserve_scroll is kept so the ticker
+            # does not jump back when the deferred update lands.
+            if (hasattr(self.display_manager, 'is_currently_scrolling')
+                    and self.display_manager.is_currently_scrolling()
+                    and hasattr(self.display_manager, 'defer_update')):
+                logger.debug("Scrolling -- deferring the odds refresh off the render thread")
+                self.display_manager.defer_update(
+                    lambda: self._perform_update(preserve_scroll=True), priority=1)
+            else:
+                # Preserve scroll position during live updates so ticker doesn't jump back
+                self._perform_update(preserve_scroll=True)
 
         # Reset display start time when force_clear is True or when starting fresh
         if force_clear or self._display_start_time is None:
