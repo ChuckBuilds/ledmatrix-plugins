@@ -56,10 +56,14 @@ class BaseWNBAManager(Basketball):
         """
         now = datetime.now(pytz.utc)
         season_year = now.year
-        # WNBA season typically runs from May to September
+        # WNBA runs May through October: the regular season ends in September
+        # but the playoffs and Finals run into October (2024's Finals ended
+        # 20 October, 2025's in mid-October). A window closing on 30 September
+        # fetched the regular season and none of the postseason, so the
+        # scoreboard went blank exactly when the games matter most.
         if now.month < 5:
             season_year = now.year - 1
-        datestring = f"{season_year}0501-{season_year}0930"
+        datestring = f"{season_year}0501-{season_year}1101"
         cache_key = f"{self.sport_key}_schedule_{season_year}"
 
         # Check cache first
