@@ -883,9 +883,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         # Log registry state for debugging
         enabled_leagues = [lid for lid, data in registry.items() if data['enabled']]
-        custom_count = len([lid for lid, data in self._league_registry.items() if data.get('is_custom', False)])
+        custom_count = len([lid for lid, data in registry.items() if data.get('is_custom', False)])
         self.logger.info(
-            f"League registry initialized: {len(self._league_registry)} league(s) registered "
+            f"League registry initialized: {len(registry)} league(s) registered "
             f"({custom_count} custom), {len(enabled_leagues)} enabled: "
             f"{[LEAGUE_NAMES.get(lid, lid) for lid in enabled_leagues]}"
         )
@@ -910,8 +910,17 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         enabled_leagues = []
 
+        # One snapshot for the whole selection. _initialize_league_registry
+        # publishes a replacement registry by rebinding the attribute, so
+        # re-reading self._league_registry further down (the sort key, the debug
+        # line) could bind a NEWER registry than the one just iterated -- and a
+        # custom league collected from the old one may be absent from it, which
+        # is a KeyError in the sort. Reading once makes the whole selection
+        # consistent with a single registry.
+        registry = self._league_registry
+
         # Iterate through all registered leagues
-        for league_id, league_data in self._league_registry.items():
+        for league_id, league_data in registry.items():
             # Check if league is enabled
             if not league_data.get('enabled', False):
                 continue
@@ -936,11 +945,11 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 enabled_leagues.append(league_id)
 
         # Sort by priority (lower number = higher priority)
-        enabled_leagues.sort(key=lambda lid: self._league_registry[lid].get('priority', 999))
+        enabled_leagues.sort(key=lambda lid: registry[lid].get('priority', 999))
 
         self.logger.debug(
             f"Enabled leagues for {mode_type} mode: {enabled_leagues} "
-            f"(priorities: {[self._league_registry[lid].get('priority') for lid in enabled_leagues]})"
+            f"(priorities: {[registry[lid].get('priority') for lid in enabled_leagues]})"
         )
 
         return enabled_leagues
@@ -1002,13 +1011,17 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         The manager is retrieved from the league registry, which is populated
         during initialization. If the league or mode doesn't exist, returns None.
         """
+        # One snapshot: the membership test and the lookup must see the same
+        # registry, or a rebind between them turns the check into a KeyError.
+        registry = self._league_registry
+
         # Check if league exists in registry
-        if league_id not in self._league_registry:
+        if league_id not in registry:
             self.logger.warning(f"League {league_id} not found in registry")
             return None
 
         # Get managers dict for this league
-        managers = self._league_registry[league_id].get('managers', {})
+        managers = registry[league_id].get('managers', {})
 
         # Get the manager for this mode type
         manager = managers.get(mode_type)

@@ -103,6 +103,51 @@ occ_src = inspect.getsource(SoccerScoreboardPlugin.on_config_change)
 check("on_config_change no longer clears the live registry",
       "self._league_registry.clear()" not in occ_src)
 
+# --- a reader must survive a replacement landing mid-selection ------------
+# _get_enabled_leagues_for_mode iterates the registry, then sorts and logs
+# using it again. If those later reads re-fetched self._league_registry, a
+# config save that drops a custom league between the iteration and the sort
+# would raise KeyError on the render thread.
+swapped = make_plugin()
+swapped._league_registry = {
+    "eng.1": {"enabled": True, "priority": 1, "is_custom": False, "managers": {}},
+    "cus.1": {"enabled": True, "priority": 2, "is_custom": True, "managers": {}},
+}
+swapped._get_league_config = lambda lid, data: {}
+
+original_items = swapped._league_registry.items
+
+
+class _SwapOnIterate(dict):
+    """Rebinds the plugin's registry the moment the selection iterates it,
+    standing in for on_config_change landing on the watcher thread."""
+
+    def items(self):
+        # The replacement no longer has the custom league.
+        swapped._league_registry = {
+            "eng.1": {"enabled": True, "priority": 1, "is_custom": False, "managers": {}},
+        }
+        return original_items()
+
+
+swapped._league_registry = _SwapOnIterate(swapped._league_registry)
+try:
+    selected = swapped._get_enabled_leagues_for_mode("live")
+    raised = None
+except KeyError as exc:
+    selected, raised = None, exc
+
+check("a registry replacement mid-selection does not raise KeyError", raised is None)
+check("the selection reflects the registry it started from",
+      selected is not None and "cus.1" in selected)
+
+# The membership test and lookup in _get_league_manager_for_mode must also
+# agree with each other.
+mgr_plugin = make_plugin()
+mgr_plugin._league_registry = {"eng.1": {"enabled": True, "managers": {"live": "M"}}}
+check("manager lookup returns from the same snapshot it tested",
+      mgr_plugin._get_league_manager_for_mode("eng.1", "live") == "M")
+
 print()
 failed = [case for case, passed in results if not passed]
 print(f"{len(results) - len(failed)}/{len(results)} passed")
