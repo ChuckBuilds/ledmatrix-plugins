@@ -11,10 +11,7 @@ _perform_update() directly, which defeated that guard -- the refresh simply
 moved onto the one thread it must not block.
 """
 import ast
-import sys
 from pathlib import Path
-
-import pytest
 
 HERE = Path(__file__).resolve().parent
 SRC = (HERE / "manager.py").read_text(encoding="utf-8")
