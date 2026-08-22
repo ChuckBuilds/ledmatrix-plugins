@@ -2406,17 +2406,23 @@ class FlightTrackerPlugin(BasePlugin):
         self.logger.debug(f"[Flight Tracker] Map displays {desired_miles_wide:.1f} miles wide x {desired_miles_high:.1f} miles high (no stretching)")
         self.logger.debug(f"[Flight Tracker] Native tile scale: {pixels_per_mile_at_zoom:.3f} pixels/mile, cropped {crop_width_needed}x{crop_height_needed} pixels, scaled to {self.display_width}x{self.display_height}")
         
-        # Debug: Save composite image to see what's happening
-        try:
-            debug_composite = Path("debug_composite.png")
-            composite.save(debug_composite)
-            self.logger.debug(f"[Flight Tracker] Saved composite to: {debug_composite}")
-            
-            debug_cropped = Path("debug_cropped.png")
-            cropped.save(debug_cropped)
-            self.logger.debug(f"[Flight Tracker] Saved cropped to: {debug_cropped}")
-        except Exception as e:
-            self.logger.debug(f"[Flight Tracker] Could not save debug images: {e}")
+        # Dump the composite and the crop for inspection -- but only when debug
+        # logging is on. These were unconditional, so every map rebuild wrote
+        # two PNGs (~27KB) into the process's working directory: SD-card wear
+        # on a device that has nothing to gain from it, and two untracked files
+        # appearing in the checkout the service runs from. There is no config
+        # flag for them, so nobody could turn them off either.
+        if self.logger.isEnabledFor(logging.DEBUG):
+            try:
+                debug_composite = Path("debug_composite.png")
+                composite.save(debug_composite)
+                self.logger.debug(f"[Flight Tracker] Saved composite to: {debug_composite}")
+
+                debug_cropped = Path("debug_cropped.png")
+                cropped.save(debug_cropped)
+                self.logger.debug(f"[Flight Tracker] Saved cropped to: {debug_cropped}")
+            except Exception as e:
+                self.logger.debug(f"[Flight Tracker] Could not save debug images: {e}")
         
         return cropped
     

@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.12.13",
+  "version": "1.12.14",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -37,6 +37,12 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "version": "1.12.14",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop writing debug PNGs on every map rebuild. _get_map_background saved debug_composite.png and debug_cropped.png unconditionally, so each composite cost ~27KB of SD-card writes and dropped two untracked files into whatever directory the service runs from -- for a normal install, the checkout itself. There was no config flag, so they could not be turned off. They are still written when debug logging is on, which is when they are actually wanted."
+    },
     {
       "version": "1.12.13",
       "released": "2026-08-19",
