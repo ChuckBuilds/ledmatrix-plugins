@@ -805,24 +805,32 @@ class SportsCore(ABC):
         Measured from the score font rather than assumed, so it tracks a user
         who sets a larger one.
 
-        Reserved for a five-character score ("17-21"), which is what almost
-        every game shows. Reserving for six ("100-98") costs 12px, and on a
-        64px panel that is the difference between a 12px logo and a 6px one --
-        paying a visible price on every game for a scoreline football does not
-        produce. A game that does reach three digits either side will have its
-        score touch the logo edge; that is the better trade.
+        Reserving the score's FULL width was the first attempt and it was
+        wrong: on a 64px panel a 40px score leaves 24px for two logos, so each
+        came out 10px wide -- a sliver at the edge. Trading a jumbled panel for
+        one with no identifiable team is not a fix.
 
-        The logo cache is keyed on team, so this must not vary with the score
-        actually on screen -- hence a fixed representative string rather than
-        the live one.
+        So the reserve is half the score's width, which lets the score's outer
+        quarter cross onto each logo while its middle stays on black. The
+        digits are drawn with an outline, so the crossing reads as a score in
+        front of a logo rather than two things fighting. That buys back real
+        logo: 10px -> 22px visible at 64 wide, 26px -> 38px at 96.
+
+        Binds only where the 1.5x oversize did not already fit. 128x32 and
+        512x64 -- and every wider panel -- keep exactly the logos they had.
+
+        Measured from the score font so it tracks a user who sets a larger
+        one, and from a fixed five-character string rather than the live
+        score, because the logo cache is keyed on team and must not resize
+        when a team passes 9 points.
         """
         try:
             font = self.fonts["score"]
             from PIL import Image as _Image, ImageDraw as _ImageDraw
             probe = _ImageDraw.Draw(_Image.new("RGB", (4, 4)))
-            return int(probe.textlength("00-00", font=font)) + 4
+            return int(probe.textlength("00-00", font=font)) // 2
         except Exception:
-            return 44
+            return 22
 
     def _load_and_resize_logo(
         self, team_id: str, team_abbrev: str, logo_path: Path, logo_url: str | None

@@ -88,8 +88,21 @@ def main():
         home_left = w - logo_w + r._LOGO_EDGE_BLEED_PX
         check("%3dx%-3d logos leave the centre clear" % (w, h),
               away_right <= home_left)
-        check("%3dx%-3d centre still fits the score" % (w, h),
+        # The gap is deliberately half the score's width: the score's outer
+        # quarter crosses onto each logo, its middle stays on black. So the
+        # check is that the clear strip is at least the reserve, not that the
+        # whole score fits inside it.
+        check("%3dx%-3d keeps the reserved centre strip clear" % (w, h),
               home_left - away_right >= gap - 1)
+        score_w = int(draw.textlength("00-00", font=score_font))
+        overlap_each_side = max(0, (score_w - (home_left - away_right)) / 2)
+        check("%3dx%-3d score crosses no more than a quarter onto a logo"
+              % (w, h), overlap_each_side <= score_w / 4 + 1)
+
+    print("\nthe reserve is half the score, not all of it")
+    r = _Fake(64, 32, score_font)
+    check("a 64px panel gets a 22px reserve, not 44",
+          18 <= r._scorebug_centre_gap() <= 24)
 
     print("\nthe rigs keep their large logos")
     for w, h, expect_at_least in ((128, 32, 40), (512, 64, 90)):
