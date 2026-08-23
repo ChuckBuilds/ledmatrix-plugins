@@ -56,7 +56,11 @@ def check(case, passed):
 
 
 def make_plugin(update_interval=300):
-    p = YouTubeStatsPlugin.__new__(YouTubeStatsPlugin)
+    # object.__new__ rather than YouTubeStatsPlugin.__new__: the stub above
+    # makes BasePlugin `object`, so the latter resolves to object.__new__ and
+    # static analysis reads the explicit class argument as a bound-method call
+    # with a missing `cls`. Same result, no false positive.
+    p = object.__new__(YouTubeStatsPlugin)
     p.logger = logging.getLogger("test-youtube-storm")
     p.enabled = True
     p.channel_stats = None
