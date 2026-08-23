@@ -60,8 +60,7 @@ class _Fake:
         self.display_height = h
         self.fonts = {"score": score_font}
 
-    _scorebug_centre_gap = None       # bound below from the real class
-    _fit_text = None
+
 
 
 def main():
@@ -69,8 +68,12 @@ def main():
     from sports import SportsCore
     from PIL import Image, ImageDraw, ImageFont
 
-    _Fake._scorebug_centre_gap = SportsCore._scorebug_centre_gap
-    _Fake._fit_text = SportsCore._fit_text
+    # The real methods are called unbound against the fake, rather than
+    # patched onto it. Binding them to a class attribute that starts as None
+    # reads to static analysis as "None is not callable" -- a false positive,
+    # but a noisy one, and this form says what is happening more plainly.
+    centre_gap = SportsCore._scorebug_centre_gap
+    fit_text = SportsCore._fit_text
     score_font = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 8)
     draw = ImageDraw.Draw(Image.new("RGB", (4, 4)))
 
@@ -80,7 +83,7 @@ def main():
     print("the two logos never reach into each other")
     for w, h in SIZES:
         r = _Fake(w, h, score_font)
-        gap = r._scorebug_centre_gap()
+        gap = centre_gap(r)
         reach = (w - gap) // 2 + r._LOGO_EDGE_BLEED_PX
         logo_w = max(8, min(int(w * 1.5), reach))
         logo_w = min(logo_w, int(h * 1.5))
@@ -102,12 +105,12 @@ def main():
     print("\nthe reserve is half the score, not all of it")
     r = _Fake(64, 32, score_font)
     check("a 64px panel gets a 22px reserve, not 44",
-          18 <= r._scorebug_centre_gap() <= 24)
+          18 <= centre_gap(r) <= 24)
 
     print("\nthe rigs keep their large logos")
     for w, h, expect_at_least in ((128, 32, 40), (512, 64, 90)):
         r = _Fake(w, h, score_font)
-        reach = (w - r._scorebug_centre_gap()) // 2 + r._LOGO_EDGE_BLEED_PX
+        reach = (w - centre_gap(r)) // 2 + r._LOGO_EDGE_BLEED_PX
         logo_w = min(max(8, min(int(w * 1.5), reach)), int(h * 1.5))
         check("%3dx%-3d logo is still %d+px" % (w, h, expect_at_least),
               logo_w >= expect_at_least)
@@ -120,21 +123,21 @@ def main():
     # draws its clock in 4x6-font, where "Q4 02:34" fits and nothing is shed.
     # The fitter still has to shed correctly for any font/width pair that does
     # overflow, which is what this pins -- PressStart2P@8 in 62px.
-    picked = r._fit_text(draw, ("Q4 02:34", "02:34", "Q4"), time_font, 62)
+    picked = fit_text(r, draw, ("Q4 02:34", "02:34", "Q4"), time_font, 62)
     check("an overflowing clock sheds the quarter rather than clipping",
           picked == "02:34")
     check("what it picked actually fits",
           draw.textlength(picked, font=time_font) <= 62)
 
     wide = _Fake(512, 64, score_font)
-    picked_wide = wide._fit_text(draw, ("Q4 02:34", "02:34", "Q4"), time_font, 510)
+    picked_wide = fit_text(wide, draw, ("Q4 02:34", "02:34", "Q4"), time_font, 510)
     check("a wide panel keeps the full clock", picked_wide == "Q4 02:34")
 
     print("\nnothing fitting still returns something")
     check("the shortest form is used as a last resort",
-          r._fit_text(draw, ("aaaaaaaaaaaa", "bbbbbbbbbb"), time_font, 4) == "bbbbbbbbbb")
+          fit_text(r, draw, ("aaaaaaaaaaaa", "bbbbbbbbbb"), time_font, 4) == "bbbbbbbbbb")
     check("an empty candidate list yields an empty string",
-          r._fit_text(draw, (), time_font, 100) == "")
+          fit_text(r, draw, (), time_font, 100) == "")
 
     print()
     failed = [c for c, ok in results if not ok]

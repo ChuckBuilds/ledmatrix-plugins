@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.20.0",
+  "version": "2.20.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -26,11 +26,11 @@
   ],
   "versions": [
     {
-      "version": "2.20.0",
+      "version": "2.20.1",
       "released": "2026-08-23",
       "ledmatrix_min_version": "2.0.0",
       "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
-      "changelog": "Scroll/Vegas cards: the centre gap is now measured from the score actually loaded and the card is sized to fit two full-height logos plus that gap, so the score no longer renders on top of the team logos on tall cards."
+      "changelog": "Scroll/Vegas cards: the centre gap is now measured from the score actually loaded and the card is sized to fit two full-height logos plus that gap, so the score no longer renders on top of the team logos on tall cards. Test-only follow-up: the small-panel test calls the real sizing methods unbound rather than patching them onto a stub, which cleared a static-analysis false positive."
     },
     {
       "version": "2.19.3",
