@@ -144,3 +144,8 @@ Thumbs.db
 *.log
 config.json
 *.pem
+
+# Google OAuth artifacts (also covered by root .gitignore)
+credentials.json
+token.pickle
+*.pickle

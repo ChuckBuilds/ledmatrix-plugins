@@ -1,150 +1,24 @@
 # LEDMatrix Plugin Development Rules
 
-## Monorepo Structure
+**Source of truth for agents:** `AGENTS.md` → `CLAUDE.md`.
+Human deep-dive: `docs/plugin-development/`.
 
-All official plugins live in `plugins/<plugin-id>/` within this repository.
-The registry file `plugins.json` is the source of truth for the Plugin Store.
+Do not duplicate long API catalogs here. If a rule isn’t in `CLAUDE.md`, add it
+there (session-memory / promote), not as a third copy.
 
-**Full references:** `CLAUDE.md` (dense) and `docs/plugin-development/` (deep-dive
-human guide) cover the plugin/core API, advanced features, styling, and adaptive
-layout. Consult them before non-trivial changes.
+## Hard rules (summary)
 
-## Plugin Version Management
+1. Bump `manifest.json` `version` + top `versions[]` entry on every plugin change.
+2. Never hand-edit `plugins.json` — pre-commit / `update_registry.py` only.
+3. Fetch in `update()`, draw in `display()`; namespace cache keys by plugin id.
+4. Plugin-unique names for deferred/subpackage modules (`check_module_collisions.py`).
+5. Pass the core safety harness (no crash / no overflow). Classic design sizes:
+   64×32, 128×32, 128×64, 256×32 (CI may test more — see docs topic 07).
+6. No secrets in git. Real values stay on the Pi/core runtime
+   (`config_secrets.json`); this repo keeps templates only. OAuth files
+   (`credentials.json`, `token.pickle`) are gitignored.
 
-### When Making Changes to Any Plugin
+Install hook: `cp scripts/pre-commit .git/hooks/pre-commit`
 
-**ALWAYS follow this exact sequence:**
-
-#### 1. Update Plugin Files
-- Make your code changes in `plugins/<plugin-id>/`
-- Files: `manager.py`, `config_schema.json`, etc.
-
-#### 2. Bump Version in `manifest.json`
-- **Bump the `version` field** using semantic versioning (MAJOR.MINOR.PATCH)
-- Update the `versions` array — add the NEW version FIRST (most recent at top):
-  ```json
-  "version": "1.2.3",
-
-  "versions": [
-    {
-      "released": "2026-02-11",
-      "version": "1.2.3",
-      "ledmatrix_min": "2.0.0"
-    },
-    {
-      "released": "2025-10-20",
-      "version": "1.2.2",
-      ...
-    }
-  ]
-  ```
-
-#### 3. Commit
-- The **pre-commit hook** automatically runs `update_registry.py` and stages `plugins.json`
-- You do NOT need to manually run `update_registry.py` or manually edit `plugins.json`
-
-```bash
-git add plugins/<plugin-id>/
-git commit -m "fix(plugin-id): description of change"
-git push origin main
-```
-
-**If the pre-commit hook is not installed:** `cp scripts/pre-commit .git/hooks/pre-commit`
-
----
-
-## Version Numbering Guidelines
-
-### When to Bump MAJOR (x.0.0)
-- Breaking changes to config schema (not backward compatible)
-- Removed features or config options
-- Complete rewrite or architecture change
-
-### When to Bump MINOR (1.x.0)
-- New features added
-- New config options (backward compatible)
-- New display modes or functionality
-
-### When to Bump PATCH (1.2.x)
-- Bug fixes
-- Performance improvements
-- Documentation updates
-- Minor tweaks
-
----
-
-## Common Pitfalls
-
-### Forgetting to Bump Version
-**Problem**: Users won't receive the update — the store compares `manifest.json` version against `plugins.json` `latest_version`.
-**Solution**: Always bump `version` in `manifest.json` for every change.
-
-### Version Mismatch
-**Problem**: `version` field doesn't match top entry in `versions` array.
-**Solution**: Keep both in sync.
-
-### Cross-Plugin Module Collisions
-**Problem**: The core loads each plugin's top-level `*.py` files by bare name. A
-helper module imported from a subpackage or from inside a function/method body (a
-*deferred* import) can bind a **different** plugin's same-named module and fail to
-load (real case: two plugins both shipping `data_model.py`).
-**Solution**: Give deferred/subpackage helper modules plugin-unique names (e.g.
-`election_data_model.py`, not `data_model.py`). Relative imports don't work (the
-entry point loads with no package context). CI runs
-`scripts/check_module_collisions.py` on every PR; run it locally too.
-
-### Rendering Off-Panel / Not Scaling
-**Problem**: Plugin renders past the edge, crashes, or stays tiny on large panels.
-**Solution**: Render correctly at all four sizes (64×32, 128×32, 128×64, 256×32).
-The core **safety harness** (`test-plugins.yml`) renders every screen at every
-size on each PR and fails on overflow/crash. See
-`docs/plugin-development/05-adaptive-layout.md`.
-
----
-
-## Plugin Manifest Required Fields
-
-Every `plugins/<id>/manifest.json` must have:
-- `id` — Plugin identifier (must match directory name)
-- `name` — Human-readable display name
-- `version` — Semver string (e.g., "1.2.3")
-- `class_name` — Python class name in manager.py
-- `display_modes` — Array of supported display modes
-
-## Registry Format
-
-`plugins.json` entries for monorepo plugins use:
-- `repo`: `https://github.com/ChuckBuilds/ledmatrix-plugins`
-- `plugin_path`: `plugins/<plugin-id>`
-- `branch`: `main`
-- `latest_version`: Synced from manifest by `update_registry.py`
-
-Third-party plugins keep their own `repo` URL and empty `plugin_path`.
-
----
-
-## Checklist
-
-Before pushing a plugin update:
-
-- [ ] Code changes completed and tested
-- [ ] `manifest.json` version bumped
-- [ ] New version added to TOP of `versions` array
-- [ ] Pre-commit hook installed (`cp scripts/pre-commit .git/hooks/pre-commit`)
-- [ ] Committed and pushed
-
----
-
-## Integration with LEDMatrix Core
-
-When updating the **LEDMatrix core** (not plugins), you don't need to update the registry.
-
-But if you update:
-- `plugin_system/base_plugin.py`
-- `web_interface/templates/v3/partials/plugins.html`
-- API endpoints used by plugins
-
-**Then** you should:
-1. Test all installed plugins still work
-2. Update minimum LEDMatrix version in affected plugin manifests
-3. Document breaking changes
+This repo is **plugins + registry only**. Core (`BasePlugin`, harness,
+web UI) lives in `ChuckBuilds/LEDMatrix` — don’t apply core-edit checklists here.

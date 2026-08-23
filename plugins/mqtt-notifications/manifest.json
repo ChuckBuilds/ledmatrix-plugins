@@ -1,7 +1,7 @@
 {
   "id": "mqtt-notifications",
   "name": "MQTT Notifications",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "ChuckBuilds",
   "description": "Display text or images from HomeAssistant via MQTT. Supports dynamic MQTT topics with wildcard support for flexible notification handling that interrupts the normal display rotation.",
   "category": "integration",
@@ -18,6 +18,12 @@
   "entry_point": "manager.py",
   "class_name": "MQTTNotificationsPlugin",
   "versions": [
+    {
+      "version": "1.1.1",
+      "released": "2026-08-15",
+      "notes": "Mark MQTT broker password as x-secret so the web UI masks it.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.1.0",
       "released": "2026-07-31",
