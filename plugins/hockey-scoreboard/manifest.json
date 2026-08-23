@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.13.4",
+  "version": "1.13.5",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.13.5",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Derive the ESPN season window from the current date instead of pinning it to 2025-26. _get_season_date_range built its range from literal datetimes and discarded the `now` it had just computed, so once the 2026-27 season opened it would have kept asking for last season. It now uses the same August rollover rule as nhl_managers.py, so the two agree on which season is current. Also drops a function-local datetime re-import that shadowed the module one and made the derivation untestable."
+    },
     {
       "version": "1.13.1",
       "released": "2026-08-19",
