@@ -573,6 +573,53 @@ class SportsCore(ABC):
             )
             return default
 
+    #: Score may occupy this share of the panel width before the layout
+    #: reaches for a narrower face. Above it the score crowds out the logos
+    #: and the clock; below it the design face is kept.
+    _SCORE_WIDTH_BUDGET = 0.55
+
+    #: Narrower crisp rungs to fall back through, widest first. 4x6-font
+    #: renders cleanly at multiples of 7 and is about half the width of
+    #: PressStart2P per character.
+    _NARROW_SCORE_RUNGS = (("4x6-font.ttf", 14), ("4x6-font.ttf", 7))
+
+    def _fit_score_font(self, fonts: dict) -> dict:
+        """Swap in a narrower face where the score would swamp the panel.
+
+        PressStart2P at 10px puts "17-21" at 50px. That is 39% of a 128-wide
+        panel and fine, but 78% of a 64-wide one -- the score, the clock and
+        the logos were all competing for the same strip, which is what made
+        the small sizes unreadable. PressStart2P has no smaller crisp size
+        (its grid is 8), so the way down is a narrower face, not a smaller
+        one: 4x6-font is crisp at multiples of 7 and roughly half as wide.
+
+        Only swaps when the current font actually overflows the budget, so
+        every panel where it already fits -- 96x48 upward, including both the
+        128x32 and 512x64 builds -- keeps the face it has. The clock moves
+        with the score so the two stay visually related; it also stops the
+        clock having to shed its quarter on a 64-wide panel, because the
+        narrower face fits "Q4 02:34" where the old one did not.
+        """
+        try:
+            from PIL import Image as _Image, ImageDraw as _ImageDraw, ImageFont as _ImageFont
+            probe = _ImageDraw.Draw(_Image.new("RGB", (4, 4)))
+            budget = self.display_width * self._SCORE_WIDTH_BUDGET
+            if probe.textlength("00-00", font=fonts["score"]) <= budget:
+                return fonts
+            for name, size in self._NARROW_SCORE_RUNGS:
+                candidate = _ImageFont.truetype(_resolve_font_path(f"assets/fonts/{name}"), size)
+                if probe.textlength("00-00", font=candidate) <= budget:
+                    fonts["score"] = candidate
+                    fonts["time"] = candidate
+                    return fonts
+            name, size = self._NARROW_SCORE_RUNGS[-1]
+            narrowest = _ImageFont.truetype(_resolve_font_path(f"assets/fonts/{name}"), size)
+            fonts["score"] = narrowest
+            fonts["time"] = narrowest
+        except Exception:
+            self.logger.debug("Score font fitting skipped", exc_info=True)
+        return fonts
+
     def _load_fonts(self):
         """Load fonts used by the scoreboard from config or use defaults."""
         fonts = {}
@@ -620,7 +667,7 @@ class SportsCore(ABC):
             fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
         except OSError:
             fonts["record"] = ImageFont.load_default()
-        return fonts
+        return self._fit_score_font(fonts)
 
     def _draw_dynamic_odds(
         self, draw: ImageDraw.Draw, odds: Dict[str, Any], width: int, height: int

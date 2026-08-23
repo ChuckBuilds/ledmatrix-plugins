@@ -115,8 +115,14 @@ def main():
     print("\nstatus text sheds detail rather than overflowing")
     time_font = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 8)
     r = _Fake(64, 32, score_font)
+    # A property of the fitter, not of any one panel: since the narrow-panel
+    # score font landed (test_narrow_panels_score_font.py) a 64-wide panel
+    # draws its clock in 4x6-font, where "Q4 02:34" fits and nothing is shed.
+    # The fitter still has to shed correctly for any font/width pair that does
+    # overflow, which is what this pins -- PressStart2P@8 in 62px.
     picked = r._fit_text(draw, ("Q4 02:34", "02:34", "Q4"), time_font, 62)
-    check("a 64px panel drops the quarter from the clock", picked == "02:34")
+    check("an overflowing clock sheds the quarter rather than clipping",
+          picked == "02:34")
     check("what it picked actually fits",
           draw.textlength(picked, font=time_font) <= 62)
 
