@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,13 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.18.0",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fetch the WNBA postseason. The ESPN date window was built as {year}0501-{year}0930 on the basis that the season runs May to September; the regular season does, but the playoffs and Finals run into October (2024 ended 20 October, 2025 mid-October). Both fetch calls pass that window as dates= with no date-less fallback, so no postseason game was ever retrieved and the scoreboard went blank exactly when the games matter most. The window now closes 1 November. NBA and both NCAA leagues were checked and are correct.",
+      "changelog": "Pixel fonts now render on their grids instead of anti-aliased: PressStart2P snaps to multiples of 8 and 4x6-font to multiples of 7, on both the scroll/Vegas cards and the regular display. A font size that merely echoes the schema default is treated as unchosen and snapped; a size you actually chose is left alone."
+    },
     {
       "version": "1.17.0",
       "released": "2026-08-22",
