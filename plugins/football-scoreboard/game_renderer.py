@@ -1274,6 +1274,34 @@ class GameRenderer:
             pass
         return default
 
+    #: Clear pixels kept between the score and each logo. Without it the
+    #: score's outermost column can land on the logo's first lit column --
+    #: numerically fine, visually touching.
+    _SCORE_LOGO_GUTTER_PX: ClassVar[int] = 4
+
+    def _score_reserve_width(self) -> int:
+        """Centre strip the score actually needs, measured rather than assumed.
+
+        The gap was derived from the card width alone (width x
+        CENTER_GAP_RATIO, clamped to CENTER_GAP_MAX_PX = 40) while the score's
+        size comes from config and the element-style resolver. The two had no
+        relationship with each other. On devpi's 64-tall cards that put an
+        ~80px score in a 36px gap, so ~17px of it landed on each logo -- the
+        overlap reported against the Vegas ticker, and visible on the panel
+        even though every harness render passed.
+
+        Measuring the score keeps the strip wide enough for whatever font is
+        actually in play, instead of assuming a size the renderer never
+        promised.
+        """
+        try:
+            probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
+            width = probe.textlength("00-00", font=self.fonts['score'])
+            return int(width) + 2 * self._SCORE_LOGO_GUTTER_PX
+        except Exception:
+            self.logger.debug("Score reserve measurement failed", exc_info=True)
+            return 0
+
     def _center_gap_width(self) -> int:
         """Width of the middle strip kept clear of logos.
 
@@ -1289,7 +1317,11 @@ class GameRenderer:
         high = self._scroll_card_option("center_gap_max", self.CENTER_GAP_MAX_PX)
         try:
             scaled = round(self.display_width * float(ratio))
-            return int(max(int(low), min(int(high), scaled)))
+            derived = int(max(int(low), min(int(high), scaled)))
+            # A strip narrower than the score is the bug, not a style choice.
+            # An explicit ``center_gap`` is still honoured above, including 0
+            # for deliberate edge-to-edge logos.
+            return max(derived, self._score_reserve_width())
         except (TypeError, ValueError):
             return self.CENTER_GAP_MIN_PX
 
@@ -1301,7 +1333,11 @@ class GameRenderer:
         logos used to meet (128x64, 64x32) shrink.
         """
         available = (self.display_width - self._center_gap_width()) // 2
-        return max(8, min(self.display_height, available))
+        # No height cap: the card is now sized as "two full-height logos plus
+        # the measured gap", so whatever is left after the gap is exactly the
+        # logo's share. Capping at display_height here is what left 18px of
+        # dead space above and below the logos on a 64-tall card.
+        return max(8, available)
 
     def _upcoming_center_mode(self) -> str:
         """Middle of an upcoming card: 'vs', 'date_time' or 'none'."""

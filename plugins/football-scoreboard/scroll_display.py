@@ -69,10 +69,42 @@ else:
         NCAA_FB_SEPARATOR_ICON = "assets/sports/ncaa_logos/ncaa_fb.png"
 
         def scroll_settings_defaults(self):
-            # Core sizes game cards to the panel; this plugin has always
-            # pinned them at 128px, and the byte-identical harness gate
-            # depends on keeping that.
-            return {**super().scroll_settings_defaults(), "game_card_width": 128}
+            # Core sizes game cards to the panel; this plugin pinned them at a
+            # flat 128px whatever the panel was, which is what put the score on
+            # top of the logos on tall cards -- see _default_game_card_width.
+            return {**super().scroll_settings_defaults(),
+                    "game_card_width": self._default_game_card_width()}
+
+        def _default_game_card_width(self) -> int:
+            """Card width that fits two full-height logos and the score.
+
+            GameRenderer gives each logo (width - centre gap) / 2. With a flat
+            128px card and a gap that ignored the score, a 64-tall card had a
+            36px gap holding an ~80px score, so the score ran ~17px onto each
+            logo. Widening the gap alone would have fixed the overlap by
+            shrinking the logos to 22px -- the failure mode of "the logos
+            aren't visible" that we already rejected once.
+
+            Sizing the card as "two full-height logos plus the measured gap"
+            makes the height the binding constraint instead, so the logos come
+            out at their full height AND the score has its own clear strip.
+
+            The gap is measured with a throwaway renderer because the score's
+            font comes from config and the element-style resolver, not from
+            the card size -- it is the same for a 128px card as for a 256px
+            one, so there is no circularity in asking for it first.
+
+            A 32-tall panel computes 2*32 + ~48 = 112 and keeps the 128 it has
+            always had; only the tall cards move.
+            """
+            try:
+                probe = GameRenderer(128, self.display_height, self.config)
+                gap = probe._center_gap_width()
+            except Exception:
+                self.logger.debug("Card width probe failed; keeping 128",
+                                  exc_info=True)
+                return 128
+            return max(128, self.display_height * 2 + gap)
 
         def _load_separator_icons(self) -> None:
             """Load and resize league separator icons."""
