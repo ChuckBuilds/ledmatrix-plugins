@@ -105,13 +105,49 @@ class F1DataSource:
         else:
             self._mem_cache[key] = (time.time(), data)
 
+    @staticmethod
+    def _is_openf1_empty_result(url: str, response: Any) -> bool:
+        """True only for OpenF1's "no rows matched" 404.
+
+        _fetch_json is shared with ESPN and Jolpi, where a 404 means a resource
+        is genuinely missing and is worth an ERROR. Only OpenF1 uses 404 to say
+        an empty result set, so the downgrade is scoped to it -- by host, and
+        by the body it sends -- rather than applied to every 404.
+        """
+        if getattr(response, "status_code", None) != 404:
+            return False
+        if not url.startswith(OPENF1_BASE):
+            return False
+        try:
+            detail = (response.json() or {}).get("detail", "")
+        except (ValueError, AttributeError):
+            # A 404 with an unreadable body is not a known empty result.
+            return False
+        return isinstance(detail, str) and "no results found" in detail.lower()
+
     def _fetch_json(self, url: str, params: Dict = None,
                     timeout: int = 30) -> Optional[Dict]:
-        """Fetch JSON from a URL with error handling."""
+        """Fetch JSON from a URL with error handling.
+
+        OpenF1 answers an *empty result set* with ``404 {"detail": "No results
+        found."}`` rather than an empty list, so a 404 is the normal reply for
+        a session that has not run yet -- every practice session is a 404 until
+        cars are on track. Logging that at ERROR meant a rig sitting between
+        race weekends wrote ~60 spurious ERROR lines a day to the journal,
+        which both buries genuine failures and is pointless SD-card wear.
+        Real failures (5xx, timeouts, connection errors) still log at ERROR.
+        """
         try:
             response = self.session.get(url, params=params, timeout=timeout)
             response.raise_for_status()
             return response.json()
+        except requests.HTTPError as e:
+            # Must precede RequestException -- HTTPError is a subclass.
+            if self._is_openf1_empty_result(url, e.response):
+                logger.debug("No data available yet for %s: %s", url, e)
+            else:
+                logger.error("API request failed for %s: %s", url, e)
+            return None
         except requests.RequestException as e:
             logger.error("API request failed for %s: %s", url, e)
             return None

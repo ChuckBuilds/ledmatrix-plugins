@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.8.4",
+  "version": "1.8.6",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,18 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.8.6",
+      "released": "2026-08-21",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Scope the 404 log downgrade to OpenF1. _fetch_json is shared with ESPN and Jolpi, where a 404 means a resource is genuinely missing and must keep its ERROR signal; only OpenF1 answers an empty result set with 404 {\"detail\": \"No results found.\"}. The downgrade now checks both the host and that body, so an unexplained OpenF1 404 or any 404 from the other two still logs at ERROR."
+    },
+    {
+      "version": "1.8.5",
+      "released": "2026-08-21",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop logging an empty OpenF1 result as an error. OpenF1 answers an empty result set with 404 {\"detail\": \"No results found.\"} rather than an empty list, so every practice-session query is a 404 until cars are on track. That normal condition was logged at ERROR, so a rig sitting between race weekends wrote ~60 spurious ERROR lines a day to the journal -- burying genuine failures and wearing the SD card for nothing. 404 now logs at DEBUG; 5xx, 401/403, timeouts and connection errors are unchanged."
+    },
     {
       "version": "1.8.4",
       "released": "2026-08-19",
