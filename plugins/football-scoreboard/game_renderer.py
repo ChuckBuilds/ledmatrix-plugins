@@ -225,7 +225,23 @@ class GameRenderer:
         return max(grid, int(round(desired / grid)) * grid)
 
     def _detail_font_size(self, base: int = 6) -> int:
-        """Odds/detail size, scaled to the panel height.
+        """Odds/detail size: one grid step of the detail face, at every height.
+
+        This used to scale with panel height, on the reasoning that 6px odds
+        read as an afterthought on a 64-tall panel. Two things were wrong with
+        that. The sizes it produced (6px, then 10px) are both off the 4x6
+        face's 7px grid, so the glyphs were anti-aliased -- on an LED matrix
+        that is a dim lamp, not a soft edge, and it is why the odds looked
+        broken rather than small. And the larger size did not fit: the
+        over/under is budgeted against the centre text, and at 10px it lost
+        that contest and was dropped entirely, so growing the font cost half
+        the odds.
+
+        One crisp grid step reads clearly at every height and leaves room for
+        both numbers. Kept as a method rather than a constant because a user
+        who sets a size explicitly still overrides it.
+
+        Superseded reasoning, for the record:
 
         The odds are drawn in the detail font, pinned at 6px because that is
         what suited a 32-tall panel. On a 64-tall one everything around them
@@ -243,17 +259,7 @@ class GameRenderer:
         would get bigger by losing half of themselves. 1.75x (10px) was the
         largest size measured to still render both over/under and spread.
         """
-        if self.display_height <= self._FONT_BASELINE_HEIGHT:
-            # Deliberately left off-grid. The next crisp size up is 7px, and
-            # at 7px the over/under no longer fits beside the centre text --
-            # the collision guard drops it entirely, so the odds would get
-            # sharper by losing half of themselves. On a 32-tall panel the
-            # detail text is small enough that the softness barely reads;
-            # a missing number is worse than a fuzzy one.
-            return base
-        grid = self._FONT_PIXEL_GRID.get('4x6-font.ttf', base)
-        steps = max(1, round(self.display_height / self._FONT_BASELINE_HEIGHT))
-        return grid * steps
+        return self._FONT_PIXEL_GRID.get('4x6-font.ttf', base)
 
     def _load_fonts(self) -> Dict[str, Union[ImageFont.FreeTypeFont, Any]]:
         """
@@ -741,7 +747,9 @@ class GameRenderer:
         
         # Draw odds if enabled
         if show_odds and 'odds' in game and game['odds']:
-            self._draw_dynamic_odds(draw_overlay, game['odds'])
+            self._draw_dynamic_odds(
+                draw_overlay, game['odds'],
+                centre_text=self._centre_row_text(game, game_type))
         
         # Draw records or rankings if enabled
         if show_records or show_ranking:
@@ -988,7 +996,9 @@ class GameRenderer:
 
         game_league = game.get("league", "nfl")
         if self._get_display_option(game_league, "show_odds") and game.get('odds'):
-            self._draw_dynamic_odds(draw_overlay, game['odds'])
+            self._draw_dynamic_odds(
+                draw_overlay, game['odds'],
+                centre_text=self._centre_row_text(game, game_type))
         show_records = self._get_display_option(game_league, "show_records")
         show_ranking = self._get_display_option(game_league, "show_ranking")
         if show_records or show_ranking:
@@ -1544,8 +1554,32 @@ class GameRenderer:
                 fill=color, outline=(0, 0, 0)
             )
     
-    def _draw_dynamic_odds(self, draw: ImageDraw.Draw, odds: Dict[str, Any]) -> None:
-        """Draw odds with dynamic positioning."""
+    #: Clear pixels kept between an odds label and the centre status text.
+    _ODDS_CENTRE_GUTTER_PX: ClassVar[int] = 3
+
+    def _centre_row_text(self, game: Dict[str, Any], game_type: str) -> str:
+        """What this card draws in the centre of the odds row.
+
+        The odds sit at the outer ends of the top row and the status sits in
+        the middle of it, so this is the string they have to share space with.
+        Mirrors what the three _draw_*_game_status methods put there.
+        """
+        if game_type == "live":
+            if game.get("is_halftime"):
+                return "Halftime"
+            return f"{game.get('period_text', '')} {game.get('clock', '')}".strip()
+        if game_type == "recent":
+            return str(game.get("period_text") or "Final")
+        _date, time_text = self._upcoming_date_and_time(game)
+        return str(time_text or "")
+
+    def _draw_dynamic_odds(self, draw: ImageDraw.Draw, odds: Dict[str, Any],
+                           centre_text: str = "") -> None:
+        """Draw odds with dynamic positioning.
+
+        *centre_text* is what this card draws on the same row, used to budget
+        the space left at the edges. Empty falls back to the old worst case.
+        """
         try:
             if not odds:
                 return
@@ -1598,8 +1632,19 @@ class GameRenderer:
             # of hard-coding a width.
             font = self.fonts["detail"]
             time_font = self.fonts.get("time", font)
-            centre_reserve = draw.textlength("12:00 PM", font=time_font)
-            side_budget = max(0.0, (self.display_width - centre_reserve) / 2)
+            # Reserve for what this card actually puts in the centre, not the
+            # widest string any card could. "12:00 PM" is an upcoming card's
+            # kickoff; a finished card says "Final" and costs 24px less. The
+            # fixed worst case spent that on every card and pushed the
+            # over/under out of cards that had room for it.
+            centre_reserve = draw.textlength(centre_text or "12:00 PM",
+                                             font=time_font)
+            # A gutter either side of the centre text. Without it a label that
+            # fits "exactly" ends on the pixel the status starts on, which
+            # reads as collided even though nothing is overprinted.
+            gutter = self._ODDS_CENTRE_GUTTER_PX
+            side_budget = max(
+                0.0, (self.display_width - centre_reserve) / 2 - gutter)
 
             if favored_spread is not None:
                 spread_text = str(favored_spread)
@@ -1620,13 +1665,21 @@ class GameRenderer:
             # Show over/under on opposite side
             over_under = odds.get("over_under")
             if over_under is not None and isinstance(over_under, (int, float)):
-                ou_text = f"O/U: {over_under}"
-                ou_width = draw.textlength(ou_text, font=font)
-
-                # The longer of the two labels; on a narrow card it is the one
-                # that collides, so it is the one that gives way. The spread is
-                # the more useful number, and it is kept.
-                if ou_width > side_budget:
+                # Shed label, then punctuation, before shedding the number.
+                # A live card centres "Q4 02:34", which is as wide as the old
+                # worst case, so the full label never fit there -- the
+                # over/under was dropped on exactly the cards people watch.
+                # The bare number still reads as the over/under from position.
+                candidates = (f"O/U: {over_under}", f"O/U {over_under}",
+                              f"O/U{over_under}", f"{over_under}")
+                for candidate in candidates:
+                    ou_text = candidate
+                    ou_width = draw.textlength(ou_text, font=font)
+                    if ou_width <= side_budget:
+                        break
+                else:
+                    # Not even the bare number fits; the spread is the more
+                    # useful of the two and keeps the space.
                     return
 
                 if favored_side == "home":

@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.19.2",
+  "version": "2.19.3",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.19.3",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Keep the over/under on screen, and shrink the odds rather than blur them. The detail font no longer grows with panel height: the sizes that produced (6px, then 10px) both sit off the 4x6 face grid of 7px, so the glyphs were anti-aliased, and the larger one lost its space contest against the centre status and was dropped entirely. One crisp 7px step now applies at every height. The budget also measures what the card actually centres instead of the widest string any card could hold, and the label sheds its prefix before it sheds the number (O/U: 45.5 to 45.5), with a 3px gutter so a label that just fits does not end on the pixel the status starts on. The over/under now renders on live, final and upcoming cards at both 32 and 64 tall; previously it was missing from every 64-tall card."
+    },
     {
       "version": "2.19.2",
       "released": "2026-08-23",

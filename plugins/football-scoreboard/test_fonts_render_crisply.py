@@ -96,21 +96,17 @@ def main():
         r = GameRenderer(128, height, {})
         for key in ("score", "time", "status", "detail", "rank"):
             pct = fuzz_pct(r.fonts[key])
-            if height <= 32 and key == "detail":
-                continue                      # documented exception, below
             check("%3dpx panel: %s at %spx is crisp"
                   % (height, key, r.fonts[key].size), pct == 0.0)
 
-    print("\nthe 32-tall detail exception is deliberate and still in place")
-    r32 = GameRenderer(128, 32, {})
-    check("32-tall detail stays 6px so the over/under survives",
-          r32.fonts["detail"].size == 6)
-
-    print("\ntall panels scale the detail font in whole grid steps")
-    for height, expected in ((64, 14), (96, 21), (128, 28)):
+    print("\nthe detail font is one crisp grid step at every height")
+    # It used to scale with panel height (6px, then 10px). Both are off the
+    # 7px grid, and the larger one lost the over/under to the centre-text
+    # budget -- so the odds got bigger by losing half of themselves.
+    for height in (32, 48, 64, 96, 128):
         r = GameRenderer(128, height, {})
-        check("%dpx panel: detail is %dpx" % (height, expected),
-              r.fonts["detail"].size == expected)
+        check("%3dpx panel: detail is 7px" % height,
+              r.fonts["detail"].size == 7)
 
     print()
     failed = [c for c, ok in results if not ok]
