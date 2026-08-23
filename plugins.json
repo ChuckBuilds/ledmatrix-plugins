@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-08-20",
+  "last_updated": "2026-08-21",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -335,7 +335,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.13.3",
+      "latest_version": "1.13.4",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -359,7 +359,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.12.5",
+      "latest_version": "1.12.6",
       "icon": "fas fa-baseball-ball"
     },
     {
