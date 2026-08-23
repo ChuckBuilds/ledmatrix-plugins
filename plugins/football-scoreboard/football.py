@@ -219,6 +219,16 @@ class FootballLive(Football, SportsLive):
             elif game.get("is_period_break"):
                 period_clock_text = game.get("status_text", "Period Break")
 
+            # Shed detail before legibility on a narrow panel: the full
+            # "Q4 02:34" is 64px at 8px, the whole width of a 64px display.
+            # -2 leaves room for the outline stroke at both ends.
+            period_clock_text = self._fit_text(
+                draw_overlay,
+                (period_clock_text,
+                 game.get("clock", ""),
+                 game.get("period_text", "")),
+                self.fonts['time'], display_width - 2)
+
             status_width = draw_overlay.textlength(period_clock_text, font=self.fonts['time'])
             status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
             status_y = 1 + self._get_layout_offset('status_text', 'y_offset') # Position at top
@@ -249,6 +259,18 @@ class FootballLive(Football, SportsLive):
                 
                 self._draw_text_with_outline(draw_overlay, scoring_event, (event_x, event_y), self.fonts['detail'], fill=event_color)
             elif down_distance and game.get("is_live"): # Only show if live and available
+                # Same trade as the clock above: prefer the long form, fall
+                # back to ESPN's short one ("1st & 10" -> "1st&10"), and only
+                # then let it overflow. The possession ball is drawn to the
+                # right of this text, so an oversized string pushes the ball
+                # off the panel as well as clipping itself.
+                down_distance = self._fit_text(
+                    draw_overlay,
+                    (down_distance,
+                     game.get("down_distance_text", ""),
+                     game.get("down_distance_text_long", "")),
+                    self.fonts['detail'], display_width - 10)
+
                 dd_width = draw_overlay.textlength(down_distance, font=self.fonts['detail'])
                 dd_x = (display_width - dd_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
                 dd_y = (display_height)- 7 + self._get_layout_offset('status_text', 'y_offset') # Top of D&D text

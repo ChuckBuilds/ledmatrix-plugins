@@ -768,6 +768,62 @@ class SportsCore(ABC):
             draw.text((x + dx, y + dy), text, font=font, fill=outline_color)
         draw.text((x, y), text, font=font, fill=fill)
 
+    def _fit_text(self, draw, candidates, font, max_width: int) -> str:
+        """First candidate that fits *max_width*, else the last one, else "".
+
+        Small panels are the reason this exists. A status line is centred and
+        drawn whatever its width, so on a 64px panel "Q4 02:34" at 8px is
+        exactly 64px: it spans the full panel, its outline stroke is clipped
+        at both ends, and it collides with anything else on that row. Passing
+        progressively shorter forms lets the caller give up detail instead of
+        legibility -- "Q4 02:34" then "02:34" then "Q4" -- which is the same
+        trade the odds row makes when it sheds "O/U:".
+
+        Callers order candidates richest-first. The shortest is returned even
+        if it does not fit, because a clipped clock still tells you more than
+        a blank one.
+        """
+        last = ""
+        for candidate in candidates:
+            if not candidate:
+                continue
+            last = candidate
+            try:
+                if draw.textlength(candidate, font=font) <= max_width:
+                    return candidate
+            except Exception:
+                return candidate
+        return last
+
+    #: How far each logo is shifted outward, off the panel edge, by the
+    #: scorebug layouts. Kept here because the logo sizing has to know it.
+    _LOGO_EDGE_BLEED_PX = 10
+
+    def _scorebug_centre_gap(self) -> int:
+        """Width the centre keeps clear for the score, in the scorebug layout.
+
+        Measured from the score font rather than assumed, so it tracks a user
+        who sets a larger one.
+
+        Reserved for a five-character score ("17-21"), which is what almost
+        every game shows. Reserving for six ("100-98") costs 12px, and on a
+        64px panel that is the difference between a 12px logo and a 6px one --
+        paying a visible price on every game for a scoreline football does not
+        produce. A game that does reach three digits either side will have its
+        score touch the logo edge; that is the better trade.
+
+        The logo cache is keyed on team, so this must not vary with the score
+        actually on screen -- hence a fixed representative string rather than
+        the live one.
+        """
+        try:
+            font = self.fonts["score"]
+            from PIL import Image as _Image, ImageDraw as _ImageDraw
+            probe = _ImageDraw.Draw(_Image.new("RGB", (4, 4)))
+            return int(probe.textlength("00-00", font=font)) + 4
+        except Exception:
+            return 44
+
     def _load_and_resize_logo(
         self, team_id: str, team_abbrev: str, logo_path: Path, logo_url: str | None
     ) -> Optional[Image.Image]:
@@ -820,8 +876,23 @@ class SportsCore(ABC):
             if logo.mode != "RGBA":
                 logo = logo.convert("RGBA")
 
-            max_width = int(self.display_width * 1.5)
+            # 1.5x the panel so the logo bleeds off the outer edge -- the look
+            # this layout is built around. On a wide panel that is fine: the
+            # two logos sit at x=-10 and x=width-logo+10 with the score in the
+            # gap between them. On a narrow one it is not. At 64x32 a 1.5x
+            # logo is 48px, the pair spans -10..38 and 26..74, and they
+            # overlap EACH OTHER in the middle before the score or clock are
+            # drawn at all -- which is what makes a small panel look jumbled.
+            #
+            # So the bleed is capped by what the panel can actually spare: the
+            # centre has to keep room for the score, and each logo may reach
+            # inward only as far as the edge of that gap (plus the 10px it is
+            # already shifted outward by). Binds only when the panel is too
+            # narrow for the 1.5x; every size that fits today is unchanged.
             max_height = int(self.display_height * 1.5)
+            centre_gap = self._scorebug_centre_gap()
+            reach = (self.display_width - centre_gap) // 2 + self._LOGO_EDGE_BLEED_PX
+            max_width = max(8, min(int(self.display_width * 1.5), reach))
             logo.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
             self._logo_cache[team_abbrev] = logo
             return logo
