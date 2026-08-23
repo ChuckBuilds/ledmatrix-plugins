@@ -200,6 +200,30 @@ class GameRenderer:
     #: Panel height the classic font sizes were chosen against.
     _FONT_BASELINE_HEIGHT: ClassVar[int] = 32
 
+    #: Pixel grid each bundled font is drawn on. These are pixel-art faces:
+    #: they rasterise cleanly only at whole multiples of their grid, and at
+    #: any other size FreeType anti-aliases to fake the in-between stroke
+    #: widths. On an LED matrix every pixel is a physical lamp, so a grey
+    #: edge pixel is not a soft edge -- it is a dim lamp, and the text reads
+    #: as smeared. Measured, not assumed: rendering "01/13 O45.5 17-21" at
+    #: 5..40px, these are the only sizes with zero part-lit pixels.
+    _FONT_PIXEL_GRID: ClassVar[Dict[str, int]] = {
+        'PressStart2P-Regular.ttf': 8,   # crisp at 8, 16, 24, 32, 40
+        '4x6-font.ttf': 7,               # crisp at 7, 14, 21, 28, 35
+    }
+
+    @classmethod
+    def _crisp_size(cls, font_file: str, desired: int) -> int:
+        """Snap *desired* to the nearest size this font renders crisply at.
+
+        Fonts with no known grid are returned unchanged, so a user-supplied
+        face is never second-guessed.
+        """
+        grid = cls._FONT_PIXEL_GRID.get(font_file)
+        if not grid or desired <= 0:
+            return desired
+        return max(grid, int(round(desired / grid)) * grid)
+
     def _detail_font_size(self, base: int = 6) -> int:
         """Odds/detail size, scaled to the panel height.
 
@@ -220,9 +244,16 @@ class GameRenderer:
         largest size measured to still render both over/under and spread.
         """
         if self.display_height <= self._FONT_BASELINE_HEIGHT:
+            # Deliberately left off-grid. The next crisp size up is 7px, and
+            # at 7px the over/under no longer fits beside the centre text --
+            # the collision guard drops it entirely, so the odds would get
+            # sharper by losing half of themselves. On a 32-tall panel the
+            # detail text is small enough that the softness barely reads;
+            # a missing number is worse than a fuzzy one.
             return base
-        scaled = round(base * self.display_height / self._FONT_BASELINE_HEIGHT)
-        return int(min(round(base * 1.75), scaled))
+        grid = self._FONT_PIXEL_GRID.get('4x6-font.ttf', base)
+        steps = max(1, round(self.display_height / self._FONT_BASELINE_HEIGHT))
+        return grid * steps
 
     def _load_fonts(self) -> Dict[str, Union[ImageFont.FreeTypeFont, Any]]:
         """
@@ -238,7 +269,16 @@ class GameRenderer:
             for font_key, (loader_font, loader_size) in self._LOADER_DEFAULTS.items():
                 element = self._FONT_ELEMENT_KEYS.get(font_key, font_key)
                 if font_key == 'detail':
+                    # _detail_font_size already picks a size deliberately --
+                    # grid-aligned on tall panels, and off-grid at 6px on 32
+                    # tall ones where the over/under would not survive 7px.
+                    # Re-snapping here would undo that.
                     loader_size = self._detail_font_size(loader_size)
+                else:
+                    # Snap the DEFAULT to the font's pixel grid. A size the
+                    # user set explicitly is passed through untouched by the
+                    # resolver, so this only moves a default we chose.
+                    loader_size = self._crisp_size(loader_font, loader_size)
                 fonts[font_key] = self._style_resolver.style(
                     element, classic_font=loader_font,
                     classic_size=loader_size).font
@@ -257,14 +297,21 @@ class GameRenderer:
         rank_config = customization.get('rank_text', {})
 
         try:
-            fonts["score"] = self._load_custom_font(score_config, default_size=10)
-            fonts["time"] = self._load_custom_font(period_config, default_size=8)
-            fonts["team"] = self._load_custom_font(team_config, default_size=8)
-            fonts["status"] = self._load_custom_font(status_config, default_size=6)
+            _ps = 'PressStart2P-Regular.ttf'
+            fonts["score"] = self._load_custom_font(
+                score_config, default_size=self._crisp_size(_ps, 10))
+            fonts["time"] = self._load_custom_font(
+                period_config, default_size=self._crisp_size(_ps, 8))
+            fonts["team"] = self._load_custom_font(
+                team_config, default_size=self._crisp_size(_ps, 8))
+            fonts["status"] = self._load_custom_font(
+                status_config, default_size=self._crisp_size(_ps, 6))
             fonts["detail"] = self._load_custom_font(
-                detail_config, default_size=self._detail_font_size(),
+                detail_config,
+                default_size=self._detail_font_size(),
                 default_font='4x6-font.ttf')
-            fonts["rank"] = self._load_custom_font(rank_config, default_size=10)
+            fonts["rank"] = self._load_custom_font(
+                rank_config, default_size=self._crisp_size(_ps, 10))
             self.logger.debug("Successfully loaded fonts from config")
         except Exception as e:
             self.logger.error(f"Error loading fonts: {e}, using defaults")

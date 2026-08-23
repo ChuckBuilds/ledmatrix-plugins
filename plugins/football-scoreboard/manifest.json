@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.19.1",
+  "version": "2.19.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.19.2",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Render the scroll-card fonts on their pixel grid. PressStart2P and 4x6-font are pixel-art faces that rasterise cleanly only at whole multiples of 8 and 7; every other size is anti-aliased, and on an LED matrix a part-lit pixel is a dim lamp rather than a soft edge. Score, status and rank sat off-grid at 10/6/10, and on 64-tall panels the odds were scaled to 10px where 65% of the lit pixels were partial -- the over/under and spread came out visibly broken. Defaults now snap to the grid and the detail font scales in whole grid steps (14px at 64 tall, 21 at 96, 28 at 128). A 32-tall panel deliberately keeps its 6px detail font: the next crisp size is 7px, at which the over/under no longer fits and is dropped entirely."
+    },
     {
       "version": "2.18.1",
       "released": "2026-08-19",
