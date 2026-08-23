@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.12.13",
+  "version": "1.12.17",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
