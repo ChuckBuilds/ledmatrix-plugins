@@ -1643,7 +1643,12 @@ class SportsUpcoming(SportsCore):
             status_font = self.fonts["status"]
             if display_width > 128:
                 status_font = self.fonts["time"]
-            status_text = "Next Game"
+            # "Next Game" is 9 characters; at 8px that is 72px, wider than a
+            # 64px panel, so it ran off both edges. Shed to "Next" then to
+            # nothing -- the date and time below already say what the card is.
+            status_text = self._fit_text(
+                draw_overlay, ("Next Game", "Next", ""),
+                status_font, display_width - 2)
             status_width = draw_overlay.textlength(status_text, font=status_font)
             status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
             status_y = 1 + self._get_layout_offset('status_text', 'y_offset')  # Changed from 2
