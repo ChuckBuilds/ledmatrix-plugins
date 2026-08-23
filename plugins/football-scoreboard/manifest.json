@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.19.1",
+  "version": "2.19.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.19.2",
+      "released": "2026-08-21",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fix live scorebug overlap during games (e.g. favorite DAL). Classic logos were sized to 1.5x the panel and shifted inward, so live-only chrome (down/distance, possession, timeouts, records) painted on top of them \\u2014 upcoming/recent looked fine with less center ink. Live logos now fit a reserved center column; records sit above the timeout strip in classic and adaptive layouts.\",\n      \"ledmatrix_min_version\": \"2.0.0 (Written against 2.15.4; rebased onto 2.19.1, so it lands as 2.19.2.) Test measures the drawn glyph height instead of assuming it, so it holds whether or not the core is importable."
+    },
     {
       "version": "2.18.1",
       "released": "2026-08-19",
