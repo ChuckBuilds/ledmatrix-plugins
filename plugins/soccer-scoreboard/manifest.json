@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.12.6",
+  "version": "2.12.7",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,12 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.12.7",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Rebuild the league registry into a local and publish it with one atomic rebind instead of clearing the live dict and refilling it key by key. on_config_change runs on the core's config-watcher thread while the display path iterates the same registry, so saving config during a soccer frame could render a screen with no leagues, or raise \"dictionary changed size during iteration\" inside display(). Readers that consult the registry more than once (the league selection's iterate-then-sort, and the manager lookup's membership-test-then-index) now take a single snapshot, so a replacement landing mid-selection cannot turn a league collected from the old registry into a KeyError against the new one."
+    },
     {
       "version": "2.12.2",
       "released": "2026-08-19",
