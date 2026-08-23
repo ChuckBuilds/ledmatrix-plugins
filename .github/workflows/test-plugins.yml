@@ -8,6 +8,11 @@ on:
   pull_request:
     paths:
       - 'plugins/**'
+      # Repo-level guards live here and are run below. Without this a PR that
+      # only touches one of them matches no path, the workflow never runs, and
+      # the guard is merged without ever having executed.
+      - 'scripts/**'
+      - '.github/workflows/test-plugins.yml'
   workflow_dispatch:
     inputs:
       all:
@@ -208,6 +213,68 @@ jobs:
       # script wanting a tty or an out-of-season feed no longer looks like a
       # regression. Adding a plugin test that cannot pass here will now fail
       # CI, so make it skip deliberately rather than leaving it red.
+      # Repo-level guards: scripts/test_*.py, whatever is there.
+      #
+      # Discovered rather than listed. The structure workflow names its three
+      # by hand, which is why five others -- including the schedule-window
+      # plumbing guard -- had never run in CI at all: a guard added later is
+      # simply not picked up, and nothing says so. Globbing means the next one
+      # runs the day it lands.
+      #
+      # Here rather than in the structure workflow because several of these
+      # import a plugin's modules, which pull in the core; this job is the one
+      # that checks core out. They are written to skip cleanly when it is
+      # absent, so running them without it would report success while checking
+      # nothing.
+      - name: Run repo-level guard tests
+        if: always()
+        working-directory: plugins-repo
+        env:
+          LEDMATRIX_CORE: ${{ github.workspace }}/core
+          PYTHONPATH: ${{ github.workspace }}/core
+        run: |
+          set -u
+          shopt -s nullglob
+          guards=(scripts/test_*.py)
+          if [ ${#guards[@]} -eq 0 ]; then
+            echo "::error::no scripts/test_*.py found; the glob or the layout changed"
+            exit 1
+          fi
+          failed=""
+          skipped=""
+          for guard in "${guards[@]}"; do
+            echo "::group::$guard"
+            # Status 2 is "skipped, and said why" -- test_schedule_window_plumbing.py
+            # exits 2 when it cannot find a LEDMatrix core checkout. The core is
+            # checked out above, so that should not happen here; but this step is
+            # `if: always()`, so a failed checkout would otherwise surface as
+            # "guard failed" and point at the guard instead of at the checkout.
+            # Anything else nonzero is a real failure.
+            set +e
+            python "$guard"
+            status=$?
+            set -e
+            echo "::endgroup::"
+            case "$status" in
+              0) ;;
+              2)
+                echo "::notice file=$guard::guard skipped (exit 2)"
+                skipped="$skipped $guard"
+                ;;
+              *)
+                echo "::error file=$guard::guard failed (exit $status)"
+                failed="$failed $guard"
+                ;;
+            esac
+          done
+          if [ -n "$skipped" ]; then
+            echo "skipped:$skipped"
+          fi
+          if [ -n "$failed" ]; then
+            echo "failed:$failed"
+            exit 1
+          fi
+
       - name: Run plugin unit tests on changed plugins
         if: always() && steps.changed.outputs.all_ids != ''
         working-directory: plugins-repo
