@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.12.7",
+  "version": "2.13.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,13 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.13.0",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Rebuild the league registry into a local and publish it with one atomic rebind instead of clearing the live dict and refilling it key by key. on_config_change runs on the core's config-watcher thread while the display path iterates the same registry, so saving config during a soccer frame could render a screen with no leagues, or raise \"dictionary changed size during iteration\" inside display(). Readers that consult the registry more than once (the league selection's iterate-then-sort, and the manager lookup's membership-test-then-index) now take a single snapshot, so a replacement landing mid-selection cannot turn a league collected from the old registry into a KeyError against the new one.",
+      "changelog": "Scroll/Vegas cards: the centre gap is now measured from the score actually loaded, and the card is sized to fit two full-height logos plus that gap, so the score no longer renders on top of the team logos and the logos are no longer frozen at 46px on tall panels."
+    },
     {
       "version": "2.12.7",
       "released": "2026-08-22",
@@ -167,7 +174,7 @@
     {
       "released": "2026-07-29",
       "version": "2.5.0",
-      "notes": "Corrected every team code in TEAMS.md against ESPN's live data — Manchester United is MAN (not MUN), Manchester City MNC (not MCI), Real Madrid RMA, and Ligue 1 had eight wrong codes. The plugin now also says why a league is empty: an unrecognised favorite team logs a warning naming the closest match, while a correct code in a league with no fixtures yet logs the date the season starts.",
+      "notes": "Corrected every team code in TEAMS.md against ESPN's live data \u2014 Manchester United is MAN (not MUN), Manchester City MNC (not MCI), Real Madrid RMA, and Ligue 1 had eight wrong codes. The plugin now also says why a league is empty: an unrecognised favorite team logs a warning naming the closest match, while a correct code in a league with no fixtures yet logs the date the season starts.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -191,7 +198,7 @@
     {
       "released": "2026-07-02",
       "version": "2.2.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league, including custom leagues.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u2014 spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league, including custom leagues.",
       "ledmatrix_min": "2.0.0"
     },
     {

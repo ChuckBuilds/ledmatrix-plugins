@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.12.6",
+  "version": "1.13.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,13 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.13.0",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Request odds only for the games that will be shown. The upcoming-games loop fetched odds for every game it collected and the caller then kept upcoming_games_to_show of them (10 by default). The loop's own comment claimed odds were fetched only for games that would be displayed, but the filter it referred to applies only when show_favorite_teams_only is set AND favourite teams are configured, and neither is the default -- so in the usual case nothing narrowed it. A live rig running college football logged 946 upcoming games in one cycle and displayed 1 of them, having made 946 separate ESPN odds requests to do it, from a Pi that is also driving the panel. The odds cache only absorbs repeats of the same event, so a wide schedule never benefited from it. Nothing about what reaches the screen changes.",
+      "changelog": "Scroll/Vegas cards: the centre gap is now measured from the score actually loaded, and the card is sized to fit two full-height logos plus that gap, so the score no longer renders on top of the team logos and the logos are no longer frozen at 46px on tall panels."
+    },
     {
       "version": "1.12.1",
       "released": "2026-08-19",
@@ -184,7 +191,7 @@
     {
       "released": "2026-07-02",
       "version": "1.3.0",
-      "notes": "Add exclude_teams (hide specific teams from the live rotation and recent/final scores — spoiler protection, takes precedence over favorite_teams/show_all_live) and favorite_live_boost (tune how many more turns your favorite's live game gets in the rotation vs other live games, 1 = even rotation, default 2).",
+      "notes": "Add exclude_teams (hide specific teams from the live rotation and recent/final scores \u2014 spoiler protection, takes precedence over favorite_teams/show_all_live) and favorite_live_boost (tune how many more turns your favorite's live game gets in the rotation vs other live games, 1 = even rotation, default 2).",
       "ledmatrix_min": "2.0.0"
     },
     {

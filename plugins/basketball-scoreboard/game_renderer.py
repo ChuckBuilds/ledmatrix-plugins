@@ -695,6 +695,27 @@ class GameRenderer:
             pass
         return default
 
+    #: Clear pixels kept between the score and each logo, so the score's
+    #: outermost column cannot land on the logo's first lit column.
+    _SCORE_LOGO_GUTTER_PX: ClassVar[int] = 4
+
+    def _score_reserve_width(self) -> int:
+        """Centre strip the score actually needs, measured rather than assumed.
+
+        The gap was derived from the card width alone (width x
+        CENTER_GAP_RATIO, clamped to CENTER_GAP_MAX_PX) while the score's size
+        comes from config and the element-style resolver. Nothing compared the
+        two, so any score wider than the clamp was drawn over the logos.
+        Measuring it keeps the strip wide enough for whatever font is in play.
+        """
+        try:
+            probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
+            width = probe.textlength("00-00", font=self.fonts['score'])
+            return int(width) + 2 * self._SCORE_LOGO_GUTTER_PX
+        except Exception:
+            self.logger.debug("Score reserve measurement failed", exc_info=True)
+            return 0
+
     def _center_gap_width(self) -> int:
         """Width of the middle strip kept clear of logos.
 
@@ -710,7 +731,10 @@ class GameRenderer:
         high = self._scroll_card_option("center_gap_max", self.CENTER_GAP_MAX_PX)
         try:
             scaled = round(self.display_width * float(ratio))
-            return int(max(int(low), min(int(high), scaled)))
+            derived = int(max(int(low), min(int(high), scaled)))
+            # A strip narrower than the score is the bug, not a style choice.
+            # An explicit ``center_gap`` is still honoured above, including 0.
+            return max(derived, self._score_reserve_width())
         except (TypeError, ValueError):
             return self.CENTER_GAP_MIN_PX
 
@@ -722,7 +746,10 @@ class GameRenderer:
         logos used to meet (128x64, 64x32) shrink.
         """
         available = (self.display_width - self._center_gap_width()) // 2
-        return max(8, min(self.display_height, available))
+        # No height cap: the card is sized as "two full-height logos plus the
+        # measured gap", so what is left after the gap is exactly the logo's
+        # share. The cap is what froze the logos at 46px on a 128px card.
+        return max(8, available)
 
     def _upcoming_center_mode(self) -> str:
         """Middle of an upcoming card: 'vs', 'date_time' or 'none'."""

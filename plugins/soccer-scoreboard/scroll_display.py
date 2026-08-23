@@ -100,6 +100,30 @@ else:
         SCROLL_LEAGUE_KEYS = ()
         SCROLL_CONFIG_KEY = "scroll_mode"
 
+
+        def _default_game_card_width(self) -> int:
+            """Card width that fits two full-height logos and the score.
+
+            The card was a flat 128px whatever the panel was, so each logo got
+            (128 - gap) / 2 = 46px and stayed there -- 46px of logo in a
+            128-tall card, with the rest dead space. Sizing the card as "two
+            full-height logos plus the measured gap" makes the height the
+            binding constraint instead.
+
+            The gap is measured with a throwaway renderer because the score's
+            font comes from config, not from the card size, so asking for it
+            before the width is settled is not circular. A 32-tall panel keeps
+            the 128 it has always had.
+            """
+            try:
+                probe = GameRenderer(128, self.display_height, self.config)
+                gap = probe._center_gap_width()
+            except Exception:
+                self.logger.debug("Card width probe failed; keeping 128",
+                                  exc_info=True)
+                return 128
+            return max(128, self.display_height * 2 + gap)
+
         def scroll_settings_defaults(self):
             # The soccer lineage's defaults differ from the shared ones: a
             # 24px gap rather than 48, explicit min/max duration bounds, and
@@ -110,7 +134,7 @@ else:
                 "gap_between_games": 24,
                 "min_duration": 30,
                 "max_duration": 300,
-                "game_card_width": 128,
+                "game_card_width": self._default_game_card_width(),
             }
 
         def __init__(self, *args, **kwargs):

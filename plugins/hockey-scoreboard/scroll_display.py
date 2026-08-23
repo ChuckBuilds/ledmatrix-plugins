@@ -90,11 +90,35 @@ else:
         NCAAM_HOCKEY_SEPARATOR_ICON = "assets/sports/ncaa_logos/ncaa_hockey.png"
         NCAAW_HOCKEY_SEPARATOR_ICON = "assets/sports/ncaa_logos/ncaa_hockey.png"
 
+
+        def _default_game_card_width(self) -> int:
+            """Card width that fits two full-height logos and the score.
+
+            The card was a flat 128px whatever the panel was, so each logo got
+            (128 - gap) / 2 = 46px and stayed there -- 46px of logo in a
+            128-tall card, with the rest dead space. Sizing the card as "two
+            full-height logos plus the measured gap" makes the height the
+            binding constraint instead.
+
+            The gap is measured with a throwaway renderer because the score's
+            font comes from config, not from the card size, so asking for it
+            before the width is settled is not circular. A 32-tall panel keeps
+            the 128 it has always had.
+            """
+            try:
+                probe = GameRenderer(128, self.display_height, self.config)
+                gap = probe._center_gap_width()
+            except Exception:
+                self.logger.debug("Card width probe failed; keeping 128",
+                                  exc_info=True)
+                return 128
+            return max(128, self.display_height * 2 + gap)
+
         def scroll_settings_defaults(self):
             # Where this plugin's defaults differ from core's.
             return {
                 **super().scroll_settings_defaults(),
-                "game_card_width": 128,
+                "game_card_width": self._default_game_card_width(),
             }
 
         def _load_separator_icons(self) -> None:
