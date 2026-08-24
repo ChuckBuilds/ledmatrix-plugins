@@ -109,6 +109,33 @@ def main():
               r.fonts["detail"].size == 7)
 
     print()
+    print("\nthe local loader works too, not just the style resolver")
+    # This path only runs on a core without src.element_style, so it never
+    # executes here -- which is exactly how a bad keyword argument sat in it
+    # undetected until static analysis pointed at it. Exercise it directly.
+    r = GameRenderer(128, 64, {})
+    r._style_resolver = None
+    try:
+        local = r._load_fonts()
+    except Exception as exc:                       # pragma: no cover
+        check("the no-resolver path loads without raising (%s)" % exc, False)
+        local = {}
+    # Loading "without raising" proves nothing on its own: _load_fonts wraps
+    # the whole block in try/except and drops to hardcoded emergency defaults,
+    # which are crisp as well -- so a broken call in the config path is
+    # invisible unless the two paths can be told apart. They can: the config
+    # path gives status PressStart2P (the loader's own default face), while
+    # the emergency fallback hardcodes 4x6-font for it.
+    status_face = os.path.basename(str(getattr(local.get("status"), "path", "")))
+    check("the no-resolver path used the config loader, not the emergency "
+          "fallback (status face %s)" % (status_face or "none"),
+          status_face == "PressStart2P-Regular.ttf")
+    for key, font in sorted(local.items()):
+        size = getattr(font, "size", None)
+        if size:
+            check("no-resolver %s at %spx is crisp" % (key, size),
+                  fuzz_pct(font) == 0.0)
+
     failed = [c for c, ok in results if not ok]
     print("FAILED: %d" % len(failed) if failed else "All checks passed")
     sys.exit(1 if failed else 0)
