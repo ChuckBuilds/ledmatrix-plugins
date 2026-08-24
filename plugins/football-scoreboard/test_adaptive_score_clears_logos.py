@@ -153,14 +153,19 @@ def main():
     for h, card in ((64, 216), (96, 280), (128, 344), (64, 256)):
         r = GameRenderer(card, h, {"layout_mode": "adaptive"})
         seen = {}
-        original = r._fit_element
 
-        def spy(key, text, region, ladder, _o=original, _s=seen):
-            fit = _o(key, text, region, ladder)
-            _s[key] = getattr(getattr(fit, "font", None), "size", 0)
-            return fit
+        def make_spy(original, sink):
+            # Closure rather than default arguments: passing the dict as a
+            # default is a mutable-default smell, and there is no late-binding
+            # problem to work around here since the spy is used within this
+            # iteration.
+            def spy(key, text, region, ladder):
+                fit = original(key, text, region, ladder)
+                sink[key] = getattr(getattr(fit, "font", None), "size", 0)
+                return fit
+            return spy
 
-        r._fit_element = spy
+        r._fit_element = make_spy(r._fit_element, seen)
         logos = plugin_dir / "assets" / "sports" / "nfl_logos"
         r.render_game_card({"away_abbr": "GB", "home_abbr": "KC",
                             "away_score": "34", "home_score": "13",
