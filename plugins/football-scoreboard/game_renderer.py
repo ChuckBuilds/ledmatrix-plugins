@@ -11,6 +11,7 @@ This module provides:
 - Consistent rendering across all display modes
 """
 
+import dataclasses
 import logging
 import os
 from pathlib import Path
@@ -1054,6 +1055,56 @@ class GameRenderer:
             self.logger.debug("Adaptive score gap probe failed", exc_info=True)
             return 0
 
+    #: Width the adaptive logo slots aim for, as a multiple of the card
+    #: height. The core sizes those slots SQUARE (capped at the card height),
+    #: which suits the roughly square marks -- Steelers, TCU -- but leaves the
+    #: wide ones short, because a logo scaled to fill a square slot runs out
+    #: of width long before it runs out of height. 1.54 is the aspect of the
+    #: common wide marks (Green Bay's oval, Kansas City's arrowhead), so a
+    #: slot this wide lets them reach full height. Wider than this only helps
+    #: the rarer ~1.8 marks and costs marquee width for everything else.
+    _LOGO_SLOT_ASPECT: ClassVar[float] = 1.54
+
+    def _adaptive_logo_slot_width(self) -> int:
+        """Slot width the wide logos need to reach the full card height."""
+        return max(1, int(round(self.display_height * self._LOGO_SLOT_ASPECT)))
+
+    def _widen_logo_slots(self, regs):
+        """Give the logos slots wide enough to fill the card height.
+
+        scoreboard_regions() caps each slot at the card height, and widening
+        the CARD does not change that -- every extra pixel goes to the middle
+        instead (a 400px card still gets a 64px slot on a 64-tall panel). So a
+        1.54:1 logo renders 64x41 in a square slot: full width, well short of
+        full height, which is why the wide marks looked smaller than the
+        square ones rather than any difference between leagues.
+
+        The slots are pinned to the outer edges and the middle keeps whatever
+        is left, which is the gap _default_game_card_width already sized for
+        the score. Narrows nothing: if the core's slot is already at least
+        this wide, or the card is too narrow to leave a usable middle, the
+        regions are returned untouched.
+        """
+        slot = self._adaptive_logo_slot_width()
+        away, home = regs.away_slot, regs.home_slot
+        if slot <= away.w:
+            return regs
+        # Card width comes from the REGIONS, not from self: the helper must
+        # describe whatever layout it was handed, and reading self.display_width
+        # made it widen regions belonging to a narrower card.
+        card = home.x + home.w
+        # The middle has to keep enough room for the score. A bare
+        # _MIN_ADAPTIVE_SCORE_WIDTH_PX is not enough of a bar -- an 18px
+        # middle clears it and still crushes the score onto the 7px rung --
+        # so require the gap the score is actually sized for.
+        required = max(self._MIN_ADAPTIVE_SCORE_WIDTH_PX, self._center_gap_width())
+        if card - 2 * slot < required:
+            return regs
+        return dataclasses.replace(
+            regs,
+            away_slot=dataclasses.replace(away, x=0, w=slot),
+            home_slot=dataclasses.replace(home, x=card - slot, w=slot))
+
     def _score_clear_of_logos(self, regs):
         """Trim the score region back to the strip between the two logos.
 
@@ -1104,20 +1155,19 @@ class GameRenderer:
         score_px = getattr(self, '_adaptive_score_px', 0) or 0
         if not score_px:
             return ADAPTIVE_LADDER_TEXT
-        # When the score is already at the smallest PressStart rung there is
-        # no headroom to be secondary WITHIN the same face, and capping below
-        # it drops the band onto 4x6-font -- a different, narrower letterform
-        # on exactly the small panels where nothing was wrong. A 32-tall card
-        # has both at 8px and reads fine; the imbalance only appears once the
-        # score has climbed above the floor.
-        if score_px <= 8:
-            return ADAPTIVE_LADDER_TEXT
+        # Never LARGER than the score, and strictly smaller once the score is
+        # above the 8px floor. At the floor itself equal is right: capping
+        # below 8 drops the band onto 4x6-font, a different and narrower
+        # letterform, on exactly the small panels where nothing was wrong.
+        # Allowing "equal" only at the floor also stops the band jumping to
+        # 16px when a squeezed card pushes the score down to 8.
+        cap = score_px if score_px <= 8 else score_px - 1
         # FontStep's field is size_px, not size. Getting that wrong made the
         # filter match nothing, and the fallback below then silently returned
         # a ladder rather than raising -- so the cap appeared to do nothing.
-        smaller = tuple(step for step in ADAPTIVE_LADDER_TEXT
-                        if getattr(step, 'size_px', 0) < score_px)
-        return smaller or ADAPTIVE_LADDER_TEXT[-1:]
+        allowed = tuple(step for step in ADAPTIVE_LADDER_TEXT
+                        if getattr(step, 'size_px', 0) <= cap)
+        return allowed or ADAPTIVE_LADDER_TEXT[-1:]
 
     def _render_game_card_adaptive(self, game: Dict[str, Any],
                                    game_type: str) -> Image.Image:
@@ -1126,7 +1176,8 @@ class GameRenderer:
         overlay = Image.new('RGBA', (width, height), (0, 0, 0, 0))
         draw_overlay = ImageDraw.Draw(overlay)
 
-        regs = scoreboard_regions(Region(0, 0, width, height), ctx=self._ctx)
+        regs = self._widen_logo_slots(
+            scoreboard_regions(Region(0, 0, width, height), ctx=self._ctx))
         self._adaptive_score_px = 0
 
         away_raw = self._load_raw_logo(game.get("away_abbr", ""), game.get("away_logo_path"))

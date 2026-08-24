@@ -114,6 +114,11 @@ else:
                 gap = probe._center_gap_width()
                 if getattr(probe, "_adaptive", False):
                     gap = max(gap, probe._adaptive_score_gap())
+                    # Adaptive logo slots are widened past the core's square
+                    # cap so the wide marks reach full height, so the card is
+                    # two of THOSE plus the gap rather than two square ones.
+                    slot = probe._adaptive_logo_slot_width()
+                    return max(128, slot * 2 + gap)
             except Exception:
                 self.logger.debug("Card width probe failed; keeping 128",
                                   exc_info=True)

@@ -70,6 +70,13 @@ def main():
         print("\n1 failed")
         return 1
 
+    if not hasattr(GameRenderer, "_widen_logo_slots"):
+        print("  [FAIL] GameRenderer has no _widen_logo_slots -- the logo "
+              "slots are still capped square at the card height, so a wide "
+              "mark renders full-width and well short of full height.")
+        print("\n1 failed")
+        return 1
+
     r = GameRenderer(128, 64, {"layout_mode": "adaptive"})
 
     print("the clamped region never reaches into either logo")
@@ -180,8 +187,12 @@ def main():
         # nothing.
         check("h=%-3d card %d: the score was actually fitted" % (h, card),
               bool(score))
-        check("h=%-3d card %d: status %spx stays under score %spx"
-              % (h, card, status, score), 0 < status < score)
+        # Never larger than the score; strictly smaller once the score is
+        # above the 8px floor, where equal is correct (capping below 8 would
+        # drop the band onto the narrower 4x6 face).
+        ok = 0 < status <= score if score <= 8 else 0 < status < score
+        check("h=%-3d card %d: status %spx vs score %spx"
+              % (h, card, status, score), ok)
 
     print("\nthe ladder cap reads the right field")
     # FontStep's field is size_px, not size. Getting that wrong made the
@@ -195,6 +206,41 @@ def main():
     r._adaptive_score_px = 0
     check("no score on the card leaves the ladder alone",
           r._status_ladder() == ADAPTIVE_LADDER_TEXT)
+
+    print("\nthe logo slots are widened past the core's square cap")
+    # scoreboard_regions() caps each slot at the card height, and widening the
+    # CARD does not change that -- the extra width goes to the middle instead.
+    # So a 1.54:1 mark renders 64x41 in a square slot: full width, well short
+    # of full height. That is why the wide logos looked smaller than the
+    # square ones, not any difference between leagues.
+    for h in (32, 48, 64, 96, 128):
+        probe = GameRenderer(128, h, {"layout_mode": "adaptive"})
+        slot = probe._adaptive_logo_slot_width()
+        gap = max(probe._center_gap_width(), probe._adaptive_score_gap())
+        card = max(128, slot * 2 + gap)
+        check("h=%-3d slot %dpx is wider than the card height" % (h, slot),
+              slot > h)
+        r = GameRenderer(card, h, {"layout_mode": "adaptive"})
+        regs = r._widen_logo_slots(scoreboard_regions(Region(0, 0, card, h)))
+        check("h=%-3d the widened slot is applied (%dpx)" % (h, regs.away_slot.w),
+              regs.away_slot.w == slot)
+        check("h=%-3d slots sit on the card edges" % h,
+              regs.away_slot.x == 0 and regs.home_slot.x + regs.home_slot.w == card)
+        middle = regs.home_slot.x - (regs.away_slot.x + regs.away_slot.w)
+        check("h=%-3d the middle still holds the score gap (%dpx)" % (h, middle),
+              middle >= gap)
+        score = r._score_clear_of_logos(regs)
+        check("h=%-3d the score still clears both widened logos" % h,
+              score.x >= regs.away_slot.x + regs.away_slot.w
+              and score.x + score.w <= regs.home_slot.x)
+
+    print("\nwidening never narrows, and never eats the middle")
+    r = GameRenderer(286, 64, {"layout_mode": "adaptive"})
+    # A card too narrow for two wide slots must be left exactly as it was.
+    narrow = scoreboard_regions(Region(0, 0, 128, 64))
+    kept = r._widen_logo_slots(narrow)
+    check("a card with no room to widen is returned untouched",
+          kept.away_slot.w == narrow.away_slot.w)
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
