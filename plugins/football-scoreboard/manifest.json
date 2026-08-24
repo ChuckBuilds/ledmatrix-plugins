@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.19.1",
+  "version": "2.25.3",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,109 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.25.3",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "Font family aliases are resolved to filenames before the font is loaded, so a configured alias no longer falls back to the wrong face at a size that is not crisp for it. Card width and centre gap are also settled together rather than the gap being measured at a fixed probe width."
+    },
+    {
+      "version": "2.25.2",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "Review follow-ups: the detail text falls back to the 4x6 face its schema declares instead of PressStart2P, and the logo-slot docstring no longer claims a cap that was removed. Also corrects the live down-and-distance fallback, which listed its candidates so that an overflowing string fell back to the LONGEST form rather than the shortest."
+    },
+    {
+      "version": "2.25.1",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "Test-only: the fit-inspection helper is defined once instead of twice."
+    },
+    {
+      "version": "2.25.0",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "A game_card_width equal to the schema default is now treated as unchosen, so the computed card width applies. Without this the card stayed pinned at 128px on any config saved through the web UI, which left the logos SMALLER than before, not merely unchanged. Upcoming cards also cap their kick-off time against the centre element, as played games already cap their status line."
+    },
+    {
+      "version": "2.24.0",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "Adaptive scroll/Vegas cards give the team logos slots wide enough to reach the full card height, so wide marks (arrowheads, ovals) are no longer rendered short. Panel-sized cards are unchanged."
+    },
+    {
+      "version": "2.23.2",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "Test-only: removes a mutable default argument flagged by static analysis."
+    },
+    {
+      "version": "2.23.1",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "Adaptive layout: the status line (Final, Q3 8:42) no longer grows to the same size as the score on large cards, so the score stays the headline. Small panels are unchanged."
+    },
+    {
+      "version": "2.23.0",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "Adaptive scroll/Vegas cards are now sized so the gap between the logos fits a 16px score instead of an 8px one, doubling the score without shrinking the logos. Short panels, where the larger size would not be used, are left as they were."
+    },
+    {
+      "version": "2.22.0",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "Adaptive layout: the score is now drawn in the strip between the team logos instead of across them, bringing adaptive cards in line with the classic layout."
+    },
+    {
+      "version": "2.21.2",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "Readability follow-up in the font loader; no behaviour change."
+    },
+    {
+      "version": "2.21.1",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "Fixes the non-resolver font path, which raised a TypeError and silently fell back to emergency defaults on cores without src.element_style."
+    },
+    {
+      "version": "2.21.0",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "Pixel fonts now render on their grids instead of anti-aliased: PressStart2P snaps to multiples of 8 and 4x6-font to multiples of 7, on both the scroll/Vegas cards and the regular display. A font size that merely echoes the schema default is treated as unchosen and snapped; a size you actually chose is left alone."
+    },
+    {
+      "version": "2.20.1",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the scorebug overprinting itself on small panels. Logos were sized at 1.5x the panel so they bleed off the outer edge, which is fine when the panel is wide; at 64x32 it made each logo 48px at x=-10 and x=26, so the two logos overlapped each other across the middle before the score or clock were drawn. They are now capped so the pair always leaves the centre clear for the score, which binds only where the 1.5x did not fit -- 128x32 and 512x64 keep the logo sizes they had. Status and down-and-distance also shed detail rather than overflowing: Q4 02:34 is 64px at 8px, the entire width of a 64px panel, so it spanned edge to edge with its outline clipped and collided with the rows above and below. They now fall back through shorter forms (Q4 02:34 to 02:34 to Q4) the same way the odds row sheds its label.",
+      "changelog": "Scroll/Vegas cards: the centre gap is now measured from the score actually loaded and the card is sized to fit two full-height logos plus that gap, so the score no longer renders on top of the team logos on tall cards. Test-only follow-up: the small-panel test calls the real sizing methods unbound rather than patching them onto a stub, which cleared a static-analysis false positive."
+    },
+    {
+      "version": "2.19.3",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Keep the over/under on screen, and shrink the odds rather than blur them. The detail font no longer grows with panel height: the sizes that produced (6px, then 10px) both sit off the 4x6 face grid of 7px, so the glyphs were anti-aliased, and the larger one lost its space contest against the centre status and was dropped entirely. One crisp 7px step now applies at every height. The budget also measures what the card actually centres instead of the widest string any card could hold, and the label sheds its prefix before it sheds the number (O/U: 45.5 to 45.5), with a 3px gutter so a label that just fits does not end on the pixel the status starts on. The over/under now renders on live, final and upcoming cards at both 32 and 64 tall; previously it was missing from every 64-tall card."
+    },
+    {
+      "version": "2.19.2",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Render the scroll-card fonts on their pixel grid. PressStart2P and 4x6-font are pixel-art faces that rasterise cleanly only at whole multiples of 8 and 7; every other size is anti-aliased, and on an LED matrix a part-lit pixel is a dim lamp rather than a soft edge. Score, status and rank sat off-grid at 10/6/10, and on 64-tall panels the odds were scaled to 10px where 65% of the lit pixels were partial -- the over/under and spread came out visibly broken. Defaults now snap to the grid and the detail font scales in whole grid steps (14px at 64 tall, 21 at 96, 28 at 128). A 32-tall panel deliberately keeps its 6px detail font: the next crisp size is 7px, at which the over/under no longer fits and is dropped entirely."
+    },
     {
       "version": "2.18.1",
       "released": "2026-08-19",

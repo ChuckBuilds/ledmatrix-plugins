@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.16.7",
+  "version": "1.20.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,41 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.20.0",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fetch the WNBA postseason. The ESPN date window was built as {year}0501-{year}0930 on the basis that the season runs May to September; the regular season does, but the playoffs and Finals run into October (2024 ended 20 October, 2025 mid-October). Both fetch calls pass that window as dates= with no date-less fallback, so no postseason game was ever retrieved and the scoreboard went blank exactly when the games matter most. The window now closes 1 November. NBA and both NCAA leagues were checked and are correct.",
+      "changelog": "Font family aliases are resolved to filenames before the font is loaded, so a configured alias no longer falls back to the wrong face at a size that is not crisp for it. Card width and centre gap are also settled together rather than the gap being measured at a fixed probe width. The centre strip is now sized for a three-digit score, which this sport reaches."
+    },
+    {
+      "version": "1.19.1",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fetch the WNBA postseason. The ESPN date window was built as {year}0501-{year}0930 on the basis that the season runs May to September; the regular season does, but the playoffs and Finals run into October (2024 ended 20 October, 2025 mid-October). Both fetch calls pass that window as dates= with no date-less fallback, so no postseason game was ever retrieved and the scoreboard went blank exactly when the games matter most. The window now closes 1 November. NBA and both NCAA leagues were checked and are correct.",
+      "changelog": "Review follow-ups: the detail text falls back to the 4x6 face its schema declares instead of PressStart2P, and the logo-slot docstring no longer claims a cap that was removed."
+    },
+    {
+      "version": "1.19.0",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fetch the WNBA postseason. The ESPN date window was built as {year}0501-{year}0930 on the basis that the season runs May to September; the regular season does, but the playoffs and Finals run into October (2024 ended 20 October, 2025 mid-October). Both fetch calls pass that window as dates= with no date-less fallback, so no postseason game was ever retrieved and the scoreboard went blank exactly when the games matter most. The window now closes 1 November. NBA and both NCAA leagues were checked and are correct.",
+      "changelog": "A game_card_width equal to the schema default is now treated as unchosen, so the computed card width applies. Without this the card stayed pinned at 128px on any config saved through the web UI, which left the logos SMALLER than before, not merely unchanged."
+    },
+    {
+      "version": "1.18.0",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fetch the WNBA postseason. The ESPN date window was built as {year}0501-{year}0930 on the basis that the season runs May to September; the regular season does, but the playoffs and Finals run into October (2024 ended 20 October, 2025 mid-October). Both fetch calls pass that window as dates= with no date-less fallback, so no postseason game was ever retrieved and the scoreboard went blank exactly when the games matter most. The window now closes 1 November. NBA and both NCAA leagues were checked and are correct.",
+      "changelog": "Pixel fonts now render on their grids instead of anti-aliased: PressStart2P snaps to multiples of 8 and 4x6-font to multiples of 7, on both the scroll/Vegas cards and the regular display. A font size that merely echoes the schema default is treated as unchosen and snapped; a size you actually chose is left alone."
+    },
+    {
+      "version": "1.17.0",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fetch the WNBA postseason. The ESPN date window was built as {year}0501-{year}0930 on the basis that the season runs May to September; the regular season does, but the playoffs and Finals run into October (2024 ended 20 October, 2025 mid-October). Both fetch calls pass that window as dates= with no date-less fallback, so no postseason game was ever retrieved and the scoreboard went blank exactly when the games matter most. The window now closes 1 November. NBA and both NCAA leagues were checked and are correct.",
+      "changelog": "Scroll/Vegas cards: the centre gap is now measured from the score actually loaded, and the card is sized to fit two full-height logos plus that gap, so the score no longer renders on top of the team logos and the logos are no longer frozen at 46px on tall panels."
+    },
     {
       "version": "1.16.7",
       "released": "2026-08-22",

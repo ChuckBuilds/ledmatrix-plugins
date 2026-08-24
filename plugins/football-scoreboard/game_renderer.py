@@ -11,6 +11,7 @@ This module provides:
 - Consistent rendering across all display modes
 """
 
+import dataclasses
 import logging
 import os
 from pathlib import Path
@@ -200,8 +201,61 @@ class GameRenderer:
     #: Panel height the classic font sizes were chosen against.
     _FONT_BASELINE_HEIGHT: ClassVar[int] = 32
 
+    #: Pixel grid each bundled font is drawn on. These are pixel-art faces:
+    #: they rasterise cleanly only at whole multiples of their grid, and at
+    #: any other size FreeType anti-aliases to fake the in-between stroke
+    #: widths. On an LED matrix every pixel is a physical lamp, so a grey
+    #: edge pixel is not a soft edge -- it is a dim lamp, and the text reads
+    #: as smeared. Measured, not assumed: rendering "01/13 O45.5 17-21" at
+    #: 5..40px, these are the only sizes with zero part-lit pixels.
+    #: Below this the gap between the logos cannot hold a legible score, so
+    #: the original (overlapping) region is kept rather than collapsing it.
+    _MIN_ADAPTIVE_SCORE_WIDTH_PX: ClassVar[int] = 16
+
+    _FONT_PIXEL_GRID: ClassVar[Dict[str, int]] = {
+        'PressStart2P-Regular.ttf': 8,   # crisp at 8, 16, 24, 32, 40
+        '4x6-font.ttf': 7,               # crisp at 7, 14, 21, 28, 35
+    }
+
+    #: baseball-scoreboard's schema offers font FAMILY ALIASES rather than
+    #: filenames, and a config saved through the web UI stores the alias. Kept
+    #: out of _FONT_PIXEL_GRID so that table stays a map of real files.
+    _FONT_NAME_ALIASES = {
+        'press_start': 'PressStart2P-Regular.ttf',
+        'four_by_six': '4x6-font.ttf',
+    }
+
+    @classmethod
+    def _crisp_size(cls, font_file: str, desired: int) -> int:
+        """Snap *desired* to the nearest size this font renders crisply at.
+
+        Fonts with no known grid are returned unchanged, so a user-supplied
+        face is never second-guessed.
+        """
+        font_file = cls._FONT_NAME_ALIASES.get(font_file, font_file)
+        grid = cls._FONT_PIXEL_GRID.get(font_file)
+        if not grid or desired <= 0:
+            return desired
+        return max(grid, int(round(desired / grid)) * grid)
+
     def _detail_font_size(self, base: int = 6) -> int:
-        """Odds/detail size, scaled to the panel height.
+        """Odds/detail size: one grid step of the detail face, at every height.
+
+        This used to scale with panel height, on the reasoning that 6px odds
+        read as an afterthought on a 64-tall panel. Two things were wrong with
+        that. The sizes it produced (6px, then 10px) are both off the 4x6
+        face's 7px grid, so the glyphs were anti-aliased -- on an LED matrix
+        that is a dim lamp, not a soft edge, and it is why the odds looked
+        broken rather than small. And the larger size did not fit: the
+        over/under is budgeted against the centre text, and at 10px it lost
+        that contest and was dropped entirely, so growing the font cost half
+        the odds.
+
+        One crisp grid step reads clearly at every height and leaves room for
+        both numbers. Kept as a method rather than a constant because a user
+        who sets a size explicitly still overrides it.
+
+        Superseded reasoning, for the record:
 
         The odds are drawn in the detail font, pinned at 6px because that is
         what suited a 32-tall panel. On a 64-tall one everything around them
@@ -219,10 +273,87 @@ class GameRenderer:
         would get bigger by losing half of themselves. 1.75x (10px) was the
         largest size measured to still render both over/under and spread.
         """
-        if self.display_height <= self._FONT_BASELINE_HEIGHT:
-            return base
-        scaled = round(base * self.display_height / self._FONT_BASELINE_HEIGHT)
-        return int(min(round(base * 1.75), scaled))
+        return self._FONT_PIXEL_GRID.get('4x6-font.ttf', base)
+
+    def _schema_font_size(self, element_key):
+        """The font_size this plugin's config_schema.json declares, or None."""
+        if not element_key:
+            return None
+        cache = getattr(self.__class__, '_SCHEMA_FONT_SIZES', None)
+        if cache is None:
+            cache = {}
+            try:
+                import json
+                schema_path = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), 'config_schema.json')
+                with open(schema_path) as fh:
+                    schema = json.load(fh)
+                props = (schema.get('properties', {})
+                               .get('customization', {})
+                               .get('properties', {}))
+                for key, spec in props.items():
+                    size = spec.get('properties', {}).get('font_size', {}).get('default')
+                    if size is not None:
+                        cache[key] = int(size)
+            except Exception:
+                cache = {}
+            self.__class__._SCHEMA_FONT_SIZES = cache
+        return cache.get(element_key)
+
+    def _resolve_font_size(self, element_config, element_key, default_size, font_name):
+        """Size to render at: the user's choice, or a grid-snapped default.
+
+        A configured size counts as a real choice only when it differs from
+        the schema default. The web UI writes the whole schema default block
+        on every save, so "font_size == schema default" carries no intent and
+        would otherwise pin every install to an anti-aliased size forever.
+        """
+        configured = (element_config or {}).get('font_size')
+        if configured is not None:
+            try:
+                configured = int(configured)
+                if configured != self._schema_font_size(element_key):
+                    return configured
+            except (TypeError, ValueError):
+                pass
+        return self._crisp_size(font_name, default_size)
+
+    def _snap_resolved_fonts(self, fonts):
+        """Re-snap a resolver-supplied font whose SIZE was never really chosen.
+
+        The resolver hands back the configured face and size whenever either
+        differs from the schema default. That is right for the face, but it
+        lets an unchosen size ride along: a config that changes only the FONT
+        (say detail from 4x6-font to PressStart2P) keeps the schema's 6px,
+        which is off PressStart2P's 8px grid, so the glyphs anti-alias.
+
+        Where the configured size merely echoes the schema default, snap it to
+        whatever face actually ended up in use. A size the user genuinely
+        changed is left alone.
+        """
+        customization = self.config.get('customization', {}) or {}
+        for font_key, font in list(fonts.items()):
+            element = self._FONT_ELEMENT_KEYS.get(font_key, font_key)
+            size = getattr(font, 'size', None)
+            path = getattr(font, 'path', None)
+            if not size or not isinstance(path, str):
+                continue
+            configured = (customization.get(element) or {}).get('font_size')
+            if configured is None:
+                continue
+            try:
+                if int(configured) != self._schema_font_size(element):
+                    continue                      # a real choice: leave it
+            except (TypeError, ValueError):
+                continue
+            face = os.path.basename(path)
+            crisp = self._crisp_size(face, size)
+            if crisp and crisp != size:
+                try:
+                    fonts[font_key] = ImageFont.truetype(path, crisp)
+                except Exception:
+                    self.logger.debug("Could not re-snap %s", font_key, exc_info=True)
+        return fonts
 
     def _load_fonts(self) -> Dict[str, Union[ImageFont.FreeTypeFont, Any]]:
         """
@@ -238,11 +369,20 @@ class GameRenderer:
             for font_key, (loader_font, loader_size) in self._LOADER_DEFAULTS.items():
                 element = self._FONT_ELEMENT_KEYS.get(font_key, font_key)
                 if font_key == 'detail':
+                    # _detail_font_size already picks a size deliberately --
+                    # grid-aligned on tall panels, and off-grid at 6px on 32
+                    # tall ones where the over/under would not survive 7px.
+                    # Re-snapping here would undo that.
                     loader_size = self._detail_font_size(loader_size)
+                else:
+                    # Snap the DEFAULT to the font's pixel grid. A size the
+                    # user set explicitly is passed through untouched by the
+                    # resolver, so this only moves a default we chose.
+                    loader_size = self._crisp_size(loader_font, loader_size)
                 fonts[font_key] = self._style_resolver.style(
                     element, classic_font=loader_font,
                     classic_size=loader_size).font
-            return fonts
+            return self._snap_resolved_fonts(fonts)
 
         # Older cores (no src.element_style): the original local loader.
         # Get customization config
@@ -257,25 +397,41 @@ class GameRenderer:
         rank_config = customization.get('rank_text', {})
 
         try:
-            fonts["score"] = self._load_custom_font(score_config, default_size=10)
-            fonts["time"] = self._load_custom_font(period_config, default_size=8)
-            fonts["team"] = self._load_custom_font(team_config, default_size=8)
-            fonts["status"] = self._load_custom_font(status_config, default_size=6)
+            _ps = 'PressStart2P-Regular.ttf'
+            # Sizes resolved first: a _crisp_size() call nested in the argument
+            # list put a classmethod call and a keyword argument on one line,
+            # which is how element_key ended up passed to the wrong callable
+            # once already, and which static analysis still reads that way.
+            score_size = self._crisp_size(_ps, 10)
+            time_size = self._crisp_size(_ps, 8)
+            team_size = self._crisp_size(_ps, 8)
+            status_size = self._crisp_size(_ps, 6)
+            rank_size = self._crisp_size(_ps, 10)
+            fonts["score"] = self._load_custom_font(
+                score_config, default_size=score_size, element_key='score_text')
+            fonts["time"] = self._load_custom_font(
+                period_config, default_size=time_size, element_key='period_text')
+            fonts["team"] = self._load_custom_font(
+                team_config, default_size=team_size, element_key='team_name')
+            fonts["status"] = self._load_custom_font(
+                status_config, default_size=status_size, element_key='status_text')
             fonts["detail"] = self._load_custom_font(
-                detail_config, default_size=self._detail_font_size(),
+                detail_config,
+                default_size=self._detail_font_size(), element_key='detail_text',
                 default_font='4x6-font.ttf')
-            fonts["rank"] = self._load_custom_font(rank_config, default_size=10)
+            fonts["rank"] = self._load_custom_font(
+                rank_config, default_size=rank_size, element_key='rank_text')
             self.logger.debug("Successfully loaded fonts from config")
         except Exception as e:
             self.logger.error(f"Error loading fonts: {e}, using defaults")
             # Fallback to hardcoded defaults
             try:
-                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
                 fonts["time"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
                 fonts["team"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
-                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["rank"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["rank"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
             except IOError:
                 self.logger.warning("Fonts not found, using default PIL font.")
                 default_font = ImageFont.load_default()
@@ -283,7 +439,7 @@ class GameRenderer:
         
         return fonts
     
-    def _load_custom_font(self, element_config: Dict[str, Any], default_size: int = 8, default_font: str = 'PressStart2P-Regular.ttf') -> Union[ImageFont.FreeTypeFont, Any]:
+    def _load_custom_font(self, element_config: Dict[str, Any], default_size: int = 8, default_font: str = 'PressStart2P-Regular.ttf', element_key=None) -> Union[ImageFont.FreeTypeFont, Any]:
         """
         Load a custom font from an element configuration dictionary.
         
@@ -293,7 +449,14 @@ class GameRenderer:
             ImageFont.FreeTypeFont for TTF/OTF fonts, freetype.Face for BDF fonts, or fallback font
         """
         font_name = element_config.get('font', default_font)
-        font_size = int(element_config.get('font_size', default_size))
+        # Resolve a family alias to its filename BEFORE the path is built.
+        # The grid table understands aliases, so a configured
+        # "four_by_six" was sized on the 4x6 grid (7px) while the path
+        # lookup used the raw alias, missed, and fell back to
+        # PressStart2P -- rendering 7px on an 8px grid, anti-aliased.
+        font_name = self._FONT_NAME_ALIASES.get(font_name, font_name)
+        font_size = self._resolve_font_size(
+            element_config, element_key, default_size, font_name)
         font_path = _resolve_font_path(os.path.join('assets', 'fonts', font_name))
         
         try:
@@ -694,7 +857,9 @@ class GameRenderer:
         
         # Draw odds if enabled
         if show_odds and 'odds' in game and game['odds']:
-            self._draw_dynamic_odds(draw_overlay, game['odds'])
+            self._draw_dynamic_odds(
+                draw_overlay, game['odds'],
+                centre_text=self._centre_row_text(game, game_type))
         
         # Draw records or rankings if enabled
         if show_records or show_ranking:
@@ -852,6 +1017,164 @@ class GameRenderer:
             self.logger.error(f"Error loading logo for {team_abbrev}: {e}")
         return None
 
+    #: Ladder rung the adaptive score should be able to reach. 8 is what fits
+    #: a 48px gap and matches classic, but reads thin on a tall card; 24 needs
+    #: a 128px gap and buys mostly dead space. 16 doubles the score for 40px
+    #: of extra card and costs nothing in logo size.
+    _ADAPTIVE_SCORE_TARGET_PX: ClassVar[int] = 16
+
+    def _adaptive_score_gap(self) -> int:
+        """Middle width needed for the adaptive score to reach its target rung.
+
+        Only meaningful in adaptive layout, where the score is fitted to the
+        strip between the logos from a ladder of crisp sizes. The gap is what
+        decides which rung it gets, so this reports the width that rung needs
+        plus the same gutter the classic path keeps.
+
+        Returns 0 if the target size cannot be measured, which leaves the
+        caller's own gap untouched.
+        """
+        try:
+            probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
+            font = ImageFont.truetype(
+                _resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"),
+                self._ADAPTIVE_SCORE_TARGET_PX)
+            needed = (int(probe.textlength("00-00", font=font))
+                      + 2 * self._SCORE_LOGO_GUTTER_PX)
+
+            # Ask the fitter whether it would actually use the bigger rung on
+            # a card this tall, rather than assume it. The fit is context
+            # dependent, not purely a matter of region size: the same 88x31
+            # region takes 16px on a 64-tall card and only 8px on a 48-tall
+            # one. Widening the gap where the rung is unreachable would buy
+            # nothing but dead space either side of an 8px score.
+            card = max(128, self.display_height * 2 + needed)
+            regs = scoreboard_regions(
+                Region(0, 0, card, self.display_height), ctx=self._ctx)
+            fit = self._fit_element(
+                'score', "00-00",
+                self._region_for(self._score_clear_of_logos(regs), 'score'),
+                ADAPTIVE_LADDER_HEADLINE)
+            got = getattr(getattr(fit, 'font', None), 'size', 0) or 0
+            return needed if got >= self._ADAPTIVE_SCORE_TARGET_PX else 0
+        except Exception:
+            self.logger.debug("Adaptive score gap probe failed", exc_info=True)
+            return 0
+
+    #: Width the adaptive logo slots aim for, as a multiple of the card
+    #: height. The core sizes those slots SQUARE (capped at the card height),
+    #: which suits the roughly square marks -- Steelers, TCU -- but leaves the
+    #: wide ones short, because a logo scaled to fill a square slot runs out
+    #: of width long before it runs out of height. 1.54 is the aspect of the
+    #: common wide marks (Green Bay's oval, Kansas City's arrowhead), so a
+    #: slot this wide lets them reach full height. Wider than this only helps
+    #: the rarer ~1.8 marks and costs marquee width for everything else.
+    _LOGO_SLOT_ASPECT: ClassVar[float] = 1.54
+
+    def _adaptive_logo_slot_width(self) -> int:
+        """Slot width the wide logos need to reach the full card height."""
+        return max(1, int(round(self.display_height * self._LOGO_SLOT_ASPECT)))
+
+    def _widen_logo_slots(self, regs):
+        """Give the logos slots wide enough to fill the card height.
+
+        scoreboard_regions() caps each slot at the card height, and widening
+        the CARD does not change that -- every extra pixel goes to the middle
+        instead (a 400px card still gets a 64px slot on a 64-tall panel). So a
+        1.54:1 logo renders 64x41 in a square slot: full width, well short of
+        full height, which is why the wide marks looked smaller than the
+        square ones rather than any difference between leagues.
+
+        The slots are pinned to the outer edges and the middle keeps whatever
+        is left, which is the gap _default_game_card_width already sized for
+        the score. Narrows nothing: if the core's slot is already at least
+        this wide, or the card is too narrow to leave a usable middle, the
+        regions are returned untouched.
+        """
+        slot = self._adaptive_logo_slot_width()
+        away, home = regs.away_slot, regs.home_slot
+        if slot <= away.w:
+            return regs
+        # Card width comes from the REGIONS, not from self: the helper must
+        # describe whatever layout it was handed, and reading self.display_width
+        # made it widen regions belonging to a narrower card.
+        card = home.x + home.w
+        # The middle has to keep enough room for the score. A bare
+        # _MIN_ADAPTIVE_SCORE_WIDTH_PX is not enough of a bar -- an 18px
+        # middle clears it and still crushes the score onto the 7px rung --
+        # so require the gap the score is actually sized for.
+        required = max(self._MIN_ADAPTIVE_SCORE_WIDTH_PX, self._center_gap_width())
+        if card - 2 * slot < required:
+            return regs
+        return dataclasses.replace(
+            regs,
+            away_slot=dataclasses.replace(away, x=0, w=slot),
+            home_slot=dataclasses.replace(home, x=card - slot, w=slot))
+
+    def _score_clear_of_logos(self, regs):
+        """Trim the score region back to the strip between the two logos.
+
+        The core's scoreboard_regions() deliberately overlaps score_area with
+        BOTH logo slots -- by exactly half the logo's width at every card size
+        (128x64: away[0,44] score[22,106] home[84,128]). The score is then
+        fitted to that region, so it grows until it spans the logos and is
+        drawn on top of them. That is the overlap reported against the Vegas
+        ticker, and it is why widening the card never helped: the regions
+        scale proportionally and the overlap stays at half the logo.
+
+        Classic already keeps the score on its own strip. Clamping the region
+        to the gap between the slots brings adaptive to the same arrangement:
+        the ladder simply picks the largest rung that fits the real space, so
+        the score lands beside the logos rather than across them, and comes
+        out at a comparable size to classic's.
+
+        The region is only ever narrowed, never widened, and a card whose
+        logos leave no usable middle keeps the original region rather than
+        collapsing to nothing.
+        """
+        # Deliberately not wrapped in try/except. An earlier version was, and
+        # when the constant below was accidentally defined at module scope
+        # instead of on the class, the AttributeError went straight into the
+        # handler and the clamp silently did nothing -- the overlap looked
+        # unfixed, with no error anywhere. A mistake in this arithmetic should
+        # be loud.
+        area, away, home = regs.score_area, regs.away_slot, regs.home_slot
+        left = max(area.x, away.x + away.w)
+        right = min(area.x + area.w, home.x)
+        if right - left < self._MIN_ADAPTIVE_SCORE_WIDTH_PX:
+            return area
+        return area.__class__(left, area.y, right - left, area.h)
+
+    def _status_ladder(self):
+        """Ladder for the top status band, never coarser than the score.
+
+        The status band spans the FULL card width, while the score is confined
+        to the strip between the logos. Once the card is widened so the score
+        can reach a bigger rung, the band widens with it -- and on a 96- or
+        128-tall card "Final" reached the same 16px rung as the score, so the
+        secondary text ended up as large as the headline it sits above.
+
+        Capping the band one rung below whatever the score actually took keeps
+        the hierarchy the classic layout has. When there is no score on the
+        card (an upcoming game) the full ladder is used unchanged.
+        """
+        score_px = getattr(self, '_adaptive_score_px', 0) or 0
+        if not score_px:
+            return ADAPTIVE_LADDER_TEXT
+        # Never LARGER than the score, and strictly smaller once the score is
+        # above the 8px floor. At the floor itself equal is right: capping
+        # below 8 drops the band onto 4x6-font, a different and narrower
+        # letterform, on exactly the small panels where nothing was wrong.
+        # Allowing "equal" only at the floor also stops the band jumping to
+        # 16px when a squeezed card pushes the score down to 8.
+        cap = score_px if score_px <= 8 else score_px - 1
+        # FontStep's field is size_px, not size. Getting that wrong made the
+        # filter match nothing, and the fallback below then silently returned
+        # a ladder rather than raising -- so the cap appeared to do nothing.
+        allowed = tuple(step for step in ADAPTIVE_LADDER_TEXT
+                        if getattr(step, 'size_px', 0) <= cap)
+        return allowed or ADAPTIVE_LADDER_TEXT[-1:]
+
     def _render_game_card_adaptive(self, game: Dict[str, Any],
                                    game_type: str) -> Image.Image:
         width, height = self.display_width, self.display_height
@@ -859,7 +1182,9 @@ class GameRenderer:
         overlay = Image.new('RGBA', (width, height), (0, 0, 0, 0))
         draw_overlay = ImageDraw.Draw(overlay)
 
-        regs = scoreboard_regions(Region(0, 0, width, height), ctx=self._ctx)
+        regs = self._widen_logo_slots(
+            scoreboard_regions(Region(0, 0, width, height), ctx=self._ctx))
+        self._adaptive_score_px = 0
 
         away_raw = self._load_raw_logo(game.get("away_abbr", ""), game.get("away_logo_path"))
         home_raw = self._load_raw_logo(game.get("home_abbr", ""), game.get("home_logo_path"))
@@ -888,11 +1213,14 @@ class GameRenderer:
         # Score — largest crisp font that fits the center region. Only drawn
         # once a game has started: an upcoming game has no score, so the
         # extractor's 0-0 was a placeholder, not a result.
-        score_region = self._region_for(regs.score_area, 'score')
+        score_region = self._region_for(
+            self._score_clear_of_logos(regs), 'score')
         if game_type in ("live", "recent"):
             score_text = f"{game.get('away_score', '0')}-{game.get('home_score', '0')}"
             score_fit = self._fit_element('score', score_text, score_region,
                                           ADAPTIVE_LADDER_HEADLINE)
+            self._adaptive_score_px = getattr(
+                getattr(score_fit, 'font', None), 'size', 0) or 0
             self._draw_fit_outline(draw_overlay, score_fit, score_region,
                                    fill=self._score_color_for(game, game_type))
         elif game_type == "upcoming" and self._upcoming_center_mode() == "vs":
@@ -900,6 +1228,14 @@ class GameRenderer:
             if vs_text:
                 vs_fit = self._fit_element('score', vs_text, score_region,
                                            ADAPTIVE_LADDER_HEADLINE)
+                # The centre element is this card's headline, exactly as the
+                # score is on a played game, so the status band is measured
+                # against it too. Without this an upcoming card left the band
+                # uncapped and the kick-off time came out at the same 16px as
+                # the "@" -- twice the size the same band gets on a recent
+                # card, and the largest thing on the card.
+                self._adaptive_score_px = getattr(
+                    getattr(vs_fit, 'font', None), 'size', 0) or 0
                 self._draw_fit_outline(draw_overlay, vs_fit, score_region,
                                        fill=self._element_color('score_text'))
 
@@ -909,7 +1245,7 @@ class GameRenderer:
             top = game.get("period_text") or "Final"
             fit = self._fit_element('time', top,
                                     self._region_for(regs.status_band, 'status_text'),
-                                    ADAPTIVE_LADDER_TEXT)
+                                    self._status_ladder())
             self._draw_fit_outline(draw_overlay, fit,
                                    self._region_for(regs.status_band, 'status_text'))
             self._draw_bottom_center_adaptive(
@@ -934,14 +1270,19 @@ class GameRenderer:
             else:
                 if game_time:
                     region = self._region_for(regs.status_band, 'time')
-                    fit = self._fit_element('time', game_time, region, ADAPTIVE_LADDER_TEXT)
+                    # Same band, same rule as a played game's status line:
+                    # never larger than the card's centre element.
+                    fit = self._fit_element('time', game_time, region,
+                                            self._status_ladder())
                     self._draw_fit_outline(draw_overlay, fit, region)
                 self._draw_bottom_center_adaptive(draw_overlay, game_date,
                                                   regs, 'date')
 
         game_league = game.get("league", "nfl")
         if self._get_display_option(game_league, "show_odds") and game.get('odds'):
-            self._draw_dynamic_odds(draw_overlay, game['odds'])
+            self._draw_dynamic_odds(
+                draw_overlay, game['odds'],
+                centre_text=self._centre_row_text(game, game_type))
         show_records = self._get_display_option(game_league, "show_records")
         show_ranking = self._get_display_option(game_league, "show_ranking")
         if show_records or show_ranking:
@@ -973,7 +1314,7 @@ class GameRenderer:
         if period_clock_text:
             region = self._region_for(regs.status_band, 'status_text')
             fit = self._fit_element('time', period_clock_text, region,
-                                    ADAPTIVE_LADDER_TEXT)
+                                    self._status_ladder())
             self._draw_fit_outline(draw, fit, region)
 
         # Scoring event or down & distance in the bottom detail band —
@@ -1217,6 +1558,40 @@ class GameRenderer:
             pass
         return default
 
+    #: Clear pixels kept between the score and each logo. Without it the
+    #: score's outermost column can land on the logo's first lit column --
+    #: numerically fine, visually touching.
+    _SCORE_LOGO_GUTTER_PX: ClassVar[int] = 4
+
+    #: Widest score the centre strip is sized to hold. Two digits a side covers this sport's realistic range.
+    #: The reserve is a fixed width so the strip does not jitter between
+    #: cards, so it has to assume the worst case rather than measure the
+    #: score in hand.
+    _SCORE_PROBE: ClassVar[str] = "00-00"
+
+    def _score_reserve_width(self) -> int:
+        """Centre strip the score actually needs, measured rather than assumed.
+
+        The gap was derived from the card width alone (width x
+        CENTER_GAP_RATIO, clamped to CENTER_GAP_MAX_PX = 40) while the score's
+        size comes from config and the element-style resolver. The two had no
+        relationship with each other. On devpi's 64-tall cards that put an
+        ~80px score in a 36px gap, so ~17px of it landed on each logo -- the
+        overlap reported against the Vegas ticker, and visible on the panel
+        even though every harness render passed.
+
+        Measuring the score keeps the strip wide enough for whatever font is
+        actually in play, instead of assuming a size the renderer never
+        promised.
+        """
+        try:
+            probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
+            width = probe.textlength(self._SCORE_PROBE, font=self.fonts['score'])
+            return int(width) + 2 * self._SCORE_LOGO_GUTTER_PX
+        except Exception:
+            self.logger.debug("Score reserve measurement failed", exc_info=True)
+            return 0
+
     def _center_gap_width(self) -> int:
         """Width of the middle strip kept clear of logos.
 
@@ -1232,19 +1607,28 @@ class GameRenderer:
         high = self._scroll_card_option("center_gap_max", self.CENTER_GAP_MAX_PX)
         try:
             scaled = round(self.display_width * float(ratio))
-            return int(max(int(low), min(int(high), scaled)))
+            derived = int(max(int(low), min(int(high), scaled)))
+            # A strip narrower than the score is the bug, not a style choice.
+            # An explicit ``center_gap`` is still honoured above, including 0
+            # for deliberate edge-to-edge logos.
+            return max(derived, self._score_reserve_width())
         except (TypeError, ValueError):
             return self.CENTER_GAP_MIN_PX
 
     def _logo_slot_width(self) -> int:
         """Per-side logo slot, leaving the center gap clear.
 
-        Capped at display_height, so wide/short cards (128x32, 256x32) already
-        have a large middle and come out unchanged -- only the sizes where the
-        logos used to meet (128x64, 64x32) shrink.
+        No longer capped at display_height: the card is sized as two
+        full-height logos plus the measured gap, so what is left after the gap
+        is exactly the logo's share. The cap was what froze the logos at 46px
+        on the old flat 128px card.
         """
         available = (self.display_width - self._center_gap_width()) // 2
-        return max(8, min(self.display_height, available))
+        # No height cap: the card is now sized as "two full-height logos plus
+        # the measured gap", so whatever is left after the gap is exactly the
+        # logo's share. Capping at display_height here is what left 18px of
+        # dead space above and below the logos on a 64-tall card.
+        return max(8, available)
 
     def _upcoming_center_mode(self) -> str:
         """Middle of an upcoming card: 'vs', 'date_time' or 'none'."""
@@ -1497,8 +1881,32 @@ class GameRenderer:
                 fill=color, outline=(0, 0, 0)
             )
     
-    def _draw_dynamic_odds(self, draw: ImageDraw.Draw, odds: Dict[str, Any]) -> None:
-        """Draw odds with dynamic positioning."""
+    #: Clear pixels kept between an odds label and the centre status text.
+    _ODDS_CENTRE_GUTTER_PX: ClassVar[int] = 3
+
+    def _centre_row_text(self, game: Dict[str, Any], game_type: str) -> str:
+        """What this card draws in the centre of the odds row.
+
+        The odds sit at the outer ends of the top row and the status sits in
+        the middle of it, so this is the string they have to share space with.
+        Mirrors what the three _draw_*_game_status methods put there.
+        """
+        if game_type == "live":
+            if game.get("is_halftime"):
+                return "Halftime"
+            return f"{game.get('period_text', '')} {game.get('clock', '')}".strip()
+        if game_type == "recent":
+            return str(game.get("period_text") or "Final")
+        _date, time_text = self._upcoming_date_and_time(game)
+        return str(time_text or "")
+
+    def _draw_dynamic_odds(self, draw: ImageDraw.Draw, odds: Dict[str, Any],
+                           centre_text: str = "") -> None:
+        """Draw odds with dynamic positioning.
+
+        *centre_text* is what this card draws on the same row, used to budget
+        the space left at the edges. Empty falls back to the old worst case.
+        """
         try:
             if not odds:
                 return
@@ -1551,8 +1959,19 @@ class GameRenderer:
             # of hard-coding a width.
             font = self.fonts["detail"]
             time_font = self.fonts.get("time", font)
-            centre_reserve = draw.textlength("12:00 PM", font=time_font)
-            side_budget = max(0.0, (self.display_width - centre_reserve) / 2)
+            # Reserve for what this card actually puts in the centre, not the
+            # widest string any card could. "12:00 PM" is an upcoming card's
+            # kickoff; a finished card says "Final" and costs 24px less. The
+            # fixed worst case spent that on every card and pushed the
+            # over/under out of cards that had room for it.
+            centre_reserve = draw.textlength(centre_text or "12:00 PM",
+                                             font=time_font)
+            # A gutter either side of the centre text. Without it a label that
+            # fits "exactly" ends on the pixel the status starts on, which
+            # reads as collided even though nothing is overprinted.
+            gutter = self._ODDS_CENTRE_GUTTER_PX
+            side_budget = max(
+                0.0, (self.display_width - centre_reserve) / 2 - gutter)
 
             if favored_spread is not None:
                 spread_text = str(favored_spread)
@@ -1573,13 +1992,21 @@ class GameRenderer:
             # Show over/under on opposite side
             over_under = odds.get("over_under")
             if over_under is not None and isinstance(over_under, (int, float)):
-                ou_text = f"O/U: {over_under}"
-                ou_width = draw.textlength(ou_text, font=font)
-
-                # The longer of the two labels; on a narrow card it is the one
-                # that collides, so it is the one that gives way. The spread is
-                # the more useful number, and it is kept.
-                if ou_width > side_budget:
+                # Shed label, then punctuation, before shedding the number.
+                # A live card centres "Q4 02:34", which is as wide as the old
+                # worst case, so the full label never fit there -- the
+                # over/under was dropped on exactly the cards people watch.
+                # The bare number still reads as the over/under from position.
+                candidates = (f"O/U: {over_under}", f"O/U {over_under}",
+                              f"O/U{over_under}", f"{over_under}")
+                for candidate in candidates:
+                    ou_text = candidate
+                    ou_width = draw.textlength(ou_text, font=font)
+                    if ou_width <= side_budget:
+                        break
+                else:
+                    # Not even the bare number fits; the spread is the more
+                    # useful of the two and keeps the space.
                     return
 
                 if favored_side == "home":
@@ -1628,7 +2055,7 @@ class GameRenderer:
         record_font = getattr(self, '_record_font', None)
         if record_font is None:
             try:
-                record_font = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+                record_font = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
             except OSError:
                 record_font = ImageFont.load_default()
             self._record_font = record_font

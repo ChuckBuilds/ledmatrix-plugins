@@ -76,6 +76,65 @@ else:
         SCROLL_LEAGUE_KEYS = ()
         SCROLL_CONFIG_KEY = "scroll_mode"
 
+
+        def _default_game_card_width(self) -> int:
+            """Card width that fits two full-height logos and the score.
+
+            The card was a flat 128px whatever the panel was, so each logo got
+            (128 - gap) / 2 = 46px and stayed there -- 46px of logo in a
+            128-tall card, with the rest dead space. Sizing the card as "two
+            full-height logos plus the measured gap" makes the height the
+            binding constraint instead.
+
+            The gap is measured with a throwaway renderer because the score's
+            font comes from config, not from the card size, so asking for it
+            before the width is settled is not circular. A 32-tall panel keeps
+            the 128 it has always had.
+            """
+            try:
+                # The gap has to be measured at the width we are going to
+                # USE, not at the probe width. When center_gap_ratio drives
+                # the gap (rather than the score reserve) it scales with the
+                # card, so a gap measured at 128px underestimates the gap at
+                # the final width, and the logos silently get less than the
+                # full height the card was sized to give them. Settle the two
+                # together; a couple of rounds is plenty, and the loop is
+                # bounded so a pathological config cannot spin.
+                # A ratio-driven gap converges geometrically rather than at
+                # once, so allow enough rounds to settle: with the default
+                # score-driven gap the width does not depend on the card and
+                # this breaks on the second pass.
+                width = 128
+                for _ in range(12):
+                    probe = GameRenderer(width, self.display_height, self.config)
+                    candidate = max(128, self.display_height * 2
+                                    + probe._center_gap_width())
+                    if candidate == width:
+                        break
+                    width = candidate
+            except Exception:
+                self.logger.debug("Card width probe failed; keeping 128",
+                                  exc_info=True)
+                return 128
+            return width
+
+
+        #: The schema declares game_card_width: 128 for every league, and the
+        #: web UI writes the whole schema block on every save, so nearly every
+        #: real config carries it whether or not anyone chose it. Honouring it
+        #: as an override pins the card at 128 forever -- and since the centre
+        #: gap is now sized from the score, that SHRINKS the logos rather than
+        #: just declining the improvement. Equal to the schema default means
+        #: unchosen, the same rule the fonts use.
+        _SCHEMA_CARD_WIDTH = 128
+
+        def _get_scroll_settings(self, league=None):
+            settings = super()._get_scroll_settings(league)
+            if settings.get("game_card_width") == self._SCHEMA_CARD_WIDTH:
+                settings = {**settings,
+                            "game_card_width": self._default_game_card_width()}
+            return settings
+
         def scroll_settings_defaults(self):
             # Where this plugin's defaults differ from core's.
             return {
@@ -83,7 +142,7 @@ else:
                 "gap_between_games": 24,
                 "min_duration": 30,
                 "max_duration": 300,
-                "game_card_width": 128,
+                "game_card_width": self._default_game_card_width(),
             }
 
         def __init__(self, *args, **kwargs):

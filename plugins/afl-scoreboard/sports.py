@@ -480,7 +480,80 @@ class SportsCore(ABC):
             )
             return False
 
-    def _load_custom_font_from_element_config(self, element_config: Dict[str, Any], default_size: int = 8) -> ImageFont.FreeTypeFont:
+
+    #: Sizes each pixel font renders crisply at. Off the grid the glyphs are
+    #: anti-aliased, and on an LED matrix a part-lit pixel reads as a dim
+    #: lamp rather than a soft edge.
+    _FONT_PIXEL_GRID = {
+        'PressStart2P-Regular.ttf': 8,   # crisp at 8, 16, 24, 32, 40
+        '4x6-font.ttf': 7,               # crisp at 7, 14, 21, 28, 35
+    }
+
+    #: baseball-scoreboard's schema offers font FAMILY ALIASES rather than
+    #: filenames, and a config saved through the web UI stores the alias. Kept
+    #: out of _FONT_PIXEL_GRID so that table stays a map of real files.
+    _FONT_NAME_ALIASES = {
+        'press_start': 'PressStart2P-Regular.ttf',
+        'four_by_six': '4x6-font.ttf',
+    }
+
+    @classmethod
+    def _crisp_size(cls, font_file, desired):
+        """Snap *desired* to the nearest size *font_file* renders crisply at.
+
+        A face with no known grid is returned unchanged, so a user-supplied
+        font is never second-guessed.
+        """
+        font_file = cls._FONT_NAME_ALIASES.get(font_file, font_file)
+        grid = cls._FONT_PIXEL_GRID.get(font_file)
+        if not grid or not desired or desired <= 0:
+            return desired
+        return max(grid, int(round(float(desired) / grid)) * grid)
+
+    def _schema_font_size(self, element_key):
+        """The font_size this plugin's config_schema.json declares, or None."""
+        if not element_key:
+            return None
+        cache = getattr(self.__class__, '_SCHEMA_FONT_SIZES', None)
+        if cache is None:
+            cache = {}
+            try:
+                import json
+                schema_path = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), 'config_schema.json')
+                with open(schema_path) as fh:
+                    schema = json.load(fh)
+                props = (schema.get('properties', {})
+                               .get('customization', {})
+                               .get('properties', {}))
+                for key, spec in props.items():
+                    size = spec.get('properties', {}).get('font_size', {}).get('default')
+                    if size is not None:
+                        cache[key] = int(size)
+            except Exception:
+                cache = {}
+            self.__class__._SCHEMA_FONT_SIZES = cache
+        return cache.get(element_key)
+
+    def _resolve_font_size(self, element_config, element_key, default_size, font_name):
+        """Size to render at: the user's choice, or a grid-snapped default.
+
+        A configured size counts as a real choice only when it differs from
+        the schema default. The web UI writes the whole schema default block
+        on every save, so "font_size == schema default" carries no intent and
+        would otherwise pin every install to an anti-aliased size forever.
+        """
+        configured = (element_config or {}).get('font_size')
+        if configured is not None:
+            try:
+                configured = int(configured)
+                if configured != self._schema_font_size(element_key):
+                    return configured
+            except (TypeError, ValueError):
+                pass
+        return self._crisp_size(font_name, default_size)
+
+    def _load_custom_font_from_element_config(self, element_config: Dict[str, Any], default_size: int = 8, element_key=None, default_font: Optional[str] = None) -> ImageFont.FreeTypeFont:
         """
         Load a custom font from an element configuration dictionary.
         
@@ -492,8 +565,19 @@ class SportsCore(ABC):
             PIL ImageFont object
         """
         # Get font name and size, with defaults
-        font_name = element_config.get('font', 'PressStart2P-Regular.ttf')
-        font_size = int(element_config.get('font_size', default_size))  # Ensure integer for PIL
+        # Falls back to the caller's face, not always PressStart2P: the
+        # schema declares 4x6-font for the detail element, so without this
+        # a bare config rendered detail in the wrong face.
+        base_default = default_font or 'PressStart2P-Regular.ttf'
+        font_name = element_config.get('font', base_default)
+        # Resolve a family alias to its filename BEFORE the path is built.
+        # The grid table understands aliases, so a configured
+        # "four_by_six" was sized on the 4x6 grid (7px) while the path
+        # lookup used the raw alias, missed, and fell back to
+        # PressStart2P -- rendering 7px on an 8px grid, anti-aliased.
+        font_name = self._FONT_NAME_ALIASES.get(font_name, font_name)
+        font_size = self._resolve_font_size(
+            element_config, element_key, default_size, font_name)
         
         # Build font path
         font_path = _resolve_font_path(os.path.join('assets', 'fonts', font_name))
@@ -679,23 +763,23 @@ class SportsCore(ABC):
         rank_config = customization.get('rank_text', {})
         
         try:
-            fonts["score"] = self._load_custom_font_from_element_config(score_config, default_size=10)
-            fonts["time"] = self._load_custom_font_from_element_config(period_config, default_size=8)
-            fonts["team"] = self._load_custom_font_from_element_config(team_config, default_size=8)
-            fonts["status"] = self._load_custom_font_from_element_config(status_config, default_size=6)
-            fonts["detail"] = self._load_custom_font_from_element_config(detail_config, default_size=6)
-            fonts["rank"] = self._load_custom_font_from_element_config(rank_config, default_size=10)
+            fonts["score"] = self._load_custom_font_from_element_config(score_config, default_size=10, element_key='score_text')
+            fonts["time"] = self._load_custom_font_from_element_config(period_config, default_size=8, element_key='period_text')
+            fonts["team"] = self._load_custom_font_from_element_config(team_config, default_size=8, element_key='team_name')
+            fonts["status"] = self._load_custom_font_from_element_config(status_config, default_size=6, element_key='status_text')
+            fonts["detail"] = self._load_custom_font_from_element_config(detail_config, default_size=6, element_key='detail_text', default_font='4x6-font.ttf')
+            fonts["rank"] = self._load_custom_font_from_element_config(rank_config, default_size=10, element_key='rank_text')
             self.logger.info("Successfully loaded fonts from config")
         except Exception as e:
             self.logger.error(f"Error loading fonts: {e}, using defaults")
             # Fallback to hardcoded defaults
             try:
-                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
                 fonts["time"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
                 fonts["team"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
-                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["rank"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["rank"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
             except IOError:
                 self.logger.warning("Fonts not found, using default PIL font.")
                 fonts["score"] = ImageFont.load_default()
@@ -708,7 +792,7 @@ class SportsCore(ABC):
         # (after both branches, so it is set on every path) so the scorebug
         # draw paths don't reload it from disk every frame.
         try:
-            fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+            fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
         except OSError:
             fonts["record"] = ImageFont.load_default()
         return fonts

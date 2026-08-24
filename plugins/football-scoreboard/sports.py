@@ -374,7 +374,80 @@ class SportsCore(ABC):
             )
             return False
 
-    def _load_custom_font_from_element_config(self, element_config: Dict[str, Any], default_size: int = 8) -> ImageFont.FreeTypeFont:
+
+    #: Sizes each pixel font renders crisply at. Off the grid the glyphs are
+    #: anti-aliased, and on an LED matrix a part-lit pixel reads as a dim
+    #: lamp rather than a soft edge.
+    _FONT_PIXEL_GRID = {
+        'PressStart2P-Regular.ttf': 8,   # crisp at 8, 16, 24, 32, 40
+        '4x6-font.ttf': 7,               # crisp at 7, 14, 21, 28, 35
+    }
+
+    #: baseball-scoreboard's schema offers font FAMILY ALIASES rather than
+    #: filenames, and a config saved through the web UI stores the alias. Kept
+    #: out of _FONT_PIXEL_GRID so that table stays a map of real files.
+    _FONT_NAME_ALIASES = {
+        'press_start': 'PressStart2P-Regular.ttf',
+        'four_by_six': '4x6-font.ttf',
+    }
+
+    @classmethod
+    def _crisp_size(cls, font_file, desired):
+        """Snap *desired* to the nearest size *font_file* renders crisply at.
+
+        A face with no known grid is returned unchanged, so a user-supplied
+        font is never second-guessed.
+        """
+        font_file = cls._FONT_NAME_ALIASES.get(font_file, font_file)
+        grid = cls._FONT_PIXEL_GRID.get(font_file)
+        if not grid or not desired or desired <= 0:
+            return desired
+        return max(grid, int(round(float(desired) / grid)) * grid)
+
+    def _schema_font_size(self, element_key):
+        """The font_size this plugin's config_schema.json declares, or None."""
+        if not element_key:
+            return None
+        cache = getattr(self.__class__, '_SCHEMA_FONT_SIZES', None)
+        if cache is None:
+            cache = {}
+            try:
+                import json
+                schema_path = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), 'config_schema.json')
+                with open(schema_path) as fh:
+                    schema = json.load(fh)
+                props = (schema.get('properties', {})
+                               .get('customization', {})
+                               .get('properties', {}))
+                for key, spec in props.items():
+                    size = spec.get('properties', {}).get('font_size', {}).get('default')
+                    if size is not None:
+                        cache[key] = int(size)
+            except Exception:
+                cache = {}
+            self.__class__._SCHEMA_FONT_SIZES = cache
+        return cache.get(element_key)
+
+    def _resolve_font_size(self, element_config, element_key, default_size, font_name):
+        """Size to render at: the user's choice, or a grid-snapped default.
+
+        A configured size counts as a real choice only when it differs from
+        the schema default. The web UI writes the whole schema default block
+        on every save, so "font_size == schema default" carries no intent and
+        would otherwise pin every install to an anti-aliased size forever.
+        """
+        configured = (element_config or {}).get('font_size')
+        if configured is not None:
+            try:
+                configured = int(configured)
+                if configured != self._schema_font_size(element_key):
+                    return configured
+            except (TypeError, ValueError):
+                pass
+        return self._crisp_size(font_name, default_size)
+
+    def _load_custom_font_from_element_config(self, element_config: Dict[str, Any], default_size: int = 8, element_key=None, default_font: Optional[str] = None) -> ImageFont.FreeTypeFont:
         """
         Load a custom font from an element configuration dictionary.
         
@@ -386,8 +459,19 @@ class SportsCore(ABC):
             PIL ImageFont object
         """
         # Get font name and size, with defaults
-        font_name = element_config.get('font', 'PressStart2P-Regular.ttf')
-        font_size = int(element_config.get('font_size', default_size))  # Ensure integer for PIL
+        # Falls back to the caller's face, not always PressStart2P: the
+        # schema declares 4x6-font for the detail element, so without this
+        # a bare config rendered detail in the wrong face.
+        base_default = default_font or 'PressStart2P-Regular.ttf'
+        font_name = element_config.get('font', base_default)
+        # Resolve a family alias to its filename BEFORE the path is built.
+        # The grid table understands aliases, so a configured
+        # "four_by_six" was sized on the 4x6 grid (7px) while the path
+        # lookup used the raw alias, missed, and fell back to
+        # PressStart2P -- rendering 7px on an 8px grid, anti-aliased.
+        font_name = self._FONT_NAME_ALIASES.get(font_name, font_name)
+        font_size = self._resolve_font_size(
+            element_config, element_key, default_size, font_name)
         
         # Build font path
         font_path = _resolve_font_path(os.path.join('assets', 'fonts', font_name))
@@ -573,6 +657,53 @@ class SportsCore(ABC):
             )
             return default
 
+    #: Score may occupy this share of the panel width before the layout
+    #: reaches for a narrower face. Above it the score crowds out the logos
+    #: and the clock; below it the design face is kept.
+    _SCORE_WIDTH_BUDGET = 0.55
+
+    #: Narrower crisp rungs to fall back through, widest first. 4x6-font
+    #: renders cleanly at multiples of 7 and is about half the width of
+    #: PressStart2P per character.
+    _NARROW_SCORE_RUNGS = (("4x6-font.ttf", 14), ("4x6-font.ttf", 7))
+
+    def _fit_score_font(self, fonts: dict) -> dict:
+        """Swap in a narrower face where the score would swamp the panel.
+
+        PressStart2P at 10px puts "17-21" at 50px. That is 39% of a 128-wide
+        panel and fine, but 78% of a 64-wide one -- the score, the clock and
+        the logos were all competing for the same strip, which is what made
+        the small sizes unreadable. PressStart2P has no smaller crisp size
+        (its grid is 8), so the way down is a narrower face, not a smaller
+        one: 4x6-font is crisp at multiples of 7 and roughly half as wide.
+
+        Only swaps when the current font actually overflows the budget, so
+        every panel where it already fits -- 96x48 upward, including both the
+        128x32 and 512x64 builds -- keeps the face it has. The clock moves
+        with the score so the two stay visually related; it also stops the
+        clock having to shed its quarter on a 64-wide panel, because the
+        narrower face fits "Q4 02:34" where the old one did not.
+        """
+        try:
+            from PIL import Image as _Image, ImageDraw as _ImageDraw, ImageFont as _ImageFont
+            probe = _ImageDraw.Draw(_Image.new("RGB", (4, 4)))
+            budget = self.display_width * self._SCORE_WIDTH_BUDGET
+            if probe.textlength("00-00", font=fonts["score"]) <= budget:
+                return fonts
+            for name, size in self._NARROW_SCORE_RUNGS:
+                candidate = _ImageFont.truetype(_resolve_font_path(f"assets/fonts/{name}"), size)
+                if probe.textlength("00-00", font=candidate) <= budget:
+                    fonts["score"] = candidate
+                    fonts["time"] = candidate
+                    return fonts
+            name, size = self._NARROW_SCORE_RUNGS[-1]
+            narrowest = _ImageFont.truetype(_resolve_font_path(f"assets/fonts/{name}"), size)
+            fonts["score"] = narrowest
+            fonts["time"] = narrowest
+        except Exception:
+            self.logger.debug("Score font fitting skipped", exc_info=True)
+        return fonts
+
     def _load_fonts(self):
         """Load fonts used by the scoreboard from config or use defaults."""
         fonts = {}
@@ -589,23 +720,23 @@ class SportsCore(ABC):
         rank_config = customization.get('rank_text', {})
         
         try:
-            fonts["score"] = self._load_custom_font_from_element_config(score_config, default_size=10)
-            fonts["time"] = self._load_custom_font_from_element_config(period_config, default_size=8)
-            fonts["team"] = self._load_custom_font_from_element_config(team_config, default_size=8)
-            fonts["status"] = self._load_custom_font_from_element_config(status_config, default_size=6)
-            fonts["detail"] = self._load_custom_font_from_element_config(detail_config, default_size=6)
-            fonts["rank"] = self._load_custom_font_from_element_config(rank_config, default_size=10)
+            fonts["score"] = self._load_custom_font_from_element_config(score_config, default_size=10, element_key='score_text')
+            fonts["time"] = self._load_custom_font_from_element_config(period_config, default_size=8, element_key='period_text')
+            fonts["team"] = self._load_custom_font_from_element_config(team_config, default_size=8, element_key='team_name')
+            fonts["status"] = self._load_custom_font_from_element_config(status_config, default_size=6, element_key='status_text')
+            fonts["detail"] = self._load_custom_font_from_element_config(detail_config, default_size=6, element_key='detail_text', default_font='4x6-font.ttf')
+            fonts["rank"] = self._load_custom_font_from_element_config(rank_config, default_size=10, element_key='rank_text')
             self.logger.info("Successfully loaded fonts from config")
         except Exception as e:
             self.logger.error(f"Error loading fonts: {e}, using defaults")
             # Fallback to hardcoded defaults
             try:
-                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
                 fonts["time"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
                 fonts["team"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
-                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["rank"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["rank"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
             except IOError:
                 self.logger.warning("Fonts not found, using default PIL font.")
                 fonts["score"] = ImageFont.load_default()
@@ -617,10 +748,10 @@ class SportsCore(ABC):
         # Record/ranking annotations always use the small 4x6 face; cached here
         # so the scorebug draw paths don't reload it from disk every frame.
         try:
-            fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+            fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
         except OSError:
             fonts["record"] = ImageFont.load_default()
-        return fonts
+        return self._fit_score_font(fonts)
 
     def _draw_dynamic_odds(
         self, draw: ImageDraw.Draw, odds: Dict[str, Any], width: int, height: int
@@ -768,6 +899,70 @@ class SportsCore(ABC):
             draw.text((x + dx, y + dy), text, font=font, fill=outline_color)
         draw.text((x, y), text, font=font, fill=fill)
 
+    def _fit_text(self, draw, candidates, font, max_width: int) -> str:
+        """First candidate that fits *max_width*, else the last one, else "".
+
+        Small panels are the reason this exists. A status line is centred and
+        drawn whatever its width, so on a 64px panel "Q4 02:34" at 8px is
+        exactly 64px: it spans the full panel, its outline stroke is clipped
+        at both ends, and it collides with anything else on that row. Passing
+        progressively shorter forms lets the caller give up detail instead of
+        legibility -- "Q4 02:34" then "02:34" then "Q4" -- which is the same
+        trade the odds row makes when it sheds "O/U:".
+
+        Callers order candidates richest-first. The shortest is returned even
+        if it does not fit, because a clipped clock still tells you more than
+        a blank one.
+        """
+        last = ""
+        for candidate in candidates:
+            if not candidate:
+                continue
+            last = candidate
+            try:
+                if draw.textlength(candidate, font=font) <= max_width:
+                    return candidate
+            except Exception:
+                return candidate
+        return last
+
+    #: How far each logo is shifted outward, off the panel edge, by the
+    #: scorebug layouts. Kept here because the logo sizing has to know it.
+    _LOGO_EDGE_BLEED_PX = 10
+
+    def _scorebug_centre_gap(self) -> int:
+        """Width the centre keeps clear for the score, in the scorebug layout.
+
+        Measured from the score font rather than assumed, so it tracks a user
+        who sets a larger one.
+
+        Reserving the score's FULL width was the first attempt and it was
+        wrong: on a 64px panel a 40px score leaves 24px for two logos, so each
+        came out 10px wide -- a sliver at the edge. Trading a jumbled panel for
+        one with no identifiable team is not a fix.
+
+        So the reserve is half the score's width, which lets the score's outer
+        quarter cross onto each logo while its middle stays on black. The
+        digits are drawn with an outline, so the crossing reads as a score in
+        front of a logo rather than two things fighting. That buys back real
+        logo: 10px -> 22px visible at 64 wide, 26px -> 38px at 96.
+
+        Binds only where the 1.5x oversize did not already fit. 128x32 and
+        512x64 -- and every wider panel -- keep exactly the logos they had.
+
+        Measured from the score font so it tracks a user who sets a larger
+        one, and from a fixed five-character string rather than the live
+        score, because the logo cache is keyed on team and must not resize
+        when a team passes 9 points.
+        """
+        try:
+            font = self.fonts["score"]
+            from PIL import Image as _Image, ImageDraw as _ImageDraw
+            probe = _ImageDraw.Draw(_Image.new("RGB", (4, 4)))
+            return int(probe.textlength("00-00", font=font)) // 2
+        except Exception:
+            return 22
+
     def _load_and_resize_logo(
         self, team_id: str, team_abbrev: str, logo_path: Path, logo_url: str | None
     ) -> Optional[Image.Image]:
@@ -820,8 +1015,23 @@ class SportsCore(ABC):
             if logo.mode != "RGBA":
                 logo = logo.convert("RGBA")
 
-            max_width = int(self.display_width * 1.5)
+            # 1.5x the panel so the logo bleeds off the outer edge -- the look
+            # this layout is built around. On a wide panel that is fine: the
+            # two logos sit at x=-10 and x=width-logo+10 with the score in the
+            # gap between them. On a narrow one it is not. At 64x32 a 1.5x
+            # logo is 48px, the pair spans -10..38 and 26..74, and they
+            # overlap EACH OTHER in the middle before the score or clock are
+            # drawn at all -- which is what makes a small panel look jumbled.
+            #
+            # So the bleed is capped by what the panel can actually spare: the
+            # centre has to keep room for the score, and each logo may reach
+            # inward only as far as the edge of that gap (plus the 10px it is
+            # already shifted outward by). Binds only when the panel is too
+            # narrow for the 1.5x; every size that fits today is unchanged.
             max_height = int(self.display_height * 1.5)
+            centre_gap = self._scorebug_centre_gap()
+            reach = (self.display_width - centre_gap) // 2 + self._LOGO_EDGE_BLEED_PX
+            max_width = max(8, min(int(self.display_width * 1.5), reach))
             logo.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
             self._logo_cache[team_abbrev] = logo
             return logo
@@ -1572,7 +1782,15 @@ class SportsUpcoming(SportsCore):
             status_font = self.fonts["status"]
             if display_width > 128:
                 status_font = self.fonts["time"]
-            status_text = "Next Game"
+            # "Next Game" is 9 characters; at 8px that is 72px, wider than a
+            # 64px panel, so it ran off both edges. Shed to "Next", which the
+            # date and time below give context for.
+            #
+            # No empty last candidate: _fit_text skips falsy entries, so ""
+            # could never be returned and the label cannot shed to nothing.
+            status_text = self._fit_text(
+                draw_overlay, ("Next Game", "Next"),
+                status_font, display_width - 2)
             status_width = draw_overlay.textlength(status_text, font=status_font)
             status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
             status_y = 1 + self._get_layout_offset('status_text', 'y_offset')  # Changed from 2

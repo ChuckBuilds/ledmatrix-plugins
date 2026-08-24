@@ -68,11 +68,99 @@ else:
         NFL_SEPARATOR_ICON = "assets/sports/nfl_logos/NFL.png"
         NCAA_FB_SEPARATOR_ICON = "assets/sports/ncaa_logos/ncaa_fb.png"
 
+
+        #: The schema declares game_card_width: 128 for every league, and the
+        #: web UI writes the whole schema block on every save, so nearly every
+        #: real config carries it whether or not anyone chose it. Honouring it
+        #: as an override pins the card at 128 forever -- and since the centre
+        #: gap is now sized from the score, that SHRINKS the logos rather than
+        #: just declining the improvement. Equal to the schema default means
+        #: unchosen, the same rule the fonts use.
+        _SCHEMA_CARD_WIDTH = 128
+
+        def _get_scroll_settings(self, league=None):
+            settings = super()._get_scroll_settings(league)
+            if settings.get("game_card_width") == self._SCHEMA_CARD_WIDTH:
+                settings = {**settings,
+                            "game_card_width": self._default_game_card_width()}
+            return settings
+
         def scroll_settings_defaults(self):
-            # Core sizes game cards to the panel; this plugin has always
-            # pinned them at 128px, and the byte-identical harness gate
-            # depends on keeping that.
-            return {**super().scroll_settings_defaults(), "game_card_width": 128}
+            # Core sizes game cards to the panel; this plugin pinned them at a
+            # flat 128px whatever the panel was, which is what put the score on
+            # top of the logos on tall cards -- see _default_game_card_width.
+            return {**super().scroll_settings_defaults(),
+                    "game_card_width": self._default_game_card_width()}
+
+        def _default_game_card_width(self) -> int:
+            """Card width that fits two full-height logos and the score.
+
+            GameRenderer gives each logo (width - centre gap) / 2. With a flat
+            128px card and a gap that ignored the score, a 64-tall card had a
+            36px gap holding an ~80px score, so the score ran ~17px onto each
+            logo. Widening the gap alone would have fixed the overlap by
+            shrinking the logos to 22px -- the failure mode of "the logos
+            aren't visible" that we already rejected once.
+
+            Sizing the card as "two full-height logos plus the measured gap"
+            makes the height the binding constraint instead, so the logos come
+            out at their full height AND the score has its own clear strip.
+
+            The gap is measured with a throwaway renderer because the score's
+            font comes from config and the element-style resolver, not from
+            the card size -- it is the same for a 128px card as for a 256px
+            one, so there is no circularity in asking for it first.
+
+            A 32-tall panel computes 2*32 + ~48 = 112 and keeps the 128 it has
+            always had; only the tall cards move.
+
+            ADAPTIVE layout needs more. There the logos are already capped at
+            the card height once the card reaches 2 x height, so every further
+            pixel of width goes entirely into the middle -- the logos do not
+            shrink at all. The score is fitted to that middle from a ladder of
+            crisp sizes (8, 16, 24, 32), so the gap decides which rung it
+            gets, and 48px of gap only fits the 8px rung: the same size
+            classic uses, which reads thin on a 64-tall card. Sizing the gap
+            for the 16px rung doubles the score and costs nothing in logo
+            size. 24px was deliberately not chosen -- it needs a 128px gap,
+            so a 256px card, and the extra width lands as dead space either
+            side of the score rather than as anything legible.
+            """
+            try:
+                # The gap has to be measured at the width we are going to
+                # USE, not at the probe width. When center_gap_ratio drives
+                # the gap (rather than the score reserve) it scales with the
+                # card, so a gap measured at 128px underestimates the gap at
+                # the final width and the logos silently get less than the
+                # full height the card was sized to give them. Settle the two
+                # together; the loop is bounded so a pathological config
+                # cannot spin.
+                # A ratio-driven gap converges geometrically rather than at
+                # once, so allow enough rounds to settle: with the default
+                # score-driven gap the width does not depend on the card and
+                # this breaks on the second pass.
+                width = 128
+                for _ in range(12):
+                    probe = GameRenderer(width, self.display_height, self.config)
+                    gap = probe._center_gap_width()
+                    if getattr(probe, "_adaptive", False):
+                        gap = max(gap, probe._adaptive_score_gap())
+                        # Adaptive logo slots are widened past the core's
+                        # square cap so the wide marks reach full height, so
+                        # the card is two of THOSE plus the gap rather than
+                        # two square ones.
+                        half = probe._adaptive_logo_slot_width()
+                    else:
+                        half = self.display_height
+                    candidate = max(128, half * 2 + gap)
+                    if candidate == width:
+                        break
+                    width = candidate
+            except Exception:
+                self.logger.debug("Card width probe failed; keeping 128",
+                                  exc_info=True)
+                return 128
+            return width
 
         def _load_separator_icons(self) -> None:
             """Load and resize league separator icons."""

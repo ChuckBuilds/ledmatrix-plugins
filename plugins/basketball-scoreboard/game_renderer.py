@@ -161,23 +161,23 @@ class GameRenderer:
         rank_config = customization.get('rank_text', {})
         
         try:
-            fonts["score"] = self._load_custom_font(score_config, default_size=10)
-            fonts["time"] = self._load_custom_font(period_config, default_size=8)
-            fonts["team"] = self._load_custom_font(team_config, default_size=8)
-            fonts["status"] = self._load_custom_font(status_config, default_size=6)
-            fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6-font.ttf')
-            fonts["rank"] = self._load_custom_font(rank_config, default_size=10)
+            fonts["score"] = self._load_custom_font(score_config, default_size=10, element_key='score_text')
+            fonts["time"] = self._load_custom_font(period_config, default_size=8, element_key='period_text')
+            fonts["team"] = self._load_custom_font(team_config, default_size=8, element_key='team_name')
+            fonts["status"] = self._load_custom_font(status_config, default_size=6, element_key='status_text')
+            fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6-font.ttf', element_key='detail_text')
+            fonts["rank"] = self._load_custom_font(rank_config, default_size=10, element_key='rank_text')
             self.logger.debug("Successfully loaded fonts from config")
         except Exception:
             self.logger.exception("Error loading fonts, using defaults")
             # Fallback to hardcoded defaults
             try:
-                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
                 fonts["time"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
                 fonts["team"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
-                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["rank"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["rank"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
             except IOError:
                 self.logger.warning("Fonts not found, using default PIL font.")
                 default_font = ImageFont.load_default()
@@ -185,10 +185,90 @@ class GameRenderer:
         
         return fonts
     
-    def _load_custom_font(self, element_config: Dict[str, Any], default_size: int = 8, default_font: str = 'PressStart2P-Regular.ttf') -> ImageFont.FreeTypeFont:
+
+    #: Sizes each pixel font renders crisply at. Off the grid the glyphs are
+    #: anti-aliased, and on an LED matrix a part-lit pixel reads as a dim
+    #: lamp rather than a soft edge.
+    _FONT_PIXEL_GRID = {
+        'PressStart2P-Regular.ttf': 8,   # crisp at 8, 16, 24, 32, 40
+        '4x6-font.ttf': 7,               # crisp at 7, 14, 21, 28, 35
+    }
+
+    #: baseball-scoreboard's schema offers font FAMILY ALIASES rather than
+    #: filenames, and a config saved through the web UI stores the alias. Kept
+    #: out of _FONT_PIXEL_GRID so that table stays a map of real files.
+    _FONT_NAME_ALIASES = {
+        'press_start': 'PressStart2P-Regular.ttf',
+        'four_by_six': '4x6-font.ttf',
+    }
+
+    @classmethod
+    def _crisp_size(cls, font_file, desired):
+        """Snap *desired* to the nearest size *font_file* renders crisply at.
+
+        A face with no known grid is returned unchanged, so a user-supplied
+        font is never second-guessed.
+        """
+        font_file = cls._FONT_NAME_ALIASES.get(font_file, font_file)
+        grid = cls._FONT_PIXEL_GRID.get(font_file)
+        if not grid or not desired or desired <= 0:
+            return desired
+        return max(grid, int(round(float(desired) / grid)) * grid)
+
+    def _schema_font_size(self, element_key):
+        """The font_size this plugin's config_schema.json declares, or None."""
+        if not element_key:
+            return None
+        cache = getattr(self.__class__, '_SCHEMA_FONT_SIZES', None)
+        if cache is None:
+            cache = {}
+            try:
+                import json
+                schema_path = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), 'config_schema.json')
+                with open(schema_path) as fh:
+                    schema = json.load(fh)
+                props = (schema.get('properties', {})
+                               .get('customization', {})
+                               .get('properties', {}))
+                for key, spec in props.items():
+                    size = spec.get('properties', {}).get('font_size', {}).get('default')
+                    if size is not None:
+                        cache[key] = int(size)
+            except Exception:
+                cache = {}
+            self.__class__._SCHEMA_FONT_SIZES = cache
+        return cache.get(element_key)
+
+    def _resolve_font_size(self, element_config, element_key, default_size, font_name):
+        """Size to render at: the user's choice, or a grid-snapped default.
+
+        A configured size counts as a real choice only when it differs from
+        the schema default. The web UI writes the whole schema default block
+        on every save, so "font_size == schema default" carries no intent and
+        would otherwise pin every install to an anti-aliased size forever.
+        """
+        configured = (element_config or {}).get('font_size')
+        if configured is not None:
+            try:
+                configured = int(configured)
+                if configured != self._schema_font_size(element_key):
+                    return configured
+            except (TypeError, ValueError):
+                pass
+        return self._crisp_size(font_name, default_size)
+
+    def _load_custom_font(self, element_config: Dict[str, Any], default_size: int = 8, default_font: str = 'PressStart2P-Regular.ttf', element_key=None) -> ImageFont.FreeTypeFont:
         """Load a custom font from an element configuration dictionary."""
         font_name = element_config.get('font', default_font)
-        font_size = int(element_config.get('font_size', default_size))
+        # Resolve a family alias to its filename BEFORE the path is built.
+        # The grid table understands aliases, so a configured
+        # "four_by_six" was sized on the 4x6 grid (7px) while the path
+        # lookup used the raw alias, missed, and fell back to
+        # PressStart2P -- rendering 7px on an 8px grid, anti-aliased.
+        font_name = self._FONT_NAME_ALIASES.get(font_name, font_name)
+        font_size = self._resolve_font_size(
+            element_config, element_key, default_size, font_name)
         font_path = _resolve_font_path(os.path.join('assets', 'fonts', font_name))
         
         try:
@@ -695,6 +775,34 @@ class GameRenderer:
             pass
         return default
 
+    #: Clear pixels kept between the score and each logo, so the score's
+    #: outermost column cannot land on the logo's first lit column.
+    _SCORE_LOGO_GUTTER_PX: ClassVar[int] = 4
+
+    #: Widest score the centre strip is sized to hold. Basketball totals routinely pass 100, so the strip is sized for a
+    #: three-digit score.
+    #: The reserve is a fixed width so the strip does not jitter between
+    #: cards, so it has to assume the worst case rather than measure the
+    #: score in hand.
+    _SCORE_PROBE: ClassVar[str] = "000-000"
+
+    def _score_reserve_width(self) -> int:
+        """Centre strip the score actually needs, measured rather than assumed.
+
+        The gap was derived from the card width alone (width x
+        CENTER_GAP_RATIO, clamped to CENTER_GAP_MAX_PX) while the score's size
+        comes from config and the element-style resolver. Nothing compared the
+        two, so any score wider than the clamp was drawn over the logos.
+        Measuring it keeps the strip wide enough for whatever font is in play.
+        """
+        try:
+            probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
+            width = probe.textlength(self._SCORE_PROBE, font=self.fonts['score'])
+            return int(width) + 2 * self._SCORE_LOGO_GUTTER_PX
+        except Exception:
+            self.logger.debug("Score reserve measurement failed", exc_info=True)
+            return 0
+
     def _center_gap_width(self) -> int:
         """Width of the middle strip kept clear of logos.
 
@@ -710,19 +818,26 @@ class GameRenderer:
         high = self._scroll_card_option("center_gap_max", self.CENTER_GAP_MAX_PX)
         try:
             scaled = round(self.display_width * float(ratio))
-            return int(max(int(low), min(int(high), scaled)))
+            derived = int(max(int(low), min(int(high), scaled)))
+            # A strip narrower than the score is the bug, not a style choice.
+            # An explicit ``center_gap`` is still honoured above, including 0.
+            return max(derived, self._score_reserve_width())
         except (TypeError, ValueError):
             return self.CENTER_GAP_MIN_PX
 
     def _logo_slot_width(self) -> int:
         """Per-side logo slot, leaving the center gap clear.
 
-        Capped at display_height, so wide/short cards (128x32, 256x32) already
-        have a large middle and come out unchanged -- only the sizes where the
-        logos used to meet (128x64, 64x32) shrink.
+        No longer capped at display_height: the card is sized as two
+        full-height logos plus the measured gap, so what is left after the gap
+        is exactly the logo's share. The cap was what froze the logos at 46px
+        on the old flat 128px card.
         """
         available = (self.display_width - self._center_gap_width()) // 2
-        return max(8, min(self.display_height, available))
+        # No height cap: the card is sized as "two full-height logos plus the
+        # measured gap", so what is left after the gap is exactly the logo's
+        # share. The cap is what froze the logos at 46px on a 128px card.
+        return max(8, available)
 
     def _upcoming_center_mode(self) -> str:
         """Middle of an upcoming card: 'vs', 'date_time' or 'none'."""
@@ -1023,7 +1138,7 @@ class GameRenderer:
         record_font = getattr(self, '_record_font', None)
         if record_font is None:
             try:
-                record_font = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+                record_font = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
             except OSError:
                 record_font = ImageFont.load_default()
             self._record_font = record_font
