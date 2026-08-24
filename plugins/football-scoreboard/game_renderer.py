@@ -393,20 +393,29 @@ class GameRenderer:
 
         try:
             _ps = 'PressStart2P-Regular.ttf'
+            # Sizes resolved first: a _crisp_size() call nested in the argument
+            # list put a classmethod call and a keyword argument on one line,
+            # which is how element_key ended up passed to the wrong callable
+            # once already, and which static analysis still reads that way.
+            score_size = self._crisp_size(_ps, 10)
+            time_size = self._crisp_size(_ps, 8)
+            team_size = self._crisp_size(_ps, 8)
+            status_size = self._crisp_size(_ps, 6)
+            rank_size = self._crisp_size(_ps, 10)
             fonts["score"] = self._load_custom_font(
-                score_config, default_size=self._crisp_size(_ps, 10), element_key='score_text')
+                score_config, default_size=score_size, element_key='score_text')
             fonts["time"] = self._load_custom_font(
-                period_config, default_size=self._crisp_size(_ps, 8), element_key='period_text')
+                period_config, default_size=time_size, element_key='period_text')
             fonts["team"] = self._load_custom_font(
-                team_config, default_size=self._crisp_size(_ps, 8), element_key='team_name')
+                team_config, default_size=team_size, element_key='team_name')
             fonts["status"] = self._load_custom_font(
-                status_config, default_size=self._crisp_size(_ps, 6), element_key='status_text')
+                status_config, default_size=status_size, element_key='status_text')
             fonts["detail"] = self._load_custom_font(
                 detail_config,
                 default_size=self._detail_font_size(), element_key='detail_text',
                 default_font='4x6-font.ttf')
             fonts["rank"] = self._load_custom_font(
-                rank_config, default_size=self._crisp_size(_ps, 10), element_key='rank_text')
+                rank_config, default_size=rank_size, element_key='rank_text')
             self.logger.debug("Successfully loaded fonts from config")
         except Exception as e:
             self.logger.error(f"Error loading fonts: {e}, using defaults")
