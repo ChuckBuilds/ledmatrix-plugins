@@ -447,7 +447,7 @@ class SportsCore(ABC):
                 pass
         return self._crisp_size(font_name, default_size)
 
-    def _load_custom_font_from_element_config(self, element_config: Dict[str, Any], default_size: int = 8, element_key=None) -> ImageFont.FreeTypeFont:
+    def _load_custom_font_from_element_config(self, element_config: Dict[str, Any], default_size: int = 8, element_key=None, default_font: Optional[str] = None) -> ImageFont.FreeTypeFont:
         """
         Load a custom font from an element configuration dictionary.
         
@@ -459,7 +459,11 @@ class SportsCore(ABC):
             PIL ImageFont object
         """
         # Get font name and size, with defaults
-        font_name = element_config.get('font', 'PressStart2P-Regular.ttf')
+        # Falls back to the caller's face, not always PressStart2P: the
+        # schema declares 4x6-font for the detail element, so without this
+        # a bare config rendered detail in the wrong face.
+        base_default = default_font or 'PressStart2P-Regular.ttf'
+        font_name = element_config.get('font', base_default)
         font_size = self._resolve_font_size(
             element_config, element_key, default_size, font_name)
         
@@ -714,7 +718,7 @@ class SportsCore(ABC):
             fonts["time"] = self._load_custom_font_from_element_config(period_config, default_size=8, element_key='period_text')
             fonts["team"] = self._load_custom_font_from_element_config(team_config, default_size=8, element_key='team_name')
             fonts["status"] = self._load_custom_font_from_element_config(status_config, default_size=6, element_key='status_text')
-            fonts["detail"] = self._load_custom_font_from_element_config(detail_config, default_size=6, element_key='detail_text')
+            fonts["detail"] = self._load_custom_font_from_element_config(detail_config, default_size=6, element_key='detail_text', default_font='4x6-font.ttf')
             fonts["rank"] = self._load_custom_font_from_element_config(rank_config, default_size=10, element_key='rank_text')
             self.logger.info("Successfully loaded fonts from config")
         except Exception as e:
@@ -1773,10 +1777,13 @@ class SportsUpcoming(SportsCore):
             if display_width > 128:
                 status_font = self.fonts["time"]
             # "Next Game" is 9 characters; at 8px that is 72px, wider than a
-            # 64px panel, so it ran off both edges. Shed to "Next" then to
-            # nothing -- the date and time below already say what the card is.
+            # 64px panel, so it ran off both edges. Shed to "Next", which the
+            # date and time below give context for.
+            #
+            # No empty last candidate: _fit_text skips falsy entries, so ""
+            # could never be returned and the label cannot shed to nothing.
             status_text = self._fit_text(
-                draw_overlay, ("Next Game", "Next", ""),
+                draw_overlay, ("Next Game", "Next"),
                 status_font, display_width - 2)
             status_width = draw_overlay.textlength(status_text, font=status_font)
             status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')

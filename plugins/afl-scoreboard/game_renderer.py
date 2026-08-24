@@ -833,9 +833,10 @@ class GameRenderer:
     def _logo_slot_width(self) -> int:
         """Per-side logo slot, leaving the center gap clear.
 
-        Capped at display_height, so wide/short cards (128x32, 256x32) already
-        have a large middle and come out unchanged -- only the sizes where the
-        logos used to meet (128x64, 64x32) shrink.
+        No longer capped at display_height: the card is sized as two
+        full-height logos plus the measured gap, so what is left after the gap
+        is exactly the logo's share. The cap was what froze the logos at 46px
+        on the old flat 128px card.
         """
         available = (self.display_width - self._center_gap_width()) // 2
         # No height cap: the card is sized as "two full-height logos plus the

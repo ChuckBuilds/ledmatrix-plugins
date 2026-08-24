@@ -56,7 +56,6 @@ def check(case, passed):
 
 
 HEIGHTS = (32, 48, 64, 96, 128)
-FLAT_CARD = True          # True: card is sized from the height. False: panel-width card.
 
 
 def main():
@@ -74,8 +73,8 @@ def main():
     draw = ImageDraw.Draw(Image.new("RGB", (4, 4)))
 
     def card_for(h):
-        if not FLAT_CARD:
-            return 256                      # stand-in for a panel-width card
+        # This lineage sizes the card from the height, so the width follows
+        # the gap the score needs.
         probe = GameRenderer(128, h, {})
         return max(128, h * 2 + probe._center_gap_width())
 
@@ -96,12 +95,11 @@ def main():
         check("h=%-3d two logos + gap fit the %dpx card" % (h, card),
               r._logo_slot_width() * 2 + r._center_gap_width() <= card)
 
-    if FLAT_CARD:
-        print("\nthe logos get the full card height (no dead space)")
-        for h in HEIGHTS:
-            r = GameRenderer(card_for(h), h, {})
-            check("h=%-3d logo slot %dpx >= height" % (h, r._logo_slot_width()),
-                  r._logo_slot_width() >= h)
+    print("\nthe logos get the full card height (no dead space)")
+    for h in HEIGHTS:
+        r = GameRenderer(card_for(h), h, {})
+        check("h=%-3d logo slot %dpx >= height" % (h, r._logo_slot_width()),
+              r._logo_slot_width() >= h)
 
     print("\nthe gap follows the score, not the card width")
     r = GameRenderer(card_for(64), 64, {})

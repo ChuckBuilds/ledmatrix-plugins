@@ -51,9 +51,12 @@ def check(case, passed):
 
 
 class _Fake:
-    """Enough of a renderer to exercise the sizing rules without a display."""
+    """Enough of a renderer to exercise the sizing rules without a display.
 
-    _LOGO_EDGE_BLEED_PX = 10
+    The bleed constant is copied off SportsCore in main() rather than
+    hardcoded here: a duplicate would keep asserting the old geometry, and
+    pass, if production changed it.
+    """
 
     def __init__(self, w, h, score_font):
         self.display_width = w
@@ -74,6 +77,7 @@ def main():
     # but a noisy one, and this form says what is happening more plainly.
     centre_gap = SportsCore._scorebug_centre_gap
     fit_text = SportsCore._fit_text
+    _Fake._LOGO_EDGE_BLEED_PX = SportsCore._LOGO_EDGE_BLEED_PX
     score_font = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 8)
     draw = ImageDraw.Draw(Image.new("RGB", (4, 4)))
 

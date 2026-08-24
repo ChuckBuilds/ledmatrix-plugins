@@ -264,11 +264,17 @@ class FootballLive(Football, SportsLive):
                 # then let it overflow. The possession ball is drawn to the
                 # right of this text, so an oversized string pushes the ball
                 # off the panel as well as clipping itself.
+                #
+                # Order matters and this had it backwards. _fit_text returns
+                # the LAST candidate when none fit, so the shortest form has
+                # to come last; listing the long form last meant the overflow
+                # fallback was the widest string rather than the narrowest --
+                # the opposite of what the comment above promises.
+                # down_distance holds down_distance_text, ESPN's SHORT form.
                 down_distance = self._fit_text(
                     draw_overlay,
-                    (down_distance,
-                     game.get("down_distance_text", ""),
-                     game.get("down_distance_text_long", "")),
+                    (game.get("down_distance_text_long", ""),
+                     down_distance),
                     self.fonts['detail'], display_width - 10)
 
                 dd_width = draw_overlay.textlength(down_distance, font=self.fonts['detail'])
