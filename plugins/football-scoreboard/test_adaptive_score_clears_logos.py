@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""In adaptive layout the score must not be drawn across the team logos.
+
+This is a SEPARATE defect from the classic-path one in
+test_vegas_score_clears_the_logos.py, and it is the one that was actually
+visible on the 512x64 rig, because that rig sets layout_mode=adaptive.
+
+_render_game_card_adaptive() does not use _center_gap_width() or
+_logo_slot_width() at all -- it takes its geometry from the CORE's
+src.adaptive_layout.scoreboard_regions(), which deliberately overlaps
+score_area with BOTH logo slots by half the logo's width:
+
+    128x64: away[0,44]  score[22,106]  home[84,128]  -> 22px each side
+    176x64: away[0,64]  score[32,144]  home[112,176] -> 32px each side
+
+The score is then fitted to that region, so it grows until it spans the logos
+and is drawn on top of them. Widening the card does not help: the regions
+scale proportionally and the overlap stays at half the logo. So the fix is to
+clamp the region to the strip between the slots before fitting.
+
+Run: <core-venv>/bin/python plugins/football-scoreboard/test_adaptive_score_clears_logos.py
+"""
+
+import os
+import sys
+from pathlib import Path
+
+plugin_dir = Path(__file__).parent
+sys.path.insert(0, str(plugin_dir))
+
+REPO = Path(__file__).resolve().parents[2]
+CORE = None
+for _c in (os.environ.get("LEDMATRIX_CORE", ""),
+           str(REPO.parent / "LEDMatrix"),
+           str(Path.home() / "projects" / "LEDMatrix")):
+    if _c and (Path(_c) / "assets" / "fonts").is_dir():
+        CORE = Path(_c)
+        break
+if CORE is None:
+    print("SKIP: no LEDMatrix core checkout found (set LEDMATRIX_CORE)")
+    sys.exit(2)
+sys.path.insert(0, str(CORE))
+
+import logging  # noqa: E402
+logging.disable(logging.CRITICAL)
+
+results = []
+
+
+def check(case, passed):
+    results.append((case, passed))
+    print("  [%s] %s" % ("pass" if passed else "FAIL", case))
+
+
+SIZES = ((128, 32), (128, 64), (176, 64), (236, 64), (512, 64), (256, 128))
+
+
+def main():
+    os.chdir(str(CORE))
+    from game_renderer import GameRenderer, ADAPTIVE_AVAILABLE
+    if not ADAPTIVE_AVAILABLE:
+        print("SKIP: this core has no src.adaptive_layout")
+        return 2
+    from src.adaptive_layout import Region, scoreboard_regions
+
+    if not hasattr(GameRenderer, "_score_clear_of_logos"):
+        print("  [FAIL] GameRenderer has no _score_clear_of_logos -- the "
+              "adaptive score region still spans both logo slots, so the "
+              "score renders on top of the logos.")
+        print("\n1 failed")
+        return 1
+
+    r = GameRenderer(128, 64, {"layout_mode": "adaptive"})
+
+    print("the clamped region never reaches into either logo")
+    for w, h in SIZES:
+        regs = scoreboard_regions(Region(0, 0, w, h))
+        got = r._score_clear_of_logos(regs)
+        away, home = regs.away_slot, regs.home_slot
+        check("%3dx%-3d starts at/after the away logo ends" % (w, h),
+              got.x >= away.x + away.w)
+        check("%3dx%-3d ends at/before the home logo starts" % (w, h),
+              got.x + got.w <= home.x)
+
+    print("\nit actually narrows the region (the whole point)")
+    # The first version of this fix silently did nothing: the constant it
+    # compared against had been defined at module scope instead of on the
+    # class, and the resulting AttributeError was swallowed by a try/except,
+    # so the region came back unchanged with no error logged anywhere. A
+    # check that only asserted "no overlap" would NOT have caught that,
+    # because the unclamped region overlaps -- this one would.
+    for w, h in ((128, 64), (176, 64)):
+        regs = scoreboard_regions(Region(0, 0, w, h))
+        before, after = regs.score_area, r._score_clear_of_logos(regs)
+        check("%3dx%-3d region narrowed %d -> %d px" % (w, h, before.w, after.w),
+              after.w < before.w)
+
+    print("\nthe vertical extent and the region type are preserved")
+    regs = scoreboard_regions(Region(0, 0, 128, 64))
+    got = r._score_clear_of_logos(regs)
+    check("y is unchanged", got.y == regs.score_area.y)
+    check("height is unchanged", got.h == regs.score_area.h)
+    check("still a Region", isinstance(got, type(regs.score_area)))
+
+    print("\na card with no usable middle keeps the original region")
+    class _Tight:
+        score_area = Region(0, 0, 40, 20)
+        away_slot = Region(0, 0, 20, 20)
+        home_slot = Region(21, 0, 19, 20)      # 1px gap: unusable
+    kept = r._score_clear_of_logos(_Tight())
+    check("falls back rather than collapsing to a sliver",
+          kept is _Tight.score_area)
+
+    failed = [c for c, ok in results if not ok]
+    print("\n%d checks, %d failed" % (len(results), len(failed)))
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

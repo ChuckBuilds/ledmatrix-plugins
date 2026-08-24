@@ -207,6 +207,10 @@ class GameRenderer:
     #: edge pixel is not a soft edge -- it is a dim lamp, and the text reads
     #: as smeared. Measured, not assumed: rendering "01/13 O45.5 17-21" at
     #: 5..40px, these are the only sizes with zero part-lit pixels.
+    #: Below this the gap between the logos cannot hold a legible score, so
+    #: the original (overlapping) region is kept rather than collapsing it.
+    _MIN_ADAPTIVE_SCORE_WIDTH_PX: ClassVar[int] = 16
+
     _FONT_PIXEL_GRID: ClassVar[Dict[str, int]] = {
         'PressStart2P-Regular.ttf': 8,   # crisp at 8, 16, 24, 32, 40
         '4x6-font.ttf': 7,               # crisp at 7, 14, 21, 28, 35
@@ -1006,6 +1010,40 @@ class GameRenderer:
             self.logger.error(f"Error loading logo for {team_abbrev}: {e}")
         return None
 
+    def _score_clear_of_logos(self, regs):
+        """Trim the score region back to the strip between the two logos.
+
+        The core's scoreboard_regions() deliberately overlaps score_area with
+        BOTH logo slots -- by exactly half the logo's width at every card size
+        (128x64: away[0,44] score[22,106] home[84,128]). The score is then
+        fitted to that region, so it grows until it spans the logos and is
+        drawn on top of them. That is the overlap reported against the Vegas
+        ticker, and it is why widening the card never helped: the regions
+        scale proportionally and the overlap stays at half the logo.
+
+        Classic already keeps the score on its own strip. Clamping the region
+        to the gap between the slots brings adaptive to the same arrangement:
+        the ladder simply picks the largest rung that fits the real space, so
+        the score lands beside the logos rather than across them, and comes
+        out at a comparable size to classic's.
+
+        The region is only ever narrowed, never widened, and a card whose
+        logos leave no usable middle keeps the original region rather than
+        collapsing to nothing.
+        """
+        # Deliberately not wrapped in try/except. An earlier version was, and
+        # when the constant below was accidentally defined at module scope
+        # instead of on the class, the AttributeError went straight into the
+        # handler and the clamp silently did nothing -- the overlap looked
+        # unfixed, with no error anywhere. A mistake in this arithmetic should
+        # be loud.
+        area, away, home = regs.score_area, regs.away_slot, regs.home_slot
+        left = max(area.x, away.x + away.w)
+        right = min(area.x + area.w, home.x)
+        if right - left < self._MIN_ADAPTIVE_SCORE_WIDTH_PX:
+            return area
+        return area.__class__(left, area.y, right - left, area.h)
+
     def _render_game_card_adaptive(self, game: Dict[str, Any],
                                    game_type: str) -> Image.Image:
         width, height = self.display_width, self.display_height
@@ -1042,7 +1080,8 @@ class GameRenderer:
         # Score — largest crisp font that fits the center region. Only drawn
         # once a game has started: an upcoming game has no score, so the
         # extractor's 0-0 was a placeholder, not a result.
-        score_region = self._region_for(regs.score_area, 'score')
+        score_region = self._region_for(
+            self._score_clear_of_logos(regs), 'score')
         if game_type in ("live", "recent"):
             score_text = f"{game.get('away_score', '0')}-{game.get('home_score', '0')}"
             score_fit = self._fit_element('score', score_text, score_region,

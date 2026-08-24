@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-08-23",
+  "last_updated": "2026-08-24",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -240,7 +240,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.21.2"
+      "latest_version": "2.22.0"
     },
     {
       "id": "geochron",
