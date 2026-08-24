@@ -1088,6 +1088,37 @@ class GameRenderer:
             return area
         return area.__class__(left, area.y, right - left, area.h)
 
+    def _status_ladder(self):
+        """Ladder for the top status band, never coarser than the score.
+
+        The status band spans the FULL card width, while the score is confined
+        to the strip between the logos. Once the card is widened so the score
+        can reach a bigger rung, the band widens with it -- and on a 96- or
+        128-tall card "Final" reached the same 16px rung as the score, so the
+        secondary text ended up as large as the headline it sits above.
+
+        Capping the band one rung below whatever the score actually took keeps
+        the hierarchy the classic layout has. When there is no score on the
+        card (an upcoming game) the full ladder is used unchanged.
+        """
+        score_px = getattr(self, '_adaptive_score_px', 0) or 0
+        if not score_px:
+            return ADAPTIVE_LADDER_TEXT
+        # When the score is already at the smallest PressStart rung there is
+        # no headroom to be secondary WITHIN the same face, and capping below
+        # it drops the band onto 4x6-font -- a different, narrower letterform
+        # on exactly the small panels where nothing was wrong. A 32-tall card
+        # has both at 8px and reads fine; the imbalance only appears once the
+        # score has climbed above the floor.
+        if score_px <= 8:
+            return ADAPTIVE_LADDER_TEXT
+        # FontStep's field is size_px, not size. Getting that wrong made the
+        # filter match nothing, and the fallback below then silently returned
+        # a ladder rather than raising -- so the cap appeared to do nothing.
+        smaller = tuple(step for step in ADAPTIVE_LADDER_TEXT
+                        if getattr(step, 'size_px', 0) < score_px)
+        return smaller or ADAPTIVE_LADDER_TEXT[-1:]
+
     def _render_game_card_adaptive(self, game: Dict[str, Any],
                                    game_type: str) -> Image.Image:
         width, height = self.display_width, self.display_height
@@ -1096,6 +1127,7 @@ class GameRenderer:
         draw_overlay = ImageDraw.Draw(overlay)
 
         regs = scoreboard_regions(Region(0, 0, width, height), ctx=self._ctx)
+        self._adaptive_score_px = 0
 
         away_raw = self._load_raw_logo(game.get("away_abbr", ""), game.get("away_logo_path"))
         home_raw = self._load_raw_logo(game.get("home_abbr", ""), game.get("home_logo_path"))
@@ -1130,6 +1162,8 @@ class GameRenderer:
             score_text = f"{game.get('away_score', '0')}-{game.get('home_score', '0')}"
             score_fit = self._fit_element('score', score_text, score_region,
                                           ADAPTIVE_LADDER_HEADLINE)
+            self._adaptive_score_px = getattr(
+                getattr(score_fit, 'font', None), 'size', 0) or 0
             self._draw_fit_outline(draw_overlay, score_fit, score_region,
                                    fill=self._score_color_for(game, game_type))
         elif game_type == "upcoming" and self._upcoming_center_mode() == "vs":
@@ -1146,7 +1180,7 @@ class GameRenderer:
             top = game.get("period_text") or "Final"
             fit = self._fit_element('time', top,
                                     self._region_for(regs.status_band, 'status_text'),
-                                    ADAPTIVE_LADDER_TEXT)
+                                    self._status_ladder())
             self._draw_fit_outline(draw_overlay, fit,
                                    self._region_for(regs.status_band, 'status_text'))
             self._draw_bottom_center_adaptive(
@@ -1212,7 +1246,7 @@ class GameRenderer:
         if period_clock_text:
             region = self._region_for(regs.status_band, 'status_text')
             fit = self._fit_element('time', period_clock_text, region,
-                                    ADAPTIVE_LADDER_TEXT)
+                                    self._status_ladder())
             self._draw_fit_outline(draw, fit, region)
 
         # Scoring event or down & distance in the bottom detail band —

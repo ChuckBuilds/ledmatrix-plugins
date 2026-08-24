@@ -144,6 +144,53 @@ def main():
     check("classic renderer reports no adaptive gap",
           not getattr(c, "_adaptive", False) and c._adaptive_score_gap() >= 0)
 
+    print("\nthe status band never grows to the score's size")
+    # The status band spans the FULL card width while the score is confined
+    # to the strip between the logos, so widening the card for the score also
+    # let "Final" reach the same 16px rung on 96- and 128-tall cards -- the
+    # secondary text as large as the headline above it.
+    from game_renderer import ADAPTIVE_LADDER_TEXT
+    for h, card in ((64, 216), (96, 280), (128, 344), (64, 256)):
+        r = GameRenderer(card, h, {"layout_mode": "adaptive"})
+        seen = {}
+        original = r._fit_element
+
+        def spy(key, text, region, ladder, _o=original, _s=seen):
+            fit = _o(key, text, region, ladder)
+            _s[key] = getattr(getattr(fit, "font", None), "size", 0)
+            return fit
+
+        r._fit_element = spy
+        logos = plugin_dir / "assets" / "sports" / "nfl_logos"
+        r.render_game_card({"away_abbr": "GB", "home_abbr": "KC",
+                            "away_score": "34", "home_score": "13",
+                            "status_text": "Final", "game_date": "Aug 22",
+                            "league": "nfl",
+                            "away_logo_path": str(logos / "GB.png"),
+                            "home_logo_path": str(logos / "KC.png")}, "recent")
+        score, status = seen.get("score", 0), seen.get("time", 0)
+        # Assert the score was fitted at all. Without logos the renderer takes
+        # a text-only fallback and never fits a score, and an earlier version
+        # of this check quietly skipped on that -- passing while testing
+        # nothing.
+        check("h=%-3d card %d: the score was actually fitted" % (h, card),
+              bool(score))
+        check("h=%-3d card %d: status %spx stays under score %spx"
+              % (h, card, status, score), 0 < status < score)
+
+    print("\nthe ladder cap reads the right field")
+    # FontStep's field is size_px, not size. Getting that wrong made the
+    # filter match nothing and the fallback quietly returned a whole ladder,
+    # so the cap looked applied but did nothing.
+    r = GameRenderer(216, 64, {"layout_mode": "adaptive"})
+    r._adaptive_score_px = 16
+    capped = r._status_ladder()
+    check("a 16px score caps the band below 16px",
+          all(getattr(st, "size_px", 99) < 16 for st in capped))
+    r._adaptive_score_px = 0
+    check("no score on the card leaves the ladder alone",
+          r._status_ladder() == ADAPTIVE_LADDER_TEXT)
+
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
     return 1 if failed else 0
