@@ -1010,6 +1010,50 @@ class GameRenderer:
             self.logger.error(f"Error loading logo for {team_abbrev}: {e}")
         return None
 
+    #: Ladder rung the adaptive score should be able to reach. 8 is what fits
+    #: a 48px gap and matches classic, but reads thin on a tall card; 24 needs
+    #: a 128px gap and buys mostly dead space. 16 doubles the score for 40px
+    #: of extra card and costs nothing in logo size.
+    _ADAPTIVE_SCORE_TARGET_PX: ClassVar[int] = 16
+
+    def _adaptive_score_gap(self) -> int:
+        """Middle width needed for the adaptive score to reach its target rung.
+
+        Only meaningful in adaptive layout, where the score is fitted to the
+        strip between the logos from a ladder of crisp sizes. The gap is what
+        decides which rung it gets, so this reports the width that rung needs
+        plus the same gutter the classic path keeps.
+
+        Returns 0 if the target size cannot be measured, which leaves the
+        caller's own gap untouched.
+        """
+        try:
+            probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
+            font = ImageFont.truetype(
+                _resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"),
+                self._ADAPTIVE_SCORE_TARGET_PX)
+            needed = (int(probe.textlength("00-00", font=font))
+                      + 2 * self._SCORE_LOGO_GUTTER_PX)
+
+            # Ask the fitter whether it would actually use the bigger rung on
+            # a card this tall, rather than assume it. The fit is context
+            # dependent, not purely a matter of region size: the same 88x31
+            # region takes 16px on a 64-tall card and only 8px on a 48-tall
+            # one. Widening the gap where the rung is unreachable would buy
+            # nothing but dead space either side of an 8px score.
+            card = max(128, self.display_height * 2 + needed)
+            regs = scoreboard_regions(
+                Region(0, 0, card, self.display_height), ctx=self._ctx)
+            fit = self._fit_element(
+                'score', "00-00",
+                self._region_for(self._score_clear_of_logos(regs), 'score'),
+                ADAPTIVE_LADDER_HEADLINE)
+            got = getattr(getattr(fit, 'font', None), 'size', 0) or 0
+            return needed if got >= self._ADAPTIVE_SCORE_TARGET_PX else 0
+        except Exception:
+            self.logger.debug("Adaptive score gap probe failed", exc_info=True)
+            return 0
+
     def _score_clear_of_logos(self, regs):
         """Trim the score region back to the strip between the two logos.
 

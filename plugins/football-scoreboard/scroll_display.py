@@ -96,10 +96,24 @@ else:
 
             A 32-tall panel computes 2*32 + ~48 = 112 and keeps the 128 it has
             always had; only the tall cards move.
+
+            ADAPTIVE layout needs more. There the logos are already capped at
+            the card height once the card reaches 2 x height, so every further
+            pixel of width goes entirely into the middle -- the logos do not
+            shrink at all. The score is fitted to that middle from a ladder of
+            crisp sizes (8, 16, 24, 32), so the gap decides which rung it
+            gets, and 48px of gap only fits the 8px rung: the same size
+            classic uses, which reads thin on a 64-tall card. Sizing the gap
+            for the 16px rung doubles the score and costs nothing in logo
+            size. 24px was deliberately not chosen -- it needs a 128px gap,
+            so a 256px card, and the extra width lands as dead space either
+            side of the score rather than as anything legible.
             """
             try:
                 probe = GameRenderer(128, self.display_height, self.config)
                 gap = probe._center_gap_width()
+                if getattr(probe, "_adaptive", False):
+                    gap = max(gap, probe._adaptive_score_gap())
             except Exception:
                 self.logger.debug("Card width probe failed; keeping 128",
                                   exc_info=True)

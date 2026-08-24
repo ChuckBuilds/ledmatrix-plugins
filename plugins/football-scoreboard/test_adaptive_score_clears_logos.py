@@ -111,6 +111,39 @@ def main():
     check("falls back rather than collapsing to a sliver",
           kept is _Tight.score_area)
 
+    print("\nthe gap is widened only where the bigger score rung is reachable")
+    # Once the card reaches 2 x height the logos are capped at the card
+    # height, so extra width goes entirely into the middle and the gap
+    # decides which ladder rung the score gets. But the fitter is CONTEXT
+    # dependent, not purely region-driven: the identical 88x31 region takes
+    # 16px on a 64-tall card and 8px on a 48-tall one. Widening the gap where
+    # the rung is unreachable would buy only dead space, so the helper probes
+    # the fitter and declines.
+    from game_renderer import ADAPTIVE_LADDER_HEADLINE
+    target = GameRenderer._ADAPTIVE_SCORE_TARGET_PX
+    for h, reachable in ((32, False), (48, False), (64, True), (96, True), (128, True)):
+        probe = GameRenderer(128, h, {"layout_mode": "adaptive"})
+        gap = probe._adaptive_score_gap()
+        check("h=%-3d %s" % (h, "widens the gap" if reachable else
+                             "declines to widen (rung unreachable)"),
+              (gap > 0) is reachable)
+        if not reachable:
+            continue
+        card = max(128, h * 2 + max(probe._center_gap_width(), gap))
+        r = GameRenderer(card, h, {"layout_mode": "adaptive"})
+        regs = scoreboard_regions(Region(0, 0, card, h))
+        fit = r._fit_element('score', "00-00",
+                             r._region_for(r._score_clear_of_logos(regs), 'score'),
+                             ADAPTIVE_LADDER_HEADLINE)
+        got = getattr(getattr(fit, 'font', None), 'size', 0)
+        check("h=%-3d card %d actually reaches the %dpx rung (got %spx)"
+              % (h, card, target, got), got >= target)
+
+    print("\nclassic layout is untouched by any of this")
+    c = GameRenderer(128, 64, {"layout_mode": "classic"})
+    check("classic renderer reports no adaptive gap",
+          not getattr(c, "_adaptive", False) and c._adaptive_score_gap() >= 0)
+
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
     return 1 if failed else 0
