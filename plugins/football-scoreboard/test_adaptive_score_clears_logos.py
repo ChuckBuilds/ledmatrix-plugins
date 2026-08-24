@@ -55,6 +55,20 @@ def check(case, passed):
 SIZES = ((128, 32), (128, 64), (176, 64), (236, 64), (512, 64), (256, 128))
 
 
+def make_spy(original, sink):
+    """Wrap _fit_element so the size it settles on can be inspected.
+
+    A closure rather than default arguments: passing the results dict as a
+    default is a mutable-default smell, and there is no late-binding problem
+    to work around, since each spy is used within the iteration that builds it.
+    """
+    def spy(key, text, region, ladder):
+        fit = original(key, text, region, ladder)
+        sink[key] = getattr(getattr(fit, "font", None), "size", 0)
+        return fit
+    return spy
+
+
 def main():
     os.chdir(str(CORE))
     from game_renderer import GameRenderer, ADAPTIVE_AVAILABLE
@@ -161,17 +175,6 @@ def main():
         r = GameRenderer(card, h, {"layout_mode": "adaptive"})
         seen = {}
 
-        def make_spy(original, sink):
-            # Closure rather than default arguments: passing the dict as a
-            # default is a mutable-default smell, and there is no late-binding
-            # problem to work around here since the spy is used within this
-            # iteration.
-            def spy(key, text, region, ladder):
-                fit = original(key, text, region, ladder)
-                sink[key] = getattr(getattr(fit, "font", None), "size", 0)
-                return fit
-            return spy
-
         r._fit_element = make_spy(r._fit_element, seen)
         logos = plugin_dir / "assets" / "sports" / "nfl_logos"
         r.render_game_card({"away_abbr": "GB", "home_abbr": "KC",
@@ -206,13 +209,6 @@ def main():
                                   "status_text": "Final", "game_date": "Aug 22"})):
         r = GameRenderer(286, 64, {"layout_mode": "adaptive"})
         seen = {}
-
-        def make_spy(original, sink):
-            def spy(key, text, region, ladder):
-                fit = original(key, text, region, ladder)
-                sink[key] = getattr(getattr(fit, "font", None), "size", 0)
-                return fit
-            return spy
 
         r._fit_element = make_spy(r._fit_element, seen)
         r.render_game_card({"away_abbr": "GB", "home_abbr": "KC", "league": "nfl",
