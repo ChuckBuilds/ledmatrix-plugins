@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.14.0",
+  "version": "2.15.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,13 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.15.0",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Rebuild the league registry into a local and publish it with one atomic rebind instead of clearing the live dict and refilling it key by key. on_config_change runs on the core's config-watcher thread while the display path iterates the same registry, so saving config during a soccer frame could render a screen with no leagues, or raise \"dictionary changed size during iteration\" inside display(). Readers that consult the registry more than once (the league selection's iterate-then-sort, and the manager lookup's membership-test-then-index) now take a single snapshot, so a replacement landing mid-selection cannot turn a league collected from the old registry into a KeyError against the new one.",
+      "changelog": "A game_card_width equal to the schema default is now treated as unchosen, so the computed card width applies. Without this the card stayed pinned at 128px on any config saved through the web UI, which left the logos SMALLER than before, not merely unchanged."
+    },
     {
       "version": "2.14.0",
       "released": "2026-08-22",

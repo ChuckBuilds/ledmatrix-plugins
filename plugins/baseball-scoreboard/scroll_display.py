@@ -84,6 +84,41 @@ else:
             self._game_renderer = None
             super().__init__(*args, **kwargs)
 
+
+        def _default_game_card_width(self) -> int:
+            """Card wide enough for two full-height logos plus the score gap.
+
+            This lineage defaults its cards to the full panel width, but a
+            config pinning them to the schema's 128 leaves the logos sharing
+            what is left after a score-sized gap -- narrower than before the
+            gap was measured. Sizing from the height instead keeps the logos
+            whole without turning each card into a whole screen.
+            """
+            try:
+                probe = GameRenderer(128, self.display_height, self.config)
+                gap = probe._center_gap_width()
+            except Exception:
+                self.logger.debug("Card width probe failed; keeping 128",
+                                  exc_info=True)
+                return 128
+            return max(128, self.display_height * 2 + gap)
+
+        #: The schema declares game_card_width: 128 for every league, and the
+        #: web UI writes the whole schema block on every save, so nearly every
+        #: real config carries it whether or not anyone chose it. Honouring it
+        #: as an override pins the card at 128 forever -- and since the centre
+        #: gap is now sized from the score, that SHRINKS the logos rather than
+        #: just declining the improvement. Equal to the schema default means
+        #: unchosen, the same rule the fonts use.
+        _SCHEMA_CARD_WIDTH = 128
+
+        def _get_scroll_settings(self, league=None):
+            settings = super()._get_scroll_settings(league)
+            if settings.get("game_card_width") == self._SCHEMA_CARD_WIDTH:
+                settings = {**settings,
+                            "game_card_width": self._default_game_card_width()}
+            return settings
+
         def _get_game_renderer(self, game_card_width: int = 128) -> Optional[GameRenderer]:
             """Get or create the cached GameRenderer instance.
 

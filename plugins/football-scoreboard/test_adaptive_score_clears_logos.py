@@ -194,6 +194,35 @@ def main():
         check("h=%-3d card %d: status %spx vs score %spx"
               % (h, card, status, score), ok)
 
+    print("\nan upcoming card caps its time the same way a played one does")
+    # The status band is capped against the card's headline. On a played game
+    # that is the score; on an upcoming one it is the centre element. Nothing
+    # seeded the cap for upcoming cards, so the kick-off time came out at the
+    # same 16px as the "@" -- twice what the same band gets on a recent card,
+    # and the largest thing on the card.
+    logos = plugin_dir / "assets" / "sports" / "nfl_logos"
+    for gt, extra in (("upcoming", {"game_time": "3:00PM", "game_date": "Aug 29"}),
+                      ("recent", {"away_score": "34", "home_score": "13",
+                                  "status_text": "Final", "game_date": "Aug 22"})):
+        r = GameRenderer(286, 64, {"layout_mode": "adaptive"})
+        seen = {}
+
+        def make_spy(original, sink):
+            def spy(key, text, region, ladder):
+                fit = original(key, text, region, ladder)
+                sink[key] = getattr(getattr(fit, "font", None), "size", 0)
+                return fit
+            return spy
+
+        r._fit_element = make_spy(r._fit_element, seen)
+        r.render_game_card({"away_abbr": "GB", "home_abbr": "KC", "league": "nfl",
+                            "away_logo_path": str(logos / "GB.png"),
+                            "home_logo_path": str(logos / "KC.png"), **extra}, gt)
+        centre, band = seen.get("score", 0), seen.get("time", 0)
+        check("%-9s the centre element was fitted" % gt, bool(centre))
+        check("%-9s band %spx stays under centre %spx" % (gt, band, centre),
+              0 < band < centre)
+
     print("\nthe ladder cap reads the right field")
     # FontStep's field is size_px, not size. Getting that wrong made the
     # filter match nothing and the fallback quietly returned a whole ladder,

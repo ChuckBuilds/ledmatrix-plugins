@@ -114,6 +114,23 @@ else:
                 return 128
             return max(128, self.display_height * 2 + gap)
 
+
+        #: The schema declares game_card_width: 128 for every league, and the
+        #: web UI writes the whole schema block on every save, so nearly every
+        #: real config carries it whether or not anyone chose it. Honouring it
+        #: as an override pins the card at 128 forever -- and since the centre
+        #: gap is now sized from the score, that SHRINKS the logos rather than
+        #: just declining the improvement. Equal to the schema default means
+        #: unchosen, the same rule the fonts use.
+        _SCHEMA_CARD_WIDTH = 128
+
+        def _get_scroll_settings(self, league=None):
+            settings = super()._get_scroll_settings(league)
+            if settings.get("game_card_width") == self._SCHEMA_CARD_WIDTH:
+                settings = {**settings,
+                            "game_card_width": self._default_game_card_width()}
+            return settings
+
         def scroll_settings_defaults(self):
             # Where this plugin's defaults differ from core's.
             return {

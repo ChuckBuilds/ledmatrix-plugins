@@ -1222,6 +1222,14 @@ class GameRenderer:
             if vs_text:
                 vs_fit = self._fit_element('score', vs_text, score_region,
                                            ADAPTIVE_LADDER_HEADLINE)
+                # The centre element is this card's headline, exactly as the
+                # score is on a played game, so the status band is measured
+                # against it too. Without this an upcoming card left the band
+                # uncapped and the kick-off time came out at the same 16px as
+                # the "@" -- twice the size the same band gets on a recent
+                # card, and the largest thing on the card.
+                self._adaptive_score_px = getattr(
+                    getattr(vs_fit, 'font', None), 'size', 0) or 0
                 self._draw_fit_outline(draw_overlay, vs_fit, score_region,
                                        fill=self._element_color('score_text'))
 
@@ -1256,7 +1264,10 @@ class GameRenderer:
             else:
                 if game_time:
                     region = self._region_for(regs.status_band, 'time')
-                    fit = self._fit_element('time', game_time, region, ADAPTIVE_LADDER_TEXT)
+                    # Same band, same rule as a played game's status line:
+                    # never larger than the card's centre element.
+                    fit = self._fit_element('time', game_time, region,
+                                            self._status_ladder())
                     self._draw_fit_outline(draw_overlay, fit, region)
                 self._draw_bottom_center_adaptive(draw_overlay, game_date,
                                                   regs, 'date')
