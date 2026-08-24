@@ -56,6 +56,10 @@ def check(case, passed):
 
 
 HEIGHTS = (32, 48, 64, 96, 128)
+# Deliberately a literal, not GameRenderer._SCORE_PROBE: reading the
+# implementation's own constant would make this agree by construction
+# and never catch a reserve that is too narrow for a real score.
+WORST_SCORE = "00-00"   # this sport's widest realistic score
 
 
 def main():
@@ -81,7 +85,7 @@ def main():
     print("the score fits the gap it is centred in")
     for h in HEIGHTS:
         r = GameRenderer(card_for(h), h, {})
-        score_w = draw.textlength("00-00", font=r.fonts["score"])
+        score_w = draw.textlength(WORST_SCORE, font=r.fonts["score"])
         gap = r._center_gap_width()
         check("h=%-3d score %dpx fits the %dpx gap" % (h, score_w, gap),
               score_w <= gap)
@@ -106,10 +110,37 @@ def main():
     before = r._center_gap_width()
     r.fonts["score"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 24)
     after = r._center_gap_width()
-    big = draw.textlength("00-00", font=r.fonts["score"])
+    big = draw.textlength(WORST_SCORE, font=r.fonts["score"])
     check("a 24px score (%dpx wide) widens the gap %d -> %d" % (big, before, after),
           after > before)
     check("...and the widened gap actually holds it", big <= after)
+
+    print("\na ratio-driven gap must be measured at the width actually used")
+    # _center_gap_width() scales with display_width when center_gap_ratio
+    # drives it rather than the score reserve. Sizing the card from a gap
+    # measured at a 128px probe therefore underestimates the gap at the final
+    # width, and the logos quietly get less than the full height the card was
+    # supposed to give them. scroll_display settles the two together.
+    #
+    # Scope: this pins the RENDERER property that makes settling necessary.
+    # The loop itself lives in ScrollDisplay._default_game_card_width, which
+    # needs a display manager and is not constructed here.
+    ratio_cfg = {"scroll_card": {"center_gap_ratio": 0.5,
+                                 "center_gap_min": 22, "center_gap_max": 300}}
+    h = 64
+    naive = max(128, h * 2 + GameRenderer(128, h, ratio_cfg)._center_gap_width())
+    check("a gap measured at 128px leaves the logos short (%dpx slot)"
+          % GameRenderer(naive, h, ratio_cfg)._logo_slot_width(),
+          GameRenderer(naive, h, ratio_cfg)._logo_slot_width() < h)
+    settled = 128
+    for _ in range(12):
+        nxt = max(128, h * 2 + GameRenderer(settled, h, ratio_cfg)._center_gap_width())
+        if nxt == settled:
+            break
+        settled = nxt
+    check("settling on the final width restores full-height logos (%dpx)"
+          % GameRenderer(settled, h, ratio_cfg)._logo_slot_width(),
+          GameRenderer(settled, h, ratio_cfg)._logo_slot_width() >= h)
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))

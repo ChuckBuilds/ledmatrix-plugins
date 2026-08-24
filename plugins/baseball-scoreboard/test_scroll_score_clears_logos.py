@@ -56,6 +56,10 @@ def check(case, passed):
 
 
 HEIGHTS = (32, 48, 64, 96, 128)
+# Deliberately a literal, not GameRenderer._SCORE_PROBE: reading the
+# implementation's own constant would make this agree by construction
+# and never catch a reserve that is too narrow for a real score.
+WORST_SCORE = "00-00"   # this sport's widest realistic score
 
 
 def main():
@@ -80,7 +84,7 @@ def main():
     print("the score fits the gap it is centred in")
     for h in HEIGHTS:
         r = GameRenderer(card_for(h), h, {})
-        score_w = draw.textlength("00-00", font=r.fonts["score"])
+        score_w = draw.textlength(WORST_SCORE, font=r.fonts["score"])
         gap = r._center_gap_width()
         check("h=%-3d score %dpx fits the %dpx gap" % (h, score_w, gap),
               score_w <= gap)
@@ -99,7 +103,7 @@ def main():
     before = r._center_gap_width()
     r.fonts["score"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 24)
     after = r._center_gap_width()
-    big = draw.textlength("00-00", font=r.fonts["score"])
+    big = draw.textlength(WORST_SCORE, font=r.fonts["score"])
     check("a 24px score (%dpx wide) widens the gap %d -> %d" % (big, before, after),
           after > before)
     check("...and the widened gap actually holds it", big <= after)

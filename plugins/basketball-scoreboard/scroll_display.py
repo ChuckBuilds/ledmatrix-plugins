@@ -109,13 +109,31 @@ else:
             the 128 it has always had.
             """
             try:
-                probe = GameRenderer(128, self.display_height, self.config)
-                gap = probe._center_gap_width()
+                # The gap has to be measured at the width we are going to
+                # USE, not at the probe width. When center_gap_ratio drives
+                # the gap (rather than the score reserve) it scales with the
+                # card, so a gap measured at 128px underestimates the gap at
+                # the final width, and the logos silently get less than the
+                # full height the card was sized to give them. Settle the two
+                # together; a couple of rounds is plenty, and the loop is
+                # bounded so a pathological config cannot spin.
+                # A ratio-driven gap converges geometrically rather than at
+                # once, so allow enough rounds to settle: with the default
+                # score-driven gap the width does not depend on the card and
+                # this breaks on the second pass.
+                width = 128
+                for _ in range(12):
+                    probe = GameRenderer(width, self.display_height, self.config)
+                    candidate = max(128, self.display_height * 2
+                                    + probe._center_gap_width())
+                    if candidate == width:
+                        break
+                    width = candidate
             except Exception:
                 self.logger.debug("Card width probe failed; keeping 128",
                                   exc_info=True)
                 return 128
-            return max(128, self.display_height * 2 + gap)
+            return width
 
 
         #: The schema declares game_card_width: 128 for every league, and the

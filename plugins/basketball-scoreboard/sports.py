@@ -434,6 +434,12 @@ class SportsCore(ABC):
         """
         # Get font name and size, with defaults
         font_name = element_config.get('font', default_font)
+        # Resolve a family alias to its filename BEFORE the path is built.
+        # The grid table understands aliases, so a configured
+        # "four_by_six" was sized on the 4x6 grid (7px) while the path
+        # lookup used the raw alias, missed, and fell back to
+        # PressStart2P -- rendering 7px on an 8px grid, anti-aliased.
+        font_name = self._FONT_NAME_ALIASES.get(font_name, font_name)
         font_size = self._resolve_font_size(
             element_config, element_key, default_size, font_name)
         

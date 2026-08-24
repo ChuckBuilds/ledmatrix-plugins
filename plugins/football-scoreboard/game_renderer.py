@@ -449,6 +449,12 @@ class GameRenderer:
             ImageFont.FreeTypeFont for TTF/OTF fonts, freetype.Face for BDF fonts, or fallback font
         """
         font_name = element_config.get('font', default_font)
+        # Resolve a family alias to its filename BEFORE the path is built.
+        # The grid table understands aliases, so a configured
+        # "four_by_six" was sized on the 4x6 grid (7px) while the path
+        # lookup used the raw alias, missed, and fell back to
+        # PressStart2P -- rendering 7px on an 8px grid, anti-aliased.
+        font_name = self._FONT_NAME_ALIASES.get(font_name, font_name)
         font_size = self._resolve_font_size(
             element_config, element_key, default_size, font_name)
         font_path = _resolve_font_path(os.path.join('assets', 'fonts', font_name))
@@ -1557,6 +1563,12 @@ class GameRenderer:
     #: numerically fine, visually touching.
     _SCORE_LOGO_GUTTER_PX: ClassVar[int] = 4
 
+    #: Widest score the centre strip is sized to hold. Two digits a side covers this sport's realistic range.
+    #: The reserve is a fixed width so the strip does not jitter between
+    #: cards, so it has to assume the worst case rather than measure the
+    #: score in hand.
+    _SCORE_PROBE: ClassVar[str] = "00-00"
+
     def _score_reserve_width(self) -> int:
         """Centre strip the score actually needs, measured rather than assumed.
 
@@ -1574,7 +1586,7 @@ class GameRenderer:
         """
         try:
             probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
-            width = probe.textlength("00-00", font=self.fonts['score'])
+            width = probe.textlength(self._SCORE_PROBE, font=self.fonts['score'])
             return int(width) + 2 * self._SCORE_LOGO_GUTTER_PX
         except Exception:
             self.logger.debug("Score reserve measurement failed", exc_info=True)

@@ -120,6 +120,33 @@ def main():
     print("\n32-tall cards keep the 128px width they always had")
     check("h=32 card is still 128", card_for(32) == 128)
 
+    print("\na ratio-driven gap must be measured at the width actually used")
+    # _center_gap_width() scales with display_width when center_gap_ratio
+    # drives it rather than the score reserve. Sizing the card from a gap
+    # measured at a 128px probe therefore underestimates the gap at the final
+    # width, and the logos quietly get less than the full height the card was
+    # supposed to give them. scroll_display settles the two together.
+    #
+    # Scope: this pins the RENDERER property that makes settling necessary.
+    # The loop itself lives in ScrollDisplay._default_game_card_width, which
+    # needs a display manager and is not constructed here.
+    ratio_cfg = {"scroll_card": {"center_gap_ratio": 0.5,
+                                 "center_gap_min": 22, "center_gap_max": 300}}
+    h = 64
+    naive = max(128, h * 2 + GameRenderer(128, h, ratio_cfg)._center_gap_width())
+    check("a gap measured at 128px leaves the logos short (%dpx slot)"
+          % GameRenderer(naive, h, ratio_cfg)._logo_slot_width(),
+          GameRenderer(naive, h, ratio_cfg)._logo_slot_width() < h)
+    settled = 128
+    for _ in range(12):
+        nxt = max(128, h * 2 + GameRenderer(settled, h, ratio_cfg)._center_gap_width())
+        if nxt == settled:
+            break
+        settled = nxt
+    check("settling on the final width restores full-height logos (%dpx)"
+          % GameRenderer(settled, h, ratio_cfg)._logo_slot_width(),
+          GameRenderer(settled, h, ratio_cfg)._logo_slot_width() >= h)
+
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
     return 1 if failed else 0

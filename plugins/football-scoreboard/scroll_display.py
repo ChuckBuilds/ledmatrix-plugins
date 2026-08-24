@@ -127,20 +127,40 @@ else:
             side of the score rather than as anything legible.
             """
             try:
-                probe = GameRenderer(128, self.display_height, self.config)
-                gap = probe._center_gap_width()
-                if getattr(probe, "_adaptive", False):
-                    gap = max(gap, probe._adaptive_score_gap())
-                    # Adaptive logo slots are widened past the core's square
-                    # cap so the wide marks reach full height, so the card is
-                    # two of THOSE plus the gap rather than two square ones.
-                    slot = probe._adaptive_logo_slot_width()
-                    return max(128, slot * 2 + gap)
+                # The gap has to be measured at the width we are going to
+                # USE, not at the probe width. When center_gap_ratio drives
+                # the gap (rather than the score reserve) it scales with the
+                # card, so a gap measured at 128px underestimates the gap at
+                # the final width and the logos silently get less than the
+                # full height the card was sized to give them. Settle the two
+                # together; the loop is bounded so a pathological config
+                # cannot spin.
+                # A ratio-driven gap converges geometrically rather than at
+                # once, so allow enough rounds to settle: with the default
+                # score-driven gap the width does not depend on the card and
+                # this breaks on the second pass.
+                width = 128
+                for _ in range(12):
+                    probe = GameRenderer(width, self.display_height, self.config)
+                    gap = probe._center_gap_width()
+                    if getattr(probe, "_adaptive", False):
+                        gap = max(gap, probe._adaptive_score_gap())
+                        # Adaptive logo slots are widened past the core's
+                        # square cap so the wide marks reach full height, so
+                        # the card is two of THOSE plus the gap rather than
+                        # two square ones.
+                        half = probe._adaptive_logo_slot_width()
+                    else:
+                        half = self.display_height
+                    candidate = max(128, half * 2 + gap)
+                    if candidate == width:
+                        break
+                    width = candidate
             except Exception:
                 self.logger.debug("Card width probe failed; keeping 128",
                                   exc_info=True)
                 return 128
-            return max(128, self.display_height * 2 + gap)
+            return width
 
         def _load_separator_icons(self) -> None:
             """Load and resize league separator icons."""
