@@ -1527,15 +1527,32 @@ class SportsUpcoming(SportsCore):
                     processed_games, self.favorite_teams
                 )
             else:
-                # No favorite teams: show N total games sorted by time (schedule view)
+                # Not favourites-only: show the next N games league-wide, sorted by
+                # time (schedule view). Reached both when no favourites are set AND
+                # when they are set but show_favorite_teams_only is off.
                 team_games = sorted(
                     processed_games,
                     key=lambda g: g.get("start_time_utc")
                     or datetime.max.replace(tzinfo=timezone.utc),
                 )[:self.upcoming_games_to_show]
-                self.logger.info(
-                    f"No favorites configured: showing {len(team_games)} total upcoming games"
-                )
+                # Two different reasons land here, and saying "no favorites" for
+                # both sent a user hunting for a configuration they had already
+                # set: having favourites is not enough, show_favorite_teams_only
+                # has to be on as well. A board logging "Found 12 favorite team
+                # upcoming games" immediately followed by "No favorites
+                # configured" is just wrong.
+                if self.favorite_teams:
+                    self.logger.info(
+                        "Favorites %s are set but show_favorite_teams_only is off: "
+                        "showing the next %d upcoming games league-wide. Turn that "
+                        "setting on to see only these teams.",
+                        self.favorite_teams, len(team_games)
+                    )
+                else:
+                    self.logger.info(
+                        "No favorites configured: showing %d total upcoming games",
+                        len(team_games)
+                    )
 
             # Odds are fetched here, for the games that survived selection,
             # rather than inside the loop that collects them. That loop runs
@@ -2139,9 +2156,24 @@ class SportsRecent(SportsCore):
                     or datetime.min.replace(tzinfo=timezone.utc),
                     reverse=True,
                 )[:self.recent_games_to_show]
-                self.logger.info(
-                    f"No favorites configured: showing {len(team_games)} total recent games"
-                )
+                # Two different reasons land here, and saying "no favorites" for
+                # both sent a user hunting for a configuration they had already
+                # set: having favourites is not enough, show_favorite_teams_only
+                # has to be on as well. A board logging "Found 12 favorite team
+                # recent games" immediately followed by "No favorites
+                # configured" is just wrong.
+                if self.favorite_teams:
+                    self.logger.info(
+                        "Favorites %s are set but show_favorite_teams_only is off: "
+                        "showing the next %d recent games league-wide. Turn that "
+                        "setting on to see only these teams.",
+                        self.favorite_teams, len(team_games)
+                    )
+                else:
+                    self.logger.info(
+                        "No favorites configured: showing %d total recent games",
+                        len(team_games)
+                    )
 
             # Check if the list of games to display has changed (thread-safe)
             with self._games_lock:
