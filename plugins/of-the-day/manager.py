@@ -552,12 +552,29 @@ class OfTheDayPlugin(BasePlugin):
             except Exception as fallback_e:
                 self.logger.error(f"Fallback text drawing also failed: {fallback_e}", exc_info=True)
     
+    def _fresh_frame(self):
+        """Start a frame on a new in-memory buffer, without touching the panel.
+
+        display_manager.clear() calls Clear() on the offscreen AND current
+        canvases, writing black straight to the matrix, so the panel is blank
+        from that call until update_display() pushes the finished frame.
+
+        This plugin only redraws when the category or rotation state actually
+        changes, so the blank was a brief blip rather than the continuous
+        pulse the same pattern caused in the calendar plugin -- but there is
+        no reason to blank the panel at all when the buffer can simply be
+        replaced.
+        """
+        self.display_manager.image = Image.new(
+            'RGB',
+            (self.display_manager.width, self.display_manager.height),
+            (0, 0, 0))
+        self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
+
     def _display_title(self, category_config: Dict, item_data: Dict):
         """Display the title/word with subtitle, matching old manager layout."""
-        # Clear display first
-        self.display_manager.clear()
-
-        # Use display_manager's image and draw directly
+        # Compose off-panel; see _fresh_frame.
+        self._fresh_frame()
         draw = self.display_manager.draw
 
         # Fonts/colors/offsets honor customization.<element> (classic
@@ -660,10 +677,8 @@ class OfTheDayPlugin(BasePlugin):
 
     def _display_content(self, category_config: Dict, item_data: Dict):
         """Display the definition/content, matching old manager layout."""
-        # Clear display first
-        self.display_manager.clear()
-
-        # Use display_manager's image and draw directly
+        # Compose off-panel; see _fresh_frame.
+        self._fresh_frame()
         draw = self.display_manager.draw
 
         # Fonts/colors/offsets honor customization.<element> (classic

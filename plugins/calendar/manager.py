@@ -513,14 +513,32 @@ class CalendarPlugin(BasePlugin):
             self.logger.error(f"Error displaying calendar: {e}", exc_info=True)
             self._display_error()
     
+    def _fresh_frame(self):
+        """Start a frame on a new in-memory buffer, without touching the panel.
+
+        display_manager.clear() does not just reset the buffer: it calls
+        Clear() on the offscreen AND current canvases, writing black straight
+        to the matrix. The display controller calls display() in a loop, so
+        clearing per frame meant the panel went black between every redraw --
+        the pulsing reported against this plugin.
+
+        Replacing the image instead leaves the panel showing the previous
+        frame until update_display() swaps the finished one in. It also keeps
+        the core's dirty-frame tracking working: clear() resets
+        _last_pushed_digest, forcing a full push every tick even when the
+        rendered pixels are identical.
+
+        Returns the (width, height) the caller should render at.
+        """
+        width, height = self._get_display_dimensions()
+        self.display_manager.image = Image.new('RGB', (width, height), (0, 0, 0))
+        self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
+        return width, height
+
     def _display_event(self, event: Dict):
         """Display a single calendar event on the display_manager."""
-        self.display_manager.clear()
-
-        # Render to the display_manager's image
-        width, height = self._get_display_dimensions()
+        width, height = self._fresh_frame()
         self._render_event_to_image(event, self.display_manager.image, width, height)
-
         self.display_manager.update_display()
 
     def _render_event_image(self, event: Dict, width: Optional[int] = None,
@@ -717,9 +735,8 @@ class CalendarPlugin(BasePlugin):
     
     def _display_no_events(self):
         """Display message when no events are available."""
-        self.display_manager.clear()
-        width, height = self._get_display_dimensions()
-        draw = ImageDraw.Draw(self.display_manager.image)
+        width, height = self._fresh_frame()
+        draw = self.display_manager.draw
 
         # Ensure font is loaded
         if self.datetime_font is None:
@@ -739,9 +756,8 @@ class CalendarPlugin(BasePlugin):
 
     def _display_error(self):
         """Display error message."""
-        self.display_manager.clear()
-        width, height = self._get_display_dimensions()
-        draw = ImageDraw.Draw(self.display_manager.image)
+        width, height = self._fresh_frame()
+        draw = self.display_manager.draw
 
         # Ensure font is loaded
         if self.datetime_font is None:
