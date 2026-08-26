@@ -1250,6 +1250,27 @@ class MusicPlugin(BasePlugin):
                 # no network on the render thread.
                 fetched_image = self._render_album_art(
                     self._album_art_bytes, album_art_target_size)
+                if fetched_image:
+                    # Publish it, exactly as the inline fallback below does.
+                    # Without this the decoded image was discarded and
+                    # image_to_render_this_cycle stayed None, so the panel drew
+                    # the empty placeholder rectangle instead of the cover --
+                    # and because the poller prefetches on every track change,
+                    # this branch is the one that almost always runs.
+                    with self.track_info_lock:
+                        latest_known_art_url_in_live_info = (
+                            self.current_track_info.get('album_art_url')
+                            if self.current_track_info else None)
+                        if target_art_url_for_current_track == latest_known_art_url_in_live_info:
+                            self.album_art_image = fetched_image
+                            self.last_album_art_url = target_art_url_for_current_track
+                            image_to_render_this_cycle = fetched_image
+                        else:
+                            self.logger.info(
+                                "MusicPlugin: Discarding prefetched art for "
+                                f"{target_art_url_for_current_track}; track changed "
+                                f"to '{self.current_track_info.get('title', 'N/A')}' "
+                                "while it was being decoded.")
             else:
                 # Not prefetched yet -- first paint, or the poller has not caught
                 # up. Falls back to the original inline fetch so the art still
