@@ -20,7 +20,6 @@ told no.
 SkyAware is exempt: it reads a receiver on the user's own LAN.
 """
 import sys
-import time
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -93,6 +92,21 @@ class TestRetryAfter:
     def test_an_http_date_is_ignored_rather_than_crashing(self):
         r = _response(429, headers={"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"})
         assert fetcher._retry_after_seconds(r) is None
+
+    def test_a_nan_header_is_rejected(self):
+        # float("NaN") parses, and every comparison against NaN is False -- so
+        # an unguarded NaN reaches _next_allowed and should_skip() then returns
+        # False forever, disabling the throttle rather than applying it.
+        assert fetcher._retry_after_seconds(_response(429, headers={"Retry-After": "NaN"})) is None
+
+    def test_an_infinite_header_is_rejected(self):
+        assert fetcher._retry_after_seconds(_response(429, headers={"Retry-After": "inf"})) is None
+
+    def test_a_nan_header_still_leaves_the_throttle_skipping(self):
+        t = fetcher._RemoteThrottle("x", min_interval=5.0)
+        t.note_rate_limited(fetcher._retry_after_seconds(
+            _response(429, headers={"Retry-After": "NaN"})))
+        assert t.should_skip(), "a NaN Retry-After disabled the throttle"
 
     def test_an_absurd_header_is_capped(self):
         r = _response(429, headers={"Retry-After": "999999"})

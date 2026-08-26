@@ -43,7 +43,11 @@ def _retry_after_seconds(response) -> Optional[float]:
         seconds = float(raw.strip())
     except (TypeError, ValueError):
         return None  # HTTP-date form; not worth parsing for a display poll
-    if seconds < 0:
+    # float() accepts "NaN" and "inf". NaN is the dangerous one: every
+    # comparison against it is False, so it would sail past the check below,
+    # land in _next_allowed, and make should_skip() return False forever --
+    # disabling the throttle instead of applying it.
+    if not math.isfinite(seconds) or seconds < 0:
         return None
     return min(seconds, _MAX_BACKOFF_SECONDS)
 
