@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.15.3",
+  "version": "2.16.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,13 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.16.0",
+      "released": "2026-08-22",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off. New other_upcoming_games_to_show / other_recent_games_to_show control how many other games fill the rest, and other_rotation_interval_seconds advances that slice over time so the board works through the schedule instead of repeating the same handful.",
+      "changelog": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off. New other_upcoming_games_to_show / other_recent_games_to_show control how many other games fill the rest, and other_rotation_interval_seconds advances that slice over time so the board works through the schedule instead of repeating the same handful."
+    },
     {
       "version": "2.15.3",
       "released": "2026-08-22",
