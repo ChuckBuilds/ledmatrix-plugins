@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -66,6 +66,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.3.1",
+      "released": "2026-08-26",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Show the album cover again. display() had two paths to the art: one that decodes bytes the polling thread already downloaded, and an inline fallback that fetches when nothing is prefetched. The prefetch path called _render_album_art() and then dropped the result -- it never assigned image_to_render_this_cycle or self.album_art_image -- so the panel drew its empty placeholder rectangle instead of the cover. Only the fallback published its image, and that branch almost never runs, because the poller prefetches on every track change. Nothing failed and nothing was logged; the art was decoded every frame and discarded. The prefetch path now publishes the image the same way the fallback does, under track_info_lock so a track change mid-decode cannot show the previous cover."
+    },
     {
       "version": "1.3.0",
       "released": "2026-08-22",

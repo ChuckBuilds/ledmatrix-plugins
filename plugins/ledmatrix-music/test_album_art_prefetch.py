@@ -72,6 +72,51 @@ def test_display_prefers_the_prefetched_bytes():
         "a stale image could be shown for a new track")
 
 
+def _prefetch_branch():
+    """The body of the `elif` that renders already-downloaded bytes.
+
+    Located by its test (which checks _album_art_bytes_url), not by walking for
+    any if-statement that mentions the call -- an outer If's body contains the
+    inline-fallback arm too, and matching that made this pass on the very bug
+    it exists to catch.
+    """
+    for node in ast.walk(FUNCS["display"]):
+        if not isinstance(node, ast.If):
+            continue
+        if "_album_art_bytes_url" in ast.unparse(node.test):
+            return " ".join(ast.unparse(s) for s in node.body)
+    return None
+
+
+def test_the_prefetched_image_is_actually_published():
+    """Decoding it is not enough -- the branch has to hand it to the panel.
+
+    The prefetch branch called _render_album_art() and dropped the result on
+    the floor: neither image_to_render_this_cycle nor self.album_art_image was
+    assigned, so display() fell through to the placeholder rectangle. Only the
+    inline fallback published its image, and that branch runs almost never --
+    the poller prefetches on every track change, so the prefetch branch wins
+    the race essentially every time. Result: the cover never appeared, with no
+    error logged anywhere, because nothing had failed.
+    """
+    branch = _prefetch_branch()
+    assert branch, "no elif in display() keys off _album_art_bytes_url"
+    assert "image_to_render_this_cycle" in branch, (
+        "the prefetch branch decodes the art but never assigns "
+        "image_to_render_this_cycle, so the panel draws the empty placeholder")
+    assert "self.album_art_image" in branch, (
+        "the prefetch branch does not cache the decoded image, so it is "
+        "re-decoded on every frame")
+
+
+def test_the_prefetched_image_is_guarded_against_a_track_change():
+    """The track can change while the bytes are being decoded."""
+    branch = _prefetch_branch()
+    assert "track_info_lock" in branch, (
+        "the prefetch branch publishes without taking track_info_lock; the "
+        "inline fallback does, and the same race applies here")
+
+
 def test_display_keeps_an_inline_fallback():
     """First paint has nothing prefetched; the panel must not go blank."""
     body = ast.unparse(FUNCS["display"])
