@@ -30,6 +30,76 @@ logger = logging.getLogger(__name__)
 FALLBACK_MAX_AGE_SECONDS = 30.0
 
 
+#: Longest a provider is left alone after repeated rate limiting.
+_MAX_BACKOFF_SECONDS = 300.0
+
+
+def _retry_after_seconds(response) -> Optional[float]:
+    """Seconds from a Retry-After header, if the provider sent a usable one."""
+    raw = response.headers.get("Retry-After")
+    if not raw:
+        return None
+    try:
+        seconds = float(raw.strip())
+    except (TypeError, ValueError):
+        return None  # HTTP-date form; not worth parsing for a display poll
+    # float() accepts "NaN" and "inf". NaN is the dangerous one: every
+    # comparison against it is False, so it would sail past the check below,
+    # land in _next_allowed, and make should_skip() return False forever --
+    # disabling the throttle instead of applying it.
+    if not math.isfinite(seconds) or seconds < 0:
+        return None
+    return min(seconds, _MAX_BACKOFF_SECONDS)
+
+
+class _RemoteThrottle:
+    """Paces requests to a free public feed and backs off when refused.
+
+    These services are free, shared, and asked for nothing in return, while
+    the display polls every ``update_interval`` -- 5s by default and 2s while
+    following a live flight. That is more often than they want to be asked,
+    and being refused is the polite version of the answer.
+
+    A fixed floor alone is not enough: refusals were observed at roughly one
+    request every five seconds, so the limit being enforced is not a simple
+    requests-per-second the client can compute. The floor keeps normal polling
+    reasonable; the backoff is what actually responds to being told no, and it
+    honours Retry-After when the provider bothers to send one.
+
+    Skipping returns no data, which the manager already handles by keeping the
+    aircraft it last saw -- so the panel shows slightly older positions rather
+    than going empty.
+    """
+
+    def __init__(self, name: str, min_interval: float):
+        self.name = name
+        self.min_interval = min_interval
+        self._next_allowed = 0.0
+        self._penalty = 0.0
+
+    def should_skip(self) -> bool:
+        return time.monotonic() < self._next_allowed
+
+    def note_success(self) -> None:
+        self._penalty = 0.0
+        self._next_allowed = time.monotonic() + self.min_interval
+
+    def note_error(self) -> None:
+        # A timeout or a 500 is not a refusal; do not escalate, but do not
+        # retry immediately either.
+        self._next_allowed = time.monotonic() + self.min_interval
+
+    def note_rate_limited(self, retry_after: Optional[float] = None) -> float:
+        if retry_after is not None:
+            wait = retry_after
+        else:
+            base = max(self._penalty * 2, self.min_interval * 2)
+            self._penalty = min(base, _MAX_BACKOFF_SECONDS)
+            wait = self._penalty
+        self._next_allowed = time.monotonic() + wait
+        return wait
+
+
 class AircraftFetcher(ABC):
     """Base class for aircraft data source fetchers."""
 
@@ -193,6 +263,9 @@ class FR24Fetcher(AircraftFetcher):
 
     def __init__(self, request_timeout: int = 10):
         self.timeout = request_timeout
+        # Unofficial endpoint with no published allowance, so pace it at least
+        # as politely as the documented feeds.
+        self._throttle = _RemoteThrottle("FR24", min_interval=5.0)
 
     def fetch(self, center_lat, center_lon, radius_miles, altitude_colors):
         bounds = _fr24_bounds(center_lat, center_lon, radius_miles)
@@ -203,13 +276,25 @@ class FR24Fetcher(AircraftFetcher):
             "adsb": 1, "gnd": 0, "air": 1, "vehicles": 0,
             "estimated": 1, "maxage": 14400, "gliders": 0, "stats": 1,
         }
+        if self._throttle.should_skip():
+            return None
+
         try:
             response = requests.get(url, params=params, headers=_FR24_HEADERS, timeout=self.timeout)
+            if response.status_code == 429:
+                wait = self._throttle.note_rate_limited(_retry_after_seconds(response))
+                logger.warning(
+                    f"[Flight Tracker] FR24: rate limited, "
+                    f"pausing requests for {wait:.0f}s"
+                )
+                return None
             response.raise_for_status()
             raw = response.json()
         except Exception:
+            self._throttle.note_error()
             logger.exception("[Flight Tracker] FR24 feed fetch failed")
             return None
+        self._throttle.note_success()
 
         current_time = time.time()
         result: Dict[str, Dict] = {}
@@ -365,6 +450,9 @@ class OpenSkyFetcher(AircraftFetcher):
     def __init__(self, username: str = "", password: str = "", request_timeout: int = 15):
         self.auth = (username, password) if username and password else None
         self.timeout = request_timeout
+        # Anonymous OpenSky serves 10-second resolution, so asking faster than
+        # that returns the same state vectors while spending the daily credits.
+        self._throttle = _RemoteThrottle("OpenSky", min_interval=10.0)
         if self.auth:
             logger.info("[Flight Tracker] OpenSky: using authenticated access")
         else:
@@ -383,6 +471,9 @@ class OpenSkyFetcher(AircraftFetcher):
             "extended": 1,
         }
 
+        if self._throttle.should_skip():
+            return None
+
         try:
             response = requests.get(
                 self.API_URL,
@@ -390,11 +481,20 @@ class OpenSkyFetcher(AircraftFetcher):
                 auth=self.auth,
                 timeout=self.timeout,
             )
+            if response.status_code == 429:
+                wait = self._throttle.note_rate_limited(_retry_after_seconds(response))
+                logger.warning(
+                    f"[Flight Tracker] OpenSky: rate limited, "
+                    f"pausing requests for {wait:.0f}s"
+                )
+                return None
             response.raise_for_status()
             data = response.json()
         except Exception:
+            self._throttle.note_error()
             logger.exception("[Flight Tracker] OpenSky fetch failed")
             return None
+        self._throttle.note_success()
 
         states = data.get("states")
         if not states:
@@ -497,6 +597,7 @@ class AdsbNetFetcher(AircraftFetcher):
         self.max_nm = max_nm
         self.provider = provider
         self.timeout = request_timeout
+        self._throttle = _RemoteThrottle(provider, min_interval=5.0)
 
     def fetch(self, center_lat, center_lon, radius_miles, altitude_colors):
         # Convert statute miles → nautical miles, cap at provider limit
@@ -508,14 +609,26 @@ class AdsbNetFetcher(AircraftFetcher):
             )
             radius_nm = self.max_nm
 
+        if self._throttle.should_skip():
+            return None
+
         url = f"{self.base_url}/v2/lat/{center_lat}/lon/{center_lon}/dist/{radius_nm}"
         try:
             response = requests.get(url, timeout=self.timeout)
+            if response.status_code == 429:
+                wait = self._throttle.note_rate_limited(_retry_after_seconds(response))
+                logger.warning(
+                    f"[Flight Tracker] {self.provider}: rate limited, "
+                    f"pausing requests for {wait:.0f}s"
+                )
+                return None
             response.raise_for_status()
             data = response.json()
         except Exception:
+            self._throttle.note_error()
             logger.exception(f"[Flight Tracker] {self.provider} fetch failed")
             return None
+        self._throttle.note_success()
 
         # adsb.lol returns aircraft under "ac"; adsb.fi's opendata API uses
         # "aircraft". Accept either so both providers work.
