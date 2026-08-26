@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.13.1",
+  "version": "1.14.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,13 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.14.0",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new other_upcoming_games_to_show / other_recent_games_to_show settings controlling how many other games fill the rest.",
+      "changelog": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new other_upcoming_games_to_show / other_recent_games_to_show settings controlling how many other games fill the rest."
+    },
     {
       "version": "1.13.1",
       "released": "2026-08-19",

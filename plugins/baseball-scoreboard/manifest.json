@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.31.3",
+  "version": "1.32.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,13 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.32.0",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new other_upcoming_games_to_show / other_recent_games_to_show settings controlling how many other games fill the rest.",
+      "changelog": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new other_upcoming_games_to_show / other_recent_games_to_show settings controlling how many other games fill the rest."
+    },
     {
       "version": "1.31.3",
       "released": "2026-08-19",

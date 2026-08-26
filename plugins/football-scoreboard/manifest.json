@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.25.4",
+  "version": "2.26.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,13 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.26.0",
+      "released": "2026-08-23",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new other_upcoming_games_to_show / other_recent_games_to_show settings controlling how many other games fill the rest.",
+      "changelog": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new other_upcoming_games_to_show / other_recent_games_to_show settings controlling how many other games fill the rest."
+    },
     {
       "version": "2.25.4",
       "released": "2026-08-23",

@@ -209,6 +209,24 @@
               "minimum": 1,
               "maximum": 20,
               "description": "Number of upcoming fights to display. With favorites: N per favorite fighter. Without favorites: N total."
+            },
+            "other_upcoming_games_to_show": {
+              "type": "integer",
+              "title": "Other upcoming games to show",
+              "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
+              "default": 5,
+              "minimum": 0,
+              "maximum": 20,
+              "x-advanced": true
+            },
+            "other_recent_games_to_show": {
+              "type": "integer",
+              "title": "Other recent games to show",
+              "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
+              "default": 5,
+              "minimum": 0,
+              "maximum": 20,
+              "x-advanced": true
             }
           }
         },

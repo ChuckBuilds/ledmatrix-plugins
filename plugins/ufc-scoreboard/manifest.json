@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.6.2",
+  "version": "1.7.0",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,13 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.7.0",
+      "released": "2026-08-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new other_upcoming_games_to_show / other_recent_games_to_show settings controlling how many other games fill the rest.",
+      "changelog": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new other_upcoming_games_to_show / other_recent_games_to_show settings controlling how many other games fill the rest."
+    },
     {
       "version": "1.6.2",
       "released": "2026-08-19",

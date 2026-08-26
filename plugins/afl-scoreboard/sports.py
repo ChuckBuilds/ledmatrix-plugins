@@ -184,6 +184,17 @@ class SportsCore(ABC):
         self.upcoming_games_to_show: int = self.mode_config.get(
             "upcoming_games_to_show", 10
         )  # Show next 10 games
+        # How many NON-favourite games to add when favourites are set but
+        # show_favorite_teams_only is off. 0 makes that mode favourites-only.
+        # Defaults match the league-wide counts above, so a board that upgrades
+        # keeps every game it was already showing and simply gains its
+        # favourites -- the change is additive, never a removal.
+        self.other_upcoming_games_to_show: int = self.mode_config.get(
+            "other_upcoming_games_to_show", self.upcoming_games_to_show
+        )
+        self.other_recent_games_to_show: int = self.mode_config.get(
+            "other_recent_games_to_show", self.recent_games_to_show
+        )
         filtering_config = self.mode_config.get("filtering", {})
         self.show_favorite_teams_only: bool = self.mode_config.get(
             "show_favorite_teams_only",
@@ -1517,6 +1528,58 @@ class SportsUpcoming(SportsCore):
         self.last_game_switch = 0
         self.game_display_duration = 15  # Display each upcoming game for 15 seconds
 
+    def _is_favorite_game(self, game: Dict) -> bool:
+        """Does either side of this game belong to a favourite team?"""
+        if not self.favorite_teams:
+            return False
+        return (
+            game.get("home_abbr") in self.favorite_teams
+            or game.get("away_abbr") in self.favorite_teams
+        )
+
+    def _favorites_first(
+        self,
+        processed_games: List[Dict],
+        favorite_limit: int,
+        other_limit: int,
+        newest_first: bool = False,
+    ) -> List[Dict]:
+        """Favourite games first, then a bounded number of everything else.
+
+        This is the middle setting the plugin was missing. `show_favorite_teams_only`
+        used to be the whole story: on, and you saw nothing but your teams; off,
+        and your teams were ignored entirely -- the selection just took the next
+        N games league-wide, so a UGA fan with 946 upcoming college games in the
+        window saw UGA about as often as chance allowed.
+
+        Both counts are TOTALS here, not per-team. In favourites-only mode
+        `upcoming_games_to_show` is a per-team budget, which is reasonable when
+        the list is your own teams; applied to a dynamic group it is not. With
+        AP_TOP_10 resolving to a dozen teams, three games each is 28 distinct
+        cards before a single non-favourite is added. A total keeps the rotation
+        the length the user asked for.
+        """
+        if newest_first:
+            def key(g):
+                return g.get("start_time_utc") or datetime.min.replace(tzinfo=timezone.utc)
+            ordered = sorted(processed_games, key=key, reverse=True)
+        else:
+            def key(g):
+                return g.get("start_time_utc") or datetime.max.replace(tzinfo=timezone.utc)
+            ordered = sorted(processed_games, key=key)
+
+        favorites, others = [], []
+        for game in ordered:
+            (favorites if self._is_favorite_game(game) else others).append(game)
+
+        selected = favorites[:max(0, favorite_limit)]
+        selected.extend(others[:max(0, other_limit)])
+        # Re-sort so the card order still reads as a schedule. Selection decides
+        # WHICH games; it should not reorder them into favourites-then-others,
+        # which would show next week's UGA game before tonight's.
+        selected.sort(key=key, reverse=newest_first)
+        return selected
+
     def _select_games_for_display(
         self, processed_games: List[Dict], favorite_teams: List[str]
     ) -> List[Dict]:
@@ -1657,33 +1720,31 @@ class SportsUpcoming(SportsCore):
                 team_games = self._select_games_for_display(
                     processed_games, self.favorite_teams
                 )
+            elif self.favorite_teams:
+                # Favourites set, but not exclusively: show them first, then
+                # top up with other games so the board still has variety.
+                team_games = self._favorites_first(
+                    processed_games,
+                    self.upcoming_games_to_show,
+                    self.other_upcoming_games_to_show,
+                )
+                shown_favs = sum(1 for g in team_games if self._is_favorite_game(g))
+                self.logger.info(
+                    "Favorites %s: showing %d favorite and %d other upcoming games. "
+                    "Set other_upcoming_games_to_show to 0 for favorites only.",
+                    self.favorite_teams, shown_favs, len(team_games) - shown_favs
+                )
             else:
-                # Not favourites-only: show the next N games league-wide, sorted by
-                # time (schedule view). Reached both when no favourites are set AND
-                # when they are set but show_favorite_teams_only is off.
+                # No favourites at all: the next N upcoming games league-wide.
                 team_games = sorted(
                     processed_games,
                     key=lambda g: g.get("start_time_utc")
                     or datetime.max.replace(tzinfo=timezone.utc),
                 )[:self.upcoming_games_to_show]
-                # Two different reasons land here, and saying "no favorites" for
-                # both sent a user hunting for a configuration they had already
-                # set: having favourites is not enough, show_favorite_teams_only
-                # has to be on as well. A board logging "Found 12 favorite team
-                # upcoming games" immediately followed by "No favorites
-                # configured" is just wrong.
-                if self.favorite_teams:
-                    self.logger.info(
-                        "Favorites %s are set but show_favorite_teams_only is off: "
-                        "showing the next %d upcoming games league-wide. Turn that "
-                        "setting on to see only these teams.",
-                        self.favorite_teams, len(team_games)
-                    )
-                else:
-                    self.logger.info(
-                        "No favorites configured: showing %d total upcoming games",
-                        len(team_games)
-                    )
+                self.logger.info(
+                    "No favorites configured: showing %d total upcoming games",
+                    len(team_games)
+                )
 
             # Odds are fetched here, for the games that survived selection,
             # rather than inside the loop that collects them. That loop runs
@@ -2243,17 +2304,31 @@ class SportsRecent(SportsCore):
                     self.logger.info(
                         f"Game {i+1} for display: {game['away_abbr']} @ {game['home_abbr']} - {game.get('start_time_utc')} - Score: {game['away_score']}-{game['home_score']}"
                     )
+            elif self.favorite_teams:
+                # Favourites set, but not exclusively: theirs first, then fill.
+                team_games = self._favorites_first(
+                    processed_games,
+                    self.recent_games_to_show,
+                    self.other_recent_games_to_show,
+                    newest_first=True,
+                )
+                shown_favs = sum(1 for g in team_games if self._is_favorite_game(g))
+                self.logger.info(
+                    "Favorites %s: showing %d favorite and %d other recent games. "
+                    "Set other_recent_games_to_show to 0 for favorites only.",
+                    self.favorite_teams, shown_favs, len(team_games) - shown_favs
+                )
             else:
-                # show_favorite_teams_only disabled or no favorites: show N total games sorted by time
+                # No favourites at all: the most recent N league-wide.
                 team_games = sorted(
                     processed_games,
                     key=lambda g: g.get("start_time_utc")
                     or datetime.min.replace(tzinfo=timezone.utc),
                     reverse=True,
                 )[:self.recent_games_to_show]
-                reason = "show_favorite_teams_only disabled" if not self.show_favorite_teams_only else "no favorites configured"
                 self.logger.info(
-                    f"Showing all games ({reason}): {len(team_games)} total recent games"
+                    "No favorites configured: showing %d total recent games",
+                    len(team_games)
                 )
 
             # Check if the list of games to display has changed (protected by lock for thread safety)
