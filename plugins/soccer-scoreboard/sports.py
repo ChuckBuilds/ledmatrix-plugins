@@ -202,6 +202,17 @@ class SportsCore(ABC):
         self.other_recent_games_to_show: int = self.mode_config.get(
             "other_recent_games_to_show", self.recent_games_to_show
         )
+        # Variety comes from turnover, not from a bigger pool. Enlarging the
+        # pool makes a lap longer -- roughly one card per visit -- so a wide
+        # selection makes any given game RARER. Instead the pool stays short
+        # and the non-favourite slice advances on this interval, so over a day
+        # the board works through the schedule while a lap still takes minutes.
+        # 0 pins the window, restoring the fixed "next N others".
+        self.other_rotation_interval_seconds: int = self.mode_config.get(
+            "other_rotation_interval_seconds", 1800
+        )
+        self._other_window_start: int = 0
+        self._other_window_rotated_at: float = 0.0
         filtering_config = self.mode_config.get("filtering", {})
         self.show_favorite_teams_only: bool = self.mode_config.get(
             "show_favorite_teams_only",
@@ -1561,6 +1572,44 @@ class SportsUpcoming(SportsCore):
             or game.get("away_abbr") in self.favorite_teams
         )
 
+    def _other_games_window(self, others: List[Dict], limit: int) -> List[Dict]:
+        """A rotating slice of the non-favourite games.
+
+        The window advances by its own width, so consecutive windows are
+        disjoint and the board walks the schedule rather than resampling the
+        same front of it. It wraps, so a short list still cycles.
+
+        Advancing is time-based, not per-update. update() runs every 30s; if
+        the window moved with it the games list would change identity on every
+        pass, reset the display index, and no card past the first would ever be
+        reached.
+        """
+        if limit <= 0 or not others:
+            return []
+        if len(others) <= limit:
+            return others[:limit]
+
+        interval = self.other_rotation_interval_seconds
+        if interval > 0:
+            now = time.monotonic()
+            if not self._other_window_rotated_at:
+                self._other_window_rotated_at = now
+            elapsed = now - self._other_window_rotated_at
+            if elapsed >= interval:
+                # Advance by however many intervals actually passed. The board
+                # is not guaranteed to be running -- or this mode displayed --
+                # for every one of them, and stepping once would let a plugin
+                # that sat idle crawl a step at a time.
+                steps = int(elapsed // interval)
+                self._other_window_start += steps * limit
+                self._other_window_rotated_at = now
+
+        start = self._other_window_start % len(others)
+        window = others[start:start + limit]
+        if len(window) < limit:
+            window += others[:limit - len(window)]
+        return window
+
     def _favorites_first(
         self,
         processed_games: List[Dict],
@@ -1597,7 +1646,7 @@ class SportsUpcoming(SportsCore):
             (favorites if self._is_favorite_game(game) else others).append(game)
 
         selected = favorites[:max(0, favorite_limit)]
-        selected.extend(others[:max(0, other_limit)])
+        selected.extend(self._other_games_window(others, max(0, other_limit)))
         # Re-sort so the card order still reads as a schedule. Selection decides
         # WHICH games; it should not reorder them into favourites-then-others,
         # which would show next week's UGA game before tonight's.

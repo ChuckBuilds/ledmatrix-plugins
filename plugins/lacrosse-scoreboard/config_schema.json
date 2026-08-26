@@ -375,6 +375,15 @@
               "minimum": 0,
               "maximum": 20,
               "x-advanced": true
+            },
+            "other_rotation_interval_seconds": {
+              "type": "integer",
+              "title": "Rotate other games every (seconds)",
+              "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
+              "default": 1800,
+              "minimum": 0,
+              "maximum": 86400,
+              "x-advanced": true
             }
           }
         },
@@ -809,6 +818,15 @@
               "default": 5,
               "minimum": 0,
               "maximum": 20,
+              "x-advanced": true
+            },
+            "other_rotation_interval_seconds": {
+              "type": "integer",
+              "title": "Rotate other games every (seconds)",
+              "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
+              "default": 1800,
+              "minimum": 0,
+              "maximum": 86400,
               "x-advanced": true
             }
           }

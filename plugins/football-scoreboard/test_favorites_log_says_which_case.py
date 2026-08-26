@@ -93,6 +93,13 @@ def _run(sports, favorites, only_flag):
     obj.show_favorite_teams_only = only_flag
     obj.upcoming_games_to_show = 3
     obj.other_upcoming_games_to_show = 3
+    # This probe builds the object with __new__, so every attribute __init__
+    # would have set has to be supplied here. Miss one and update() raises
+    # inside its own try/except, the log line never appears, and the failure
+    # reads as "the wording changed" rather than "the object was incomplete".
+    obj.other_rotation_interval_seconds = 0
+    obj._other_window_start = 0
+    obj._other_window_rotated_at = 0.0
     obj.games_list = []
     obj.current_game = None
 

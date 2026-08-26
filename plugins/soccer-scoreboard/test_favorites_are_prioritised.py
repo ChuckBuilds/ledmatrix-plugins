@@ -23,6 +23,7 @@ Run: <core-venv>/bin/python plugins/soccer-scoreboard/test_favorites_are_priorit
 
 import os
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -95,6 +96,9 @@ def make(sports, favorites, fav_limit, other_limit):
     obj.other_upcoming_games_to_show = other_limit
     obj.recent_games_to_show = fav_limit
     obj.other_recent_games_to_show = other_limit
+    obj.other_rotation_interval_seconds = 0      # pinned unless a test asks
+    obj._other_window_start = 0
+    obj._other_window_rotated_at = 0.0
     return obj
 
 
@@ -162,6 +166,53 @@ def main():
     check("favourites still present in recent mode",
           len([n for n in abbrs(picked) if "UGA" in n or "AUB" in n]) == 2,
           abbrs(picked))
+
+    print("\nthe other-games window rotates, so variety comes from turnover")
+    # A bigger pool would make a lap longer -- roughly one card per visit --
+    # so the board keeps a short pool and moves the window instead.
+    obj = make(sports, favs, 3, 2)
+    obj.other_rotation_interval_seconds = 1800
+    first = abbrs(obj._favorites_first(games, 3, 2))
+    others_first = [n for n in first if "UGA" not in n and "AUB" not in n]
+
+    obj._other_window_rotated_at = time.monotonic() - 1801   # one interval on
+    second = abbrs(obj._favorites_first(games, 3, 2))
+    others_second = [n for n in second if "UGA" not in n and "AUB" not in n]
+
+    check("a later window shows different other games",
+          others_first != others_second, (others_first, others_second))
+    check("consecutive windows do not overlap",
+          not (set(others_first) & set(others_second)),
+          (others_first, others_second))
+    check("favourites are NOT rotated -- still the soonest",
+          [n for n in first if "UGA" in n or "AUB" in n]
+          == [n for n in second if "UGA" in n or "AUB" in n], (first, second))
+
+    print("\nrotation interval 0 pins the window")
+    obj = make(sports, favs, 3, 2)
+    a = abbrs(obj._favorites_first(games, 3, 2))
+    obj._other_window_rotated_at = time.monotonic() - 99999
+    b = abbrs(obj._favorites_first(games, 3, 2))
+    check("the same games come back", a == b, (a, b))
+
+    print("\nthe window wraps rather than running off the end")
+    obj = make(sports, favs, 3, 2)
+    obj.other_rotation_interval_seconds = 1800
+    obj._other_window_start = len(games) - 1      # near the end of the others
+    wrapped = abbrs(obj._favorites_first(games, 3, 2))
+    others = [n for n in wrapped if "UGA" not in n and "AUB" not in n]
+    # only two favourite games exist in the fixture, so the total is 2 + 2
+    check("still returns a full window of others", len(others) == 2, wrapped)
+    check("the window wrapped to the start of the list",
+          others == ["T01A@T01H", "T02A@T02H"], others)
+
+    print("\nfewer other games than the limit: no rotation, show them all")
+    tiny = [g for g in games if g["id"] in ("g00", "g40", "g41")]
+    obj = make(sports, favs, 3, 2)
+    obj.other_rotation_interval_seconds = 1800
+    obj._other_window_rotated_at = time.monotonic() - 99999
+    names = abbrs(obj._favorites_first(tiny, 3, 2))
+    check("the single other game is still shown", len(names) == 3, names)
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
