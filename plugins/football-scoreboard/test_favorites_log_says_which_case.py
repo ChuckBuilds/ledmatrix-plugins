@@ -17,11 +17,6 @@ Twelve favourite games found, then told there are no favourites. The branch
 means "not favourites-ONLY", and it now says so, naming the teams and the
 setting to change.
 
-Since then that branch also stopped ignoring favourites altogether -- it shows
-them first and tops up with other games -- so the message reports the split and
-points at other_upcoming_games_to_show. See test_favorites_are_prioritised.py
-for the selection itself; this file only guards the wording.
-
 This drives SportsUpcoming.update() and reads what it logged, rather than
 inspecting the source: the wording is the whole point of the change, so the
 test has to observe the wording that actually reaches a user's journal.
@@ -92,14 +87,6 @@ def _run(sports, favorites, only_flag):
     obj.favorite_teams = favorites
     obj.show_favorite_teams_only = only_flag
     obj.upcoming_games_to_show = 3
-    obj.other_upcoming_games_to_show = 3
-    # This probe builds the object with __new__, so every attribute __init__
-    # would have set has to be supplied here. Miss one and update() raises
-    # inside its own try/except, the log line never appears, and the failure
-    # reads as "the wording changed" rather than "the object was incomplete".
-    obj.other_rotation_interval_seconds = 0
-    obj._other_window_start = 0
-    obj._other_window_rotated_at = 0.0
     obj.games_list = []
     obj.current_game = None
 
@@ -118,9 +105,8 @@ def main():
           "No favorites configured" not in joined)
     check("names the configured teams", "UGA" in joined and "AUB" in joined)
     check("names the setting to change",
-          "other_upcoming_games_to_show" in joined)
-    check("reports the favourite/other split",
-          "favorite and" in joined and "other upcoming games" in joined)
+          "show_favorite_teams_only" in joined)
+    check("says the games shown are league-wide", "league-wide" in joined)
 
     print("\nno favourites at all: the original message still applies")
     msgs = _run(sports, [], False)
@@ -134,7 +120,7 @@ def main():
     joined = "\n".join(msgs)
     check("no schedule-view message at all",
           "No favorites configured" not in joined
-          and "other upcoming games" not in joined)
+          and "league-wide" not in joined)
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))

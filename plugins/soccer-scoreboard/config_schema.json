@@ -499,33 +499,6 @@
                   "minimum": 1,
                   "maximum": 20,
                   "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-                },
-                "other_upcoming_games_to_show": {
-                  "type": "integer",
-                  "title": "Other upcoming games to show",
-                  "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_recent_games_to_show": {
-                  "type": "integer",
-                  "title": "Other recent games to show",
-                  "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_rotation_interval_seconds": {
-                  "type": "integer",
-                  "title": "Rotate other games every (seconds)",
-                  "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
-                  "default": 1800,
-                  "minimum": 0,
-                  "maximum": 86400,
-                  "x-advanced": true
                 }
               }
             },
@@ -935,33 +908,6 @@
                   "minimum": 1,
                   "maximum": 20,
                   "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-                },
-                "other_upcoming_games_to_show": {
-                  "type": "integer",
-                  "title": "Other upcoming games to show",
-                  "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_recent_games_to_show": {
-                  "type": "integer",
-                  "title": "Other recent games to show",
-                  "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_rotation_interval_seconds": {
-                  "type": "integer",
-                  "title": "Rotate other games every (seconds)",
-                  "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
-                  "default": 1800,
-                  "minimum": 0,
-                  "maximum": 86400,
-                  "x-advanced": true
                 }
               }
             },
@@ -1371,33 +1317,6 @@
                   "minimum": 1,
                   "maximum": 20,
                   "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-                },
-                "other_upcoming_games_to_show": {
-                  "type": "integer",
-                  "title": "Other upcoming games to show",
-                  "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_recent_games_to_show": {
-                  "type": "integer",
-                  "title": "Other recent games to show",
-                  "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_rotation_interval_seconds": {
-                  "type": "integer",
-                  "title": "Rotate other games every (seconds)",
-                  "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
-                  "default": 1800,
-                  "minimum": 0,
-                  "maximum": 86400,
-                  "x-advanced": true
                 }
               }
             },
@@ -1807,33 +1726,6 @@
                   "minimum": 1,
                   "maximum": 20,
                   "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-                },
-                "other_upcoming_games_to_show": {
-                  "type": "integer",
-                  "title": "Other upcoming games to show",
-                  "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_recent_games_to_show": {
-                  "type": "integer",
-                  "title": "Other recent games to show",
-                  "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_rotation_interval_seconds": {
-                  "type": "integer",
-                  "title": "Rotate other games every (seconds)",
-                  "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
-                  "default": 1800,
-                  "minimum": 0,
-                  "maximum": 86400,
-                  "x-advanced": true
                 }
               }
             },
@@ -2243,33 +2135,6 @@
                   "minimum": 1,
                   "maximum": 20,
                   "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-                },
-                "other_upcoming_games_to_show": {
-                  "type": "integer",
-                  "title": "Other upcoming games to show",
-                  "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_recent_games_to_show": {
-                  "type": "integer",
-                  "title": "Other recent games to show",
-                  "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_rotation_interval_seconds": {
-                  "type": "integer",
-                  "title": "Rotate other games every (seconds)",
-                  "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
-                  "default": 1800,
-                  "minimum": 0,
-                  "maximum": 86400,
-                  "x-advanced": true
                 }
               }
             },
@@ -2679,33 +2544,6 @@
                   "minimum": 1,
                   "maximum": 20,
                   "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-                },
-                "other_upcoming_games_to_show": {
-                  "type": "integer",
-                  "title": "Other upcoming games to show",
-                  "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_recent_games_to_show": {
-                  "type": "integer",
-                  "title": "Other recent games to show",
-                  "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_rotation_interval_seconds": {
-                  "type": "integer",
-                  "title": "Rotate other games every (seconds)",
-                  "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
-                  "default": 1800,
-                  "minimum": 0,
-                  "maximum": 86400,
-                  "x-advanced": true
                 }
               }
             },
@@ -3115,33 +2953,6 @@
                   "minimum": 1,
                   "maximum": 20,
                   "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-                },
-                "other_upcoming_games_to_show": {
-                  "type": "integer",
-                  "title": "Other upcoming games to show",
-                  "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_recent_games_to_show": {
-                  "type": "integer",
-                  "title": "Other recent games to show",
-                  "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_rotation_interval_seconds": {
-                  "type": "integer",
-                  "title": "Rotate other games every (seconds)",
-                  "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
-                  "default": 1800,
-                  "minimum": 0,
-                  "maximum": 86400,
-                  "x-advanced": true
                 }
               }
             },
@@ -3551,33 +3362,6 @@
                   "minimum": 1,
                   "maximum": 20,
                   "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-                },
-                "other_upcoming_games_to_show": {
-                  "type": "integer",
-                  "title": "Other upcoming games to show",
-                  "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_recent_games_to_show": {
-                  "type": "integer",
-                  "title": "Other recent games to show",
-                  "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_rotation_interval_seconds": {
-                  "type": "integer",
-                  "title": "Rotate other games every (seconds)",
-                  "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
-                  "default": 1800,
-                  "minimum": 0,
-                  "maximum": 86400,
-                  "x-advanced": true
                 }
               }
             },
@@ -3987,33 +3771,6 @@
                   "minimum": 1,
                   "maximum": 20,
                   "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-                },
-                "other_upcoming_games_to_show": {
-                  "type": "integer",
-                  "title": "Other upcoming games to show",
-                  "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_recent_games_to_show": {
-                  "type": "integer",
-                  "title": "Other recent games to show",
-                  "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_rotation_interval_seconds": {
-                  "type": "integer",
-                  "title": "Rotate other games every (seconds)",
-                  "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
-                  "default": 1800,
-                  "minimum": 0,
-                  "maximum": 86400,
-                  "x-advanced": true
                 }
               }
             },
@@ -4423,33 +4180,6 @@
                   "minimum": 1,
                   "maximum": 20,
                   "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-                },
-                "other_upcoming_games_to_show": {
-                  "type": "integer",
-                  "title": "Other upcoming games to show",
-                  "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_recent_games_to_show": {
-                  "type": "integer",
-                  "title": "Other recent games to show",
-                  "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
-                  "default": 1,
-                  "minimum": 0,
-                  "maximum": 20,
-                  "x-advanced": true
-                },
-                "other_rotation_interval_seconds": {
-                  "type": "integer",
-                  "title": "Rotate other games every (seconds)",
-                  "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
-                  "default": 1800,
-                  "minimum": 0,
-                  "maximum": 86400,
-                  "x-advanced": true
                 }
               }
             },
@@ -4847,33 +4577,6 @@
                 "minimum": 1,
                 "maximum": 20,
                 "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
-              },
-              "other_upcoming_games_to_show": {
-                "type": "integer",
-                "title": "Other upcoming games to show",
-                "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
-                "default": 10,
-                "minimum": 0,
-                "maximum": 20,
-                "x-advanced": true
-              },
-              "other_recent_games_to_show": {
-                "type": "integer",
-                "title": "Other recent games to show",
-                "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
-                "default": 1,
-                "minimum": 0,
-                "maximum": 20,
-                "x-advanced": true
-              },
-              "other_rotation_interval_seconds": {
-                "type": "integer",
-                "title": "Rotate other games every (seconds)",
-                "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
-                "default": 1800,
-                "minimum": 0,
-                "maximum": 86400,
-                "x-advanced": true
               }
             },
             "additionalProperties": false
@@ -5690,33 +5393,6 @@
       "title": "Maximum idle live-check interval (seconds)",
       "description": "Ceiling for the back-off above. Raise it to poll an out-of-season league even less; lower it to notice the first game after a quiet spell sooner.",
       "x-advanced": true
-    },
-    "other_upcoming_games_to_show": {
-      "type": "integer",
-      "title": "Other upcoming games to show",
-      "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
-      "default": 1,
-      "minimum": 0,
-      "maximum": 20,
-      "x-advanced": true
-    },
-    "other_recent_games_to_show": {
-      "type": "integer",
-      "title": "Other recent games to show",
-      "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
-      "default": 1,
-      "minimum": 0,
-      "maximum": 20,
-      "x-advanced": true
-    },
-    "other_rotation_interval_seconds": {
-      "type": "integer",
-      "title": "Rotate other games every (seconds)",
-      "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
-      "default": 1800,
-      "minimum": 0,
-      "maximum": 86400,
-      "x-advanced": true
     }
   },
   "additionalProperties": false,
@@ -5735,10 +5411,7 @@
     "recent_update_interval",
     "upcoming_update_interval",
     "recent_games_to_show",
-    "other_recent_games_to_show",
-    "other_rotation_interval_seconds",
     "upcoming_games_to_show",
-    "other_upcoming_games_to_show",
     "show_favorite_teams_only",
     "game_display_duration",
     "timezone",
