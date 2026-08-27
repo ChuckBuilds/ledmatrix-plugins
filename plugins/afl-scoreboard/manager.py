@@ -261,6 +261,27 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "exclude_teams": cfg.get("exclude_teams", []),
                 "display_modes": manager_display_modes,
                 "recent_games_to_show": cfg.get("recent_games_to_show", 5),
+                # These ride the same source as the limits above, which is where the
+                # schema declares them. Managers read a translated config, not the
+                # plugin config, so a key missing here is a setting the user can
+                # change in the web UI that silently never reaches the code.
+                "other_upcoming_games_to_show": cfg.get(
+                    "other_upcoming_games_to_show",
+                    cfg.get("upcoming_games_to_show", 10),
+                ),
+                "other_recent_games_to_show": cfg.get(
+                    "other_recent_games_to_show",
+                    cfg.get("recent_games_to_show", 5),
+                ),
+                "other_rotation_interval_seconds": cfg.get(
+                    "other_rotation_interval_seconds", 1800
+                ),
+                "other_games_min_quality": cfg.get(
+                    "other_games_min_quality", "ranked"
+                ),
+                "other_games_divisions": list(
+                    cfg.get("other_games_divisions", ["fbs"])
+                ),
                 "upcoming_games_to_show": cfg.get("upcoming_games_to_show", 10),
                 "show_records": cfg.get("show_records", False),
                 "show_ranking": cfg.get("show_rankings", cfg.get("show_ranking", False)),

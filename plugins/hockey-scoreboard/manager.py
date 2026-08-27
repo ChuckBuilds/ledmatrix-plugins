@@ -771,6 +771,14 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Resolve filtering settings
         recent_games_to_show = resolve_value(["filtering", "recent_games_to_show"], ["recent_games_to_show"], 5)
         upcoming_games_to_show = resolve_value(["filtering", "upcoming_games_to_show"], ["upcoming_games_to_show"], 10)
+        # Resolved the same way as the limits above, and from the same place
+        # the schema declares them. A key missing from this translation is a
+        # setting the user can change in the web UI that never reaches the code.
+        other_upcoming_games_to_show = resolve_value(["filtering", "other_upcoming_games_to_show"], ["other_upcoming_games_to_show"], upcoming_games_to_show)
+        other_recent_games_to_show = resolve_value(["filtering", "other_recent_games_to_show"], ["other_recent_games_to_show"], recent_games_to_show)
+        other_rotation_interval_seconds = resolve_value(["filtering", "other_rotation_interval_seconds"], ["other_rotation_interval_seconds"], 1800)
+        other_games_min_quality = resolve_value(["filtering", "other_games_min_quality"], ["other_games_min_quality"], "ranked")
+        other_games_divisions = resolve_value(["filtering", "other_games_divisions"], ["other_games_divisions"], ["fbs"])
 
         # Resolve update intervals
         update_interval_seconds = resolve_value(["update_intervals", "base"], ["update_interval_seconds"], 60)
@@ -822,6 +830,11 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 },
                 "recent_games_to_show": recent_games_to_show,
                 "upcoming_games_to_show": upcoming_games_to_show,
+                "other_upcoming_games_to_show": other_upcoming_games_to_show,
+                "other_recent_games_to_show": other_recent_games_to_show,
+                "other_rotation_interval_seconds": other_rotation_interval_seconds,
+                "other_games_min_quality": other_games_min_quality,
+                "other_games_divisions": list(other_games_divisions or []),
                 "show_records": show_records,
                 "show_ranking": show_ranking,
                 "show_odds": show_odds,

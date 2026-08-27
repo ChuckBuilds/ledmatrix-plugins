@@ -663,6 +663,27 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "display_modes": manager_display_modes,
                 "test_mode": manager_test_mode,
                 "recent_games_to_show": game_limits.get("recent_games_to_show", 5),
+                # These ride the same source as the limits above, which is where the
+                # schema declares them. Managers read a translated config, not the
+                # plugin config, so a key missing here is a setting the user can
+                # change in the web UI that silently never reaches the code.
+                "other_upcoming_games_to_show": game_limits.get(
+                    "other_upcoming_games_to_show",
+                    game_limits.get("upcoming_games_to_show", 10),
+                ),
+                "other_recent_games_to_show": game_limits.get(
+                    "other_recent_games_to_show",
+                    game_limits.get("recent_games_to_show", 5),
+                ),
+                "other_rotation_interval_seconds": game_limits.get(
+                    "other_rotation_interval_seconds", 1800
+                ),
+                "other_games_min_quality": game_limits.get(
+                    "other_games_min_quality", "ranked"
+                ),
+                "other_games_divisions": list(
+                    game_limits.get("other_games_divisions", ["fbs"])
+                ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", 10),
                 "show_records": display_options.get("show_records", False),
                 "show_ranking": display_options.get("show_ranking", False),

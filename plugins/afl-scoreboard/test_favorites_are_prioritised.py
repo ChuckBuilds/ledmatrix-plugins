@@ -313,6 +313,18 @@ def main():
     check("and its favourites are present",
           len([n for n in names if "UGA" in n or "AUB" in n]) == 2, names)
 
+    print("\nrankings are only fetched where a poll exists")
+    # NFL's rankings endpoint 404s. _fetch_team_rankings only short-circuits on
+    # a NON-empty cache, so a failed fetch retries every update -- ~2,900 dead
+    # requests a day per league once "ranked" became the default.
+    probe = make(sports, favs, 3, 3)
+    for league, expected in (("college-football", True), ("mens-college-basketball", True),
+                             ("ncaa_mens", True), ("nfl", False), ("nhl", False),
+                             ("mlb", False), ("", False)):
+        probe.league = league
+        check("%-24s rankings fetch = %s" % (league or "<unset>", expected),
+              probe._league_has_rankings() is expected)
+
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
     return 1 if failed else 0
