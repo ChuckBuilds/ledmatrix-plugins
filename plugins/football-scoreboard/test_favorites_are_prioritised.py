@@ -21,6 +21,7 @@ is added.
 Run: <core-venv>/bin/python plugins/football-scoreboard/test_favorites_are_prioritised.py
 """
 
+import logging
 import os
 import sys
 import time
@@ -71,6 +72,9 @@ def schedule():
             "id": "g%02d" % i,
             "away_abbr": away,
             "home_abbr": home,
+            "home_id": 1000 + i,
+            "away_id": 2000 + i,
+            "broadcast": "",
             "start_time_utc": NOW + timedelta(hours=i),
             "is_upcoming": True,
             "is_final": False,
@@ -99,6 +103,11 @@ def make(sports, favorites, fav_limit, other_limit):
     obj.other_rotation_interval_seconds = 0      # pinned unless a test asks
     obj._other_window_start = 0
     obj._other_window_rotated_at = 0.0
+    obj.other_games_min_quality = "any"          # filters off unless a test asks
+    obj.other_games_divisions = []
+    obj._team_rankings_cache = {}
+    obj._division_team_ids = {}
+    obj.logger = logging.getLogger("prioritised_probe")
     return obj
 
 
@@ -111,7 +120,11 @@ def main():
     import sports
 
     games = schedule()
-    favs = ["UGA", "AUB"]
+    # Both spellings of the same two games. Most plugins match favourites by
+    # abbreviation; nrl matches by ESPN team id, because NRL abbreviations are
+    # not unique ("NEW" is two different clubs). Supplying both keeps this
+    # fixture honest for either matcher instead of quietly testing nothing.
+    favs = ["UGA", "AUB", "2040", "1041"]
 
     print("favourites set, only-flag off: they appear, and so do others")
     obj = make(sports, favs, 3, 2)
@@ -139,13 +152,13 @@ def main():
 
     print("\nthe favourite limit is a TOTAL, not a per-team budget")
     # 12 favourite teams, as AP_TOP_10 resolves to. Per-team would be dozens.
-    many = ["T%02dA" % i for i in range(30, 42)]
+    many = ["T%02dA" % i for i in range(30, 42)] + [str(2000 + i) for i in range(30, 42)]
     obj = make(sports, many, 3, 1)
     names = abbrs(obj._favorites_first(games, 3, 1))
     check("favourites capped at the limit", len(names) == 4, names)
 
     print("\nfewer favourite games than the limit: others fill the rest")
-    obj = make(sports, ["UGA"], 5, 2)
+    obj = make(sports, ["UGA", "2040"], 5, 2)
     names = abbrs(obj._favorites_first(games, 5, 2))
     fav_picked = [n for n in names if "UGA" in n]
     check("the one favourite game is shown", len(fav_picked) == 1, names)
@@ -153,7 +166,7 @@ def main():
           len(names) == 3, names)
 
     print("\nno favourite games at all in the window: still shows other games")
-    obj = make(sports, ["ZZZ"], 3, 2)
+    obj = make(sports, ["ZZZ", "999999"], 3, 2)
     names = abbrs(obj._favorites_first(games, 3, 2))
     check("the board is not left empty", len(names) == 2, names)
 
@@ -213,6 +226,92 @@ def main():
     obj._other_window_rotated_at = time.monotonic() - 99999
     names = abbrs(obj._favorites_first(tiny, 3, 2))
     check("the single other game is still shown", len(names) == 3, names)
+
+    print("\nquality filter: only ranked teams fill the other slots")
+    # Selection is otherwise purely chronological, and on a college slate that
+    # is mostly filler -- rotating harder just serves more of it.
+    obj = make(sports, favs, 3, 3)
+    obj.other_games_min_quality = "ranked"
+    obj._team_rankings_cache = {"T05H": 4, "T09A": 12}
+    names = abbrs(obj._favorites_first(games, 3, 3))
+    others = [n for n in names if "UGA" not in n and "AUB" not in n]
+    check("only ranked matchups fill the other slots",
+          others and all("T05H" in n or "T09A" in n for n in others), others)
+    check("favourites are exempt from the quality filter",
+          len([n for n in names if "UGA" in n or "AUB" in n]) == 2, names)
+
+    print("\nan empty rankings table must not empty the board")
+    obj = make(sports, favs, 3, 3)
+    obj.other_games_min_quality = "ranked"
+    obj._team_rankings_cache = {}        # fetch failed, or rankings unavailable
+    names = abbrs(obj._favorites_first(games, 3, 3))
+    check("filter fails OPEN, other games still shown",
+          len([n for n in names if "UGA" not in n and "AUB" not in n]) == 3, names)
+
+    print("\ndivision filter: every participant must be in a checked division")
+    obj = make(sports, favs, 3, 3)
+    obj.other_games_divisions = ["fbs"]
+    obj._division_team_ids = {
+        "fbs": {int(g["home_id"]) for g in games[:20]},
+        "fcs": {int(g["home_id"]) for g in games[20:]},
+    }
+    picked = obj._favorites_first(games, 3, 3)
+    others = [g for g in picked if not obj._is_favorite_game(g)]
+    check("a game with an unchecked-division side is dropped",
+          all(int(g["home_id"]) in obj._division_team_ids["fbs"]
+              and int(g["away_id"]) in obj._division_team_ids["fbs"]
+              for g in others), abbrs(others))
+
+    print("\na favourite from an unchecked division is STILL shown")
+    # Someone can be genuinely into a smaller-division school; making them a
+    # favourite has to keep working regardless of what the others filter says.
+    obj = make(sports, favs, 3, 3)
+    obj.favorite_teams = ["T45H", "1045"]                       # home_id 1045 -> the fcs set below
+    obj.other_games_min_quality = "ranked"
+    obj.other_games_divisions = ["fbs"]
+    obj._team_rankings_cache = {"T05H": 4}
+    obj._division_team_ids = {
+        "fbs": {int(g["home_id"]) for g in games[:20]},
+        "fcs": {int(g["home_id"]) for g in games[20:]},
+    }
+    picked = obj._favorites_first(games, 3, 3)
+    fav = [g for g in picked if obj._is_favorite_game(g)]
+    check("the small-division favourite still appears", len(fav) >= 1, abbrs(picked))
+
+    print("\nunresolved divisions must not empty the board either")
+    obj = make(sports, favs, 3, 3)
+    obj.other_games_divisions = ["fbs"]
+    obj._division_team_ids = {}          # lookup failed
+    names = abbrs(obj._favorites_first(games, 3, 3))
+    check("filter fails OPEN when divisions are unknown",
+          len([n for n in names if "UGA" not in n and "AUB" not in n]) == 3, names)
+
+    print("\nthe RECENT class must have these too, not just Upcoming")
+    # SportsRecent is a SIBLING of SportsUpcoming, not a subclass. The helpers
+    # first landed on Upcoming, so the recent path called a method it did not
+    # have -- AttributeError, swallowed by update()'s own try/except, recent
+    # games silently blank. Driving the real class is the only way to see it.
+    for cls_name in ("SportsRecent", "SportsUpcoming"):
+        klass = getattr(sports, cls_name)
+        for attr in ("_favorites_first", "_passes_other_filters",
+                     "_other_games_window", "_is_favorite_game",
+                     "_game_divisions", "_is_ranked_game"):
+            check(f"{cls_name} has {attr}", hasattr(klass, attr))
+
+    recent_cls = type("RecentProbe", (sports.SportsRecent,), {
+        "_fetch_data": lambda s: None,
+        "_extract_game_details": lambda s, ev: None,
+    })
+    r = recent_cls.__new__(recent_cls)
+    r.favorite_teams = favs
+    r.recent_games_to_show = 3
+    r.other_recent_games_to_show = 2
+    r.logger = logging.getLogger("recent_probe")
+    picked = r._favorites_first(games, 3, 2, newest_first=True)
+    names = abbrs(picked)
+    check("the recent path actually selects games", len(names) == 4, names)
+    check("and its favourites are present",
+          len([n for n in names if "UGA" in n or "AUB" in n]) == 2, names)
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
