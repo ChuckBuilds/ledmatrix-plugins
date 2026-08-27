@@ -231,3 +231,40 @@ Two things to keep in mind:
 - More slots make the cycle **longer**, not faster — everything else appears
   proportionally less often. And appearing more often only helps if the data is
   fresh, which is governed by this plugin's own live update interval.
+
+## 🎯 Which Games Get Shown
+
+**`upcoming_games_to_show` is not "how many cards you see".** It is the size of a *pool*. The panel cycles through that pool one card at a time and keeps its place between visits, so a pool of 3 means the board rotates through the same 3 games until the schedule moves on. Making the number bigger gives you a *longer lap*, so any one game comes round **less** often.
+
+Which mode you are in depends on whether `favorite_teams` is set and whether `show_favorite_teams_only` is on:
+
+| `favorite_teams` | `show_favorite_teams_only` | What you get |
+|---|---|---|
+| empty | either | The next N games league-wide, chronologically. |
+| set | **on** | Only your teams. The limit is a budget **per team**. |
+| set | **off** | **Your teams first, then other games to fill.** Both limits are **totals**. |
+
+The third row is what most people want, and it did not exist before: with the flag off, favorites used to be ignored *entirely*.
+
+### The settings
+
+| Option | Default | Description |
+|---|---|---|
+| `upcoming_games_to_show` | varies | How many **favorite** upcoming games to show. |
+| `recent_games_to_show` | varies | The same, for finished games. |
+| `other_upcoming_games_to_show` | matches `upcoming_games_to_show` | How many **non-favorite** upcoming games to add. `0` gives you favorites only. |
+| `other_recent_games_to_show` | matches `recent_games_to_show` | The same, for finished games. |
+| `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
+| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked`, `broadcast`, or `any`. |
+| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. |
+
+**Your favorite teams are never filtered by the last two** — follow a smaller-division team and its games always appear. Those settings only decide what fills the *remaining* slots.
+
+### Variety comes from turnover
+
+Rather than widening the pool, the non-favorite slice **moves**: the window advances by its own width every `other_rotation_interval_seconds`, so consecutive windows do not overlap and the board works through the schedule instead of resampling the front of it. Your favorites are not rotated — for upcoming games the soonest ones are the point.
+
+Both filters **fail open**: if the data behind them cannot be fetched, the game is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
+
+> `other_games_min_quality` and `other_games_divisions` only mean something for leagues with a national poll and divisions — that is, the college ones. Elsewhere they are inert and cost nothing: no poll is requested and no division lookup is made.
+
