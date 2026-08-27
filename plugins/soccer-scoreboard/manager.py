@@ -416,6 +416,27 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "exclude_teams": league_config.get("exclude_teams", []),
                 "display_modes": manager_display_modes,
                 "recent_games_to_show": game_limits.get("recent_games_to_show", league_config.get("recent_games_to_show", 5)),
+                # These ride the same source as the limits above, which is where the
+                # schema declares them. Managers read a translated config, not the
+                # plugin config, so a key missing here is a setting the user can
+                # change in the web UI that silently never reaches the code.
+                "other_upcoming_games_to_show": game_limits.get(
+                    "other_upcoming_games_to_show",
+                    game_limits.get("upcoming_games_to_show", 10),
+                ),
+                "other_recent_games_to_show": game_limits.get(
+                    "other_recent_games_to_show",
+                    game_limits.get("recent_games_to_show", 5),
+                ),
+                "other_rotation_interval_seconds": game_limits.get(
+                    "other_rotation_interval_seconds", 1800
+                ),
+                "other_games_min_quality": game_limits.get(
+                    "other_games_min_quality", "ranked"
+                ),
+                "other_games_divisions": list(
+                    game_limits.get("other_games_divisions", ["fbs"])
+                ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", league_config.get("upcoming_games_to_show", 10)),
                 "show_records": self.config.get("show_records", False),
                 "show_ranking": self.config.get("show_ranking", False),
@@ -719,6 +740,27 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "exclude_teams": custom_league.get("exclude_teams", []),
                 "display_modes": manager_display_modes,
                 "recent_games_to_show": game_limits.get("recent_games_to_show", 5),
+                # These ride the same source as the limits above, which is where the
+                # schema declares them. Managers read a translated config, not the
+                # plugin config, so a key missing here is a setting the user can
+                # change in the web UI that silently never reaches the code.
+                "other_upcoming_games_to_show": game_limits.get(
+                    "other_upcoming_games_to_show",
+                    game_limits.get("upcoming_games_to_show", 10),
+                ),
+                "other_recent_games_to_show": game_limits.get(
+                    "other_recent_games_to_show",
+                    game_limits.get("recent_games_to_show", 5),
+                ),
+                "other_rotation_interval_seconds": game_limits.get(
+                    "other_rotation_interval_seconds", 1800
+                ),
+                "other_games_min_quality": game_limits.get(
+                    "other_games_min_quality", "ranked"
+                ),
+                "other_games_divisions": list(
+                    game_limits.get("other_games_divisions", ["fbs"])
+                ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", 10),
                 "show_records": self.config.get("show_records", False),
                 "show_ranking": self.config.get("show_ranking", False),

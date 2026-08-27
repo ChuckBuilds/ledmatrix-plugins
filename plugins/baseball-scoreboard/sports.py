@@ -1496,6 +1496,17 @@ class SportsCore(ABC):
                 present.add("other")
         return present
 
+    def _league_has_rankings(self) -> bool:
+        """Only college leagues publish a poll; everyone else 404s.
+
+        This gate matters more than it looks. _fetch_team_rankings only
+        short-circuits when the cache is non-empty, so a failed fetch leaves it
+        empty and the next update tries again -- at a 30s interval that is
+        ~2,900 pointless requests a day, per league, all of them 404s.
+        """
+        league = (self.league or "").lower()
+        return "college" in league or "ncaa" in league
+
     def _is_ranked_game(self, game: Dict) -> bool:
         rankings = getattr(self, "_team_rankings_cache", None) or {}
         if not rankings:
@@ -1716,7 +1727,9 @@ class SportsUpcoming(SportsCore):
         # Rankings drive the rank badge AND, when the quality filter is set to
         # "ranked", which games are eligible at all. Fetching them only for the
         # badge left the filter with an empty table and emptied the board.
-        if self.show_ranking or self.other_games_min_quality == "ranked":
+        if self.show_ranking or (
+            self.other_games_min_quality == "ranked" and self._league_has_rankings()
+        ):
             self._fetch_team_rankings()
 
         try:
@@ -2271,7 +2284,9 @@ class SportsRecent(SportsCore):
         # Rankings drive the rank badge AND, when the quality filter is set to
         # "ranked", which games are eligible at all. Fetching them only for the
         # badge left the filter with an empty table and emptied the board.
-        if self.show_ranking or self.other_games_min_quality == "ranked":
+        if self.show_ranking or (
+            self.other_games_min_quality == "ranked" and self._league_has_rankings()
+        ):
             self._fetch_team_rankings()
 
         try:
