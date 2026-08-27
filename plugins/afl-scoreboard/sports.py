@@ -219,6 +219,7 @@ class SportsCore(ABC):
             "other_games_divisions", ["fbs"]
         ))
         self._division_team_ids: Optional[Dict[str, set]] = None
+        self._division_loaded_at: float = 0.0
         filtering_config = self.mode_config.get("filtering", {})
         self.show_favorite_teams_only: bool = self.mode_config.get(
             "show_favorite_teams_only",
@@ -1546,6 +1547,7 @@ class SportsCore(ABC):
     _other_window_start: ClassVar[int] = 0
     _other_window_rotated_at: ClassVar[float] = 0.0
     _division_team_ids: ClassVar[Optional[Dict[str, set]]] = None
+    _division_loaded_at: ClassVar[float] = 0.0
     _team_rankings_cache: ClassVar[Dict[str, int]] = {}
 
     # ESPN group ids for the college divisions. Derived from its own group
@@ -1555,18 +1557,33 @@ class SportsCore(ABC):
     # Merrimack at Delaware classifies as FBS.
     _DIVISION_GROUPS: ClassVar[Dict[str, int]] = {"fbs": 80, "fcs": 81}
     _DIVISION_CACHE_TTL: ClassVar[int] = 24 * 60 * 60
+    # A lookup that came back empty is retried on this shorter clock.
+    _DIVISION_RETRY_SECONDS: ClassVar[int] = 10 * 60
 
     def _load_division_team_ids(self) -> Dict[str, set]:
-        """Team ids per college division, cached for a day.
+        """Team ids per college division. Two requests a day, college only.
 
-        Two requests every 24 hours, and only for a college league. Returns
-        empty sets on any failure -- the caller treats "unknown" as "allowed",
-        because a division lookup that fails must not blank the board.
+        Returns empty sets on any failure -- the caller treats "unknown" as
+        "allowed", because a division lookup that fails must not blank the
+        board.
+
+        The in-memory copy expires like the stored one. Holding it for the life
+        of the process meant two things, both silent: a board that happened to
+        be offline for the first lookup had division filtering disabled until
+        someone restarted the service, which on a display running for weeks is
+        indefinitely; and a roster that changed between seasons was never
+        picked up. A failed lookup is retried sooner than a good one, so a
+        blip costs minutes rather than a day, without retrying per frame.
         """
+        now = time.monotonic()
         if self._division_team_ids is not None:
-            return self._division_team_ids
+            resolved = any(self._division_team_ids.values())
+            age_limit = self._DIVISION_CACHE_TTL if resolved else self._DIVISION_RETRY_SECONDS
+            if now - self._division_loaded_at < age_limit:
+                return self._division_team_ids
         self._division_team_ids = {}
-        if "college" not in (self.league or ""):
+        self._division_loaded_at = now
+        if "college" not in (self.league or "").lower():
             return self._division_team_ids     # no divisions to speak of
         for name, group in self._DIVISION_GROUPS.items():
             ids = set()

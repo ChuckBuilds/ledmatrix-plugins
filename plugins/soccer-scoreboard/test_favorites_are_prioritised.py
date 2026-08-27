@@ -107,6 +107,13 @@ def make(sports, favorites, fav_limit, other_limit):
     obj.other_games_divisions = []
     obj._team_rankings_cache = {}
     obj._division_team_ids = {}
+    # The value and its freshness stamp have to be set together: a populated
+    # cache with a zero stamp reads as stale and sends the lookup back to the
+    # network, which is not what a test pre-loading divisions means.
+    obj._division_loaded_at = time.monotonic()
+    obj.league = "college-football"
+    obj.sport = "football"
+    obj.cache_manager = None
     obj.logger = logging.getLogger("prioritised_probe")
     return obj
 
@@ -255,6 +262,7 @@ def main():
         "fbs": {int(g["home_id"]) for g in games[:20]},
         "fcs": {int(g["home_id"]) for g in games[20:]},
     }
+    obj._division_loaded_at = time.monotonic()
     picked = obj._favorites_first(games, 3, 3)
     others = [g for g in picked if not obj._is_favorite_game(g)]
     check("a game with an unchecked-division side is dropped",
@@ -274,6 +282,7 @@ def main():
         "fbs": {int(g["home_id"]) for g in games[:20]},
         "fcs": {int(g["home_id"]) for g in games[20:]},
     }
+    obj._division_loaded_at = time.monotonic()
     picked = obj._favorites_first(games, 3, 3)
     fav = [g for g in picked if obj._is_favorite_game(g)]
     check("the small-division favourite still appears", len(fav) >= 1, abbrs(picked))
@@ -282,6 +291,7 @@ def main():
     obj = make(sports, favs, 3, 3)
     obj.other_games_divisions = ["fbs"]
     obj._division_team_ids = {}          # lookup failed
+    obj._division_loaded_at = time.monotonic()
     names = abbrs(obj._favorites_first(games, 3, 3))
     check("filter fails OPEN when divisions are unknown",
           len([n for n in names if "UGA" not in n and "AUB" not in n]) == 3, names)
@@ -324,6 +334,56 @@ def main():
         probe.league = league
         check("%-24s rankings fetch = %s" % (league or "<unset>", expected),
               probe._league_has_rankings() is expected)
+
+    print("\na failed division lookup is retried, not cached forever")
+    # Holding an empty result for the life of the process meant one offline
+    # moment at boot disabled division filtering until someone restarted the
+    # service -- on a board running for weeks, indefinitely.
+    probe = make(sports, favs, 3, 3)
+    probe.league = "college-football"
+    probe.sport = "football"
+    probe.cache_manager = None
+    calls = []
+
+    class _Boom:
+        def get(self, *a, **k):
+            calls.append(1)
+            raise RuntimeError("network down")
+
+    probe.session = _Boom()
+    probe._division_team_ids = None
+    probe._division_loaded_at = 0.0
+    probe._load_division_team_ids()
+    first = len(calls)
+    check("a failed lookup tried the network", first > 0, calls)
+
+    probe._load_division_team_ids()
+    check("and is not retried immediately", len(calls) == first, calls)
+
+    probe._division_loaded_at = time.monotonic() - (probe._DIVISION_RETRY_SECONDS + 1)
+    probe._load_division_team_ids()
+    check("but IS retried once the short clock passes", len(calls) > first, calls)
+
+    print("\na good lookup is held for the full day")
+    probe2 = make(sports, favs, 3, 3)
+    probe2.league = "college-football"
+    probe2.sport = "football"
+    probe2.cache_manager = None
+    probe2._division_team_ids = {"fbs": {1, 2}, "fcs": {3}}
+    probe2._division_loaded_at = time.monotonic() - (probe2._DIVISION_RETRY_SECONDS + 1)
+    hits = []
+
+    class _Count:
+        def get(self, *a, **k):
+            hits.append(1)
+            raise RuntimeError("should not be called")
+
+    probe2.session = _Count()
+    probe2._load_division_team_ids()
+    check("a resolved lookup is not retried on the short clock", not hits, hits)
+    probe2._division_loaded_at = time.monotonic() - (probe2._DIVISION_CACHE_TTL + 1)
+    probe2._load_division_team_ids()
+    check("but is refreshed after a day", bool(hits), hits)
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
