@@ -207,6 +207,19 @@ class SportsCore(ABC):
         )
         self._other_window_start: int = 0
         self._other_window_rotated_at: float = 0.0
+        # Which non-favourite games are worth a slot. Selection is otherwise
+        # purely chronological, and on a college slate two thirds of what that
+        # returns is filler nobody asked for: rotating harder just serves more
+        # of it. Favourites are NEVER filtered by these -- follow a Division II
+        # school and its games always show; this only decides what fills the
+        # remaining slots.
+        self.other_games_min_quality: str = self.mode_config.get(
+            "other_games_min_quality", "ranked"
+        )
+        self.other_games_divisions: List[str] = list(self.mode_config.get(
+            "other_games_divisions", ["fbs"]
+        ))
+        self._division_team_ids: Optional[Dict[str, set]] = None
         filtering_config = self.mode_config.get("filtering", {})
         self.show_favorite_teams_only: bool = self.mode_config.get(
             "show_favorite_teams_only",
@@ -316,11 +329,6 @@ class SportsCore(ABC):
         every membership check compares team IDs instead.
         """
         return bool(team_list) and str(team_id) in team_list
-
-    def _is_favorite_game(self, game: Dict) -> bool:
-        return self._team_in(game.get("home_id"), self.favorite_teams) or self._team_in(
-            game.get("away_id"), self.favorite_teams
-        )
 
     def _effective_live_duration(self, game):
         """How long the given live game should stay on screen before rotating.
@@ -1365,6 +1373,7 @@ class SportsCore(ABC):
                 or status["type"]["name"] == "STATUS_HALFTIME",  # Added halftime check
                 "is_period_break": status["type"]["name"]
                 == "STATUS_END_PERIOD",  # Added Period Break check
+                "broadcast": (competition.get("broadcast") or ""),
                 "home_abbr": home_abbr,
                 "home_id": home_team["id"],
                 "home_score": home_score,
@@ -1532,38 +1541,136 @@ class SportsCore(ABC):
         self.logger.info(f"{self.__class__.__name__} cleanup completed")
 
 
-class SportsUpcoming(SportsCore):
-    def __init__(
-        self,
-        config: Dict[str, Any],
-        display_manager,
-        cache_manager,
-        logger: logging.Logger,
-        sport_key: str,
-    ):
-        super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        self.upcoming_games = []  # Store all fetched upcoming games initially
-        self.games_list = []  # Filtered list for display (favorite teams)
-        self.current_game_index = 0
-        self.last_update = 0
-        self.update_interval = self.mode_config.get(
-            "upcoming_update_interval", 3600
-        )  # Check for recent games every hour
-        self.last_log_time = 0
-        self.log_interval = 300
-        self.last_warning_time = 0
-        self.warning_cooldown = 300
-        self.last_game_switch = 0
-        self.game_display_duration = 15  # Display each upcoming game for 15 seconds
-
     def _is_favorite_game(self, game: Dict) -> bool:
-        """Does either side of this game belong to a favourite team?"""
-        if not self.favorite_teams:
-            return False
-        return (
-            game.get("home_abbr") in self.favorite_teams
-            or game.get("away_abbr") in self.favorite_teams
+        return self._team_in(game.get("home_id"), self.favorite_teams) or self._team_in(
+            game.get("away_id"), self.favorite_teams
         )
+
+    # Class-level defaults for everything the selection path reads. __init__
+    # sets all of these from config; these exist so a missing one can never
+    # raise. That failure is invisible where it matters: the read happens
+    # inside update()'s own try/except, so the exception is swallowed and the
+    # board simply goes blank with no explanation.
+    #
+    # They deliberately fail OPEN -- no quality bar, no division restriction --
+    # matching the filters themselves, so the degraded state shows too much
+    # rather than nothing.
+    other_upcoming_games_to_show: ClassVar[int] = 0
+    other_recent_games_to_show: ClassVar[int] = 0
+    other_rotation_interval_seconds: ClassVar[int] = 0
+    other_games_min_quality: ClassVar[str] = "any"
+    other_games_divisions: ClassVar[tuple] = ()
+    _other_window_start: ClassVar[int] = 0
+    _other_window_rotated_at: ClassVar[float] = 0.0
+    _division_team_ids: ClassVar[Optional[Dict[str, set]]] = None
+    _team_rankings_cache: ClassVar[Dict[str, int]] = {}
+
+    # ESPN group ids for the college divisions. Derived from its own group
+    # rosters, which are disjoint (148 FBS team ids, 130 FCS, no overlap).
+    # conferenceId is NOT usable for this: cross-division games put an FBS
+    # conference on an FCS slate, so the id sets overlap and a game like
+    # Merrimack at Delaware classifies as FBS.
+    _DIVISION_GROUPS: ClassVar[Dict[str, int]] = {"fbs": 80, "fcs": 81}
+    _DIVISION_CACHE_TTL: ClassVar[int] = 24 * 60 * 60
+
+    def _load_division_team_ids(self) -> Dict[str, set]:
+        """Team ids per college division, cached for a day.
+
+        Two requests every 24 hours, and only for a college league. Returns
+        empty sets on any failure -- the caller treats "unknown" as "allowed",
+        because a division lookup that fails must not blank the board.
+        """
+        if self._division_team_ids is not None:
+            return self._division_team_ids
+        self._division_team_ids = {}
+        if "college" not in (self.league or ""):
+            return self._division_team_ids     # no divisions to speak of
+        for name, group in self._DIVISION_GROUPS.items():
+            ids = set()
+            key = f"{self.league}_division_teams_{group}"
+            try:
+                cached = self.cache_manager.get(key) if self.cache_manager else None
+                if cached:
+                    ids = {int(i) for i in cached}
+                else:
+                    url = (
+                        "https://sports.core.api.espn.com/v2/sports/"
+                        f"{self.sport}/leagues/{self.league}/seasons/"
+                        f"{datetime.now().year}/types/2/groups/{group}/teams"
+                    )
+                    resp = self.session.get(url, params={"limit": 300}, timeout=15)
+                    resp.raise_for_status()
+                    for item in resp.json().get("items", []):
+                        found = re.search(r"/teams/(\d+)", item.get("$ref", ""))
+                        if found:
+                            ids.add(int(found.group(1)))
+                    if ids and self.cache_manager:
+                        self.cache_manager.set(
+                            key, sorted(ids), ttl=self._DIVISION_CACHE_TTL
+                        )
+            except Exception as exc:
+                self.logger.warning(
+                    "Could not resolve %s teams for %s (%s); division filtering "
+                    "will allow everything", name, self.league, exc
+                )
+            self._division_team_ids[name] = ids
+        return self._division_team_ids
+
+    def _game_divisions(self, game: Dict) -> Optional[set]:
+        """Divisions of BOTH sides, or None when they cannot be told.
+
+        Every participant counts, not just the higher one. Unchecking FCS has
+        to actually remove FCS teams from the board, otherwise a top-25 side
+        hosting a school nobody has heard of still fills a slot -- which is the
+        exact complaint. A viewer who wants those keeps FCS checked.
+        """
+        divisions = self._load_division_team_ids()
+        if not any(divisions.values()):
+            return None
+        try:
+            ids = [int(game.get("home_id")), int(game.get("away_id"))]
+        except (TypeError, ValueError):
+            return None
+        present = set()
+        for team_id in ids:
+            for name in ("fbs", "fcs"):
+                if team_id in divisions.get(name, set()):
+                    present.add(name)
+                    break
+            else:
+                present.add("other")
+        return present
+
+    def _is_ranked_game(self, game: Dict) -> bool:
+        rankings = getattr(self, "_team_rankings_cache", None) or {}
+        if not rankings:
+            return False
+        return bool(
+            rankings.get(game.get("home_abbr"), 0)
+            or rankings.get(game.get("away_abbr"), 0)
+        )
+
+    def _passes_other_filters(self, game: Dict) -> bool:
+        """Is this non-favourite game worth one of the remaining slots?
+
+        Every check fails OPEN. If rankings could not be fetched or the
+        division rosters did not resolve, the game is allowed: a board showing
+        filler is a poor board, but a board showing nothing is a broken one.
+        """
+        if self.other_games_min_quality == "ranked":
+            if (getattr(self, "_team_rankings_cache", None) or {}) and \
+                    not self._is_ranked_game(game):
+                return False
+        elif self.other_games_min_quality == "broadcast":
+            if not game.get("broadcast") and not self._is_ranked_game(game):
+                return False
+
+        wanted = self.other_games_divisions
+        if wanted:
+            present = self._game_divisions(game)
+            if present is not None and not present.issubset(set(wanted)):
+                return False
+        return True
 
     def _other_games_window(self, others: List[Dict], limit: int) -> List[Dict]:
         """A rotating slice of the non-favourite games.
@@ -1636,7 +1743,10 @@ class SportsUpcoming(SportsCore):
 
         favorites, others = [], []
         for game in ordered:
-            (favorites if self._is_favorite_game(game) else others).append(game)
+            if self._is_favorite_game(game):
+                favorites.append(game)          # never filtered: your team is your team
+            elif self._passes_other_filters(game):
+                others.append(game)
 
         selected = favorites[:max(0, favorite_limit)]
         selected.extend(self._other_games_window(others, max(0, other_limit)))
@@ -1645,6 +1755,31 @@ class SportsUpcoming(SportsCore):
         # which would show next week's UGA game before tonight's.
         selected.sort(key=key, reverse=newest_first)
         return selected
+
+
+class SportsUpcoming(SportsCore):
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        display_manager,
+        cache_manager,
+        logger: logging.Logger,
+        sport_key: str,
+    ):
+        super().__init__(config, display_manager, cache_manager, logger, sport_key)
+        self.upcoming_games = []  # Store all fetched upcoming games initially
+        self.games_list = []  # Filtered list for display (favorite teams)
+        self.current_game_index = 0
+        self.last_update = 0
+        self.update_interval = self.mode_config.get(
+            "upcoming_update_interval", 3600
+        )  # Check for recent games every hour
+        self.last_log_time = 0
+        self.log_interval = 300
+        self.last_warning_time = 0
+        self.warning_cooldown = 300
+        self.last_game_switch = 0
+        self.game_display_duration = 15  # Display each upcoming game for 15 seconds
 
     def _select_games_for_display(
         self, processed_games: List[Dict], favorite_teams: List[str]
@@ -1717,8 +1852,10 @@ class SportsUpcoming(SportsCore):
 
         self.last_update = current_time
 
-        # Fetch rankings if enabled
-        if self.show_ranking:
+        # Rankings drive the rank badge AND, when the quality filter is set to
+        # "ranked", which games are eligible at all. Fetching them only for the
+        # badge left the filter with an empty table and emptied the board.
+        if self.show_ranking or self.other_games_min_quality == "ranked":
             self._fetch_team_rankings()
 
         try:
@@ -2287,8 +2424,10 @@ class SportsRecent(SportsCore):
 
         self.last_update = current_time  # Update time even if fetch fails
 
-        # Fetch rankings if enabled
-        if self.show_ranking:
+        # Rankings drive the rank badge AND, when the quality filter is set to
+        # "ranked", which games are eligible at all. Fetching them only for the
+        # badge left the filter with an empty table and emptied the board.
+        if self.show_ranking or self.other_games_min_quality == "ranked":
             self._fetch_team_rankings()
 
         try:

@@ -22,8 +22,8 @@
       "version": "1.13.0",
       "released": "2026-08-19",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off. New other_upcoming_games_to_show / other_recent_games_to_show control how many other games fill the rest, and other_rotation_interval_seconds advances that slice over time so the board works through the schedule instead of repeating the same handful.",
-      "changelog": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off. New other_upcoming_games_to_show / other_recent_games_to_show control how many other games fill the rest, and other_rotation_interval_seconds advances that slice over time so the board works through the schedule instead of repeating the same handful."
+      "notes": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new settings controlling how many other games fill the rest, how often that slice rotates, and which other games qualify (ranked teams by default, FBS only for college). Favorite teams are never filtered, so a team from any division always appears.",
+      "changelog": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new settings controlling how many other games fill the rest, how often that slice rotates, and which other games qualify (ranked teams by default, FBS only for college). Favorite teams are never filtered, so a team from any division always appears."
     },
     {
       "version": "1.12.3",
