@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.16.0",
+  "version": "2.17.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -27,11 +27,18 @@
   ],
   "versions": [
     {
+      "version": "2.17.0",
+      "released": "2026-08-27",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The new favourite-selection settings now reach the display: they were declared in the config form and read by the display code, but dropped in the translation between the two, so changing them did nothing. Other games can be filtered by quality before they fill the remaining slots; this league has no national poll or divisions, so those filters pass everything through, and favourites are never filtered in any case. The README now documents how the selection settings actually behave.",
+      "changelog": "The new favourite-selection settings now reach the display: they were declared in the config form and read by the display code, but dropped in the translation between the two, so changing them did nothing. Other games can be filtered by quality before they fill the remaining slots; this league has no national poll or divisions, so those filters pass everything through, and favourites are never filtered in any case. The README now documents how the selection settings actually behave."
+    },
+    {
       "version": "2.16.0",
       "released": "2026-08-22",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new settings controlling how many other games fill the rest, how often that slice rotates, and which other games qualify (ranked teams by default, FBS only for college). Favorite teams are never filtered, so a team from any division always appears.",
-      "changelog": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new settings controlling how many other games fill the rest, how often that slice rotates, and which other games qualify (ranked teams by default, FBS only for college). Favorite teams are never filtered, so a team from any division always appears."
+      "notes": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off. New other_upcoming_games_to_show / other_recent_games_to_show control how many other games fill the rest, and other_rotation_interval_seconds advances that slice over time so the board works through the schedule instead of repeating the same handful.",
+      "changelog": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off. New other_upcoming_games_to_show / other_recent_games_to_show control how many other games fill the rest, and other_rotation_interval_seconds advances that slice over time so the board works through the schedule instead of repeating the same handful."
     },
     {
       "version": "2.15.3",

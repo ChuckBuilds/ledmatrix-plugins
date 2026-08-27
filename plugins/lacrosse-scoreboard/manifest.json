@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -51,11 +51,18 @@
   ],
   "versions": [
     {
+      "version": "1.17.0",
+      "released": "2026-08-27",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The new favourite-selection settings now reach the display: they were declared in the config form and read by the display code, but dropped in the translation between the two, so changing them did nothing. Other games are filtered by quality before they fill the remaining slots -- ranked teams by default, and FBS only for college -- while favourites are never filtered, so a team from any division still appears. College rankings are fetched from the endpoint that actually carries them, so the rank badge and the ranked filter work at all; each poll is fetched once rather than once per configured group; leagues with no poll no longer ask for one; and the division lookup expires instead of being held for the life of the process. Each plugin's README now documents how the selection settings actually behave.",
+      "changelog": "The new favourite-selection settings now reach the display: they were declared in the config form and read by the display code, but dropped in the translation between the two, so changing them did nothing. Other games are filtered by quality before they fill the remaining slots -- ranked teams by default, and FBS only for college -- while favourites are never filtered, so a team from any division still appears. College rankings are fetched from the endpoint that actually carries them, so the rank badge and the ranked filter work at all; each poll is fetched once rather than once per configured group; leagues with no poll no longer ask for one; and the division lookup expires instead of being held for the life of the process. Each plugin's README now documents how the selection settings actually behave."
+    },
+    {
       "version": "1.16.0",
       "released": "2026-08-19",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new settings controlling how many other games fill the rest, how often that slice rotates, and which other games qualify (ranked teams by default, FBS only for college). Favorite teams are never filtered, so a team from any division always appears.",
-      "changelog": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off, with new settings controlling how many other games fill the rest, how often that slice rotates, and which other games qualify (ranked teams by default, FBS only for college). Favorite teams are never filtered, so a team from any division always appears."
+      "notes": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off. New other_upcoming_games_to_show / other_recent_games_to_show control how many other games fill the rest, and other_rotation_interval_seconds advances that slice over time so the board works through the schedule instead of repeating the same handful.",
+      "changelog": "Favorite teams now appear in upcoming and recent even when 'show favorite teams only' is off. New other_upcoming_games_to_show / other_recent_games_to_show control how many other games fill the rest, and other_rotation_interval_seconds advances that slice over time so the board works through the schedule instead of repeating the same handful."
     },
     {
       "version": "1.15.3",
