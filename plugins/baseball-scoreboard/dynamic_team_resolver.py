@@ -92,8 +92,11 @@ class DynamicTeamResolver:
             pattern_sport = pattern_config['sport']
             limit = pattern_config['limit']
 
-            # Check cache first (using cache_manager if available)
-            cache_key = f"dynamic_teams_{pattern_sport}_{dynamic_team}"
+            # Keyed by SPORT, not by pattern. Every AP_TOP_n resolves from the
+            # same poll and differs only in how far down it slices, and the
+            # value cached below is the whole list -- so keying by pattern
+            # fetched, stored and expired the identical payload once per group.
+            cache_key = f"dynamic_teams_{pattern_sport}_rankings"
             if self.cache_manager:
                 cached_teams = self.cache_manager.get(cache_key)
                 if cached_teams:
