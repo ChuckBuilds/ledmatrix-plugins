@@ -558,6 +558,8 @@ Selection is otherwise purely chronological, and on a college slate most of what
 
 Both filters **fail open**: if rankings cannot be fetched, or the division rosters do not resolve, the game is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
 
+They fail open a second time, as a set: if the filters between them leave **nothing at all** — your teams idle and every other game rejected — the unfiltered list is used instead. Setting `other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one way to ask for an empty slate, and that is honoured.
+
 > These two settings only mean something for `ncaa_fb`. The NFL has no poll and no divisions, so both are inert there and cost nothing — no poll is requested and no division lookup is made. College football is also the only league ESPN publishes FBS/FCS group rosters for at all, so `other_games_divisions` does nothing in the other sports plugins either.
 
 ### A worked example

@@ -524,5 +524,7 @@ Rather than widening the pool, the non-favorite slice **moves**: the window adva
 
 Both filters **fail open**: if the data behind them cannot be fetched, the game is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
 
+They fail open a second time, as a set: if the filters between them leave **nothing at all** — your teams idle and every other game rejected — the unfiltered list is used instead. Setting `other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one way to ask for an empty slate, and that is honoured.
+
 > `other_games_min_quality` needs a national poll, which only the college leagues publish — set to `ranked` in a professional league it lets every game through, and no poll is requested. `other_games_divisions` needs ESPN's FBS/FCS group rosters, which exist for **college football and nothing else**: asked for any other college league they come back empty or 500, so the setting is inert here and no lookup is made.
 

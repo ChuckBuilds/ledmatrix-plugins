@@ -459,6 +459,84 @@ def main():
         check("%-24s division lookup = %s" % (league, expected),
               bool(asked) is expected, asked)
 
+    print("\nthe filters must not blank the mode when nothing survives")
+    # Each check fails open on missing data, but a filter working exactly as
+    # asked can match nothing -- and with no favourite game left there is
+    # nothing to carry the mode. The board goes dark rather than short.
+    probe = make(sports, ["NOT_PLAYING"], 3, 3)
+    probe.other_games_min_quality = "ranked"
+    probe._team_rankings_cache = {"NOT_PLAYING_TODAY": 1}     # loaded, matches nothing
+    picked = probe._favorites_first(games, 3, 3)
+    check("a filter matching nothing still fills the other slots",
+          len(picked) == 3, abbrs(picked))
+
+    probe = make(sports, ["NOT_PLAYING"], 3, 0)
+    probe.other_games_min_quality = "ranked"
+    probe._team_rankings_cache = {"NOT_PLAYING_TODAY": 1}
+    check("but 0 others is an explicit favourites-only, and stays quiet",
+          probe._favorites_first(games, 3, 0) == [])
+
+    print("\na league with no broadcast data fails open too")
+    # The scoreboard payload always carries the key, so the per-check "missing
+    # means allowed" reading never fired here: picking `broadcast` in a league
+    # ESPN leaves empty -- the NHL and the soccer leagues, measured -- removed
+    # every non-favourite game instead of allowing them.
+    probe = make(sports, favs, 3, 3)
+    probe.other_games_min_quality = "broadcast"
+    others = [g for g in probe._favorites_first(games, 3, 3)
+              if not probe._is_favorite_game(g)]
+    check("nothing televised anywhere: other games still shown",
+          len(others) == 3, abbrs(others))
+
+    televised = [dict(g) for g in games]
+    televised[5]["broadcast"] = "ESPN"
+    televised[6]["broadcast"] = "ABC"
+    probe = make(sports, favs, 3, 3)
+    probe.other_games_min_quality = "broadcast"
+    others = [g for g in probe._favorites_first(televised, 3, 3)
+              if not probe._is_favorite_game(g)]
+    check("where the league does carry it, only televised games qualify",
+          bool(others) and all(g.get("broadcast") for g in others), abbrs(others))
+
+    print("\na poll that matches nothing says so, once")
+    # The table is keyed by the abbreviation the RANKINGS endpoint returns and
+    # matched against the SCOREBOARD's. If those ever stop agreeing the filter
+    # removes every game with no exception and no log line -- the same shape as
+    # the bug where rankings were never loading at all.
+    class _Capture(logging.Handler):
+        def __init__(self):
+            logging.Handler.__init__(self)
+            self.messages = []
+
+        def emit(self, record):
+            self.messages.append(record.getMessage())
+
+    cap = _Capture()
+    probe = make(sports, favs, 3, 3)
+    probe.logger = logging.getLogger("ranking_coverage_probe")
+    probe.logger.addHandler(cap)
+    probe.logger.setLevel(logging.WARNING)
+    probe.other_games_min_quality = "ranked"
+    probe._team_rankings_cache = {"NOT_PLAYING_TODAY": 1}
+    probe._ranking_coverage_logged_at = 0.0
+    probe._favorites_first(games, 3, 3)
+    check("the mismatch is reported",
+          any("removing every non-favourite" in m for m in cap.messages),
+          cap.messages)
+    seen = len(cap.messages)
+    probe._favorites_first(games, 3, 3)
+    check("and not repeated on every update", len(cap.messages) == seen)
+
+    probe = make(sports, favs, 3, 3)
+    probe.logger = logging.getLogger("ranking_coverage_quiet")
+    quiet = _Capture()
+    probe.logger.addHandler(quiet)
+    probe.other_games_min_quality = "ranked"
+    probe._team_rankings_cache = {"T05H": 4}      # a poll that DOES match
+    probe._ranking_coverage_logged_at = 0.0
+    probe._favorites_first(games, 3, 3)
+    check("a poll that matches is not warned about", not quiet.messages, quiet.messages)
+
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
     return 1 if failed else 0

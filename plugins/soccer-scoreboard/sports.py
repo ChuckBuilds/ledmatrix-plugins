@@ -1592,6 +1592,9 @@ class SportsCore(ABC):
         "college-football": {"fbs": 80, "fcs": 81},
     }
     _DIVISION_CACHE_TTL: ClassVar[int] = 24 * 60 * 60
+    _broadcast_data_seen: ClassVar[bool] = True
+    _RANKING_COVERAGE_SECONDS: ClassVar[int] = 60 * 60
+    _ranking_coverage_logged_at: ClassVar[float] = 0.0
     # A lookup that came back empty is retried on this shorter clock.
     _DIVISION_RETRY_SECONDS: ClassVar[int] = 10 * 60
 
@@ -1709,6 +1712,16 @@ class SportsCore(ABC):
                     not self._is_ranked_game(game):
                 return False
         elif self.other_games_min_quality == "broadcast":
+            # A league ESPN carries no broadcast data for is UNKNOWN, not a
+            # league where nothing is on television. The scoreboard payload
+            # always has the key, so the usual "missing means allowed" reading
+            # does not apply here -- measured, college football, the NFL,
+            # college baseball, college lacrosse and UFC all carry a
+            # broadcaster, while the NHL and the soccer leagues return "" for
+            # every game. Without this, picking "broadcast" there removed every
+            # non-favourite game rather than failing open like its neighbours.
+            if not self._broadcast_data_seen:
+                return True
             if not game.get("broadcast") and not self._is_ranked_game(game):
                 return False
 
@@ -1734,8 +1747,53 @@ class SportsCore(ABC):
         is no favourite left to carry the mode -- an empty list is a blank
         panel rather than a short one.
         """
+        self._note_broadcast_coverage(games)
         kept = [g for g in games if self._passes_other_filters(g)]
+        self._check_ranking_coverage(games)
         return kept or games
+
+    def _note_broadcast_coverage(self, games: List[Dict]) -> None:
+        """Does this league carry broadcast data at all?
+
+        Answered from the slate rather than from a list of league names, so a
+        league ESPN starts or stops populating needs no code change. Read by
+        `_passes_other_filters`; defaults to True so a caller that has not
+        asked keeps the stricter reading.
+        """
+        self._broadcast_data_seen = any(
+            (g.get("broadcast") or "").strip() for g in games
+        )
+
+    def _check_ranking_coverage(self, games: List[Dict]) -> None:
+        """Say so when a loaded poll matches nothing on the schedule.
+
+        The table is keyed by the abbreviation the RANKINGS endpoint returns and
+        matched against the one the SCOREBOARD endpoint returns. Nothing
+        guarantees the two agree, and if they ever stop agreeing the filter
+        quietly removes every non-favourite game -- no exception, no log line,
+        just a shorter board. That is the same shape as the bug where rankings
+        were never loading at all, which survived until someone went looking.
+
+        Throttled to once an hour: selection runs on every update.
+        """
+        if self.other_games_min_quality != "ranked":
+            return
+        rankings = getattr(self, "_team_rankings_cache", None) or {}
+        if not rankings or not games:
+            return
+        if any(self._is_ranked_game(g) for g in games):
+            return
+        now = time.monotonic()
+        if now - self._ranking_coverage_logged_at < self._RANKING_COVERAGE_SECONDS:
+            return
+        self._ranking_coverage_logged_at = now
+        self.logger.warning(
+            "%s: %d ranked teams loaded, but none of the %d other games match "
+            "one -- the quality filter is removing every non-favourite game. "
+            "Ranked abbreviations look like: %s",
+            self.league, len(rankings), len(games),
+            ", ".join(sorted(rankings)[:8]),
+        )
 
     def _other_games_window(self, others: List[Dict], limit: int) -> List[Dict]:
         """A rotating slice of the non-favourite games.
@@ -1806,15 +1864,30 @@ class SportsCore(ABC):
                 return g.get("start_time_utc") or datetime.max.replace(tzinfo=timezone.utc)
             ordered = sorted(processed_games, key=key)
 
-        favorites, others = [], []
+        self._note_broadcast_coverage(ordered)
+        favorites, others, unfiltered = [], [], []
         for game in ordered:
             if self._is_favorite_game(game):
                 favorites.append(game)          # never filtered: your team is your team
-            elif self._passes_other_filters(game):
+                continue
+            unfiltered.append(game)
+            if self._passes_other_filters(game):
                 others.append(game)
+        self._check_ranking_coverage(unfiltered)
 
         selected = favorites[:max(0, favorite_limit)]
         selected.extend(self._other_games_window(others, max(0, other_limit)))
+        if not selected and other_limit > 0:
+            # Nothing survived at all: your teams are not playing inside the
+            # schedule window AND the filters removed every other game. Each
+            # check fails open on missing data, but a filter working exactly as
+            # asked can still match nothing on a given day, and with no
+            # favourite game left there is nothing to carry the mode -- an empty
+            # list is a blank panel, not a short one. Same whole-list fallback
+            # `_filtered_or_all` makes for a board with no favourites at all.
+            # `other_limit` of 0 is an explicit "favourites only", so that one
+            # is left to go quiet as asked.
+            selected = self._other_games_window(unfiltered, max(0, other_limit))
         # Re-sort so the card order still reads as a schedule. Selection decides
         # WHICH games; it should not reorder them into favourites-then-others,
         # which would show next week's UGA game before tonight's.
