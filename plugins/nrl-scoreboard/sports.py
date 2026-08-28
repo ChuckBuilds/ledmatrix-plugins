@@ -190,11 +190,11 @@ class SportsCore(ABC):
         # Defaults match the league-wide counts above, so a board that upgrades
         # keeps every game it was already showing and simply gains its
         # favourites -- the change is additive, never a removal.
-        self.other_upcoming_games_to_show: int = self.mode_config.get(
-            "other_upcoming_games_to_show", self.upcoming_games_to_show
+        self.other_upcoming_games_to_show: int = self._setting_int(
+            "other_upcoming_games_to_show", self.upcoming_games_to_show, 0, 20
         )
-        self.other_recent_games_to_show: int = self.mode_config.get(
-            "other_recent_games_to_show", self.recent_games_to_show
+        self.other_recent_games_to_show: int = self._setting_int(
+            "other_recent_games_to_show", self.recent_games_to_show, 0, 20
         )
         # Variety comes from turnover, not from a bigger pool. Enlarging the
         # pool makes a lap longer -- roughly one card per visit -- so a wide
@@ -202,8 +202,8 @@ class SportsCore(ABC):
         # and the non-favourite slice advances on this interval, so over a day
         # the board works through the schedule while a lap still takes minutes.
         # 0 pins the window, restoring the fixed "next N others".
-        self.other_rotation_interval_seconds: int = self.mode_config.get(
-            "other_rotation_interval_seconds", 1800
+        self.other_rotation_interval_seconds: int = self._setting_int(
+            "other_rotation_interval_seconds", 1800, 0, 86400
         )
         self._other_window_start: int = 0
         self._other_window_rotated_at: float = 0.0
@@ -213,12 +213,12 @@ class SportsCore(ABC):
         # of it. Favourites are NEVER filtered by these -- follow a Division II
         # school and its games always show; this only decides what fills the
         # remaining slots.
-        self.other_games_min_quality: str = self.mode_config.get(
+        self.other_games_min_quality: str = str(self.mode_config.get(
             "other_games_min_quality", "ranked"
+        )).strip().lower()
+        self.other_games_divisions: List[str] = self._normalise_divisions(
+            self.mode_config.get("other_games_divisions", ["fbs"])
         )
-        self.other_games_divisions: List[str] = list(self.mode_config.get(
-            "other_games_divisions", ["fbs"]
-        ))
         self._division_team_ids: Optional[Dict[str, set]] = None
         self._division_loaded_at: float = 0.0
         filtering_config = self.mode_config.get("filtering", {})
@@ -1651,10 +1651,14 @@ class SportsCore(ABC):
     def _game_divisions(self, game: Dict) -> Optional[set]:
         """Divisions of BOTH sides, or None when they cannot be told.
 
-        Every participant counts, not just the higher one. Unchecking FCS has
-        to actually remove FCS teams from the board, otherwise a top-25 side
-        hosting a school nobody has heard of still fills a slot -- which is the
-        exact complaint. A viewer who wants those keeps FCS checked.
+        Both sides are collected, but the caller only needs ONE of them to sit
+        in a checked division. Requiring every participant read as "FBS games
+        only" and removed a ranked side hosting an FCS school -- which is still
+        a game involving a team the viewer checked the box for, and on a real
+        Week 2 slate it silently dropped five of the twenty ranked matchups.
+        What the checkbox is for is keeping FCS-versus-FCS out of a board
+        configured for FBS, and that still holds: a game with no checked
+        division on either side is dropped.
         """
         divisions = self._load_division_team_ids()
         if not any(divisions.values()):
@@ -1683,6 +1687,43 @@ class SportsCore(ABC):
         """
         league = (self.league or "").lower()
         return "college" in league or "ncaa" in league
+
+    @staticmethod
+    def _normalise_divisions(raw) -> List[str]:
+        """Division names from config, in the shape the filter expects.
+
+        A hand-edited config can hold "fbs" where the schema says ["fbs"], and
+        list("fbs") is ['f', 'b', 's'] -- three names that match no division, so
+        every non-favourite game is rejected by a setting the user believes says
+        the opposite. An empty list is left empty: that means "no division
+        filter" and is a legitimate choice, not a mistake to correct.
+        """
+        if isinstance(raw, str):
+            raw = [raw]
+        try:
+            items = list(raw or [])
+        except TypeError:
+            return []
+        return [str(d).strip().lower() for d in items if str(d).strip()]
+
+    def _setting_int(self, key: str, default: int, low: int, high: int) -> int:
+        """A count from config, clamped to the range its schema declares.
+
+        The schema constrains these, but config.json can be hand-edited or
+        written by an older tool, and a string or a negative here does not
+        raise where anyone would see it -- it raises inside update()'s own
+        try/except, which shows up as a mode that silently renders nothing.
+        Same shape as the favorite_live_boost clamp above.
+        """
+        try:
+            return max(low, min(high, int(self.mode_config.get(key, default))))
+        except (TypeError, ValueError):
+            self.logger.warning(
+                "%s: ignoring unusable %s=%r, using %s",
+                getattr(self, "league", "?"), key,
+                self.mode_config.get(key), default,
+            )
+            return default
 
     def _is_ranked_game(self, game: Dict) -> bool:
         rankings = getattr(self, "_team_rankings_cache", None) or {}
@@ -1721,7 +1762,7 @@ class SportsCore(ABC):
         wanted = self.other_games_divisions
         if wanted:
             present = self._game_divisions(game)
-            if present is not None and not present.issubset(set(wanted)):
+            if present is not None and not (present & set(wanted)):
                 return False
         return True
 

@@ -279,7 +279,12 @@ def main():
     check("filter fails OPEN, other games still shown",
           len([n for n in names if "UGA" not in n and "AUB" not in n]) == 3, names)
 
-    print("\ndivision filter: every participant must be in a checked division")
+    print("\ndivision filter: ONE side in a checked division is enough")
+    # Requiring every participant read as "FBS versus FBS only": a ranked side
+    # hosting an FCS school was dropped, which on a real Week 2 slate removed
+    # five of the twenty ranked matchups -- games about a team the viewer had
+    # explicitly checked the box for. What the setting is for is keeping
+    # FCS-versus-FCS out of a board configured for FBS.
     obj = make(sports, favs, 3, 3)
     obj.other_games_divisions = ["fbs"]
     obj._division_team_ids = division_sets(games)
@@ -287,12 +292,30 @@ def main():
     picked = obj._favorites_first(games, 3, 3)
     others = [g for g in picked if not obj._is_favorite_game(g)]
     check("the other slots are still filled", len(others) == 3, abbrs(others))
-    check("the game with one side outside the checked division is dropped",
-          all(g["id"] != games[0]["id"] for g in others), abbrs(others))
-    check("a game with an unchecked-division side is dropped",
+    check("the game with one checked side and one unchecked side is KEPT",
+          any(g["id"] == games[0]["id"] for g in others), abbrs(others))
+    check("every other game has at least one checked side",
           all(int(g["home_id"]) in obj._division_team_ids["fbs"]
-              and int(g["away_id"]) in obj._division_team_ids["fbs"]
+              or int(g["away_id"]) in obj._division_team_ids["fbs"]
               for g in others), abbrs(others))
+
+    # Straight at the rule, so the three cases cannot hide behind whichever
+    # games happen to sort first.
+    fbs_id = sorted(obj._division_team_ids["fbs"])[0]
+    fcs_id = sorted(obj._division_team_ids["fcs"])[0]
+    def matchup(home, away):
+        return {"home_id": home, "away_id": away,
+                "home_abbr": "H%d" % home, "away_abbr": "A%d" % away,
+                "broadcast": ""}
+    check("FBS vs FBS passes with only FBS checked",
+          obj._passes_other_filters(matchup(fbs_id, fbs_id)))
+    check("FBS vs FCS passes too -- one checked side is the rule",
+          obj._passes_other_filters(matchup(fbs_id, fcs_id)))
+    check("FCS vs FCS does not",
+          not obj._passes_other_filters(matchup(fcs_id, fcs_id)))
+    obj.other_games_divisions = ["fbs", "fcs"]
+    check("and checking FCS brings it back",
+          obj._passes_other_filters(matchup(fcs_id, fcs_id)))
 
     print("\na favourite from an unchecked division is STILL shown")
     # Someone can be genuinely into a smaller-division school; making them a
@@ -536,6 +559,33 @@ def main():
     probe._ranking_coverage_logged_at = 0.0
     probe._favorites_first(games, 3, 3)
     check("a poll that matches is not warned about", not quiet.messages, quiet.messages)
+
+    print("\nan unusable value in config.json must not blank the mode")
+    # These land in update()'s own try/except, so a string where an int belongs
+    # does not surface as an error -- it surfaces as a mode that renders
+    # nothing, which is indistinguishable from "no games today".
+    probe = make(sports, favs, 3, 3)
+    probe.logger = logging.getLogger("coercion_probe")
+    probe.mode_config = {"other_upcoming_games_to_show": "not a number",
+                         "other_rotation_interval_seconds": -5,
+                         "other_recent_games_to_show": 999}
+    check("a non-numeric count falls back to the default",
+          probe._setting_int("other_upcoming_games_to_show", 3, 0, 20) == 3)
+    check("a negative interval clamps to the floor",
+          probe._setting_int("other_rotation_interval_seconds", 1800, 0, 86400) == 0)
+    check("an oversized count clamps to the ceiling",
+          probe._setting_int("other_recent_games_to_show", 3, 0, 20) == 20)
+    check("a missing key uses the default",
+          probe._setting_int("not_present_at_all", 7, 0, 20) == 7)
+
+    check("a bare string division becomes one name, not three letters",
+          sports.SportsCore._normalise_divisions("fbs") == ["fbs"])
+    check("case and padding are normalised",
+          sports.SportsCore._normalise_divisions([" FBS ", "Fcs"]) == ["fbs", "fcs"])
+    check("an empty list stays empty -- that means no division filter",
+          sports.SportsCore._normalise_divisions([]) == [])
+    check("None is treated as empty rather than raising",
+          sports.SportsCore._normalise_divisions(None) == [])
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))

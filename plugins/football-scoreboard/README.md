@@ -554,7 +554,7 @@ Your favorites are **not** rotated. For upcoming games the soonest ones are the 
 
 Selection is otherwise purely chronological, and on a college slate most of what that returns is filler. Of ~950 upcoming games, roughly 250 involve a nationally ranked team; the rest are matchups most viewers have never heard of. Rotating harder just serves more of them, which is why `other_games_min_quality` defaults to `ranked`.
 
-`other_games_divisions` uses **every** team in a game, not just the higher-division one. Leaving `fcs` unchecked therefore also hides a ranked team hosting an FCS school — which is usually what people mean by "show me FBS games". Check `fcs` or `other` if you want them back.
+`other_games_divisions` needs **one** team in a checked division, not both. With only `fbs` checked you still get #12 Texas Tech hosting Abilene Christian — a game involving a team you asked for — while Abilene Christian vs Furman stays out. Check `fcs` or `other` to bring the smaller-division matchups in as well.
 
 Both filters **fail open**: if rankings cannot be fetched, or the division rosters do not resolve, the game is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
 

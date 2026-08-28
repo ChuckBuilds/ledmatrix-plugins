@@ -503,7 +503,7 @@
               "default": [
                 "fbs"
               ],
-              "description": "Which divisions the NON-favorite games may come from. Every team in a game must be in a checked division, so leaving FCS unchecked also hides a ranked team hosting an FCS school. Check FCS or Other to follow the smaller divisions. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
               "x-widget": "checkbox-group",
               "x-advanced": true
             }
@@ -987,7 +987,7 @@
               "default": [
                 "fbs"
               ],
-              "description": "Which divisions the NON-favorite games may come from. Every team in a game must be in a checked division, so leaving FCS unchecked also hides a ranked team hosting an FCS school. Check FCS or Other to follow the smaller divisions. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
               "x-widget": "checkbox-group",
               "x-advanced": true
             }
@@ -1432,7 +1432,7 @@
               "default": [
                 "fbs"
               ],
-              "description": "Which divisions the NON-favorite games may come from. Every team in a game must be in a checked division, so leaving FCS unchecked also hides a ranked team hosting an FCS school. Check FCS or Other to follow the smaller divisions. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
               "x-widget": "checkbox-group",
               "x-advanced": true
             }
@@ -1915,7 +1915,7 @@
               "default": [
                 "fbs"
               ],
-              "description": "Which divisions the NON-favorite games may come from. Every team in a game must be in a checked division, so leaving FCS unchecked also hides a ranked team hosting an FCS school. Check FCS or Other to follow the smaller divisions. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
               "x-widget": "checkbox-group",
               "x-advanced": true
             }
