@@ -147,7 +147,7 @@ Which mode you are in depends on whether `favorite_teams` is set and whether `sh
 
 | `favorite_teams` | `show_favorite_teams_only` | What you get |
 |---|---|---|
-| empty | either | The next N games league-wide, chronologically. |
+| empty | either | The next N games league-wide, chronologically. Every game shown is a non-favorite game, so the two filters below apply to all of them. |
 | set | **on** | Only your teams. The limit is a budget **per team**. |
 | set | **off** | **Your teams first, then other games to fill.** Both limits are **totals**. |
 
@@ -163,7 +163,7 @@ The third row is what most people want, and it did not exist before: with the fl
 | `other_recent_games_to_show` | matches `recent_games_to_show` | The same, for finished games. |
 | `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
 | `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked`, `broadcast`, or `any`. |
-| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. |
+| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. College football only — see the note below. |
 
 **Your favorite teams are never filtered by the last two** — follow a smaller-division team and its games always appear. Those settings only decide what fills the *remaining* slots.
 
@@ -173,7 +173,7 @@ Rather than widening the pool, the non-favorite slice **moves**: the window adva
 
 Both filters **fail open**: if the data behind them cannot be fetched, the game is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
 
-> `other_games_min_quality` and `other_games_divisions` only mean something for leagues with a national poll and divisions — that is, the college ones. Elsewhere they are inert and cost nothing: no poll is requested and no division lookup is made.
+> Both `other_games_min_quality` and `other_games_divisions` are inert in this plugin. `ranked` needs a national poll and the division filter needs ESPN's FBS/FCS group rosters; this league has neither, so every game passes both, and neither costs a request — no poll is fetched and no division lookup is made.
 
 
 ## License

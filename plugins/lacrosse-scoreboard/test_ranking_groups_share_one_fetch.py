@@ -76,11 +76,13 @@ def main():
     cache = Cache()
     if "cache_manager" in inspect.signature(DynamicTeamResolver.__init__).parameters:
         resolver = DynamicTeamResolver(cache_manager=cache)
-        keys = lambda: set(cache.writes)
+        def keys():
+            return set(cache.writes)
     else:
         resolver = DynamicTeamResolver()
         type(resolver)._rankings_cache = {}
-        keys = lambda: set(type(resolver)._rankings_cache)
+        def keys():
+            return set(type(resolver)._rankings_cache)
 
     fetches = []
     resolver._fetch_rankings = lambda sport: (fetches.append(sport) or list(POLL))

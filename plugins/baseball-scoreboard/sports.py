@@ -1427,13 +1427,24 @@ class SportsCore(ABC):
     # conferenceId is NOT usable for this: cross-division games put an FBS
     # conference on an FCS slate, so the id sets overlap and a game like
     # Merrimack at Delaware classifies as FBS.
-    _DIVISION_GROUPS: ClassVar[Dict[str, int]] = {"fbs": 80, "fcs": 81}
+    #
+    # Keyed by league, because FBS/FCS is a college FOOTBALL taxonomy and ESPN
+    # publishes those group rosters for that league alone. Every other college
+    # league was asked for the same two groups and answered with nothing
+    # usable -- college-baseball and both college-lacrosse leagues return HTTP
+    # 500, and men's and women's college basketball and college hockey return
+    # 200 with an empty item list. An empty roster fails open, so the setting
+    # never filtered anything there; it only cost two requests a day and a
+    # warning in the log, on every league that cannot have divisions at all.
+    _DIVISION_GROUPS_BY_LEAGUE: ClassVar[Dict[str, Dict[str, int]]] = {
+        "college-football": {"fbs": 80, "fcs": 81},
+    }
     _DIVISION_CACHE_TTL: ClassVar[int] = 24 * 60 * 60
     # A lookup that came back empty is retried on this shorter clock.
     _DIVISION_RETRY_SECONDS: ClassVar[int] = 10 * 60
 
     def _load_division_team_ids(self) -> Dict[str, set]:
-        """Team ids per college division. Two requests a day, college only.
+        """Team ids per college division. Two requests a day, one league.
 
         Returns empty sets on any failure -- the caller treats "unknown" as
         "allowed", because a division lookup that fails must not blank the
@@ -1455,9 +1466,10 @@ class SportsCore(ABC):
                 return self._division_team_ids
         self._division_team_ids = {}
         self._division_loaded_at = now
-        if "college" not in (self.league or "").lower():
+        groups = self._DIVISION_GROUPS_BY_LEAGUE.get((self.league or "").lower())
+        if not groups:
             return self._division_team_ids     # no divisions to speak of
-        for name, group in self._DIVISION_GROUPS.items():
+        for name, group in groups.items():
             ids = set()
             key = f"{self.league}_division_teams_{group}"
             try:
@@ -1554,6 +1566,24 @@ class SportsCore(ABC):
             if present is not None and not present.issubset(set(wanted)):
                 return False
         return True
+
+    def _filtered_or_all(self, games: List[Dict]) -> List[Dict]:
+        """The games worth watching, or all of them if that leaves none.
+
+        With no favourites configured every game selected is a non-favourite
+        game, so the quality and division settings have to apply here too. They
+        governed only the top-up slice, which this branch never uses, so a
+        board with an empty favourites list had both settings silently inert --
+        it could ask for ranked games only and still get the next N kickoffs.
+
+        Fails open as a whole, not just per check. `_passes_other_filters`
+        allows a game whose data could not be resolved, but a filter working
+        exactly as asked can still match nothing on a given day, and here there
+        is no favourite left to carry the mode -- an empty list is a blank
+        panel rather than a short one.
+        """
+        kept = [g for g in games if self._passes_other_filters(g)]
+        return kept or games
 
     def _other_games_window(self, others: List[Dict], limit: int) -> List[Dict]:
         """A rotating slice of the non-favourite games.
@@ -1832,7 +1862,7 @@ class SportsUpcoming(SportsCore):
             else:
                 # No favourites at all: the next N upcoming games league-wide.
                 team_games = sorted(
-                    processed_games,
+                    self._filtered_or_all(processed_games),
                     key=lambda g: g.get("start_time_utc")
                     or datetime.max.replace(tzinfo=timezone.utc),
                 )[:self.upcoming_games_to_show]
@@ -2456,7 +2486,7 @@ class SportsRecent(SportsCore):
             else:
                 # No favourites at all: the next N recent games league-wide.
                 team_games = sorted(
-                    processed_games,
+                    self._filtered_or_all(processed_games),
                     key=lambda g: g.get("start_time_utc")
                     or datetime.min.replace(tzinfo=timezone.utc),
                     reverse=True,

@@ -511,7 +511,7 @@ Which mode you are in depends on two things: whether `favorite_teams` is set, an
 
 | `favorite_teams` | `show_favorite_teams_only` | What you get |
 |---|---|---|
-| empty | either | The next N games league-wide, chronologically. |
+| empty | either | The next N games league-wide, chronologically. Every game shown is a non-favorite game, so the two filters below apply to all of them. |
 | set | **on** | Only your teams. `upcoming_games_to_show` is a budget **per team**. |
 | set | **off** | **Your teams first, then other games to fill.** Both limits are **totals**. |
 
@@ -558,7 +558,7 @@ Selection is otherwise purely chronological, and on a college slate most of what
 
 Both filters **fail open**: if rankings cannot be fetched, or the division rosters do not resolve, the game is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
 
-> These two settings only mean something for college leagues. The NFL has no poll and no divisions, so they are inert there and cost nothing.
+> These two settings only mean something for `ncaa_fb`. The NFL has no poll and no divisions, so both are inert there and cost nothing — no poll is requested and no division lookup is made. College football is also the only league ESPN publishes FBS/FCS group rosters for at all, so `other_games_divisions` does nothing in the other sports plugins either.
 
 ### A worked example
 

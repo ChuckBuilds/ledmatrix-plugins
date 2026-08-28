@@ -83,6 +83,30 @@ def schedule():
     return games
 
 
+def division_sets(games):
+    """FBS and FCS rosters covering BOTH sides of every fixture game.
+
+    Built from home_id alone, every away side landed in "other" and the filter
+    dropped the whole slate: `others` came back empty and the assertion below
+    ran over an empty list, which passes. It would have passed equally against
+    a filter that rejected everything, which is the failure it exists to catch.
+
+    One game straddles on purpose -- games[0] keeps its FBS home side and is
+    given an FCS away side -- because the rule under test is that EVERY
+    participant has to sit in a checked division, not just the home one. It is
+    the FIRST game deliberately: selection is chronological, so a straddler
+    further down never competes for a slot and the assertion cannot see it.
+    """
+    fbs = ({int(g["home_id"]) for g in games[:20]}
+           | {int(g["away_id"]) for g in games[:20]})
+    fcs = ({int(g["home_id"]) for g in games[20:]}
+           | {int(g["away_id"]) for g in games[20:]})
+    straddler = int(games[0]["away_id"])
+    fbs.discard(straddler)
+    fcs.add(straddler)
+    return {"fbs": fbs, "fcs": fcs}
+
+
 def make(sports, favorites, fav_limit, other_limit):
     """A bare object with just the attributes _favorites_first reads.
 
@@ -258,13 +282,13 @@ def main():
     print("\ndivision filter: every participant must be in a checked division")
     obj = make(sports, favs, 3, 3)
     obj.other_games_divisions = ["fbs"]
-    obj._division_team_ids = {
-        "fbs": {int(g["home_id"]) for g in games[:20]},
-        "fcs": {int(g["home_id"]) for g in games[20:]},
-    }
+    obj._division_team_ids = division_sets(games)
     obj._division_loaded_at = time.monotonic()
     picked = obj._favorites_first(games, 3, 3)
     others = [g for g in picked if not obj._is_favorite_game(g)]
+    check("the other slots are still filled", len(others) == 3, abbrs(others))
+    check("the game with one side outside the checked division is dropped",
+          all(g["id"] != games[0]["id"] for g in others), abbrs(others))
     check("a game with an unchecked-division side is dropped",
           all(int(g["home_id"]) in obj._division_team_ids["fbs"]
               and int(g["away_id"]) in obj._division_team_ids["fbs"]
@@ -278,10 +302,7 @@ def main():
     obj.other_games_min_quality = "ranked"
     obj.other_games_divisions = ["fbs"]
     obj._team_rankings_cache = {"T05H": 4}
-    obj._division_team_ids = {
-        "fbs": {int(g["home_id"]) for g in games[:20]},
-        "fcs": {int(g["home_id"]) for g in games[20:]},
-    }
+    obj._division_team_ids = division_sets(games)
     obj._division_loaded_at = time.monotonic()
     picked = obj._favorites_first(games, 3, 3)
     fav = [g for g in picked if obj._is_favorite_game(g)]
@@ -384,6 +405,59 @@ def main():
     probe2._division_loaded_at = time.monotonic() - (probe2._DIVISION_CACHE_TTL + 1)
     probe2._load_division_team_ids()
     check("but is refreshed after a day", bool(hits), hits)
+
+    print("\nwith no favourites configured the filters still apply")
+    # Every game selected in that branch is a non-favourite game, so the
+    # settings that govern non-favourite games have to reach it. They did not:
+    # the branch took the next N chronologically, whatever the user had asked
+    # for, and nothing said so.
+    probe = make(sports, [], 3, 3)
+    probe.other_games_min_quality = "ranked"
+    probe._team_rankings_cache = {"T05H": 4, "T09A": 12}
+    kept = probe._filtered_or_all(games)
+    check("only ranked games survive", bool(kept) and all(
+        g["home_abbr"] in ("T05H", "T09A") or g["away_abbr"] in ("T05H", "T09A")
+        for g in kept), [g["id"] for g in kept])
+
+    probe._team_rankings_cache = {"NOT_PLAYING_TODAY": 1}
+    check("a filter that matches nothing keeps the whole list rather than "
+          "blanking the mode", len(probe._filtered_or_all(games)) == len(games))
+
+    # The helper being correct is half of it; both branches have to call it.
+    # That is what was missing -- the code and the settings were both there and
+    # the one line joining them was not, which no behavioural check on the
+    # helper itself can see.
+    import inspect
+    for cls_name in ("SportsUpcoming", "SportsRecent"):
+        src = inspect.getsource(getattr(sports, cls_name).update)
+        check("%s filters its no-favourites branch" % cls_name,
+              "_filtered_or_all(processed_games)" in src)
+
+    print("\nthe division lookup runs for the one league that has divisions")
+    # FBS/FCS group rosters exist for college football and nowhere else:
+    # college-baseball and college-lacrosse answer 500, college basketball and
+    # college hockey answer 200 with an empty list. Asking anyway cost two
+    # requests a day and a warning per league, and filtered nothing.
+    for league, expected in (("college-football", True),
+                             ("college-baseball", False),
+                             ("mens-college-basketball", False),
+                             ("nfl", False)):
+        probe = make(sports, favs, 3, 3)
+        probe.league = league
+        probe.cache_manager = None
+        probe._division_team_ids = None
+        probe._division_loaded_at = 0.0
+        asked = []
+
+        class _Recorder:
+            def get(self, *a, **k):
+                asked.append(a[0] if a else "")
+                raise RuntimeError("offline")
+
+        probe.session = _Recorder()
+        probe._load_division_team_ids()
+        check("%-24s division lookup = %s" % (league, expected),
+              bool(asked) is expected, asked)
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))

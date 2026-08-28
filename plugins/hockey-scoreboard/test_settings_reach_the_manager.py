@@ -141,22 +141,22 @@ def main():
     if not takes_league:
         # Single-league plugins read self.config directly; nesting the block
         # under a league name would hide it from them entirely.
-        shapes.append(("", dict(league_block)))
+        shapes.append(("", lambda b: dict(b)))
     else:
         for league in leagues:
             if not league:
                 continue
-            shapes.append((league, {league: league_block}))
-            shapes.append((league, {"leagues": {league: league_block}}))
-        shapes.append(("eng.1", {"leagues": {"eng.1": league_block}}))
+            shapes.append((league, lambda b, l=league: {l: b}))
+            shapes.append((league, lambda b, l=league: {"leagues": {l: b}}))
+        shapes.append(("eng.1", lambda b: {"leagues": {"eng.1": b}}))
 
     # Try every shape and keep the one that fits best. Stopping at the first
     # shape that merely PRODUCED a block is wrong: feeding the config in the
     # wrong shape still yields a block, just one full of defaults -- which
     # looks exactly like the bug this test exists to catch.
-    best, best_league, best_score = None, None, -1
-    for league, cfg in shapes:
-        obj.config = cfg
+    best, best_league, best_build, best_score = None, None, None, -1
+    for league, build in shapes:
+        obj.config = build(league_block)
         try:
             adapted = adapt(league)
         except Exception as exc:
@@ -169,7 +169,7 @@ def main():
                 continue
             score = sum(1 for k, want in PROBE.items() if value.get(k) == want)
             if score > best_score:
-                best, best_league, best_score = value, league, score
+                best, best_league, best_build, best_score = value, league, build, score
         if best_score == len(PROBE):
             break
 
@@ -184,6 +184,60 @@ def main():
         got = best.get(key)
         check("%s reaches the manager (%r)" % (key, want), got == want,
               "got %r" % (got,))
+
+    # A location the schema OFFERS has to be a location that works. Two of
+    # these plugins declare the same keys twice -- at the root of the config
+    # and inside game_limits -- and the web UI renders both, so whichever one
+    # the user fills in is the one that has to arrive. Each adapter read one of
+    # the two, which left the other in the same state as a key missing from the
+    # translation entirely: accepted, saved, ignored. Plugins that declare them
+    # in one place are checked for that one place.
+    block_props = {}
+    props = (schema.get("properties") or {})
+    if not takes_league:
+        block_props = props
+    else:
+        node = props.get(best_league) or \
+            ((props.get("leagues") or {}).get("properties") or {}).get(best_league) or {}
+        block_props = node.get("properties") or {}
+    # Not just game_limits: hockey and lacrosse declare the same keys under
+    # filtering. Take whichever sub-block a plugin's own schema uses rather
+    # than naming one and reporting "nothing to check" for the rest.
+    places = []
+    if any(k in block_props for k in PROBE):
+        places.append((None, block_props))
+    for name, node in sorted(block_props.items()):
+        sub = (node or {}).get("properties") if isinstance(node, dict) else None
+        if isinstance(sub, dict) and any(k in sub for k in PROBE):
+            places.append((name, sub))
+    if not places:
+        print("  (the schema declares none of these keys on this block; "
+              "the location check has nothing to check)")
+
+    for where, declared_in in places:
+        only = {"enabled": True, "favorite_teams": ["UGA"]}
+        if where is None:
+            only.update(PROBE)
+        else:
+            only[where] = dict(PROBE)
+        obj.config = best_build(only)
+        try:
+            adapted = adapt(best_league)
+        except Exception as exc:
+            check("the translation survives a %s-only config"
+                  % (where or "root"), False, "%s: %s" % (type(exc).__name__, exc))
+            continue
+        landed, landed_score = {}, -1
+        for value in (adapted or {}).values():
+            if not isinstance(value, dict) or not any(k in value for k in PROBE):
+                continue
+            score = sum(1 for k, want in PROBE.items() if value.get(k) == want)
+            if score > landed_score:
+                landed, landed_score = value, score
+        for key in [k for k in PROBE if k in declared_in]:
+            check("%s survives a config that only sets it in %s"
+                  % (key, where or "the config root"),
+                  landed.get(key) == PROBE[key], "got %r" % (landed.get(key),))
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))

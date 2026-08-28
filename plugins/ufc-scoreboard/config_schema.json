@@ -245,7 +245,7 @@
                 "broadcast",
                 "ranked"
               ],
-              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this.",
+              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots.",
               "default": "ranked",
               "x-advanced": true
             },
@@ -264,7 +264,7 @@
               "default": [
                 "fbs"
               ],
-              "description": "Which divisions the NON-favorite games may come from. Every team in a game must be in a checked division, so leaving FCS unchecked also hides a ranked team hosting an FCS school. Check FCS or Other to follow the smaller divisions. Your favorite teams are never filtered by this, so a team from any division still always appears. Only meaningful for college leagues; ignored elsewhere.",
+              "description": "Which divisions the NON-favorite games may come from. Every team in a game must be in a checked division, so leaving FCS unchecked also hides a ranked team hosting an FCS school. Check FCS or Other to follow the smaller divisions. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
               "x-widget": "checkbox-group",
               "x-advanced": true
             }
