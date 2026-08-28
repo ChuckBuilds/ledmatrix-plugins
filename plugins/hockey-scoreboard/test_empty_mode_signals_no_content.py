@@ -72,6 +72,14 @@ class _Manager:
         self.draws += 1
         self.display_manager.update_display()
 
+    # SportsUpcoming/Recent.display() re-cut the non-favourite slice before the
+    # dwell check. The real method is bound rather than stubbed: with no
+    # selection pools it returns False without touching anything else, which is
+    # what an empty mode should do, and a no-op here would hide a regression
+    # that made it raise.
+    _rotate_other_games_on_display = sports.SportsCore._rotate_other_games_on_display
+    _advance_other_games_if_due = sports.SportsCore._advance_other_games_if_due
+
 
 GAME = {'id': 'g1', 'away_abbr': 'TB', 'home_abbr': 'BOS'}
 

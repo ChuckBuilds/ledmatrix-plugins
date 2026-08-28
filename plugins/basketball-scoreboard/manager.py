@@ -830,6 +830,9 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "update_interval_seconds", 300
                 ),
                 "live_update_interval": league_config.get("live_update_interval", 30),
+                "recent_update_interval": league_config.get("recent_update_interval", 3600),
+                "upcoming_update_interval": league_config.get("upcoming_update_interval", 3600),
+                "stale_game_timeout": league_config.get("stale_game_timeout", 300),
                 "live_game_duration": league_config.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": league_config.get(
                     "non_favorite_live_game_duration", 0

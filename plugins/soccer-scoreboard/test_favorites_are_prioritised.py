@@ -22,6 +22,7 @@ Run: <core-venv>/bin/python plugins/soccer-scoreboard/test_favorites_are_priorit
 """
 
 import logging
+import threading
 import os
 import sys
 import time
@@ -586,6 +587,60 @@ def main():
           sports.SportsCore._normalise_divisions([]) == [])
     check("None is treated as empty rather than raising",
           sports.SportsCore._normalise_divisions(None) == [])
+
+    print("\nthe slice rotates between fetches, not only during one")
+    # _other_games_window only ever ran from update(), which returns early until
+    # upcoming_update_interval (an hour, and not settable) has passed. So a
+    # four-minute rotation did not produce fifteen slices an hour, it produced
+    # one jump of fifteen windows -- the setting said one thing and the board
+    # did another.
+    clock = {"t": 10_000.0}
+    real_monotonic = sports.time.monotonic
+    sports.time.monotonic = lambda: clock["t"]
+    try:
+        probe = make(sports, favs, 3, 3)
+        probe.other_rotation_interval_seconds = 240
+        probe._games_lock = threading.RLock()
+        probe.games_list = probe._favorites_first(games, 3, 3)
+        probe.current_game_index = 0
+        probe.current_game = probe.games_list[0]
+        probe.last_game_switch = 0.0
+        first = [g["id"] for g in probe.games_list]
+
+        check("nothing rotates before the interval is up",
+              not probe._rotate_other_games_on_display())
+        check("and the list is untouched",
+              [g["id"] for g in probe.games_list] == first)
+
+        clock["t"] += 241
+        check("once it passes, the slice is re-cut on the display path",
+              probe._rotate_other_games_on_display())
+        second = [g["id"] for g in probe.games_list]
+        check("and the games actually changed", second != first,
+              (abbrs(probe.games_list), first))
+
+        favourite_ids = {g["id"] for g in games if probe._is_favorite_game(g)}
+        check("favourites are still there after the cut",
+              len(favourite_ids & set(second)) == len(favourite_ids & set(first)),
+              abbrs(probe.games_list))
+
+        clock["t"] += 241
+        probe.current_game = probe.games_list[0]
+        probe.current_game_index = 0
+        probe._rotate_other_games_on_display()
+        if probe.current_game and probe.current_game["id"] in [g["id"] for g in probe.games_list]:
+            check("a surviving card keeps its place rather than jumping to the top",
+                  probe.games_list[probe.current_game_index]["id"] == probe.current_game["id"])
+        else:
+            check("a card that did not survive the cut resets to the top",
+                  probe.current_game_index == 0)
+
+        probe.other_rotation_interval_seconds = 0
+        clock["t"] += 10_000
+        check("0 pins the window, on this path too",
+              not probe._rotate_other_games_on_display())
+    finally:
+        sports.time.monotonic = real_monotonic
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))

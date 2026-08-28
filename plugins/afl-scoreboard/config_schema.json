@@ -329,6 +329,14 @@
       "description": "Update interval for live games (seconds)",
       "x-advanced": true
     },
+    "stale_game_timeout": {
+      "type": "integer",
+      "default": 300,
+      "minimum": 60,
+      "maximum": 3600,
+      "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+      "x-advanced": true
+    },
     "recent_update_interval": {
       "type": "integer",
       "default": 3600,
@@ -1427,6 +1435,7 @@
     "upcoming_game_duration",
     "update_interval_seconds",
     "live_update_interval",
+    "stale_game_timeout",
     "recent_update_interval",
     "upcoming_update_interval",
     "recent_games_to_show",

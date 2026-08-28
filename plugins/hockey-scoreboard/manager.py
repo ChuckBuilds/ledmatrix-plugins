@@ -785,6 +785,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         live_update_interval = resolve_value(["update_intervals", "live"], ["live_update_interval"], 15)
         recent_update_interval = resolve_value(["update_intervals", "recent"], ["recent_update_interval"], 3600)
         upcoming_update_interval = resolve_value(["update_intervals", "upcoming"], ["upcoming_update_interval"], 3600)
+        stale_game_timeout = resolve_value(["update_intervals", "stale_game_timeout"], ["stale_game_timeout"], 300)
 
         # Resolve display durations
         def resolve_live_duration() -> int:
@@ -848,6 +849,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "live_update_interval": live_update_interval,
                 "recent_update_interval": recent_update_interval,
                 "upcoming_update_interval": upcoming_update_interval,
+                "stale_game_timeout": stale_game_timeout,
                 "live_game_duration": resolve_live_duration(),
                 "non_favorite_live_game_duration": resolve_non_favorite_live_duration(),
                 "background_service": {

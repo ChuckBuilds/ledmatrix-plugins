@@ -289,6 +289,9 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 ),
                 "update_interval_seconds": cfg.get("update_interval_seconds", 300),
                 "live_update_interval": cfg.get("live_update_interval", 30),
+                "recent_update_interval": cfg.get("recent_update_interval", 3600),
+                "upcoming_update_interval": cfg.get("upcoming_update_interval", 3600),
+                "stale_game_timeout": cfg.get("stale_game_timeout", 300),
                 "live_game_duration": cfg.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": cfg.get(
                     "non_favorite_live_game_duration", 0

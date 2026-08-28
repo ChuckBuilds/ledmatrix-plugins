@@ -1892,6 +1892,38 @@ class SportsCore(ABC):
                 others.append(game)
         self._check_ranking_coverage(unfiltered)
 
+        self._selection_pools = {
+            "favorites": favorites,
+            "others": others,
+            "unfiltered": unfiltered,
+            "favorite_limit": favorite_limit,
+            "other_limit": other_limit,
+            "newest_first": newest_first,
+        }
+        return self._compose_selection()
+
+    def _compose_selection(self) -> List[Dict]:
+        """Favourites plus the current slice of others, in schedule order.
+
+        Split out of _favorites_first so the slice can be re-cut between
+        fetches. The pools are settled -- which games exist, and which of them
+        are worth a slot -- while WHICH of the others is on screen is a display
+        decision, and gating it on the fetch made the rotation interval a lie:
+        update() returns early until upcoming_update_interval has passed, so a
+        four-minute rotation actually stepped fifteen windows once an hour.
+        Same lesson as _advance_live_game_if_due further down this file.
+        """
+        pools = self._selection_pools
+        favorites, others = pools["favorites"], pools["others"]
+        favorite_limit, other_limit = pools["favorite_limit"], pools["other_limit"]
+        newest_first = pools["newest_first"]
+        if newest_first:
+            def key(g):
+                return g.get("start_time_utc") or datetime.min.replace(tzinfo=timezone.utc)
+        else:
+            def key(g):
+                return g.get("start_time_utc") or datetime.max.replace(tzinfo=timezone.utc)
+
         selected = favorites[:max(0, favorite_limit)]
         selected.extend(self._other_games_window(others, max(0, other_limit)))
         if not selected and other_limit > 0:
@@ -1904,12 +1936,68 @@ class SportsCore(ABC):
             # `_filtered_or_all` makes for a board with no favourites at all.
             # `other_limit` of 0 is an explicit "favourites only", so that one
             # is left to go quiet as asked.
-            selected = self._other_games_window(unfiltered, max(0, other_limit))
+            selected = self._other_games_window(pools["unfiltered"], max(0, other_limit))
         # Re-sort so the card order still reads as a schedule. Selection decides
         # WHICH games; it should not reorder them into favourites-then-others,
         # which would show next week's UGA game before tonight's.
         selected.sort(key=key, reverse=newest_first)
         return selected
+
+    def _rotate_other_games_on_display(self) -> bool:
+        """Swap in a freshly cut slice when the rotation interval has passed.
+
+        Returns True when the list changed, so the caller forces a redraw.
+
+        The card currently on screen keeps its place if it survived the cut:
+        rotating the pool should change what comes NEXT, not interrupt whatever
+        someone is reading. Only when it is gone does the index reset, and then
+        the dwell resets with it so the replacement gets a full turn rather than
+        the tail of its predecessor's.
+        """
+        rebuilt = self._advance_other_games_if_due()
+        if not rebuilt:
+            return False
+        with self._games_lock:
+            if [g.get("id") for g in rebuilt] == [g.get("id") for g in self.games_list]:
+                return False
+            current_id = (self.current_game or {}).get("id")
+            self.games_list = rebuilt
+            for index, game in enumerate(rebuilt):
+                if game.get("id") == current_id:
+                    self.current_game_index = index
+                    self.current_game = game
+                    break
+            else:
+                self.current_game_index = 0
+                self.current_game = rebuilt[0]
+                self.last_game_switch = time.time()
+            self.logger.info(
+                "Rotated the other-games slice to: %s",
+                ", ".join("%s@%s" % (g.get("away_abbr"), g.get("home_abbr"))
+                          for g in rebuilt),
+            )
+        return True
+
+    def _advance_other_games_if_due(self) -> List[Dict]:
+        """Re-cut the non-favourite slice on the display path, or [] if not due.
+
+        Costs one list slice and a sort of at most a few games -- no fetch, no
+        parsing, no network. Returns the new list rather than assigning it,
+        because the two callers keep different bookkeeping around games_list
+        and both hold their own lock while they swap it in.
+        """
+        pools = getattr(self, "_selection_pools", None)
+        if not pools:
+            return []
+        interval = self.other_rotation_interval_seconds
+        others, limit = pools["others"], max(0, pools["other_limit"])
+        if interval <= 0 or limit <= 0 or len(others) <= limit:
+            return []       # pinned, favourites-only, or nothing to rotate through
+        if not self._other_window_rotated_at:
+            return []       # no window has been cut yet; update() does the first
+        if time.monotonic() - self._other_window_rotated_at < interval:
+            return []
+        return self._compose_selection()
 
 
 class SportsUpcoming(SportsCore):
@@ -2434,6 +2522,11 @@ class SportsUpcoming(SportsCore):
                 )  # Changed log prefix
                 self.last_warning_time = current_time
             return False  # Skip display update
+
+        # Before the dwell check, so a fresh slice is on screen for a full
+        # duration rather than for whatever was left of the previous card's.
+        if self._rotate_other_games_on_display():
+            force_clear = True
 
         try:
             current_time = time.time()
@@ -3014,6 +3107,11 @@ class SportsRecent(SportsCore):
             if not self.games_list and self.current_game:
                 self.current_game = None  # Clear internal state if list becomes empty
             return False
+
+        # Before the dwell check, so a fresh slice is on screen for a full
+        # duration rather than for whatever was left of the previous card's.
+        if self._rotate_other_games_on_display():
+            force_clear = True
 
         try:
             current_time = time.time()

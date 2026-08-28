@@ -438,6 +438,14 @@
               "maximum": 300,
               "description": "Update interval for live NCAA Men's Lacrosse games"
             },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
             "recent": {
               "x-advanced": true,
               "type": "integer",
@@ -912,6 +920,14 @@
               "minimum": 10,
               "maximum": 300,
               "description": "Update interval for live NCAA Women's Lacrosse games"
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
             },
             "recent": {
               "x-advanced": true,

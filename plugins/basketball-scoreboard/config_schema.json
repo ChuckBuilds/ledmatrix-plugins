@@ -420,6 +420,30 @@
           "maximum": 300,
           "description": "How often to update live game data (seconds)"
         },
+        "recent_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+          "x-advanced": true
+        },
+        "upcoming_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+          "x-advanced": true
+        },
+        "stale_game_timeout": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 60,
+          "maximum": 3600,
+          "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+          "x-advanced": true
+        },
         "update_interval_seconds": {
           "x-advanced": true,
           "type": "integer",
@@ -904,6 +928,30 @@
           "maximum": 300,
           "description": "How often to update live game data (seconds)"
         },
+        "recent_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+          "x-advanced": true
+        },
+        "upcoming_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+          "x-advanced": true
+        },
+        "stale_game_timeout": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 60,
+          "maximum": 3600,
+          "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+          "x-advanced": true
+        },
         "update_interval_seconds": {
           "x-advanced": true,
           "type": "integer",
@@ -1348,6 +1396,30 @@
           "minimum": 5,
           "maximum": 300,
           "description": "How often to update live game data (seconds)"
+        },
+        "recent_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+          "x-advanced": true
+        },
+        "upcoming_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+          "x-advanced": true
+        },
+        "stale_game_timeout": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 60,
+          "maximum": 3600,
+          "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+          "x-advanced": true
         },
         "update_interval_seconds": {
           "x-advanced": true,
@@ -1831,6 +1903,30 @@
           "minimum": 5,
           "maximum": 300,
           "description": "How often to update live game data (seconds)"
+        },
+        "recent_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+          "x-advanced": true
+        },
+        "upcoming_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+          "x-advanced": true
+        },
+        "stale_game_timeout": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 60,
+          "maximum": 3600,
+          "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+          "x-advanced": true
         },
         "update_interval_seconds": {
           "x-advanced": true,

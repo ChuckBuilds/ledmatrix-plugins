@@ -49,6 +49,12 @@ PROBE = {
     "other_rotation_interval_seconds": 900,
     "other_games_min_quality": "broadcast",
     "other_games_divisions": ["fcs"],
+    # Read by sports.py out of the translated config, and for a while declared
+    # in three plugins' schemas while no translation carried them -- a control
+    # the form offered and the board ignored.
+    "recent_update_interval": 1234,
+    "upcoming_update_interval": 2345,
+    "stale_game_timeout": 456,
 }
 
 
