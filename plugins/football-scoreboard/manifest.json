@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.26.0",
+  "version": "2.26.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.26.1",
+      "released": "2026-08-29",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fetch a team's badge when it is not already on disk. The shipped logo set covers FBS only, so an FCS opponent -- Furman, Tennessee State -- had no file and its card drew without logos. Nothing was logged and nothing errored, because nothing had failed: the file simply was not there. The download now happens where the game dict is built, on the data thread, using the logo URL ESPN returns in the same payload as the game. That also keeps the HTTP round trip off the render thread. On a live rig this pulled 96 missing badges on the first pass, taking the local set from 209 to 307. A team whose logo genuinely cannot be fetched is remembered so it is not re-requested every pass, but a badge written by a concurrent manager counts as success rather than a failure."
+    },
     {
       "version": "2.26.0",
       "released": "2026-08-23",

@@ -242,6 +242,9 @@ class SportsCore(ABC):
         self.session.mount("http://", adapter)
 
         self._logo_cache = {}
+        # Teams whose logo could not be fetched. Remembered so a badge
+        # ESPN has no file for is not re-requested on every data pass.
+        self._logo_fetch_failed = set()
 
         # Set up headers
         self.headers = {
@@ -1346,6 +1349,7 @@ class SportsCore(ABC):
                 # the raw config, can color a final score by the result.
                 "favorite_teams": list(self.favorite_teams or []),
             }
+            self._ensure_team_logos(details)
             return details, home_team, away_team, status, situation
         except Exception as e:
             # Log the problematic event structure if possible
@@ -1354,6 +1358,71 @@ class SportsCore(ABC):
                 exc_info=True,
             )
             return None, None, None, None, None
+
+    def _ensure_team_logos(self, details: dict) -> None:
+        """Fetch any badge this game needs that is not on disk yet.
+
+        Done here, on the data thread where the game dict is built, rather than
+        left to the renderer: ESPN hands us the logo URL in the same payload as
+        the game, so the moment we know a team will be shown we already know
+        where to get its badge. It also keeps the download off the render
+        thread, where an HTTP round trip stalls the panel.
+
+        The shipped set covers FBS only, so an FCS opponent -- Furman,
+        Tennessee State -- has no file and the card drew without logos. Nothing
+        was logged, because nothing had failed: the file simply was not there.
+
+        A team whose logo cannot be fetched is remembered, so one missing badge
+        does not mean a request on every pass for the rest of the session.
+        """
+        for side in ("home", "away"):
+            abbr = details.get("%s_abbr" % side)
+            logo_path = details.get("%s_logo_path" % side)
+            if not abbr or not logo_path:
+                continue
+            # Existence is checked before the failed set, not after: the live,
+            # recent and upcoming managers each build game dicts, so two can
+            # want the same badge at once. The one that loses that race sees no
+            # file yet and records a failure -- and if the set were consulted
+            # first, it would keep skipping a logo the winner had since written.
+            try:
+                if Path(logo_path).exists():
+                    continue
+            except OSError:
+                continue
+            if abbr in self._logo_fetch_failed:
+                continue
+
+            logo_url = details.get("%s_logo_url" % side)
+            self.logger.info(
+                "No local logo for %s; fetching it now", abbr
+            )
+            try:
+                fetched = download_missing_logo(
+                    self.sport_key,
+                    details.get("%s_id" % side),
+                    abbr,
+                    Path(logo_path),
+                    logo_url,
+                )
+            except Exception:
+                self.logger.warning(
+                    "Logo fetch raised for %s", abbr, exc_info=True
+                )
+                self._logo_fetch_failed.add(abbr)
+                continue
+
+            # Re-check the file rather than trusting the return value: a
+            # concurrent manager may have written it while this call was in
+            # flight, which is a success from the panel's point of view.
+            if fetched or Path(logo_path).exists():
+                self.logger.info("Downloaded logo for %s", abbr)
+            else:
+                self.logger.warning(
+                    "Could not fetch a logo for %s; its card will draw without one",
+                    abbr,
+                )
+                self._logo_fetch_failed.add(abbr)
 
     @abstractmethod
     def _extract_game_details(self, game_event: dict) -> dict | None:
