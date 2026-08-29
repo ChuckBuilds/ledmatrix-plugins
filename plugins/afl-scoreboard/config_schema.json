@@ -31,7 +31,7 @@
         "switch_upcoming_center": {
           "type": "string",
           "title": "Middle of a Full-Screen Upcoming Scoreboard",
-          "description": "What to show between the two logos on the full-screen (switch mode) scoreboard before a game starts. Defaults to the stacked date and time, which is what this display has always shown. Pick the matchup separator to use the same VS / @ / at text as the scroll and Vegas cards, or \"Same as scroll and Vegas\" to follow the setting above. Football's beta adaptive layout always follows the setting above.",
+          "description": "What to show between the two logos on the full-screen (switch mode) scoreboard before a game starts. Defaults to the stacked date and time, which is what this display has always shown. Pick the matchup separator to use the same VS / @ / at text as the scroll and Vegas cards, or \"Same as scroll and Vegas\" to follow the setting above.",
           "enum": [
             "date_time",
             "vs",
@@ -74,6 +74,31 @@
               "day_first": "19 Sep",
               "numeric_day_first": "19/9",
               "weekday": "Fri Sep 19"
+            }
+          }
+        },
+        "switch_date_format": {
+          "type": "string",
+          "title": "Full-Screen Date Format",
+          "description": "How the date is written on the full-screen (switch mode) scoreboard. Defaults to \"9/19\", which is what this display has always drawn, so it does not change until you pick something else. Choose \"Same as scroll and Vegas\" to follow the Date Format setting above instead.",
+          "enum": [
+            "numeric",
+            "abbrev",
+            "day_first",
+            "numeric_day_first",
+            "weekday",
+            "inherit"
+          ],
+          "default": "numeric",
+          "x-advanced": true,
+          "x-options": {
+            "labels": {
+              "numeric": "9/19",
+              "abbrev": "Sep 19",
+              "day_first": "19 Sep",
+              "numeric_day_first": "19/9",
+              "weekday": "Fri Sep 19",
+              "inherit": "Same as scroll and Vegas"
             }
           }
         },

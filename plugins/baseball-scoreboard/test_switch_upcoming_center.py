@@ -187,22 +187,52 @@ def main():
     check("an unknown value falls back to the stacked date and time",
           list(junk.getdata()) == list(reference.getdata()) and junk_header is True)
 
+    # -- 4b. the config a REAL INSTALL hands the plugin --
+    # The decisive case, and the one the first cut of this test missed by
+    # only ever passing configs a human would type. The core merges schema
+    # defaults into the config on every load, recursively, so every key in
+    # the block arrives set -- "the user did not touch it" is not a state
+    # this code ever sees. Rendering under those exact defaults is the only
+    # honest check that an untouched panel is unchanged.
+    import json as _json
+    schema = _json.loads(
+        (plugin_dir / "config_schema.json").read_text())["properties"]["scroll_card"]
+    materialised = {k: v["default"] for k, v in schema["properties"].items()
+                    if "default" in v}
+    real_install, real_header = render({"scroll_card": materialised})
+    check("a real install's materialised defaults render the old layout",
+          list(real_install.getdata()) == list(reference.getdata()))
+    check("a real install still draws the header", real_header is True)
+    check("the block's own default for the full-screen date is the historic one",
+          materialised.get("switch_date_format") == "numeric")
+    # date_format's default is "abbrev" and the scroll card renders it, so
+    # reading the shared key here would have restyled 9/19 to Sep 19 on every
+    # existing panel. Pinned as a rendered pixel comparison above and as the
+    # formatter's answer here.
+    check("the scroll card's date_format does not reach this display on its own",
+          Bug({"scroll_card": {"date_format": "abbrev"}})
+          ._format_game_date("9/19", GAME) == "9/19")
+    check("switch_date_format: inherit follows the scroll card",
+          Bug({"scroll_card": {"switch_date_format": "inherit",
+                               "date_format": "abbrev"}})
+          ._format_game_date("9/19", GAME) == "Sep 19")
+
     # -- 5. the formatting keys reach this display --
     bug = Bug({"scroll_card": {"time_format": "24h"}})
     check("time_format: 24h converts the time",
           bug._format_game_time("7:05PM") == "19:05")
     check("time_format: unset leaves the 12h string alone",
           Bug({})._format_game_time("7:05PM") == "7:05PM")
-    check("date_format: unset leaves the m/d string alone, so no panel restyles",
+    check("switch_date_format: unset leaves the m/d string alone",
           Bug({})._format_game_date("9/19", GAME) == "9/19")
-    check("date_format: abbrev rewrites the date",
-          Bug({"scroll_card": {"date_format": "abbrev"}})
+    check("switch_date_format: abbrev rewrites the date",
+          Bug({"scroll_card": {"switch_date_format": "abbrev"}})
           ._format_game_date("9/19", GAME) == "Sep 19")
-    check("date_format: weekday uses the game's start time",
-          Bug({"scroll_card": {"date_format": "weekday"}})
+    check("switch_date_format: weekday uses the game's start time",
+          Bug({"scroll_card": {"switch_date_format": "weekday"}})
           ._format_game_date("9/19", GAME) == "Fri Sep 19")
-    check("date_format: day_first rewrites the date",
-          Bug({"scroll_card": {"date_format": "day_first"}})
+    check("switch_date_format: day_first rewrites the date",
+          Bug({"scroll_card": {"switch_date_format": "day_first"}})
           ._format_game_date("9/19", GAME) == "19 Sep")
 
     no_time, _ = render({"scroll_card": {"show_time": False}})
@@ -217,6 +247,38 @@ def main():
     swapped, _ = render({"scroll_card": {"swap_date_time": True}})
     check("swap_date_time: puts the time on top",
           list(swapped.getdata()) != list(default_img.getdata()))
+
+    # The font follows the text, not the row -- the time in the larger "time"
+    # face and the date in the smaller "detail" one, as the scroll card does.
+    # Pinning the faces to the rows instead put a swapped date into the 8px
+    # face, where a long date ran off both edges of a 64px panel.
+    #
+    # Measured against what each face would actually produce, rather than
+    # against "does it fit": clipping means an overflowing string simply
+    # stops being drawn, so a width bound can never see the bug.
+    def _ink_width(image, y0, y1):
+        """Horizontal extent of lit pixels in a band, 0 if the band is dark."""
+        pixels = image.load()
+        xs = [x for y in range(max(0, y0), min(HEIGHT, y1))
+              for x in range(WIDTH) if pixels[x, y] != (0, 0, 0)]
+        return (max(xs) - min(xs) + 1) if xs else 0
+
+    probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
+    detail_font = at_bug.fonts.get("detail") or at_bug.fonts["time"]
+    long_date = Bug({"scroll_card": {"switch_date_format": "weekday"}}) \
+        ._format_game_date(GAME["game_date"], GAME)
+    detail_w = probe.textlength(long_date, font=detail_font)
+    time_w = probe.textlength(long_date, font=at_bug.fonts["time"])
+    if detail_w == time_w:
+        check("SKIPPED: this plugin's detail and time faces are the same size", True)
+    else:
+        cfg = {"switch_upcoming_center": "vs", "vs_text": "@",
+               "switch_date_format": "weekday", "swap_date_time": True}
+        flipped, _ = render({"scroll_card": cfg})
+        # Swapped puts the date on the top row; the outline adds a pixel a side.
+        top_ink = _ink_width(flipped, 0, 9)
+        check("vs + swap_date_time: the date is drawn in the small detail face",
+              top_ink and abs(top_ink - (detail_w + 2)) < abs(top_ink - (time_w + 2)))
 
     # -- 6. the layout offsets the schema advertises still move things --
     nudged, _ = render(

@@ -77,6 +77,31 @@
             }
           }
         },
+        "switch_date_format": {
+          "type": "string",
+          "title": "Full-Screen Date Format",
+          "description": "How the date is written on the full-screen (switch mode) scoreboard. Defaults to \"9/19\", which is what this display has always drawn, so it does not change until you pick something else. Choose \"Same as scroll and Vegas\" to follow the Date Format setting above instead.",
+          "enum": [
+            "numeric",
+            "abbrev",
+            "day_first",
+            "numeric_day_first",
+            "weekday",
+            "inherit"
+          ],
+          "default": "numeric",
+          "x-advanced": true,
+          "x-options": {
+            "labels": {
+              "numeric": "9/19",
+              "abbrev": "Sep 19",
+              "day_first": "19 Sep",
+              "numeric_day_first": "19/9",
+              "weekday": "Fri Sep 19",
+              "inherit": "Same as scroll and Vegas"
+            }
+          }
+        },
         "time_format": {
           "type": "string",
           "title": "Time Format",

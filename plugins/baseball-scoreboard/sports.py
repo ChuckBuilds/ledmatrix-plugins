@@ -617,19 +617,29 @@ class SportsCore(ABC):
         """Separator drawn between the teams -- "VS", "@", "at", anything."""
         return str(self._card_option("vs_text", "VS"))
 
-    def _format_game_date(self, date_text: str, game: Optional[Dict] = None) -> str:
-        """Format an upcoming date per scroll_card.date_format.
+    def _switch_date_format(self) -> str:
+        """Date style for the full-screen scorebug.
 
-        Unset means unchanged. _extract_game_details_common already emits
-        "9/19", which is the "numeric" style, so defaulting to the schema's
-        "abbrev" here would restyle every existing panel on update. The key
-        only takes effect once it is actually set.
+        Its own key rather than the shared ``date_format`` because the two
+        displays disagree about the default: the scroll card renders "Sep 19"
+        while _extract_game_details_common emits "9/19", the "numeric" style,
+        and this scorebug has always drawn it. Reading the shared key here
+        would restyle every existing panel on update -- and "leave it alone
+        when unset" is not available, because the core merges schema defaults
+        into the config on every load, so the key is never actually unset.
+        "inherit" opts into the scroll and Vegas setting.
         """
+        fmt = str(self._card_option("switch_date_format", "numeric") or "numeric").lower()
+        if fmt == "inherit":
+            fmt = str(self._card_option("date_format", "abbrev") or "abbrev").lower()
+        return fmt
+
+    def _format_game_date(self, date_text: str, game: Optional[Dict] = None) -> str:
+        """Format an upcoming date per scroll_card.switch_date_format."""
         raw = str(date_text or "").strip()
-        fmt = self._card_option("date_format")
-        if not raw or fmt is None:
+        if not raw:
             return raw
-        fmt = str(fmt)
+        fmt = self._switch_date_format()
         if fmt == "numeric":
             return raw
         parts = raw.replace("-", "/").split("/")
@@ -757,23 +767,33 @@ class SportsCore(ABC):
         # "vs" and "none" both push the date and time out to the edges, time
         # on top unless swap_date_time says otherwise -- the same order the
         # scroll card uses.
+        #
+        # The font travels with the text, not with the row: the time is always
+        # drawn in the larger "time" face and the date in the smaller "detail"
+        # one, which is what _draw_upcoming_game_status does. Pinning the faces
+        # to the rows instead put a swapped date into the 8px face, where
+        # "Fri Sep 19" ran off both edges of a 64px panel while the same date
+        # fitted on the ticker.
+        detail_font = self.fonts.get("detail") or self.fonts["time"]
         if swapped:
-            top_element, top_text, bottom_element, bottom_text = (
-                date_element, date_text, time_element, time_text)
+            top_element, top_text, top_font = date_element, date_text, detail_font
+            bottom_element, bottom_text, bottom_font = (
+                time_element, time_text, self.fonts["time"])
         else:
-            top_element, top_text, bottom_element, bottom_text = (
-                time_element, time_text, date_element, date_text)
+            top_element, top_text, top_font = (
+                time_element, time_text, self.fonts["time"])
+            bottom_element, bottom_text, bottom_font = (
+                date_element, date_text, detail_font)
 
         if top_text:
-            top_width = draw.textlength(top_text, font=self.fonts["time"])
+            top_width = draw.textlength(top_text, font=top_font)
             top_x = ((width - top_width) // 2
                      + self._get_layout_offset(top_element, 'x_offset'))
             top_y = 1 + self._get_layout_offset(top_element, 'y_offset')
             self._draw_text_with_outline(
-                draw, top_text, (top_x, top_y), self.fonts["time"]
+                draw, top_text, (top_x, top_y), top_font
             )
         if bottom_text:
-            bottom_font = self.fonts.get("detail") or self.fonts["time"]
             bottom_width = draw.textlength(bottom_text, font=bottom_font)
             bottom_x = ((width - bottom_width) // 2
                         + self._get_layout_offset(bottom_element, 'x_offset'))

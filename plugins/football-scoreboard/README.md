@@ -630,10 +630,11 @@ ticker, and the full-screen scoreboard -- rather than only the tickers.
 | Matchup Separator | `vs_text` | `VS` | Text drawn between the teams: `VS`, `@`, `at`, `v`. The away team is always on the left, so `@` and `at` read as "away at home". Blank draws nothing. |
 | Middle of an Upcoming Card | `upcoming_center` | `vs` | Scroll and Vegas cards: the separator, the date and time stacked, or nothing. |
 | Middle of a Full-Screen Upcoming Scoreboard | `switch_upcoming_center` | `date_time` | The same choice for the full-screen scoreboard, plus `inherit` to follow the setting above. It defaults to the stacked date and time, which is what this display has always shown, so nothing changes until you pick something else. |
-| Date Format | `date_format` | `abbrev` | `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. Leave it unset on the full-screen scoreboard to keep the `9/19` it has always drawn. |
+| Date Format | `date_format` | `abbrev` | How the scroll and Vegas cards write the date: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
+| Full-Screen Date Format | `switch_date_format` | `numeric` | The same choice for the full-screen scoreboard, plus `inherit` to follow the row above. It has its own default because the two displays disagree about what is normal: the cards have always written `Sep 19` and the full-screen scoreboard `9/19`, so a single shared default would restyle one of them. |
 | Time Format | `time_format` | `12h` | 12- or 24-hour clock. |
 | Show Date / Show Time | `show_date`, `show_time` | `true` | Drop either line. |
-| Swap Date and Time | `swap_date_time` | `false` | Put the date above the time. |
+| Swap Date and Time | `swap_date_time` | `false` | Swap the two lines over. Each display starts from its own order, so this flips them rather than forcing one: the scroll and Vegas cards put the time on top, the full-screen date/time stack puts the date on top. |
 
 Choosing the separator for the full-screen scoreboard moves the date and time
 out of the middle and onto the top and bottom rows, the same way the scroll
