@@ -1706,6 +1706,16 @@ class SportsCore(ABC):
 
         Ties fall back to kickoff order, and a league with no poll keeps the
         chronological order it had, because there is nothing to sort on.
+
+        One game per team, which is the part rank ordering cannot do without.
+        The upcoming pool is not a week of fixtures -- for college football it
+        is the whole season, 947 games on a real board -- so ordering by rank
+        alone put all twelve of the #1 team's games above the #2 team's first
+        one, and the board walked one team's season. Measured on ledpi the
+        moment this shipped: KENT@OSU, ILL@OSU, then OSU@IOWA, MD@OSU. Keeping
+        only the soonest game per team makes the pool "what each team has
+        next", which is both what an upcoming board means and inherently
+        near-term, since a team's next game is by definition the closest one.
         """
         rankings = getattr(self, "_team_rankings_cache", None) or {}
         if not rankings:
@@ -1718,7 +1728,25 @@ class SportsCore(ABC):
             def key(game):
                 when = game.get("start_time_utc") or datetime.max.replace(tzinfo=timezone.utc)
                 return (self._best_rank(game), when.timestamp())
-        return sorted(games, key=key)
+
+        # Soonest-first so "one per team" keeps each team's NEXT game, then
+        # re-ordered by rank. Doing it the other way round would keep whichever
+        # of a team's games happened to sort first by rank, which for a game
+        # between two ranked sides is not necessarily the next one.
+        soonest_first = sorted(
+            games,
+            key=lambda g: (g.get("start_time_utc")
+                           or datetime.max.replace(tzinfo=timezone.utc)).timestamp(),
+            reverse=newest_first,
+        )
+        seen, once_each = set(), []
+        for game in soonest_first:
+            sides = (game.get("home_abbr"), game.get("away_abbr"))
+            if any(side in seen for side in sides):
+                continue
+            seen.update(s for s in sides if s)
+            once_each.append(game)
+        return sorted(once_each, key=key)
 
     def _passes_other_filters(self, game: Dict) -> bool:
         """Is this non-favourite game worth one of the remaining slots?

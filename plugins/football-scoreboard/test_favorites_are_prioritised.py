@@ -667,6 +667,27 @@ def main():
     check("ties fall back to kickoff order",
           probe._by_importance([games[5], games[3]])[0]["id"] == games[3]["id"])
 
+    # The upcoming pool is a SEASON, not a week -- 947 games on a real board --
+    # so ordering by rank alone stacked all of the #1 team's games above the #2
+    # team's first one and the board walked one team's schedule: KENT@OSU,
+    # ILL@OSU, OSU@IOWA, MD@OSU, measured on ledpi.
+    season = []
+    for week in range(4):
+        season.append({**games[0], "id": "top%d" % week,
+                       "home_abbr": "TOP", "away_abbr": "OPP%d" % week,
+                       "start_time_utc": NOW + timedelta(days=7 * week + 1)})
+        season.append({**games[1], "id": "second%d" % week,
+                       "home_abbr": "SECOND", "away_abbr": "FOE%d" % week,
+                       "start_time_utc": NOW + timedelta(days=7 * week + 2)})
+    probe._team_rankings_cache = {"TOP": 1, "SECOND": 2}
+    ordered = probe._by_importance(season)
+    check("a team appears once, not once per week",
+          [g["home_abbr"] for g in ordered] == ["TOP", "SECOND"],
+          [g["id"] for g in ordered])
+    check("and it is that team's NEXT game, not a later one",
+          ordered[0]["id"] == "top0" and ordered[1]["id"] == "second0",
+          [g["id"] for g in ordered])
+
     probe._team_rankings_cache = {}
     unchanged = probe._by_importance(list(games[:5]))
     check("a league with no poll keeps chronological order",
