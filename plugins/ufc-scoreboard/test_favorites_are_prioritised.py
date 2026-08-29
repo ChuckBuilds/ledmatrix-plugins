@@ -551,6 +551,30 @@ def main():
     probe._favorites_first(games, 3, 3)
     check("and not repeated on every update", len(cap.messages) == seen)
 
+    # monotonic() counts from an arbitrary origin -- a few hundred seconds on a
+    # freshly booted board -- so comparing it against a zero stamp treated
+    # "never logged" as "logged at the epoch" and swallowed the first warning
+    # for the first hour of uptime. That is exactly when a misconfigured board
+    # is being watched. CI caught it; a machine with days of uptime cannot.
+    booted = _Capture()
+    fresh = make(sports, favs, 3, 3)
+    fresh.logger = logging.getLogger("ranking_coverage_fresh_boot")
+    fresh.logger.addHandler(booted)
+    fresh.logger.setLevel(logging.WARNING)
+    fresh.other_games_min_quality = "ranked"
+    fresh._team_rankings_cache = {"NOT_PLAYING_TODAY": 1}
+    fresh._ranking_coverage_logged_at = 0.0
+    real_monotonic = sports.time.monotonic
+    sports.time.monotonic = lambda: 120.0        # two minutes of uptime
+    try:
+        fresh._check_ranking_coverage(games)
+    finally:
+        sports.time.monotonic = real_monotonic
+    check("and reported on a machine that only just booted",
+          any("removing every non-favourite" in m for m in booted.messages),
+          booted.messages)
+    fresh.logger.removeHandler(booted)
+
     probe = make(sports, favs, 3, 3)
     probe.logger = logging.getLogger("ranking_coverage_quiet")
     quiet = _Capture()

@@ -1675,7 +1675,14 @@ class SportsCore(ABC):
         if any(self._is_ranked_game(g) for g in games):
             return
         now = time.monotonic()
-        if now - self._ranking_coverage_logged_at < self._RANKING_COVERAGE_SECONDS:
+        # Zero means never logged, not "logged at the epoch". monotonic() counts
+        # from an arbitrary origin -- on a freshly booted board it is a few
+        # hundred seconds -- so comparing against 0 swallowed the first warning
+        # for the first hour of uptime, which is exactly when a misconfigured
+        # board is being watched. CI caught this; a machine with days of uptime
+        # cannot.
+        if (self._ranking_coverage_logged_at
+                and now - self._ranking_coverage_logged_at < self._RANKING_COVERAGE_SECONDS):
             return
         self._ranking_coverage_logged_at = now
         self.logger.warning(
