@@ -761,6 +761,31 @@ class SportsCore(ABC):
         hour = hour % 12 + (12 if meridiem == "PM" else 0)
         return f"{hour:02d}:{minute:02d}"
 
+    def _scorebug_font(self, draw, text: str, width: int):
+        """The face this scorebug draws its date and time in.
+
+        Always the "time" face, which is what this display has used for both
+        rows for as long as it has existed: changing switch_upcoming_center
+        moves the two lines around, it is not meant to restyle them, so the
+        type stays put while the placement changes.
+
+        The single exception is text that cannot fit the panel at all. Only
+        the "weekday" date can do that -- "Fri Sep 19" measures 80px in an
+        8px face, on a board 64px wide -- and the smaller "detail" face is a
+        better answer there than running off both edges. Every other date and
+        time this display can produce fits, so in practice the face never
+        changes; it is a floor, not a style rule.
+        """
+        font = self.fonts["time"]
+        if not text:
+            return font
+        try:
+            if draw.textlength(text, font=font) + 2 <= width:
+                return font
+        except (TypeError, ValueError):
+            return font
+        return self.fonts.get("detail") or font
+
     def _upcoming_date_and_time_text(self, game_date: str, game_time: str,
                                      game: Optional[Dict] = None) -> Tuple[str, str]:
         """The formatted (date, time) pair, blanked by show_date/show_time."""
@@ -814,11 +839,12 @@ class SportsCore(ABC):
                     row_y += self._get_layout_offset(element, 'y_offset')
                 if not text:
                     continue
-                text_width = draw.textlength(text, font=self.fonts["time"])
+                font = self._scorebug_font(draw, text, width)
+                text_width = draw.textlength(text, font=font)
                 text_x = ((width - text_width) // 2
                           + self._get_layout_offset(element, 'x_offset'))
                 self._draw_text_with_outline(
-                    draw, text, (text_x, row_y), self.fonts["time"]
+                    draw, text, (text_x, row_y), font
                 )
             return True
 
@@ -837,25 +863,15 @@ class SportsCore(ABC):
         # "vs" and "none" both push the date and time out to the edges, time
         # on top unless swap_date_time says otherwise -- the same order the
         # scroll card uses.
-        #
-        # The font travels with the text, not with the row: the time is always
-        # drawn in the larger "time" face and the date in the smaller "detail"
-        # one, which is what _draw_upcoming_game_status does. Pinning the faces
-        # to the rows instead put a swapped date into the 8px face, where
-        # "Fri Sep 19" ran off both edges of a 64px panel while the same date
-        # fitted on the ticker.
-        detail_font = self.fonts.get("detail") or self.fonts["time"]
         if swapped:
-            top_element, top_text, top_font = date_element, date_text, detail_font
-            bottom_element, bottom_text, bottom_font = (
-                time_element, time_text, self.fonts["time"])
+            top_element, top_text = date_element, date_text
+            bottom_element, bottom_text = time_element, time_text
         else:
-            top_element, top_text, top_font = (
-                time_element, time_text, self.fonts["time"])
-            bottom_element, bottom_text, bottom_font = (
-                date_element, date_text, detail_font)
+            top_element, top_text = time_element, time_text
+            bottom_element, bottom_text = date_element, date_text
 
         if top_text:
+            top_font = self._scorebug_font(draw, top_text, width)
             top_width = draw.textlength(top_text, font=top_font)
             top_x = ((width - top_width) // 2
                      + self._get_layout_offset(top_element, 'x_offset'))
@@ -864,6 +880,7 @@ class SportsCore(ABC):
                 draw, top_text, (top_x, top_y), top_font
             )
         if bottom_text:
+            bottom_font = self._scorebug_font(draw, bottom_text, width)
             bottom_width = draw.textlength(bottom_text, font=bottom_font)
             bottom_x = ((width - bottom_width) // 2
                         + self._get_layout_offset(bottom_element, 'x_offset'))

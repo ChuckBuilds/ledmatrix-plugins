@@ -21,8 +21,8 @@ The block now drives every display mode. What this pins down:
     always said "9/19") -- hold this display to what it already drew, and
     take "inherit" to opt into the scroll and Vegas setting.
   * "vs" draws the configured separator in the middle, empty draws nothing,
-    and the date and time move out to the top and bottom rows, each keeping
-    its own font rather than the row's.
+    and the date and time move out to the top and bottom rows, keeping the
+    face they are drawn in -- the mode changes placement, not type.
   * vs_text, time_format, show_date/show_time and swap_date_time are shared
     outright, and do reach this display.
 
@@ -256,14 +256,14 @@ def main():
     check("swap_date_time: puts the time on top",
           list(swapped.getdata()) != list(default_img.getdata()))
 
-    # The font follows the text, not the row -- the time in the larger "time"
-    # face and the date in the smaller "detail" one, as the scroll card does.
-    # Pinning the faces to the rows instead put a swapped date into the 8px
-    # face, where a long date ran off both edges of a 64px panel.
+    # Changing the centre mode moves the two lines; it does not restyle them.
+    # Both rows keep this scorebug's own "time" face wherever they land, in
+    # every mode -- the smaller "detail" face is a floor for text that cannot
+    # fit the panel at all, not a per-row style.
     #
     # Measured against what each face would actually produce, rather than
-    # against "does it fit": clipping means an overflowing string simply
-    # stops being drawn, so a width bound can never see the bug.
+    # against "does it fit": clipping means an overflowing string simply stops
+    # being drawn, so a width bound alone can never tell the two faces apart.
     def _ink_width(image, y0, y1):
         """Horizontal extent of lit pixels in a band, 0 if the band is dark."""
         pixels = image.load()
@@ -272,21 +272,49 @@ def main():
         return (max(xs) - min(xs) + 1) if xs else 0
 
     probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
-    detail_font = at_bug.fonts.get("detail") or at_bug.fonts["time"]
+    time_font = at_bug.fonts["time"]
+    detail_font = at_bug.fonts.get("detail") or time_font
+
+    def _closer_to_time_face(ink, text):
+        t = probe.textlength(text, font=time_font)
+        d = probe.textlength(text, font=detail_font)
+        if t == d:
+            return True          # the plugin sets both faces the same size
+        return abs(ink - (t + 2)) < abs(ink - (d + 2))
+
+    # A date that fits: it must be drawn in the same face the stacked layout
+    # uses, whichever row the mode and swap_date_time put it on.
+    short_date = Bug({})._format_game_date(GAME["game_date"], GAME)
+    fits_cfg = {"switch_upcoming_center": "vs", "vs_text": "@"}
+    plain, _ = render({"scroll_card": fits_cfg})
+    flipped, _ = render({"scroll_card": dict(fits_cfg, swap_date_time=True)})
+    check("vs: a date that fits keeps the scorebug's own face on the bottom row",
+          _closer_to_time_face(_ink_width(plain, HEIGHT - 10, HEIGHT), short_date))
+    check("vs + swap: the same date keeps that face on the top row",
+          _closer_to_time_face(_ink_width(flipped, 0, 10), short_date))
+
+    # A date that cannot fit at all drops to the smaller face rather than
+    # running off both edges. Only the weekday format is long enough to.
     long_date = Bug({"scroll_card": {"switch_date_format": "weekday"}}) \
         ._format_game_date(GAME["game_date"], GAME)
-    detail_w = probe.textlength(long_date, font=detail_font)
-    time_w = probe.textlength(long_date, font=at_bug.fonts["time"])
-    if detail_w == time_w:
+    if probe.textlength(long_date, font=time_font) + 2 <= WIDTH:
+        check("SKIPPED: even the longest date fits this plugin's face", True)
+    elif probe.textlength(long_date, font=time_font) == probe.textlength(long_date, font=detail_font):
         check("SKIPPED: this plugin's detail and time faces are the same size", True)
     else:
-        cfg = {"switch_upcoming_center": "vs", "vs_text": "@",
-               "switch_date_format": "weekday", "swap_date_time": True}
-        flipped, _ = render({"scroll_card": cfg})
-        # Swapped puts the date on the top row; the outline adds a pixel a side.
-        top_ink = _ink_width(flipped, 0, 9)
-        check("vs + swap_date_time: the date is drawn in the small detail face",
-              top_ink and abs(top_ink - (detail_w + 2)) < abs(top_ink - (time_w + 2)))
+        over, _ = render({"scroll_card": {"switch_upcoming_center": "vs",
+                                          "vs_text": "@",
+                                          "switch_date_format": "weekday"}})
+        ink = _ink_width(over, HEIGHT - 10, HEIGHT)
+        detail_w = probe.textlength(long_date, font=detail_font)
+        # Asserted as the property, not as "nearer to one face than the
+        # other": text drawn too wide is clipped to the panel, and a clipped
+        # 80px string measures 62px -- equidistant from both candidates, so a
+        # nearest-match check ties and silently passes. What has to hold is
+        # that the date fits with room to spare and measures like the small
+        # face, which the unfixed code cannot do.
+        check("a date too wide for the face falls back to the smaller one",
+              ink and ink <= detail_w + 4 and ink < WIDTH - 2)
 
     # -- 6. the layout offsets the schema advertises still move things --
     nudged, _ = render(
