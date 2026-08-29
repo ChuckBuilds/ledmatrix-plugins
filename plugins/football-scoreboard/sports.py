@@ -802,6 +802,15 @@ class SportsCore(ABC):
             self.logger.debug("Score font fitting skipped", exc_info=True)
         return fonts
 
+    #: Widest score this sport realistically shows, used to size the centre
+    #: reserve and the score's width budget. A fixed string rather than the
+    #: live score, because the logo cache is keyed on team and must not
+    #: resize when a side passes 9 points -- but it has to be wide enough for
+    #: the sport: basketball and AFL run to three digits a side, so measuring
+    #: them against "00-00" reserved two characters less than the score
+    #: actually needs and it was drawn onto the logos either side.
+    _SCORE_PROBE_TEXT: ClassVar[str] = "00-00"
+
     #: Panel height the fixed font sizes below were chosen against. Everything
     #: else on the card is sized from display_height -- the logos most of all
     #: -- so on a taller panel they grew and the score did not.
@@ -887,7 +896,8 @@ class SportsCore(ABC):
                 # live one, so the card does not resize when a side passes 9.
                 while size > grid:
                     if probe.textlength(
-                            "00-00", font=ImageFont.truetype(path, size)) <= budget:
+                            self._SCORE_PROBE_TEXT,
+                            font=ImageFont.truetype(path, size)) <= budget:
                         break
                     size -= grid
                 if size != getattr(fonts['score'], 'size', size):
@@ -1173,7 +1183,7 @@ class SportsCore(ABC):
             font = self.fonts["score"]
             from PIL import Image as _Image, ImageDraw as _ImageDraw
             probe = _ImageDraw.Draw(_Image.new("RGB", (4, 4)))
-            width = int(probe.textlength("00-00", font=font))
+            width = int(probe.textlength(self._SCORE_PROBE_TEXT, font=font))
             return max(width // 2, width - 2 * self._SCORE_LOGO_OVERLAP_PX)
         except Exception:
             return 22

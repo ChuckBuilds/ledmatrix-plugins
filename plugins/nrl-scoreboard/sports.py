@@ -816,7 +816,8 @@ class SportsCore(ABC):
         """
         try:
             probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
-            width = int(probe.textlength("00-00", font=self.fonts["score"]))
+            width = int(probe.textlength(
+                self._SCORE_PROBE_TEXT, font=self.fonts["score"]))
             return max(width // 2, width - 2 * self._SCORE_LOGO_OVERLAP_PX)
         except Exception:
             return 22
@@ -824,6 +825,15 @@ class SportsCore(ABC):
     #: Score may occupy this share of the panel width. Above it the score
     #: crowds out the logos either side of it, so it steps back down its grid.
     _SCORE_WIDTH_BUDGET: ClassVar[float] = 0.55
+
+    #: Widest score this sport realistically shows, used to size the centre
+    #: reserve and the score's width budget. A fixed string rather than the
+    #: live score, because the logo cache is keyed on team and must not
+    #: resize when a side passes 9 points -- but it has to be wide enough for
+    #: the sport: basketball and AFL run to three digits a side, so measuring
+    #: them against "00-00" reserved two characters less than the score
+    #: actually needs and it was drawn onto the logos either side.
+    _SCORE_PROBE_TEXT: ClassVar[str] = "00-00"
 
     #: Panel height the fixed font sizes below were chosen against. Everything
     #: else on the card is sized from display_height -- the logos most of all
@@ -910,7 +920,8 @@ class SportsCore(ABC):
                 # live one, so the card does not resize when a side passes 9.
                 while size > grid:
                     if probe.textlength(
-                            "00-00", font=ImageFont.truetype(path, size)) <= budget:
+                            self._SCORE_PROBE_TEXT,
+                            font=ImageFont.truetype(path, size)) <= budget:
                         break
                     size -= grid
                 if size != getattr(fonts['score'], 'size', size):
