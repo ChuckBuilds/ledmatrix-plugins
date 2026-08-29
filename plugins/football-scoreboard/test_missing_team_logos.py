@@ -33,9 +33,15 @@ logging.basicConfig(level=logging.ERROR)
 class _Manager(sports.SportsCore):
     """Concrete SportsCore so the real method can be exercised.
 
-    Built with __new__ so none of the heavy __init__ (sessions, fonts, display
-    manager) runs; only the attributes _ensure_team_logos touches are set.
+    SportsCore.__init__ is deliberately not called: it builds HTTP sessions,
+    fonts and a display manager, none of which this method touches. Only the
+    three attributes _ensure_team_logos actually reads are set.
     """
+
+    def __init__(self):                      # pylint: disable=super-init-not-called
+        self.sport_key = "ncaa_fb"
+        self._logo_fetch_failed = set()
+        self.logger = Mock()
 
     def _extract_game_details(self, game_event):
         return None
@@ -45,11 +51,7 @@ class _Manager(sports.SportsCore):
 
 
 def _manager():
-    m = _Manager.__new__(_Manager)
-    m.sport_key = "ncaa_fb"
-    m._logo_fetch_failed = set()
-    m.logger = Mock()
-    return m
+    return _Manager()
 
 
 def _game(tmp_path, abbr="FUR", url="https://a.espncdn.com/i/teamlogos/ncaa/500/231.png"):
