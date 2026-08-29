@@ -6,8 +6,8 @@
   "properties": {
     "scroll_card": {
       "type": "object",
-      "title": "Scroll & Vegas Card Layout",
-      "description": "Layout of the game cards built for scroll and Vegas modes. The full-screen scoreboard is drawn separately and is not affected by these settings.",
+      "title": "Matchup Card Layout",
+      "description": "Layout of an upcoming or in-progress matchup: the separator drawn between the two teams, and how the date and time are written. These apply to the scroll and Vegas cards and to the full-screen scoreboard alike -- the full-screen one is controlled by its own \"Middle of a Full-Screen Upcoming Scoreboard\" setting so it keeps the look it has always had until you change it. The center-gap settings size the scroll and Vegas card only.",
       "x-advanced": true,
       "properties": {
         "upcoming_center": {
@@ -25,6 +25,26 @@
               "vs": "Matchup separator (VS / @ / at)",
               "date_time": "Date and time, stacked",
               "none": "Nothing"
+            }
+          }
+        },
+        "switch_upcoming_center": {
+          "type": "string",
+          "title": "Middle of a Full-Screen Upcoming Scoreboard",
+          "description": "What to show between the two logos on the full-screen (switch mode) scoreboard before a game starts. Defaults to the stacked date and time, which is what this display has always shown. Pick the matchup separator to use the same VS / @ / at text as the scroll and Vegas cards, or \"Same as scroll and Vegas\" to follow the setting above. Football's beta adaptive layout always follows the setting above.",
+          "enum": [
+            "date_time",
+            "vs",
+            "none",
+            "inherit"
+          ],
+          "default": "date_time",
+          "x-options": {
+            "labels": {
+              "date_time": "Date and time, stacked",
+              "vs": "Matchup separator (VS / @ / at)",
+              "none": "Nothing",
+              "inherit": "Same as scroll and Vegas"
             }
           }
         },

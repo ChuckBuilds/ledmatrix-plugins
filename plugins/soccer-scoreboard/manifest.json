@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.16.0",
+  "version": "2.17.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,13 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.17.0",
+      "released": "2026-08-29",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The matchup separator and the date and time formats now reach the full-screen scoreboard, not just the scroll and Vegas cards. A new \"Middle of a Full-Screen Upcoming Scoreboard\" setting (switch_upcoming_center) picks what sits between the two logos before a game starts: the stacked date and time as before, the VS / @ / at separator, nothing, or whatever the scroll and Vegas cards are set to. It defaults to the stacked date and time, so the scoreboard looks exactly as it did until you change it.",
+      "changelog": "The matchup separator and the date and time formats now reach the full-screen scoreboard, not just the scroll and Vegas cards. A new \"Middle of a Full-Screen Upcoming Scoreboard\" setting (switch_upcoming_center) picks what sits between the two logos before a game starts: the stacked date and time as before, the VS / @ / at separator, nothing, or whatever the scroll and Vegas cards are set to. It defaults to the stacked date and time, so the scoreboard looks exactly as it did until you change it."
+    },
     {
       "version": "2.16.0",
       "released": "2026-08-22",

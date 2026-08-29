@@ -648,6 +648,223 @@ class SportsCore(ABC):
             self.logger.error(f"Error loading default font: {e}")
             return ImageFont.load_default()
 
+    # ------------------------------------------------------------------
+    # Upcoming-card center options -- config["scroll_card"].
+    #
+    # The same block game_renderer.py reads for the scroll and Vegas cards.
+    # It used to stop there, so a user who set the matchup separator to "@"
+    # got it on the ticker and never on the full-screen scoreboard. These
+    # helpers mirror the renderer's so one setting drives every display mode;
+    # the two copies have to stay in step.
+    #
+    # ``switch_upcoming_center`` exists because the shared ``upcoming_center``
+    # defaults to "vs" while this display has always drawn the date and time
+    # stacked. Defaulting the switch-mode key to "date_time" keeps every
+    # existing panel rendering exactly what it rendered before the setting
+    # reached it; "inherit" opts into the shared value.
+    #
+    # The center-gap keys are deliberately not read here: they size the
+    # scroll card's middle strip, while this layout pins the logos to the
+    # panel edges.
+    # ------------------------------------------------------------------
+    _MONTH_ABBR: ClassVar[Tuple[str, ...]] = (
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    )
+    _WEEKDAY_ABBR: ClassVar[Tuple[str, ...]] = (
+        "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun",
+    )
+
+    def _card_option(self, key: str, default: Any = None) -> Any:
+        """Read one key from the scroll_card config block."""
+        block = (self.config or {}).get("scroll_card")
+        if isinstance(block, dict) and block.get(key) is not None:
+            return block.get(key)
+        return default
+
+    def _switch_upcoming_center(self) -> str:
+        """Middle of the full-screen upcoming scorebug: 'vs', 'date_time' or 'none'."""
+        mode = str(self._card_option("switch_upcoming_center", "date_time")
+                   or "date_time").lower()
+        if mode == "inherit":
+            mode = str(self._card_option("upcoming_center", "vs") or "vs").lower()
+        return mode if mode in ("vs", "date_time", "none") else "date_time"
+
+    def _vs_text(self) -> str:
+        """Separator drawn between the teams -- "VS", "@", "at", anything."""
+        return str(self._card_option("vs_text", "VS"))
+
+    def _format_game_date(self, date_text: str, game: Optional[Dict] = None) -> str:
+        """Format an upcoming date per scroll_card.date_format.
+
+        Unset means unchanged. _extract_game_details_common already emits
+        "9/19", which is the "numeric" style, so defaulting to the schema's
+        "abbrev" here would restyle every existing panel on update. The key
+        only takes effect once it is actually set.
+        """
+        raw = str(date_text or "").strip()
+        fmt = self._card_option("date_format")
+        if not raw or fmt is None:
+            return raw
+        fmt = str(fmt)
+        if fmt == "numeric":
+            return raw
+        parts = raw.replace("-", "/").split("/")
+        if not (len(parts) >= 2 and parts[0].strip().isdigit() and parts[1].strip().isdigit()):
+            return raw
+        month, day = int(parts[0]), int(parts[1])
+        if not 1 <= month <= 12:
+            return raw
+        name = self._MONTH_ABBR[month - 1]
+        if fmt == "numeric_day_first":
+            return f"{day}/{month}"
+        if fmt == "day_first":
+            return f"{day} {name}"
+        if fmt == "weekday":
+            weekday = self._weekday_for(game)
+            return f"{weekday} {name} {day}" if weekday else f"{name} {day}"
+        return f"{name} {day}"
+
+    def _weekday_for(self, game: Optional[Dict]) -> str:
+        """Weekday abbreviation from the game's start time, or ''."""
+        if not game:
+            return ""
+        raw = game.get("start_time_utc") or game.get("start_time")
+        if not raw:
+            return ""
+        try:
+            start = raw if isinstance(raw, datetime) else datetime.fromisoformat(
+                str(raw).replace("Z", "+00:00"))
+            return self._WEEKDAY_ABBR[start.astimezone(self._get_timezone()).weekday()]
+        except (ValueError, TypeError, OverflowError):
+            return ""
+
+    def _format_game_time(self, time_text: str) -> str:
+        """Return the time as-is (12h) or converted to 24h."""
+        raw = str(time_text or "").strip()
+        if not raw or str(self._card_option("time_format", "12h")) != "24h":
+            return raw
+        cleaned = raw.upper().replace(" ", "")
+        meridiem = "AM" if cleaned.endswith("AM") else "PM" if cleaned.endswith("PM") else ""
+        if not meridiem:
+            return raw
+        try:
+            hh, _, mm = cleaned[:-2].partition(":")
+            hour, minute = int(hh), int(mm or 0)
+        except ValueError:
+            return raw
+        if not (0 <= hour <= 12 and 0 <= minute <= 59):
+            return raw
+        hour = hour % 12 + (12 if meridiem == "PM" else 0)
+        return f"{hour:02d}:{minute:02d}"
+
+    def _upcoming_date_and_time_text(self, game_date: str, game_time: str,
+                                     game: Optional[Dict] = None) -> Tuple[str, str]:
+        """The formatted (date, time) pair, blanked by show_date/show_time."""
+        date_text = (self._format_game_date(game_date, game)
+                     if self._card_option("show_date", True) else "")
+        time_text = (self._format_game_time(game_time)
+                     if self._card_option("show_time", True) else "")
+        return date_text, time_text
+
+    def _draw_upcoming_center_switch(self, draw, game: Dict, center_y: int,
+                                     game_date: str, game_time: str,
+                                     display_width: Optional[int] = None,
+                                     display_height: Optional[int] = None,
+                                     date_element: str = 'date',
+                                     time_element: str = 'time',
+                                     second_row_y_offset: bool = True) -> bool:
+        """Draw the middle of the full-screen upcoming scorebug.
+
+        Returns True when the header above it ("Next Game", or the league
+        name) should still be drawn. In "vs" and "none" the date and time move
+        out of the middle and into the top and bottom slots, mirroring the
+        scroll card -- and the top slot is where the header used to be, so the
+        caller drops it.
+
+        ``date_element``/``time_element``/``second_row_y_offset`` exist only so
+        the layout-offset keys stay exactly what each plugin's schema
+        advertises; this sport's defaults are the common case.
+        """
+        width = self.display_width if display_width is None else display_width
+        height = self.display_height if display_height is None else display_height
+        mode = self._switch_upcoming_center()
+        date_text, time_text = self._upcoming_date_and_time_text(
+            game_date, game_time, game)
+        swapped = bool(self._card_option("swap_date_time", False))
+
+        if mode == "date_time":
+            # Historically the date sat at center_y - 7 with the time 9px
+            # under it, and the time's row was derived from the date's, so a
+            # date y_offset moved the pair. Both still hold; the slots only
+            # trade places when swap_date_time is set, and hiding one line
+            # leaves the other where it was rather than re-centering the stack.
+            slots = [(time_element, time_text), (date_element, date_text)] if swapped \
+                else [(date_element, date_text), (time_element, time_text)]
+            row_y = center_y - 7
+            for index, (element, text) in enumerate(slots):
+                if index:
+                    row_y += 9
+                    if second_row_y_offset:
+                        row_y += self._get_layout_offset(element, 'y_offset')
+                else:
+                    row_y += self._get_layout_offset(element, 'y_offset')
+                if not text:
+                    continue
+                text_width = draw.textlength(text, font=self.fonts["time"])
+                text_x = ((width - text_width) // 2
+                          + self._get_layout_offset(element, 'x_offset'))
+                self._draw_text_with_outline(
+                    draw, text, (text_x, row_y), self.fonts["time"]
+                )
+            return True
+
+        if mode == "vs":
+            vs_text = self._vs_text()
+            if vs_text:
+                vs_width = draw.textlength(vs_text, font=self.fonts["score"])
+                vs_x = ((width - vs_width) // 2
+                        + self._get_layout_offset('score', 'x_offset'))
+                vs_y = (center_y - 3
+                        + self._get_layout_offset('score', 'y_offset'))
+                self._draw_text_with_outline(
+                    draw, vs_text, (vs_x, vs_y), self.fonts["score"]
+                )
+
+        # "vs" and "none" both push the date and time out to the edges, time
+        # on top unless swap_date_time says otherwise -- the same order the
+        # scroll card uses.
+        if swapped:
+            top_element, top_text, bottom_element, bottom_text = (
+                date_element, date_text, time_element, time_text)
+        else:
+            top_element, top_text, bottom_element, bottom_text = (
+                time_element, time_text, date_element, date_text)
+
+        if top_text:
+            top_width = draw.textlength(top_text, font=self.fonts["time"])
+            top_x = ((width - top_width) // 2
+                     + self._get_layout_offset(top_element, 'x_offset'))
+            top_y = 1 + self._get_layout_offset(top_element, 'y_offset')
+            self._draw_text_with_outline(
+                draw, top_text, (top_x, top_y), self.fonts["time"]
+            )
+        if bottom_text:
+            bottom_font = self.fonts.get("detail") or self.fonts["time"]
+            bottom_width = draw.textlength(bottom_text, font=bottom_font)
+            bottom_x = ((width - bottom_width) // 2
+                        + self._get_layout_offset(bottom_element, 'x_offset'))
+            # Measured, not a fixed offset: the detail font is 6px in most
+            # plugins and 10px in soccer and nrl, where a fixed -7 ran the
+            # date off the panel.
+            ink_bottom = draw.textbbox((0, 0), bottom_text, font=bottom_font)[3]
+            bottom_y = (max(0, height - ink_bottom - 1)
+                        + self._get_layout_offset(bottom_element, 'y_offset'))
+            self._draw_text_with_outline(
+                draw, bottom_text, (bottom_x, bottom_y), bottom_font
+            )
+        return False
+
     def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
         """
         Get layout offset for a specific element and axis.
@@ -1980,36 +2197,28 @@ class SportsUpcoming(SportsCore):
 
             # Note: Rankings are now handled in the records/rankings section below
 
-            # League name at the top so the competition is identifiable (falls back
-            # to "Next Game" when the manager didn't set one). The small status font
-            # keeps long names like "Scottish Premiership" on a single line.
-            status_font = self.fonts["status"]
-            if display_width > 128:
-                status_font = self.fonts["time"]
-            status_text = getattr(self, "league_name", "") or "Next Game"
-            status_width = draw_overlay.textlength(status_text, font=status_font)
-            status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
-            status_y = 1 + self._get_layout_offset('status_text', 'y_offset')
-            self._draw_text_with_outline(
-                draw_overlay, status_text, (status_x, status_y), status_font
-            )
-
-            # Date text (centered, below "Next Game") with layout offsets
-            date_width = draw_overlay.textlength(game_date, font=self.fonts["time"])
-            date_x = (display_width - date_width) // 2 + self._get_layout_offset('date', 'x_offset')
-            # Adjust Y position to stack date and time nicely
-            date_y = center_y - 7 + self._get_layout_offset('date', 'y_offset')
-            self._draw_text_with_outline(
-                draw_overlay, game_date, (date_x, date_y), self.fonts["time"]
-            )
-
-            # Time text (centered, below Date) with layout offsets
-            time_width = draw_overlay.textlength(game_time, font=self.fonts["time"])
-            time_x = (display_width - time_width) // 2 + self._get_layout_offset('time', 'x_offset')
-            time_y = date_y + 9 + self._get_layout_offset('time', 'y_offset')
-            self._draw_text_with_outline(
-                draw_overlay, game_time, (time_x, time_y), self.fonts["time"]
-            )
+            # The middle of an upcoming scorebug -- the matchup separator, the
+            # date and time stacked, or nothing -- is config-driven now, so the
+            # one scroll_card setting drives switch, scroll and Vegas alike
+            # instead of stopping at the ticker. "vs" and "none" move the date
+            # and time out to the top and bottom rows, and the top row is where
+            # the header sits, so the helper reports whether it still has a slot.
+            if self._draw_upcoming_center_switch(
+                    draw_overlay, game, center_y, game_date, game_time,
+                    display_width=display_width, display_height=display_height):
+                # League name at the top so the competition is identifiable (falls back
+                # to "Next Game" when the manager didn't set one). The small status font
+                # keeps long names like "Scottish Premiership" on a single line.
+                status_font = self.fonts["status"]
+                if display_width > 128:
+                    status_font = self.fonts["time"]
+                status_text = getattr(self, "league_name", "") or "Next Game"
+                status_width = draw_overlay.textlength(status_text, font=status_font)
+                status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
+                status_y = 1 + self._get_layout_offset('status_text', 'y_offset')
+                self._draw_text_with_outline(
+                    draw_overlay, status_text, (status_x, status_y), status_font
+                )
 
             # Draw odds if available
             if "odds" in game and game["odds"]:
