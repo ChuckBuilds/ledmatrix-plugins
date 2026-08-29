@@ -663,6 +663,16 @@ class SportsCore(ABC):
         rather than the live score, because the logo cache is keyed on team
         and must not resize when a side passes 9 points.
         """
+        # No reserve until the score has actually grown. The cap below costs
+        # logo width, and on a panel where the score is still 8px there is no
+        # benefit to pay for it with: a 64x32 board would have watched a
+        # square logo drop from 48x48 to 24x24 in a change about score size.
+        # Gating here keeps every panel whose score did not move byte-identical
+        # -- the same thing _scale_headline_fonts does by returning early at or
+        # below the design height.
+        if not getattr(self, '_score_grew', False):
+            return 0
+
         try:
             probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
             width = int(probe.textlength(
@@ -671,9 +681,25 @@ class SportsCore(ABC):
         except Exception:
             return 22
 
-    #: Score may occupy this share of the panel width. Above it the score
-    #: crowds out the logos either side of it, so it steps back down its grid.
-    _SCORE_WIDTH_BUDGET: ClassVar[float] = 0.55
+    #: Most the score may grow, as a multiple of its design size. The same
+    #: ceiling football's adaptive layout settled on and for the same measured
+    #: reason (_ADAPTIVE_SCORE_TARGET_PX): "8 reads thin on a tall card; 24
+    #: needs a 128px gap and buys mostly dead space. 16 doubles the score for
+    #: 40px of extra card and costs nothing in logo size." Without it a
+    #: 256x128 board takes a 32px score, whose reserve leaves each logo 60px
+    #: of a 256-wide panel -- a postage stamp in a 128-tall slot.
+    _SCORE_MAX_GROWTH: ClassVar[int] = 2
+
+    #: Share of the panel width the score may take once it is allowed to grow.
+    #: Deliberately not football's _SCORE_WIDTH_BUDGET (0.55), which answers a
+    #: different question -- when to swap PressStart for a narrower FACE -- and
+    #: is tuned for a 32-tall panel where the logos have no spare height. 0.55
+    #: cannot fit a 16px score under 146px of panel, so a 128-wide board could
+    #: never reach one no matter how tall it got: 128x64 paid for the change
+    #: and got nothing back. A taller panel can afford a wider score because
+    #: its logos have height to spend instead, and 0.65 is what a 16px score
+    #: needs at 128 wide (80px of 128 is 0.625).
+    _SCORE_GROWTH_BUDGET: ClassVar[float] = 0.65
 
     #: Widest score this sport realistically shows, used to size the centre
     #: reserve and the score's width budget. A fixed string rather than the
@@ -758,13 +784,16 @@ class SportsCore(ABC):
         A 32-tall panel scales by exactly 1.0 and is left byte-identical; a
         size the user set explicitly is never overridden.
         """
+        self._score_grew = False
         try:
             scaled = None if self._user_chose_size('score_text') else \
                 self._grid_scaled_size(fonts.get('score'))
             if scaled is not None:
                 path, grid, size = scaled
+                base = getattr(fonts['score'], 'size', size) or size
+                size = min(size, base * self._SCORE_MAX_GROWTH)
                 probe = ImageDraw.Draw(Image.new('RGB', (4, 4)))
-                budget = self.display_width * self._SCORE_WIDTH_BUDGET
+                budget = self.display_width * self._SCORE_GROWTH_BUDGET
                 # Measured from a fixed five-character score rather than the
                 # live one, so the card does not resize when a side passes 9.
                 while size > grid:
@@ -775,6 +804,7 @@ class SportsCore(ABC):
                     size -= grid
                 if size != getattr(fonts['score'], 'size', size):
                     fonts['score'] = ImageFont.truetype(path, size)
+                    self._score_grew = True
 
             scaled = None if self._user_chose_size('period_text') else \
                 self._grid_scaled_size(fonts.get('time'))
@@ -1055,10 +1085,15 @@ class SportsCore(ABC):
             # 192-wide panel -- so a wide mark ran most of the way to the
             # centre from both sides and the score was drawn on top of it.
             max_height = int(self.display_height * 1.5)
+            max_width = int(self.display_width * 1.5)
             centre_gap = self._scorebug_centre_gap()
-            reach = ((self.display_width - centre_gap) // 2
-                     + self._LOGO_EDGE_BLEED_PX)
-            max_width = max(8, min(int(self.display_width * 1.5), reach))
+            if centre_gap > 0:
+                # Only once the score has grown into the middle -- see
+                # _scorebug_centre_gap. Otherwise the 1.5x sizing above stands
+                # exactly as it always has.
+                reach = ((self.display_width - centre_gap) // 2
+                         + self._LOGO_EDGE_BLEED_PX)
+                max_width = max(8, min(max_width, reach))
             logo.thumbnail((max_width, max_height), RESAMPLE_FILTER)
             self._logo_cache[team_abbrev] = logo
             return logo

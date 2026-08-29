@@ -811,6 +811,26 @@ class SportsCore(ABC):
     #: actually needs and it was drawn onto the logos either side.
     _SCORE_PROBE_TEXT: ClassVar[str] = "00-00"
 
+    #: Most the score may grow, as a multiple of its design size. The same
+    #: ceiling football's adaptive layout settled on and for the same measured
+    #: reason (_ADAPTIVE_SCORE_TARGET_PX): "8 reads thin on a tall card; 24
+    #: needs a 128px gap and buys mostly dead space. 16 doubles the score for
+    #: 40px of extra card and costs nothing in logo size." Without it a
+    #: 256x128 board takes a 32px score, whose reserve leaves each logo 60px
+    #: of a 256-wide panel -- a postage stamp in a 128-tall slot.
+    _SCORE_MAX_GROWTH: ClassVar[int] = 2
+
+    #: Share of the panel width the score may take once it is allowed to grow.
+    #: Deliberately not football's _SCORE_WIDTH_BUDGET (0.55), which answers a
+    #: different question -- when to swap PressStart for a narrower FACE -- and
+    #: is tuned for a 32-tall panel where the logos have no spare height. 0.55
+    #: cannot fit a 16px score under 146px of panel, so a 128-wide board could
+    #: never reach one no matter how tall it got: 128x64 paid for the change
+    #: and got nothing back. A taller panel can afford a wider score because
+    #: its logos have height to spend instead, and 0.65 is what a 16px score
+    #: needs at 128 wide (80px of 128 is 0.625).
+    _SCORE_GROWTH_BUDGET: ClassVar[float] = 0.65
+
     #: Panel height the fixed font sizes below were chosen against. Everything
     #: else on the card is sized from display_height -- the logos most of all
     #: -- so on a taller panel they grew and the score did not.
@@ -885,13 +905,16 @@ class SportsCore(ABC):
         A 32-tall panel scales by exactly 1.0 and is left byte-identical; a
         size the user set explicitly is never overridden.
         """
+        self._score_grew = False
         try:
             scaled = None if self._user_chose_size('score_text') else \
                 self._grid_scaled_size(fonts.get('score'))
             if scaled is not None:
                 path, grid, size = scaled
+                base = getattr(fonts['score'], 'size', size) or size
+                size = min(size, base * self._SCORE_MAX_GROWTH)
                 probe = ImageDraw.Draw(Image.new('RGB', (4, 4)))
-                budget = self.display_width * self._SCORE_WIDTH_BUDGET
+                budget = self.display_width * self._SCORE_GROWTH_BUDGET
                 # Measured from a fixed five-character score rather than the
                 # live one, so the card does not resize when a side passes 9.
                 while size > grid:
@@ -902,6 +925,7 @@ class SportsCore(ABC):
                     size -= grid
                 if size != getattr(fonts['score'], 'size', size):
                     fonts['score'] = ImageFont.truetype(path, size)
+                    self._score_grew = True
 
             scaled = None if self._user_chose_size('period_text') else \
                 self._grid_scaled_size(fonts.get('time'))
@@ -1179,6 +1203,17 @@ class SportsCore(ABC):
         score, because the logo cache is keyed on team and must not resize
         when a team passes 9 points.
         """
+        if not getattr(self, '_score_grew', False):
+            # Unchanged from the flat half-width reserve this has always used:
+            # at the 40px score every un-grown panel gets, width // 2 and
+            # width - 2 * 10 are both 20. Spelled out so the grown case below
+            # is visibly the only new behaviour.
+            try:
+                probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
+                return int(probe.textlength(
+                    self._SCORE_PROBE_TEXT, font=self.fonts["score"])) // 2
+            except Exception:
+                return 22
         try:
             font = self.fonts["score"]
             from PIL import Image as _Image, ImageDraw as _ImageDraw
