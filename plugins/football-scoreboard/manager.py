@@ -67,6 +67,12 @@ _ROOT_CONFIG_KEYS = (
     "schedule_lookahead_days",
     "no_data_interval_seconds",
     "live_idle_max_interval_seconds",
+    # The matchup separator and the date/time formats, read by the full-screen
+    # scorebug in sports.py as well as by the scroll and Vegas card renderer.
+    # The scroll path gets the whole plugin config and so never needed this;
+    # the per-league managers are handed a rebuilt dict, so without naming it
+    # here the setting reaches the ticker and never the scoreboard.
+    "scroll_card",
 )
 
 

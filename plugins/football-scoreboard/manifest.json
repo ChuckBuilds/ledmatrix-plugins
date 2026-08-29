@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.26.1",
+  "version": "2.27.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,13 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.27.0",
+      "released": "2026-08-29",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The matchup separator and the date and time formats now reach the full-screen scoreboard, not just the scroll and Vegas cards. A new \"Middle of a Full-Screen Upcoming Scoreboard\" setting (switch_upcoming_center) picks what sits between the two logos before a game starts: the stacked date and time as before, the VS / @ / at separator, nothing, or whatever the scroll and Vegas cards are set to. It defaults to the stacked date and time, so the scoreboard looks exactly as it did until you change it.",
+      "changelog": "The matchup separator and the date and time formats now reach the full-screen scoreboard, not just the scroll and Vegas cards. A new \"Middle of a Full-Screen Upcoming Scoreboard\" setting (switch_upcoming_center) picks what sits between the two logos before a game starts: the stacked date and time as before, the VS / @ / at separator, nothing, or whatever the scroll and Vegas cards are set to. It defaults to the stacked date and time, so the scoreboard looks exactly as it did until you change it."
+    },
     {
       "version": "2.26.1",
       "released": "2026-08-29",
