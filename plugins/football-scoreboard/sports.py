@@ -1570,10 +1570,18 @@ class SportsCore(ABC):
                 if cached:
                     ids = {int(i) for i in cached}
                 else:
+                    # The SEASON year, not the calendar year. College
+                    # football's 2026 season runs into January 2027, and asking
+                    # for season 2027 in January returns groups that do not
+                    # exist yet: the roster comes back empty, division
+                    # filtering fails open, and it does so through the bowls
+                    # and the playoff -- the weeks anyone is watching.
+                    now = datetime.now()
+                    season = now.year if now.month >= 7 else now.year - 1
                     url = (
                         "https://sports.core.api.espn.com/v2/sports/"
                         f"{self.sport}/leagues/{self.league}/seasons/"
-                        f"{datetime.now().year}/types/2/groups/{group}/teams"
+                        f"{season}/types/2/groups/{group}/teams"
                     )
                     resp = self.session.get(url, params={"limit": 300}, timeout=15)
                     resp.raise_for_status()
@@ -1838,26 +1846,6 @@ class SportsCore(ABC):
                 return False
         return True
 
-    def _filtered_or_all(self, games: List[Dict]) -> List[Dict]:
-        """The games worth watching, or all of them if that leaves none.
-
-        With no favourites configured every game selected is a non-favourite
-        game, so the quality and division settings have to apply here too. They
-        governed only the top-up slice, which this branch never uses, so a
-        board with an empty favourites list had both settings silently inert --
-        it could ask for ranked games only and still get the next N kickoffs.
-
-        Fails open as a whole, not just per check. `_passes_other_filters`
-        allows a game whose data could not be resolved, but a filter working
-        exactly as asked can still match nothing on a given day, and here there
-        is no favourite left to carry the mode -- an empty list is a blank
-        panel rather than a short one.
-        """
-        self._note_broadcast_coverage(games)
-        kept = [g for g in games if self._passes_other_filters(g)]
-        self._check_ranking_coverage(games)
-        return kept or games
-
     def _note_broadcast_coverage(self, games: List[Dict]) -> None:
         """Does this league carry broadcast data at all?
 
@@ -1926,21 +1914,29 @@ class SportsCore(ABC):
             return others[:limit]
 
         interval = self.other_rotation_interval_seconds
-        if interval > 0:
-            now = time.monotonic()
-            if not self._other_window_rotated_at:
-                self._other_window_rotated_at = now
-            elapsed = now - self._other_window_rotated_at
-            if elapsed >= interval:
-                # Advance by however many intervals actually passed. The board
-                # is not guaranteed to be running -- or this mode displayed --
-                # for every one of them, and stepping once would let a plugin
-                # that sat idle crawl a step at a time.
-                steps = int(elapsed // interval)
-                self._other_window_start += steps * limit
-                self._other_window_rotated_at = now
+        # Under the lock: update() advances this window through
+        # _favorites_first, and display() advances it through
+        # _rotate_other_games_on_display, so the read-modify-write below has two
+        # writers. Interleaved, both can see the interval elapsed and each add a
+        # width, skipping a window of games nobody ever sees. _games_lock is an
+        # RLock and the display path takes it again straight after, which is
+        # why this can be the same lock rather than another one to reason about.
+        with self._games_lock:
+            if interval > 0:
+                now = time.monotonic()
+                if not self._other_window_rotated_at:
+                    self._other_window_rotated_at = now
+                elapsed = now - self._other_window_rotated_at
+                if elapsed >= interval:
+                    # Advance by however many intervals actually passed. The
+                    # board is not guaranteed to be running -- or this mode
+                    # displayed -- for every one of them, and stepping once
+                    # would let a plugin that sat idle crawl a step at a time.
+                    steps = int(elapsed // interval)
+                    self._other_window_start += steps * limit
+                    self._other_window_rotated_at = now
 
-        start = self._other_window_start % len(others)
+            start = self._other_window_start % len(others)
         window = others[start:start + limit]
         if len(window) < limit:
             window += others[:limit - len(window)]
@@ -2029,7 +2025,8 @@ class SportsCore(ABC):
             # asked can still match nothing on a given day, and with no
             # favourite game left there is nothing to carry the mode -- an empty
             # list is a blank panel, not a short one. Same whole-list fallback
-            # `_filtered_or_all` makes for a board with no favourites at all.
+            # makes for a board with no favourites at all, which now takes
+            # this same path with a favourite limit of 0.
             # `other_limit` of 0 is an explicit "favourites only", so that one
             # is left to go quiet as asked.
             selected = self._other_games_window(pools["unfiltered"], max(0, other_limit))
@@ -2086,7 +2083,12 @@ class SportsCore(ABC):
         if not pools:
             return []
         interval = self.other_rotation_interval_seconds
-        others, limit = pools["others"], max(0, pools["other_limit"])
+        limit = max(0, pools["other_limit"])
+        # Whichever pool _compose_selection will actually slice. When the
+        # filters reject everything it falls back to the unfiltered list, and
+        # gating on `others` there left that fallback pinned until the next
+        # fetch -- an hour by default -- however short the rotation was set.
+        others = pools["others"] or (pools["unfiltered"] if limit > 0 else [])
         if interval <= 0 or limit <= 0 or len(others) <= limit:
             return []       # pinned, favourites-only, or nothing to rotate through
         if not self._other_window_rotated_at:
@@ -2286,12 +2288,15 @@ class SportsUpcoming(SportsCore):
                     self.favorite_teams, shown_favs, len(team_games) - shown_favs
                 )
             else:
-                # No favourites at all: the next N games league-wide.
-                team_games = sorted(
-                    self._filtered_or_all(processed_games),
-                    key=lambda g: g.get("start_time_utc")
-                    or datetime.max.replace(tzinfo=timezone.utc),
-                )[:self.upcoming_games_to_show]
+                # No favourites at all: the same selection with no favourite
+                # slots. This used to be its own path -- filter, sort, truncate
+                # -- which never built the selection pools, so nothing rotated
+                # and nothing was ordered by rank. That is the DEFAULT
+                # configuration for college football, so the board most in need
+                # of the pacing work was the one board not getting it.
+                team_games = self._favorites_first(
+                    processed_games, 0, self.upcoming_games_to_show
+                )
                 self.logger.info(
                     "No favorites configured: showing %d total upcoming games",
                     len(team_games)
@@ -2927,13 +2932,11 @@ class SportsRecent(SportsCore):
                     self.favorite_teams, shown_favs, len(team_games) - shown_favs
                 )
             else:
-                # No favourites at all: the most recent N league-wide.
-                team_games = sorted(
-                    self._filtered_or_all(processed_games),
-                    key=lambda g: g.get("start_time_utc")
-                    or datetime.min.replace(tzinfo=timezone.utc),
-                    reverse=True,
-                )[:self.recent_games_to_show]
+                # No favourites at all -- see the note in SportsUpcoming.
+                team_games = self._favorites_first(
+                    processed_games, 0, self.recent_games_to_show,
+                    newest_first=True,
+                )
                 self.logger.info(
                     "No favorites configured: showing %d total recent games",
                     len(team_games)

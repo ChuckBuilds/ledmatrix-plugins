@@ -137,7 +137,13 @@ class ESPNDataSource(DataSource):
                 return data
             except Exception as e:
                 status = getattr(getattr(e, "response", None), "status_code", None)
-                if status not in (404, None):
+                # Only a 404 is routine -- it is how a league says "no poll
+                # here". Everything else is worth an error, and `status is
+                # None` covers the ones that matter most: ConnectionError,
+                # Timeout, a body that would not parse. Silencing those left a
+                # board that could not reach ESPN with one debug line, and the
+                # ranked filter running on an empty table.
+                if status != 404:
                     self.logger.error(
                         f"Error fetching {endpoint} from ESPN for "
                         f"{sport}/{league}: {e}"

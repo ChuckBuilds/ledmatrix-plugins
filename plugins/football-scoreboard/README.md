@@ -523,7 +523,7 @@ Per league, under `game_limits`:
 
 | Option | Default | Description |
 |---|---|---|
-| `upcoming_games_to_show` | `1` | How many **favorite** upcoming games to show (a total, not per team, when `show_favorite_teams_only` is off). |
+| `upcoming_games_to_show` | `5` (ncaa_fb) | How many **favorite** upcoming games to show (a total, not per team, when `show_favorite_teams_only` is off). |
 | `recent_games_to_show` | varies | The same, for finished games. |
 | `other_upcoming_games_to_show` | matches `upcoming_games_to_show` | How many **non-favorite** upcoming games to add. `0` gives you favorites only. |
 | `other_recent_games_to_show` | matches `recent_games_to_show` | The same, for finished games. |
