@@ -33,6 +33,12 @@
       "changelog": "The matchup separator and the date and time formats now reach the full-screen scoreboard, not just the scroll and Vegas cards. A new \"Middle of a Full-Screen Upcoming Scoreboard\" setting (switch_upcoming_center) picks what sits between the two logos before a game starts: the stacked date and time as before, the VS / @ / at separator, nothing, or whatever the scroll and Vegas cards are set to. It defaults to the stacked date and time, so the scoreboard looks exactly as it did until you change it."
     },
     {
+      "version": "2.26.1",
+      "released": "2026-08-29",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fetch a team's badge when it is not already on disk. The shipped logo set covers FBS only, so an FCS opponent -- Furman, Tennessee State -- had no file and its card drew without logos. Nothing was logged and nothing errored, because nothing had failed: the file simply was not there. The request is now made where the game dict is built, using the logo URL ESPN returns in the same payload as the game, and the download runs on a small shared pool rather than inline -- a request is allowed 30s, so a game with two missing badges could otherwise hold its own detail extraction for a minute and delay every scoreboard update behind it. The pool's record of what is in flight and what could not be fetched is shared across the live, recent and upcoming managers and namespaced by sport, so the same badge is not queued three times. On a live rig this pulled 96 missing badges, taking the local set from 209 to 307."
+    },
+    {
       "version": "2.26.0",
       "released": "2026-08-23",
       "ledmatrix_min_version": "2.0.0",
