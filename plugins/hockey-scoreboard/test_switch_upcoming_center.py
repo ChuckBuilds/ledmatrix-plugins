@@ -8,16 +8,23 @@ scoreboard, which drew a hardcoded "Next Game" over a hardcoded 12h time.
 
 The block now drives every display mode. What this pins down:
 
-  * the default render is byte-identical to the old one. That is the whole
-    reason switch_upcoming_center exists: upcoming_center defaults to "vs",
-    this display has always drawn the date and time stacked, and honouring
-    the shared key directly would have flipped every existing panel on
-    update. Compared against a literal reference drawing, not against the
+  * the default render is byte-identical to the old one -- including under
+    the config a real install materialises, which is the case that actually
+    matters and the one the first cut of this test missed: the core merges
+    schema defaults in recursively, so every key always arrives set and
+    "the user has not touched this" is not a state the code can observe.
+    Compared against a literal reference drawing, not against the
     implementation's own helpers, so it fails if the layout drifts.
+  * the two keys that exist because the displays disagree about a default --
+    switch_upcoming_center (the cards say "vs", this has always stacked the
+    date and time) and switch_date_format (the cards say "Sep 19", this has
+    always said "9/19") -- hold this display to what it already drew, and
+    take "inherit" to opt into the scroll and Vegas setting.
   * "vs" draws the configured separator in the middle, empty draws nothing,
-    and the date and time move to the top and bottom rows.
-  * "inherit" follows upcoming_center.
-  * time_format/date_format/show_*/swap_date_time reach this display.
+    and the date and time move out to the top and bottom rows, each keeping
+    its own font rather than the row's.
+  * vs_text, time_format, show_date/show_time and swap_date_time are shared
+    outright, and do reach this display.
 
 Renders into a bare Image rather than through the display manager: the point
 is the pixels _draw_upcoming_center_switch puts down, and going through
