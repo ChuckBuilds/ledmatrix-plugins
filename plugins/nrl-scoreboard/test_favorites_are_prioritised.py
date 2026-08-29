@@ -703,6 +703,45 @@ def main():
     check("the sooner favourite game still comes first",
           picked and picked[0]["id"] == games[40]["id"], abbrs(picked))
 
+    print("\nfavourite slots are shared between your teams")
+    # Taking the soonest N favourite games spends them on whoever plays most
+    # often. Walked across a real season with UGA and AUB and a limit of 2, nine
+    # days showed Auburn twice and Georgia not at all -- Auburn played either
+    # side of a Georgia bye.
+    # Each fixture team carries BOTH spellings the lineages match on -- most
+    # compare abbreviations, NRL compares ESPN team ids because its
+    # abbreviations are not unique -- so one fixture works in all nine.
+    def fav_game(gid, team, days):
+        game = dict(games[0])
+        game.update({"id": gid, "start_time_utc": NOW + timedelta(days=days)})
+        if team == "first":
+            game.update({"home_abbr": "UGA", "home_id": 1041,
+                         "away_abbr": "OPP", "away_id": 9001})
+        else:
+            game.update({"home_abbr": "AUB", "home_id": 2040,
+                         "away_abbr": "FOE", "away_id": 9002})
+        return game
+
+    # The second team plays twice before the first plays at all -- a bye week.
+    bye = [fav_game("bye0", "second", 1), fav_game("bye1", "second", 8),
+           fav_game("bye2", "first", 15)]
+    probe = make(sports, favs, 2, 0)
+    picked = probe._favorites_first(bye, 2, 0)
+    check("both teams get a slot even when one plays twice first",
+          {g["id"] for g in picked} == {"bye0", "bye2"}, [g["id"] for g in picked])
+
+    # Breadth first, but not at the cost of depth: one team with slots to spare
+    # still gets its next games.
+    solo = make(sports, ["AUB", "2040"], 3, 0)
+    picked = solo._favorites_first(bye, 3, 0)
+    check("a single favourite still fills the slots it is given",
+          {g["id"] for g in picked} == {"bye0", "bye1"}, [g["id"] for g in picked])
+
+    both = make(sports, favs, 3, 0)
+    picked = both._favorites_first(bye, 3, 0)
+    check("with room for three, the second game of a team comes back",
+          {g["id"] for g in picked} == {"bye0", "bye1", "bye2"}, [g["id"] for g in picked])
+
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
     return 1 if failed else 0

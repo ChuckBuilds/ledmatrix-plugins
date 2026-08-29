@@ -1598,6 +1598,64 @@ class SportsCore(ABC):
                               rankings.get(game.get("away_abbr"), 0)) if r]
         return min(ranked) if ranked else 99
 
+    def _round_robin_favorites(self, games: List[Dict], limit: int) -> List[Dict]:
+        """Each favourite team's next game before any team's second one.
+
+        Taking the soonest N favourite games spends the slots on whoever plays
+        most often. Walked across a real season with two favourites and a limit
+        of 2, nine days of it showed Auburn twice and Georgia not at all --
+        Auburn played either side of a Georgia bye, so both slots went to
+        Auburn. The other-games pool already refuses to do this; favourites
+        were still doing it.
+
+        Depth is kept where there is room: one favourite with three slots still
+        gets its next three games, because the round-robin only comes back for
+        a team's second game once every team has had a first.
+
+        A game between two favourites is picked once and counts for both.
+        """
+        if limit <= 0 or not games:
+            return []
+        wanted = [t for t in (self.favorite_teams or []) if t]
+        if len(wanted) < 2:
+            return games[:limit]        # nothing to share the slots between
+
+        # Which side of a game belongs to which favourite is a per-lineage
+        # question: NRL matches on ESPN team IDs because its abbreviations are
+        # not unique ("NEW" is both Newcastle and New Zealand), while the rest
+        # match on abbreviation. Ask for the lineage's own matcher rather than
+        # assuming, or this silently groups nothing and every slot goes empty.
+        team_in = getattr(self, "_team_in", None)
+        if callable(team_in):
+            def belongs(game, team):
+                return bool(team_in(game.get("home_id"), [team])
+                            or team_in(game.get("away_id"), [team]))
+        else:
+            def belongs(game, team):
+                return team in (game.get("home_abbr"), game.get("away_abbr"))
+
+        queues = {team: [] for team in wanted}
+        for game in games:              # already in kickoff order
+            for team in wanted:
+                if belongs(game, team):
+                    queues[team].append(game)
+
+        picked, taken = [], set()
+        while len(picked) < limit:
+            progressed = False
+            for team in wanted:
+                queue = queues[team]
+                while queue and queue[0].get("id") in taken:
+                    queue.pop(0)
+                if queue and len(picked) < limit:
+                    game = queue.pop(0)
+                    taken.add(game.get("id"))
+                    picked.append(game)
+                    progressed = True
+            if not progressed:
+                break                   # every queue is empty
+        return picked
+
     def _by_importance(self, games: List[Dict], newest_first: bool = False) -> List[Dict]:
         """Non-favourite games, best matchup first.
 
@@ -1865,7 +1923,7 @@ class SportsCore(ABC):
             def key(g):
                 return g.get("start_time_utc") or datetime.max.replace(tzinfo=timezone.utc)
 
-        selected = favorites[:max(0, favorite_limit)]
+        selected = self._round_robin_favorites(favorites, max(0, favorite_limit))
         selected.extend(self._other_games_window(others, max(0, other_limit)))
         if not selected and other_limit > 0:
             # Nothing survived at all: your teams are not playing inside the
