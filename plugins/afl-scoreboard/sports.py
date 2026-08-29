@@ -1717,6 +1717,47 @@ class SportsCore(ABC):
             or rankings.get(game.get("away_abbr"), 0)
         )
 
+    def _best_rank(self, game: Dict) -> int:
+        """The better of the two sides' poll positions, or 99 if neither ranks."""
+        rankings = getattr(self, "_team_rankings_cache", None) or {}
+        if not rankings:
+            return 99
+        ranked = [r for r in (rankings.get(game.get("home_abbr"), 0),
+                              rankings.get(game.get("away_abbr"), 0)) if r]
+        return min(ranked) if ranked else 99
+
+    def _by_importance(self, games: List[Dict], newest_first: bool = False) -> List[Dict]:
+        """Non-favourite games, best matchup first.
+
+        The quality filter already declares the poll to be the thing worth
+        showing -- and then selection ignored the number entirely. #1 against #2
+        and #25 against an unranked side were interchangeable, and whichever
+        kicked off sooner took the slot, so the biggest game of the week had no
+        better chance of being seen than any other.
+
+        The rotation still walks the entire pool, so nothing is lost and
+        coverage is unchanged; it now walks DOWN the ladder instead of along the
+        clock. The first window after a restart holds the best games available
+        rather than the earliest ones, which is the case that matters -- a board
+        is far more often freshly started or freshly updated than three hours
+        into a lap.
+
+        Ties fall back to kickoff order, and a league with no poll keeps the
+        chronological order it had, because there is nothing to sort on.
+        """
+        rankings = getattr(self, "_team_rankings_cache", None) or {}
+        if not rankings:
+            return games
+        if newest_first:
+            def key(game):
+                when = game.get("start_time_utc") or datetime.min.replace(tzinfo=timezone.utc)
+                return (self._best_rank(game), -when.timestamp())
+        else:
+            def key(game):
+                when = game.get("start_time_utc") or datetime.max.replace(tzinfo=timezone.utc)
+                return (self._best_rank(game), when.timestamp())
+        return sorted(games, key=key)
+
     def _passes_other_filters(self, game: Dict) -> bool:
         """Is this non-favourite game worth one of the remaining slots?
 
@@ -1894,8 +1935,8 @@ class SportsCore(ABC):
 
         self._selection_pools = {
             "favorites": favorites,
-            "others": others,
-            "unfiltered": unfiltered,
+            "others": self._by_importance(others, newest_first),
+            "unfiltered": self._by_importance(unfiltered, newest_first),
             "favorite_limit": favorite_limit,
             "other_limit": other_limit,
             "newest_first": newest_first,

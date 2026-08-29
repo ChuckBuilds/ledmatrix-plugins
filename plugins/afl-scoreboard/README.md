@@ -260,6 +260,8 @@ The third row is what most people want, and it did not exist before: with the fl
 
 **Your favorite teams are never filtered by the last two** — follow a smaller-division team and its games always appear. Those settings only decide what fills the *remaining* slots.
 
+Within the other-games pool, **the better matchup leads**. The slice is ordered by the best poll position of either side, so a top-five game sits in the first window rather than whichever kicks off soonest; ties fall back to kickoff order, and a league with no poll keeps chronological order. Your favorite teams are ordered by when they play, not by rank -- for your own team the next game is the point.
+
 ### Variety comes from turnover
 
 Rather than widening the pool, the non-favorite slice **moves**: the window advances by its own width every `other_rotation_interval_seconds`, so consecutive windows do not overlap and the board works through the schedule instead of resampling the front of it. Your favorites are not rotated — for upcoming games the soonest ones are the point.

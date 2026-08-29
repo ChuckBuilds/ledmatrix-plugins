@@ -642,6 +642,46 @@ def main():
     finally:
         sports.time.monotonic = real_monotonic
 
+    print("\nthe best matchup available leads, not the earliest")
+    # The filter said rank was what mattered and then selection ignored the
+    # number: #1 vs #2 and #25 vs an unranked side were interchangeable, and the
+    # earlier kickoff won. The pool is now ordered by the better of the two
+    # sides before the window slices it.
+    probe = make(sports, [], 3, 3)
+    probe.other_games_min_quality = "ranked"
+    # T50H plays LAST in the fixture and carries the best rank; T02H plays early
+    # and is barely ranked. Chronology and importance disagree on purpose.
+    probe._team_rankings_cache = {"T50H": 1, "T30A": 7, "T02H": 24}
+    ordered = probe._by_importance([g for g in games if probe._passes_other_filters(g)])
+    check("the top-ranked game sorts first even though it is last chronologically",
+          ordered and ordered[0]["home_abbr"] == "T50H", abbrs(ordered[:3]))
+    check("and the rest follow the ladder, not the clock",
+          [g["home_abbr"] for g in ordered[:3]] == ["T50H", "T30H", "T02H"],
+          abbrs(ordered[:3]))
+
+    picked = probe._favorites_first(games, 3, 1)
+    others = [g for g in picked if not probe._is_favorite_game(g)]
+    check("so the first window holds the best game available",
+          others and others[0]["home_abbr"] == "T50H", abbrs(others))
+
+    check("ties fall back to kickoff order",
+          probe._by_importance([games[5], games[3]])[0]["id"] == games[3]["id"])
+
+    probe._team_rankings_cache = {}
+    unchanged = probe._by_importance(list(games[:5]))
+    check("a league with no poll keeps chronological order",
+          [g["id"] for g in unchanged] == [g["id"] for g in games[:5]])
+
+    print("\nfavourites are still ordered by when they play")
+    # Importance ordering is for the OTHER slots. For your own teams the next
+    # game is the point -- ordering those by rank would show a week-8 fixture
+    # ahead of Saturday's.
+    probe = make(sports, favs, 3, 3)
+    probe._team_rankings_cache = {"AUB": 1, "BAMA": 25}
+    picked = probe._favorites_first(games, 3, 0)
+    check("the sooner favourite game still comes first",
+          picked and picked[0]["id"] == games[40]["id"], abbrs(picked))
+
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
     return 1 if failed else 0
