@@ -4,6 +4,7 @@ import secrets
 import threading
 import time
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Tuple
@@ -124,6 +125,81 @@ def _clamp_seconds(value: Any, fallback: int, low: int = 5,
         # raises -- the same gap _clamp_window above already covers.
         return fallback
     return max(low, min(high, seconds))
+
+
+class _LogoFetcher:
+    """Fetches missing team badges off the data thread, once per team.
+
+    Shared by every manager in the process. Live, recent and upcoming each
+    build game dicts, so without a common record they would each queue the
+    same badge and each keep a private note of what failed -- three attempts
+    at a logo ESPN does not have. Keys are namespaced by sport so two leagues
+    using the same abbreviation do not shadow each other.
+
+    Downloads run on a small pool rather than inline. download_missing_logo
+    allows 30s per request, so a game with two missing badges could hold its
+    own detail extraction for a minute and delay every scoreboard update queued
+    behind it. A badge that arrives late is not a problem: the card draws
+    without it once, and correctly on the next pass.
+    """
+
+    _MAX_WORKERS = 2
+    _lock = threading.Lock()
+    _pool: Optional[ThreadPoolExecutor] = None
+    _pending: set = set()
+    _failed: set = set()
+
+    @classmethod
+    def _executor(cls) -> ThreadPoolExecutor:
+        if cls._pool is None:
+            cls._pool = ThreadPoolExecutor(
+                max_workers=cls._MAX_WORKERS, thread_name_prefix="logo-fetch"
+            )
+        return cls._pool
+
+    @classmethod
+    def request(cls, sport_key, team_id, abbr, logo_path, logo_url, logger):
+        """Queue a badge for download. Returns the Future, or None if skipped."""
+        key = (sport_key, abbr)
+        with cls._lock:
+            if key in cls._pending or key in cls._failed:
+                return None
+            cls._pending.add(key)
+        logger.info("No local logo for %s; fetching it in the background", abbr)
+        return cls._executor().submit(
+            cls._fetch, key, sport_key, team_id, abbr, logo_path, logo_url, logger
+        )
+
+    @classmethod
+    def _fetch(cls, key, sport_key, team_id, abbr, logo_path, logo_url, logger):
+        fetched = False
+        try:
+            fetched = bool(
+                download_missing_logo(sport_key, team_id, abbr, Path(logo_path), logo_url)
+            )
+        except Exception:
+            logger.warning("Logo fetch raised for %s", abbr, exc_info=True)
+
+        # The file on disk is the authority: another manager's request may have
+        # written it while this one was in flight, which is a success from the
+        # panel's point of view even though our own call reported failure.
+        try:
+            fetched = fetched or Path(logo_path).exists()
+        except OSError:
+            pass
+
+        with cls._lock:
+            cls._pending.discard(key)
+            if not fetched:
+                cls._failed.add(key)
+
+        if fetched:
+            logger.info("Downloaded logo for %s", abbr)
+        else:
+            logger.warning(
+                "Could not fetch a logo for %s; its card will draw without one", abbr
+            )
+        return fetched
 
 
 class SportsCore(ABC):
@@ -1346,6 +1422,7 @@ class SportsCore(ABC):
                 # the raw config, can color a final score by the result.
                 "favorite_teams": list(self.favorite_teams or []),
             }
+            self._ensure_team_logos(details)
             return details, home_team, away_team, status, situation
         except Exception as e:
             # Log the problematic event structure if possible
@@ -1354,6 +1431,37 @@ class SportsCore(ABC):
                 exc_info=True,
             )
             return None, None, None, None, None
+
+    def _ensure_team_logos(self, details: dict) -> None:
+        """Ask for any badge this game needs that is not on disk yet.
+
+        The shipped set covers FBS only, so an FCS opponent -- Furman,
+        Tennessee State -- has no file and its card drew without logos. Nothing
+        was logged, because nothing had failed: the file simply was not there.
+
+        ESPN returns the logo URL in the same payload as the game, so the
+        moment a team is known to be showing, its badge URL is already in hand.
+        The download itself is handed to _LogoFetcher rather than run here --
+        see that class for why this must not block.
+        """
+        for side in ("home", "away"):
+            abbr = details.get("%s_abbr" % side)
+            logo_path = details.get("%s_logo_path" % side)
+            if not abbr or not logo_path:
+                continue
+            try:
+                if Path(logo_path).exists():
+                    continue
+            except OSError:
+                continue
+            _LogoFetcher.request(
+                self.sport_key,
+                details.get("%s_id" % side),
+                abbr,
+                logo_path,
+                details.get("%s_logo_url" % side),
+                self.logger,
+            )
 
     @abstractmethod
     def _extract_game_details(self, game_event: dict) -> dict | None:
