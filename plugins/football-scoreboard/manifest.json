@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.26.1",
+  "version": "2.27.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,13 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.27.0",
+      "released": "2026-08-29",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The score is now the headline it was always meant to be. It was the only element on the card not sized from the panel, and it was not even bigger than its neighbours: PressStart2P renders crisply on an 8px grid, so the 10px default snapped to 8 -- the same 8 the clock above it and the game date below it are drawn at. It is now sized from display_height, snapped to its face's pixel grid, and stepped back down that grid until it fits its share of the width; the clock/date face is regrown the same way but held a grid step below it. A 192x48 panel goes from an 8px score to 16px, 256x128 and 384x96 to 24px. The bottom-anchored and centre-anchored score positions, and the date positions, scale with their faces so a grown one is not clipped off the card. Logos are capped by the score's centre reserve, so a wide mark can no longer run in from both sides and have the score drawn on top of it. Panels at or below the 32-tall design height are byte-identical. The adaptive layout reaches the same rung: fit_text_proportional takes the largest rung at or below its target, and 8 * (48/32) = 12 fell just short of 16, so a 48-tall card got the same 8px score a 32-tall one did. _fit_element now snaps the score's target to the face's grid first, so both layouts pick the same size on the same panel. The centre reserve holds a fixed 10px logo crossing rather than a flat half of the score's width.",
+      "changelog": "The score is now the headline it was always meant to be. It was the only element on the card not sized from the panel, and it was not even bigger than its neighbours: PressStart2P renders crisply on an 8px grid, so the 10px default snapped to 8 -- the same 8 the clock above it and the game date below it are drawn at. It is now sized from display_height, snapped to its face's pixel grid, and stepped back down that grid until it fits its share of the width; the clock/date face is regrown the same way but held a grid step below it. A 192x48 panel goes from an 8px score to 16px, 256x128 and 384x96 to 24px. The bottom-anchored and centre-anchored score positions, and the date positions, scale with their faces so a grown one is not clipped off the card. Logos are capped by the score's centre reserve, so a wide mark can no longer run in from both sides and have the score drawn on top of it. Panels at or below the 32-tall design height are byte-identical. The adaptive layout reaches the same rung: fit_text_proportional takes the largest rung at or below its target, and 8 * (48/32) = 12 fell just short of 16, so a 48-tall card got the same 8px score a 32-tall one did. _fit_element now snaps the score's target to the face's grid first, so both layouts pick the same size on the same panel. The centre reserve holds a fixed 10px logo crossing rather than a flat half of the score's width."
+    },
     {
       "version": "2.26.1",
       "released": "2026-08-29",
@@ -300,7 +307,7 @@
       "released": "2026-07-10",
       "version": "2.8.0",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" \u2014 rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
+      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" — rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
     },
     {
       "released": "2026-07-08",

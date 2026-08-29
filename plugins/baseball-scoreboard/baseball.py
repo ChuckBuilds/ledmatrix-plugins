@@ -2137,8 +2137,20 @@ class BaseballLive(Baseball, SportsLive):
                 finally:
                     self.display_manager.draw = original_draw
 
-            # Draw Team:Score at the bottom (matching main branch format)
-            score_font = self.display_manager.font  # Use PressStart2P
+            # Draw Team:Score at the bottom (matching main branch format).
+            #
+            # The label and the number are drawn in DIFFERENT faces on purpose.
+            # Both used to be display_manager.font -- a fixed 8px PressStart2P
+            # that never moved with the panel -- so on a 48- or 64-tall card
+            # the run count, the one number this screen exists to show, was the
+            # same size as the abbreviation next to it and smaller than the
+            # inning above it. The runs now use the panel-scaled score font
+            # while the abbreviation stays small, which makes the number the
+            # headline without costing the layout any width: three big digits
+            # either side would meet in the middle on a 192-wide panel, three
+            # small letters plus one big digit do not.
+            label_font = self.display_manager.font  # Use PressStart2P
+            score_font = self.fonts.get("score", label_font)
             outline_color = (0, 0, 0)
             score_text_color = (
                 255,
@@ -2147,12 +2159,12 @@ class BaseballLive(Baseball, SportsLive):
             )
 
             # Helper function for outlined text
-            def draw_bottom_outlined_text(x, y, text):
+            def draw_bottom_outlined_text(x, y, text, font):
                 self._draw_text_with_outline(
                     draw_overlay,
                     text,
                     (x, y),
-                    score_font,
+                    font,
                     fill=score_text_color,
                     outline_color=outline_color,
                 )
@@ -2162,29 +2174,48 @@ class BaseballLive(Baseball, SportsLive):
             away_score_str = str(game["away_score"])
             home_score_str = str(game["home_score"])
 
-            away_text = f"{away_abbr}:{away_score_str}"
-            home_text = f"{home_abbr}:{home_score_str}"
+            away_label = f"{away_abbr}:"
+            home_label = f"{home_abbr}:"
 
-            # Calculate Y position (bottom edge)
-            try:
-                font_height = score_font.getbbox("A")[3] - score_font.getbbox("A")[1]
-            except AttributeError:
-                font_height = 8  # Fallback for default font
-            score_y = (
-                self.display_height - font_height - 2
-            )  # 2 pixels padding from bottom
+            def ink_height(font):
+                try:
+                    box = font.getbbox("A")
+                    return box[3] - box[1]
+                except AttributeError:
+                    return 8  # Fallback for default font
+
+            label_height = ink_height(label_font)
+            score_height = ink_height(score_font)
+
+            # Both faces sit on a shared bottom edge, so the smaller one is
+            # pushed down by the difference rather than drawn at the same y --
+            # otherwise the abbreviation floats above the number it labels.
+            row_height = max(label_height, score_height)
+            row_y = self.display_height - row_height - 2  # 2px padding, bottom
+            label_y = row_y + (row_height - label_height)
+            score_y = row_y + (row_height - score_height)
+
+            def text_width(text, font):
+                box = draw_overlay.textbbox((0, 0), text, font=font)
+                return box[2] - box[0]
 
             # Away Team:Score (Bottom Left)
-            away_score_x = 2  # 2 pixels padding from left
-            draw_bottom_outlined_text(away_score_x, score_y, away_text)
+            away_x = 2  # 2 pixels padding from left
+            draw_bottom_outlined_text(away_x, label_y, away_label, label_font)
+            draw_bottom_outlined_text(
+                away_x + text_width(away_label, label_font), score_y,
+                away_score_str, score_font)
 
             # Home Team:Score (Bottom Right)
-            home_text_bbox = draw_overlay.textbbox((0, 0), home_text, font=score_font)
-            home_text_width = home_text_bbox[2] - home_text_bbox[0]
-            home_score_x = (
-                self.display_width - home_text_width - 2
+            home_width = (text_width(home_label, label_font)
+                          + text_width(home_score_str, score_font))
+            home_x = (
+                self.display_width - home_width - 2
             )  # 2 pixels padding from right
-            draw_bottom_outlined_text(home_score_x, score_y, home_text)
+            draw_bottom_outlined_text(home_x, label_y, home_label, label_font)
+            draw_bottom_outlined_text(
+                home_x + text_width(home_label, label_font), score_y,
+                home_score_str, score_font)
 
             # Draw gambling odds if available
             if game.get("odds"):

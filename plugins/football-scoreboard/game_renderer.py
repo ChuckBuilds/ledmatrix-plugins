@@ -987,6 +987,23 @@ class GameRenderer:
                              line_height=height)
         base_size_px = getattr(self.fonts[font_key], 'size', 10)
         height_scale = self.display_height / self._ctx.design_size[1]
+        if font_key == 'score':
+            # Snap the score's target to the face's pixel grid before the
+            # ladder sees it, so it lands ON a rung instead of just under one.
+            #
+            # fit_text_proportional takes the largest rung <= target, and the
+            # arcade ladder's rungs are 8 / 16 / 24 / 32. A 48-tall panel gives
+            # 8 * (48/32) = 12, which is short of 16, so the score stayed at 8
+            # -- the same size the classic layout was stuck at, and the same
+            # size as the clock above it. Snapping 12 to the nearest crisp
+            # size first makes the target exactly 16 and the rung reachable,
+            # and it uses the same _crisp_size() the classic path does, so the
+            # two layouts pick the same score size on the same panel.
+            face = os.path.basename(
+                getattr(self.fonts[font_key], 'path', '') or '')
+            snapped = self._crisp_size(face, base_size_px * height_scale)
+            if snapped:
+                base_size_px, height_scale = snapped, 1.0
         return self._ctx.fit_text_proportional(text, region, base_size_px=base_size_px,
                                                ladder=ladder, scale=height_scale)
 

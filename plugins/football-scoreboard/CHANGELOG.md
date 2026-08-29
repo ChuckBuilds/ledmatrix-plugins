@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.27.0] - 2026-08-29
+
+### Changed
+- **The score is now the headline it was always meant to be.** It was the only element on the card not sized from the panel, and it was not even bigger than its neighbours: PressStart2P renders crisply on an 8px grid, so the 10px default snapped to 8 -- the same 8 the period/clock above it and the game date below it are drawn at. Three lines of identical type on live and recent cards, none of them the score. It is now sized from `display_height`, snapped to its face's pixel grid, and stepped back down that grid until it fits its share of the width; the clock/date face is regrown the same way but held a grid step below it. A 192x48 panel goes from an 8px score to 16px, 256x128 and 384x96 to 24px.
+- **The adaptive layout reaches the same rung.** `fit_text_proportional` takes the largest ladder rung at or below its target, and `8 * (48/32) = 12` fell just short of 16 -- so a 48-tall card got the same 8px score a 32-tall one did. `_fit_element` now snaps the score's target to the face's grid first, so both layouts pick the same size on the same panel.
+- **The score's reserve holds its crossing, not its fraction.** The centre gap the logos are sized around was a flat half of the score's width, which kept the score's crossing at 10px only because the score was always 40px wide. It now reserves `width - 2 * 10`, identical at a 40px score and holding the same 10px crossing at every larger one.
+- **Score and date positions scale with their faces.** The centred score's `-3` and the date's 7px drop from the bottom edge were both chosen for an 8px face and clipped a grown one off the card.
+- Panels at or below the 32-tall design height are byte-identical: all 12 safety-harness renders at 64x32, 128x32, 96x48 and 128x64 match the previous release exactly.
+
 ## [2.11.0] - 2026-08-04
 
 ### Changed
