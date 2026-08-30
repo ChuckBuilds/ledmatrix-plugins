@@ -13,8 +13,10 @@ This module provides:
 
 import logging
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional, Tuple
+from zoneinfo import ZoneInfo
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -701,12 +703,15 @@ class GameRenderer:
             self._draw_text_with_outline(draw, game_date, (date_x, date_y), self.fonts['detail'])
     
     # ------------------------------------------------------------------
-    # Scroll/Vegas card options -- config["scroll_card"], plus the shared
+    # Card options -- config["scroll_card"], plus the shared
     # customization.layout offsets and per-element colours.
     #
-    # These only affect the cards this renderer builds, which are used by
-    # scroll_display.py and scroll_display_legacy.py alone. The full-screen
-    # scorebug is drawn elsewhere and is deliberately left untouched.
+    # The center-gap keys size this renderer's cards alone. The rest --
+    # upcoming_center, vs_text, the date and time formats -- are also read by
+    # sports.py's full-screen scorebug (SportsCore._draw_upcoming_center_switch
+    # and friends, gated there on switch_upcoming_center), so those two copies
+    # have to stay in step: a change to the formatting rules here needs the
+    # same change there, or the ticker and the scoreboard disagree.
     # ------------------------------------------------------------------
     CENTER_GAP_RATIO: ClassVar[float] = 0.28
     CENTER_GAP_MIN_PX: ClassVar[int] = 22

@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.27.0] - 2026-08-29
+## [2.28.0] - 2026-08-29
 
 ### Changed
 - **The score is now the headline it was always meant to be.** It was the only element on the card not sized from the panel, and it was not even bigger than its neighbours: PressStart2P renders crisply on an 8px grid, so the 10px default snapped to 8 — the same 8 the clock above it and the game date below it are drawn at. It is now sized from `display_height`, snapped to its face's pixel grid and capped at twice its design size, with the clock/date face held a grid step below it.

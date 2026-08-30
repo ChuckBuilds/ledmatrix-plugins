@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -19,11 +19,24 @@
   ],
   "versions": [
     {
-      "version": "1.14.0",
+      "version": "1.15.0",
       "released": "2026-08-29",
       "ledmatrix_min_version": "2.0.0",
       "notes": "The score is now the headline it was always meant to be. It was the only element on the card not sized from the panel, and it was not even bigger than its neighbours: PressStart2P renders crisply on an 8px grid, so the 10px default snapped to 8 -- the same 8 the clock above it and the game date below it are drawn at. It is now sized from display_height, snapped to its face's pixel grid and capped at twice its design size, with the clock/date face held a grid step below it. Score and date positions scale with their faces so a grown one is not clipped off the card. Where the grown score would swamp the panel the layout now reaches for a narrower FACE rather than crowding out the logos, which is what football-scoreboard has always done and the single reason its logos read larger than every other scoreboard's at the same size. Measured on a 128x64 board: 4x6-font at 14px reserves 28px and leaves 52x52 logos, where PressStart2P at 16px reserved 60px and left 36x36 -- two small badges adrift in a mostly black panel. The two faces are nothing like the same shape: PressStart2P is square, 4x6-font is nearly as tall and about half as wide, so the score keeps the dimension that carries legibility and gives back the one the logos need. Logos are sized against the space the score actually needs, and only where the score grew -- a panel whose score did not move keeps exactly the logos it had. The upcoming screen is untouched at every size: it draws no score, so none of this applies to it -- its date and time keep the face and size they always had. Measured on the live and recent screens: 64x32, 128x32 and 256x32 render byte-identically to the previous release, and every taller panel gains a larger score with logos the score is no longer drawn across.",
       "changelog": "The score is now the headline it was always meant to be. It was the only element on the card not sized from the panel, and it was not even bigger than its neighbours: PressStart2P renders crisply on an 8px grid, so the 10px default snapped to 8 -- the same 8 the clock above it and the game date below it are drawn at. It is now sized from display_height, snapped to its face's pixel grid and capped at twice its design size, with the clock/date face held a grid step below it. Score and date positions scale with their faces so a grown one is not clipped off the card. Where the grown score would swamp the panel the layout now reaches for a narrower FACE rather than crowding out the logos, which is what football-scoreboard has always done and the single reason its logos read larger than every other scoreboard's at the same size. Measured on a 128x64 board: 4x6-font at 14px reserves 28px and leaves 52x52 logos, where PressStart2P at 16px reserved 60px and left 36x36 -- two small badges adrift in a mostly black panel. The two faces are nothing like the same shape: PressStart2P is square, 4x6-font is nearly as tall and about half as wide, so the score keeps the dimension that carries legibility and gives back the one the logos need. Logos are sized against the space the score actually needs, and only where the score grew -- a panel whose score did not move keeps exactly the logos it had. The upcoming screen is untouched at every size: it draws no score, so none of this applies to it -- its date and time keep the face and size they always had. Measured on the live and recent screens: 64x32, 128x32 and 256x32 render byte-identically to the previous release, and every taller panel gains a larger score with logos the score is no longer drawn across."
+    },
+    {
+      "version": "1.14.1",
+      "released": "2026-08-29",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fix a crash when the date format is set to \"weekday\". game_renderer.py used datetime, timezone and ZoneInfo without importing any of them, so choosing that option -- one of the documented values of scroll_card.date_format -- raised NameError. Neither helper's except clause catches NameError (_weekday_for catches ValueError/TypeError, _card_tzinfo catches KeyError/ValueError/TypeError/OSError), so it propagated out of the render rather than falling back to the plain date. The imports now match hockey-scoreboard, the one copy that always had them and rendered the option correctly. Nothing else changes: the default \"abbrev\" format, which is what the render harness and the golden images exercise, was never affected, which is how this went unnoticed."
+    },
+    {
+      "version": "1.14.0",
+      "released": "2026-08-29",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The matchup separator and the date and time formats now reach the full-screen scoreboard, not just the scroll and Vegas cards. A new \"Middle of a Full-Screen Upcoming Scoreboard\" setting (switch_upcoming_center) picks what sits between the two logos before a game starts: the stacked date and time as before, the VS / @ / at separator, nothing, or whatever the scroll and Vegas cards are set to. It defaults to the stacked date and time, so the scoreboard looks exactly as it did until you change it.",
+      "changelog": "The matchup separator and the date and time formats now reach the full-screen scoreboard, not just the scroll and Vegas cards. A new \"Middle of a Full-Screen Upcoming Scoreboard\" setting (switch_upcoming_center) picks what sits between the two logos before a game starts: the stacked date and time as before, the VS / @ / at separator, nothing, or whatever the scroll and Vegas cards are set to. It defaults to the stacked date and time, so the scoreboard looks exactly as it did until you change it."
     },
     {
       "version": "1.13.0",

@@ -67,6 +67,12 @@ _ROOT_CONFIG_KEYS = (
     "schedule_lookahead_days",
     "no_data_interval_seconds",
     "live_idle_max_interval_seconds",
+    # The matchup separator and the date/time formats, read by the full-screen
+    # scorebug in sports.py as well as by the scroll and Vegas card renderer.
+    # The scroll path gets the whole plugin config and so never needed this;
+    # the per-league managers are handed a rebuilt dict, so without naming it
+    # here the setting reaches the ticker and never the scoreboard.
+    "scroll_card",
 )
 
 
@@ -663,6 +669,35 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "display_modes": manager_display_modes,
                 "test_mode": manager_test_mode,
                 "recent_games_to_show": game_limits.get("recent_games_to_show", 5),
+                # These ride the same source as the limits above, which is where the
+                # schema declares them. Managers read a translated config, not the
+                # plugin config, so a key missing here is a setting the user can
+                # change in the web UI that silently never reaches the code.
+                "other_upcoming_games_to_show": game_limits.get(
+                    "other_upcoming_games_to_show",
+                    game_limits.get("upcoming_games_to_show", 10),
+                ),
+                "other_recent_games_to_show": game_limits.get(
+                    "other_recent_games_to_show",
+                    game_limits.get("recent_games_to_show", 5),
+                ),
+                "other_rotation_interval_seconds": game_limits.get(
+                    "other_rotation_interval_seconds", 1800
+                ),
+                "other_games_min_quality": game_limits.get(
+                    "other_games_min_quality", "ranked"
+                ),
+                # Passed through raw. list() here defeated the coercion in
+                # sports.py twice over: a hand-edited "fbs" became
+                # ['f','b','s'] -- already a list, so the string branch never
+                # fired, and the filter then matched nothing and rejected every
+                # non-favourite game -- while a null raised TypeError inside
+                # this translation, which _initialize_managers catches and logs
+                # once, leaving all six managers None and the plugin rendering
+                # nothing at all.
+                "other_games_divisions": game_limits.get(
+                    "other_games_divisions", ["fbs"]
+                ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", 10),
                 "show_records": display_options.get("show_records", False),
                 "show_ranking": display_options.get("show_ranking", False),
@@ -671,6 +706,9 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "update_interval_seconds", 300
                 ),
                 "live_update_interval": league_config.get("live_update_interval", 30),
+                "recent_update_interval": league_config.get("recent_update_interval", 3600),
+                "upcoming_update_interval": league_config.get("upcoming_update_interval", 3600),
+                "stale_game_timeout": league_config.get("stale_game_timeout", 300),
                 "live_game_duration": league_config.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": league_config.get(
                     "non_favorite_live_game_duration", 0

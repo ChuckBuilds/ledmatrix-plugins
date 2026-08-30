@@ -72,6 +72,8 @@ These patterns update automatically as rankings change throughout the season. Yo
 
 This will show games for all AP Top 25 teams plus Georgia and Alabama (duplicates are automatically removed).
 
+> **These expand into real teams, and that has consequences.** Adding `AP_TOP_10` alongside two teams of your own makes yours 2 of up to 12 favorites (fewer when your teams are already ranked — duplicates are removed), all competing for the same slots — so your teams can stop appearing. See [Which Games Get Shown](#-which-games-get-shown) before mixing them.
+
 ## 📺 Display Modes
 
 ### Granular Mode Control
@@ -497,6 +499,91 @@ Per league (`nfl`, `ncaa_fb`), under `filtering`:
 
 With both `show_favorite_teams_only` and `show_all_live` off, all live games rotate evenly — `favorite_live_boost` is what gives your favorite's game precedence in that mode without hiding everyone else's scores.
 
+## 🎯 Which Games Get Shown
+
+This trips people up, so it is worth being precise: **`upcoming_games_to_show` is not "how many cards you see".** It is the size of a *pool*. The panel cycles through that pool one card at a time (`upcoming_game_duration`, 15s by default), and it keeps its place between visits. So a pool of 3 means the board rotates through the same 3 games until the schedule moves on.
+
+That is why making the number bigger does not help you see a particular team more often — a bigger pool means a *longer lap*, so any one game comes round **less** often.
+
+### The three modes
+
+Which mode you are in depends on two things: whether `favorite_teams` is set, and whether `filtering.show_favorite_teams_only` is on.
+
+| `favorite_teams` | `show_favorite_teams_only` | What you get |
+|---|---|---|
+| empty | either | The next N games league-wide, chronologically. Every game shown is a non-favorite game, so the two filters below apply to all of them. |
+| set | **on** | Only your teams. `upcoming_games_to_show` is a budget **per team**. |
+| set | **off** | **Your teams first, then other games to fill.** Both limits are **totals**. |
+
+The third row is the one most people actually want, and before v2.26.0 it did not exist — with the flag off, favorites were ignored *entirely* and you got the next N games league-wide. On a college slate that is ~950 upcoming games, so your team showed up about as often as chance allowed.
+
+### The settings
+
+Per league, under `game_limits`:
+
+| Option | Default | Description |
+|---|---|---|
+| `upcoming_games_to_show` | `5` (ncaa_fb) | How many **favorite** upcoming games to show (a total, not per team, when `show_favorite_teams_only` is off). |
+| `recent_games_to_show` | varies | The same, for finished games. |
+| `other_upcoming_games_to_show` | matches `upcoming_games_to_show` | How many **non-favorite** upcoming games to add. `0` gives you favorites only. |
+| `other_recent_games_to_show` | matches `recent_games_to_show` | The same, for finished games. |
+| `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
+| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked`, `broadcast`, or `any`. |
+| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from: `fbs`, `fcs`, `other`. |
+
+**Your favorite teams are never filtered by the last two.** Follow a Division II school and its games always appear, whatever the quality bar or division boxes say. Those settings only decide what fills the *remaining* slots.
+
+Within the other-games pool, **the better matchup leads**, and each team appears once. The pool is each team's *next* game ordered by the best poll position of either side, so a top-five matchup sits in the first window rather than whichever kicks off soonest — and the #1 team's whole season does not sort above everyone else's opener. Ties fall back to kickoff order, and a league with no poll keeps chronological order. Your favorite teams are ordered by when they play, not by rank -- for your own team the next game is the point.
+
+### Variety comes from turnover, not from a bigger pool
+
+Rather than widening the pool, the non-favorite slice **moves**. The window advances by its own width every `other_rotation_interval_seconds`, so consecutive windows do not overlap and the board works through the schedule instead of resampling the front of it.
+
+Measured on a real board — favorites `UGA` + `AUB`, 3 others, rotating every 30 minutes:
+
+```text
+  +  0 min: UNC@TCU, SJSU@USC, NCSU@UVA
+  + 30 min: JVST@NDSU, SAC@EMU, HAW@STAN
+  + 60 min: NMSU@FSU, MEM@UNLV, MASS@RUTG
+  + 90 min: BCU@UCF,  AKR@WAKE, MRMK@DEL
+```
+
+18 different matchups over three hours, while the pool stays at 6 cards and a full lap still takes about 90 seconds of airtime.
+
+Your favorites are **not** rotated. For upcoming games the soonest ones are the point — rotating them would show you a week-8 fixture instead of Saturday's.
+
+### Keeping the filler out
+
+Selection is otherwise purely chronological, and on a college slate most of what that returns is filler. Of ~950 upcoming games, roughly 250 involve a nationally ranked team; the rest are matchups most viewers have never heard of. Rotating harder just serves more of them, which is why `other_games_min_quality` defaults to `ranked`.
+
+`other_games_divisions` needs **one** team in a checked division, not both. With only `fbs` checked you still get #12 Texas Tech hosting Abilene Christian — a game involving a team you asked for — while Abilene Christian vs Furman stays out. Check `fcs` or `other` to bring the smaller-division matchups in as well.
+
+Both filters **fail open**: if rankings cannot be fetched, or the division rosters do not resolve, the game is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
+
+They fail open a second time, as a set: if the filters between them leave **nothing at all** — your teams idle and every other game rejected — the unfiltered list is used instead. Setting `other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one way to ask for an empty slate, and that is honoured.
+
+> These two settings only mean something for `ncaa_fb`. The NFL has no poll and no divisions, so both are inert there and cost nothing — no poll is requested and no division lookup is made. College football is also the only league ESPN publishes FBS/FCS group rosters for at all, so `other_games_divisions` does nothing in the other sports plugins either.
+
+### A worked example
+
+Say you follow Georgia and Auburn and want to see their next games plus some variety:
+
+```json
+"ncaa_fb": {
+  "favorite_teams": ["UGA", "AUB"],
+  "filtering": { "show_favorite_teams_only": false },
+  "game_limits": {
+    "upcoming_games_to_show": 3,
+    "other_upcoming_games_to_show": 3
+  }
+}
+```
+
+That gives 6 cards: the 3 soonest UGA/AUB games, plus 3 ranked FBS matchups that turn over every half hour.
+
+> **Careful with `AP_TOP_25` / `AP_TOP_10` in `favorite_teams`.** They expand into real teams, so adding `AP_TOP_10` makes UGA and AUB 2 of 11 favorites — and your own teams then queue behind every top-10 game that kicks off earlier. On one real schedule, UGA's next game was favorite-game #5 and Auburn's was #8, so with `upcoming_games_to_show: 3` neither appeared. If you want your teams guaranteed, keep the favorites list to your teams and let `other_upcoming_games_to_show` supply the variety.
+
+
 ### Customization Options
 
 - **Font Customization**: Adjust font family and size for:
@@ -617,3 +704,41 @@ Two things to keep in mind:
 - More slots make the cycle **longer**, not faster — everything else appears
   proportionally less often. And appearing more often only helps if the data is
   fresh, which is governed by this plugin's own live update interval.
+
+## Matchup separator and the upcoming card middle
+
+The **Matchup Card Layout** section (advanced) controls what sits between the
+two team logos before a game starts, and how the date and time are written.
+These settings now apply to every display mode -- the scroll ticker, the Vegas
+ticker, and the full-screen scoreboard -- rather than only the tickers.
+
+| Setting | Key | Default | What it does |
+|---|---|---|---|
+| Matchup Separator | `vs_text` | `VS` | Text drawn between the teams: `VS`, `@`, `at`, `v`. The away team is always on the left, so `@` and `at` read as "away at home". Blank draws nothing. |
+| Middle of an Upcoming Card | `upcoming_center` | `vs` | Scroll and Vegas cards: the separator, the date and time stacked, or nothing. |
+| Middle of a Full-Screen Upcoming Scoreboard | `switch_upcoming_center` | `date_time` | The same choice for the full-screen scoreboard, plus `inherit` to follow the setting above. It defaults to the stacked date and time, which is what this display has always shown, so nothing changes until you pick something else. |
+| Date Format | `date_format` | `abbrev` | How the scroll and Vegas cards write the date: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
+| Full-Screen Date Format | `switch_date_format` | `numeric` | The same choice for the full-screen scoreboard, plus `inherit` to follow the row above. It has its own default because the two displays disagree about what is normal: the cards have always written `Sep 19` and the full-screen scoreboard `9/19`, so a single shared default would restyle one of them. |
+| Time Format | `time_format` | `12h` | 12- or 24-hour clock. |
+| Show Date / Show Time | `show_date`, `show_time` | `true` | Drop either line. |
+| Swap Date and Time | `swap_date_time` | `false` | Swap the two lines over. Each display starts from its own order, so this flips them rather than forcing one: the scroll and Vegas cards put the time on top, the full-screen date/time stack puts the date on top. |
+
+Choosing the separator for the full-screen scoreboard moves the date and time
+out of the middle and onto the top and bottom rows, the same way the scroll
+card lays them out; the "Next Game" header gives up the top row to them.
+
+The center-gap settings in the same section size the scroll and Vegas card's
+middle strip only -- the full-screen scoreboard pins its logos to the panel
+edges and is unaffected.
+
+Example:
+
+```json
+{
+  "scroll_card": {
+    "vs_text": "@",
+    "switch_upcoming_center": "vs",
+    "date_format": "weekday"
+  }
+}
+```
