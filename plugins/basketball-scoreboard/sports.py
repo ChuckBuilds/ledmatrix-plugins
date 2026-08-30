@@ -655,6 +655,64 @@ class SportsCore(ABC):
     #: of a 256-wide panel -- a postage stamp in a 128-tall slot.
     _SCORE_MAX_GROWTH: ClassVar[int] = 2
 
+    #: Score may occupy this share of the panel width before the layout reaches
+    #: for a narrower face. Football's long-standing value, ported here with the
+    #: mechanism it belongs to.
+    _SCORE_WIDTH_BUDGET: ClassVar[float] = 0.55
+
+    #: Narrower crisp rungs to fall back through, widest first. 4x6-font renders
+    #: cleanly at multiples of 7 and is about half the width of PressStart2P per
+    #: character.
+    _NARROW_SCORE_RUNGS = (("4x6-font.ttf", 14), ("4x6-font.ttf", 7))
+
+    def _fit_score_font(self, fonts):
+        """Swap in a narrower face where the score would swamp the panel.
+
+        Ported from football-scoreboard, which has had it for a while and is the
+        only reason its logos read larger than every other scoreboard's at the
+        same panel size. Measured on a 128x64 board, all else equal: football
+        reserves 28px for a 4x6 score at 14px and gets 60x60 logos; the same card
+        with PressStart2P at 16px reserves 60px and gets 36x36 -- two small
+        badges adrift in a mostly black panel.
+
+        The trade is a good one because the two faces are nothing like the same
+        shape. PressStart2P is square: 16px tall costs 16px per character.
+        4x6-font at 14px is nearly as tall and about half as wide, so the score
+        keeps its size in the dimension that carries legibility and gives back
+        the dimension the logos actually need.
+
+        Only swaps above the design height, and only when the current face
+        genuinely overflows the budget, so every 32-tall panel -- where the
+        score does not grow at all -- keeps the face it has.
+        """
+        if getattr(self, 'display_height', 0) <= self._FONT_DESIGN_HEIGHT:
+            return fonts
+        try:
+            from PIL import Image as _Image, ImageDraw as _ImageDraw, ImageFont as _ImageFont
+            probe = _ImageDraw.Draw(_Image.new("RGB", (4, 4)))
+            budget = self.display_width * self._SCORE_WIDTH_BUDGET
+            if probe.textlength(getattr(self, "_SCORE_PROBE_TEXT", "00-00"), font=fonts["score"]) <= budget:
+                return fonts
+            for name, size in self._NARROW_SCORE_RUNGS:
+                candidate = _ImageFont.truetype(
+                    _resolve_font_path(f"assets/fonts/{name}"), size)
+                if probe.textlength(getattr(self, "_SCORE_PROBE_TEXT", "00-00"), font=candidate) <= budget:
+                    # The clock moves with the score so the two stay visually
+                    # related, exactly as football does it.
+                    fonts["score"] = candidate
+                    fonts["time"] = candidate
+                    self._score_grew = True
+                    return fonts
+            name, size = self._NARROW_SCORE_RUNGS[-1]
+            narrowest = _ImageFont.truetype(
+                _resolve_font_path(f"assets/fonts/{name}"), size)
+            fonts["score"] = narrowest
+            fonts["time"] = narrowest
+            self._score_grew = True
+        except Exception:
+            self.logger.debug("Score font fitting skipped", exc_info=True)
+        return fonts
+
     #: Share of the panel width the score may take once it is allowed to grow.
     #: Deliberately not football's _SCORE_WIDTH_BUDGET (0.55), which answers a
     #: different question -- when to swap PressStart for a narrower FACE -- and
@@ -771,6 +829,30 @@ class SportsCore(ABC):
                     fonts['score'] = ImageFont.truetype(path, size)
                     self._score_grew = True
 
+            if not self._score_grew and not self._user_chose_size('score_text') \
+                    and self.display_height > self._FONT_DESIGN_HEIGHT:
+                # PressStart2P could not grow inside the budget -- its next crisp
+                # size is simply too wide for this panel. A narrower face still
+                # can: 4x6-font at 14px is nearly as tall as PressStart2P at 16
+                # and about half as wide. This matters beyond the score itself,
+                # because a card whose score never grows never reserves the
+                # centre either, so its logos stay at the uncapped 1.5x and are
+                # drawn straight over the score -- which is what a three-digit
+                # basketball score does on a 128x64 board.
+                probe = ImageDraw.Draw(Image.new('RGB', (4, 4)))
+                budget = self.display_width * self._SCORE_GROWTH_BUDGET
+                current = getattr(fonts.get('score'), 'size', 0) or 0
+                for _name, _size in self._NARROW_SCORE_RUNGS:
+                    if _size <= current:
+                        continue
+                    _path = _resolve_font_path(f"assets/fonts/{_name}")
+                    _candidate = ImageFont.truetype(_path, _size)
+                    if probe.textlength(self._SCORE_PROBE_TEXT,
+                                        font=_candidate) <= budget:
+                        fonts['score'] = _candidate
+                        self._score_grew = True
+                        break
+
             scaled = None if self._user_chose_size('period_text') else \
                 self._grid_scaled_size(fonts.get('time'))
             if scaled is not None:
@@ -836,7 +918,10 @@ class SportsCore(ABC):
             fonts["date"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
         except OSError:
             fonts["date"] = ImageFont.load_default()
-        return self._scale_headline_fonts(fonts)
+        # Grow first, then fit: _scale_headline_fonts sizes the score from
+        # the panel height, and _fit_score_font is the guard that swaps in a
+        # narrower FACE rather than let a grown score crowd out the logos.
+        return self._fit_score_font(self._scale_headline_fonts(fonts))
 
     def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
         """

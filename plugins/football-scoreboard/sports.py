@@ -786,18 +786,20 @@ class SportsCore(ABC):
             from PIL import Image as _Image, ImageDraw as _ImageDraw, ImageFont as _ImageFont
             probe = _ImageDraw.Draw(_Image.new("RGB", (4, 4)))
             budget = self.display_width * self._SCORE_WIDTH_BUDGET
-            if probe.textlength("00-00", font=fonts["score"]) <= budget:
+            if probe.textlength(getattr(self, "_SCORE_PROBE_TEXT", "00-00"), font=fonts["score"]) <= budget:
                 return fonts
             for name, size in self._NARROW_SCORE_RUNGS:
                 candidate = _ImageFont.truetype(_resolve_font_path(f"assets/fonts/{name}"), size)
-                if probe.textlength("00-00", font=candidate) <= budget:
+                if probe.textlength(getattr(self, "_SCORE_PROBE_TEXT", "00-00"), font=candidate) <= budget:
                     fonts["score"] = candidate
                     fonts["time"] = candidate
+                    self._score_grew = True
                     return fonts
             name, size = self._NARROW_SCORE_RUNGS[-1]
             narrowest = _ImageFont.truetype(_resolve_font_path(f"assets/fonts/{name}"), size)
             fonts["score"] = narrowest
             fonts["time"] = narrowest
+            self._score_grew = True
         except Exception:
             self.logger.debug("Score font fitting skipped", exc_info=True)
         return fonts
@@ -926,6 +928,30 @@ class SportsCore(ABC):
                 if size != getattr(fonts['score'], 'size', size):
                     fonts['score'] = ImageFont.truetype(path, size)
                     self._score_grew = True
+
+            if not self._score_grew and not self._user_chose_size('score_text') \
+                    and self.display_height > self._FONT_DESIGN_HEIGHT:
+                # PressStart2P could not grow inside the budget -- its next crisp
+                # size is simply too wide for this panel. A narrower face still
+                # can: 4x6-font at 14px is nearly as tall as PressStart2P at 16
+                # and about half as wide. This matters beyond the score itself,
+                # because a card whose score never grows never reserves the
+                # centre either, so its logos stay at the uncapped 1.5x and are
+                # drawn straight over the score -- which is what a three-digit
+                # basketball score does on a 128x64 board.
+                probe = ImageDraw.Draw(Image.new('RGB', (4, 4)))
+                budget = self.display_width * self._SCORE_GROWTH_BUDGET
+                current = getattr(fonts.get('score'), 'size', 0) or 0
+                for _name, _size in self._NARROW_SCORE_RUNGS:
+                    if _size <= current:
+                        continue
+                    _path = _resolve_font_path(f"assets/fonts/{_name}")
+                    _candidate = ImageFont.truetype(_path, _size)
+                    if probe.textlength(self._SCORE_PROBE_TEXT,
+                                        font=_candidate) <= budget:
+                        fonts['score'] = _candidate
+                        self._score_grew = True
+                        break
 
             scaled = None if self._user_chose_size('period_text') else \
                 self._grid_scaled_size(fonts.get('time'))
