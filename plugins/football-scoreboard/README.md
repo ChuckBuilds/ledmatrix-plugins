@@ -762,6 +762,15 @@ only which font was loaded; every string was drawn white.
 Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white, so a display
 nobody has recoloured looks exactly as it did.
 
+The adaptive layout (`layout_mode: "adaptive"`) honours the same colours, by
+the same rule — the colour follows the face the text is set in. The clock,
+a recent card's "Final" and an upcoming card's kickoff time are set in the
+period face and take `period_text`'s colour; the stacked date+time centre
+stands in for the score and takes `score_text`'s; the bottom date line is set
+in the detail face and takes `detail_text`'s. Corner records, timeout bars and
+the semantic fills (scoring events, down & distance, the favourite-result
+tint) keep their own colours, exactly as in classic.
+
 ```json
 {
   "customization": {

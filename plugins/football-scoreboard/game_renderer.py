@@ -1422,8 +1422,13 @@ class GameRenderer:
             fit = self._fit_element('time', top,
                                     self._region_for(regs.status_band, 'status_text'),
                                     self._status_ladder())
+            # Coloured by the face it is fitted in, same rule as the classic
+            # card: this line is set in the period face, so period_text's
+            # colour applies. The ladder's fonts are not element-owned, so the
+            # identity lookup cannot resolve these -- the fill is named here.
             self._draw_fit_outline(draw_overlay, fit,
-                                   self._region_for(regs.status_band, 'status_text'))
+                                   self._region_for(regs.status_band, 'status_text'),
+                                   fill=self._element_color('period_text'))
             self._draw_bottom_center_adaptive(
                 draw_overlay, self._format_game_date(game.get("game_date", ""), game),
                 regs, 'date')
@@ -1442,7 +1447,10 @@ class GameRenderer:
                 if stacked:
                     fit = self._fit_element('score', stacked, score_region,
                                             ADAPTIVE_LADDER_TEXT)
-                    self._draw_fit_outline(draw_overlay, fit, score_region)
+                    # The stacked centre stands in for the score, set in the
+                    # score face, so it takes score_text's colour.
+                    self._draw_fit_outline(draw_overlay, fit, score_region,
+                                           fill=self._element_color('score_text'))
             else:
                 if game_time:
                     region = self._region_for(regs.status_band, 'time')
@@ -1450,7 +1458,8 @@ class GameRenderer:
                     # never larger than the card's centre element.
                     fit = self._fit_element('time', game_time, region,
                                             self._status_ladder())
-                    self._draw_fit_outline(draw_overlay, fit, region)
+                    self._draw_fit_outline(draw_overlay, fit, region,
+                                           fill=self._element_color('period_text'))
                 self._draw_bottom_center_adaptive(draw_overlay, game_date,
                                                   regs, 'date')
 
@@ -1470,10 +1479,17 @@ class GameRenderer:
 
     def _draw_bottom_center_adaptive(self, draw: ImageDraw.Draw, text: str,
                                      regs, element: str,
-                                     fill: Tuple[int, int, int] = (255, 255, 255)):
-        """Fit text into the bottom detail band. Returns (x, y, fit) or None."""
+                                     fill: Optional[Tuple[int, int, int]] = None):
+        """Fit text into the bottom detail band. Returns (x, y, fit) or None.
+
+        The band is set in the detail face, so an unspecified fill takes
+        detail_text's colour; the scoring-event and down-distance callers pass
+        their semantic colours explicitly and still win.
+        """
         if not text:
             return None
+        if fill is None:
+            fill = self._element_color('detail_text')
         region = self._region_for(regs.detail_band, element)
         fit = self._fit_element('detail', text, region, ADAPTIVE_LADDER_TEXT)
         x, y = self._draw_fit_outline(draw, fit, region, fill=fill)
@@ -1491,7 +1507,8 @@ class GameRenderer:
             region = self._region_for(regs.status_band, 'status_text')
             fit = self._fit_element('time', period_clock_text, region,
                                     self._status_ladder())
-            self._draw_fit_outline(draw, fit, region)
+            self._draw_fit_outline(draw, fit, region,
+                                   fill=self._element_color('period_text'))
 
         # Scoring event or down & distance in the bottom detail band —
         # semantic colors preserved from the classic layout
