@@ -1,11 +1,11 @@
 {
-  "_comment": "Deterministic settings + a frozen mocked ESPN rugby-league (NRL, league slug '3') scoreboard response for the plugin safety harness. Contains one live, one recent, and one upcoming game so live/recent/upcoming rendering can be golden-imaged without network access.",
+  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the NRL schedule cache with one in-progress, one completed and one scheduled game so live, recent and upcoming each render without a network call. The cache key must match what NrlBaseManager builds from the frozen time and the schedule window (lookback 14, lookahead 7): nrl_schedule_20260626-20260717. Favourite teams are ESPN abbreviations, not numeric ids -- PEN appears in the live and upcoming games and SYD in the recent one, so the favourites-first selection path is exercised rather than skipped.",
   "config": {
     "enabled": true,
     "timezone": "UTC",
     "favorite_teams": [
-      "18",
-      "16"
+      "PEN",
+      "SYD"
     ],
     "display_modes": {
       "live": true,

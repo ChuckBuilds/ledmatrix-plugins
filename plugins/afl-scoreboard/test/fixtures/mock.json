@@ -1,5 +1,5 @@
 {
-  "afl_schedule_20260626-20260724": {
+  "afl_schedule_20260626-20260717": {
     "events": [
       {
         "id": "1133629",
@@ -131,13 +131,81 @@
       },
       {
         "id": "live-demo-001",
-        "date": "2026-07-09T10:10Z",
+        "date": "2026-07-10T11:30Z",
         "name": "Sydney Swans at Fremantle",
         "shortName": "SYD @ FRE",
         "competitions": [
           {
             "id": "1133635",
-            "date": "2026-07-09T10:10Z",
+            "date": "2026-07-10T11:30Z",
+            "status": {
+              "clock": 765.0,
+              "displayClock": "12:45",
+              "period": 3,
+              "type": {
+                "id": "2",
+                "name": "STATUS_IN_PROGRESS",
+                "state": "in",
+                "completed": false,
+                "description": "In Progress",
+                "detail": "Q3 12:45",
+                "shortDetail": "Q3 12:45"
+              }
+            },
+            "competitors": [
+              {
+                "homeAway": "home",
+                "score": "54",
+                "team": {
+                  "id": "1",
+                  "abbreviation": "FRE",
+                  "displayName": "Fremantle",
+                  "shortDisplayName": "Fremantle",
+                  "logos": []
+                }
+              },
+              {
+                "homeAway": "away",
+                "score": "48",
+                "team": {
+                  "id": "4",
+                  "abbreviation": "SYD",
+                  "displayName": "Sydney Swans",
+                  "shortDisplayName": "Sydney Swans",
+                  "logos": []
+                }
+              }
+            ]
+          }
+        ],
+        "status": {
+          "clock": 765.0,
+          "displayClock": "12:45",
+          "period": 3,
+          "type": {
+            "id": "2",
+            "name": "STATUS_IN_PROGRESS",
+            "state": "in",
+            "completed": false,
+            "description": "In Progress",
+            "detail": "Q3 12:45",
+            "shortDetail": "Q3 12:45"
+          }
+        }
+      }
+    ]
+  },
+  "afl_scoreboard_current": {
+    "events": [
+      {
+        "id": "live-demo-001",
+        "date": "2026-07-10T11:30Z",
+        "name": "Sydney Swans at Fremantle",
+        "shortName": "SYD @ FRE",
+        "competitions": [
+          {
+            "id": "1133635",
+            "date": "2026-07-10T11:30Z",
             "status": {
               "clock": 765.0,
               "displayClock": "12:45",
