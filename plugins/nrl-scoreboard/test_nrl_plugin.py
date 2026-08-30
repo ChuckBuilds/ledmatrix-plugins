@@ -90,6 +90,14 @@ class TestLeagueSlug(unittest.TestCase):
         self.assertIn("apis/site/v2/sports/rugby-league", src)
 
 
+# Cache keys the fixture must use. SCHEDULE_KEY is what NrlBaseManager
+# builds from the frozen time in harness.json (2026-07-10) and the schedule
+# window defaults (lookback 14, lookahead 7); LIVE_KEY is the separate
+# short-TTL key _fetch_todays_games reads.
+SCHEDULE_KEY = "nrl_schedule_20260626-20260717"
+LIVE_KEY = "nrl_scoreboard_current"
+
+
 class TestHarness(unittest.TestCase):
     def test_harness_has_live_recent_upcoming(self):
         h = _load("test/harness.json")
@@ -97,11 +105,38 @@ class TestHarness(unittest.TestCase):
         # file, per the plugin safety harness convention - not inline data.
         self.assertIsInstance(h["mock_data"], str)
         mock = _load(h["mock_data"])
-        events = mock["events"]
+
+        # The fixture is a CACHE, keyed exactly as NrlBaseManager builds the key
+        # from the frozen clock and the schedule window (lookback 14, lookahead
+        # 7). It used to hold the raw ESPN payload at the top level instead, so
+        # every lookup missed and all three screens rendered blank -- which the
+        # safety harness cannot flag, because a blank card neither crashes nor
+        # overflows. Assert the key, not just the contents.
+        self.assertIn(SCHEDULE_KEY, mock,
+                      "schedule mock must be keyed as the manager looks it up")
+        self.assertIn(LIVE_KEY, mock,
+                      "live view reads a separate short-TTL key")
+
+        schedule = mock[SCHEDULE_KEY]
+        events = schedule["events"]
         states = {e["competitions"][0]["status"]["type"]["state"] for e in events}
         self.assertEqual(states, {"in", "post", "pre"})
         # league slug in mock must be "3"
-        self.assertEqual(mock["leagues"][0]["slug"], "3")
+        self.assertEqual(schedule["leagues"][0]["slug"], "3")
+
+        # The live key must carry the in-progress game, or live renders nothing.
+        live_states = {e["competitions"][0]["status"]["type"]["state"]
+                       for e in mock[LIVE_KEY]["events"]}
+        self.assertEqual(live_states, {"in"})
+
+        # Favourites must be ESPN abbreviations; numeric ids are rejected by the
+        # resolver, which is how this fixture silently stopped exercising the
+        # favourites-first selection path.
+        favourites = h["config"]["favorite_teams"]
+        playing = {c["team"]["abbreviation"]
+                   for e in events for c in e["competitions"][0]["competitors"]}
+        self.assertTrue(set(favourites) <= playing,
+                        "favourite teams must appear in the fixture's games")
 
 
 class TestPeriodMapping(unittest.TestCase):

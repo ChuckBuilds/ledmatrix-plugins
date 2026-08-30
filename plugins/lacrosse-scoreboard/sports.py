@@ -1894,43 +1894,6 @@ class SportsCore(ABC):
 
         self.logger.info(f"{self.__class__.__name__} cleanup completed")
 
-
-class SportsUpcoming(SportsCore):
-    #: This screen shows the date and the time, never a score.
-    _DRAWS_SCORE: ClassVar[bool] = False
-
-    def __init__(
-        self,
-        config: Dict[str, Any],
-        display_manager,
-        cache_manager,
-        logger: logging.Logger,
-        sport_key: str,
-    ):
-        super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        self.upcoming_games = []  # Store all fetched upcoming games initially
-        self.games_list = []  # Filtered list for display (favorite teams)
-        self.current_game_index = 0
-        self.last_update = 0
-        self.update_interval = self.mode_config.get(
-            "upcoming_update_interval", 3600
-        )  # Check for recent games every hour
-        self.last_log_time = 0
-        self.log_interval = 300
-        self.last_warning_time = 0
-        self.warning_cooldown = 300
-        self.last_game_switch = 0
-        self.game_display_duration = 15  # Display each upcoming game for 15 seconds
-
-    def _is_favorite_game(self, game: Dict) -> bool:
-        """Does either side of this game belong to a favourite team?"""
-        if not self.favorite_teams:
-            return False
-        return (
-            game.get("home_abbr") in self.favorite_teams
-            or game.get("away_abbr") in self.favorite_teams
-        )
-
     def _other_games_window(self, others: List[Dict], limit: int) -> List[Dict]:
         """A rotating slice of the non-favourite games.
 
@@ -2011,6 +1974,46 @@ class SportsUpcoming(SportsCore):
         # which would show next week's UGA game before tonight's.
         selected.sort(key=key, reverse=newest_first)
         return selected
+
+    def _is_favorite_game(self, game: Dict) -> bool:
+        """Does either side of this game belong to a favourite team?"""
+        if not self.favorite_teams:
+            return False
+        return (
+            game.get("home_abbr") in self.favorite_teams
+            or game.get("away_abbr") in self.favorite_teams
+        )
+
+
+class SportsUpcoming(SportsCore):
+    #: This screen shows the date and the time, never a score.
+    _DRAWS_SCORE: ClassVar[bool] = False
+
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        display_manager,
+        cache_manager,
+        logger: logging.Logger,
+        sport_key: str,
+    ):
+        super().__init__(config, display_manager, cache_manager, logger, sport_key)
+        self.upcoming_games = []  # Store all fetched upcoming games initially
+        self.games_list = []  # Filtered list for display (favorite teams)
+        self.current_game_index = 0
+        self.last_update = 0
+        self.update_interval = self.mode_config.get(
+            "upcoming_update_interval", 3600
+        )  # Check for recent games every hour
+        self.last_log_time = 0
+        self.log_interval = 300
+        self.last_warning_time = 0
+        self.warning_cooldown = 300
+        self.last_game_switch = 0
+        self.game_display_duration = 15  # Display each upcoming game for 15 seconds
+
+
+
 
     def _select_games_for_display(
         self, processed_games: List[Dict], favorite_teams: List[str]

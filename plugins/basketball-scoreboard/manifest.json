@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.24.0",
+  "version": "1.24.1",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,13 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.24.1",
+      "released": "2026-08-30",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Recent games come back when favourite teams are set. SportsRecent.update() calls self._favorites_first(...), but that helper -- and _other_games_window and _is_favorite_game with it -- was defined on SportsUpcoming, a sibling class rather than an ancestor, so the call raised AttributeError. update() catches it, logs \"Error updating recent games\" and carries on with an empty list, so the recent screen simply showed nothing. It only bites when favourite teams are configured without show_favorite_teams_only, which is the ordinary way to use the setting. football-scoreboard already had all three helpers on SportsCore and was unaffected; this brings the rest into line with it. No other behaviour changes: every safety-harness render for the seven plugins whose fixtures set no favourites is byte-identical.",
+      "changelog": "Recent games come back when favourite teams are set. SportsRecent.update() calls self._favorites_first(...), but that helper -- and _other_games_window and _is_favorite_game with it -- was defined on SportsUpcoming, a sibling class rather than an ancestor, so the call raised AttributeError. update() catches it, logs \"Error updating recent games\" and carries on with an empty list, so the recent screen simply showed nothing. It only bites when favourite teams are configured without show_favorite_teams_only, which is the ordinary way to use the setting. football-scoreboard already had all three helpers on SportsCore and was unaffected; this brings the rest into line with it. No other behaviour changes: every safety-harness render for the seven plugins whose fixtures set no favourites is byte-identical."
+    },
     {
       "version": "1.24.0",
       "released": "2026-08-29",

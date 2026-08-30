@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.19.0",
+  "version": "2.19.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -26,6 +26,13 @@
     "soccer_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.19.1",
+      "released": "2026-08-30",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Recent games come back when favourite teams are set. SportsRecent.update() calls self._favorites_first(...), but that helper -- and _other_games_window and _is_favorite_game with it -- was defined on SportsUpcoming, a sibling class rather than an ancestor, so the call raised AttributeError. update() catches it, logs \"Error updating recent games\" and carries on with an empty list, so the recent screen simply showed nothing. It only bites when favourite teams are configured without show_favorite_teams_only, which is the ordinary way to use the setting. football-scoreboard already had all three helpers on SportsCore and was unaffected; this brings the rest into line with it. No other behaviour changes: every safety-harness render for the seven plugins whose fixtures set no favourites is byte-identical.",
+      "changelog": "Recent games come back when favourite teams are set. SportsRecent.update() calls self._favorites_first(...), but that helper -- and _other_games_window and _is_favorite_game with it -- was defined on SportsUpcoming, a sibling class rather than an ancestor, so the call raised AttributeError. update() catches it, logs \"Error updating recent games\" and carries on with an empty list, so the recent screen simply showed nothing. It only bites when favourite teams are configured without show_favorite_teams_only, which is the ordinary way to use the setting. football-scoreboard already had all three helpers on SportsCore and was unaffected; this brings the rest into line with it. No other behaviour changes: every safety-harness render for the seven plugins whose fixtures set no favourites is byte-identical."
+    },
     {
       "version": "2.19.0",
       "released": "2026-08-29",
