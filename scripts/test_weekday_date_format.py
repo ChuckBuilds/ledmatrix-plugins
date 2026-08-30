@@ -16,17 +16,16 @@ and the goldens all render the default "abbrev" format and never touch the
 weekday branch.
 
 A linter would catch the missing name, but the thing worth guarding is the
-behaviour: the option is offered, so it has to work. Each plugin is exercised
-in its own subprocess because every copy is imported as the bare module name
-`game_renderer` and they would otherwise shadow one another.
+behaviour: the option is offered, so it has to work. Every copy is called
+`game_renderer`, so each is loaded under its own module name rather than by
+import, which would have them shadowing one another.
 
 Run: <core-venv>/bin/python scripts/test_weekday_date_format.py
 """
 
-import json
+import importlib.util
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -49,46 +48,39 @@ WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 # result of "Tue" means _card_tzinfo() was skipped or silently fell back to
 # UTC. That distinction is the only thing separating a working timezone
 # conversion from one that merely does not crash.
-PROBE = r'''
-import os, sys, logging
-CORE, PLUGIN = sys.argv[1], sys.argv[2]
-sys.path.insert(0, CORE); sys.path.insert(0, os.path.join(CORE, "src"))
-sys.path.insert(0, PLUGIN)
-os.chdir(CORE); logging.disable(logging.CRITICAL)
-import json
-import game_renderer as gr
+GAME = {"game_date": "10/12", "start_time_utc": "2026-10-13T01:00:00Z"}
 
 # Windows has no system tz database; without the tzdata package ZoneInfo
 # raises and the renderer correctly falls back to UTC. That is an environment
-# limitation, not a defect, so report it and let the caller skip that check.
+# limitation, not a defect, so skip just that assertion when it applies.
 try:
-    from zoneinfo import ZoneInfo as _ZI
-    _ZI("America/New_York")
-    tz_available = True
+    from zoneinfo import ZoneInfo as _ZoneInfo
+    _ZoneInfo("America/New_York")
+    TZ_AVAILABLE = True
 except Exception:
-    tz_available = False
+    TZ_AVAILABLE = False
 
-game = {"game_date": "10/12", "start_time_utc": "2026-10-13T01:00:00Z"}
-out = {"tz_available": tz_available}
-try:
-    r = gr.GameRenderer(128, 64, {"scroll_card": {"date_format": "weekday"},
-                                  "timezone": "America/New_York"})
-    out["weekday"] = r._format_game_date(game["game_date"], game)
-except Exception as e:
-    out["weekday_error"] = "%s: %s" % (type(e).__name__, e)
-try:
-    r = gr.GameRenderer(128, 64, {"scroll_card": {"date_format": "weekday"},
-                                  "timezone": "Not/AZone"})
-    out["bad_tz"] = r._format_game_date(game["game_date"], game)
-except Exception as e:
-    out["bad_tz_error"] = "%s: %s" % (type(e).__name__, e)
-try:
-    r = gr.GameRenderer(128, 64, {})
-    out["default"] = r._format_game_date(game["game_date"], game)
-except Exception as e:
-    out["default_error"] = "%s: %s" % (type(e).__name__, e)
-print(json.dumps(out))
-'''
+
+def load_renderer_module(plugin_dir):
+    """Load one plugin's game_renderer under a name of its own.
+
+    All eight copies are called `game_renderer`, so a plain import would bind
+    whichever landed in sys.modules first and silently test it eight times.
+    The plugin directory goes on sys.path for the duration because one copy
+    (baseball) imports a plugin-local helper.
+    """
+    name = "gr_%s" % plugin_dir.name.replace("-", "_")
+    spec = importlib.util.spec_from_file_location(name, plugin_dir / "game_renderer.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.path.insert(0, str(plugin_dir))
+    sys.modules[name] = module
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.remove(str(plugin_dir))
+        sys.modules.pop(name, None)
+    return module
+
 
 results = []
 skipped_tz = []
@@ -111,6 +103,10 @@ def offers_weekday(plugin_dir):
 
 
 def main():
+    os.chdir(str(CORE))
+    sys.path.insert(0, str(CORE))
+    sys.path.insert(0, str(CORE / "src"))
+
     targets = sorted(p.parent for p in REPO.glob("plugins/*/game_renderer.py")
                      if offers_weekday(p.parent))
     if not targets:
@@ -119,44 +115,50 @@ def main():
 
     for plugin in targets:
         name = plugin.name
-        proc = subprocess.run([sys.executable, "-c", PROBE, str(CORE), str(plugin)],
-                              capture_output=True, text=True)
-        stdout = proc.stdout.strip().splitlines()
-        if proc.returncode != 0 or not stdout:
-            check("%s -- weekday probe ran" % name, False)
-            print("        %s" % (proc.stderr.strip().splitlines()[-1:] or ["no output"])[0])
-            continue
         try:
-            out = json.loads(stdout[-1])
-        except ValueError:
-            check("%s -- weekday probe returned JSON" % name, False)
+            gr = load_renderer_module(plugin)
+        except Exception as exc:
+            check("%s -- game_renderer imports (%s: %s)"
+                  % (name, type(exc).__name__, exc), False)
             continue
 
-        err = out.get("weekday_error")
-        check("%s -- date_format 'weekday' does not raise%s"
-              % (name, " (%s)" % err if err else ""), not err)
-        if not err:
-            value = out["weekday"]
+        def render(config):
+            return gr.GameRenderer(128, 64, config)._format_game_date(
+                GAME["game_date"], GAME)
+
+        try:
+            value = render({"scroll_card": {"date_format": "weekday"},
+                            "timezone": "America/New_York"})
+            check("%s -- date_format 'weekday' does not raise" % name, True)
             check("%s -- 'weekday' renders a weekday, got %r" % (name, value),
                   bool(re.match(r"^(%s)\s" % "|".join(WEEKDAYS), value)))
-            # UTC would say Tue; New York says Mon
-            if out.get("tz_available"):
+            if TZ_AVAILABLE:
+                # UTC would say Tue; New York says Mon
                 check("%s -- the configured timezone is applied, got %r" % (name, value),
                       value.startswith("Mon"))
             else:
                 skipped_tz.append(name)
+        except Exception as exc:
+            check("%s -- date_format 'weekday' does not raise (%s: %s)"
+                  % (name, type(exc).__name__, exc), False)
 
-        bad = out.get("bad_tz_error")
-        check("%s -- an unusable timezone falls back instead of raising%s"
-              % (name, " (%s)" % bad if bad else ""), not bad)
+        try:
+            render({"scroll_card": {"date_format": "weekday"}, "timezone": "Not/AZone"})
+            check("%s -- an unusable timezone falls back instead of raising" % name, True)
+        except Exception as exc:
+            check("%s -- an unusable timezone falls back instead of raising (%s: %s)"
+                  % (name, type(exc).__name__, exc), False)
 
-        dflt = out.get("default_error")
-        check("%s -- the default date format still works%s"
-              % (name, " (%s)" % dflt if dflt else ""), not dflt)
+        try:
+            render({})
+            check("%s -- the default date format still works" % name, True)
+        except Exception as exc:
+            check("%s -- the default date format still works (%s: %s)"
+                  % (name, type(exc).__name__, exc), False)
 
     if skipped_tz:
-        print("  note: no tz database in this environment (pip install tzdata) -- "
-              "timezone-conversion check skipped for %d plugin(s)" % len(skipped_tz))
+        print("  note: no tz database here (pip install tzdata) -- timezone-conversion "
+              "check skipped for %d plugin(s)" % len(skipped_tz))
 
     failed = [c for c, ok in results if not ok]
     print("%d checks across %d plugins, %s"
