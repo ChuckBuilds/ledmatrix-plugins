@@ -7,8 +7,10 @@ Returns PIL Images instead of updating display directly.
 
 import logging
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional, Tuple
+from zoneinfo import ZoneInfo
 from PIL import Image, ImageDraw, ImageFont
 
 
