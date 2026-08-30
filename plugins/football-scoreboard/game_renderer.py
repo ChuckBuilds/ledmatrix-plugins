@@ -263,7 +263,7 @@ class GameRenderer:
                 config, defaults_from_schema_file(schema_path))
 
         # Load fonts
-        self.fonts = self._load_fonts()
+        self.fonts = self._unshare_element_fonts(self._load_fonts())
 
         # Adaptive layout (beta, opt-in): scales fonts/logos/regions to the
         # card size instead of the classic fixed-pixel layout. Default
@@ -681,13 +681,82 @@ class GameRenderer:
             self.logger.error(f"Error loading logo for {team_abbrev}: {e}")
             return None
     
+    #: Which customization element owns each loaded face. The font loader
+    #: already picks each face from exactly that element (element_key=), so
+    #: resolving the colour from the face keeps the two in step by
+    #: construction, rather than by every draw site remembering to agree.
+    _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
+        "score": "score_text",
+        "time": "period_text",
+        "team": "team_name",
+        "status": "status_text",
+        "detail": "detail_text",
+        "rank": "rank_text",
+    }
+
+    def _unshare_element_fonts(self, fonts):
+        """Give each colourable element its own face object.
+
+        The colour a draw gets is resolved from the face it was handed, and
+        several of these loaders legitimately hand one object to more than one
+        element -- a size resolver that lands two elements on the same face, a
+        fallback that fills every key from one default, football's narrowing
+        step that deliberately shrinks the clock along with the score. Sharing
+        the object makes the element ambiguous and the colour unresolvable.
+
+        Re-instantiating from the same path and size gives a distinct object
+        with identical metrics, so nothing about the rendering changes; only
+        the ability to tell two elements apart does. Faces that cannot be
+        rebuilt (a BDF loaded through freetype.Face, anything without a usable
+        path) are left shared, and their draws stay white as before.
+        """
+        try:
+            from PIL import ImageFont as _IF
+        except ImportError:  # pragma: no cover
+            return fonts
+        seen = {}
+        for key in self._ELEMENT_FOR_FONT:
+            font = fonts.get(key)
+            if font is None:
+                continue
+            if id(font) not in seen:
+                seen[id(font)] = key
+                continue
+            path, size = getattr(font, "path", None), getattr(font, "size", None)
+            if not path or not size:
+                continue
+            try:
+                fonts[key] = _IF.truetype(path, size)
+            except (OSError, ValueError, TypeError):
+                self.logger.debug(
+                    "Could not un-share the %s face; it keeps the default colour", key)
+        return fonts
+
+    def _font_color(self, font, default: Tuple[int, int, int] = (255, 255, 255)):
+        """Colour for whichever element owns this face.
+
+        Matched on identity, and deliberately gives up when one object is
+        shared: the last-resort font path can hand the same face to several
+        keys, and there is no right answer for which element's colour that is.
+        White is what those draws used before, so ambiguity costs nothing.
+        """
+        try:
+            fonts = getattr(self, "fonts", None) or {}
+            matches = [element for key, element in self._ELEMENT_FOR_FONT.items()
+                       if fonts.get(key) is font]
+            if len(matches) == 1:
+                return self._element_color(matches[0], default)
+        except (AttributeError, TypeError):
+            pass
+        return default
+
     def _draw_text_with_outline(
         self, 
         draw: ImageDraw.Draw, 
         text: str, 
         position: Tuple[int, int], 
         font: Union[ImageFont.FreeTypeFont, Any], 
-        fill: Tuple[int, int, int] = (255, 255, 255), 
+        fill: Optional[Tuple[int, int, int]] = None, 
         outline_color: Tuple[int, int, int] = (0, 0, 0)
     ) -> None:
         """
@@ -706,6 +775,14 @@ class GameRenderer:
         # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
         # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
         # glyphs. 1-bit mode keeps strokes crisp.
+        # Defaults to the configured colour for whichever element owns
+        # this face rather than to white, so customization.<element>.text_color
+        # reaches every draw. The schema has offered those pickers all along
+        # and they only ever changed the font. An explicit fill still wins:
+        # the odds colours and the favourite-result score tint mean something
+        # the palette does not.
+        if fill is None:
+            fill = self._font_color(font)
         draw.fontmode = "1"
         x, y = position
         for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
@@ -822,8 +899,15 @@ class GameRenderer:
         )
         return "win" if favorite_score > other_score else "loss"
 
-    def _score_color_for(self, game: Dict[str, Any], game_type: str, default=(255, 255, 255)):
-        """Fill color for a game card's score. Only finished games are tinted."""
+    def _score_color_for(self, game: Dict[str, Any], game_type: str, default=None):
+        """Fill color for a game card's score. Only finished games are tinted.
+
+        The default is the configured score colour rather than a flat white,
+        so customization.score_text.text_color shows on games the favourite
+        tint does not apply to. The tint still wins where it applies.
+        """
+        if default is None:
+            default = self._element_color('score_text')
         if game_type != "recent":
             return default
         return self._recent_score_color(game, default)
@@ -1338,8 +1422,13 @@ class GameRenderer:
             fit = self._fit_element('time', top,
                                     self._region_for(regs.status_band, 'status_text'),
                                     self._status_ladder())
+            # Coloured by the face it is fitted in, same rule as the classic
+            # card: this line is set in the period face, so period_text's
+            # colour applies. The ladder's fonts are not element-owned, so the
+            # identity lookup cannot resolve these -- the fill is named here.
             self._draw_fit_outline(draw_overlay, fit,
-                                   self._region_for(regs.status_band, 'status_text'))
+                                   self._region_for(regs.status_band, 'status_text'),
+                                   fill=self._element_color('period_text'))
             self._draw_bottom_center_adaptive(
                 draw_overlay, self._format_game_date(game.get("game_date", ""), game),
                 regs, 'date')
@@ -1358,7 +1447,10 @@ class GameRenderer:
                 if stacked:
                     fit = self._fit_element('score', stacked, score_region,
                                             ADAPTIVE_LADDER_TEXT)
-                    self._draw_fit_outline(draw_overlay, fit, score_region)
+                    # The stacked centre stands in for the score, set in the
+                    # score face, so it takes score_text's colour.
+                    self._draw_fit_outline(draw_overlay, fit, score_region,
+                                           fill=self._element_color('score_text'))
             else:
                 if game_time:
                     region = self._region_for(regs.status_band, 'time')
@@ -1366,7 +1458,8 @@ class GameRenderer:
                     # never larger than the card's centre element.
                     fit = self._fit_element('time', game_time, region,
                                             self._status_ladder())
-                    self._draw_fit_outline(draw_overlay, fit, region)
+                    self._draw_fit_outline(draw_overlay, fit, region,
+                                           fill=self._element_color('period_text'))
                 self._draw_bottom_center_adaptive(draw_overlay, game_date,
                                                   regs, 'date')
 
@@ -1386,10 +1479,17 @@ class GameRenderer:
 
     def _draw_bottom_center_adaptive(self, draw: ImageDraw.Draw, text: str,
                                      regs, element: str,
-                                     fill: Tuple[int, int, int] = (255, 255, 255)):
-        """Fit text into the bottom detail band. Returns (x, y, fit) or None."""
+                                     fill: Optional[Tuple[int, int, int]] = None):
+        """Fit text into the bottom detail band. Returns (x, y, fit) or None.
+
+        The band is set in the detail face, so an unspecified fill takes
+        detail_text's colour; the scoring-event and down-distance callers pass
+        their semantic colours explicitly and still win.
+        """
         if not text:
             return None
+        if fill is None:
+            fill = self._element_color('detail_text')
         region = self._region_for(regs.detail_band, element)
         fit = self._fit_element('detail', text, region, ADAPTIVE_LADDER_TEXT)
         x, y = self._draw_fit_outline(draw, fit, region, fill=fill)
@@ -1407,7 +1507,8 @@ class GameRenderer:
             region = self._region_for(regs.status_band, 'status_text')
             fit = self._fit_element('time', period_clock_text, region,
                                     self._status_ladder())
-            self._draw_fit_outline(draw, fit, region)
+            self._draw_fit_outline(draw, fit, region,
+                                   fill=self._element_color('period_text'))
 
         # Scoring event or down & distance in the bottom detail band —
         # semantic colors preserved from the classic layout
