@@ -72,7 +72,7 @@ These patterns update automatically as rankings change throughout the season. Yo
 
 This will show games for all AP Top 25 teams plus Georgia and Alabama (duplicates are automatically removed).
 
-> **These expand into real teams, and that has consequences.** Adding `AP_TOP_10` alongside two teams of your own makes yours 2 of 11 favorites, all competing for the same slots — so your teams can stop appearing. See [Which Games Get Shown](#-which-games-get-shown) before mixing them.
+> **These expand into real teams, and that has consequences.** Adding `AP_TOP_10` alongside two teams of your own makes yours 2 of up to 12 favorites (fewer when your teams are already ranked — duplicates are removed), all competing for the same slots — so your teams can stop appearing. See [Which Games Get Shown](#-which-games-get-shown) before mixing them.
 
 ## 📺 Display Modes
 
@@ -541,7 +541,7 @@ Rather than widening the pool, the non-favorite slice **moves**. The window adva
 
 Measured on a real board — favorites `UGA` + `AUB`, 3 others, rotating every 30 minutes:
 
-```
+```text
   +  0 min: UNC@TCU, SJSU@USC, NCSU@UVA
   + 30 min: JVST@NDSU, SAC@EMU, HAW@STAN
   + 60 min: NMSU@FSU, MEM@UNLV, MASS@RUTG

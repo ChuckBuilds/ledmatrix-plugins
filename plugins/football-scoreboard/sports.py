@@ -1671,7 +1671,11 @@ class SportsCore(ABC):
                 or status["type"]["name"] == "STATUS_HALFTIME",  # Added halftime check
                 "is_period_break": status["type"]["name"]
                 == "STATUS_END_PERIOD",  # Added Period Break check
-                "broadcast": (competition.get("broadcast") or ""),
+                # str(): ESPN's undocumented payloads have served this field
+                # as an object in some sports. A non-string here reaches
+                # _note_broadcast_coverage's .strip() inside update()'s own
+                # try/except -- a mode that silently renders nothing.
+                "broadcast": str(competition.get("broadcast") or ""),
                 "home_abbr": home_abbr,
                 "home_id": home_team["id"],
                 "home_score": home_team.get("score", "0"),
@@ -2033,7 +2037,10 @@ class SportsCore(ABC):
         """
         try:
             return max(low, min(high, int(self.mode_config.get(key, default))))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
+            # OverflowError: json parses a bare Infinity, and int(inf) raises
+            # -- from __init__, outside any try/except, so the manager would
+            # fail to construct instead of falling back.
             self.logger.warning(
                 "%s: ignoring unusable %s=%r, using %s",
                 getattr(self, "league", "?"), key,

@@ -148,6 +148,15 @@ def main():
                      if (p / "sports.py").exists() and (p / "config_schema.json").exists())
     else:
         ids = args.plugin_ids
+        # check_plugin() treats a missing schema as nothing-to-check, which is
+        # right for the --all glob but turns a typoed id into a false "OK" --
+        # and then a FileNotFoundError while the summary counts its blocks.
+        unknown = [i for i in ids
+                   if not (PLUGINS / i / "config_schema.json").exists()]
+        if unknown:
+            print("Unknown plugin id(s): %s" % ", ".join(sorted(unknown)),
+                  file=sys.stderr)
+            return 2
 
     problems = [p for pid in ids for p in check_plugin(pid)]
     if not problems:
