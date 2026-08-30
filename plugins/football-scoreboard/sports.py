@@ -347,7 +347,7 @@ class SportsCore(ABC):
         self.current_game = None
         # Thread safety lock for shared game state
         self._games_lock = threading.RLock()
-        self.fonts = self._load_fonts()
+        self.fonts = self._unshare_element_fonts(self._load_fonts())
 
         # Initialize dynamic team resolver and resolve favorite teams
         self.dynamic_resolver = DynamicTeamResolver(cache_manager=cache_manager)
@@ -1424,13 +1424,103 @@ class SportsCore(ABC):
         except Exception as e:
             self.logger.error(f"Error drawing odds: {e}", exc_info=True)
 
+    #: Which customization element owns each loaded face. The font loader
+    #: already picks each face from exactly that element (element_key=), so
+    #: resolving the colour from the face keeps the two in step by
+    #: construction, rather than by every draw site remembering to agree.
+    _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
+        "score": "score_text",
+        "time": "period_text",
+        "team": "team_name",
+        "status": "status_text",
+        "detail": "detail_text",
+        "rank": "rank_text",
+    }
+
+    def _element_color(self, element: str, default: Tuple[int, int, int] = (255, 255, 255)):
+        """Per-element text colour from customization.<element>.text_color."""
+        try:
+            cfg = (self.config or {}).get("customization", {}).get(element, {})
+            value = cfg.get("text_color")
+            if isinstance(value, (list, tuple)) and len(value) == 3:
+                return tuple(max(0, min(255, int(c))) for c in value)
+            if isinstance(value, str) and value.startswith("#") and len(value) == 7:
+                return tuple(int(value[i:i + 2], 16) for i in (1, 3, 5))
+        except (TypeError, ValueError):
+            pass
+        return default
+
+    def _unshare_element_fonts(self, fonts):
+        """Give each colourable element its own face object.
+
+        The colour a draw gets is resolved from the face it was handed, and
+        several of these loaders legitimately hand one object to more than one
+        element -- a size resolver that lands two elements on the same face, a
+        fallback that fills every key from one default, football's narrowing
+        step that deliberately shrinks the clock along with the score. Sharing
+        the object makes the element ambiguous and the colour unresolvable.
+
+        Re-instantiating from the same path and size gives a distinct object
+        with identical metrics, so nothing about the rendering changes; only
+        the ability to tell two elements apart does. Faces that cannot be
+        rebuilt (a BDF loaded through freetype.Face, anything without a usable
+        path) are left shared, and their draws stay white as before.
+        """
+        try:
+            from PIL import ImageFont as _IF
+        except ImportError:  # pragma: no cover
+            return fonts
+        seen = {}
+        for key in self._ELEMENT_FOR_FONT:
+            font = fonts.get(key)
+            if font is None:
+                continue
+            if id(font) not in seen:
+                seen[id(font)] = key
+                continue
+            path, size = getattr(font, "path", None), getattr(font, "size", None)
+            if not path or not size:
+                continue
+            try:
+                fonts[key] = _IF.truetype(path, size)
+            except (OSError, ValueError, TypeError):
+                self.logger.debug(
+                    "Could not un-share the %s face; it keeps the default colour", key)
+        return fonts
+
+    def _font_color(self, font, default: Tuple[int, int, int] = (255, 255, 255)):
+        """Colour for whichever element owns this face.
+
+        Matched on identity, and deliberately gives up when one object is
+        shared: the last-resort font path can hand the same face to several
+        keys, and there is no right answer for which element's colour that is.
+        White is what those draws used before, so ambiguity costs nothing.
+        """
+        try:
+            fonts = getattr(self, "fonts", None) or {}
+            matches = [element for key, element in self._ELEMENT_FOR_FONT.items()
+                       if fonts.get(key) is font]
+            if len(matches) == 1:
+                return self._element_color(matches[0], default)
+        except (AttributeError, TypeError):
+            pass
+        return default
+
     def _draw_text_with_outline(
-        self, draw, text, position, font, fill=(255, 255, 255), outline_color=(0, 0, 0)
+        self, draw, text, position, font, fill=None, outline_color=(0, 0, 0)
     ):
         """Draw text with a black outline for better readability."""
         # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
         # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
         # glyphs. 1-bit mode keeps strokes crisp.
+        # Defaults to the configured colour for whichever element owns
+        # this face rather than to white, so customization.<element>.text_color
+        # reaches every draw. The schema has offered those pickers all along
+        # and they only ever changed the font. An explicit fill still wins:
+        # the odds colours and the favourite-result score tint mean something
+        # the palette does not.
+        if fill is None:
+            fill = self._font_color(font)
         draw.fontmode = "1"
         x, y = position
         for dx, dy in [
@@ -3639,7 +3729,7 @@ class SportsRecent(SportsCore):
                 score_text,
                 (score_x, score_y),
                 self.fonts["score"],
-                fill=self._recent_score_color(game, (255, 255, 255)),
+                fill=self._recent_score_color(game, self._element_color('score_text')),
             )
 
             # Game date (Bottom of display, one line above bottom edge, centered) with layout offsets
