@@ -3,6 +3,9 @@ import logging
 from PIL import Image, ImageDraw, ImageFont
 from sports import SportsCore, SportsLive
 from data_sources import ESPNDataSource
+# Possession geometry lives with the renderer so the classic, scroll and
+# adaptive paths all draw the same ball in the same reserved space.
+from game_renderer import draw_possession_football, possession_ball_box
 
 class Football(SportsCore):
     """Base class for football sports with common functionality."""
@@ -113,6 +116,49 @@ class Football(SportsCore):
             # Log the problematic event structure if possible
             logging.error(f"Error extracting game details: {e} from event: {game_event.get('id')}", exc_info=True)
             return None
+
+    # --- Bottom-row layout ------------------------------------------------
+
+    def _record_font(self):
+        """Font used for the bottom-corner record/ranking text."""
+        return (self.fonts.get("record") or self.fonts.get("status")
+                or ImageFont.load_default())
+
+    def _corner_text(self, game: Dict, side: str) -> str:
+        """Record or ranking text shown in a bottom corner for one team."""
+        abbr = game.get(f"{side}_abbr", "")
+        if not abbr:
+            return ""
+        if self.show_ranking:
+            # Rankings replace records entirely; unranked teams show nothing
+            rank = self._team_rankings_cache.get(abbr, 0)
+            return f"#{rank}" if rank > 0 else ""
+        if self.show_records:
+            return game.get(f"{side}_record", "") or ""
+        return ""
+
+    def _bottom_free_band(self, draw, game: Dict):
+        """Span of the bottom row the timeout bars and records leave free, as
+        (first free x, first occupied x).
+
+        Derived from the same constants those two draw with, so the space the
+        possession ball is kept out of cannot drift from what is on the panel.
+        """
+        display_width = (self.display_manager.matrix.width
+                         if getattr(self.display_manager, 'matrix', None)
+                         else self.display_width)
+        block = 2 + 3 * 4 + 2 * 1 + 1  # margin + 3 bars + 2 gaps + outline
+        left, right = block, display_width - block
+        if self.show_records or self.show_ranking:
+            font = self._record_font()
+            away_text = self._corner_text(game, "away")
+            home_text = self._corner_text(game, "home")
+            if away_text:
+                left = max(left, 3 + draw.textlength(away_text, font=font))
+            if home_text:
+                right = min(right, display_width - 3 - draw.textlength(home_text, font=font))
+        return int(left), int(right)
+
 
 class FootballLive(Football, SportsLive):
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager, logger: logging.Logger, sport_key: str):
@@ -259,18 +305,10 @@ class FootballLive(Football, SportsLive):
                 
                 self._draw_text_with_outline(draw_overlay, scoring_event, (event_x, event_y), self.fonts['detail'], fill=event_color)
             elif down_distance and game.get("is_live"): # Only show if live and available
-                # Same trade as the clock above: prefer the long form, fall
-                # back to ESPN's short one ("1st & 10" -> "1st&10"), and only
-                # then let it overflow. The possession ball is drawn to the
-                # right of this text, so an oversized string pushes the ball
-                # off the panel as well as clipping itself.
-                #
-                # Order matters and this had it backwards. _fit_text returns
-                # the LAST candidate when none fit, so the shortest form has
-                # to come last; listing the long form last meant the overflow
-                # fallback was the widest string rather than the narrowest --
-                # the opposite of what the comment above promises.
-                # down_distance holds down_distance_text, ESPN's SHORT form.
+                # Text is chosen and placed exactly as before -- the long form
+                # carries the yardage and is preferred whenever it fits. The
+                # ball is fitted around it afterwards, never the other way
+                # round.
                 down_distance = self._fit_text(
                     draw_overlay,
                     (game.get("down_distance_text_long", ""),
@@ -283,41 +321,14 @@ class FootballLive(Football, SportsLive):
                 down_color = (200, 200, 0) if not game.get("is_redzone", False) else (255,0,0) # Yellowish text
                 self._draw_text_with_outline(draw_overlay, down_distance, (dd_x, dd_y), self.fonts['detail'], fill=down_color)
 
-                # Possession Indicator (small football icon)
-                possession = game.get("possession_indicator")
-                if possession: # Only draw if possession is known
-                    ball_radius_x = 3  # Wider for football shape
-                    ball_radius_y = 2  # Shorter for football shape
-                    ball_color = (139, 69, 19) # Brown color for the football
-                    lace_color = (255, 255, 255) # White for laces
-
-                    # Approximate height of the detail font (4x6 font at size 6 is roughly 6px tall)
-                    detail_font_height_approx = 6
-                    ball_y_center = dd_y + (detail_font_height_approx // 2) # Center ball vertically with D&D text
-
-                    possession_ball_padding = 3 # Pixels between D&D text and ball
-
-                    if possession == "away":
-                        # Position ball to the left of D&D text
-                        ball_x_center = dd_x - possession_ball_padding - ball_radius_x
-                    elif possession == "home":
-                        # Position ball to the right of D&D text
-                        ball_x_center = dd_x + dd_width + possession_ball_padding + ball_radius_x
-                    else:
-                        ball_x_center = 0 # Should not happen / no indicator
-
-                    if ball_x_center > 0: # Draw if position is valid
-                        # Draw the football shape (ellipse)
-                        draw_overlay.ellipse(
-                            (ball_x_center - ball_radius_x, ball_y_center - ball_radius_y,  # x0, y0
-                             ball_x_center + ball_radius_x, ball_y_center + ball_radius_y), # x1, y1
-                            fill=ball_color, outline=(0,0,0)
-                        )
-                        # Draw a simple horizontal lace
-                        draw_overlay.line(
-                            (ball_x_center - 1, ball_y_center, ball_x_center + 1, ball_y_center),
-                            fill=lace_color, width=1
-                        )
+                # Possession Indicator (small football icon), drawn only where
+                # it clears the timeout bars and the record text.
+                corner_left, corner_right = self._bottom_free_band(draw_overlay, game)
+                icon_box = possession_ball_box(
+                    dd_x, dd_width, 6, dd_y, corner_left, corner_right,
+                    game.get("possession_indicator"))
+                if icon_box:
+                    draw_possession_football(draw_overlay, icon_box)
 
             # Timeouts (Bottom corners) - 3 small bars per team
             timeout_bar_width = 4
@@ -345,74 +356,24 @@ class FootballLive(Football, SportsLive):
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:
-                record_font = self.fonts.get("record") or self.fonts.get("status") or ImageFont.load_default()
-                
-                # Get team abbreviations
-                away_abbr = game.get('away_abbr', '')
-                home_abbr = game.get('home_abbr', '')
-                
+                record_font = self._record_font()
                 record_bbox = draw_overlay.textbbox((0,0), "0-0", font=record_font)
                 record_height = record_bbox[3] - record_bbox[1]
                 record_y = display_height - record_height - 4
-                self.logger.debug(f"Record positioning: height={record_height}, record_y={record_y}, display_height={display_height}")
 
-                # Display away team info
-                if away_abbr:
-                    if self.show_ranking and self.show_records:
-                        # When both rankings and records are enabled, rankings replace records completely
-                        away_rank = self._team_rankings_cache.get(away_abbr, 0)
-                        if away_rank > 0:
-                            away_text = f"#{away_rank}"
-                        else:
-                            # Show nothing for unranked teams when rankings are prioritized
-                            away_text = ''
-                    elif self.show_ranking:
-                        # Show ranking only if available
-                        away_rank = self._team_rankings_cache.get(away_abbr, 0)
-                        if away_rank > 0:
-                            away_text = f"#{away_rank}"
-                        else:
-                            away_text = ''
-                    elif self.show_records:
-                        # Show record only when rankings are disabled
-                        away_text = game.get('away_record', '')
-                    else:
-                        away_text = ''
-                    
-                    if away_text:
-                        away_record_x = 3
-                        self.logger.debug(f"Drawing away ranking '{away_text}' at ({away_record_x}, {record_y}) with font size {record_font.size if hasattr(record_font, 'size') else 'unknown'}")
-                        self._draw_text_with_outline(draw_overlay, away_text, (away_record_x, record_y), record_font)
+                # Same strings _bottom_free_band reserved space for, so the
+                # possession ball can never be drawn on top of them.
+                away_text = self._corner_text(game, "away")
+                if away_text:
+                    self._draw_text_with_outline(draw_overlay, away_text, (3, record_y),
+                                                 record_font)
 
-                # Display home team info
-                if home_abbr:
-                    if self.show_ranking and self.show_records:
-                        # When both rankings and records are enabled, rankings replace records completely
-                        home_rank = self._team_rankings_cache.get(home_abbr, 0)
-                        if home_rank > 0:
-                            home_text = f"#{home_rank}"
-                        else:
-                            # Show nothing for unranked teams when rankings are prioritized
-                            home_text = ''
-                    elif self.show_ranking:
-                        # Show ranking only if available
-                        home_rank = self._team_rankings_cache.get(home_abbr, 0)
-                        if home_rank > 0:
-                            home_text = f"#{home_rank}"
-                        else:
-                            home_text = ''
-                    elif self.show_records:
-                        # Show record only when rankings are disabled
-                        home_text = game.get('home_record', '')
-                    else:
-                        home_text = ''
-                    
-                    if home_text:
-                        home_record_bbox = draw_overlay.textbbox((0,0), home_text, font=record_font)
-                        home_record_width = home_record_bbox[2] - home_record_bbox[0]
-                        home_record_x = display_width - home_record_width - 3
-                        self.logger.debug(f"Drawing home ranking '{home_text}' at ({home_record_x}, {record_y}) with font size {record_font.size if hasattr(record_font, 'size') else 'unknown'}")
-                        self._draw_text_with_outline(draw_overlay, home_text, (home_record_x, record_y), record_font)
+                home_text = self._corner_text(game, "home")
+                if home_text:
+                    home_record_width = draw_overlay.textlength(home_text, font=record_font)
+                    home_record_x = display_width - home_record_width - 3
+                    self._draw_text_with_outline(draw_overlay, home_text,
+                                                 (home_record_x, record_y), record_font)
 
             # Composite the text overlay onto the main image
             main_img = Image.alpha_composite(main_img, overlay)

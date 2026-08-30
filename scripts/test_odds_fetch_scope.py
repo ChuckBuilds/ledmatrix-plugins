@@ -55,9 +55,17 @@ def main():
         if "_fetch_odds" not in src:
             continue
 
-        trim = src.find("[:self.upcoming_games_to_show]")
+        # The trim is whatever bounds the list before odds are fetched over it.
+        # Originally a slice; a plugin whose two selection branches were merged
+        # bounds it inside the selection helper instead, passing the same limit.
+        # Either shape is fine -- what must stay true is that the fetch comes
+        # after it and iterates the selected list, which the checks below
+        # enforce. Accepting only the slice would have failed a refactor that
+        # kept the invariant, and the pressure then is to weaken the guard.
+        trim = max(src.find("[:self.upcoming_games_to_show]"),
+                   src.find("processed_games, 0, self.upcoming_games_to_show"))
         if trim == -1:
-            check(f"{plugin}: has an upcoming-games trim", False)
+            check(f"{plugin}: bounds the list before fetching odds over it", False)
             continue
 
         # Every _fetch_odds call in the upcoming path must sit after the trim.

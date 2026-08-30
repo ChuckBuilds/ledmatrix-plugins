@@ -32,6 +32,7 @@ Run: <core-venv>/bin/python plugins/football-scoreboard/test_favorites_log_says_
 import logging
 import os
 import sys
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -100,6 +101,9 @@ def _run(sports, favorites, only_flag):
     obj.other_rotation_interval_seconds = 0
     obj._other_window_start = 0
     obj._other_window_rotated_at = 0.0
+    # The window advance runs under this: update() and the display path both
+    # reach it, and an unguarded read-modify-write there skips a window.
+    obj._games_lock = threading.RLock()
     obj.games_list = []
     obj.current_game = None
 
