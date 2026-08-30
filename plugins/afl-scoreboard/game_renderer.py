@@ -14,8 +14,10 @@ This module provides:
 import logging
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional, Tuple
+from zoneinfo import ZoneInfo
 from PIL import Image, ImageDraw, ImageFont
 
 # Add project root to path to import the shared logo downloader (same

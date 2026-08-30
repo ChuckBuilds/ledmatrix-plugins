@@ -76,7 +76,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.33.0"
+      "latest_version": "1.33.1"
     },
     {
       "id": "basketball-scoreboard",
@@ -101,7 +101,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.22.0"
+      "latest_version": "1.22.1"
     },
     {
       "id": "calendar",
@@ -240,7 +240,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.27.0"
+      "latest_version": "2.27.1"
     },
     {
       "id": "geochron",
@@ -359,7 +359,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.17.0",
+      "latest_version": "1.17.1",
       "icon": "fas fa-baseball-ball"
     },
     {
@@ -760,7 +760,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.17.0"
+      "latest_version": "2.17.1"
     },
     {
       "id": "static-image",
@@ -1048,7 +1048,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.15.0",
+      "latest_version": "1.15.1",
       "last_updated": "2026-08-13"
     },
     {
@@ -1095,7 +1095,7 @@
       "last_updated": "2026-08-13",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.14.0"
+      "latest_version": "1.14.1"
     },
     {
       "id": "jellyfin-now-playing",

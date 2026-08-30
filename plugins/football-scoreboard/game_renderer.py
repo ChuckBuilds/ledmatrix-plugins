@@ -14,8 +14,10 @@ This module provides:
 import dataclasses
 import logging
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional, Tuple, Union
+from zoneinfo import ZoneInfo
 from PIL import Image, ImageDraw, ImageFont
 
 
