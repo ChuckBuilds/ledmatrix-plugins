@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.29.1",
+  "version": "2.29.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,13 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.29.2",
+      "released": "2026-08-30",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Rotated-in games now get their odds. Odds are fetched in update(), which for an upcoming list runs hourly, while the other-games rotation re-cuts the non-favourite slice every other_rotation_interval_seconds on the display path -- deliberately with no network work. Every slice cut between updates therefore rendered without a line even though ESPN had one, while the favourites, which survive every cut, kept the odds update() gave them. The rotation now hands the freshly swapped-in games to a background thread that asks the odds manager about each one -- bounded by the slice, never the pool, so a college league's hundreds of upcoming games are still never trawled -- and a line appears on the card as soon as its fetch lands. Cached per game, so a game re-entering the window inside the odds TTL costs a lookup rather than a request.",
+      "changelog": "Rotated-in games now get their odds. The other-games rotation re-cuts the slice on the display path between hourly updates, and only update() fetched odds -- so rotated-in cards rendered without a line even though ESPN had one, while favourites kept theirs. The rotation now hands the fresh slice to a background thread, bounded by the slice size, with per-game caching."
+    },
     {
       "version": "2.29.1",
       "released": "2026-08-30",
@@ -347,7 +354,7 @@
       "released": "2026-07-10",
       "version": "2.8.0",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" — rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
+      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" \u2014 rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
     },
     {
       "released": "2026-07-08",

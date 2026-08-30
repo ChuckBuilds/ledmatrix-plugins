@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.29.2] - 2026-08-30
+
+### Fixed
+- **Rotated-in games now get their odds.** Odds are fetched in `update()`, which for an upcoming list runs hourly, while the other-games rotation re-cuts the non-favourite slice every `other_rotation_interval_seconds` on the display path — deliberately with no network work. Every slice cut between updates therefore rendered without a line even though ESPN had one, while the favourites, which survive every cut, kept the odds `update()` gave them. Observed live on a college slate: the hourly cycle fetched odds for the five games selected at that moment while the panel rotated through a different five with nothing under the matchup. The rotation now hands the freshly swapped-in games to a background daemon thread that asks the odds manager about each one — bounded by the slice, never the pool, so a college league's hundreds of upcoming games are still never trawled — and the line appears on the card as soon as its fetch lands. Cached per game, so a game re-entering the window inside the odds TTL costs a lookup rather than a request.
+
 ## [2.29.1] - 2026-08-30
 
 ### Fixed
