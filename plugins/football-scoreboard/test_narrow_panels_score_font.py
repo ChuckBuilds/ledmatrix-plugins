@@ -65,7 +65,8 @@ def main():
     from sports import SportsCore
     from PIL import Image, ImageDraw, ImageFont
 
-    for attr in ("_SCORE_WIDTH_BUDGET", "_NARROW_SCORE_RUNGS", "_fit_score_font"):
+    for attr in ("_SCORE_WIDTH_BUDGET", "_NARROW_SCORE_RUNGS",
+                 "_SCORE_PROBE_TEXT", "_fit_score_font"):
         if not hasattr(SportsCore, attr):
             print("  [FAIL] SportsCore has no %s -- the score font is still "
                   "fixed at PressStart2P 10px on every panel, so a 64-wide "

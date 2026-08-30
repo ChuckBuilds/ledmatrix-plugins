@@ -327,7 +327,14 @@ class GameRenderer:
                     max_logo_h = self.display_height
                 else:
                     max_logo_w = self._logo_slot_width()
-                    max_logo_h = int(self.display_height * 0.75)
+                    # Full card height, as football-scoreboard's card already
+                    # does. The 0.75 factor left every baseball mark a quarter
+                    # short of the height its slot allows -- and because the
+                    # slot is square (min(height, available)), a tall-ish mark
+                    # ran out of height first and so came out narrower too.
+                    # The slot already keeps the centre gap clear, so nothing
+                    # here can reach the score.
+                    max_logo_h = self.display_height
                 logo.thumbnail((max_logo_w, max_logo_h), RESAMPLE_FILTER)
 
                 # Copy before exiting context manager

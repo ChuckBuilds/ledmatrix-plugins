@@ -62,8 +62,11 @@ def make_spy(original, sink):
     default is a mutable-default smell, and there is no late-binding problem
     to work around, since each spy is used within the iteration that builds it.
     """
-    def spy(key, text, region, ladder):
-        fit = original(key, text, region, ladder)
+    def spy(key, text, region, ladder, **kwargs):
+        # **kwargs so the spy keeps working as _fit_element grows keyword
+        # options (snap_to_grid), rather than raising TypeError from inside
+        # the render and failing as though the layout were broken.
+        fit = original(key, text, region, ladder, **kwargs)
         sink[key] = getattr(getattr(fit, "font", None), "size", 0)
         return fit
     return spy
@@ -135,14 +138,20 @@ def main():
     print("\nthe gap is widened only where the bigger score rung is reachable")
     # Once the card reaches 2 x height the logos are capped at the card
     # height, so extra width goes entirely into the middle and the gap
-    # decides which ladder rung the score gets. But the fitter is CONTEXT
-    # dependent, not purely region-driven: the identical 88x31 region takes
-    # 16px on a 64-tall card and 8px on a 48-tall one. Widening the gap where
-    # the rung is unreachable would buy only dead space, so the helper probes
-    # the fitter and declines.
+    # decides which ladder rung the score gets. Widening the gap where the
+    # rung is unreachable would buy only dead space, so the helper probes the
+    # fitter and declines.
+    #
+    # 48 used to be on the declining side, and that was the bug rather than
+    # the rule: fit_text_proportional takes the largest rung <= its target, so
+    # 8 * (48/32) = 12 fell just short of the 16px rung and a 48-tall card got
+    # the same 8px score as a 32-tall one -- the same size as the clock drawn
+    # above it. _fit_element now snaps the score's target to the face's pixel
+    # grid first, so 12 becomes 16 and the rung is reachable. 32 still
+    # declines: it scales by exactly 1.0 and is meant to be left alone.
     from game_renderer import ADAPTIVE_LADDER_HEADLINE
     target = GameRenderer._ADAPTIVE_SCORE_TARGET_PX
-    for h, reachable in ((32, False), (48, False), (64, True), (96, True), (128, True)):
+    for h, reachable in ((32, False), (48, True), (64, True), (96, True), (128, True)):
         probe = GameRenderer(128, h, {"layout_mode": "adaptive"})
         gap = probe._adaptive_score_gap()
         check("h=%-3d %s" % (h, "widens the gap" if reachable else
@@ -153,9 +162,12 @@ def main():
         card = max(128, h * 2 + max(probe._center_gap_width(), gap))
         r = GameRenderer(card, h, {"layout_mode": "adaptive"})
         regs = scoreboard_regions(Region(0, 0, card, h))
+        # snap_to_grid mirrors the real score call site; the "VS" separator
+        # and the stacked date/time share this font key and deliberately do
+        # not snap.
         fit = r._fit_element('score', "00-00",
                              r._region_for(r._score_clear_of_logos(regs), 'score'),
-                             ADAPTIVE_LADDER_HEADLINE)
+                             ADAPTIVE_LADDER_HEADLINE, snap_to_grid=True)
         got = getattr(getattr(fit, 'font', None), 'size', 0)
         check("h=%-3d card %d actually reaches the %dpx rung (got %spx)"
               % (h, card, target, got), got >= target)

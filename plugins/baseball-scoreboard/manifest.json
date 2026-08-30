@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.34.0",
+  "version": "1.35.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,13 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.35.0",
+      "released": "2026-08-29",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The score is now the headline it was always meant to be. It was the only element on the card not sized from the panel, and it was not even bigger than its neighbours: PressStart2P renders crisply on an 8px grid, so the 10px default snapped to 8 -- the same 8 the clock above it and the game date below it are drawn at. It is now sized from display_height, snapped to its face's pixel grid and capped at twice its design size, with the clock/date face held a grid step below it. Score and date positions scale with their faces so a grown one is not clipped off the card. Where the grown score would swamp the panel the layout now reaches for a narrower FACE rather than crowding out the logos, which is what football-scoreboard has always done and the single reason its logos read larger than every other scoreboard's at the same size. Measured on a 128x64 board: 4x6-font at 14px reserves 28px and leaves 52x52 logos, where PressStart2P at 16px reserved 60px and left 36x36 -- two small badges adrift in a mostly black panel. The two faces are nothing like the same shape: PressStart2P is square, 4x6-font is nearly as tall and about half as wide, so the score keeps the dimension that carries legibility and gives back the one the logos need. Logos are sized against the space the score actually needs, and only where the score grew -- a panel whose score did not move keeps exactly the logos it had. The upcoming screen is untouched at every size: it draws no score, so none of this applies to it -- its date and time keep the face and size they always had. Measured on the live and recent screens: 64x32, 128x32 and 256x32 render byte-identically to the previous release, and every taller panel gains a larger score with logos the score is no longer drawn across. The live card's run counts grow with the panel too: both halves of the bottom BOS:4 row were drawn in the fixed 8px display_manager.font, so the run count was the size of the abbreviation beside it. The runs now use the panel-scaled score font while the abbreviation stays small. Scroll-card logos fill the full card height instead of 0.75x it.",
+      "changelog": "The score is now the headline it was always meant to be. It was the only element on the card not sized from the panel, and it was not even bigger than its neighbours: PressStart2P renders crisply on an 8px grid, so the 10px default snapped to 8 -- the same 8 the clock above it and the game date below it are drawn at. It is now sized from display_height, snapped to its face's pixel grid and capped at twice its design size, with the clock/date face held a grid step below it. Score and date positions scale with their faces so a grown one is not clipped off the card. Where the grown score would swamp the panel the layout now reaches for a narrower FACE rather than crowding out the logos, which is what football-scoreboard has always done and the single reason its logos read larger than every other scoreboard's at the same size. Measured on a 128x64 board: 4x6-font at 14px reserves 28px and leaves 52x52 logos, where PressStart2P at 16px reserved 60px and left 36x36 -- two small badges adrift in a mostly black panel. The two faces are nothing like the same shape: PressStart2P is square, 4x6-font is nearly as tall and about half as wide, so the score keeps the dimension that carries legibility and gives back the one the logos need. Logos are sized against the space the score actually needs, and only where the score grew -- a panel whose score did not move keeps exactly the logos it had. The upcoming screen is untouched at every size: it draws no score, so none of this applies to it -- its date and time keep the face and size they always had. Measured on the live and recent screens: 64x32, 128x32 and 256x32 render byte-identically to the previous release, and every taller panel gains a larger score with logos the score is no longer drawn across. The live card's run counts grow with the panel too: both halves of the bottom BOS:4 row were drawn in the fixed 8px display_manager.font, so the run count was the size of the abbreviation beside it. The runs now use the panel-scaled score font while the abbreviation stays small. Scroll-card logos fill the full card height instead of 0.75x it."
+    },
     {
       "version": "1.34.0",
       "released": "2026-08-29",
@@ -305,7 +312,7 @@
     {
       "released": "2026-07-08",
       "version": "1.14.2",
-      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team \u25b2/\u25bc indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
+      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team ▲/▼ indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -323,7 +330,7 @@
     {
       "released": "2026-07-07",
       "version": "1.13.1",
-      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team \u25b2/\u25bc arrow, which wasn't factored into the width check at all.",
+      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team ▲/▼ arrow, which wasn't factored into the width check at all.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -365,7 +372,7 @@
     {
       "released": "2026-07-02",
       "version": "1.7.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u2014 spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
       "ledmatrix_min": "2.0.0"
     },
     {
