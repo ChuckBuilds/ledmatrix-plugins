@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.29.0",
+  "version": "2.29.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,13 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.29.1",
+      "released": "2026-08-30",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The full-screen upcoming scoreboard draws its date and time again on configs that had hidden them on the scroll card. Show Date and Show Time predate the full-screen display reading the scroll_card block: they governed only the scroll and Vegas cards, so turning them off there never touched the stacked date and time in the middle of the switch-mode scorebug -- until the block was wired through, when those old settings started silently blanking it. The full-screen display now has its own switch_show_date and switch_show_time, both defaulting to true, holding it to what it has always drawn -- the same back-compat rule that gave it switch_upcoming_center and switch_date_format. The scroll and Vegas cards keep following Show Date and Show Time exactly as before.",
+      "changelog": "The full-screen upcoming scoreboard draws its date and time again on configs that had hidden them on the scroll card. Show Date and Show Time governed only the scroll and Vegas cards before the full-screen display read the scroll_card block, so those old settings had started silently blanking a scorebug that has always drawn both lines. It now has its own switch_show_date and switch_show_time, both defaulting to true; the scroll and Vegas cards keep following Show Date and Show Time exactly as before."
+    },
     {
       "version": "2.29.0",
       "released": "2026-08-29",

@@ -774,11 +774,19 @@ class SportsCore(ABC):
 
     def _upcoming_date_and_time_text(self, game_date: str, game_time: str,
                                      game: Optional[Dict] = None) -> Tuple[str, str]:
-        """The formatted (date, time) pair, blanked by show_date/show_time."""
+        """The formatted (date, time) pair, blanked by switch_show_date/_time.
+
+        Deliberately not the shared show_date/show_time: those governed only
+        the scroll and Vegas cards before this display read the block, so a
+        config that had turned them off there would silently blank a scorebug
+        that has always drawn both lines. The switch keys default to True for
+        the same reason switch_upcoming_center defaults to "date_time" -- an
+        untouched panel keeps rendering exactly what it rendered before.
+        """
         date_text = (self._format_game_date(game_date, game)
-                     if self._card_option("show_date", True) else "")
+                     if self._card_option("switch_show_date", True) else "")
         time_text = (self._format_game_time(game_time)
-                     if self._card_option("show_time", True) else "")
+                     if self._card_option("switch_show_time", True) else "")
         return date_text, time_text
 
     def _draw_upcoming_center_switch(self, draw, game: Dict, center_y: int,
