@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.27.0",
+  "version": "2.27.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.27.2",
+      "released": "2026-08-29",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Keep the possession football on the panel and clear of everything else, and stop the adaptive layout dropping the yardage. The ball was placed a fixed 3px from the down and distance text and guarded only by a check that its x had not come out negative -- which tests that a number was not negative, not that the ball fit anywhere. On a 64px-wide panel it landed on the timeout bars; on the adaptive 256x128 card it was drawn at x 262-274 of a 256px card, entirely off the edge. Its size and the wording beside it are unchanged: the ball is placed around the text now, never the other way round, and where a row genuinely cannot hold both -- a 64x32 leaves about 30px between the timeout bars and the text alone wants 29 -- the down and distance wins and the ball is omitted. Separately, the adaptive card drew the down and distance in PressStart2P, roughly four times wider per character than the 4x6 face: on a 192x48 panel that rendered \"3rd & 8 at KC 42\" 128px wide against the classic layout's 65px, and on a 256x128 it reached the full 256px so the line was clipped at both ends. That line alone now uses the compact 4x6 face, verified crisp at both rungs; the clock, status band, records and dates keep the face and sizes they had. With the narrower face the yardage also fits where it previously did not -- the long form was gated on `display_width > 128`, a proxy for \"is there room\" that got a 128x64 wrong -- so it is now preferred whenever it fits the space the timeout bars and records leave free."
+    },
     {
       "version": "2.27.0",
       "released": "2026-08-29",
