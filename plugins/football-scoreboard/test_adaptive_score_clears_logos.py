@@ -62,8 +62,11 @@ def make_spy(original, sink):
     default is a mutable-default smell, and there is no late-binding problem
     to work around, since each spy is used within the iteration that builds it.
     """
-    def spy(key, text, region, ladder):
-        fit = original(key, text, region, ladder)
+    def spy(key, text, region, ladder, **kwargs):
+        # **kwargs so the spy keeps working as _fit_element grows keyword
+        # options (snap_to_grid), rather than raising TypeError from inside
+        # the render and failing as though the layout were broken.
+        fit = original(key, text, region, ladder, **kwargs)
         sink[key] = getattr(getattr(fit, "font", None), "size", 0)
         return fit
     return spy
@@ -159,9 +162,12 @@ def main():
         card = max(128, h * 2 + max(probe._center_gap_width(), gap))
         r = GameRenderer(card, h, {"layout_mode": "adaptive"})
         regs = scoreboard_regions(Region(0, 0, card, h))
+        # snap_to_grid mirrors the real score call site; the "VS" separator
+        # and the stacked date/time share this font key and deliberately do
+        # not snap.
         fit = r._fit_element('score', "00-00",
                              r._region_for(r._score_clear_of_logos(regs), 'score'),
-                             ADAPTIVE_LADDER_HEADLINE)
+                             ADAPTIVE_LADDER_HEADLINE, snap_to_grid=True)
         got = getattr(getattr(fit, 'font', None), 'size', 0)
         check("h=%-3d card %d actually reaches the %dpx rung (got %spx)"
               % (h, card, target, got), got >= target)

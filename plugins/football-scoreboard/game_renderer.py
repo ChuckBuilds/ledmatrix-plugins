@@ -958,7 +958,7 @@ class GameRenderer:
         return region.offset(dx, dy) if (dx or dy) else region
 
     def _fit_element(self, font_key: str, text: str, region: "Region",
-                     ladder) -> "FitResult":
+                     ladder, *, snap_to_grid: bool = False) -> "FitResult":
         """Crisp font sized proportionally to this element's classic fixed
         size (self.fonts[font_key]'s configured size — the default, e.g.
         score=10/time=8/detail=6, unless the user overrode it) — unless the
@@ -970,6 +970,14 @@ class GameRenderer:
         let it balloon out of proportion (even overlapping the logos) well
         past what fits the classic composition, even though the pick is
         individually "correct" for its own box.
+
+        ``snap_to_grid`` is opt-in per CALL, not per font key, because the
+        score font is used for three different things: the score itself, the
+        "VS" separator on an upcoming card, and that card's stacked
+        date/time. Only the first is a score. Keying the snap on
+        ``font_key == 'score'`` grew the "VS" to 16px on a 192x48 panel --
+        a separator sized like a headline, for a card with no result to
+        report.
 
         Scaled by HEIGHT alone (not LayoutContext's conservative
         min(width_ratio, height_ratio)) to match how the card's own logos
@@ -987,7 +995,7 @@ class GameRenderer:
                              line_height=height)
         base_size_px = getattr(self.fonts[font_key], 'size', 10)
         height_scale = self.display_height / self._ctx.design_size[1]
-        if font_key == 'score':
+        if snap_to_grid:
             # Snap the score's target to the face's pixel grid before the
             # ladder sees it, so it lands ON a rung instead of just under one.
             #
@@ -1071,7 +1079,7 @@ class GameRenderer:
             fit = self._fit_element(
                 'score', "00-00",
                 self._region_for(self._score_clear_of_logos(regs), 'score'),
-                ADAPTIVE_LADDER_HEADLINE)
+                ADAPTIVE_LADDER_HEADLINE, snap_to_grid=True)
             got = getattr(getattr(fit, 'font', None), 'size', 0) or 0
             return needed if got >= self._ADAPTIVE_SCORE_TARGET_PX else 0
         except Exception:
@@ -1235,7 +1243,8 @@ class GameRenderer:
         if game_type in ("live", "recent"):
             score_text = f"{game.get('away_score', '0')}-{game.get('home_score', '0')}"
             score_fit = self._fit_element('score', score_text, score_region,
-                                          ADAPTIVE_LADDER_HEADLINE)
+                                          ADAPTIVE_LADDER_HEADLINE,
+                                          snap_to_grid=True)
             self._adaptive_score_px = getattr(
                 getattr(score_fit, 'font', None), 'size', 0) or 0
             self._draw_fit_outline(draw_overlay, score_fit, score_region,

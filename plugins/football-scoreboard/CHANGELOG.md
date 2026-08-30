@@ -8,7 +8,7 @@
 - **Logos are sized against the space the score actually needs**, and only where the score grew. A panel whose score did not move keeps exactly the logos it had.
 - **Score and date positions scale with their faces.** The bottom-anchored score's `-14`, the centred score's `-3`, and the date's 7px drop were all chosen for an 8px face and clipped a grown one off the card.
 - **The upcoming screen is untouched at every size.** It draws no score — `fonts["score"]` appears in `SportsUpcoming` zero times, `fonts["time"]` five times — so none of the score-driven sizing applies to it and its date and time keep the face and size they always had. Measured on the live and recent screens: 64x32, 128x32 and 256x32 are byte-identical to the previous release; every taller panel gains a larger score with logos the score is no longer drawn across.
-- The adaptive layout reaches the same rung: fit_text_proportional takes the largest rung at or below its target, and 8 * (48/32) = 12 fell just short of 16, so a 48-tall card got the same 8px score a 32-tall one did. _fit_element now snaps the score's target to the face's grid first, so both layouts pick the same size on the same panel.
+- The adaptive layout reaches the same rung: fit_text_proportional takes the largest rung at or below its target, and 8 * (48/32) = 12 fell just short of 16, so a 48-tall card got the same 8px score a 32-tall one did. _fit_element now snaps the score's target to the face's grid first, so both layouts pick the same size on the same panel. The snap is opt-in per call rather than keyed on the font name: the score font also draws the `VS` separator and the stacked date/time on an upcoming card, and those are not scores — they keep the size they always had.
 
 ## [2.11.0] - 2026-08-04
 
