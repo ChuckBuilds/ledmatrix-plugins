@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.27.0",
+  "version": "2.28.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,13 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.28.0",
+      "released": "2026-08-29",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The text colour pickers in Customization now actually colour the text. score_text, period_text, team_name, status_text, detail_text and rank_text have each offered a colour in the web UI for as long as they have had a font, and setting one changed only which font was loaded -- every string was drawn white. The colour now follows the face it belongs to, on the full-screen scoreboard and on the scroll and Vegas cards alike. Every default is white, so a display nobody has recoloured looks exactly as it did.",
+      "changelog": "The text colour pickers in Customization now actually colour the text. score_text, period_text, team_name, status_text, detail_text and rank_text have each offered a colour in the web UI for as long as they have had a font, and setting one changed only which font was loaded -- every string was drawn white. The colour now follows the face it belongs to, on the full-screen scoreboard and on the scroll and Vegas cards alike. Every default is white, so a display nobody has recoloured looks exactly as it did."
+    },
     {
       "version": "2.27.0",
       "released": "2026-08-29",

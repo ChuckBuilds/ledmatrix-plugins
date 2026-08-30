@@ -442,3 +442,37 @@ Example:
   }
 }
 ```
+
+### Text Colours
+
+Each text element in the **Customization** section carries a colour, and it now
+applies to the text drawn in that element's face — on the full-screen scoreboard
+and on the scroll and Vegas cards alike. Until this version the picker changed
+only which font was loaded; every string was drawn white.
+
+| Element | Key | Colours |
+|---|---|---|
+| Score | `score_text` | The score, and the matchup separator on an upcoming card |
+| Period / clock | `period_text` | The clock, period, and the date and time on an upcoming scoreboard |
+| Team name | `team_name` | Team names and abbreviations |
+| Status | `status_text` | Status lines such as "Next Game" |
+| Detail | `detail_text` | Small detail lines |
+| Ranking | `rank_text` | Team rankings drawn in the ranking face |
+
+Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white, so a display
+nobody has recoloured looks exactly as it did.
+
+```json
+{
+  "customization": {
+    "score_text": { "text_color": [255, 200, 0] },
+    "status_text": { "text_color": "#00A0FF" }
+  }
+}
+```
+
+Two things keep their own colours on purpose: the betting-odds figures, which
+are coloured by which side is favoured, and a finished game's score when
+**Favorite Team Result Colors** is on — that tint wins, and your score colour
+shows on every other game. Records and rankings drawn in the small fixed face
+stay white; no element in the schema owns that face.
