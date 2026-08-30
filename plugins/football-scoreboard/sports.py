@@ -833,6 +833,15 @@ class SportsCore(ABC):
     #: needs at 128 wide (80px of 128 is 0.625).
     _SCORE_GROWTH_BUDGET: ClassVar[float] = 0.65
 
+    #: Whether this screen actually draws a score. Everything below that sizes
+    #: the score, reserves the middle for it, or trades face width to fit it is
+    #: work done ON BEHALF of the score -- and SportsUpcoming draws no score at
+    #: all. It uses fonts["time"] five times and fonts["score"] not once, so
+    #: before this flag the upcoming card inherited a narrower face and a bigger
+    #: size chosen for a number it never shows: "Next Game / 01/16 / 12:00AM"
+    #: silently changed typeface on a 128x64 panel.
+    _DRAWS_SCORE: ClassVar[bool] = True
+
     #: Panel height the fixed font sizes below were chosen against. Everything
     #: else on the card is sized from display_height -- the logos most of all
     #: -- so on a taller panel they grew and the score did not.
@@ -908,6 +917,9 @@ class SportsCore(ABC):
         size the user set explicitly is never overridden.
         """
         self._score_grew = False
+        if not self._DRAWS_SCORE:
+            # No score on this screen, so none of the sizing below is for it.
+            return fonts
         try:
             scaled = None if self._user_chose_size('score_text') else \
                 self._grid_scaled_size(fonts.get('score'))
@@ -1764,6 +1776,9 @@ class SportsCore(ABC):
 
 
 class SportsUpcoming(SportsCore):
+    #: This screen shows the date and the time, never a score.
+    _DRAWS_SCORE: ClassVar[bool] = False
+
     def __init__(
         self,
         config: Dict[str, Any],
