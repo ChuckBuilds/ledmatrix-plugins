@@ -268,8 +268,9 @@ class SportsCore(ABC):
         # How many NON-favourite games to add when favourites are set but
         # show_favorite_teams_only is off. 0 makes that mode favourites-only.
         # Defaults match the league-wide counts above, so a board that upgrades
-        # keeps every game it was already showing and simply gains its
-        # favourites -- the change is additive, never a removal.
+        # keeps as many slots as it had and simply gains its favourites. The
+        # COUNTS never remove anything; the quality and division filters below
+        # are the deliberate exception, trading filler for ranked matchups.
         self.other_upcoming_games_to_show: int = self._setting_int(
             "other_upcoming_games_to_show", self.upcoming_games_to_show, 0, 20
         )
@@ -2446,11 +2447,16 @@ class SportsCore(ABC):
             return []
         interval = self.other_rotation_interval_seconds
         limit = max(0, pools["other_limit"])
-        # Whichever pool _compose_selection will actually slice. When the
-        # filters reject everything it falls back to the unfiltered list, and
-        # gating on `others` there left that fallback pinned until the next
-        # fetch -- an hour by default -- however short the rotation was set.
-        others = pools["others"] or (pools["unfiltered"] if limit > 0 else [])
+        # Whichever pool _compose_selection will actually slice. It falls back
+        # to the unfiltered list only when NOTHING survived -- favourites
+        # included. With a favourite playing and the filters rejecting every
+        # other game, compose keeps the favourites-only list, so guessing the
+        # unfiltered pool here made the due-check fire on every display() call
+        # forever, recomposing an identical list each frame.
+        others = pools["others"]
+        favorites_fill = pools["favorites"] and pools["favorite_limit"] > 0
+        if not others and limit > 0 and not favorites_fill:
+            others = pools["unfiltered"]
         if interval <= 0 or limit <= 0 or len(others) <= limit:
             return []       # pinned, favourites-only, or nothing to rotate through
         if not self._other_window_rotated_at:

@@ -499,7 +499,7 @@
               "default": 5,
               "minimum": 1,
               "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+              "description": "Total games this mode cycles through: favorites fill first, other games take the remaining slots. With 'show favorite teams only' on: N games per favorite team."
             },
             "upcoming_games_to_show": {
               "x-advanced": true,
@@ -507,7 +507,7 @@
               "default": 1,
               "minimum": 1,
               "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+              "description": "Total games this mode cycles through: favorites fill first, other games take the remaining slots. With 'show favorite teams only' on: N games per favorite team."
             },
             "other_upcoming_games_to_show": {
               "type": "integer",
@@ -958,7 +958,7 @@
               "default": 5,
               "minimum": 1,
               "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+              "description": "Total games this mode cycles through: favorites fill first, other games take the remaining slots. With 'show favorite teams only' on: N games per favorite team."
             },
             "upcoming_games_to_show": {
               "x-advanced": true,
@@ -966,7 +966,7 @@
               "default": 5,
               "minimum": 1,
               "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+              "description": "Total games this mode cycles through: favorites fill first, other games take the remaining slots. With 'show favorite teams only' on: N games per favorite team."
             },
             "other_upcoming_games_to_show": {
               "type": "integer",
