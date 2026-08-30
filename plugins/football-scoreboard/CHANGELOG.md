@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.29.1] - 2026-08-30
+
+### Fixed
+- **The full-screen upcoming scoreboard draws its date and time again on configs that had hidden them on the scroll card.** `show_date`/`show_time` predate the full-screen display reading the `scroll_card` block: they governed only the scroll and Vegas cards, so turning them off there never touched the stacked date and time in the middle of the switch-mode scorebug — until the block was wired through, when those old settings started silently blanking it. The middle then drew nothing at all: `switch_upcoming_center` defaults to `date_time`, and both of its lines came back empty. The full-screen display now has its own `switch_show_date` and `switch_show_time`, both defaulting to `true`, holding it to what it has always drawn — the same back-compat rule that gave it `switch_upcoming_center` and `switch_date_format`. The scroll and Vegas cards keep following `show_date`/`show_time` exactly as before, and a regression test pins that the shared keys no longer reach this display.
+
 ## [2.29.0] - 2026-08-29
 
 ### Changed
