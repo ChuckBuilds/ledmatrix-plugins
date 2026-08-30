@@ -81,8 +81,31 @@ def run_one(script: Path, core: Path | None, timeout: int) -> tuple[int, str]:
     if proc.returncode == PASS:
         return PASS, ""
 
-    tail = [ln for ln in (proc.stdout + proc.stderr).splitlines() if ln.strip()]
-    return FAIL, (tail[-1][:120] if tail else f"exit {proc.returncode}")
+    # The reason has to name what actually failed. Reporting the last line
+    # reported whatever the script logged LAST -- for a script that warns on
+    # stderr, always that warning, whether it passed or failed. Nine plugins
+    # failed in CI with an identical message that named a log line rather than
+    # a check, and the run could not be diagnosed from its own output.
+    lines = [ln.rstrip() for ln in (proc.stdout + proc.stderr).splitlines() if ln.strip()]
+    failed_checks = [ln.strip() for ln in lines if "[FAIL]" in ln or ln.startswith("FAILED")]
+    if failed_checks:
+        reason = "; ".join(c[:100] for c in failed_checks[:3])
+        if len(failed_checks) > 3:
+            reason += f" (+{len(failed_checks) - 3} more)"
+        return FAIL, reason
+    if not lines:
+        return FAIL, f"exit {proc.returncode}"
+    # No named check failed, so the script died some other way -- a traceback,
+    # an assertion, an exit code from somewhere else. The tail is the evidence,
+    # taken from each stream separately: concatenating them put every stdout
+    # line before every stderr line, so a script that printed its diagnostic
+    # and then three warnings reported only the warnings.
+    tails = []
+    for name, stream in (("stdout", proc.stdout), ("stderr", proc.stderr)):
+        kept = [ln.rstrip() for ln in stream.splitlines() if ln.strip()]
+        if kept:
+            tails.append("%s: %s" % (name, " | ".join(kept[-2:])))
+    return FAIL, ("exit %d | %s" % (proc.returncode, " ; ".join(tails)))[:240]
 
 
 def main() -> int:
