@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.27.2",
+  "version": "2.27.3",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.27.3",
+      "released": "2026-08-30",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fix a crash when the date format is set to \"weekday\". game_renderer.py used datetime, timezone and ZoneInfo without importing any of them, so choosing that option -- one of the documented values of scroll_card.date_format -- raised NameError. Neither helper's except clause catches NameError (_weekday_for catches ValueError/TypeError, _card_tzinfo catches KeyError/ValueError/TypeError/OSError), so it propagated out of the render rather than falling back to the plain date. The imports now match hockey-scoreboard, the one copy that always had them and rendered the option correctly. Nothing else changes: the default \"abbrev\" format, which is what the render harness and the golden images exercise, was never affected, which is how this went unnoticed."
+    },
     {
       "version": "2.27.2",
       "released": "2026-08-29",
