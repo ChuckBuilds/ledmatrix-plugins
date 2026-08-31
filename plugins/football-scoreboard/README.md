@@ -528,7 +528,7 @@ Per league, under `game_limits`:
 | `other_upcoming_games_to_show` | matches `upcoming_games_to_show` | How many **non-favorite** upcoming games to add. `0` gives you favorites only. |
 | `other_recent_games_to_show` | matches `recent_games_to_show` | The same, for finished games. |
 | `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
-| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked`, `broadcast`, or `any`. |
+| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked` or `any`. |
 | `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from: `fbs`, `fcs`, `other`. |
 
 **Your favorite teams are never filtered by the last two.** Follow a Division II school and its games always appear, whatever the quality bar or division boxes say. Those settings only decide what fills the *remaining* slots.
@@ -555,6 +555,10 @@ Your favorites are **not** rotated. For upcoming games the soonest ones are the 
 ### Keeping the filler out
 
 Selection is otherwise purely chronological, and on a college slate most of what that returns is filler. Of ~950 upcoming games, roughly 250 involve a nationally ranked team; the rest are matchups most viewers have never heard of. Rotating harder just serves more of them, which is why `other_games_min_quality` defaults to `ranked`.
+
+`ranked` means ranked in the **top division's** poll — the AP Top 25 for college football. South Dakota State is a perennial FCS number one, but South Dakota State at Northwestern is not a ranked matchup and does not qualify: the ranked side is FCS and the FBS side is unranked. The poll is matched on team id rather than abbreviation, so two schools sharing an abbreviation across divisions cannot promote each other.
+
+> **Retired:** `broadcast` no longer exists. ESPN lists a broadcaster for almost every game now — ESPN+ included — so on a real Week 1/Week 2 slate it passed **174 of 175** games: a quality bar in the dropdown that behaved as `any`. Boards still holding it are read as `ranked` and say so once in the log; change the setting to clear the schema warning.
 
 `other_games_divisions` needs **one** team in a checked division, not both. With only `fbs` checked you still get #12 Texas Tech hosting Abilene Christian — a game involving a team you asked for — while Abilene Christian vs Furman stays out. Check `fcs` or `other` to bring the smaller-division matchups in as well.
 

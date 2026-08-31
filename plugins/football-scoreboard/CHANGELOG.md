@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.0.0] - 2026-08-31
+
+### Changed
+- **`ranked` now means ranked in the top division's poll.** ESPN answers the college football rankings endpoint with four polls — AP Top 25, the AFCA Coaches Poll, the FCS Coaches Poll and the AFCA Division II Poll — and the parser took whichever it listed first. That is AP today, so the table was FBS by luck rather than by choice: nothing in the payload promises the order, and ESPN demonstrably changes it, adding the CFP rankings in November. With a lower-division poll leading, every top FCS side reads as ranked and a board asking for the week's best matchups is served South Dakota State at Northwestern — the ranked side is FCS, the FBS side is unranked, and it is exactly the game the setting exists to keep off the panel. The poll is now chosen rather than trusted: ESPN's own order is kept among top-division polls, and the ones below FBS are stepped over. Verified against the live payload with the FCS poll moved to the front — AP is still the table, and South Dakota State is still unranked.
+- **Teams are matched by id, not just abbreviation.** The FBS and FCS schedules arrive in one scoreboard payload and an abbreviation is not unique across divisions — ESPN has SDSU for San Diego State and SDST for South Dakota State today, with nothing promising it stays that way — so two schools sharing one could promote each other into a ranked slot. The rank badge reads the same table, so it can no longer draw an FCS poll position on an FBS board.
+- **An unusable `other_games_min_quality` falls back to `ranked` with a warning.** It used to fall through every branch of the filter and silently mean `any`: a quality bar the board believes it has and does not.
+
+### Removed
+- **The `broadcast` quality tier.** Measured against a real Week 1 and Week 2 college slate it passed **174 of 175** games — ESPN lists a broadcaster for nearly everything now, ESPN+ included — so it read as a quality bar in the dropdown and behaved as `any`. Boards still holding it are read as `ranked` and say so once in the log; changing the setting clears the schema warning the core raises for a value no longer in the enum.
+
 ## [2.29.3] - 2026-08-31
 
 ### Fixed

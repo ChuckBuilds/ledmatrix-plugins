@@ -748,11 +748,25 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             
             
             rankings = {}
-            rankings_data = data.get('rankings', [])
-            
-            if rankings_data:
-                # Use the first ranking (usually AP Top 25)
-                first_ranking = rankings_data[0]
+            # The poll is CHOSEN, not taken on trust. ESPN answers this
+            # endpoint for college football with four blocks -- AP Top 25, the
+            # AFCA Coaches Poll, the FCS Coaches Poll and the AFCA Division II
+            # Poll -- and taking the first is FBS by luck rather than by
+            # choice: nothing in the payload promises the order, and ESPN
+            # changes it, adding the CFP rankings in November. With a
+            # lower-division poll leading, the ticker would draw an FCS poll
+            # position beside an FBS team. ESPN's own order is kept among
+            # top-division polls; only the divisions below FBS are skipped.
+            # Same guard as football-scoreboard's sports.py _choose_poll.
+            first_ranking = next(
+                (block for block in (data.get('rankings') or [])
+                 if str(block.get('type') or '').lower() != 'fcs'
+                 and not any(marker in str(block.get('name') or '').lower()
+                             for marker in ('fcs', 'division ii', 'division iii'))),
+                None,
+            )
+
+            if first_ranking:
                 teams = first_ranking.get('ranks', [])
                 
                 for team_data in teams:

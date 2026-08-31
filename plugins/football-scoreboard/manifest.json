@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.29.3",
+  "version": "3.0.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,13 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.0.0",
+      "released": "2026-08-31",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The \"ranked\" quality filter now means ranked in the TOP division's poll. ESPN answers the college football rankings endpoint with four polls -- AP Top 25, the AFCA Coaches Poll, the FCS Coaches Poll and the AFCA Division II Poll -- and the parser took whichever it listed first. That is AP today, so the table was FBS by luck rather than by choice; nothing in the payload promises the order and ESPN changes it, adding the CFP rankings in November. With a lower-division poll leading, every top FCS side reads as ranked and a board asking for the week's best matchups is served South Dakota State at Northwestern -- the ranked side is FCS, the FBS side is unranked, and it is exactly the game the setting exists to keep off the panel. The poll is now chosen rather than trusted, keeping ESPN's own order among top-division polls and stepping over the ones below FBS. Teams are matched by id as well as abbreviation, because the FBS and FCS schedules arrive in one payload and an abbreviation is not unique across divisions, so two schools sharing one can no longer promote each other. The rank badge follows the same table, so it can no longer show an FCS poll position on an FBS board. BREAKING: the \"broadcast\" quality tier is retired. Measured against a real Week 1 and Week 2 slate it passed 174 of 175 games -- ESPN lists a broadcaster for nearly everything now, ESPN+ included -- so it read as a quality bar in the dropdown and behaved as \"any\". Boards holding it are read as \"ranked\" and say so once in the log; change the setting to clear the schema warning. An unusable value there now falls back to \"ranked\" with a warning too, instead of falling through every branch and silently meaning \"any\" -- a bar the board believes it has and does not.",
+      "changelog": "The \"ranked\" quality filter now means ranked in the TOP division's poll. ESPN answers the college football rankings endpoint with four polls -- AP Top 25, the AFCA Coaches Poll, the FCS Coaches Poll and the AFCA Division II Poll -- and the parser took whichever it listed first. That is AP today, so the table was FBS by luck rather than by choice; nothing in the payload promises the order and ESPN changes it, adding the CFP rankings in November. With a lower-division poll leading, every top FCS side reads as ranked and a board asking for the week's best matchups is served South Dakota State at Northwestern -- the ranked side is FCS, the FBS side is unranked, and it is exactly the game the setting exists to keep off the panel. The poll is now chosen rather than trusted, keeping ESPN's own order among top-division polls and stepping over the ones below FBS. Teams are matched by id as well as abbreviation, because the FBS and FCS schedules arrive in one payload and an abbreviation is not unique across divisions, so two schools sharing one can no longer promote each other. The rank badge follows the same table, so it can no longer show an FCS poll position on an FBS board. BREAKING: the \"broadcast\" quality tier is retired. Measured against a real Week 1 and Week 2 slate it passed 174 of 175 games -- ESPN lists a broadcaster for nearly everything now, ESPN+ included -- so it read as a quality bar in the dropdown and behaved as \"any\". Boards holding it are read as \"ranked\" and say so once in the log; change the setting to clear the schema warning. An unusable value there now falls back to \"ranked\" with a warning too, instead of falling through every branch and silently meaning \"any\" -- a bar the board believes it has and does not."
+    },
     {
       "version": "2.29.3",
       "released": "2026-08-31",
@@ -361,7 +368,7 @@
       "released": "2026-07-10",
       "version": "2.8.0",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" \u2014 rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
+      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" — rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
     },
     {
       "released": "2026-07-08",

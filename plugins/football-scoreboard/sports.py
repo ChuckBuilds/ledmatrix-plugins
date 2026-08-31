@@ -294,9 +294,9 @@ class SportsCore(ABC):
         # of it. Favourites are NEVER filtered by these -- follow a Division II
         # school and its games always show; this only decides what fills the
         # remaining slots.
-        self.other_games_min_quality: str = str(self.mode_config.get(
-            "other_games_min_quality", "ranked"
-        )).strip().lower()
+        self.other_games_min_quality: str = self._normalise_quality(
+            self.mode_config.get("other_games_min_quality", "ranked")
+        )
         self.other_games_divisions: List[str] = self._normalise_divisions(
             self.mode_config.get("other_games_divisions", ["fbs"])
         )
@@ -372,6 +372,7 @@ class SportsCore(ABC):
 
         # Initialize team rankings cache
         self._team_rankings_cache = {}
+        self._ranked_team_ids = {}
         self._rankings_cache_timestamp = 0
         self._rankings_cache_duration = 3600  # Cache rankings for 1 hour
 
@@ -1792,6 +1793,55 @@ class SportsCore(ABC):
             return True
         return False
 
+    def _choose_poll(self, rankings_data: List[Dict]) -> Dict:
+        """The first poll ESPN lists that is not a lower-division one.
+
+        ESPN's order is kept, so whichever poll it fronts -- AP now, the CFP
+        rankings once those start -- is still the one that drives the badge.
+        Only the divisions below FBS are stepped over.
+        """
+        for block in rankings_data or []:
+            name = str(block.get("name") or "").lower()
+            kind = str(block.get("type") or "").lower()
+            if kind in self._NON_TOP_POLL_TYPES or any(
+                marker in name for marker in self._NON_TOP_POLL_NAMES
+            ):
+                self.logger.debug(
+                    "%s: skipping %s -- not a top-division poll",
+                    self.league, block.get("name") or kind,
+                )
+                continue
+            return block
+        return {}
+
+    def _normalise_quality(self, raw) -> str:
+        """other_games_min_quality, as one of the values the code implements.
+
+        An unusable value used to fall through every branch of
+        _passes_other_filters and silently mean "any" -- a quality bar the
+        board believes it has and does not.
+        """
+        value = str(raw or "").strip().lower()
+        if value in self._QUALITY_CHOICES:
+            return value
+        if value == "broadcast":
+            # Retired. Measured against a real Week 1 and Week 2 college slate
+            # it passed 174 of 175 games: ESPN publishes a broadcaster for
+            # nearly everything now, ESPN+ included, so the tier read as a
+            # quality bar and behaved as "any". Boards holding it get the bar
+            # they thought they were getting.
+            self.logger.warning(
+                "%s: other_games_min_quality 'broadcast' has been retired -- "
+                "it let through nearly every game -- using 'ranked'. Change "
+                "the setting to clear this.", getattr(self, "sport_key", "?"),
+            )
+            return "ranked"
+        self.logger.warning(
+            "%s: ignoring unusable other_games_min_quality=%r, using 'ranked'",
+            getattr(self, "sport_key", "?"), raw,
+        )
+        return "ranked"
+
     def _fetch_team_rankings(self) -> Dict[str, int]:
         """Fetch team rankings using the new architecture components."""
         current_time = time.time()
@@ -1807,27 +1857,41 @@ class SportsCore(ABC):
         try:
             data = self.data_source.fetch_standings(self.sport, self.league)
 
-            rankings = {}
-            rankings_data = data.get("rankings", [])
+            rankings: Dict[str, int] = {}
+            ranked_ids: Dict[int, int] = {}
+            poll = self._choose_poll(data.get("rankings", []))
 
-            if rankings_data:
-                # Use the first ranking (usually AP Top 25)
-                first_ranking = rankings_data[0]
-                teams = first_ranking.get("ranks", [])
-
-                for team_data in teams:
-                    team_info = team_data.get("team", {})
-                    team_abbr = team_info.get("abbreviation", "")
-                    current_rank = team_data.get("current", 0)
-
-                    if team_abbr and current_rank > 0:
-                        rankings[team_abbr] = current_rank
+            for team_data in poll.get("ranks", []):
+                team_info = team_data.get("team", {})
+                team_abbr = team_info.get("abbreviation", "")
+                current_rank = team_data.get("current", 0)
+                if current_rank <= 0:
+                    continue
+                if team_abbr:
+                    rankings[team_abbr] = current_rank
+                # Kept by id as well as by abbreviation. The badge draws the
+                # abbreviation, but abbreviations are not unique across
+                # divisions and the FBS and FCS schedules arrive in the SAME
+                # scoreboard payload -- ESPN has SDSU for San Diego State and
+                # SDST for South Dakota State today, and nothing promises it
+                # stays that way. An id cannot rank the wrong school.
+                try:
+                    ranked_ids[int(team_info.get("id"))] = current_rank
+                except (TypeError, ValueError):
+                    pass
 
             # Cache the results
             self._team_rankings_cache = rankings
+            self._ranked_team_ids = ranked_ids
             self._rankings_cache_timestamp = current_time
 
-            self.logger.debug(f"Fetched rankings for {len(rankings)} teams")
+            if rankings:
+                self.logger.info(
+                    "%s: %d ranked teams loaded from %s", self.league,
+                    len(rankings), poll.get("name") or "an unnamed poll",
+                )
+            else:
+                self.logger.debug("Fetched rankings for 0 teams")
             return rankings
 
         except Exception as e:
@@ -1969,10 +2033,12 @@ class SportsCore(ABC):
                 or status["type"]["name"] == "STATUS_HALFTIME",  # Added halftime check
                 "is_period_break": status["type"]["name"]
                 == "STATUS_END_PERIOD",  # Added Period Break check
-                # str(): ESPN's undocumented payloads have served this field
-                # as an object in some sports. A non-string here reaches
-                # _note_broadcast_coverage's .strip() inside update()'s own
-                # try/except -- a mode that silently renders nothing.
+                # str(): ESPN's undocumented payloads have served this
+                # field as an object in some sports, and a non-string reaching
+                # a .strip() inside update()'s own try/except is a mode that
+                # silently renders nothing. Kept as plain game metadata now
+                # that the "broadcast" quality tier is retired; nothing
+                # selects on it.
                 "broadcast": str(competition.get("broadcast") or ""),
                 "home_abbr": home_abbr,
                 "home_id": home_team["id"],
@@ -2176,6 +2242,31 @@ class SportsCore(ABC):
     _division_team_ids: ClassVar[Optional[Dict[str, set]]] = None
     _division_loaded_at: ClassVar[float] = 0.0
     _team_rankings_cache: ClassVar[Dict[str, int]] = {}
+    _ranked_team_ids: ClassVar[Dict[int, int]] = {}
+
+    # Polls the rank badge and the "ranked" quality filter may read. ESPN
+    # answers /rankings for college football with FOUR blocks -- AP Top 25,
+    # the AFCA Coaches Poll, the FCS Coaches Poll and the AFCA Division II
+    # Poll -- and the parser used to take whichever came first. Today that is
+    # AP, so the table was FBS by luck. Nothing in the payload promises that
+    # order and ESPN demonstrably changes it, adding the CFP rankings in
+    # November. With the FCS poll leading, every top FCS side reads as ranked
+    # and a board asking for ranked matchups is served South Dakota State at
+    # Northwestern: the FCS side is ranked, the FBS side is not, and it is
+    # exactly the game the setting exists to keep off the panel.
+    #
+    # An EXCLUDE list, not an allow list: a poll ESPN invents at the top
+    # division should still count, while the divisions below FBS must never.
+    # Type is checked first and name second, because the Division II block
+    # types as "afca" while the FBS coaches poll -- also an AFCA poll -- types
+    # as "usa", so the type alone cannot tell those two apart.
+    _NON_TOP_POLL_TYPES: ClassVar[frozenset] = frozenset({"fcs"})
+    _NON_TOP_POLL_NAMES: ClassVar[Tuple[str, ...]] = (
+        "fcs", "division ii", "division iii", "div ii", "div iii",
+    )
+    # What other_games_min_quality may be. "broadcast" is retired and migrates
+    # to "ranked" -- see _normalise_quality.
+    _QUALITY_CHOICES: ClassVar[frozenset] = frozenset({"any", "ranked"})
 
     # ESPN group ids for the college divisions. Derived from its own group
     # rosters, which are disjoint (148 FBS team ids, 130 FCS, no overlap).
@@ -2195,7 +2286,6 @@ class SportsCore(ABC):
         "college-football": {"fbs": 80, "fcs": 81},
     }
     _DIVISION_CACHE_TTL: ClassVar[int] = 24 * 60 * 60
-    _broadcast_data_seen: ClassVar[bool] = True
     _RANKING_COVERAGE_SECONDS: ClassVar[int] = 60 * 60
     _ranking_coverage_logged_at: ClassVar[float] = 0.0
     # A lookup that came back empty is retried on this shorter clock.
@@ -2346,23 +2436,42 @@ class SportsCore(ABC):
             )
             return default
 
+    def _rankings_loaded(self) -> bool:
+        """Did a poll load at all? Both readings below fail open when not."""
+        return bool(getattr(self, "_ranked_team_ids", None)
+                    or getattr(self, "_team_rankings_cache", None))
+
+    def _ranked_positions(self, game: Dict) -> List[int]:
+        """Poll positions held by either side: ids first, abbreviations second.
+
+        The id table is authoritative whenever the game carries ids and a poll
+        has been parsed, because it is built from a top-division poll alone --
+        so an FCS side cannot appear in it however it is abbreviated, and an
+        abbreviation shared across divisions cannot promote the wrong school.
+        The abbreviation table stays as the fallback for a game dict with no
+        ids on it.
+        """
+        by_id = getattr(self, "_ranked_team_ids", None) or {}
+        ids = []
+        for side in ("home_id", "away_id"):
+            try:
+                ids.append(int(game.get(side)))
+            except (TypeError, ValueError):
+                ids = []
+                break
+        if by_id and ids:
+            return [rank for rank in (by_id.get(i, 0) for i in ids) if rank]
+        by_abbr = getattr(self, "_team_rankings_cache", None) or {}
+        return [rank for rank in (by_abbr.get(game.get("home_abbr"), 0),
+                                  by_abbr.get(game.get("away_abbr"), 0)) if rank]
+
     def _is_ranked_game(self, game: Dict) -> bool:
-        rankings = getattr(self, "_team_rankings_cache", None) or {}
-        if not rankings:
-            return False
-        return bool(
-            rankings.get(game.get("home_abbr"), 0)
-            or rankings.get(game.get("away_abbr"), 0)
-        )
+        return bool(self._ranked_positions(game))
 
     def _best_rank(self, game: Dict) -> int:
         """The better of the two sides' poll positions, or 99 if neither ranks."""
-        rankings = getattr(self, "_team_rankings_cache", None) or {}
-        if not rankings:
-            return 99
-        ranked = [r for r in (rankings.get(game.get("home_abbr"), 0),
-                              rankings.get(game.get("away_abbr"), 0)) if r]
-        return min(ranked) if ranked else 99
+        found = self._ranked_positions(game)
+        return min(found) if found else 99
 
     def _round_robin_favorites(self, games: List[Dict], limit: int) -> List[Dict]:
         """Each favourite team's next game before any team's second one.
@@ -2451,8 +2560,7 @@ class SportsCore(ABC):
         next", which is both what an upcoming board means and inherently
         near-term, since a team's next game is by definition the closest one.
         """
-        rankings = getattr(self, "_team_rankings_cache", None) or {}
-        if not rankings:
+        if not self._rankings_loaded():
             return games
         if newest_first:
             def key(game):
@@ -2485,26 +2593,17 @@ class SportsCore(ABC):
     def _passes_other_filters(self, game: Dict) -> bool:
         """Is this non-favourite game worth one of the remaining slots?
 
+        "ranked" means ranked in the TOP division's poll -- see _choose_poll.
+        An FCS side ranked in its own poll does not qualify the game it is
+        playing in, which for college football is most often an FCS school
+        visiting an unranked FBS one.
+
         Every check fails OPEN. If rankings could not be fetched or the
         division rosters did not resolve, the game is allowed: a board showing
         filler is a poor board, but a board showing nothing is a broken one.
         """
         if self.other_games_min_quality == "ranked":
-            if (getattr(self, "_team_rankings_cache", None) or {}) and \
-                    not self._is_ranked_game(game):
-                return False
-        elif self.other_games_min_quality == "broadcast":
-            # A league ESPN carries no broadcast data for is UNKNOWN, not a
-            # league where nothing is on television. The scoreboard payload
-            # always has the key, so the usual "missing means allowed" reading
-            # does not apply here -- measured, college football, the NFL,
-            # college baseball, college lacrosse and UFC all carry a
-            # broadcaster, while the NHL and the soccer leagues return "" for
-            # every game. Without this, picking "broadcast" there removed every
-            # non-favourite game rather than failing open like its neighbours.
-            if not self._broadcast_data_seen:
-                return True
-            if not game.get("broadcast") and not self._is_ranked_game(game):
+            if self._rankings_loaded() and not self._is_ranked_game(game):
                 return False
 
         wanted = self.other_games_divisions
@@ -2513,18 +2612,6 @@ class SportsCore(ABC):
             if present is not None and not (present & set(wanted)):
                 return False
         return True
-
-    def _note_broadcast_coverage(self, games: List[Dict]) -> None:
-        """Does this league carry broadcast data at all?
-
-        Answered from the slate rather than from a list of league names, so a
-        league ESPN starts or stops populating needs no code change. Read by
-        `_passes_other_filters`; defaults to True so a caller that has not
-        asked keeps the stricter reading.
-        """
-        self._broadcast_data_seen = any(
-            (g.get("broadcast") or "").strip() for g in games
-        )
 
     def _check_ranking_coverage(self, games: List[Dict]) -> None:
         """Say so when a loaded poll matches nothing on the schedule.
@@ -2641,7 +2728,6 @@ class SportsCore(ABC):
                 return g.get("start_time_utc") or datetime.max.replace(tzinfo=timezone.utc)
             ordered = sorted(processed_games, key=key)
 
-        self._note_broadcast_coverage(ordered)
         favorites, others, unfiltered = [], [], []
         for game in ordered:
             if self._is_favorite_game(game):
