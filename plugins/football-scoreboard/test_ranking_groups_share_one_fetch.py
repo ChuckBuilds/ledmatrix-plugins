@@ -72,14 +72,24 @@ def main():
 
     # Lineages cache differently: some take a cache_manager, some keep a
     # class-level dict. Build whichever this one wants instead of assuming.
+    #
+    # The argument is passed as **kwargs rather than a literal keyword. Five
+    # plugins ship a class of this name and three of them -- basketball,
+    # hockey, lacrosse -- take no cache_manager at all, so a bare
+    # `from dynamic_team_resolver import ...` gives a static analyser a call it
+    # can prove wrong for the class it happened to resolve. It also stops the
+    # same condition being written twice, once here and once for the second
+    # resolver below.
     import inspect
     cache = Cache()
-    if "cache_manager" in inspect.signature(DynamicTeamResolver.__init__).parameters:
-        resolver = DynamicTeamResolver(cache_manager=cache)
+    takes_cache = "cache_manager" in inspect.signature(
+        DynamicTeamResolver.__init__).parameters
+    cache_kwargs = {"cache_manager": cache} if takes_cache else {}
+    resolver = DynamicTeamResolver(**cache_kwargs)
+    if takes_cache:
         def keys():
             return set(cache.writes)
     else:
-        resolver = DynamicTeamResolver()
         type(resolver)._rankings_cache = {}
         def keys():
             return set(type(resolver)._rankings_cache)
@@ -114,10 +124,8 @@ def main():
     # so a new instance refetches by construction -- not something this change
     # governs, so it is not asserted there.
     before = len(fetches)
-    shared_cache = "cache_manager" in inspect.signature(
-        DynamicTeamResolver.__init__).parameters
-    second = DynamicTeamResolver(cache_manager=cache) if shared_cache \
-        else DynamicTeamResolver()
+    shared_cache = takes_cache
+    second = DynamicTeamResolver(**cache_kwargs)
     second._fetch_rankings = lambda sport: (fetches.append(sport) or list(POLL))
     again = {p: second.resolve_teams([p]) for p in patterns}
     if shared_cache:

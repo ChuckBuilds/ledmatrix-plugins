@@ -63,15 +63,36 @@ def _blocks(node, path="", in_row_editor=False):
     return found
 
 
+def _settings_the_code_reads(plugin_id):
+    """Which of the catalogue this plugin's own code actually consumes.
+
+    Derived from sports.py rather than hardcoded, because the nine plugins do
+    not have to be in lockstep: a setting can land in one lineage first and be
+    ported later, and during that window the others are not broken -- they
+    simply do not have it yet. Hardcoding the full list made this guard fail
+    every plugin that had not been ported, which turns a staged rollout into a
+    red build and teaches people to ignore the guard.
+
+    A setting the code DOES read must still be reachable. That is the invariant
+    worth enforcing, and it is the one that catches the real bug.
+    """
+    source = PLUGINS / plugin_id / "sports.py"
+    if not source.exists():
+        return {}
+    text = source.read_text()
+    return {key: spec for key, spec in REQUIRED.items() if '"%s"' % key in text}
+
+
 def check_plugin(plugin_id):
     schema_path = PLUGINS / plugin_id / "config_schema.json"
     if not schema_path.exists():
         return []
     schema = json.loads(schema_path.read_text())
+    required = _settings_the_code_reads(plugin_id)
     problems = []
     for where, props, row_editor in _blocks(schema):
         label = "%s %s" % (plugin_id, where.replace("/properties", "") or "<root>")
-        for key, (want_type, low, high, allowed) in REQUIRED.items():
+        for key, (want_type, low, high, allowed) in required.items():
             if row_editor and want_type == "array":
                 continue          # see _blocks: the row editor cannot submit one
             node = props.get(key)
@@ -104,6 +125,8 @@ def check_plugin(plugin_id):
         # card count -- and the dwell -- on somebody else's board.
         for other, own in (("other_upcoming_games_to_show", "upcoming_games_to_show"),
                            ("other_recent_games_to_show", "recent_games_to_show")):
+            if other not in required:
+                continue
             a = (props.get(other) or {}).get("default")
             b = (props.get(own) or {}).get("default")
             if isinstance(a, int) and isinstance(b, int) and a > b:
@@ -125,13 +148,23 @@ def main():
                      if (p / "sports.py").exists() and (p / "config_schema.json").exists())
     else:
         ids = args.plugin_ids
+        # check_plugin() treats a missing schema as nothing-to-check, which is
+        # right for the --all glob but turns a typoed id into a false "OK" --
+        # and then a FileNotFoundError while the summary counts its blocks.
+        unknown = [i for i in ids
+                   if not (PLUGINS / i / "config_schema.json").exists()]
+        if unknown:
+            print("Unknown plugin id(s): %s" % ", ".join(sorted(unknown)),
+                  file=sys.stderr)
+            return 2
 
     problems = [p for pid in ids for p in check_plugin(pid)]
     if not problems:
         blocks = sum(len(_blocks(json.loads((PLUGINS / i / "config_schema.json").read_text())))
                      for i in ids)   # noqa: E501 - count only
-        print("OK: %d plugin(s), %d selection block(s), all five settings present "
-              "with matching ranges." % (len(ids), blocks))
+        print("OK: %d plugin(s), %d selection block(s); every setting each "
+              "plugin's code reads is declared, with matching ranges."
+              % (len(ids), blocks))
         return 0
     for problem in problems:
         print("  - %s" % problem)

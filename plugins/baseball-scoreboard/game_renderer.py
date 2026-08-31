@@ -6,10 +6,11 @@ Returns images instead of updating display directly.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import os
 from typing import Any, ClassVar, Dict, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -122,7 +123,7 @@ class GameRenderer:
         self._team_rankings_cache: Dict[str, int] = {}
 
         # Load fonts
-        self.fonts = self._load_fonts()
+        self.fonts = self._unshare_element_fonts(self._load_fonts())
 
     def _load_fonts(self) -> Dict[str, ImageFont.FreeTypeFont]:
         """Load fonts used by the scoreboard from config or use defaults."""
@@ -326,7 +327,14 @@ class GameRenderer:
                     max_logo_h = self.display_height
                 else:
                     max_logo_w = self._logo_slot_width()
-                    max_logo_h = int(self.display_height * 0.75)
+                    # Full card height, as football-scoreboard's card already
+                    # does. The 0.75 factor left every baseball mark a quarter
+                    # short of the height its slot allows -- and because the
+                    # slot is square (min(height, available)), a tall-ish mark
+                    # ran out of height first and so came out narrower too.
+                    # The slot already keeps the centre gap clear, so nothing
+                    # here can reach the score.
+                    max_logo_h = self.display_height
                 logo.thumbnail((max_logo_w, max_logo_h), RESAMPLE_FILTER)
 
                 # Copy before exiting context manager
@@ -339,13 +347,90 @@ class GameRenderer:
             self.logger.exception(f"Error loading logo for {team_abbrev}")
             return None
 
+    #: Which customization element owns each loaded face. The font loader
+    #: already picks each face from exactly that element (element_key=), so
+    #: resolving the colour from the face keeps the two in step by
+    #: construction, rather than by every draw site remembering to agree.
+    _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
+        "score": "score_text",
+        "time": "period_text",
+        "team": "team_name",
+        "status": "status_text",
+        "detail": "detail_text",
+        "rank": "rank_text",
+    }
+
+    def _unshare_element_fonts(self, fonts):
+        """Give each colourable element its own face object.
+
+        The colour a draw gets is resolved from the face it was handed, and
+        several of these loaders legitimately hand one object to more than one
+        element -- a size resolver that lands two elements on the same face, a
+        fallback that fills every key from one default, football's narrowing
+        step that deliberately shrinks the clock along with the score. Sharing
+        the object makes the element ambiguous and the colour unresolvable.
+
+        Re-instantiating from the same path and size gives a distinct object
+        with identical metrics, so nothing about the rendering changes; only
+        the ability to tell two elements apart does. Faces that cannot be
+        rebuilt (a BDF loaded through freetype.Face, anything without a usable
+        path) are left shared, and their draws stay white as before.
+        """
+        try:
+            from PIL import ImageFont as _IF
+        except ImportError:  # pragma: no cover
+            return fonts
+        seen = {}
+        for key in self._ELEMENT_FOR_FONT:
+            font = fonts.get(key)
+            if font is None:
+                continue
+            if id(font) not in seen:
+                seen[id(font)] = key
+                continue
+            path, size = getattr(font, "path", None), getattr(font, "size", None)
+            if not path or not size:
+                continue
+            try:
+                fonts[key] = _IF.truetype(path, size)
+            except (OSError, ValueError, TypeError):
+                self.logger.debug(
+                    "Could not un-share the %s face; it keeps the default colour", key)
+        return fonts
+
+    def _font_color(self, font, default: Tuple[int, int, int] = (255, 255, 255)):
+        """Colour for whichever element owns this face.
+
+        Matched on identity, and deliberately gives up when one object is
+        shared: the last-resort font path can hand the same face to several
+        keys, and there is no right answer for which element's colour that is.
+        White is what those draws used before, so ambiguity costs nothing.
+        """
+        try:
+            fonts = getattr(self, "fonts", None) or {}
+            matches = [element for key, element in self._ELEMENT_FOR_FONT.items()
+                       if fonts.get(key) is font]
+            if len(matches) == 1:
+                return self._element_color(matches[0], default)
+        except (AttributeError, TypeError):
+            pass
+        return default
+
     def _draw_text_with_outline(self, draw, text, position, font,
-                               fill=(255, 255, 255), outline_color=(0, 0, 0)):
+                               fill=None, outline_color=(0, 0, 0)):
         """Draw text with a black outline for better readability."""
         # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
         # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
         # glyphs. 1-bit mode keeps strokes crisp. See _draw_text_with_outline in
         # sports.py for the same fix on the switch-mode renderer.
+        # Defaults to the configured colour for whichever element owns
+        # this face rather than to white, so customization.<element>.text_color
+        # reaches every draw. The schema has offered those pickers all along
+        # and they only ever changed the font. An explicit fill still wins:
+        # the odds colours and the favourite-result score tint mean something
+        # the palette does not.
+        if fill is None:
+            fill = self._font_color(font)
         draw.fontmode = "1"
         x, y = position
         for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
@@ -466,8 +551,15 @@ class GameRenderer:
         )
         return "win" if favorite_score > other_score else "loss"
 
-    def _score_color_for(self, game: Dict[str, Any], game_type: str, default=(255, 255, 255)):
-        """Fill color for a game card's score. Only finished games are tinted."""
+    def _score_color_for(self, game: Dict[str, Any], game_type: str, default=None):
+        """Fill color for a game card's score. Only finished games are tinted.
+
+        The default is the configured score colour rather than a flat white,
+        so customization.score_text.text_color shows on games the favourite
+        tint does not apply to. The tint still wins where it applies.
+        """
+        if default is None:
+            default = self._element_color('score_text')
         if game_type != "recent":
             return default
         return self._recent_score_color(game, default)
@@ -731,12 +823,15 @@ class GameRenderer:
             return self._render_error_card("Display error")
 
     # ------------------------------------------------------------------
-    # Scroll/Vegas card options -- config["scroll_card"], plus the shared
+    # Card options -- config["scroll_card"], plus the shared
     # customization.layout offsets and per-element colours.
     #
-    # These only affect the cards this renderer builds, which are used by
-    # scroll_display.py and scroll_display_legacy.py alone. The full-screen
-    # scorebug is drawn elsewhere and is deliberately left untouched.
+    # The center-gap keys size this renderer's cards alone. The rest --
+    # upcoming_center, vs_text, the date and time formats -- are also read by
+    # sports.py's full-screen scorebug (SportsCore._draw_upcoming_center_switch
+    # and friends, gated there on switch_upcoming_center), so those two copies
+    # have to stay in step: a change to the formatting rules here needs the
+    # same change there, or the ticker and the scoreboard disagree.
     # ------------------------------------------------------------------
     CENTER_GAP_RATIO: ClassVar[float] = 0.28
     CENTER_GAP_MIN_PX: ClassVar[int] = 22

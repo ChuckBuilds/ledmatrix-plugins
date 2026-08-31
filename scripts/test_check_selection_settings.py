@@ -31,7 +31,11 @@ def with_plugins(tmp, plugin_id, schema):
     """Run the checker against a single synthetic plugin."""
     d = Path(tmp) / plugin_id
     d.mkdir(parents=True, exist_ok=True)
-    (d / "sports.py").write_text("# stand-in\n")
+    # The checker derives what to require from what the code reads, so the
+    # stand-in has to name the settings or it is a plugin with no requirements
+    # and every case below passes vacuously.
+    (d / "sports.py").write_text("\n".join(
+        '_ = "%s"' % key for key in checker.REQUIRED) + "\n")
     (d / "config_schema.json").write_text(json.dumps(schema))
     original = checker.PLUGINS
     checker.PLUGINS = Path(tmp)

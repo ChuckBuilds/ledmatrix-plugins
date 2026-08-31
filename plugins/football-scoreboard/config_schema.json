@@ -6,8 +6,8 @@
   "properties": {
     "scroll_card": {
       "type": "object",
-      "title": "Scroll & Vegas Card Layout",
-      "description": "Layout of the game cards built for scroll and Vegas modes. The full-screen scoreboard is drawn separately and is not affected by these settings.",
+      "title": "Matchup Card Layout",
+      "description": "Layout of an upcoming or in-progress matchup: the separator drawn between the two teams, and how the date and time are written. These apply to the scroll and Vegas cards and to the full-screen scoreboard alike -- the full-screen one is controlled by its own \"Middle of a Full-Screen Upcoming Scoreboard\" setting so it keeps the look it has always had until you change it. The center-gap settings size the scroll and Vegas card only.",
       "x-advanced": true,
       "properties": {
         "upcoming_center": {
@@ -25,6 +25,26 @@
               "vs": "Matchup separator (VS / @ / at)",
               "date_time": "Date and time, stacked",
               "none": "Nothing"
+            }
+          }
+        },
+        "switch_upcoming_center": {
+          "type": "string",
+          "title": "Middle of a Full-Screen Upcoming Scoreboard",
+          "description": "What to show between the two logos on the full-screen (switch mode) scoreboard before a game starts. Defaults to the stacked date and time, which is what this display has always shown. Pick the matchup separator to use the same VS / @ / at text as the scroll and Vegas cards, or \"Same as scroll and Vegas\" to follow the setting above. Football's beta adaptive layout always follows the setting above.",
+          "enum": [
+            "date_time",
+            "vs",
+            "none",
+            "inherit"
+          ],
+          "default": "date_time",
+          "x-options": {
+            "labels": {
+              "date_time": "Date and time, stacked",
+              "vs": "Matchup separator (VS / @ / at)",
+              "none": "Nothing",
+              "inherit": "Same as scroll and Vegas"
             }
           }
         },
@@ -57,6 +77,31 @@
             }
           }
         },
+        "switch_date_format": {
+          "type": "string",
+          "title": "Full-Screen Date Format",
+          "description": "How the date is written on the full-screen (switch mode) scoreboard. Defaults to \"9/19\", which is what this display has always drawn, so it does not change until you pick something else. Choose \"Same as scroll and Vegas\" to follow the Date Format setting above instead.",
+          "enum": [
+            "numeric",
+            "abbrev",
+            "day_first",
+            "numeric_day_first",
+            "weekday",
+            "inherit"
+          ],
+          "default": "numeric",
+          "x-advanced": true,
+          "x-options": {
+            "labels": {
+              "numeric": "9/19",
+              "abbrev": "Sep 19",
+              "day_first": "19 Sep",
+              "numeric_day_first": "19/9",
+              "weekday": "Fri Sep 19",
+              "inherit": "Same as scroll and Vegas"
+            }
+          }
+        },
         "time_format": {
           "type": "string",
           "title": "Time Format",
@@ -83,6 +128,18 @@
           "type": "boolean",
           "title": "Show Time",
           "description": "Draw the start time on upcoming cards.",
+          "default": true
+        },
+        "switch_show_date": {
+          "type": "boolean",
+          "title": "Show Date (Full-Screen)",
+          "description": "Draw the date on the full-screen (switch mode) upcoming scoreboard. Its own switch because Show Date above predates this display reading the block: turning that off for the scroll card never hid the full-screen date, and still doesn't.",
+          "default": true
+        },
+        "switch_show_time": {
+          "type": "boolean",
+          "title": "Show Time (Full-Screen)",
+          "description": "Draw the start time on the full-screen (switch mode) upcoming scoreboard. Its own switch because Show Time above predates this display reading the block: turning that off for the scroll card never hid the full-screen time, and still doesn't.",
           "default": true
         },
         "swap_date_time": {
@@ -454,7 +511,7 @@
               "default": 5,
               "minimum": 1,
               "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+              "description": "Total games this mode cycles through: favorites fill first, other games take the remaining slots. With 'show favorite teams only' on: N games per favorite team."
             },
             "upcoming_games_to_show": {
               "x-advanced": true,
@@ -462,7 +519,7 @@
               "default": 1,
               "minimum": 1,
               "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+              "description": "Total games this mode cycles through: favorites fill first, other games take the remaining slots. With 'show favorite teams only' on: N games per favorite team."
             },
             "other_upcoming_games_to_show": {
               "type": "integer",
@@ -913,7 +970,7 @@
               "default": 5,
               "minimum": 1,
               "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+              "description": "Total games this mode cycles through: favorites fill first, other games take the remaining slots. With 'show favorite teams only' on: N games per favorite team."
             },
             "upcoming_games_to_show": {
               "x-advanced": true,
@@ -921,7 +978,7 @@
               "default": 5,
               "minimum": 1,
               "maximum": 20,
-              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+              "description": "Total games this mode cycles through: favorites fill first, other games take the remaining slots. With 'show favorite teams only' on: N games per favorite team."
             },
             "other_upcoming_games_to_show": {
               "type": "integer",

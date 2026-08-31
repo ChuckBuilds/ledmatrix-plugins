@@ -264,7 +264,7 @@ class SportsCore(ABC):
         self.current_game = None
         # Thread safety lock for shared game state
         self._games_lock = threading.RLock()
-        self.fonts = self._load_fonts()
+        self.fonts = self._unshare_element_fonts(self._load_fonts())
 
         # Initialize dynamic team resolver and resolve favorite teams
         self.dynamic_resolver = DynamicTeamResolver()
@@ -519,6 +519,260 @@ class SportsCore(ABC):
             self.logger.error(f"Error loading default font: {e}")
             return ImageFont.load_default()
     
+    # ------------------------------------------------------------------
+    # Upcoming-card center options -- config["scroll_card"].
+    #
+    # The same block game_renderer.py reads for the scroll and Vegas cards.
+    # It used to stop there, so a user who set the matchup separator to "@"
+    # got it on the ticker and never on the full-screen scoreboard. These
+    # helpers mirror the renderer's so one setting drives every display mode;
+    # the two copies have to stay in step.
+    #
+    # ``switch_upcoming_center`` exists because the shared ``upcoming_center``
+    # defaults to "vs" while this display has always drawn the date and time
+    # stacked. Defaulting the switch-mode key to "date_time" keeps every
+    # existing panel rendering exactly what it rendered before the setting
+    # reached it; "inherit" opts into the shared value.
+    #
+    # The center-gap keys are deliberately not read here: they size the
+    # scroll card's middle strip, while this layout pins the logos to the
+    # panel edges.
+    # ------------------------------------------------------------------
+    _MONTH_ABBR: ClassVar[Tuple[str, ...]] = (
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    )
+    _WEEKDAY_ABBR: ClassVar[Tuple[str, ...]] = (
+        "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun",
+    )
+
+    def _card_option(self, key: str, default: Any = None) -> Any:
+        """Read one key from the scroll_card config block."""
+        block = (self.config or {}).get("scroll_card")
+        if isinstance(block, dict) and block.get(key) is not None:
+            return block.get(key)
+        return default
+
+    def _switch_upcoming_center(self) -> str:
+        """Middle of the full-screen upcoming scorebug: 'vs', 'date_time' or 'none'."""
+        mode = str(self._card_option("switch_upcoming_center", "date_time")
+                   or "date_time").lower()
+        if mode == "inherit":
+            mode = str(self._card_option("upcoming_center", "vs") or "vs").lower()
+        return mode if mode in ("vs", "date_time", "none") else "date_time"
+
+    def _vs_text(self) -> str:
+        """Separator drawn between the teams -- "VS", "@", "at", anything."""
+        return str(self._card_option("vs_text", "VS"))
+
+    def _switch_date_format(self) -> str:
+        """Date style for the full-screen scorebug.
+
+        Its own key rather than the shared ``date_format`` because the two
+        displays disagree about the default: the scroll card renders "Sep 19"
+        while _extract_game_details_common emits "9/19", the "numeric" style,
+        and this scorebug has always drawn it. Reading the shared key here
+        would restyle every existing panel on update -- and "leave it alone
+        when unset" is not available, because the core merges schema defaults
+        into the config on every load, so the key is never actually unset.
+        "inherit" opts into the scroll and Vegas setting.
+        """
+        fmt = str(self._card_option("switch_date_format", "numeric") or "numeric").lower()
+        if fmt == "inherit":
+            fmt = str(self._card_option("date_format", "abbrev") or "abbrev").lower()
+        return fmt
+
+    def _format_game_date(self, date_text: str, game: Optional[Dict] = None) -> str:
+        """Format an upcoming date per scroll_card.switch_date_format."""
+        raw = str(date_text or "").strip()
+        if not raw:
+            return raw
+        fmt = self._switch_date_format()
+        if fmt == "numeric":
+            return raw
+        parts = raw.replace("-", "/").split("/")
+        if not (len(parts) >= 2 and parts[0].strip().isdigit() and parts[1].strip().isdigit()):
+            return raw
+        month, day = int(parts[0]), int(parts[1])
+        if not 1 <= month <= 12:
+            return raw
+        name = self._MONTH_ABBR[month - 1]
+        if fmt == "numeric_day_first":
+            return f"{day}/{month}"
+        if fmt == "day_first":
+            return f"{day} {name}"
+        if fmt == "weekday":
+            weekday = self._weekday_for(game)
+            return f"{weekday} {name} {day}" if weekday else f"{name} {day}"
+        return f"{name} {day}"
+
+    def _weekday_for(self, game: Optional[Dict]) -> str:
+        """Weekday abbreviation from the game's start time, or ''."""
+        if not game:
+            return ""
+        raw = game.get("start_time_utc") or game.get("start_time")
+        if not raw:
+            return ""
+        try:
+            start = raw if isinstance(raw, datetime) else datetime.fromisoformat(
+                str(raw).replace("Z", "+00:00"))
+            return self._WEEKDAY_ABBR[start.astimezone(self._get_timezone()).weekday()]
+        except (ValueError, TypeError, OverflowError):
+            return ""
+
+    def _format_game_time(self, time_text: str) -> str:
+        """Return the time as-is (12h) or converted to 24h."""
+        raw = str(time_text or "").strip()
+        if not raw or str(self._card_option("time_format", "12h")) != "24h":
+            return raw
+        cleaned = raw.upper().replace(" ", "")
+        meridiem = "AM" if cleaned.endswith("AM") else "PM" if cleaned.endswith("PM") else ""
+        if not meridiem:
+            return raw
+        try:
+            hh, _, mm = cleaned[:-2].partition(":")
+            hour, minute = int(hh), int(mm or 0)
+        except ValueError:
+            return raw
+        if not (0 <= hour <= 12 and 0 <= minute <= 59):
+            return raw
+        hour = hour % 12 + (12 if meridiem == "PM" else 0)
+        return f"{hour:02d}:{minute:02d}"
+
+    def _scorebug_font(self, draw, text: str, width: int):
+        """The face this scorebug draws its date and time in.
+
+        Always the "time" face, which is what this display has used for both
+        rows for as long as it has existed: changing switch_upcoming_center
+        moves the two lines around, it is not meant to restyle them, so the
+        type stays put while the placement changes.
+
+        The single exception is text that cannot fit the panel at all. Only
+        the "weekday" date can do that -- "Fri Sep 19" measures 80px in an
+        8px face, on a board 64px wide -- and the smaller "detail" face is a
+        better answer there than running off both edges. Every other date and
+        time this display can produce fits, so in practice the face never
+        changes; it is a floor, not a style rule.
+        """
+        font = self.fonts["time"]
+        if not text:
+            return font
+        try:
+            if draw.textlength(text, font=font) + 2 <= width:
+                return font
+        except (TypeError, ValueError):
+            return font
+        return self.fonts.get("detail") or font
+
+    def _upcoming_date_and_time_text(self, game_date: str, game_time: str,
+                                     game: Optional[Dict] = None) -> Tuple[str, str]:
+        """The formatted (date, time) pair, blanked by show_date/show_time."""
+        date_text = (self._format_game_date(game_date, game)
+                     if self._card_option("show_date", True) else "")
+        time_text = (self._format_game_time(game_time)
+                     if self._card_option("show_time", True) else "")
+        return date_text, time_text
+
+    def _draw_upcoming_center_switch(self, draw, game: Dict, center_y: int,
+                                     game_date: str, game_time: str,
+                                     display_width: Optional[int] = None,
+                                     display_height: Optional[int] = None,
+                                     date_element: str = 'date',
+                                     time_element: str = 'time',
+                                     second_row_y_offset: bool = True) -> bool:
+        """Draw the middle of the full-screen upcoming scorebug.
+
+        Returns True when the header above it ("Next Game", or the league
+        name) should still be drawn. In "vs" and "none" the date and time move
+        out of the middle and into the top and bottom slots, mirroring the
+        scroll card -- and the top slot is where the header used to be, so the
+        caller drops it.
+
+        ``date_element``/``time_element``/``second_row_y_offset`` exist only so
+        the layout-offset keys stay exactly what each plugin's schema
+        advertises; this sport's defaults are the common case.
+        """
+        width = self.display_width if display_width is None else display_width
+        height = self.display_height if display_height is None else display_height
+        mode = self._switch_upcoming_center()
+        date_text, time_text = self._upcoming_date_and_time_text(
+            game_date, game_time, game)
+        swapped = bool(self._card_option("swap_date_time", False))
+
+        if mode == "date_time":
+            # Historically the date sat at center_y - 7 with the time 9px
+            # under it, and the time's row was derived from the date's, so a
+            # date y_offset moved the pair. Both still hold; the slots only
+            # trade places when swap_date_time is set, and hiding one line
+            # leaves the other where it was rather than re-centering the stack.
+            slots = [(time_element, time_text), (date_element, date_text)] if swapped \
+                else [(date_element, date_text), (time_element, time_text)]
+            row_y = center_y - 7
+            for index, (element, text) in enumerate(slots):
+                if index:
+                    row_y += 9
+                    if second_row_y_offset:
+                        row_y += self._get_layout_offset(element, 'y_offset')
+                else:
+                    row_y += self._get_layout_offset(element, 'y_offset')
+                if not text:
+                    continue
+                font = self._scorebug_font(draw, text, width)
+                text_width = draw.textlength(text, font=font)
+                text_x = ((width - text_width) // 2
+                          + self._get_layout_offset(element, 'x_offset'))
+                self._draw_text_with_outline(
+                    draw, text, (text_x, row_y), font
+                )
+            return True
+
+        if mode == "vs":
+            vs_text = self._vs_text()
+            if vs_text:
+                vs_width = draw.textlength(vs_text, font=self.fonts["score"])
+                vs_x = ((width - vs_width) // 2
+                        + self._get_layout_offset('score', 'x_offset'))
+                vs_y = (center_y - 3
+                        + self._get_layout_offset('score', 'y_offset'))
+                self._draw_text_with_outline(
+                    draw, vs_text, (vs_x, vs_y), self.fonts["score"]
+                )
+
+        # "vs" and "none" both push the date and time out to the edges, time
+        # on top unless swap_date_time says otherwise -- the same order the
+        # scroll card uses.
+        if swapped:
+            top_element, top_text = date_element, date_text
+            bottom_element, bottom_text = time_element, time_text
+        else:
+            top_element, top_text = time_element, time_text
+            bottom_element, bottom_text = date_element, date_text
+
+        if top_text:
+            top_font = self._scorebug_font(draw, top_text, width)
+            top_width = draw.textlength(top_text, font=top_font)
+            top_x = ((width - top_width) // 2
+                     + self._get_layout_offset(top_element, 'x_offset'))
+            top_y = 1 + self._get_layout_offset(top_element, 'y_offset')
+            self._draw_text_with_outline(
+                draw, top_text, (top_x, top_y), top_font
+            )
+        if bottom_text:
+            bottom_font = self._scorebug_font(draw, bottom_text, width)
+            bottom_width = draw.textlength(bottom_text, font=bottom_font)
+            bottom_x = ((width - bottom_width) // 2
+                        + self._get_layout_offset(bottom_element, 'x_offset'))
+            # Measured, not a fixed offset: the detail font is 6px in most
+            # plugins and 10px in soccer and nrl, where a fixed -7 ran the
+            # date off the panel.
+            ink_bottom = draw.textbbox((0, 0), bottom_text, font=bottom_font)[3]
+            bottom_y = (max(0, height - ink_bottom - 1)
+                        + self._get_layout_offset(bottom_element, 'y_offset'))
+            self._draw_text_with_outline(
+                draw, bottom_text, (bottom_x, bottom_y), bottom_font
+            )
+        return False
+
     def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
         """
         Get layout offset for a specific element and axis.
@@ -652,6 +906,284 @@ class SportsCore(ABC):
             )
             return default
 
+    #: How far each logo is shifted outward, off the panel edge, by the
+    #: scorebug layouts (they paste at -2 and width - logo_width + 2). Kept
+    #: here because the logo sizing has to know it.
+    _LOGO_EDGE_BLEED_PX: ClassVar[int] = 2
+
+    #: How far the score may cross onto each logo. Held fixed rather than as a
+    #: fraction of the score, so the crossing stays what it was tuned for as
+    #: the score grows with the panel.
+    _SCORE_LOGO_OVERLAP_PX: ClassVar[int] = 10
+
+    def _scorebug_centre_gap(self) -> int:
+        """Width the centre keeps clear for the score, in the scorebug layout.
+
+        Not the score's full width: reserving all of it on a narrow panel
+        leaves two slivers where the logos should be, and trading a crowded
+        card for one with no identifiable team is not a fix. The reserve lets
+        the score's outer edge cross onto each logo by a fixed
+        _SCORE_LOGO_OVERLAP_PX, and the digits are drawn with an outline, so
+        the crossing reads as a score in front of a logo rather than two
+        things fighting.
+
+        Measured from the score font so it tracks the panel-scaled size (and a
+        user who sets a larger one), and from a fixed five-character string
+        rather than the live score, because the logo cache is keyed on team
+        and must not resize when a side passes 9 points.
+        """
+        # No reserve until the score has actually grown. The cap below costs
+        # logo width, and on a panel where the score is still 8px there is no
+        # benefit to pay for it with: a 64x32 board would have watched a
+        # square logo drop from 48x48 to 24x24 in a change about score size.
+        # Gating here keeps every panel whose score did not move byte-identical
+        # -- the same thing _scale_headline_fonts does by returning early at or
+        # below the design height.
+        if not getattr(self, '_score_grew', False):
+            return 0
+
+        try:
+            probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
+            width = int(probe.textlength(
+                self._SCORE_PROBE_TEXT, font=self.fonts["score"]))
+            return max(width // 2, width - 2 * self._SCORE_LOGO_OVERLAP_PX)
+        except Exception:
+            return 22
+
+    #: Most the score may grow, as a multiple of its design size. The same
+    #: ceiling football's adaptive layout settled on and for the same measured
+    #: reason (_ADAPTIVE_SCORE_TARGET_PX): "8 reads thin on a tall card; 24
+    #: needs a 128px gap and buys mostly dead space. 16 doubles the score for
+    #: 40px of extra card and costs nothing in logo size." Without it a
+    #: 256x128 board takes a 32px score, whose reserve leaves each logo 60px
+    #: of a 256-wide panel -- a postage stamp in a 128-tall slot.
+    _SCORE_MAX_GROWTH: ClassVar[int] = 2
+
+    #: Score may occupy this share of the panel width before the layout reaches
+    #: for a narrower face. Football's long-standing value, ported here with the
+    #: mechanism it belongs to.
+    _SCORE_WIDTH_BUDGET: ClassVar[float] = 0.55
+
+    #: Narrower crisp rungs to fall back through, widest first. 4x6-font renders
+    #: cleanly at multiples of 7 and is about half the width of PressStart2P per
+    #: character.
+    _NARROW_SCORE_RUNGS = (("4x6-font.ttf", 14), ("4x6-font.ttf", 7))
+
+    def _fit_score_font(self, fonts):
+        """Swap in a narrower face where the score would swamp the panel.
+
+        Ported from football-scoreboard, which has had it for a while and is the
+        only reason its logos read larger than every other scoreboard's at the
+        same panel size. Measured on a 128x64 board, all else equal: football
+        reserves 28px for a 4x6 score at 14px and gets 60x60 logos; the same card
+        with PressStart2P at 16px reserves 60px and gets 36x36 -- two small
+        badges adrift in a mostly black panel.
+
+        The trade is a good one because the two faces are nothing like the same
+        shape. PressStart2P is square: 16px tall costs 16px per character.
+        4x6-font at 14px is nearly as tall and about half as wide, so the score
+        keeps its size in the dimension that carries legibility and gives back
+        the dimension the logos actually need.
+
+        Only swaps above the design height, and only when the current face
+        genuinely overflows the budget, so every 32-tall panel -- where the
+        score does not grow at all -- keeps the face it has.
+        """
+        if not self._DRAWS_SCORE:
+            return fonts
+        if getattr(self, 'display_height', 0) <= self._FONT_DESIGN_HEIGHT:
+            return fonts
+        try:
+            from PIL import Image as _Image, ImageDraw as _ImageDraw, ImageFont as _ImageFont
+            probe = _ImageDraw.Draw(_Image.new("RGB", (4, 4)))
+            budget = self.display_width * self._SCORE_WIDTH_BUDGET
+            if probe.textlength(getattr(self, "_SCORE_PROBE_TEXT", "00-00"), font=fonts["score"]) <= budget:
+                return fonts
+            for name, size in self._NARROW_SCORE_RUNGS:
+                candidate = _ImageFont.truetype(
+                    _resolve_font_path(f"assets/fonts/{name}"), size)
+                if probe.textlength(getattr(self, "_SCORE_PROBE_TEXT", "00-00"), font=candidate) <= budget:
+                    # The clock moves with the score so the two stay visually
+                    # related, exactly as football does it.
+                    fonts["score"] = candidate
+                    fonts["time"] = candidate
+                    self._score_grew = True
+                    return fonts
+            name, size = self._NARROW_SCORE_RUNGS[-1]
+            narrowest = _ImageFont.truetype(
+                _resolve_font_path(f"assets/fonts/{name}"), size)
+            fonts["score"] = narrowest
+            fonts["time"] = narrowest
+            self._score_grew = True
+        except Exception:
+            self.logger.debug("Score font fitting skipped", exc_info=True)
+        return fonts
+
+    #: Share of the panel width the score may take once it is allowed to grow.
+    #: Deliberately not football's _SCORE_WIDTH_BUDGET (0.55), which answers a
+    #: different question -- when to swap PressStart for a narrower FACE -- and
+    #: is tuned for a 32-tall panel where the logos have no spare height. 0.55
+    #: cannot fit a 16px score under 146px of panel, so a 128-wide board could
+    #: never reach one no matter how tall it got: 128x64 paid for the change
+    #: and got nothing back. A taller panel can afford a wider score because
+    #: its logos have height to spend instead, and 0.65 is what a 16px score
+    #: needs at 128 wide (80px of 128 is 0.625).
+    _SCORE_GROWTH_BUDGET: ClassVar[float] = 0.65
+
+    #: Widest score this sport realistically shows, used to size the centre
+    #: reserve and the score's width budget. A fixed string rather than the
+    #: live score, because the logo cache is keyed on team and must not
+    #: resize when a side passes 9 points -- but it has to be wide enough for
+    #: the sport: basketball and AFL run to three digits a side, so measuring
+    #: them against "00-00" reserved two characters less than the score
+    #: actually needs and it was drawn onto the logos either side.
+    _SCORE_PROBE_TEXT: ClassVar[str] = "00-00"
+
+    #: Whether this screen actually draws a score. Everything below that sizes
+    #: the score, reserves the middle for it, or trades face width to fit it is
+    #: work done ON BEHALF of the score -- and SportsUpcoming draws no score at
+    #: all. It uses fonts["time"] five times and fonts["score"] not once, so
+    #: before this flag the upcoming card inherited a narrower face and a bigger
+    #: size chosen for a number it never shows: "Next Game / 01/16 / 12:00AM"
+    #: silently changed typeface on a 128x64 panel.
+    _DRAWS_SCORE: ClassVar[bool] = True
+
+    #: Panel height the fixed font sizes below were chosen against. Everything
+    #: else on the card is sized from display_height -- the logos most of all
+    #: -- so on a taller panel they grew and the score did not.
+    _FONT_DESIGN_HEIGHT: ClassVar[int] = 32
+
+    def _score_font_size(self) -> int:
+        """Pixel size the score is currently drawn at."""
+        return getattr(self.fonts.get("score"), "size", 8) or 8
+
+    def _time_font_size(self) -> int:
+        """Pixel size the clock/date face is currently drawn at."""
+        return getattr(self.fonts.get("time"), "size", 8) or 8
+
+    def _user_chose_size(self, element_key: str) -> bool:
+        """True when customization.<element>.font_size is a real choice.
+
+        The web UI's save flow writes the whole schema default block into
+        config.json on every save, whether or not the user touched that
+        section, so a size merely being PRESENT carries no intent. Only one
+        that differs from the schema default does.
+        """
+        element = (self.config.get('customization', {}) or {}).get(element_key) or {}
+        configured = element.get('font_size')
+        if configured is None:
+            return False
+        try:
+            return int(configured) != self._schema_font_size(element_key)
+        except (TypeError, ValueError):
+            return False
+
+    def _grid_scaled_size(self, font):
+        """(path, grid, size) for *font* regrown to this panel's height.
+
+        None when the panel is at or below the design height (nothing to do),
+        or when the face has no known pixel grid -- a user-supplied font is
+        never second-guessed, because we do not know what it renders crisply
+        at.
+        """
+        path = getattr(font, 'path', None)
+        base = getattr(font, 'size', None)
+        if not base or not isinstance(path, str):
+            return None
+        face = os.path.basename(path)
+        grid = self._FONT_PIXEL_GRID.get(self._FONT_NAME_ALIASES.get(face, face))
+        if not grid:
+            return None
+        scale = float(self.display_height) / (self._FONT_DESIGN_HEIGHT or 32)
+        if scale <= 1.0:
+            return None
+        return path, grid, max(int(base), int(self._crisp_size(face, base * scale)))
+
+    def _scale_headline_fonts(self, fonts):
+        """Grow the score with the panel, and hold the clock/date below it.
+
+        The score is the one number the card exists to show, and it was the
+        only element not sized from the panel. Worse, it was not even bigger
+        than its neighbours: PressStart2P renders crisply on an 8px grid, so
+        the 10px default snapped to 8 -- the same 8 the period/clock above it
+        and the game date below it are drawn at. Three lines of identical
+        type, none of them the headline, which is what makes the score read as
+        lower priority than the time and the date rather than the point of the
+        card.
+
+        So the score is sized from display_height and snapped to its face's
+        pixel grid (off the grid FreeType anti-aliases the strokes, and on an
+        LED matrix a part-lit pixel is a dim lamp rather than a soft edge),
+        then stepped back down that grid until it fits its share of the width.
+        The clock/date face is regrown the same way but held at least one grid
+        step below the score, so the ranking between them is visible rather
+        than implied.
+
+        A 32-tall panel scales by exactly 1.0 and is left byte-identical; a
+        size the user set explicitly is never overridden.
+        """
+        self._score_grew = False
+        if not self._DRAWS_SCORE:
+            # No score on this screen, so none of the sizing below is for it.
+            return fonts
+        try:
+            scaled = None if self._user_chose_size('score_text') else \
+                self._grid_scaled_size(fonts.get('score'))
+            if scaled is not None:
+                path, grid, size = scaled
+                base = getattr(fonts['score'], 'size', size) or size
+                size = min(size, base * self._SCORE_MAX_GROWTH)
+                probe = ImageDraw.Draw(Image.new('RGB', (4, 4)))
+                budget = self.display_width * self._SCORE_GROWTH_BUDGET
+                # Measured from a fixed five-character score rather than the
+                # live one, so the card does not resize when a side passes 9.
+                while size > grid:
+                    if probe.textlength(
+                            self._SCORE_PROBE_TEXT,
+                            font=ImageFont.truetype(path, size)) <= budget:
+                        break
+                    size -= grid
+                if size != getattr(fonts['score'], 'size', size):
+                    fonts['score'] = ImageFont.truetype(path, size)
+                    self._score_grew = True
+
+            if not self._score_grew and not self._user_chose_size('score_text') \
+                    and self.display_height > self._FONT_DESIGN_HEIGHT:
+                # PressStart2P could not grow inside the budget -- its next crisp
+                # size is simply too wide for this panel. A narrower face still
+                # can: 4x6-font at 14px is nearly as tall as PressStart2P at 16
+                # and about half as wide. This matters beyond the score itself,
+                # because a card whose score never grows never reserves the
+                # centre either, so its logos stay at the uncapped 1.5x and are
+                # drawn straight over the score -- which is what a three-digit
+                # basketball score does on a 128x64 board.
+                probe = ImageDraw.Draw(Image.new('RGB', (4, 4)))
+                budget = self.display_width * self._SCORE_GROWTH_BUDGET
+                current = getattr(fonts.get('score'), 'size', 0) or 0
+                for _name, _size in self._NARROW_SCORE_RUNGS:
+                    if _size <= current:
+                        continue
+                    _path = _resolve_font_path(f"assets/fonts/{_name}")
+                    _candidate = ImageFont.truetype(_path, _size)
+                    if probe.textlength(self._SCORE_PROBE_TEXT,
+                                        font=_candidate) <= budget:
+                        fonts['score'] = _candidate
+                        self._score_grew = True
+                        break
+
+            scaled = None if self._user_chose_size('period_text') else \
+                self._grid_scaled_size(fonts.get('time'))
+            if scaled is not None:
+                path, grid, size = scaled
+                ceiling = getattr(fonts.get('score'), 'size', 0) or 0
+                if ceiling and size >= ceiling:
+                    size = max(grid, ceiling - grid)
+                if size != getattr(fonts['time'], 'size', size):
+                    fonts['time'] = ImageFont.truetype(path, size)
+        except Exception:
+            self.logger.debug("Headline font scaling skipped", exc_info=True)
+        return fonts
+
     def _load_fonts(self):
         """Load fonts used by the scoreboard from config or use defaults."""
         fonts = {}
@@ -707,7 +1239,10 @@ class SportsCore(ABC):
             fonts["shots"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
         except OSError:
             fonts["shots"] = ImageFont.load_default()
-        return fonts
+        # Grow first, then fit: _scale_headline_fonts sizes the score from
+        # the panel height, and _fit_score_font is the guard that swaps in a
+        # narrower FACE rather than let a grown score crowd out the logos.
+        return self._fit_score_font(self._scale_headline_fonts(fonts))
 
     def _draw_dynamic_odds(
         self, draw: ImageDraw.Draw, odds: Dict[str, Any], width: int, height: int
@@ -833,13 +1368,103 @@ class SportsCore(ABC):
         except Exception as e:
             self.logger.error(f"Error drawing odds: {e}", exc_info=True)
 
+    #: Which customization element owns each loaded face. The font loader
+    #: already picks each face from exactly that element (element_key=), so
+    #: resolving the colour from the face keeps the two in step by
+    #: construction, rather than by every draw site remembering to agree.
+    _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
+        "score": "score_text",
+        "time": "period_text",
+        "team": "team_name",
+        "status": "status_text",
+        "detail": "detail_text",
+        "rank": "rank_text",
+    }
+
+    def _element_color(self, element: str, default: Tuple[int, int, int] = (255, 255, 255)):
+        """Per-element text colour from customization.<element>.text_color."""
+        try:
+            cfg = (self.config or {}).get("customization", {}).get(element, {})
+            value = cfg.get("text_color")
+            if isinstance(value, (list, tuple)) and len(value) == 3:
+                return tuple(max(0, min(255, int(c))) for c in value)
+            if isinstance(value, str) and value.startswith("#") and len(value) == 7:
+                return tuple(int(value[i:i + 2], 16) for i in (1, 3, 5))
+        except (TypeError, ValueError):
+            pass
+        return default
+
+    def _unshare_element_fonts(self, fonts):
+        """Give each colourable element its own face object.
+
+        The colour a draw gets is resolved from the face it was handed, and
+        several of these loaders legitimately hand one object to more than one
+        element -- a size resolver that lands two elements on the same face, a
+        fallback that fills every key from one default, football's narrowing
+        step that deliberately shrinks the clock along with the score. Sharing
+        the object makes the element ambiguous and the colour unresolvable.
+
+        Re-instantiating from the same path and size gives a distinct object
+        with identical metrics, so nothing about the rendering changes; only
+        the ability to tell two elements apart does. Faces that cannot be
+        rebuilt (a BDF loaded through freetype.Face, anything without a usable
+        path) are left shared, and their draws stay white as before.
+        """
+        try:
+            from PIL import ImageFont as _IF
+        except ImportError:  # pragma: no cover
+            return fonts
+        seen = {}
+        for key in self._ELEMENT_FOR_FONT:
+            font = fonts.get(key)
+            if font is None:
+                continue
+            if id(font) not in seen:
+                seen[id(font)] = key
+                continue
+            path, size = getattr(font, "path", None), getattr(font, "size", None)
+            if not path or not size:
+                continue
+            try:
+                fonts[key] = _IF.truetype(path, size)
+            except (OSError, ValueError, TypeError):
+                self.logger.debug(
+                    "Could not un-share the %s face; it keeps the default colour", key)
+        return fonts
+
+    def _font_color(self, font, default: Tuple[int, int, int] = (255, 255, 255)):
+        """Colour for whichever element owns this face.
+
+        Matched on identity, and deliberately gives up when one object is
+        shared: the last-resort font path can hand the same face to several
+        keys, and there is no right answer for which element's colour that is.
+        White is what those draws used before, so ambiguity costs nothing.
+        """
+        try:
+            fonts = getattr(self, "fonts", None) or {}
+            matches = [element for key, element in self._ELEMENT_FOR_FONT.items()
+                       if fonts.get(key) is font]
+            if len(matches) == 1:
+                return self._element_color(matches[0], default)
+        except (AttributeError, TypeError):
+            pass
+        return default
+
     def _draw_text_with_outline(
-        self, draw, text, position, font, fill=(255, 255, 255), outline_color=(0, 0, 0)
+        self, draw, text, position, font, fill=None, outline_color=(0, 0, 0)
     ):
         """Draw text with a black outline for better readability."""
         # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
         # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
         # glyphs. 1-bit mode keeps strokes crisp.
+        # Defaults to the configured colour for whichever element owns
+        # this face rather than to white, so customization.<element>.text_color
+        # reaches every draw. The schema has offered those pickers all along
+        # and they only ever changed the font. An explicit fill still wins:
+        # the odds colours and the favourite-result score tint mean something
+        # the palette does not.
+        if fill is None:
+            fill = self._font_color(font)
         draw.fontmode = "1"
         x, y = position
         for dx, dy in [
@@ -907,8 +1532,26 @@ class SportsCore(ABC):
             if logo.mode != "RGBA":
                 logo = logo.convert("RGBA")
 
-            max_width = int(self.display_width * 1.5)
+            # 1.5x the panel so the logo bleeds off the outer edge -- the look
+            # this layout is built around. The height stays at 1.5x
+            # unconditionally, but the WIDTH is capped by what the panel can
+            # spare: the centre has to keep room for the score, and each logo
+            # may reach inward only as far as the edge of that gap plus the
+            # couple of pixels it is already shifted outward by.
+            #
+            # Without the cap this was 1.5x the panel WIDTH -- 288px on a
+            # 192-wide panel -- so a wide mark ran most of the way to the
+            # centre from both sides and the score was drawn on top of it.
             max_height = int(self.display_height * 1.5)
+            max_width = int(self.display_width * 1.5)
+            centre_gap = self._scorebug_centre_gap()
+            if centre_gap > 0:
+                # Only once the score has grown into the middle -- see
+                # _scorebug_centre_gap. Otherwise the 1.5x sizing above stands
+                # exactly as it always has.
+                reach = ((self.display_width - centre_gap) // 2
+                         + self._LOGO_EDGE_BLEED_PX)
+                max_width = max(8, min(max_width, reach))
             logo.thumbnail((max_width, max_height), RESAMPLE_FILTER)
             self._logo_cache[team_abbrev] = logo
             return logo
@@ -1881,6 +2524,9 @@ class SportsCore(ABC):
 
 
 class SportsUpcoming(SportsCore):
+    #: This screen shows the date and the time, never a score.
+    _DRAWS_SCORE: ClassVar[bool] = False
+
     def __init__(
         self,
         config: Dict[str, Any],
@@ -1903,6 +2549,9 @@ class SportsUpcoming(SportsCore):
         self.warning_cooldown = 300
         self.last_game_switch = 0
         self.game_display_duration = 15  # Display each upcoming game for 15 seconds
+
+
+
 
     def _select_games_for_display(
         self, processed_games: List[Dict], favorite_teams: List[str]
@@ -2213,34 +2862,26 @@ class SportsUpcoming(SportsCore):
 
             # Note: Rankings are now handled in the records/rankings section below
 
-            # "Next Game" at the top (use smaller status font) with layout offsets
-            status_font = self.fonts["status"]
-            if self.display_width > 128:
-                status_font = self.fonts["time"]
-            status_text = "Next Game"
-            status_width = draw_overlay.textlength(status_text, font=status_font)
-            status_x = (self.display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
-            status_y = 1 + self._get_layout_offset('status_text', 'y_offset')  # Changed from 2
-            self._draw_text_with_outline(
-                draw_overlay, status_text, (status_x, status_y), status_font
-            )
-
-            # Date text (centered, below "Next Game") with layout offsets
-            date_width = draw_overlay.textlength(game_date, font=self.fonts["time"])
-            date_x = (self.display_width - date_width) // 2 + self._get_layout_offset('date', 'x_offset')
-            # Adjust Y position to stack date and time nicely
-            date_y = center_y - 7 + self._get_layout_offset('date', 'y_offset')  # Raise date slightly
-            self._draw_text_with_outline(
-                draw_overlay, game_date, (date_x, date_y), self.fonts["time"]
-            )
-
-            # Time text (centered, below Date) with layout offsets
-            time_width = draw_overlay.textlength(game_time, font=self.fonts["time"])
-            time_x = (self.display_width - time_width) // 2 + self._get_layout_offset('time', 'x_offset')
-            time_y = date_y + 9 + self._get_layout_offset('time', 'y_offset')  # Place time below date
-            self._draw_text_with_outline(
-                draw_overlay, game_time, (time_x, time_y), self.fonts["time"]
-            )
+            # The middle of an upcoming scorebug -- the matchup separator, the
+            # date and time stacked, or nothing -- is config-driven now, so the
+            # one scroll_card setting drives switch, scroll and Vegas alike
+            # instead of stopping at the ticker. "vs" and "none" move the date
+            # and time out to the top and bottom rows, and the top row is where
+            # the header sits, so the helper reports whether it still has a slot.
+            if self._draw_upcoming_center_switch(
+                    draw_overlay, game, center_y, game_date, game_time,
+                    display_width=self.display_width, display_height=self.display_height):
+                # "Next Game" at the top (use smaller status font) with layout offsets
+                status_font = self.fonts["status"]
+                if self.display_width > 128:
+                    status_font = self.fonts["time"]
+                status_text = "Next Game"
+                status_width = draw_overlay.textlength(status_text, font=status_font)
+                status_x = (self.display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
+                status_y = 1 + self._get_layout_offset('status_text', 'y_offset')  # Changed from 2
+                self._draw_text_with_outline(
+                    draw_overlay, status_text, (status_x, status_y), status_font
+                )
 
             # Draw odds if available
             if "odds" in game and game["odds"]:
@@ -2767,13 +3408,13 @@ class SportsRecent(SportsCore):
             score_text = f"{away_score}-{home_score}"
             score_width = draw_overlay.textlength(score_text, font=self.fonts["score"])
             score_x = (self.display_width - score_width) // 2 + self._get_layout_offset('score', 'x_offset')
-            score_y = self.display_height - 14 + self._get_layout_offset('score', 'y_offset')
+            score_y = self.display_height - (6 + self._score_font_size()) + self._get_layout_offset('score', 'y_offset')
             self._draw_text_with_outline(
                 draw_overlay,
                 score_text,
                 (score_x, score_y),
                 self.fonts["score"],
-                fill=self._recent_score_color(game, (255, 255, 255)),
+                fill=self._recent_score_color(game, self._element_color('score_text')),
             )
 
             # "Final" text (Top center) with layout offsets

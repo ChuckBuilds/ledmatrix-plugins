@@ -128,9 +128,13 @@ def make(sports, favorites, fav_limit, other_limit):
     obj.other_rotation_interval_seconds = 0      # pinned unless a test asks
     obj._other_window_start = 0
     obj._other_window_rotated_at = 0.0
+    obj.show_odds = False                        # rotation offers the new slice odds
     obj.other_games_min_quality = "any"          # filters off unless a test asks
     obj.other_games_divisions = []
     obj._team_rankings_cache = {}
+    # The window advance takes this: two threads reach it, update() and the
+    # display path, and each adds a width.
+    obj._games_lock = threading.RLock()
     obj._division_team_ids = {}
     # The value and its freshness stamp have to be set together: a populated
     # cache with a zero stamp reads as stale and sends the lookup back to the
@@ -358,6 +362,7 @@ def main():
         "_extract_game_details": lambda s, ev: None,
     })
     r = recent_cls.__new__(recent_cls)
+    r._games_lock = threading.RLock()
     r.favorite_teams = favs
     r.recent_games_to_show = 3
     r.other_recent_games_to_show = 2
@@ -438,24 +443,24 @@ def main():
     probe = make(sports, [], 3, 3)
     probe.other_games_min_quality = "ranked"
     probe._team_rankings_cache = {"T05H": 4, "T09A": 12}
-    kept = probe._filtered_or_all(games)
+    kept = probe._favorites_first(games, 0, 3)
     check("only ranked games survive", bool(kept) and all(
         g["home_abbr"] in ("T05H", "T09A") or g["away_abbr"] in ("T05H", "T09A")
         for g in kept), [g["id"] for g in kept])
 
     probe._team_rankings_cache = {"NOT_PLAYING_TODAY": 1}
-    check("a filter that matches nothing keeps the whole list rather than "
-          "blanking the mode", len(probe._filtered_or_all(games)) == len(games))
+    check("a filter that matches nothing keeps games rather than blanking the "
+          "mode", len(probe._favorites_first(games, 0, 3)) == 3)
 
-    # The helper being correct is half of it; both branches have to call it.
-    # That is what was missing -- the code and the settings were both there and
-    # the one line joining them was not, which no behavioural check on the
-    # helper itself can see.
+    # Behaving correctly is half of it; the no-favourites branch has to reach
+    # this code at all. It used to filter, sort and truncate on its own, which
+    # meant it built no selection pools -- so nothing rotated and nothing was
+    # ordered by rank, on the one configuration that is the default.
     import inspect
     for cls_name in ("SportsUpcoming", "SportsRecent"):
-        src = inspect.getsource(getattr(sports, cls_name).update)
-        check("%s filters its no-favourites branch" % cls_name,
-              "_filtered_or_all(processed_games)" in src)
+        src = " ".join(inspect.getsource(getattr(sports, cls_name).update).split())
+        check("%s selects its no-favourites branch the same way" % cls_name,
+              "processed_games, 0," in src)
 
     print("\nthe division lookup runs for the one league that has divisions")
     # FBS/FCS group rosters exist for college football and nowhere else:
@@ -765,6 +770,16 @@ def main():
     picked = both._favorites_first(bye, 3, 0)
     check("with room for three, the second game of a team comes back",
           {g["id"] for g in picked} == {"bye0", "bye1", "bye2"}, [g["id"] for g in picked])
+
+    print("\nthe division roster asks for the season, not the calendar year")
+    # College football's 2026 season runs into January 2027. Asking for season
+    # 2027 in January returns groups that do not exist yet, so the roster comes
+    # back empty and division filtering fails open through the bowls.
+    import inspect
+    source = inspect.getsource(sports.SportsCore._load_division_team_ids)
+    check("the URL is not built from datetime.now().year",
+          "now.year if now.month >= 7 else now.year - 1" in source
+          and "{datetime.now().year}" not in source)
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))

@@ -445,3 +445,75 @@ Two things to keep in mind:
 - More slots make the cycle **longer**, not faster — everything else appears
   proportionally less often. And appearing more often only helps if the data is
   fresh, which is governed by this plugin's own live update interval.
+
+## Matchup separator and the upcoming card middle
+
+The **Matchup Card Layout** section (advanced) controls what sits between the
+two team logos before a game starts, and how the date and time are written.
+These settings now apply to every display mode -- the scroll ticker, the Vegas
+ticker, and the full-screen scoreboard -- rather than only the tickers.
+
+| Setting | Key | Default | What it does |
+|---|---|---|---|
+| Matchup Separator | `vs_text` | `VS` | Text drawn between the teams: `VS`, `@`, `at`, `v`. The away team is always on the left, so `@` and `at` read as "away at home". Blank draws nothing. |
+| Middle of an Upcoming Card | `upcoming_center` | `vs` | Scroll and Vegas cards: the separator, the date and time stacked, or nothing. |
+| Middle of a Full-Screen Upcoming Scoreboard | `switch_upcoming_center` | `date_time` | The same choice for the full-screen scoreboard, plus `inherit` to follow the setting above. It defaults to the stacked date and time, which is what this display has always shown, so nothing changes until you pick something else. |
+| Date Format | `date_format` | `abbrev` | How the scroll and Vegas cards write the date: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
+| Full-Screen Date Format | `switch_date_format` | `numeric` | The same choice for the full-screen scoreboard, plus `inherit` to follow the row above. It has its own default because the two displays disagree about what is normal: the cards have always written `Sep 19` and the full-screen scoreboard `9/19`, so a single shared default would restyle one of them. |
+| Time Format | `time_format` | `12h` | 12- or 24-hour clock. |
+| Show Date / Show Time | `show_date`, `show_time` | `true` | Drop either line. |
+| Swap Date and Time | `swap_date_time` | `false` | Swap the two lines over. Each display starts from its own order, so this flips them rather than forcing one: the scroll and Vegas cards put the time on top, the full-screen date/time stack puts the date on top. |
+
+Choosing the separator for the full-screen scoreboard moves the date and time
+out of the middle and onto the top and bottom rows, the same way the scroll
+card lays them out; the "Next Game" header gives up the top row to them.
+
+The center-gap settings in the same section size the scroll and Vegas card's
+middle strip only -- the full-screen scoreboard pins its logos to the panel
+edges and is unaffected.
+
+Example:
+
+```json
+{
+  "scroll_card": {
+    "vs_text": "@",
+    "switch_upcoming_center": "vs",
+    "date_format": "weekday"
+  }
+}
+```
+
+### Text Colours
+
+Each text element in the **Customization** section carries a colour, and it now
+applies to the text drawn in that element's face — on the full-screen scoreboard
+and on the scroll and Vegas cards alike. Until this version the picker changed
+only which font was loaded; every string was drawn white.
+
+| Element | Key | Colours |
+|---|---|---|
+| Score | `score_text` | The score, and the matchup separator on an upcoming card |
+| Period / clock | `period_text` | The clock, period, and the date and time on an upcoming scoreboard |
+| Team name | `team_name` | Team names and abbreviations |
+| Status | `status_text` | Status lines such as "Next Game" |
+| Detail | `detail_text` | Small detail lines |
+| Ranking | `rank_text` | Team rankings drawn in the ranking face |
+
+Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white, so a display
+nobody has recoloured looks exactly as it did.
+
+```json
+{
+  "customization": {
+    "score_text": { "text_color": [255, 200, 0] },
+    "status_text": { "text_color": "#00A0FF" }
+  }
+}
+```
+
+Two things keep their own colours on purpose: the betting-odds figures, which
+are coloured by which side is favoured, and a finished game's score when
+**Favorite Team Result Colors** is on — that tint wins, and your score colour
+shows on every other game. Records and rankings drawn in the small fixed face
+stay white; no element in the schema owns that face.

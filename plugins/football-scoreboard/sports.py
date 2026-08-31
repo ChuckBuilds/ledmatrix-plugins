@@ -5,6 +5,7 @@ import secrets
 import threading
 import time
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Tuple
@@ -127,6 +128,81 @@ def _clamp_seconds(value: Any, fallback: int, low: int = 5,
     return max(low, min(high, seconds))
 
 
+class _LogoFetcher:
+    """Fetches missing team badges off the data thread, once per team.
+
+    Shared by every manager in the process. Live, recent and upcoming each
+    build game dicts, so without a common record they would each queue the
+    same badge and each keep a private note of what failed -- three attempts
+    at a logo ESPN does not have. Keys are namespaced by sport so two leagues
+    using the same abbreviation do not shadow each other.
+
+    Downloads run on a small pool rather than inline. download_missing_logo
+    allows 30s per request, so a game with two missing badges could hold its
+    own detail extraction for a minute and delay every scoreboard update queued
+    behind it. A badge that arrives late is not a problem: the card draws
+    without it once, and correctly on the next pass.
+    """
+
+    _MAX_WORKERS = 2
+    _lock = threading.Lock()
+    _pool: Optional[ThreadPoolExecutor] = None
+    _pending: set = set()
+    _failed: set = set()
+
+    @classmethod
+    def _executor(cls) -> ThreadPoolExecutor:
+        if cls._pool is None:
+            cls._pool = ThreadPoolExecutor(
+                max_workers=cls._MAX_WORKERS, thread_name_prefix="logo-fetch"
+            )
+        return cls._pool
+
+    @classmethod
+    def request(cls, sport_key, team_id, abbr, logo_path, logo_url, logger):
+        """Queue a badge for download. Returns the Future, or None if skipped."""
+        key = (sport_key, abbr)
+        with cls._lock:
+            if key in cls._pending or key in cls._failed:
+                return None
+            cls._pending.add(key)
+        logger.info("No local logo for %s; fetching it in the background", abbr)
+        return cls._executor().submit(
+            cls._fetch, key, sport_key, team_id, abbr, logo_path, logo_url, logger
+        )
+
+    @classmethod
+    def _fetch(cls, key, sport_key, team_id, abbr, logo_path, logo_url, logger):
+        fetched = False
+        try:
+            fetched = bool(
+                download_missing_logo(sport_key, team_id, abbr, Path(logo_path), logo_url)
+            )
+        except Exception:
+            logger.warning("Logo fetch raised for %s", abbr, exc_info=True)
+
+        # The file on disk is the authority: another manager's request may have
+        # written it while this one was in flight, which is a success from the
+        # panel's point of view even though our own call reported failure.
+        try:
+            fetched = fetched or Path(logo_path).exists()
+        except OSError:
+            pass
+
+        with cls._lock:
+            cls._pending.discard(key)
+            if not fetched:
+                cls._failed.add(key)
+
+        if fetched:
+            logger.info("Downloaded logo for %s", abbr)
+        else:
+            logger.warning(
+                "Could not fetch a logo for %s; its card will draw without one", abbr
+            )
+        return fetched
+
+
 class SportsCore(ABC):
     def __init__(
         self,
@@ -192,8 +268,9 @@ class SportsCore(ABC):
         # How many NON-favourite games to add when favourites are set but
         # show_favorite_teams_only is off. 0 makes that mode favourites-only.
         # Defaults match the league-wide counts above, so a board that upgrades
-        # keeps every game it was already showing and simply gains its
-        # favourites -- the change is additive, never a removal.
+        # keeps as many slots as it had and simply gains its favourites. The
+        # COUNTS never remove anything; the quality and division filters below
+        # are the deliberate exception, trading filler for ranked matchups.
         self.other_upcoming_games_to_show: int = self._setting_int(
             "other_upcoming_games_to_show", self.upcoming_games_to_show, 0, 20
         )
@@ -270,7 +347,7 @@ class SportsCore(ABC):
         self.current_game = None
         # Thread safety lock for shared game state
         self._games_lock = threading.RLock()
-        self.fonts = self._load_fonts()
+        self.fonts = self._unshare_element_fonts(self._load_fonts())
 
         # Initialize dynamic team resolver and resolve favorite teams
         self.dynamic_resolver = DynamicTeamResolver(cache_manager=cache_manager)
@@ -550,6 +627,268 @@ class SportsCore(ABC):
             self.logger.error(f"Error loading default font: {e}")
             return ImageFont.load_default()
     
+    # ------------------------------------------------------------------
+    # Upcoming-card center options -- config["scroll_card"].
+    #
+    # The same block game_renderer.py reads for the scroll and Vegas cards.
+    # It used to stop there, so a user who set the matchup separator to "@"
+    # got it on the ticker and never on the full-screen scoreboard. These
+    # helpers mirror the renderer's so one setting drives every display mode;
+    # the two copies have to stay in step.
+    #
+    # ``switch_upcoming_center`` exists because the shared ``upcoming_center``
+    # defaults to "vs" while this display has always drawn the date and time
+    # stacked. Defaulting the switch-mode key to "date_time" keeps every
+    # existing panel rendering exactly what it rendered before the setting
+    # reached it; "inherit" opts into the shared value.
+    #
+    # The center-gap keys are deliberately not read here: they size the
+    # scroll card's middle strip, while this layout pins the logos to the
+    # panel edges.
+    # ------------------------------------------------------------------
+    _MONTH_ABBR: ClassVar[Tuple[str, ...]] = (
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    )
+    _WEEKDAY_ABBR: ClassVar[Tuple[str, ...]] = (
+        "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun",
+    )
+
+    def _card_option(self, key: str, default: Any = None) -> Any:
+        """Read one key from the scroll_card config block."""
+        block = (self.config or {}).get("scroll_card")
+        if isinstance(block, dict) and block.get(key) is not None:
+            return block.get(key)
+        return default
+
+    def _switch_upcoming_center(self) -> str:
+        """Middle of the full-screen upcoming scorebug: 'vs', 'date_time' or 'none'."""
+        mode = str(self._card_option("switch_upcoming_center", "date_time")
+                   or "date_time").lower()
+        if mode == "inherit":
+            mode = str(self._card_option("upcoming_center", "vs") or "vs").lower()
+        return mode if mode in ("vs", "date_time", "none") else "date_time"
+
+    def _vs_text(self) -> str:
+        """Separator drawn between the teams -- "VS", "@", "at", anything."""
+        return str(self._card_option("vs_text", "VS"))
+
+    def _switch_date_format(self) -> str:
+        """Date style for the full-screen scorebug.
+
+        Its own key rather than the shared ``date_format`` because the two
+        displays disagree about the default: the scroll card renders "Sep 19"
+        while _extract_game_details_common emits "9/19", the "numeric" style,
+        and this scorebug has always drawn it. Reading the shared key here
+        would restyle every existing panel on update -- and "leave it alone
+        when unset" is not available, because the core merges schema defaults
+        into the config on every load, so the key is never actually unset.
+        "inherit" opts into the scroll and Vegas setting.
+        """
+        fmt = str(self._card_option("switch_date_format", "numeric") or "numeric").lower()
+        if fmt == "inherit":
+            fmt = str(self._card_option("date_format", "abbrev") or "abbrev").lower()
+        return fmt
+
+    def _format_game_date(self, date_text: str, game: Optional[Dict] = None) -> str:
+        """Format an upcoming date per scroll_card.switch_date_format."""
+        raw = str(date_text or "").strip()
+        if not raw:
+            return raw
+        fmt = self._switch_date_format()
+        if fmt == "numeric":
+            return raw
+        parts = raw.replace("-", "/").split("/")
+        if not (len(parts) >= 2 and parts[0].strip().isdigit() and parts[1].strip().isdigit()):
+            return raw
+        month, day = int(parts[0]), int(parts[1])
+        if not 1 <= month <= 12:
+            return raw
+        name = self._MONTH_ABBR[month - 1]
+        if fmt == "numeric_day_first":
+            return f"{day}/{month}"
+        if fmt == "day_first":
+            return f"{day} {name}"
+        if fmt == "weekday":
+            weekday = self._weekday_for(game)
+            return f"{weekday} {name} {day}" if weekday else f"{name} {day}"
+        return f"{name} {day}"
+
+    def _weekday_for(self, game: Optional[Dict]) -> str:
+        """Weekday abbreviation from the game's start time, or ''."""
+        if not game:
+            return ""
+        raw = game.get("start_time_utc") or game.get("start_time")
+        if not raw:
+            return ""
+        try:
+            start = raw if isinstance(raw, datetime) else datetime.fromisoformat(
+                str(raw).replace("Z", "+00:00"))
+            return self._WEEKDAY_ABBR[start.astimezone(self._get_timezone()).weekday()]
+        except (ValueError, TypeError, OverflowError):
+            return ""
+
+    def _format_game_time(self, time_text: str) -> str:
+        """Return the time as-is (12h) or converted to 24h."""
+        raw = str(time_text or "").strip()
+        if not raw or str(self._card_option("time_format", "12h")) != "24h":
+            return raw
+        cleaned = raw.upper().replace(" ", "")
+        meridiem = "AM" if cleaned.endswith("AM") else "PM" if cleaned.endswith("PM") else ""
+        if not meridiem:
+            return raw
+        try:
+            hh, _, mm = cleaned[:-2].partition(":")
+            hour, minute = int(hh), int(mm or 0)
+        except ValueError:
+            return raw
+        if not (0 <= hour <= 12 and 0 <= minute <= 59):
+            return raw
+        hour = hour % 12 + (12 if meridiem == "PM" else 0)
+        return f"{hour:02d}:{minute:02d}"
+
+    def _scorebug_font(self, draw, text: str, width: int):
+        """The face this scorebug draws its date and time in.
+
+        Always the "time" face, which is what this display has used for both
+        rows for as long as it has existed: changing switch_upcoming_center
+        moves the two lines around, it is not meant to restyle them, so the
+        type stays put while the placement changes.
+
+        The single exception is text that cannot fit the panel at all. Only
+        the "weekday" date can do that -- "Fri Sep 19" measures 80px in an
+        8px face, on a board 64px wide -- and the smaller "detail" face is a
+        better answer there than running off both edges. Every other date and
+        time this display can produce fits, so in practice the face never
+        changes; it is a floor, not a style rule.
+        """
+        font = self.fonts["time"]
+        if not text:
+            return font
+        try:
+            if draw.textlength(text, font=font) + 2 <= width:
+                return font
+        except (TypeError, ValueError):
+            return font
+        return self.fonts.get("detail") or font
+
+    def _upcoming_date_and_time_text(self, game_date: str, game_time: str,
+                                     game: Optional[Dict] = None) -> Tuple[str, str]:
+        """The formatted (date, time) pair, blanked by switch_show_date/_time.
+
+        Deliberately not the shared show_date/show_time: those governed only
+        the scroll and Vegas cards before this display read the block, so a
+        config that had turned them off there would silently blank a scorebug
+        that has always drawn both lines. The switch keys default to True for
+        the same reason switch_upcoming_center defaults to "date_time" -- an
+        untouched panel keeps rendering exactly what it rendered before.
+        """
+        date_text = (self._format_game_date(game_date, game)
+                     if self._card_option("switch_show_date", True) else "")
+        time_text = (self._format_game_time(game_time)
+                     if self._card_option("switch_show_time", True) else "")
+        return date_text, time_text
+
+    def _draw_upcoming_center_switch(self, draw, game: Dict, center_y: int,
+                                     game_date: str, game_time: str,
+                                     display_width: Optional[int] = None,
+                                     display_height: Optional[int] = None,
+                                     date_element: str = 'date',
+                                     time_element: str = 'time',
+                                     second_row_y_offset: bool = True) -> bool:
+        """Draw the middle of the full-screen upcoming scorebug.
+
+        Returns True when the header above it ("Next Game", or the league
+        name) should still be drawn. In "vs" and "none" the date and time move
+        out of the middle and into the top and bottom slots, mirroring the
+        scroll card -- and the top slot is where the header used to be, so the
+        caller drops it.
+
+        ``date_element``/``time_element``/``second_row_y_offset`` exist only so
+        the layout-offset keys stay exactly what each plugin's schema
+        advertises; this sport's defaults are the common case.
+        """
+        width = self.display_width if display_width is None else display_width
+        height = self.display_height if display_height is None else display_height
+        mode = self._switch_upcoming_center()
+        date_text, time_text = self._upcoming_date_and_time_text(
+            game_date, game_time, game)
+        swapped = bool(self._card_option("swap_date_time", False))
+
+        if mode == "date_time":
+            # Historically the date sat at center_y - 7 with the time 9px
+            # under it, and the time's row was derived from the date's, so a
+            # date y_offset moved the pair. Both still hold; the slots only
+            # trade places when swap_date_time is set, and hiding one line
+            # leaves the other where it was rather than re-centering the stack.
+            slots = [(time_element, time_text), (date_element, date_text)] if swapped \
+                else [(date_element, date_text), (time_element, time_text)]
+            row_y = center_y - 7
+            for index, (element, text) in enumerate(slots):
+                if index:
+                    row_y += 9
+                    if second_row_y_offset:
+                        row_y += self._get_layout_offset(element, 'y_offset')
+                else:
+                    row_y += self._get_layout_offset(element, 'y_offset')
+                if not text:
+                    continue
+                font = self._scorebug_font(draw, text, width)
+                text_width = draw.textlength(text, font=font)
+                text_x = ((width - text_width) // 2
+                          + self._get_layout_offset(element, 'x_offset'))
+                self._draw_text_with_outline(
+                    draw, text, (text_x, row_y), font
+                )
+            return True
+
+        if mode == "vs":
+            vs_text = self._vs_text()
+            if vs_text:
+                vs_width = draw.textlength(vs_text, font=self.fonts["score"])
+                vs_x = ((width - vs_width) // 2
+                        + self._get_layout_offset('score', 'x_offset'))
+                vs_y = (center_y - 3
+                        + self._get_layout_offset('score', 'y_offset'))
+                self._draw_text_with_outline(
+                    draw, vs_text, (vs_x, vs_y), self.fonts["score"]
+                )
+
+        # "vs" and "none" both push the date and time out to the edges, time
+        # on top unless swap_date_time says otherwise -- the same order the
+        # scroll card uses.
+        if swapped:
+            top_element, top_text = date_element, date_text
+            bottom_element, bottom_text = time_element, time_text
+        else:
+            top_element, top_text = time_element, time_text
+            bottom_element, bottom_text = date_element, date_text
+
+        if top_text:
+            top_font = self._scorebug_font(draw, top_text, width)
+            top_width = draw.textlength(top_text, font=top_font)
+            top_x = ((width - top_width) // 2
+                     + self._get_layout_offset(top_element, 'x_offset'))
+            top_y = 1 + self._get_layout_offset(top_element, 'y_offset')
+            self._draw_text_with_outline(
+                draw, top_text, (top_x, top_y), top_font
+            )
+        if bottom_text:
+            bottom_font = self._scorebug_font(draw, bottom_text, width)
+            bottom_width = draw.textlength(bottom_text, font=bottom_font)
+            bottom_x = ((width - bottom_width) // 2
+                        + self._get_layout_offset(bottom_element, 'x_offset'))
+            # Measured, not a fixed offset: the detail font is 6px in most
+            # plugins and 10px in soccer and nrl, where a fixed -7 ran the
+            # date off the panel.
+            ink_bottom = draw.textbbox((0, 0), bottom_text, font=bottom_font)[3]
+            bottom_y = (max(0, height - ink_bottom - 1)
+                        + self._get_layout_offset(bottom_element, 'y_offset'))
+            self._draw_text_with_outline(
+                draw, bottom_text, (bottom_x, bottom_y), bottom_font
+            )
+        return False
+
     def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
         """
         Get layout offset for a specific element and axis.
@@ -725,20 +1064,196 @@ class SportsCore(ABC):
             from PIL import Image as _Image, ImageDraw as _ImageDraw, ImageFont as _ImageFont
             probe = _ImageDraw.Draw(_Image.new("RGB", (4, 4)))
             budget = self.display_width * self._SCORE_WIDTH_BUDGET
-            if probe.textlength("00-00", font=fonts["score"]) <= budget:
+            if probe.textlength(getattr(self, "_SCORE_PROBE_TEXT", "00-00"), font=fonts["score"]) <= budget:
                 return fonts
             for name, size in self._NARROW_SCORE_RUNGS:
                 candidate = _ImageFont.truetype(_resolve_font_path(f"assets/fonts/{name}"), size)
-                if probe.textlength("00-00", font=candidate) <= budget:
+                if probe.textlength(getattr(self, "_SCORE_PROBE_TEXT", "00-00"), font=candidate) <= budget:
                     fonts["score"] = candidate
                     fonts["time"] = candidate
+                    self._score_grew = True
                     return fonts
             name, size = self._NARROW_SCORE_RUNGS[-1]
             narrowest = _ImageFont.truetype(_resolve_font_path(f"assets/fonts/{name}"), size)
             fonts["score"] = narrowest
             fonts["time"] = narrowest
+            self._score_grew = True
         except Exception:
             self.logger.debug("Score font fitting skipped", exc_info=True)
+        return fonts
+
+    #: Widest score this sport realistically shows, used to size the centre
+    #: reserve and the score's width budget. A fixed string rather than the
+    #: live score, because the logo cache is keyed on team and must not
+    #: resize when a side passes 9 points -- but it has to be wide enough for
+    #: the sport: basketball and AFL run to three digits a side, so measuring
+    #: them against "00-00" reserved two characters less than the score
+    #: actually needs and it was drawn onto the logos either side.
+    _SCORE_PROBE_TEXT: ClassVar[str] = "00-00"
+
+    #: Most the score may grow, as a multiple of its design size. The same
+    #: ceiling football's adaptive layout settled on and for the same measured
+    #: reason (_ADAPTIVE_SCORE_TARGET_PX): "8 reads thin on a tall card; 24
+    #: needs a 128px gap and buys mostly dead space. 16 doubles the score for
+    #: 40px of extra card and costs nothing in logo size." Without it a
+    #: 256x128 board takes a 32px score, whose reserve leaves each logo 60px
+    #: of a 256-wide panel -- a postage stamp in a 128-tall slot.
+    _SCORE_MAX_GROWTH: ClassVar[int] = 2
+
+    #: Share of the panel width the score may take once it is allowed to grow.
+    #: Deliberately not football's _SCORE_WIDTH_BUDGET (0.55), which answers a
+    #: different question -- when to swap PressStart for a narrower FACE -- and
+    #: is tuned for a 32-tall panel where the logos have no spare height. 0.55
+    #: cannot fit a 16px score under 146px of panel, so a 128-wide board could
+    #: never reach one no matter how tall it got: 128x64 paid for the change
+    #: and got nothing back. A taller panel can afford a wider score because
+    #: its logos have height to spend instead, and 0.65 is what a 16px score
+    #: needs at 128 wide (80px of 128 is 0.625).
+    _SCORE_GROWTH_BUDGET: ClassVar[float] = 0.65
+
+    #: Whether this screen actually draws a score. Everything below that sizes
+    #: the score, reserves the middle for it, or trades face width to fit it is
+    #: work done ON BEHALF of the score -- and SportsUpcoming draws no score at
+    #: all. It uses fonts["time"] five times and fonts["score"] not once, so
+    #: before this flag the upcoming card inherited a narrower face and a bigger
+    #: size chosen for a number it never shows: "Next Game / 01/16 / 12:00AM"
+    #: silently changed typeface on a 128x64 panel.
+    _DRAWS_SCORE: ClassVar[bool] = True
+
+    #: Panel height the fixed font sizes below were chosen against. Everything
+    #: else on the card is sized from display_height -- the logos most of all
+    #: -- so on a taller panel they grew and the score did not.
+    _FONT_DESIGN_HEIGHT: ClassVar[int] = 32
+
+    def _score_font_size(self) -> int:
+        """Pixel size the score is currently drawn at."""
+        return getattr(self.fonts.get("score"), "size", 8) or 8
+
+    def _time_font_size(self) -> int:
+        """Pixel size the clock/date face is currently drawn at."""
+        return getattr(self.fonts.get("time"), "size", 8) or 8
+
+    def _user_chose_size(self, element_key: str) -> bool:
+        """True when customization.<element>.font_size is a real choice.
+
+        The web UI's save flow writes the whole schema default block into
+        config.json on every save, whether or not the user touched that
+        section, so a size merely being PRESENT carries no intent. Only one
+        that differs from the schema default does.
+        """
+        element = (self.config.get('customization', {}) or {}).get(element_key) or {}
+        configured = element.get('font_size')
+        if configured is None:
+            return False
+        try:
+            return int(configured) != self._schema_font_size(element_key)
+        except (TypeError, ValueError):
+            return False
+
+    def _grid_scaled_size(self, font):
+        """(path, grid, size) for *font* regrown to this panel's height.
+
+        None when the panel is at or below the design height (nothing to do),
+        or when the face has no known pixel grid -- a user-supplied font is
+        never second-guessed, because we do not know what it renders crisply
+        at.
+        """
+        path = getattr(font, 'path', None)
+        base = getattr(font, 'size', None)
+        if not base or not isinstance(path, str):
+            return None
+        face = os.path.basename(path)
+        grid = self._FONT_PIXEL_GRID.get(self._FONT_NAME_ALIASES.get(face, face))
+        if not grid:
+            return None
+        scale = float(self.display_height) / (self._FONT_DESIGN_HEIGHT or 32)
+        if scale <= 1.0:
+            return None
+        return path, grid, max(int(base), int(self._crisp_size(face, base * scale)))
+
+    def _scale_headline_fonts(self, fonts):
+        """Grow the score with the panel, and hold the clock/date below it.
+
+        The score is the one number the card exists to show, and it was the
+        only element not sized from the panel. Worse, it was not even bigger
+        than its neighbours: PressStart2P renders crisply on an 8px grid, so
+        the 10px default snapped to 8 -- the same 8 the period/clock above it
+        and the game date below it are drawn at. Three lines of identical
+        type, none of them the headline, which is what makes the score read as
+        lower priority than the time and the date rather than the point of the
+        card.
+
+        So the score is sized from display_height and snapped to its face's
+        pixel grid (off the grid FreeType anti-aliases the strokes, and on an
+        LED matrix a part-lit pixel is a dim lamp rather than a soft edge),
+        then stepped back down that grid until it fits its share of the width.
+        The clock/date face is regrown the same way but held at least one grid
+        step below the score, so the ranking between them is visible rather
+        than implied.
+
+        A 32-tall panel scales by exactly 1.0 and is left byte-identical; a
+        size the user set explicitly is never overridden.
+        """
+        self._score_grew = False
+        if not self._DRAWS_SCORE:
+            # No score on this screen, so none of the sizing below is for it.
+            return fonts
+        try:
+            scaled = None if self._user_chose_size('score_text') else \
+                self._grid_scaled_size(fonts.get('score'))
+            if scaled is not None:
+                path, grid, size = scaled
+                base = getattr(fonts['score'], 'size', size) or size
+                size = min(size, base * self._SCORE_MAX_GROWTH)
+                probe = ImageDraw.Draw(Image.new('RGB', (4, 4)))
+                budget = self.display_width * self._SCORE_GROWTH_BUDGET
+                # Measured from a fixed five-character score rather than the
+                # live one, so the card does not resize when a side passes 9.
+                while size > grid:
+                    if probe.textlength(
+                            self._SCORE_PROBE_TEXT,
+                            font=ImageFont.truetype(path, size)) <= budget:
+                        break
+                    size -= grid
+                if size != getattr(fonts['score'], 'size', size):
+                    fonts['score'] = ImageFont.truetype(path, size)
+                    self._score_grew = True
+
+            if not self._score_grew and not self._user_chose_size('score_text') \
+                    and self.display_height > self._FONT_DESIGN_HEIGHT:
+                # PressStart2P could not grow inside the budget -- its next crisp
+                # size is simply too wide for this panel. A narrower face still
+                # can: 4x6-font at 14px is nearly as tall as PressStart2P at 16
+                # and about half as wide. This matters beyond the score itself,
+                # because a card whose score never grows never reserves the
+                # centre either, so its logos stay at the uncapped 1.5x and are
+                # drawn straight over the score -- which is what a three-digit
+                # basketball score does on a 128x64 board.
+                probe = ImageDraw.Draw(Image.new('RGB', (4, 4)))
+                budget = self.display_width * self._SCORE_GROWTH_BUDGET
+                current = getattr(fonts.get('score'), 'size', 0) or 0
+                for _name, _size in self._NARROW_SCORE_RUNGS:
+                    if _size <= current:
+                        continue
+                    _path = _resolve_font_path(f"assets/fonts/{_name}")
+                    _candidate = ImageFont.truetype(_path, _size)
+                    if probe.textlength(self._SCORE_PROBE_TEXT,
+                                        font=_candidate) <= budget:
+                        fonts['score'] = _candidate
+                        self._score_grew = True
+                        break
+
+            scaled = None if self._user_chose_size('period_text') else \
+                self._grid_scaled_size(fonts.get('time'))
+            if scaled is not None:
+                path, grid, size = scaled
+                ceiling = getattr(fonts.get('score'), 'size', 0) or 0
+                if ceiling and size >= ceiling:
+                    size = max(grid, ceiling - grid)
+                if size != getattr(fonts['time'], 'size', size):
+                    fonts['time'] = ImageFont.truetype(path, size)
+        except Exception:
+            self.logger.debug("Headline font scaling skipped", exc_info=True)
         return fonts
 
     def _load_fonts(self):
@@ -788,7 +1303,10 @@ class SportsCore(ABC):
             fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
         except OSError:
             fonts["record"] = ImageFont.load_default()
-        return self._fit_score_font(fonts)
+        # Grow first, then fit: _scale_headline_fonts sizes the score from
+        # the panel height, and _fit_score_font is the narrow-panel guard
+        # that swaps in a narrower FACE when even the grown size overflows.
+        return self._fit_score_font(self._scale_headline_fonts(fonts))
 
     def _draw_dynamic_odds(
         self, draw: ImageDraw.Draw, odds: Dict[str, Any], width: int, height: int
@@ -914,13 +1432,103 @@ class SportsCore(ABC):
         except Exception as e:
             self.logger.error(f"Error drawing odds: {e}", exc_info=True)
 
+    #: Which customization element owns each loaded face. The font loader
+    #: already picks each face from exactly that element (element_key=), so
+    #: resolving the colour from the face keeps the two in step by
+    #: construction, rather than by every draw site remembering to agree.
+    _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
+        "score": "score_text",
+        "time": "period_text",
+        "team": "team_name",
+        "status": "status_text",
+        "detail": "detail_text",
+        "rank": "rank_text",
+    }
+
+    def _element_color(self, element: str, default: Tuple[int, int, int] = (255, 255, 255)):
+        """Per-element text colour from customization.<element>.text_color."""
+        try:
+            cfg = (self.config or {}).get("customization", {}).get(element, {})
+            value = cfg.get("text_color")
+            if isinstance(value, (list, tuple)) and len(value) == 3:
+                return tuple(max(0, min(255, int(c))) for c in value)
+            if isinstance(value, str) and value.startswith("#") and len(value) == 7:
+                return tuple(int(value[i:i + 2], 16) for i in (1, 3, 5))
+        except (TypeError, ValueError):
+            pass
+        return default
+
+    def _unshare_element_fonts(self, fonts):
+        """Give each colourable element its own face object.
+
+        The colour a draw gets is resolved from the face it was handed, and
+        several of these loaders legitimately hand one object to more than one
+        element -- a size resolver that lands two elements on the same face, a
+        fallback that fills every key from one default, football's narrowing
+        step that deliberately shrinks the clock along with the score. Sharing
+        the object makes the element ambiguous and the colour unresolvable.
+
+        Re-instantiating from the same path and size gives a distinct object
+        with identical metrics, so nothing about the rendering changes; only
+        the ability to tell two elements apart does. Faces that cannot be
+        rebuilt (a BDF loaded through freetype.Face, anything without a usable
+        path) are left shared, and their draws stay white as before.
+        """
+        try:
+            from PIL import ImageFont as _IF
+        except ImportError:  # pragma: no cover
+            return fonts
+        seen = {}
+        for key in self._ELEMENT_FOR_FONT:
+            font = fonts.get(key)
+            if font is None:
+                continue
+            if id(font) not in seen:
+                seen[id(font)] = key
+                continue
+            path, size = getattr(font, "path", None), getattr(font, "size", None)
+            if not path or not size:
+                continue
+            try:
+                fonts[key] = _IF.truetype(path, size)
+            except (OSError, ValueError, TypeError):
+                self.logger.debug(
+                    "Could not un-share the %s face; it keeps the default colour", key)
+        return fonts
+
+    def _font_color(self, font, default: Tuple[int, int, int] = (255, 255, 255)):
+        """Colour for whichever element owns this face.
+
+        Matched on identity, and deliberately gives up when one object is
+        shared: the last-resort font path can hand the same face to several
+        keys, and there is no right answer for which element's colour that is.
+        White is what those draws used before, so ambiguity costs nothing.
+        """
+        try:
+            fonts = getattr(self, "fonts", None) or {}
+            matches = [element for key, element in self._ELEMENT_FOR_FONT.items()
+                       if fonts.get(key) is font]
+            if len(matches) == 1:
+                return self._element_color(matches[0], default)
+        except (AttributeError, TypeError):
+            pass
+        return default
+
     def _draw_text_with_outline(
-        self, draw, text, position, font, fill=(255, 255, 255), outline_color=(0, 0, 0)
+        self, draw, text, position, font, fill=None, outline_color=(0, 0, 0)
     ):
         """Draw text with a black outline for better readability."""
         # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
         # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
         # glyphs. 1-bit mode keeps strokes crisp.
+        # Defaults to the configured colour for whichever element owns
+        # this face rather than to white, so customization.<element>.text_color
+        # reaches every draw. The schema has offered those pickers all along
+        # and they only ever changed the font. An explicit fill still wins:
+        # the odds colours and the favourite-result score tint mean something
+        # the palette does not.
+        if fill is None:
+            fill = self._font_color(font)
         draw.fontmode = "1"
         x, y = position
         for dx, dy in [
@@ -967,6 +1575,15 @@ class SportsCore(ABC):
     #: scorebug layouts. Kept here because the logo sizing has to know it.
     _LOGO_EDGE_BLEED_PX = 10
 
+    #: How far the score may cross onto each logo. The centre reserve used
+    #: to be a flat half of the score's width, which held the crossing at
+    #: 10px only because the score was always 40px wide; now that the score
+    #: scales with the panel, a half reserve would scale the crossing with
+    #: it too. Holding the OVERLAP fixed keeps the look the half rule was
+    #: tuned for at every score size, and is identical to it at the 40px
+    #: score every panel used to get.
+    _SCORE_LOGO_OVERLAP_PX = 10
+
     def _scorebug_centre_gap(self) -> int:
         """Width the centre keeps clear for the score, in the scorebug layout.
 
@@ -992,11 +1609,23 @@ class SportsCore(ABC):
         score, because the logo cache is keyed on team and must not resize
         when a team passes 9 points.
         """
+        if not getattr(self, '_score_grew', False):
+            # Unchanged from the flat half-width reserve this has always used:
+            # at the 40px score every un-grown panel gets, width // 2 and
+            # width - 2 * 10 are both 20. Spelled out so the grown case below
+            # is visibly the only new behaviour.
+            try:
+                probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
+                return int(probe.textlength(
+                    self._SCORE_PROBE_TEXT, font=self.fonts["score"])) // 2
+            except Exception:
+                return 22
         try:
             font = self.fonts["score"]
             from PIL import Image as _Image, ImageDraw as _ImageDraw
             probe = _ImageDraw.Draw(_Image.new("RGB", (4, 4)))
-            return int(probe.textlength("00-00", font=font)) // 2
+            width = int(probe.textlength(self._SCORE_PROBE_TEXT, font=font))
+            return max(width // 2, width - 2 * self._SCORE_LOGO_OVERLAP_PX)
         except Exception:
             return 22
 
@@ -1340,7 +1969,11 @@ class SportsCore(ABC):
                 or status["type"]["name"] == "STATUS_HALFTIME",  # Added halftime check
                 "is_period_break": status["type"]["name"]
                 == "STATUS_END_PERIOD",  # Added Period Break check
-                "broadcast": (competition.get("broadcast") or ""),
+                # str(): ESPN's undocumented payloads have served this field
+                # as an object in some sports. A non-string here reaches
+                # _note_broadcast_coverage's .strip() inside update()'s own
+                # try/except -- a mode that silently renders nothing.
+                "broadcast": str(competition.get("broadcast") or ""),
                 "home_abbr": home_abbr,
                 "home_id": home_team["id"],
                 "home_score": home_team.get("score", "0"),
@@ -1362,6 +1995,7 @@ class SportsCore(ABC):
                 # the raw config, can color a final score by the result.
                 "favorite_teams": list(self.favorite_teams or []),
             }
+            self._ensure_team_logos(details)
             return details, home_team, away_team, status, situation
         except Exception as e:
             # Log the problematic event structure if possible
@@ -1370,6 +2004,37 @@ class SportsCore(ABC):
                 exc_info=True,
             )
             return None, None, None, None, None
+
+    def _ensure_team_logos(self, details: dict) -> None:
+        """Ask for any badge this game needs that is not on disk yet.
+
+        The shipped set covers FBS only, so an FCS opponent -- Furman,
+        Tennessee State -- has no file and its card drew without logos. Nothing
+        was logged, because nothing had failed: the file simply was not there.
+
+        ESPN returns the logo URL in the same payload as the game, so the
+        moment a team is known to be showing, its badge URL is already in hand.
+        The download itself is handed to _LogoFetcher rather than run here --
+        see that class for why this must not block.
+        """
+        for side in ("home", "away"):
+            abbr = details.get("%s_abbr" % side)
+            logo_path = details.get("%s_logo_path" % side)
+            if not abbr or not logo_path:
+                continue
+            try:
+                if Path(logo_path).exists():
+                    continue
+            except OSError:
+                continue
+            _LogoFetcher.request(
+                self.sport_key,
+                details.get("%s_id" % side),
+                abbr,
+                logo_path,
+                details.get("%s_logo_url" % side),
+                self.logger,
+            )
 
     @abstractmethod
     def _extract_game_details(self, game_event: dict) -> dict | None:
@@ -1570,10 +2235,18 @@ class SportsCore(ABC):
                 if cached:
                     ids = {int(i) for i in cached}
                 else:
+                    # The SEASON year, not the calendar year. College
+                    # football's 2026 season runs into January 2027, and asking
+                    # for season 2027 in January returns groups that do not
+                    # exist yet: the roster comes back empty, division
+                    # filtering fails open, and it does so through the bowls
+                    # and the playoff -- the weeks anyone is watching.
+                    now = datetime.now()
+                    season = now.year if now.month >= 7 else now.year - 1
                     url = (
                         "https://sports.core.api.espn.com/v2/sports/"
                         f"{self.sport}/leagues/{self.league}/seasons/"
-                        f"{datetime.now().year}/types/2/groups/{group}/teams"
+                        f"{season}/types/2/groups/{group}/teams"
                     )
                     resp = self.session.get(url, params={"limit": 300}, timeout=15)
                     resp.raise_for_status()
@@ -1662,7 +2335,10 @@ class SportsCore(ABC):
         """
         try:
             return max(low, min(high, int(self.mode_config.get(key, default))))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
+            # OverflowError: json parses a bare Infinity, and int(inf) raises
+            # -- from __init__, outside any try/except, so the manager would
+            # fail to construct instead of falling back.
             self.logger.warning(
                 "%s: ignoring unusable %s=%r, using %s",
                 getattr(self, "league", "?"), key,
@@ -1838,26 +2514,6 @@ class SportsCore(ABC):
                 return False
         return True
 
-    def _filtered_or_all(self, games: List[Dict]) -> List[Dict]:
-        """The games worth watching, or all of them if that leaves none.
-
-        With no favourites configured every game selected is a non-favourite
-        game, so the quality and division settings have to apply here too. They
-        governed only the top-up slice, which this branch never uses, so a
-        board with an empty favourites list had both settings silently inert --
-        it could ask for ranked games only and still get the next N kickoffs.
-
-        Fails open as a whole, not just per check. `_passes_other_filters`
-        allows a game whose data could not be resolved, but a filter working
-        exactly as asked can still match nothing on a given day, and here there
-        is no favourite left to carry the mode -- an empty list is a blank
-        panel rather than a short one.
-        """
-        self._note_broadcast_coverage(games)
-        kept = [g for g in games if self._passes_other_filters(g)]
-        self._check_ranking_coverage(games)
-        return kept or games
-
     def _note_broadcast_coverage(self, games: List[Dict]) -> None:
         """Does this league carry broadcast data at all?
 
@@ -1926,21 +2582,29 @@ class SportsCore(ABC):
             return others[:limit]
 
         interval = self.other_rotation_interval_seconds
-        if interval > 0:
-            now = time.monotonic()
-            if not self._other_window_rotated_at:
-                self._other_window_rotated_at = now
-            elapsed = now - self._other_window_rotated_at
-            if elapsed >= interval:
-                # Advance by however many intervals actually passed. The board
-                # is not guaranteed to be running -- or this mode displayed --
-                # for every one of them, and stepping once would let a plugin
-                # that sat idle crawl a step at a time.
-                steps = int(elapsed // interval)
-                self._other_window_start += steps * limit
-                self._other_window_rotated_at = now
+        # Under the lock: update() advances this window through
+        # _favorites_first, and display() advances it through
+        # _rotate_other_games_on_display, so the read-modify-write below has two
+        # writers. Interleaved, both can see the interval elapsed and each add a
+        # width, skipping a window of games nobody ever sees. _games_lock is an
+        # RLock and the display path takes it again straight after, which is
+        # why this can be the same lock rather than another one to reason about.
+        with self._games_lock:
+            if interval > 0:
+                now = time.monotonic()
+                if not self._other_window_rotated_at:
+                    self._other_window_rotated_at = now
+                elapsed = now - self._other_window_rotated_at
+                if elapsed >= interval:
+                    # Advance by however many intervals actually passed. The
+                    # board is not guaranteed to be running -- or this mode
+                    # displayed -- for every one of them, and stepping once
+                    # would let a plugin that sat idle crawl a step at a time.
+                    steps = int(elapsed // interval)
+                    self._other_window_start += steps * limit
+                    self._other_window_rotated_at = now
 
-        start = self._other_window_start % len(others)
+            start = self._other_window_start % len(others)
         window = others[start:start + limit]
         if len(window) < limit:
             window += others[:limit - len(window)]
@@ -2029,7 +2693,8 @@ class SportsCore(ABC):
             # asked can still match nothing on a given day, and with no
             # favourite game left there is nothing to carry the mode -- an empty
             # list is a blank panel, not a short one. Same whole-list fallback
-            # `_filtered_or_all` makes for a board with no favourites at all.
+            # makes for a board with no favourites at all, which now takes
+            # this same path with a favourite limit of 0.
             # `other_limit` of 0 is an explicit "favourites only", so that one
             # is left to go quiet as asked.
             selected = self._other_games_window(pools["unfiltered"], max(0, other_limit))
@@ -2072,7 +2737,53 @@ class SportsCore(ABC):
                 ", ".join("%s@%s" % (g.get("away_abbr"), g.get("home_abbr"))
                           for g in rebuilt),
             )
+        self._attach_odds_to_rotated_games(rebuilt)
         return True
+
+    def _attach_odds_to_rotated_games(self, games: List[Dict]) -> None:
+        """Fetch odds for freshly rotated-in games off the display path.
+
+        The rotation deliberately does no network work, but odds are only
+        attached in update(), and for an upcoming list that runs hourly --
+        far longer than any rotated-in card stays on screen. Every slice cut
+        between updates therefore rendered without a line even though ESPN
+        had one, while the favourites, which survive every cut, kept the
+        odds update() gave them.
+
+        One daemon thread per rotation, bounded by the slice size rather
+        than the pool's: only games actually going on screen are asked
+        about, and get_odds caches per game, so one re-entering the window
+        inside its TTL costs a cache lookup rather than a request. The
+        thread mutates each game dict in place; the renderer re-reads
+        game["odds"] every frame, so a line appears as soon as its fetch
+        lands, mid-dwell included.
+        """
+        if not self.show_odds:
+            return
+        pending = [g for g in games if not g.get("odds")]
+        if not pending:
+            return
+        interval = self.mode_config.get("odds_update_interval", 3600)
+
+        def fetch() -> None:
+            for game in pending:
+                try:
+                    odds = self.odds_manager.get_odds(
+                        sport=self.sport,
+                        league=self.league,
+                        event_id=game["id"],
+                        update_interval_seconds=interval,
+                    )
+                    if odds:
+                        game["odds"] = odds
+                except Exception as exc:
+                    self.logger.debug(
+                        "Odds fetch for rotated-in game %s failed: %s",
+                        game.get("id"), exc)
+
+        threading.Thread(
+            target=fetch, daemon=True,
+            name="%s-rotated-odds" % self.sport_key).start()
 
     def _advance_other_games_if_due(self) -> List[Dict]:
         """Re-cut the non-favourite slice on the display path, or [] if not due.
@@ -2086,7 +2797,17 @@ class SportsCore(ABC):
         if not pools:
             return []
         interval = self.other_rotation_interval_seconds
-        others, limit = pools["others"], max(0, pools["other_limit"])
+        limit = max(0, pools["other_limit"])
+        # Whichever pool _compose_selection will actually slice. It falls back
+        # to the unfiltered list only when NOTHING survived -- favourites
+        # included. With a favourite playing and the filters rejecting every
+        # other game, compose keeps the favourites-only list, so guessing the
+        # unfiltered pool here made the due-check fire on every display() call
+        # forever, recomposing an identical list each frame.
+        others = pools["others"]
+        favorites_fill = pools["favorites"] and pools["favorite_limit"] > 0
+        if not others and limit > 0 and not favorites_fill:
+            others = pools["unfiltered"]
         if interval <= 0 or limit <= 0 or len(others) <= limit:
             return []       # pinned, favourites-only, or nothing to rotate through
         if not self._other_window_rotated_at:
@@ -2097,6 +2818,9 @@ class SportsCore(ABC):
 
 
 class SportsUpcoming(SportsCore):
+    #: This screen shows the date and the time, never a score.
+    _DRAWS_SCORE: ClassVar[bool] = False
+
     def __init__(
         self,
         config: Dict[str, Any],
@@ -2286,12 +3010,15 @@ class SportsUpcoming(SportsCore):
                     self.favorite_teams, shown_favs, len(team_games) - shown_favs
                 )
             else:
-                # No favourites at all: the next N games league-wide.
-                team_games = sorted(
-                    self._filtered_or_all(processed_games),
-                    key=lambda g: g.get("start_time_utc")
-                    or datetime.max.replace(tzinfo=timezone.utc),
-                )[:self.upcoming_games_to_show]
+                # No favourites at all: the same selection with no favourite
+                # slots. This used to be its own path -- filter, sort, truncate
+                # -- which never built the selection pools, so nothing rotated
+                # and nothing was ordered by rank. That is the DEFAULT
+                # configuration for college football, so the board most in need
+                # of the pacing work was the one board not getting it.
+                team_games = self._favorites_first(
+                    processed_games, 0, self.upcoming_games_to_show
+                )
                 self.logger.info(
                     "No favorites configured: showing %d total upcoming games",
                     len(team_games)
@@ -2448,42 +3175,34 @@ class SportsUpcoming(SportsCore):
 
             # Note: Rankings are now handled in the records/rankings section below
 
-            # "Next Game" at the top (use smaller status font) with layout offsets
-            status_font = self.fonts["status"]
-            if display_width > 128:
-                status_font = self.fonts["time"]
-            # "Next Game" is 9 characters; at 8px that is 72px, wider than a
-            # 64px panel, so it ran off both edges. Shed to "Next", which the
-            # date and time below give context for.
-            #
-            # No empty last candidate: _fit_text skips falsy entries, so ""
-            # could never be returned and the label cannot shed to nothing.
-            status_text = self._fit_text(
-                draw_overlay, ("Next Game", "Next"),
-                status_font, display_width - 2)
-            status_width = draw_overlay.textlength(status_text, font=status_font)
-            status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
-            status_y = 1 + self._get_layout_offset('status_text', 'y_offset')  # Changed from 2
-            self._draw_text_with_outline(
-                draw_overlay, status_text, (status_x, status_y), status_font
-            )
-
-            # Date text (centered, below "Next Game") with layout offsets
-            date_width = draw_overlay.textlength(game_date, font=self.fonts["time"])
-            date_x = (display_width - date_width) // 2 + self._get_layout_offset('date', 'x_offset')
-            # Adjust Y position to stack date and time nicely
-            date_y = center_y - 7 + self._get_layout_offset('date', 'y_offset')  # Raise date slightly
-            self._draw_text_with_outline(
-                draw_overlay, game_date, (date_x, date_y), self.fonts["time"]
-            )
-
-            # Time text (centered, below Date) with layout offsets
-            time_width = draw_overlay.textlength(game_time, font=self.fonts["time"])
-            time_x = (display_width - time_width) // 2 + self._get_layout_offset('time', 'x_offset')
-            time_y = date_y + 9 + self._get_layout_offset('time', 'y_offset')  # Place time below date
-            self._draw_text_with_outline(
-                draw_overlay, game_time, (time_x, time_y), self.fonts["time"]
-            )
+            # The middle of an upcoming scorebug -- the matchup separator, the
+            # date and time stacked, or nothing -- is config-driven now, so the
+            # one scroll_card setting drives switch, scroll and Vegas alike
+            # instead of stopping at the ticker. "vs" and "none" move the date
+            # and time out to the top and bottom rows, and the top row is where
+            # the header sits, so the helper reports whether it still has a slot.
+            if self._draw_upcoming_center_switch(
+                    draw_overlay, game, center_y, game_date, game_time,
+                    display_width=display_width, display_height=display_height):
+                # "Next Game" at the top (use smaller status font) with layout offsets
+                status_font = self.fonts["status"]
+                if display_width > 128:
+                    status_font = self.fonts["time"]
+                # "Next Game" is 9 characters; at 8px that is 72px, wider than a
+                # 64px panel, so it ran off both edges. Shed to "Next", which the
+                # date and time below give context for.
+                #
+                # No empty last candidate: _fit_text skips falsy entries, so ""
+                # could never be returned and the label cannot shed to nothing.
+                status_text = self._fit_text(
+                    draw_overlay, ("Next Game", "Next"),
+                    status_font, display_width - 2)
+                status_width = draw_overlay.textlength(status_text, font=status_font)
+                status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
+                status_y = 1 + self._get_layout_offset('status_text', 'y_offset')  # Changed from 2
+                self._draw_text_with_outline(
+                    draw_overlay, status_text, (status_x, status_y), status_font
+                )
 
             # Draw odds if available
             if "odds" in game and game["odds"]:
@@ -2927,17 +3646,27 @@ class SportsRecent(SportsCore):
                     self.favorite_teams, shown_favs, len(team_games) - shown_favs
                 )
             else:
-                # No favourites at all: the most recent N league-wide.
-                team_games = sorted(
-                    self._filtered_or_all(processed_games),
-                    key=lambda g: g.get("start_time_utc")
-                    or datetime.min.replace(tzinfo=timezone.utc),
-                    reverse=True,
-                )[:self.recent_games_to_show]
+                # No favourites at all -- see the note in SportsUpcoming.
+                team_games = self._favorites_first(
+                    processed_games, 0, self.recent_games_to_show,
+                    newest_first=True,
+                )
                 self.logger.info(
                     "No favorites configured: showing %d total recent games",
                     len(team_games)
                 )
+
+            # Odds are fetched for the games that survived selection, same as
+            # SportsUpcoming does -- this class never fetched them at all, so
+            # a recent card only showed a line when the rotation happened to
+            # swap it in, and a league whose recent pool fits inside its
+            # limits never rotates: its finals stayed bare while a busier
+            # league's rotated cards drew theirs. ESPN keeps a completed
+            # game's closing line on the same endpoint, so a final is as
+            # answerable as an upcoming game.
+            if self.show_odds:
+                for game in team_games:
+                    self._fetch_odds(game)
 
             # Check if the list of games to display has changed (thread-safe)
             with self._games_lock:
@@ -3060,13 +3789,13 @@ class SportsRecent(SportsCore):
             score_text = f"{away_score}-{home_score}"
             score_width = draw_overlay.textlength(score_text, font=self.fonts["score"])
             score_x = (display_width - score_width) // 2 + self._get_layout_offset('score', 'x_offset')
-            score_y = (display_height // 2) - 3 + self._get_layout_offset('score', 'y_offset')  # Centered vertically, same as live games
+            score_y = (display_height // 2) - max(3, self._score_font_size() // 2 - 1) + self._get_layout_offset('score', 'y_offset')  # Centered vertically, same as live games
             self._draw_text_with_outline(
                 draw_overlay,
                 score_text,
                 (score_x, score_y),
                 self.fonts["score"],
-                fill=self._recent_score_color(game, (255, 255, 255)),
+                fill=self._recent_score_color(game, self._element_color('score_text')),
             )
 
             # Game date (Bottom of display, one line above bottom edge, centered) with layout offsets
@@ -3076,7 +3805,7 @@ class SportsRecent(SportsCore):
                 date_width = draw_overlay.textlength(game_date, font=self.fonts["time"])
                 date_x = (display_width - date_width) // 2 + self._get_layout_offset('date', 'x_offset')
                 # Position date at bottom of display, one line above the bottom edge
-                date_y = display_height - 7 + self._get_layout_offset('date', 'y_offset')  # One line above bottom edge
+                date_y = display_height - max(7, self._time_font_size() - 1) + self._get_layout_offset('date', 'y_offset')  # One line above bottom edge
                 self._draw_text_with_outline(
                     draw_overlay, game_date, (date_x, date_y), self.fonts["time"]
                 )

@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.29.3] - 2026-08-31
+
+### Fixed
+- **Recent games now get their odds too.** SportsUpcoming fetches odds for the games that survive selection, and SportsLive fetches them per included game — the Recent screen never fetched them at all. A final only showed a line when the other-games rotation happened to swap it in (2.29.2 fetches odds for each fresh slice), and a league whose recent pool fits inside its limits never rotates: its finals stayed bare while a busier league's rotated cards drew theirs. Observed live with both leagues' `show_odds` on: NFL's eight recents rotated and showed closing lines, NCAA's lone final never did. Recent's `update()` now fetches odds for the selected finals, exactly as Upcoming does; ESPN keeps a completed game's closing line on the same endpoint, so a final is as answerable as an upcoming game.
+
+## [2.29.2] - 2026-08-30
+
+### Fixed
+- **Rotated-in games now get their odds.** Odds are fetched in `update()`, which for an upcoming list runs hourly, while the other-games rotation re-cuts the non-favourite slice every `other_rotation_interval_seconds` on the display path — deliberately with no network work. Every slice cut between updates therefore rendered without a line even though ESPN had one, while the favourites, which survive every cut, kept the odds `update()` gave them. Observed live on a college slate: the hourly cycle fetched odds for the five games selected at that moment while the panel rotated through a different five with nothing under the matchup. The rotation now hands the freshly swapped-in games to a background daemon thread that asks the odds manager about each one — bounded by the slice, never the pool, so a college league's hundreds of upcoming games are still never trawled — and the line appears on the card as soon as its fetch lands. Cached per game, so a game re-entering the window inside the odds TTL costs a lookup rather than a request.
+
+## [2.29.1] - 2026-08-30
+
+### Fixed
+- **The full-screen upcoming scoreboard draws its date and time again on configs that had hidden them on the scroll card.** `show_date`/`show_time` predate the full-screen display reading the `scroll_card` block: they governed only the scroll and Vegas cards, so turning them off there never touched the stacked date and time in the middle of the switch-mode scorebug — until the block was wired through, when those old settings started silently blanking it. The middle then drew nothing at all: `switch_upcoming_center` defaults to `date_time`, and both of its lines came back empty. The full-screen display now has its own `switch_show_date` and `switch_show_time`, both defaulting to `true`, holding it to what it has always drawn — the same back-compat rule that gave it `switch_upcoming_center` and `switch_date_format`. The scroll and Vegas cards keep following `show_date`/`show_time` exactly as before, and a regression test pins that the shared keys no longer reach this display.
+
+## [2.29.0] - 2026-08-29
+
+### Changed
+- **The score is now the headline it was always meant to be.** It was the only element on the card not sized from the panel, and it was not even bigger than its neighbours: PressStart2P renders crisply on an 8px grid, so the 10px default snapped to 8 — the same 8 the clock above it and the game date below it are drawn at. It is now sized from `display_height`, snapped to its face's pixel grid and capped at twice its design size, with the clock/date face held a grid step below it.
+- **A narrower face instead of smaller logos.** Where the grown score would swamp the panel the layout reaches for a narrower *face*, which is what `football-scoreboard` has always done via `_fit_score_font` and the single reason its logos read larger than every other scoreboard's at the same panel size. Measured on 128x64: `4x6-font` at 14px reserves 28px and leaves 52x52 logos, where `PressStart2P` at 16px reserved 60px and left 36x36. The two faces are not the same shape — PressStart2P is square, 4x6-font is nearly as tall and about half as wide — so the score keeps the dimension that carries legibility and gives back the one the logos need.
+- **Logos are sized against the space the score actually needs**, and only where the score grew. A panel whose score did not move keeps exactly the logos it had.
+- **Score and date positions scale with their faces.** The bottom-anchored score's `-14`, the centred score's `-3`, and the date's 7px drop were all chosen for an 8px face and clipped a grown one off the card.
+- **The upcoming screen is untouched at every size.** It draws no score — `fonts["score"]` appears in `SportsUpcoming` zero times, `fonts["time"]` five times — so none of the score-driven sizing applies to it and its date and time keep the face and size they always had. Measured on the live and recent screens: 64x32, 128x32 and 256x32 are byte-identical to the previous release; every taller panel gains a larger score with logos the score is no longer drawn across.
+- The adaptive layout reaches the same rung: fit_text_proportional takes the largest rung at or below its target, and 8 * (48/32) = 12 fell just short of 16, so a 48-tall card got the same 8px score a 32-tall one did. _fit_element now snaps the score's target to the face's grid first, so both layouts pick the same size on the same panel. The snap is opt-in per call rather than keyed on the font name: the score font also draws the `VS` separator and the stacked date/time on an upcoming card, and those are not scores — they keep the size they always had.
+
 ## [2.11.0] - 2026-08-04
 
 ### Changed

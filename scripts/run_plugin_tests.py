@@ -96,8 +96,16 @@ def run_one(script: Path, core: Path | None, timeout: int) -> tuple[int, str]:
     if not lines:
         return FAIL, f"exit {proc.returncode}"
     # No named check failed, so the script died some other way -- a traceback,
-    # an assertion, an exit code from somewhere else. The tail is the evidence.
-    return FAIL, "exit %d | %s" % (proc.returncode, " | ".join(lines[-3:])[:220])
+    # an assertion, an exit code from somewhere else. The tail is the evidence,
+    # taken from each stream separately: concatenating them put every stdout
+    # line before every stderr line, so a script that printed its diagnostic
+    # and then three warnings reported only the warnings.
+    tails = []
+    for name, stream in (("stdout", proc.stdout), ("stderr", proc.stderr)):
+        kept = [ln.rstrip() for ln in stream.splitlines() if ln.strip()]
+        if kept:
+            tails.append("%s: %s" % (name, " | ".join(kept[-2:])))
+    return FAIL, ("exit %d | %s" % (proc.returncode, " ; ".join(tails)))[:240]
 
 
 def main() -> int:

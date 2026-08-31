@@ -1108,7 +1108,6 @@ class SportsCore(ABC):
 
         self.logger.info(f"{self.__class__.__name__} cleanup completed")
 
-
     def _is_favorite_game(self, game: Dict) -> bool:
         """Does either side of this game belong to a favourite team?"""
         if not self.favorite_teams:
@@ -1745,6 +1744,9 @@ class SportsUpcoming(SportsCore):
         self.warning_cooldown = 300
         self.last_game_switch = 0
         self.game_display_duration = self.mode_config.get("upcoming_game_duration", 15)
+
+
+
 
     def _select_games_for_display(
         self, processed_games: List[Dict], favorite_teams: List[str]

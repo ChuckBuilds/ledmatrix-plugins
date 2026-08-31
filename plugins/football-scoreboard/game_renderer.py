@@ -14,8 +14,10 @@ This module provides:
 import dataclasses
 import logging
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional, Tuple, Union
+from zoneinfo import ZoneInfo
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -99,6 +101,25 @@ try:
         FontStep("press_start", 8),
         FontStep("4x6-font", 7),
     )
+    # The down & distance line only -- NOT the clock, status band, records or
+    # dates, which keep ADAPTIVE_LADDER_TEXT and the arcade face above.
+    #
+    # This line is the longest string on the card ("3rd & 8 at KC 42" is 16
+    # characters against the score's 5) and the one with the least room, since
+    # it shares its row with the timeout bars and the records. On PressStart2P,
+    # roughly four times wider per character than the 4x6 face, it rendered
+    # 128px wide on a 192x48 panel where the classic layout draws it in 65px,
+    # and on a 256x128 it reached 16px = 256px -- the full card, clipped at
+    # both ends, with nowhere for the possession ball beside it.
+    #
+    # Both rungs are verified crisp (measure_font_crispness == 0.0): 4x6-font
+    # is a pixel-grid face, exact at 7px and at its 14px double. Going below
+    # 7px is not an option -- 6px measures 0.35 antialiased and 5px 0.55, which
+    # smears on a real LED panel.
+    ADAPTIVE_LADDER_DETAIL = (
+        FontStep("4x6-font", 14),
+        FontStep("4x6-font", 7),
+    )
 except ImportError:
     ADAPTIVE_AVAILABLE = False
 
@@ -124,6 +145,77 @@ def _get_font_manager():
         from src.font_manager import FontManager
         _shared_font_manager = FontManager({})
     return _shared_font_manager
+
+
+# --- Possession indicator -------------------------------------------------
+#
+# Football-only. The other seven game_renderer.py lineage copies have no
+# possession concept, so these have no sibling to be ported to; they live here
+# rather than in football.py because game_renderer draws the ball on two of the
+# three code paths and football.py on the third, and the three must agree.
+#
+# The ball used to be a hardcoded 7x5 ellipse placed a fixed 3px from the down
+# & distance text, guarded only by `ball_x_center > 0`. On a narrow panel that
+# put it on top of the timeout bars and the record text, and it stayed 7x5 on a
+# tall panel where it read as a dash rather than a football.
+
+POSSESSION_BALL_COLOR = (139, 69, 19)
+POSSESSION_LACE_COLOR = (255, 255, 255)
+
+
+# The classic ball. Deliberately NOT scaled: the size was never the problem,
+# and every pixel it grows is a pixel of down & distance the row has to give
+# up -- on a 64x32 the whole free band is only about 30px wide.
+POSSESSION_BALL_SIZE = (7, 5)
+
+
+def draw_possession_football(draw: ImageDraw.Draw, box) -> None:
+    """Draw the possession football filling box = (x0, y0, x1, y1) inclusive.
+
+    Same ellipse and centre lace both call sites drew before; only where the
+    box comes from has changed.
+    """
+    x0, y0, x1, y1 = (int(v) for v in box)
+    draw.ellipse((x0, y0, x1, y1), fill=POSSESSION_BALL_COLOR, outline=(0, 0, 0))
+    cx = x0 + (x1 - x0) // 2
+    cy = y0 + (y1 - y0) // 2
+    draw.line((cx - 1, cy, cx + 1, cy), fill=POSSESSION_LACE_COLOR, width=1)
+
+
+def possession_ball_box(text_x, text_width, text_height, text_y,
+                        left_limit: int, right_limit: int,
+                        possession: Optional[str],
+                        icon_size: Tuple[int, int] = POSSESSION_BALL_SIZE,
+                        gap: int = 3):
+    """Where the possession ball goes beside an already-placed down & distance
+    string, or None when there is no room for it clear of the corners.
+
+    The ball never pushes the text around. On a cramped panel -- a 64x32 leaves
+    about 30px between the timeout bars and the text alone wants 29 of them --
+    the down & distance is worth more than the indicator, so the ball is
+    dropped rather than the wording shortened or the timeout bars overdrawn.
+
+    *left_limit* / *right_limit* bound the space the timeout bars and the
+    record text leave free.
+    """
+    if not possession:
+        return None
+    icon_w, icon_h = icon_size
+    # *gap* is the clear space between the text edge and the ball edge, which
+    # is what the old centre-and-radius arithmetic worked out to. Keeping it
+    # exact means the ball lands on the same pixel it always did wherever it
+    # still fits.
+    if possession == "away":
+        x = int(text_x) - gap - icon_w + 1
+    elif possession == "home":
+        x = int(text_x + text_width) + gap
+    else:
+        return None
+    if x < left_limit or x + icon_w > right_limit:
+        return None
+    # Centred on the text exactly as the old fixed-offset arithmetic did
+    y = int(text_y) + int(text_height) // 2 - icon_h // 2
+    return (x, y, x + icon_w - 1, y + icon_h - 1)
 
 
 class GameRenderer:
@@ -171,7 +263,7 @@ class GameRenderer:
                 config, defaults_from_schema_file(schema_path))
 
         # Load fonts
-        self.fonts = self._load_fonts()
+        self.fonts = self._unshare_element_fonts(self._load_fonts())
 
         # Adaptive layout (beta, opt-in): scales fonts/logos/regions to the
         # card size instead of the classic fixed-pixel layout. Default
@@ -589,13 +681,82 @@ class GameRenderer:
             self.logger.error(f"Error loading logo for {team_abbrev}: {e}")
             return None
     
+    #: Which customization element owns each loaded face. The font loader
+    #: already picks each face from exactly that element (element_key=), so
+    #: resolving the colour from the face keeps the two in step by
+    #: construction, rather than by every draw site remembering to agree.
+    _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
+        "score": "score_text",
+        "time": "period_text",
+        "team": "team_name",
+        "status": "status_text",
+        "detail": "detail_text",
+        "rank": "rank_text",
+    }
+
+    def _unshare_element_fonts(self, fonts):
+        """Give each colourable element its own face object.
+
+        The colour a draw gets is resolved from the face it was handed, and
+        several of these loaders legitimately hand one object to more than one
+        element -- a size resolver that lands two elements on the same face, a
+        fallback that fills every key from one default, football's narrowing
+        step that deliberately shrinks the clock along with the score. Sharing
+        the object makes the element ambiguous and the colour unresolvable.
+
+        Re-instantiating from the same path and size gives a distinct object
+        with identical metrics, so nothing about the rendering changes; only
+        the ability to tell two elements apart does. Faces that cannot be
+        rebuilt (a BDF loaded through freetype.Face, anything without a usable
+        path) are left shared, and their draws stay white as before.
+        """
+        try:
+            from PIL import ImageFont as _IF
+        except ImportError:  # pragma: no cover
+            return fonts
+        seen = {}
+        for key in self._ELEMENT_FOR_FONT:
+            font = fonts.get(key)
+            if font is None:
+                continue
+            if id(font) not in seen:
+                seen[id(font)] = key
+                continue
+            path, size = getattr(font, "path", None), getattr(font, "size", None)
+            if not path or not size:
+                continue
+            try:
+                fonts[key] = _IF.truetype(path, size)
+            except (OSError, ValueError, TypeError):
+                self.logger.debug(
+                    "Could not un-share the %s face; it keeps the default colour", key)
+        return fonts
+
+    def _font_color(self, font, default: Tuple[int, int, int] = (255, 255, 255)):
+        """Colour for whichever element owns this face.
+
+        Matched on identity, and deliberately gives up when one object is
+        shared: the last-resort font path can hand the same face to several
+        keys, and there is no right answer for which element's colour that is.
+        White is what those draws used before, so ambiguity costs nothing.
+        """
+        try:
+            fonts = getattr(self, "fonts", None) or {}
+            matches = [element for key, element in self._ELEMENT_FOR_FONT.items()
+                       if fonts.get(key) is font]
+            if len(matches) == 1:
+                return self._element_color(matches[0], default)
+        except (AttributeError, TypeError):
+            pass
+        return default
+
     def _draw_text_with_outline(
         self, 
         draw: ImageDraw.Draw, 
         text: str, 
         position: Tuple[int, int], 
         font: Union[ImageFont.FreeTypeFont, Any], 
-        fill: Tuple[int, int, int] = (255, 255, 255), 
+        fill: Optional[Tuple[int, int, int]] = None, 
         outline_color: Tuple[int, int, int] = (0, 0, 0)
     ) -> None:
         """
@@ -614,6 +775,14 @@ class GameRenderer:
         # Disable anti-aliasing: pixel/bitmap fonts (e.g. PressStart2P) get
         # anti-aliased into dim partial-lit pixels on a 1:1 LED matrix, muddying
         # glyphs. 1-bit mode keeps strokes crisp.
+        # Defaults to the configured colour for whichever element owns
+        # this face rather than to white, so customization.<element>.text_color
+        # reaches every draw. The schema has offered those pickers all along
+        # and they only ever changed the font. An explicit fill still wins:
+        # the odds colours and the favourite-result score tint mean something
+        # the palette does not.
+        if fill is None:
+            fill = self._font_color(font)
         draw.fontmode = "1"
         x, y = position
         for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
@@ -730,8 +899,15 @@ class GameRenderer:
         )
         return "win" if favorite_score > other_score else "loss"
 
-    def _score_color_for(self, game: Dict[str, Any], game_type: str, default=(255, 255, 255)):
-        """Fill color for a game card's score. Only finished games are tinted."""
+    def _score_color_for(self, game: Dict[str, Any], game_type: str, default=None):
+        """Fill color for a game card's score. Only finished games are tinted.
+
+        The default is the configured score colour rather than a flat white,
+        so customization.score_text.text_color shows on games the favourite
+        tint does not apply to. The tint still wins where it applies.
+        """
+        if default is None:
+            default = self._element_color('score_text')
         if game_type != "recent":
             return default
         return self._recent_score_color(game, default)
@@ -958,7 +1134,7 @@ class GameRenderer:
         return region.offset(dx, dy) if (dx or dy) else region
 
     def _fit_element(self, font_key: str, text: str, region: "Region",
-                     ladder) -> "FitResult":
+                     ladder, *, snap_to_grid: bool = False) -> "FitResult":
         """Crisp font sized proportionally to this element's classic fixed
         size (self.fonts[font_key]'s configured size — the default, e.g.
         score=10/time=8/detail=6, unless the user overrode it) — unless the
@@ -970,6 +1146,14 @@ class GameRenderer:
         let it balloon out of proportion (even overlapping the logos) well
         past what fits the classic composition, even though the pick is
         individually "correct" for its own box.
+
+        ``snap_to_grid`` is opt-in per CALL, not per font key, because the
+        score font is used for three different things: the score itself, the
+        "VS" separator on an upcoming card, and that card's stacked
+        date/time. Only the first is a score. Keying the snap on
+        ``font_key == 'score'`` grew the "VS" to 16px on a 192x48 panel --
+        a separator sized like a headline, for a card with no result to
+        report.
 
         Scaled by HEIGHT alone (not LayoutContext's conservative
         min(width_ratio, height_ratio)) to match how the card's own logos
@@ -987,6 +1171,23 @@ class GameRenderer:
                              line_height=height)
         base_size_px = getattr(self.fonts[font_key], 'size', 10)
         height_scale = self.display_height / self._ctx.design_size[1]
+        if snap_to_grid:
+            # Snap the score's target to the face's pixel grid before the
+            # ladder sees it, so it lands ON a rung instead of just under one.
+            #
+            # fit_text_proportional takes the largest rung <= target, and the
+            # arcade ladder's rungs are 8 / 16 / 24 / 32. A 48-tall panel gives
+            # 8 * (48/32) = 12, which is short of 16, so the score stayed at 8
+            # -- the same size the classic layout was stuck at, and the same
+            # size as the clock above it. Snapping 12 to the nearest crisp
+            # size first makes the target exactly 16 and the rung reachable,
+            # and it uses the same _crisp_size() the classic path does, so the
+            # two layouts pick the same score size on the same panel.
+            face = os.path.basename(
+                getattr(self.fonts[font_key], 'path', '') or '')
+            snapped = self._crisp_size(face, base_size_px * height_scale)
+            if snapped:
+                base_size_px, height_scale = snapped, 1.0
         return self._ctx.fit_text_proportional(text, region, base_size_px=base_size_px,
                                                ladder=ladder, scale=height_scale)
 
@@ -1054,7 +1255,7 @@ class GameRenderer:
             fit = self._fit_element(
                 'score', "00-00",
                 self._region_for(self._score_clear_of_logos(regs), 'score'),
-                ADAPTIVE_LADDER_HEADLINE)
+                ADAPTIVE_LADDER_HEADLINE, snap_to_grid=True)
             got = getattr(getattr(fit, 'font', None), 'size', 0) or 0
             return needed if got >= self._ADAPTIVE_SCORE_TARGET_PX else 0
         except Exception:
@@ -1218,7 +1419,8 @@ class GameRenderer:
         if game_type in ("live", "recent"):
             score_text = f"{game.get('away_score', '0')}-{game.get('home_score', '0')}"
             score_fit = self._fit_element('score', score_text, score_region,
-                                          ADAPTIVE_LADDER_HEADLINE)
+                                          ADAPTIVE_LADDER_HEADLINE,
+                                          snap_to_grid=True)
             self._adaptive_score_px = getattr(
                 getattr(score_fit, 'font', None), 'size', 0) or 0
             self._draw_fit_outline(draw_overlay, score_fit, score_region,
@@ -1246,8 +1448,13 @@ class GameRenderer:
             fit = self._fit_element('time', top,
                                     self._region_for(regs.status_band, 'status_text'),
                                     self._status_ladder())
+            # Coloured by the face it is fitted in, same rule as the classic
+            # card: this line is set in the period face, so period_text's
+            # colour applies. The ladder's fonts are not element-owned, so the
+            # identity lookup cannot resolve these -- the fill is named here.
             self._draw_fit_outline(draw_overlay, fit,
-                                   self._region_for(regs.status_band, 'status_text'))
+                                   self._region_for(regs.status_band, 'status_text'),
+                                   fill=self._element_color('period_text'))
             self._draw_bottom_center_adaptive(
                 draw_overlay, self._format_game_date(game.get("game_date", ""), game),
                 regs, 'date')
@@ -1266,7 +1473,10 @@ class GameRenderer:
                 if stacked:
                     fit = self._fit_element('score', stacked, score_region,
                                             ADAPTIVE_LADDER_TEXT)
-                    self._draw_fit_outline(draw_overlay, fit, score_region)
+                    # The stacked centre stands in for the score, set in the
+                    # score face, so it takes score_text's colour.
+                    self._draw_fit_outline(draw_overlay, fit, score_region,
+                                           fill=self._element_color('score_text'))
             else:
                 if game_time:
                     region = self._region_for(regs.status_band, 'time')
@@ -1274,7 +1484,8 @@ class GameRenderer:
                     # never larger than the card's centre element.
                     fit = self._fit_element('time', game_time, region,
                                             self._status_ladder())
-                    self._draw_fit_outline(draw_overlay, fit, region)
+                    self._draw_fit_outline(draw_overlay, fit, region,
+                                           fill=self._element_color('period_text'))
                 self._draw_bottom_center_adaptive(draw_overlay, game_date,
                                                   regs, 'date')
 
@@ -1294,10 +1505,17 @@ class GameRenderer:
 
     def _draw_bottom_center_adaptive(self, draw: ImageDraw.Draw, text: str,
                                      regs, element: str,
-                                     fill: Tuple[int, int, int] = (255, 255, 255)):
-        """Fit text into the bottom detail band. Returns (x, y, fit) or None."""
+                                     fill: Optional[Tuple[int, int, int]] = None):
+        """Fit text into the bottom detail band. Returns (x, y, fit) or None.
+
+        The band is set in the detail face, so an unspecified fill takes
+        detail_text's colour; the scoring-event and down-distance callers pass
+        their semantic colours explicitly and still win.
+        """
         if not text:
             return None
+        if fill is None:
+            fill = self._element_color('detail_text')
         region = self._region_for(regs.detail_band, element)
         fit = self._fit_element('detail', text, region, ADAPTIVE_LADDER_TEXT)
         x, y = self._draw_fit_outline(draw, fit, region, fill=fill)
@@ -1315,14 +1533,13 @@ class GameRenderer:
             region = self._region_for(regs.status_band, 'status_text')
             fit = self._fit_element('time', period_clock_text, region,
                                     self._status_ladder())
-            self._draw_fit_outline(draw, fit, region)
+            self._draw_fit_outline(draw, fit, region,
+                                   fill=self._element_color('period_text'))
 
         # Scoring event or down & distance in the bottom detail band —
         # semantic colors preserved from the classic layout
         scoring_event = game.get("scoring_event", "")
         down_distance = game.get("down_distance_text", "")
-        if self.display_width > 128:
-            down_distance = game.get("down_distance_text_long", down_distance)
 
         if scoring_event and game.get("is_live"):
             color = {
@@ -1334,40 +1551,116 @@ class GameRenderer:
                                               'down_distance', fill=color)
         elif down_distance and game.get("is_live"):
             down_color = (255, 0, 0) if game.get("is_redzone", False) else (200, 200, 0)
-            drawn = self._draw_bottom_center_adaptive(draw, down_distance, regs,
-                                                      'down_distance', fill=down_color)
+            # Fitted here rather than via _draw_bottom_center_adaptive so the
+            # detail ladder applies to this line alone -- that helper is also
+            # what draws the scoring event, the dates and the status text.
+            region = self._region_for(regs.detail_band, 'down_distance')
+            left, right = self._bottom_free_band_adaptive(draw, game, regs)
+
+            # Prefer the long form -- it carries the yardage -- whenever it fits
+            # the space the timeout bars and the records leave free, the same
+            # trade the classic layout makes via _fit_text. The old
+            # `display_width > 128` gate was a proxy for "is there room" and got
+            # a 128x64 wrong: the long form is 65px in the 4x6 face and the free
+            # band there is wider than that, so the yardage was dropped on a
+            # panel with room for it.
+            band = (Region(left, region.y, right - left, region.h)
+                    if right > left else region)
+            # Try each wording against a band shortened by the ball first, so
+            # that where two rungs both fit the wording we take the one that
+            # also leaves room for the indicator. This costs font size, never
+            # words -- a smaller rung with the yardage beats a larger one
+            # without it.
+            slot = 0
+            if game.get("possession_indicator"):
+                slot = self._possession_icon_size()[0] + self._ctx.px(3, minimum=2)
+            narrowed = Region(band.x, band.y, max(0, band.w - slot), band.h)
+
+            fit, fit_region = None, band
+            for candidate in (game.get("down_distance_text_long", ""), down_distance):
+                if not candidate:
+                    continue
+                for target in (narrowed, band):
+                    if target.w <= 0:
+                        continue
+                    trial = self._fit_element('detail', candidate, target,
+                                              ADAPTIVE_LADDER_DETAIL)
+                    # _fit_element truncates to make text fit, so "it fits" has
+                    # to mean the string came back whole -- not "3rd & 8 at KC..."
+                    if trial.text == candidate and trial.width <= target.w:
+                        fit = trial
+                        break
+                if fit is not None:
+                    break
+            if fit is None:
+                # Nothing fits the free band intact. Fall back to what this
+                # card drew before: the short form centred in the full detail
+                # band, which on a 64px panel is all there is room for.
+                fit = self._fit_element('detail', down_distance, region,
+                                        ADAPTIVE_LADDER_DETAIL)
+                fit_region = region
+            drawn = (*self._draw_fit_outline(draw, fit, fit_region, fill=down_color), fit)
             if drawn:
-                self._draw_possession_adaptive(draw, game, *drawn)
+                dd_x, dd_y, fit = drawn
+                icon_box = possession_ball_box(
+                    dd_x, fit.width, fit.height, dd_y, left, right,
+                    game.get("possession_indicator"),
+                    icon_size=self._possession_icon_size(),
+                    gap=self._ctx.px(3, minimum=2))
+                if icon_box:
+                    draw_possession_football(draw, icon_box)
 
         self._draw_timeouts_adaptive(draw, game, regs)
 
-    def _draw_possession_adaptive(self, draw: ImageDraw.Draw, game: Dict,
-                                  dd_x: int, dd_y: int, fit) -> None:
-        """Possession football anchored to the fitted down&distance text,
-        radii scaled with the card."""
-        possession = game.get("possession_indicator")
-        if not possession:
-            return
-        ball_radius_x = self._ctx.px(3, minimum=2)
-        ball_radius_y = self._ctx.px(2, minimum=1)
-        padding = self._ctx.px(3, minimum=2)
-        ball_y_center = dd_y + fit.height // 2
-        if possession == "away":
-            ball_x_center = dd_x - padding - ball_radius_x
-        elif possession == "home":
-            ball_x_center = dd_x + fit.width + padding + ball_radius_x
-        else:
-            return
-        if ball_x_center > 0:
-            draw.ellipse(
-                (ball_x_center - ball_radius_x, ball_y_center - ball_radius_y,
-                 ball_x_center + ball_radius_x, ball_y_center + ball_radius_y),
-                fill=(139, 69, 19), outline=(0, 0, 0)
-            )
-            draw.line(
-                (ball_x_center - 1, ball_y_center, ball_x_center + 1, ball_y_center),
-                fill=(255, 255, 255), width=1
-            )
+    def _bottom_free_band_adaptive(self, draw: ImageDraw.Draw, game: Dict,
+                                   regs) -> Tuple[int, int]:
+        """Span of the detail band the timeout bars and the corner records
+        leave free, as (first free x, first occupied x).
+
+        Mirrors those two drawers' own geometry rather than reserving the
+        bottom_left/bottom_right regions outright: those regions are far wider
+        than what is actually drawn in them (on 128x64 they leave only 40px
+        between them), so reserving them would squeeze the down & distance
+        text off the card to solve a problem the ball only has at the edges.
+        """
+        band = regs.detail_band
+        left, right = band.x, band.right
+
+        # Mirrors _draw_timeouts_adaptive: margin + 3 bars + 2 gaps + outline
+        bar_w = self._ctx.px(4, minimum=3)
+        spacing = self._ctx.px(1, minimum=1)
+        margin = self._ctx.px(2, minimum=2)
+        block = margin + 3 * bar_w + 2 * spacing + 1
+        left = max(left, self._region_for(regs.bottom_left, 'timeouts').x + block)
+        right = min(right, self._region_for(regs.bottom_right, 'timeouts').right - block)
+
+        # Mirrors _draw_records_adaptive: same region, inset, ladder fit
+        league = game.get("league", "nfl")
+        show_records = self._get_display_option(league, "show_records")
+        show_ranking = self._get_display_option(league, "show_ranking")
+        if show_records or show_ranking:
+            for abbr_key, record_key, corner, align in (
+                ('away_abbr', 'away_record', regs.bottom_left, 'left'),
+                ('home_abbr', 'home_record', regs.bottom_right, 'right'),
+            ):
+                text = self._get_team_display_text(
+                    game.get(abbr_key, ''), game.get(record_key, ''),
+                    show_records, show_ranking)
+                if not text:
+                    continue
+                r = self._region_for(corner, 'records').inset(2, 0)
+                fit = self._fit_element('detail', text, r, ADAPTIVE_LADDER_TEXT)
+                if align == 'left':
+                    left = max(left, r.x + fit.width)
+                else:
+                    right = min(right, r.right - fit.width)
+        return int(left), int(right)
+
+    def _possession_icon_size(self) -> Tuple[int, int]:
+        """Ball size for the adaptive card: the px()-scaled radii it always
+        used, unchanged. Only where the ball is placed has changed."""
+        return (2 * self._ctx.px(3, minimum=2) + 1,
+                2 * self._ctx.px(2, minimum=1) + 1)
 
     def _draw_timeouts_adaptive(self, draw: ImageDraw.Draw, game: Dict,
                                 regs) -> None:
@@ -1455,10 +1748,14 @@ class GameRenderer:
             dd_y = self.display_height - 7
             down_color = (200, 200, 0) if not game.get("is_redzone", False) else (255, 0, 0)
             self._draw_text_with_outline(draw, down_distance, (dd_x, dd_y), self.fonts['detail'], fill=down_color)
-            
-            # Possession indicator
-            self._draw_possession_indicator(draw, game, dd_x, dd_width, dd_y)
-        
+
+            # Possession indicator, drawn only where it clears the corners
+            left, right = self._bottom_free_band(draw, game)
+            icon_box = possession_ball_box(dd_x, dd_width, 6, dd_y, left, right,
+                                           game.get("possession_indicator"))
+            if icon_box:
+                draw_possession_football(draw, icon_box)
+
         # Timeouts
         self._draw_timeouts(draw, game)
     
@@ -1491,12 +1788,15 @@ class GameRenderer:
             self._draw_text_with_outline(draw, game_date, (date_x, date_y), self.fonts['detail'])
     
     # ------------------------------------------------------------------
-    # Scroll/Vegas card options -- config["scroll_card"], plus the shared
+    # Card options -- config["scroll_card"], plus the shared
     # customization.layout offsets and per-element colours.
     #
-    # These only affect the cards this renderer builds, which are used by
-    # scroll_display.py and scroll_display_legacy.py alone. The full-screen
-    # scorebug is drawn elsewhere and is deliberately left untouched.
+    # The center-gap keys size this renderer's cards alone. The rest --
+    # upcoming_center, vs_text, the date and time formats -- are also read by
+    # sports.py's full-screen scorebug (SportsCore._draw_upcoming_center_switch
+    # and friends, gated there on switch_upcoming_center), so those two copies
+    # have to stay in step: a change to the formatting rules here needs the
+    # same change there, or the ticker and the scoreboard disagree.
     # ------------------------------------------------------------------
     CENTER_GAP_RATIO: ClassVar[float] = 0.28
     CENTER_GAP_MIN_PX: ClassVar[int] = 22
@@ -1812,48 +2112,45 @@ class GameRenderer:
                 fill=self._element_color(bottom_color)
             )
 
-    def _draw_possession_indicator(
-        self, 
-        draw: ImageDraw.Draw, 
-        game: Dict, 
-        dd_x: int, 
-        dd_width: float, 
-        dd_y: int
-    ) -> None:
-        """Draw the possession football indicator."""
-        possession = game.get("possession_indicator")
-        if not possession:
-            return
-        
-        ball_radius_x = 3
-        ball_radius_y = 2
-        ball_color = (139, 69, 19)  # Brown
-        lace_color = (255, 255, 255)  # White
-        
-        detail_font_height_approx = 6
-        ball_y_center = dd_y + (detail_font_height_approx // 2)
-        possession_ball_padding = 3
-        
-        if possession == "away":
-            ball_x_center = dd_x - possession_ball_padding - ball_radius_x
-        elif possession == "home":
-            ball_x_center = dd_x + int(dd_width) + possession_ball_padding + ball_radius_x
-        else:
-            return
-        
-        if ball_x_center > 0:
-            # Draw football shape (ellipse)
-            draw.ellipse(
-                (ball_x_center - ball_radius_x, ball_y_center - ball_radius_y,
-                 ball_x_center + ball_radius_x, ball_y_center + ball_radius_y),
-                fill=ball_color, outline=(0, 0, 0)
-            )
-            # Draw simple horizontal lace
-            draw.line(
-                (ball_x_center - 1, ball_y_center, ball_x_center + 1, ball_y_center),
-                fill=lace_color, width=1
-            )
-    
+    def _get_record_font(self):
+        """7px font used for the bottom-corner record/ranking text."""
+        record_font = getattr(self, '_record_font', None)
+        if record_font is None:
+            try:
+                record_font = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+            except OSError:
+                record_font = ImageFont.load_default()
+            self._record_font = record_font
+        return record_font
+
+    def _bottom_free_band(self, draw: ImageDraw.Draw, game: Dict) -> Tuple[int, int]:
+        """Span of the bottom row the timeout bars and records leave free, as
+        (first free x, first occupied x).
+
+        Derived from the same constants those two draw with, so the reservation
+        cannot drift away from what is actually on the panel.
+        """
+        block = 2 + 3 * 4 + 2 * 1 + 1  # margin + 3 bars + 2 gaps + outline
+        left, right = block, self.display_width - block
+
+        league = game.get("league", "nfl")
+        show_records = self._get_display_option(league, "show_records")
+        show_ranking = self._get_display_option(league, "show_ranking")
+        if show_records or show_ranking:
+            font = self._get_record_font()
+            away = self._get_team_display_text(
+                game.get('away_abbr', ''), game.get('away_record', ''),
+                show_records, show_ranking)
+            home = self._get_team_display_text(
+                game.get('home_abbr', ''), game.get('home_record', ''),
+                show_records, show_ranking)
+            if away:
+                left = max(left, 3 + draw.textlength(away, font=font))
+            if home:
+                right = min(right,
+                            self.display_width - 3 - draw.textlength(home, font=font))
+        return int(left), int(right)
+
     def _draw_timeouts(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw timeout indicators at bottom corners."""
         timeout_bar_width = 4
@@ -2052,14 +2349,8 @@ class GameRenderer:
     
     def _draw_records_or_rankings(self, draw: ImageDraw.Draw, game: Dict, show_records: bool, show_ranking: bool) -> None:
         """Draw team records or rankings."""
-        record_font = getattr(self, '_record_font', None)
-        if record_font is None:
-            try:
-                record_font = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
-            except OSError:
-                record_font = ImageFont.load_default()
-            self._record_font = record_font
-        
+        record_font = self._get_record_font()
+
         away_abbr = game.get('away_abbr', '')
         home_abbr = game.get('home_abbr', '')
         
