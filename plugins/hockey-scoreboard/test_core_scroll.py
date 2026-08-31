@@ -1,33 +1,39 @@
-#!/usr/bin/env python3
-"""The guarded core import must behave on every core this plugin can meet.
+"""After the sunset, the core import is the only implementation there is.
 
-Adopting core code (B5) is only safe because `scroll_display.py` falls back to
-`scroll_display_legacy.py` when the core lacks `src.common.sports_scroll`.
-Nothing verified that claim — the safety harness renders against the *current*
-core, so it exercises exactly one of the cases below.
+B5 shipped a guarded import: prefer `src.common.sports_scroll`, fall back to a
+bundled `scroll_display_legacy.py`. B6 deleted that copy, so the guard went
+with it -- wrapping an import that has nothing to fall back to would only
+mislabel the failure.
 
-That gap matters because the version floor does not close it. A user who
-installed from the v3.1.0 release reports `__version__ = "1.0.0"`, which the
-install gate treats as untrustworthy and lets through, and that core has no
-`src.common.sports_scroll`. The fallback is the only thing standing between
-them and a scoreboard that fails to load.
+This file used to prove the fallback worked. It now proves the fallback is gone
+and cannot come back by accident, which is a narrower claim:
 
-    core module        bundled copy      expected
-    -----------------  ----------------  ------------------------------------
-    present            present           core implementation (today)
-    absent             present           legacy implementation, fully working
-    absent             absent            the B6 state: fails, and names the
-                                         exact missing module
+  * the core import is a plain top-level statement, not a guarded one
+  * `scroll_display_legacy.py` is not in the plugin and is not imported
+  * ScrollDisplay really is built on the core class, checked by identity
+  * the manifest floors at or above the release that ships the module
+  * on a core without the module, the import fails naming that exact module
 
-The third row is not a supported configuration — it is what the sunset looks
-like on a core that is too old. It is asserted so that when the fallback is
-finally deleted, the failure is specific and attributable rather than a vague
-crash, and so nobody deletes the fallback without meeting it.
+The last one is the whole user-visible contract of the sunset.
+`PluginManager.load_plugin` catches the ModuleNotFoundError and parks the
+plugin in ERROR with a single log line, so the module name in that line is all
+the user gets. If the guard ever came back and swallowed the error,
+ScrollDisplay would simply be unbound and the symptom would surface much later
+as a NameError from the display path.
 
-Run: <core-venv>/bin/python plugins/hockey-scoreboard/test_core_fallback.py
+The manifest check is here because nothing else in either repo asserts the
+floor's VALUE. The safety harness runs against core main, which has the module
+whatever the manifest says; the plugins repo's manifest gate checks the field's
+spelling, not its number; and the registry carries no floor at all. Without
+this, a plugin could sunset with a 2.0.0 floor and every gate would stay green
+while the store handed it to a 3.1.0 core.
+
+Run: <core-venv>/bin/python plugins/hockey-scoreboard/test_core_scroll.py
 """
 
+import ast
 import importlib
+import json
 import os
 import sys
 
@@ -36,6 +42,14 @@ if PLUGIN_DIR not in sys.path:
     sys.path.insert(0, PLUGIN_DIR)
 
 CORE_MODULE = "src.common.sports_scroll"
+SCROLL_SOURCE = os.path.join(PLUGIN_DIR, "scroll_display.py")
+#: The core release that first shipped CORE_MODULE.
+FIRST_CORE_RELEASE = (3, 2, 0)
+
+
+def _scroll_display_ast():
+    with open(SCROLL_SOURCE, encoding="utf-8") as fh:
+        return ast.parse(fh.read())
 
 
 class _BlockModules:
@@ -81,56 +95,128 @@ def _fresh_scroll_display():
     return importlib.import_module("scroll_display")
 
 
-def test_core_present_uses_core():
-    mod = _fresh_scroll_display()
-    assert mod._USING_CORE_SCROLL is True, (
-        "core ships src.common.sports_scroll, so the plugin should be using it"
+def test_the_core_import_is_unguarded():
+    """A top-level `from ... import`, not one nested in a try or an if.
+
+    Checked against `tree.body` rather than by walking the whole tree: putting
+    the import back inside an `if` or a `try` is exactly how the guard would
+    return, and both keep the statement inside module scope where a walk would
+    still find it and call it top-level.
+    """
+    tree = _scroll_display_ast()
+
+    assert any(isinstance(n, ast.ImportFrom) and n.module == CORE_MODULE
+               for n in tree.body), (
+        f"{CORE_MODULE} is not imported as a top-level statement in "
+        f"scroll_display.py; after the sunset that import is the only source "
+        f"of the scroll base classes"
     )
-    bases = [c.__name__ for c in mod.ScrollDisplay.__mro__]
-    assert "SportsScrollDisplay" in bases, bases
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Try) and any(
+                isinstance(sub, ast.ImportFrom) and sub.module == CORE_MODULE
+                for sub in ast.walk(node)):
+            raise AssertionError(
+                f"the {CORE_MODULE} import is inside a try/except again. With "
+                f"nothing to fall back to, catching the ModuleNotFoundError "
+                f"only hides which module was missing"
+            )
+
+
+def test_the_bundled_copy_is_gone():
+    """The file, and any import of it.
+
+    An import check rather than a text search: the module docstring above
+    mentions the old name on purpose. And a source check rather than trying the
+    import for real -- until every sports plugin has sunset, a sibling's
+    scroll_display_legacy.py is still importable on sys.path, so "cannot be
+    imported" would be false for a reason that has nothing to do with this
+    plugin.
+    """
+    legacy = os.path.join(PLUGIN_DIR, "scroll_display_legacy.py")
+    assert not os.path.exists(legacy), (
+        f"{legacy} is back. The manifest floor now guarantees the core module, "
+        f"and a second implementation is where the separator-icon constants "
+        f"hid last time"
+    )
+    for node in ast.walk(_scroll_display_ast()):
+        if isinstance(node, ast.ImportFrom):
+            assert node.module != "scroll_display_legacy", (
+                "scroll_display.py imports scroll_display_legacy again; that "
+                "raises ModuleNotFoundError naming the wrong module"
+            )
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                assert alias.name != "scroll_display_legacy", alias.name
+
+
+def test_the_classes_are_defined_at_module_level():
+    """The de-indent landed.
+
+    Collapsing the guard meant lifting the whole class body out of an `else:`
+    block. A stray four spaces leaves the classes defined inside a block that
+    no longer exists -- or, worse because it still parses, inside one that does.
+    """
+    names = {n.name for n in _scroll_display_ast().body
+             if isinstance(n, ast.ClassDef)}
+    assert {"ScrollDisplay", "ScrollDisplayManager"} <= names, sorted(names)
+
+
+def test_the_base_is_the_core_class():
+    """Identity, not name.
+
+    The pre-sunset version compared `__name__`, which a locally defined class
+    called SportsScrollDisplay would satisfy just as well.
+    """
+    from src.common.sports_scroll import (
+        SportsScrollDisplay, SportsScrollDisplayManager)
+
+    mod = _fresh_scroll_display()
+    assert SportsScrollDisplay in mod.ScrollDisplay.__mro__, mod.ScrollDisplay.__mro__
+    assert SportsScrollDisplayManager in mod.ScrollDisplayManager.__mro__
     assert mod.ScrollDisplayManager.display_class is mod.ScrollDisplay
 
 
-def test_core_absent_falls_back_and_still_works():
-    """The B5 guarantee. This is the case the harness cannot reach."""
-    with _BlockModules(CORE_MODULE):
-        mod = _fresh_scroll_display()
+def test_the_manifest_floors_at_the_release_that_ships_the_module():
+    """Nothing else in either repo checks the floor's value. See the header."""
+    with open(os.path.join(PLUGIN_DIR, "manifest.json"), encoding="utf-8") as fh:
+        manifest = json.load(fh)
 
-        assert mod._USING_CORE_SCROLL is False, (
-            "with the core module gone the plugin must fall back, not import it"
-        )
-        assert mod.ScrollDisplay.__name__ == "LegacyScrollDisplay", (
-            f"expected the bundled implementation, got {mod.ScrollDisplay.__name__}"
-        )
-        # A fallback that loads but cannot draw is no fallback at all.
-        for method in ("prepare_scroll_content", "display_scroll_frame",
-                       "is_scroll_complete", "get_dynamic_duration",
-                       "_load_separator_icons"):
-            assert hasattr(mod.ScrollDisplay, method), f"fallback lost {method}()"
-        assert hasattr(mod.ScrollDisplayManager, "prepare_and_display")
+    head = (manifest.get("versions") or [{}])[0]
+    declared = head.get("ledmatrix_min_version") or head.get("ledmatrix_min")
+    assert declared, "the newest versions[] entry declares no ledmatrix floor"
+
+    parsed = tuple(int(part) for part in declared.lstrip("v").split(".")[:3])
+    assert parsed >= FIRST_CORE_RELEASE, (
+        f"floor is {declared}, but {CORE_MODULE} first shipped in "
+        f"{'.'.join(str(n) for n in FIRST_CORE_RELEASE)}. Below that the "
+        f"install gate lets this plugin through onto a core that cannot load it"
+    )
 
 
-def test_sunset_state_fails_specifically():
-    """The B6 state: no core module and no bundled copy.
+def test_an_old_core_fails_naming_the_module():
+    """The sunset's user-visible contract.
 
-    Not supported — asserted so the failure names the missing module rather
-    than surfacing as something unattributable.
+    Asserted as an exact name where the pre-sunset version accepted either the
+    core module or `scroll_display_legacy`: with the copy gone there is only
+    one right answer, and any other name means something swallowed the real
+    failure and re-raised a substitute.
     """
-    with _BlockModules(CORE_MODULE, "scroll_display_legacy"):
+    with _BlockModules(CORE_MODULE):
         for name in list(sys.modules):
             if name.startswith("scroll_display"):
                 del sys.modules[name]
         try:
             importlib.import_module("scroll_display")
         except ModuleNotFoundError as exc:
-            assert exc.name in {CORE_MODULE, "scroll_display_legacy"}, (
-                f"failure should name the missing module, got {exc.name!r}"
+            assert exc.name == CORE_MODULE, (
+                f"failure named {exc.name!r}; it must name {CORE_MODULE!r}, "
+                f"which is the only line the user gets"
             )
         else:
             raise AssertionError(
-                "expected ModuleNotFoundError with neither implementation present"
+                "scroll_display imported with no scroll implementation present"
             )
-
 
 
 def _unresolvable_globals(cls, module):
@@ -206,18 +292,6 @@ def test_content_methods_can_resolve_what_they_use():
             f"{cls.__name__} methods reference {missing}, which their module "
             f"cannot resolve — they raise NameError on the core path"
         )
-
-
-def test_fallback_content_methods_can_resolve_what_they_use():
-    """Same check on the bundled implementation."""
-    with _BlockModules(CORE_MODULE):
-        mod = _fresh_scroll_display()
-        for cls in (mod.ScrollDisplay, mod.ScrollDisplayManager):
-            missing = _unresolvable_globals(cls, mod)
-            assert not missing, (
-                f"the fallback's {cls.__name__} references {missing}, which "
-                f"its module cannot resolve"
-            )
 
 
 class _StubMatrix:
@@ -302,55 +376,77 @@ def _build(mod):
     return display
 
 
-def test_scroll_display_constructs_on_both_paths():
-    """Building the display must work on the core path and the fallback.
+def _unset_self_attributes(instance, cls):
+    """`self.X` reads that nothing in the class assigns and the object lacks.
+
+    Replaces a comparative check. The old one diffed the constructed core
+    object against the constructed legacy one, which is how afl's unset
+    `_game_renderer` was found: the bundled __init__ set it to None, the
+    adopted class did not, `prepare_scroll_content` opens with
+    `if self._game_renderer is None`, and because the core base CATCHES
+    exceptions out of that method the only symptom was scroll mode quietly
+    drawing nothing.
+
+    There is no legacy object to diff against after the sunset, so the same
+    fact is established statically: an attribute a method reads, that no
+    assignment in the class binds and no base sets on a real instance, raises
+    AttributeError the first time that method runs.
+
+    Assignments ANYWHERE in the class count as bound, not just those in
+    __init__ -- a cache populated inside the same method that reads it is
+    correct and must not be reported.
+    """
+    import inspect
+    import textwrap
+
+    try:
+        tree = ast.parse(textwrap.dedent(inspect.getsource(cls)))
+    except (OSError, TypeError):  # pragma: no cover - source is always here
+        return []
+
+    assigned, read = set(), set()
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Attribute)
+                and isinstance(node.value, ast.Name)
+                and node.value.id == "self"):
+            if isinstance(node.ctx, (ast.Store, ast.Del)):
+                assigned.add(node.attr)
+            else:
+                read.add(node.attr)
+
+    return sorted(name for name in read - assigned
+                  if not hasattr(instance, name))
+
+
+def test_scroll_display_constructs():
+    """Building the display must work, and every attribute it reads must exist.
 
     This is the check that would have caught the separator-icon constants being
     left behind on the legacy class: `_load_separator_icons` was lifted verbatim
-    into the new class and reads them off `self`, and the core base calls it
-    from `__init__` -- so the miss was not a degraded icon, it was an
-    AttributeError that stopped the display being constructed at all. Scroll
-    mode was dead for three plugins while every other gate stayed green.
+    and reads them off `self`, and the core base calls it from `__init__` -- so
+    the miss was not a degraded icon, it was an AttributeError that stopped the
+    display being constructed at all. Scroll mode was dead for three plugins
+    while every other gate stayed green.
     """
     import logging
 
     logging.disable(logging.CRITICAL)
     try:
-        core_display = _build(_fresh_scroll_display())
-        core_icons = {k: v.size for k, v in core_display._separator_icons.items()}
-
-        with _BlockModules(CORE_MODULE):
-            legacy_display = _build(_fresh_scroll_display())
-            legacy_icons = {
-                k: v.size for k, v in legacy_display._separator_icons.items()
-            }
+        display = _build(_fresh_scroll_display())
     finally:
         logging.disable(logging.NOTSET)
 
-    # Adopting core code must not change what gets drawn. Comparing the two
-    # paths needs no per-sport knowledge of the right answer -- only that the
-    # answer did not change.
-    assert core_icons == legacy_icons, (
-        f"separator icons differ between paths: core={core_icons} "
-        f"legacy={legacy_icons}"
+    assert hasattr(display, "_separator_icons"), (
+        "_load_separator_icons is called from the core base's __init__; a "
+        "missing *_SEPARATOR_ICON constant raises AttributeError there and "
+        "stops the display being constructed at all"
     )
 
-    # Attributes the bundled __init__ seeded but the adopted class does not.
-    # Construction alone cannot catch this: the object builds fine and only
-    # fails later, when a lifted method reads the attribute that was never set.
-    # afl shipped exactly that -- prepare_scroll_content opens with
-    # `if self._game_renderer is None`, the legacy __init__ set it to None and
-    # the new one did not, and because the core base CATCHES exceptions out of
-    # prepare_scroll_content the only symptom was scroll mode quietly drawing
-    # nothing. Checked one way only: extra attributes on the core path are the
-    # base class doing its job, not a defect.
-    missing = sorted(
-        name for name in vars(legacy_display)
-        if not hasattr(core_display, name)
-    )
-    assert not missing, (
-        f"the adopted class never sets {missing}, which the bundled one "
-        f"initialised — any lifted method that reads them raises AttributeError"
+    unset = _unset_self_attributes(display, type(display))
+    assert not unset, (
+        f"{type(display).__name__} methods read {unset}, which nothing assigns "
+        f"and the built object does not carry — they raise AttributeError the "
+        f"first time those methods run"
     )
 
 
@@ -369,15 +465,17 @@ if __name__ == "__main__":
               f"({exc})")
         sys.exit(2)
 
-    print("guarded core-import fallback tests")
+    print("core scroll import tests (post-sunset)")
     print("=" * 55)
     failures = []
-    for t in (test_core_present_uses_core,
-              test_core_absent_falls_back_and_still_works,
+    for t in (test_the_core_import_is_unguarded,
+              test_the_bundled_copy_is_gone,
+              test_the_classes_are_defined_at_module_level,
+              test_the_base_is_the_core_class,
+              test_the_manifest_floors_at_the_release_that_ships_the_module,
               test_content_methods_can_resolve_what_they_use,
-              test_fallback_content_methods_can_resolve_what_they_use,
-              test_scroll_display_constructs_on_both_paths,
-              test_sunset_state_fails_specifically):
+              test_scroll_display_constructs,
+              test_an_old_core_fails_naming_the_module):
         try:
             t()
             print(f"PASS {t.__name__}")
@@ -386,7 +484,7 @@ if __name__ == "__main__":
         # bug it caught was reported as a crash rather than against its name.
         except Exception as e:
             failures.append(t.__name__)
-            print(f"FAIL {t.__name__}: {e}")
+            print(f"[FAIL] {t.__name__}: {e}")
     print("=" * 55)
     if failures:
         print(f"{len(failures)} test(s) failed: {failures}")
