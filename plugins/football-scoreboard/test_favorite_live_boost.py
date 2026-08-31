@@ -141,6 +141,12 @@ recent.show_ranking = False
 recent._games_lock = threading.RLock()
 recent._zero_clock_timestamps = {}
 recent.is_enabled = True
+# Set because update() fetches odds for the finals it selects (2.29.3). This
+# probe is hand-built with __new__, so it gets none of SportsCore.__init__'s
+# attributes; a missing one raises inside update()'s own try/except, which
+# swallows it and leaves games_list empty -- the selection above works, and
+# the check below still fails.
+recent.show_odds = False
 excluded_game = _final_game("g1", "SF", "LAD")
 other_game = _final_game("g2", "SEA", "ARI")
 recent._extract_game_details = lambda game_event: game_event
