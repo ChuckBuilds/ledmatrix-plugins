@@ -132,7 +132,16 @@ def main() -> int:
     failures: list[str] = []
 
     for pid in ids:
-        scripts = sorted((PLUGINS / pid).glob("test_*.py"))
+        # Top level plus one level of test/ or tests/. Fourteen files lived in
+        # those subdirectories and had never once been run -- eleven of them
+        # ledmatrix-flights' -- because the glob only ever looked at the plugin
+        # root. They are the same standalone scripts as the rest, __main__ block
+        # and all, and they put their own plugin root on sys.path rather than
+        # relying on cwd, so they run correctly from where run_one() puts them.
+        plugin_dir = PLUGINS / pid
+        scripts = sorted(plugin_dir.glob("test_*.py"))
+        for sub in ("test", "tests"):
+            scripts.extend(sorted((plugin_dir / sub).glob("test_*.py")))
         if not scripts:
             continue
         print(f"\n{pid}")

@@ -124,7 +124,35 @@ def _final_game(gid, home, away, days_ago=1):
 
 
 recent = NFLRecentManager.__new__(NFLRecentManager)
-recent.logger = type("StubLogger", (), {"__getattr__": lambda self, _n: (lambda *a, **k: None)})()
+
+
+class _RecordingLogger:
+    """Silent, except that it remembers what update() swallowed.
+
+    SportsRecent.update() wraps its whole body in try/except and logs the
+    failure, so anything it raises leaves games_list empty rather than
+    propagating. Built by __new__ with attributes set by hand, this stub is one
+    `self.` read away from that at all times: 2.29.3 added `self.show_odds` to
+    the recent path and this file went red with "excluded team hidden ..." --
+    which is not what broke, and cost more to diagnose than the fix.
+
+    Recording the errors turns the next drift into a message that names the
+    missing attribute.
+    """
+
+    def __init__(self):
+        self.errors = []
+
+    def error(self, msg, *args, **kwargs):
+        self.errors.append(str(msg) % args if args else str(msg))
+
+    exception = error
+
+    def __getattr__(self, _name):
+        return lambda *a, **k: None
+
+
+recent.logger = _RecordingLogger()
 recent.sport_key = "nfl"
 recent.favorite_teams = []
 recent.exclude_teams = ["SF"]
@@ -138,6 +166,7 @@ recent.update_interval = 999999
 recent.last_game_switch = 0
 recent.game_display_duration = 15
 recent.show_ranking = False
+recent.show_odds = False        # read by update() since 2.29.3; see _RecordingLogger
 recent._games_lock = threading.RLock()
 recent._zero_clock_timestamps = {}
 recent.is_enabled = True
@@ -148,6 +177,14 @@ recent._fetch_data = lambda: {"events": [excluded_game, other_game]}
 recent._fetch_team_rankings = lambda: None
 
 recent.update()
+
+# Before asserting on the selection, assert update() actually ran. Otherwise a
+# missing stub attribute reads as "the excluded team leaked", because an empty
+# games_list satisfies "g1 not in result_ids" for entirely the wrong reason.
+check("update() completed without swallowing an error"
+      + (f" -- got {recent.logger.errors[0]}" if recent.logger.errors else ""),
+      not recent.logger.errors)
+
 result_ids = {g["id"] for g in recent.games_list}
 check("excluded team hidden from recent/final scores in default (no-favorites) path",
       "g1" not in result_ids and "g2" in result_ids)

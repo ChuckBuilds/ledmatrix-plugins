@@ -270,6 +270,7 @@ def test_update_expires_stale_lock():
     p.last_fetch = time.time()
     p.pending_fr24_details = {}
     p.tracked_flights_cfg = []
+    p.metar_enabled = False     # update() reads it; make_plugin does not set it
 
     _set(p, _aircraft(0.1, icao="AAA"))
     p.has_live_content()  # acquire lock
