@@ -35,9 +35,14 @@ class _Response:
         return self._payload
 
 
-def _iso(days_out):
-    return (datetime.now(timezone.utc) + timedelta(days=days_out)).strftime(
-        "%Y-%m-%dT%H:%MZ")
+def _iso(base, days_out):
+    """*base* + days as an ESPN-style timestamp.
+
+    Every date in a test case derives from one captured *base*, so a UTC
+    midnight crossing mid-test cannot make the payload and the expected
+    strftime disagree about the day.
+    """
+    return (base + timedelta(days=days_out)).strftime("%Y-%m-%dT%H:%MZ")
 
 
 def _with_payload(payload):
@@ -59,41 +64,57 @@ def main():
     original_get = requests.get
     try:
         print("events and an earlier calendar boundary: the game date wins")
-        first_game = datetime.now(timezone.utc) + timedelta(days=10)
+        base = datetime.now(timezone.utc)
         _with_payload({
-            "events": [{"date": _iso(10)}, {"date": _iso(14)}],
-            "leagues": [{"calendar": [{"startDate": _iso(6)}]}],
+            "events": [{"date": _iso(base, 10)}, {"date": _iso(base, 14)}],
+            "leagues": [{"calendar": [{"startDate": _iso(base, 6)}]}],
         })
         note = ffc.FavoriteTeamCheck._schedule_note("football/nfl")
-        expected = first_game.strftime("%d %B %Y")
+        expected = (base + timedelta(days=10)).strftime("%d %B %Y")
         check("the note names the first game's date", note is not None
               and expected in note, note)
-        boundary = (datetime.now(timezone.utc) + timedelta(days=6)).strftime("%d %B %Y")
+        boundary = (base + timedelta(days=6)).strftime("%d %B %Y")
         check("and not the calendar boundary", note is not None
               and boundary not in note, note)
 
         print("\nno events at all: the calendar still gets a say")
+        base = datetime.now(timezone.utc)
         _with_payload({
             "events": [],
-            "leagues": [{"calendar": [_iso(20)]}],
+            "leagues": [{"calendar": [_iso(base, 20)]}],
         })
         note = ffc.FavoriteTeamCheck._schedule_note("football/nfl")
-        expected = (datetime.now(timezone.utc) + timedelta(days=20)).strftime("%d %B %Y")
+        expected = (base + timedelta(days=20)).strftime("%d %B %Y")
         check("the calendar date is reported", note is not None
               and expected in note, note)
 
         print("\nonly past dates published: the finished-season wording")
+        base = datetime.now(timezone.utc)
         _with_payload({
-            "events": [{"date": _iso(-40)}],
+            "events": [{"date": _iso(base, -40)}],
             "leagues": [{"calendar": []}],
         })
         note = ffc.FavoriteTeamCheck._schedule_note("football/nfl")
         check("season-finished note", note is not None and "finished" in note, note)
 
-        print("\nan imminent slate is not worth a note")
+        print("\na finished season with an offseason calendar phase ahead")
+        # Past events mean the season is over; a future calendar boundary
+        # (the draft, next season's week 1 shell) must not be dressed up
+        # as the league's next game.
+        base = datetime.now(timezone.utc)
         _with_payload({
-            "events": [{"date": _iso(1)}],
-            "leagues": [{"calendar": [{"startDate": _iso(6)}]}],
+            "events": [{"date": _iso(base, -40)}],
+            "leagues": [{"calendar": [{"startDate": _iso(base, 45)}]}],
+        })
+        note = ffc.FavoriteTeamCheck._schedule_note("football/nfl")
+        check("the finished-season wording wins over the calendar",
+              note is not None and "finished" in note, note)
+
+        print("\nan imminent slate is not worth a note")
+        base = datetime.now(timezone.utc)
+        _with_payload({
+            "events": [{"date": _iso(base, 1)}],
+            "leagues": [{"calendar": [{"startDate": _iso(base, 6)}]}],
         })
         note = ffc.FavoriteTeamCheck._schedule_note("football/nfl")
         check("a game a day out draws no conclusion", note is None, note)

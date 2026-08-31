@@ -91,6 +91,24 @@ def main():
           mgr._reset_dwell_on_reentry() is False)
     check("the sentinel survives", mgr.last_game_switch == 0)
 
+    print("\na stand-in built without the stamp attribute at all")
+    mgr = _Manager(last_game_switch=time.time() - 60.0)
+    del mgr._last_display_call_monotonic
+    check("no AttributeError, and the first call resets",
+          mgr._reset_dwell_on_reentry() is True)
+    check("the stamp now exists for the next call",
+          mgr._last_display_call_monotonic > 0)
+
+    print("\na zero stamp always reads as the first frame")
+    # A freshly booted Pi can reach its first frame while time.monotonic()
+    # is still under the gap threshold; `now - 0.0` must not pass for one
+    # stint. The guard is `last > 0.0`, so a zero stamp resets regardless
+    # of how small the clock reads.
+    mgr = _Manager(last_game_switch=time.time() - 60.0)
+    mgr._last_display_call_monotonic = 0.0
+    check("zero stamp resets even at a tiny monotonic clock",
+          mgr._reset_dwell_on_reentry() is True)
+
     if failures:
         print("\n%d check(s) failed" % len(failures))
         return 1

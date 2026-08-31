@@ -196,8 +196,13 @@ class FavoriteTeamCheck:
         # Reading the two together reported the earliest boundary as a game
         # date -- "nothing on until 06 September" for a league whose first
         # snap is the 10th. The calendar only gets a say when the scoreboard
-        # has no events at all to roll forward to.
-        upcoming = future(event_dates) or future(calendar_dates)
+        # has no events at all to roll forward to: events that exist but are
+        # all in the past mean the season is over, and an offseason calendar
+        # phase must not be dressed up as its next game.
+        if any(event_dates):
+            upcoming = future(event_dates)
+        else:
+            upcoming = future(calendar_dates)
         if not upcoming:
             if not any(event_dates) and not any(calendar_dates):
                 return None  # Nothing published either way; draw no conclusion.

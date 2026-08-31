@@ -2818,10 +2818,15 @@ class SportsCore(ABC):
         into the card that opens the next block with a full turn, instead of
         one the rotation skipped.
         """
+        # getattr, and zero treated as "never displayed": the managers are
+        # constructed in several places -- the plugin tests among them -- not
+        # all of which set every attribute, and a freshly booted Pi can reach
+        # the first frame while time.monotonic() itself is still under the
+        # gap threshold, which would make `now - 0.0` look like one stint.
+        last = getattr(self, "_last_display_call_monotonic", 0.0)
         now = time.monotonic()
-        away = now - self._last_display_call_monotonic
         self._last_display_call_monotonic = now
-        if away < self._DWELL_REENTRY_GAP_SECONDS:
+        if last > 0.0 and now - last < self._DWELL_REENTRY_GAP_SECONDS:
             return False
         if getattr(self, "last_game_switch", 0) <= 0:
             # Zero is the live screen's "no game shown yet" sentinel with its
