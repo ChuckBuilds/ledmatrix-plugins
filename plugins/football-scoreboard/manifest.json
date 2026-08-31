@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.29.2",
+  "version": "2.29.3",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,13 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.29.3",
+      "released": "2026-08-31",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Recent games now get their odds too. SportsUpcoming fetches odds for the games that survive selection and SportsLive fetches them per included game -- the Recent screen never fetched them at all. A final only showed a line when the other-games rotation happened to swap it in (2.29.2 fetches odds for each fresh slice), and a league whose recent pool fits inside its limits never rotates: its finals stayed bare while a busier league's rotated cards drew theirs. Observed live with both leagues' show_odds on: NFL's eight recents rotated and showed closing lines, NCAA's lone final never did. Recent's update() now fetches odds for the selected finals, exactly as Upcoming does; ESPN keeps a completed game's closing line on the same endpoint, so a final is as answerable as an upcoming game.",
+      "changelog": "Recent games now get their odds too. The Recent screen never fetched odds itself -- a final only showed a line when the rotation happened to swap it in, so a league whose recent pool fits inside its limits (no rotation) showed bare finals while a busier league's rotated cards drew theirs. Recent's update() now fetches odds for the selected finals, exactly as Upcoming does."
+    },
     {
       "version": "2.29.2",
       "released": "2026-08-30",

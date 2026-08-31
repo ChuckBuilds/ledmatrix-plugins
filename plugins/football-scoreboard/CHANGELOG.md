@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.29.3] - 2026-08-31
+
+### Fixed
+- **Recent games now get their odds too.** SportsUpcoming fetches odds for the games that survive selection, and SportsLive fetches them per included game — the Recent screen never fetched them at all. A final only showed a line when the other-games rotation happened to swap it in (2.29.2 fetches odds for each fresh slice), and a league whose recent pool fits inside its limits never rotates: its finals stayed bare while a busier league's rotated cards drew theirs. Observed live with both leagues' `show_odds` on: NFL's eight recents rotated and showed closing lines, NCAA's lone final never did. Recent's `update()` now fetches odds for the selected finals, exactly as Upcoming does; ESPN keeps a completed game's closing line on the same endpoint, so a final is as answerable as an upcoming game.
+
 ## [2.29.2] - 2026-08-30
 
 ### Fixed
