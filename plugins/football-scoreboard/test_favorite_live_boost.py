@@ -141,6 +141,7 @@ recent.show_ranking = False
 recent._games_lock = threading.RLock()
 recent._zero_clock_timestamps = {}
 recent.is_enabled = True
+recent.show_odds = False  # update() offers the selected finals their odds
 excluded_game = _final_game("g1", "SF", "LAD")
 other_game = _final_game("g2", "SEA", "ARI")
 recent._extract_game_details = lambda game_event: game_event

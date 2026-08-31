@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.29.4] - 2026-08-31
+
+### Fixed
+- **A mode retaking the panel gives its current card a full turn.** The dwell clock (`last_game_switch`) kept running while a mode was off screen, so on re-entry it was always long expired and the first `display()` call advanced immediately: the card cut off by the end of the previous block was skipped instead of shown — measured live at one in five card transitions on a 30s block of 15s cards, each preceded by a one-frame flash of the card that then vanished. After a service restart the clock started at manager construction, seconds before the first frame, producing a 9s card and a 5s card in the first block. Any multi-second gap between `display()` calls now restarts the dwell for the current card, on the upcoming, recent and live screens alike; the one-frame card at a block boundary becomes the card that opens the next block with a full turn. The live screen's `last_game_switch == 0` "no game yet" sentinel is left untouched.
+- **`schedule_lookahead_days` is enforced at selection, not just in the ranged fetch.** Selection reads the season-wide background cache, so every fixture ESPN had published was eligible: with no NFL football inside a 7-day window, a live board filled with games up to four weeks out (MIN@TB, 27 days ahead) while the config's own description promised "a fixture just beyond this horizon ... never reaches the board" and the favourite-check advisory claimed the empty screen was expected. The cutoff now mirrors the lookback cutoff on the Recent screen, favourites included — it is a window, not a filter. A board that should show nothing inside its window now genuinely shows nothing; raise `schedule_lookahead_days` to see further ahead.
+- **The "nothing on until" advisory reports a game date, not a calendar boundary.** `_schedule_note` pooled ESPN's rolled-forward event dates with the league calendar's week/phase `startDate`s and took the earliest; calendar weeks routinely open days before their first game, so it said "nothing on until 06 September" for a league whose first snap is the 10th. Events now win; the calendar only speaks when the scoreboard has no events at all.
+- **A whole-number line no longer renders as "-7.0".** ESPN sends spreads as floats, so a 7-point line drew as "-7.0" beside cards saying "-3.5" and "-46.5". Whole numbers drop the ".0", spread and over/under alike; halves keep their .5.
+
 ## [2.29.3] - 2026-08-31
 
 ### Fixed

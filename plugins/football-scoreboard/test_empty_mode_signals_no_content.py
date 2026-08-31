@@ -83,6 +83,11 @@ class _Manager:
     # that made it raise.
     _rotate_other_games_on_display = sports.SportsCore._rotate_other_games_on_display
     _advance_other_games_if_due = sports.SportsCore._advance_other_games_if_due
+    # Same reasoning: the display paths reset the dwell when the mode retakes
+    # the panel, and this stand-in's last_game_switch of 0.0 is the "no game
+    # shown yet" sentinel the real method leaves alone.
+    _reset_dwell_on_reentry = sports.SportsCore._reset_dwell_on_reentry
+    _DWELL_REENTRY_GAP_SECONDS = sports.SportsCore._DWELL_REENTRY_GAP_SECONDS
 
     # SportsLive.display() drives rotation through these before drawing; the
     # test pins one game, so they are no-ops.
