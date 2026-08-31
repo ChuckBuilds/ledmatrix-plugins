@@ -1376,7 +1376,10 @@ class SportsCore(ABC):
 
             # Show the negative spread on the appropriate side
             if favored_spread is not None:
-                spread_text = str(favored_spread)
+                # %g drops a whole number's trailing ".0": ESPN sends -7.0
+                # for a pick of a week that also produces -3.5 and -46.5,
+                # and the card rendered all three styles side by side.
+                spread_text = "%g" % favored_spread
                 font = self.fonts["detail"]  # Use detail font for odds
 
                 if favored_side == "home":
@@ -1404,7 +1407,7 @@ class SportsCore(ABC):
             # Show over/under on the opposite side of the favored team
             over_under = odds.get("over_under")
             if over_under is not None and isinstance(over_under, (int, float)):
-                ou_text = f"O/U: {over_under}"
+                ou_text = "O/U: %g" % over_under
                 font = self.fonts["detail"]  # Use detail font for odds
                 ou_width = draw.textlength(ou_text, font=font)
 
