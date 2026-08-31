@@ -173,10 +173,11 @@ class FavoriteTeamCheck:
         payload = requests.get(SCOREBOARD_URL.format(path=path),
                                timeout=REQUEST_TIMEOUT).json()
 
-        dates = [cls._parse_date(e.get('date'))
-                 for e in payload.get('events') or []]
+        event_dates = [cls._parse_date(e.get('date'))
+                       for e in payload.get('events') or []]
+        calendar_dates = []
         for entry in (payload.get('leagues') or [{}])[0].get('calendar') or []:
-            dates.append(cls._parse_date(
+            calendar_dates.append(cls._parse_date(
                 entry if isinstance(entry, str) else entry.get('startDate')))
 
         # Count the last day as current, rather than filtering on "later than
@@ -185,9 +186,20 @@ class FavoriteTeamCheck:
         # finished season. A day's grace also keeps this correct whatever the
         # user's timezone, since these timestamps are UTC.
         now = datetime.now(timezone.utc)
-        upcoming = sorted(d for d in dates if d and (now - d).days < 1)
+
+        def future(candidates):
+            return sorted(d for d in candidates if d and (now - d).days < 1)
+
+        # Events are fixtures; the calendar is week and phase boundaries,
+        # which routinely open days before their first game (an NFL week 1
+        # calendar entry starts the weekend before the Thursday opener).
+        # Reading the two together reported the earliest boundary as a game
+        # date -- "nothing on until 06 September" for a league whose first
+        # snap is the 10th. The calendar only gets a say when the scoreboard
+        # has no events at all to roll forward to.
+        upcoming = future(event_dates) or future(calendar_dates)
         if not upcoming:
-            if not any(dates):
+            if not any(event_dates) and not any(calendar_dates):
                 return None  # Nothing published either way; draw no conclusion.
             return ("the season has finished and the next one's fixtures are "
                     "not published yet")

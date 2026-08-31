@@ -288,6 +288,11 @@ class SportsCore(ABC):
         )
         self._other_window_start: int = 0
         self._other_window_rotated_at: float = 0.0
+        # Monotonic stamp of the previous display() call. display() only runs
+        # while this manager's mode is on the panel, so a large gap between
+        # two calls means the mode just took (or retook) the screen -- see
+        # _reset_dwell_on_reentry.
+        self._last_display_call_monotonic: float = 0.0
         # Which non-favourite games are worth a slot. Selection is otherwise
         # purely chronological, and on a college slate two thirds of what that
         # returns is filler nobody asked for: rotating harder just serves more
@@ -2785,6 +2790,44 @@ class SportsCore(ABC):
             target=fetch, daemon=True,
             name="%s-rotated-odds" % self.sport_key).start()
 
+    #: Longest gap between two display() calls that still counts as one
+    #: on-screen stint. Frames arrive many times a second while a mode is on
+    #: the panel; between mode blocks the gap is the length of every other
+    #: mode's block -- a minute or more. Anything past a few seconds can only
+    #: be a block boundary, or the very first frame after startup.
+    _DWELL_REENTRY_GAP_SECONDS: ClassVar[float] = 5.0
+
+    def _reset_dwell_on_reentry(self) -> bool:
+        """Give the current card a full turn when this mode (re)takes the panel.
+
+        The dwell clock (last_game_switch) keeps running while the mode is off
+        screen, so on re-entry it was always long expired and the first
+        display() call advanced immediately: the card cut off by the end of
+        the previous block was skipped instead of shown -- measured at one in
+        five card transitions on a 30s block of 15s cards -- and after a
+        service restart the clock started at manager construction, seconds
+        before the first frame, shaving that much off the first card. Both are
+        the same defect: the dwell clock counting time the viewer never saw.
+
+        Returns True when the dwell was reset, so the caller forces a redraw.
+        The one-frame card at the end of a block (the advance that races the
+        controller's mode switch) still renders -- this reset is what turns it
+        into the card that opens the next block with a full turn, instead of
+        one the rotation skipped.
+        """
+        now = time.monotonic()
+        away = now - self._last_display_call_monotonic
+        self._last_display_call_monotonic = now
+        if away < self._DWELL_REENTRY_GAP_SECONDS:
+            return False
+        if getattr(self, "last_game_switch", 0) <= 0:
+            # Zero is the live screen's "no game shown yet" sentinel with its
+            # own handling; overwriting it here would hide the first game's
+            # arrival from that logic.
+            return False
+        self.last_game_switch = time.time()
+        return True
+
     def _advance_other_games_if_due(self) -> List[Dict]:
         """Re-cut the non-favourite slice on the display path, or [] if not due.
 
@@ -2946,6 +2989,19 @@ class SportsUpcoming(SportsCore):
             favorite_games_found = 0
             all_upcoming_games = 0  # Count all upcoming games regardless of favorites
 
+            # How far ahead this screen looks. The ranged fetch already uses
+            # this horizon, but selection reads the season-wide background
+            # cache, so without a cutoff here every fixture ESPN has published
+            # was eligible: with no NFL football inside a 7-day window the
+            # board filled with games up to four weeks out, while the config
+            # promised ("a fixture just beyond this horizon ... never reaches
+            # the board") and the favourite-check advisory claimed an empty
+            # screen. Mirrors the lookback cutoff on the Recent screen.
+            now = datetime.now(timezone.utc)
+            lookahead_days = getattr(
+                self, "schedule_lookahead_days", _DEFAULT_LOOKAHEAD_DAYS)
+            upcoming_cutoff = now + timedelta(days=lookahead_days)
+
             for event in events:
                 game = self._extract_game_details(event)
                 # Count all upcoming games for debugging
@@ -2954,6 +3010,9 @@ class SportsUpcoming(SportsCore):
 
                 # Filter criteria: must be upcoming ('pre' state)
                 if game and game["is_upcoming"]:
+                    start_time = game.get("start_time_utc")
+                    if start_time and start_time > upcoming_cutoff:
+                        continue
                     # Only fetch odds for games that will be displayed
                     # If show_favorite_teams_only is True, filter by favorite teams
                     # But if no favorite teams are configured, show all games (fallback)
@@ -3330,6 +3389,11 @@ class SportsUpcoming(SportsCore):
                 )  # Changed log prefix
                 self.last_warning_time = current_time
             return False  # Skip display update
+
+        # The mode just took the panel: the current card gets its full turn
+        # before the dwell check below is allowed to advance.
+        if self._reset_dwell_on_reentry():
+            force_clear = True
 
         # Before the dwell check, so a fresh slice is on screen for a full
         # duration rather than for whatever was left of the previous card's.
@@ -3940,6 +4004,11 @@ class SportsRecent(SportsCore):
                 self.current_game = None  # Clear internal state if list becomes empty
             return False
 
+        # The mode just took the panel: the current card gets its full turn
+        # before the dwell check below is allowed to advance.
+        if self._reset_dwell_on_reentry():
+            force_clear = True
+
         # Before the dwell check, so a fresh slice is on screen for a full
         # duration rather than for whatever was left of the previous card's.
         if self._rotate_other_games_on_display():
@@ -4465,6 +4534,11 @@ class SportsLive(SportsCore):
         defer to the normal live scorebug."""
         if not self.is_enabled:
             return False
+        # Same re-entry rule as the other screens: retaking the panel gives
+        # the current game a full dwell instead of an instant advance. The
+        # advance itself lives in _advance_live_game_if_due below, so the
+        # reset has to land first.
+        self._reset_dwell_on_reentry()
         celebration = self.active_celebration
         if celebration:
             if time.time() - celebration["started_at"] < self.celebration_duration:

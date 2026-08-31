@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "2.29.3",
+  "version": "2.29.4",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,13 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "2.29.4",
+      "released": "2026-08-31",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Three timing and selection fixes measured on a live board. (1) A mode retaking the panel now gives its current card a full turn: the dwell clock kept running while the mode was off screen, so the first display() call after every block advanced immediately -- the card cut off by the previous block's end was skipped instead of shown (one in five card transitions on a 30s block of 15s cards), and after a service restart the clock started at manager construction, producing a 9s card and a 5s card in the first block. (2) schedule_lookahead_days is now enforced at selection, not just in the ranged fetch: selection reads the season-wide background cache, so every published fixture was eligible and a board with no NFL football inside its 7-day window filled with games four weeks out, exactly what the config's own description says cannot happen. (3) The favourite-check advisory now reports the first game's date instead of a league-calendar week boundary, which routinely opens days before its first game -- it claimed 'nothing on until 06 September' for a league whose first snap is the 10th.",
+      "changelog": "A mode retaking the panel gives its current card a full turn instead of instantly advancing past the card the previous block cut off; the first cards after a service restart get their full duration too. schedule_lookahead_days is enforced at selection, so fixtures beyond the horizon no longer reach the board through the season-wide cache. The 'nothing on until' advisory reports the first game's date, not a calendar week boundary."
+    },
     {
       "version": "2.29.3",
       "released": "2026-08-31",
