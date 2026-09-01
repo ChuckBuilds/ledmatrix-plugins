@@ -48,6 +48,7 @@ def _install_host_stubs() -> None:
         "src.background_data_service",
         "src.common",
         "src.common.scroll_helper",
+        "src.common.sports_scroll",
         "src.api_counter",
     ]
     for name in stub_modules:
@@ -58,6 +59,14 @@ def _install_host_stubs() -> None:
         lambda *a, **k: None
     )
     sys.modules["src.common.scroll_helper"].ScrollHelper = None
+    # Since the sunset, scroll_display.py imports these unguarded -- there is no
+    # bundled fallback left to catch a miss. They have to be real classes rather
+    # than None: ScrollDisplay subclasses the first at module level, so a None
+    # here fails the import with "NoneType takes no arguments" instead.
+    sys.modules["src.common.sports_scroll"].SportsScrollDisplay = type(
+        "SportsScrollDisplay", (object,), {})
+    sys.modules["src.common.sports_scroll"].SportsScrollDisplayManager = type(
+        "SportsScrollDisplayManager", (object,), {})
     sys.modules["src.api_counter"].increment_api_counter = lambda *a, **k: None
 
 

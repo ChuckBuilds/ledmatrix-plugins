@@ -37,6 +37,20 @@ GOLDEN = os.path.join(PLUGIN_DIR, "test", "golden")
 # manager (it uses __new__), so the stub is never invoked.
 if "src.logo_downloader" not in sys.modules:
     src_pkg = types.ModuleType("src")
+    # Give the stub package a __path__ pointing at the real core's src/ when we
+    # can find one, so `import src.common.sports_scroll` still resolves through
+    # to the real module. Without it this stub SHADOWS the core: since the
+    # scroll fallback was sunset, scroll_display.py imports the core module
+    # unguarded, and a stub `src` with no __path__ fails it with
+    # "'src' is not a package" -- which the old guarded import used to swallow.
+    _core = os.environ.get("LEDMATRIX_CORE")
+    if not _core:
+        for _cand in sys.path:
+            if _cand and os.path.isdir(os.path.join(_cand, "src", "common")):
+                _core = _cand
+                break
+    if _core and os.path.isdir(os.path.join(_core, "src")):
+        src_pkg.__path__ = [os.path.join(_core, "src")]
     logo_mod = types.ModuleType("src.logo_downloader")
 
     class _StubLogoDownloader:
@@ -121,6 +135,12 @@ def test_scroll_passes_real_logo_cache_to_renderer():
 
     sd = scroll_display.ScrollDisplay.__new__(scroll_display.ScrollDisplay)
     sd.config = {}
+    # Both dimensions. Until the scroll fallback was sunset, the `src` stub
+    # above shadowed the core module and the guarded import fell back, so this
+    # built a LegacyScrollDisplay and only ever exercised the frozen copy --
+    # never the class that actually ships. The core path reads display_width
+    # when it sizes the card, so it was missing here.
+    sd.display_width = 128
     sd.display_height = 32
     sd.plugin_dir = tempfile.gettempdir()
     sd._logo_cache = {}
