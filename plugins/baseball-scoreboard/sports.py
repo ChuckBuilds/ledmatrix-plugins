@@ -2432,7 +2432,7 @@ class SportsCore(ABC):
         filler is a poor board, but a board showing nothing is a broken one.
         """
         if self.other_games_min_quality == "ranked":
-            if (getattr(self, "_team_rankings_cache", None) or {}) and \
+            if getattr(self, "_team_rankings_cache", None) and \
                     not self._is_ranked_game(game):
                 return False
 
