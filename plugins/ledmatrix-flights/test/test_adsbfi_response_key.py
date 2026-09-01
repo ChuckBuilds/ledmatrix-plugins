@@ -42,6 +42,11 @@ def _fake_aircraft():
 
 
 class _FakeResponse:
+    # status_code because the fetcher checks for 429 before touching the body.
+    # Without it this stub raised AttributeError, which read as a fetch failure
+    # rather than a broken double.
+    status_code = 200
+
     def __init__(self, payload):
         self._payload = payload
 

@@ -1,7 +1,7 @@
 {
   "id": "calendar",
   "name": "Google Calendar",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": "ChuckBuilds",
   "description": "Display upcoming events from Google Calendar with date, time, and event details. Shows next 1-3 events with automatic rotation and timezone support.",
   "category": "productivity",
@@ -35,6 +35,13 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.2.3",
+      "released": "2026-08-31",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Restores the minimum-core requirement that 1.2.0 declared. That release added the device-authorization step to the setup flow and needs the calendar_registration endpoints the core gained after 3.2.0, so it floored at 3.3.0. The two bug-fix releases after it, 1.2.1 and 1.2.2, each wrote a fresh versions[] entry declaring 2.0.0 -- and because the core reads the floor from versions[0] alone, the requirement disappeared the moment 1.2.1 shipped. A floor is cumulative: the feature that needs the newer core is still in the plugin. The store will now refuse to install this on a core older than 3.3.0 rather than handing over a setup flow whose Step 2 cannot work.",
+      "changelog": "Restores the minimum-core requirement that 1.2.0 declared. That release added the device-authorization step to the setup flow and needs the calendar_registration endpoints the core gained after 3.2.0, so it floored at 3.3.0. The two bug-fix releases after it, 1.2.1 and 1.2.2, each wrote a fresh versions[] entry declaring 2.0.0 -- and because the core reads the floor from versions[0] alone, the requirement disappeared the moment 1.2.1 shipped. A floor is cumulative: the feature that needs the newer core is still in the plugin. The store will now refuse to install this on a core older than 3.3.0 rather than handing over a setup flow whose Step 2 cannot work."
+    },
     {
       "released": "2026-08-15",
       "version": "1.2.2",
@@ -105,6 +112,6 @@
   "verified": true,
   "screenshot": "",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.3.0"
   ]
 }
