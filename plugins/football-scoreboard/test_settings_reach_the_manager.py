@@ -47,7 +47,7 @@ PROBE = {
     "other_upcoming_games_to_show": 7,
     "other_recent_games_to_show": 6,
     "other_rotation_interval_seconds": 900,
-    "other_games_min_quality": "broadcast",
+    "other_games_min_quality": "any",
     "other_games_divisions": ["fcs"],
     # Read by sports.py out of the translated config, and for a while declared
     # in three plugins' schemas while no translation carried them -- a control

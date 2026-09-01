@@ -1701,6 +1701,40 @@ class SportsCore(ABC):
             return True
         return False
 
+    # Which ranking block the badge reads. ESPN answers /rankings with more
+    # than one block for several leagues, and the FIRST is not always a poll:
+    # men's and women's college hockey front "NCAA Men's/Women's Hockey
+    # Tournament Seedings", so the badge drew a 16-team bracket seed where a
+    # viewer expects a poll position, and college lacrosse publishes seedings
+    # beside its Inside Lacrosse poll. College football fronts the AP Top 25
+    # today but also carries the FCS and Division II polls and gains the CFP
+    # rankings in November. Nothing in the payload promises the order.
+    #
+    # An EXCLUDE list, not an allow list, so a poll ESPN invents still counts
+    # while seedings and the divisions below the top one never do.
+    _NON_TOP_POLL_TYPES = frozenset({"tournament", "fcs"})
+    _NON_TOP_POLL_NAMES = ("tournament", "seedings", "fcs",
+                           "division ii", "division iii", "div ii", "div iii")
+
+    def _choose_poll(self, rankings_data):
+        """The first block ESPN lists that is an actual top-division poll.
+
+        ESPN's own order is otherwise kept, so whichever poll it fronts is the
+        one that drives the badge.
+        """
+        for block in rankings_data or []:
+            name = str(block.get("name") or "").lower()
+            kind = str(block.get("type") or "").lower()
+            if kind in self._NON_TOP_POLL_TYPES or any(
+                marker in name for marker in self._NON_TOP_POLL_NAMES
+            ):
+                self.logger.debug(
+                    "%s: skipping %s -- not a top-division poll",
+                    getattr(self, "league", "?"), block.get("name") or kind)
+                continue
+            return block
+        return {}
+
     def _fetch_team_rankings(self) -> Dict[str, int]:
         """Fetch team rankings using the new architecture components."""
         current_time = time.time()
@@ -1719,9 +1753,8 @@ class SportsCore(ABC):
             rankings = {}
             rankings_data = data.get("rankings", [])
 
-            if rankings_data:
-                # Use the first ranking (usually AP Top 25)
-                first_ranking = rankings_data[0]
+            first_ranking = self._choose_poll(rankings_data)
+            if first_ranking:
                 teams = first_ranking.get("ranks", [])
 
                 for team_data in teams:
@@ -2123,7 +2156,6 @@ class SportsUpcoming(SportsCore):
         sport_key: str,
     ):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        self.upcoming_games = []  # Store all fetched upcoming games initially
         self.games_list = []  # Filtered list for display (favorite teams)
         self.current_game_index = 0
         self.last_update = 0
@@ -2665,7 +2697,6 @@ class SportsRecent(SportsCore):
         sport_key: str,
     ):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        self.recent_games = []  # Store all fetched recent games initially
         self.games_list = []  # Filtered list for display (favorite teams)
         self.current_game_index = 0
         self.last_update = 0

@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.35.1",
+  "version": "1.35.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,13 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.35.2",
+      "released": "2026-08-31",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Hardening only, with no behaviour change here: this plugin's AP_TOP_n patterns resolve from the college baseball poll, and nothing routes to the college football endpoint its resolver also maps. The shared DynamicTeamResolver is kept in step with the other copies, where the endpoint IS reachable and taking ESPN's first ranking block could resolve AP_TOP_25 to the FCS Coaches Poll. A repo guard now holds every copy to it. The rank badge also chooses its ranking block rather than taking ESPN's first; college baseball publishes no poll, so nothing changes on screen. Dynamic duration now sizes a recent or upcoming cycle from the games actually on the board. get_cycle_duration asked the manager for recent_games/upcoming_games, lists SportsRecent and SportsUpcoming declared in __init__ and never filled -- the selected games go to games_list -- so the count was always zero and every cycle fell through to the \"no games yet\" default of three games' worth instead of scaling. Live mode reads live_games, which IS populated, which is part of why this went unnoticed. It now uses the same resolution the scroll path already used. The shared favourite-check advisory is brought back in step with football-scoreboard 2.29.4, which fixed it there without porting: the \"nothing on until\" line pooled event dates with the league calendar's week and phase boundaries and took the earliest, and those boundaries open days before the first game, so a boundary was reported as a game date. Events now win; the calendar only speaks for a payload with no events at all. The copies are byte-identical again, which hockey-scoreboard's test_favorite_check.py enforces across all seven.",
+      "changelog": "Hardening only, with no behaviour change here: this plugin's AP_TOP_n patterns resolve from the college baseball poll, and nothing routes to the college football endpoint its resolver also maps. The shared DynamicTeamResolver is kept in step with the other copies, where the endpoint IS reachable and taking ESPN's first ranking block could resolve AP_TOP_25 to the FCS Coaches Poll. A repo guard now holds every copy to it. The rank badge also chooses its ranking block rather than taking ESPN's first; college baseball publishes no poll, so nothing changes on screen. Dynamic duration now sizes a recent or upcoming cycle from the games actually on the board. get_cycle_duration asked the manager for recent_games/upcoming_games, lists SportsRecent and SportsUpcoming declared in __init__ and never filled -- the selected games go to games_list -- so the count was always zero and every cycle fell through to the \"no games yet\" default of three games' worth instead of scaling. Live mode reads live_games, which IS populated, which is part of why this went unnoticed. It now uses the same resolution the scroll path already used. The shared favourite-check advisory is brought back in step with football-scoreboard 2.29.4, which fixed it there without porting: the \"nothing on until\" line pooled event dates with the league calendar's week and phase boundaries and took the earliest, and those boundaries open days before the first game, so a boundary was reported as a game date. Events now win; the calendar only speaks for a payload with no events at all. The copies are byte-identical again, which hockey-scoreboard's test_favorite_check.py enforces across all seven."
+    },
     {
       "version": "1.35.1",
       "released": "2026-08-30",

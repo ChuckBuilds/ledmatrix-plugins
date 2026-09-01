@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.17.1",
+  "version": "1.17.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,13 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.17.2",
+      "released": "2026-08-31",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Hardening only, with no behaviour change here: this plugin's leagues publish no poll, so its rank badge reads nothing either way. The shared sports.py now chooses the ranking block rather than taking ESPN's first, because that endpoint fronts NCAA tournament SEEDINGS for college hockey and lower-division polls for college football, and the copies are kept in step rather than left to diverge. A repo guard holds every one of them to it. The never-populated upcoming_games/recent_games attributes are removed: nothing filled them and nothing read them, and their presence is what made a duration calculation reading them look correct. No behaviour change here. The shared favourite-check advisory is brought back in step with football-scoreboard 2.29.4, which fixed it there without porting: the \"nothing on until\" line pooled event dates with the league calendar's week and phase boundaries and took the earliest, and those boundaries open days before the first game, so a boundary was reported as a game date. Events now win; the calendar only speaks for a payload with no events at all. The copies are byte-identical again, which hockey-scoreboard's test_favorite_check.py enforces across all seven.",
+      "changelog": "Hardening only, with no behaviour change here: this plugin's leagues publish no poll, so its rank badge reads nothing either way. The shared sports.py now chooses the ranking block rather than taking ESPN's first, because that endpoint fronts NCAA tournament SEEDINGS for college hockey and lower-division polls for college football, and the copies are kept in step rather than left to diverge. A repo guard holds every one of them to it. The never-populated upcoming_games/recent_games attributes are removed: nothing filled them and nothing read them, and their presence is what made a duration calculation reading them look correct. No behaviour change here. The shared favourite-check advisory is brought back in step with football-scoreboard 2.29.4, which fixed it there without porting: the \"nothing on until\" line pooled event dates with the league calendar's week and phase boundaries and took the earliest, and those boundaries open days before the first game, so a boundary was reported as a game date. Events now win; the calendar only speaks for a payload with no events at all. The copies are byte-identical again, which hockey-scoreboard's test_favorite_check.py enforces across all seven."
+    },
     {
       "version": "1.17.1",
       "released": "2026-08-30",

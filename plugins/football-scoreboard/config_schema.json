@@ -553,10 +553,15 @@
               "title": "Which other games to show",
               "enum": [
                 "any",
-                "broadcast",
                 "ranked"
               ],
-              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+              "x-options": {
+                "labels": {
+                  "ranked": "Ranked teams only",
+                  "any": "Anything, in schedule order"
+                }
+              },
+              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a team ranked in the top division's poll -- the AP Top 25 for college football, so a nationally ranked FCS team playing an unranked FBS team does NOT qualify its game. 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots. The old 'broadcast' setting has been retired -- ESPN lists a broadcaster for almost every game now, ESPN+ included, so it passed 174 of 175 games on a real slate; boards still holding it are read as 'ranked'.",
               "default": "ranked",
               "x-advanced": true
             },
@@ -1012,10 +1017,15 @@
               "title": "Which other games to show",
               "enum": [
                 "any",
-                "broadcast",
                 "ranked"
               ],
-              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+              "x-options": {
+                "labels": {
+                  "ranked": "Ranked teams only",
+                  "any": "Anything, in schedule order"
+                }
+              },
+              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a team ranked in the top division's poll -- the AP Top 25 for college football, so a nationally ranked FCS team playing an unranked FBS team does NOT qualify its game. 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots. The old 'broadcast' setting has been retired -- ESPN lists a broadcaster for almost every game now, ESPN+ included, so it passed 174 of 175 games on a real slate; boards still holding it are read as 'ranked'.",
               "default": "ranked",
               "x-advanced": true
             },

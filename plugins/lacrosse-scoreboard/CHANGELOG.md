@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.19.2] - 2026-08-31
+
+### Changed
+- **The rank badge chooses its ranking block instead of taking ESPN's first.** That endpoint returns several blocks and the first is not promised to be a poll — men's and women's college hockey are fronted by *NCAA Tournament Seedings*, and college lacrosse publishes seedings of its own beside the Inside Lacrosse poll. The poll leads today, so this league was one reordering away from a bracket seed appearing where a viewer expects a poll position. ESPN's order is kept among genuine polls; seedings and lower divisions are stepped over. Ported from the same fix in `hockey-scoreboard`, where the wrong block was being drawn live, and held by `scripts/test_poll_choice.py`.
+
 ## [1.19.1] - 2026-08-30
 
 ### Fixed
