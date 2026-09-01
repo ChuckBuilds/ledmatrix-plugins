@@ -203,7 +203,7 @@
       "x-advanced": true,
       "type": "string",
       "default": "",
-      "description": "IANA timezone used to display event start times (e.g. America/Chicago). Leave blank to follow the LEDMatrix global timezone, or the system timezone if none is set. A bare \"UTC\" here is treated as a leftover from the old write-back bug and ignored when your global or system timezone disagrees \u2014 use \"Etc/UTC\" if you really want UTC."
+      "description": "IANA timezone used to display event start times (e.g. America/Chicago). Leave blank to follow the LEDMatrix global timezone, or the system timezone if none is set. A bare \"UTC\" here is treated as a leftover from the old write-back bug and ignored when your global or system timezone disagrees — use \"Etc/UTC\" if you really want UTC."
     },
     "mlb": {
       "type": "object",
@@ -535,7 +535,6 @@
               "title": "Which other games to show",
               "enum": [
                 "any",
-                "broadcast",
                 "ranked"
               ],
               "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -1058,7 +1057,6 @@
               "title": "Which other games to show",
               "enum": [
                 "any",
-                "broadcast",
                 "ranked"
               ],
               "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -1557,7 +1555,6 @@
               "title": "Which other games to show",
               "enum": [
                 "any",
-                "broadcast",
                 "ranked"
               ],
               "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",

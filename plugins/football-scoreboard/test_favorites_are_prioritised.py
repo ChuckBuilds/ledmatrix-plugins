@@ -132,6 +132,7 @@ def make(sports, favorites, fav_limit, other_limit):
     obj.other_games_min_quality = "any"          # filters off unless a test asks
     obj.other_games_divisions = []
     obj._team_rankings_cache = {}
+    obj._ranked_team_ids = {}
     # The window advance takes this: two threads reach it, update() and the
     # display path, and each adds a width.
     obj._games_lock = threading.RLock()
@@ -505,27 +506,58 @@ def main():
     check("but 0 others is an explicit favourites-only, and stays quiet",
           probe._favorites_first(games, 3, 0) == [])
 
-    print("\na league with no broadcast data fails open too")
-    # The scoreboard payload always carries the key, so the per-check "missing
-    # means allowed" reading never fired here: picking `broadcast` in a league
-    # ESPN leaves empty -- the NHL and the soccer leagues, measured -- removed
-    # every non-favourite game instead of allowing them.
+    print("\nranked means ranked in the TOP division's poll")
+    # South Dakota State at Northwestern, the game that prompted this. The FCS
+    # side is a perennial national number one and the FBS side is unranked, so
+    # reading whichever poll ESPN happened to list first made it a "ranked
+    # matchup" and gave it a slot on a board asking for the week's best games.
     probe = make(sports, favs, 3, 3)
-    probe.other_games_min_quality = "broadcast"
-    others = [g for g in probe._favorites_first(games, 3, 3)
-              if not probe._is_favorite_game(g)]
-    check("nothing televised anywhere: other games still shown",
-          len(others) == 3, abbrs(others))
+    probe.other_games_min_quality = "ranked"
+    probe._team_rankings_cache = {"UGA": 3}
+    probe._ranked_team_ids = {1040: 3}
+    top_ranked = {"home_id": 1040, "away_id": 9001,
+                  "home_abbr": "UGA", "away_abbr": "MERC"}
+    lower_ranked = {"home_id": 9002, "away_id": 9003,
+                    "home_abbr": "NU", "away_abbr": "SDST"}
+    check("a top-division ranked side qualifies its game",
+          probe._passes_other_filters(top_ranked))
+    check("a side ranked only in a lower division's poll does not",
+          not probe._passes_other_filters(lower_ranked))
 
-    televised = [dict(g) for g in games]
-    televised[5]["broadcast"] = "ESPN"
-    televised[6]["broadcast"] = "ABC"
+    print("\nthe poll is chosen, not taken on trust")
+    blocks = [
+        {"name": "FCS Coaches Poll", "type": "fcs", "ranks": []},
+        {"name": "AFCA Division II Coaches Poll", "type": "afca", "ranks": []},
+        {"name": "AP Top 25", "type": "ap", "ranks": []},
+    ]
+    check("a lower-division poll is stepped over, however ESPN orders them",
+          probe._choose_poll(blocks).get("name") == "AP Top 25")
+    check("ESPN's own order is otherwise kept",
+          probe._choose_poll(blocks[2:] + blocks[:2]).get("name") == "AP Top 25")
+    check("no top-division poll leaves the table empty rather than wrong",
+          probe._choose_poll(blocks[:2]) == {})
+
+    print("\nan abbreviation shared across divisions cannot promote a team")
+    # The FBS and FCS schedules arrive in one payload, so the abbreviation is
+    # not a unique key. The id is.
     probe = make(sports, favs, 3, 3)
-    probe.other_games_min_quality = "broadcast"
-    others = [g for g in probe._favorites_first(televised, 3, 3)
-              if not probe._is_favorite_game(g)]
-    check("where the league does carry it, only televised games qualify",
-          bool(others) and all(g.get("broadcast") for g in others), abbrs(others))
+    probe.other_games_min_quality = "ranked"
+    probe._team_rankings_cache = {"SDSU": 20}          # San Diego State
+    probe._ranked_team_ids = {21: 20}
+    impostor = {"home_id": 2571, "away_id": 9004,      # a different school
+                "home_abbr": "SDSU", "away_abbr": "NU"}
+    check("the id decides, not the abbreviation",
+          not probe._passes_other_filters(impostor))
+
+    print("\nthe retired broadcast tier migrates instead of meaning nothing")
+    probe = make(sports, favs, 3, 3)
+    check("'broadcast' is read as 'ranked'",
+          probe._normalise_quality("broadcast") == "ranked")
+    check("so is anything unusable, rather than silently meaning 'any'",
+          probe._normalise_quality("televised") == "ranked")
+    check("and the values that survive still pass through",
+          (probe._normalise_quality("any"), probe._normalise_quality(" Ranked "))
+          == ("any", "ranked"))
 
     print("\na poll that matches nothing says so, once")
     # The table is keyed by the abbreviation the RANKINGS endpoint returns and

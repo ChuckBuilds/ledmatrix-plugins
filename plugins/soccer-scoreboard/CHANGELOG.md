@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.19.2] - 2026-08-31
+
+### Changed
+- **`sports.py` chooses its ranking block instead of taking ESPN's first.** Hardening only, with no behaviour change here: soccer publishes no poll, so the rank badge reads nothing either way. The shared file is kept in step with the lineages where the first block is *NCAA Tournament Seedings* (college hockey) or a lower-division poll (college football), rather than left to diverge.
+
 ## [2.19.1] - 2026-08-30
 
 ### Fixed

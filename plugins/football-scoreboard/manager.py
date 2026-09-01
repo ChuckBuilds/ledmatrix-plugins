@@ -2610,15 +2610,17 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 if not manager:
                     continue
 
-                # Get the appropriate game list based on mode type
-                if mode_type == 'live':
-                    games = getattr(manager, 'live_games', [])
-                elif mode_type == 'recent':
-                    games = getattr(manager, 'recent_games', [])
-                elif mode_type == 'upcoming':
-                    games = getattr(manager, 'upcoming_games', [])
-                else:
-                    games = []
+                # The same list the display actually rotates. Reading
+                # recent_games/upcoming_games straight off the manager counted
+                # a list nothing ever fills: SportsRecent and SportsUpcoming
+                # declared them in __init__ and then put the selected games in
+                # games_list, so total_games was always 0 here and every cycle
+                # fell through to the "no games yet" default -- three games'
+                # worth -- instead of scaling with the number of cards actually
+                # on the board. _get_games_from_manager already resolves this
+                # correctly for the scroll path, and afl and nrl already call
+                # it here.
+                games = self._get_games_from_manager(manager, mode_type)
 
                 # Get duration for this league/mode combination
                 per_game_duration = self._get_game_duration(

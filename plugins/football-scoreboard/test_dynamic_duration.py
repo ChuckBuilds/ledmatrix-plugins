@@ -137,7 +137,7 @@ class TestGetCycleDuration:
         """Should calculate duration based on games * per_game_duration."""
         # Mock 3 recent games
         if hasattr(plugin, "nfl_recent") and plugin.nfl_recent:
-            plugin.nfl_recent.recent_games = [
+            plugin.nfl_recent.games_list = [
                 {"id": "1", "is_final": True},
                 {"id": "2", "is_final": True},
                 {"id": "3", "is_final": True},
@@ -147,6 +147,22 @@ class TestGetCycleDuration:
             # Should be 3 games * 15s = 45s (or clamped by dynamic_cap)
             assert duration is not None
             assert duration >= 15  # At least one game's worth
+
+            # The duration has to SCALE, which "assert duration >= 15" never
+            # checked: get_cycle_duration used to read recent_games, a list
+            # nothing populates, so total_games was always 0 and it returned
+            # the "no games yet" default of 3 x 15s -- numerically identical to
+            # the three games this test sets up, so the bug was invisible here.
+            # Two different counts must give two different durations.
+            plugin.nfl_recent.games_list = [
+                {"id": str(i), "is_final": True} for i in range(6)
+            ]
+            longer = plugin.get_cycle_duration("nfl_recent")
+            assert longer is not None
+            assert longer > duration, (
+                "duration did not scale with the game count: "
+                "3 games -> %s, 6 games -> %s" % (duration, longer)
+            )
 
     def test_returns_duration_for_valid_modes(self, plugin):
         """Should return a valid duration for all valid mode types."""
@@ -187,7 +203,7 @@ class TestLivePriorityWithDynamicDuration:
         # Get duration with live_priority off
         plugin.nfl_live_priority = False
         if hasattr(plugin, "nfl_recent") and plugin.nfl_recent:
-            plugin.nfl_recent.recent_games = [{"id": "1", "is_final": True}]
+            plugin.nfl_recent.games_list = [{"id": "1", "is_final": True}]
         duration_without_priority = plugin.get_cycle_duration("nfl_recent")
 
         # Get duration with live_priority on
@@ -284,7 +300,7 @@ class TestDynamicDurationConfiguration:
 
         # Even with games, should use mode-level duration
         if hasattr(plugin, "nfl_recent") and plugin.nfl_recent:
-            plugin.nfl_recent.recent_games = [
+            plugin.nfl_recent.games_list = [
                 {"id": "1", "is_final": True},
                 {"id": "2", "is_final": True},
             ]

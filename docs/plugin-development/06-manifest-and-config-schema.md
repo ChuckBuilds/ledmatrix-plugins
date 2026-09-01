@@ -51,12 +51,32 @@ usually a minimum-core-version key and a description:
 ```
 
 > **Known inconsistency — pick one key going forward.** The minimum-core-version
-> field appears under two spellings across the repo: `ledmatrix_min` and
+> field appears under two spellings inside `versions[]`: `ledmatrix_min` and
 > `ledmatrix_min_version`. Many manifests mix both. Likewise the description field
 > varies (`notes`, `note`, `changes`, `changelog`). When you add a changelog
 > entry, prefer **`ledmatrix_min_version`** and **`notes`** for consistency — but
 > check what your plugin already uses and match it until a repo-wide normalization
 > lands.
+>
+> **⚠️ And the floor is not only a `versions[]` field.** A top-level
+> `min_ledmatrix_version` overrides that array entirely. The core resolves the
+> floor in this order (`src/plugin_system/compatibility.py:declared_min_version`),
+> stopping at the first one it finds:
+>
+> 1. top-level `min_ledmatrix_version`
+> 2. top-level `requires.min_ledmatrix_version`
+> 3. `versions[0].ledmatrix_min_version`, else `versions[0].ledmatrix_min`
+>
+> Note the **name is inverted** between the two locations — `min_ledmatrix_version`
+> at the top level, `ledmatrix_min_version` inside `versions[]` — which is easy to
+> read past. Four plugins declare the top-level form today (`ledmatrix-flights`,
+> `ledmatrix-leaderboard`, `ledmatrix-music`, `ledmatrix-stocks`), and for those
+> **editing `versions[0]` changes nothing the core reads.** Check for a top-level
+> key before raising a floor, and raise the one that actually wins.
+>
+> Only `versions[0]` is ever consulted, so a floor declared on an older entry is
+> dead. If a release needs a newer core, that requirement is cumulative: every
+> later entry must carry it too, or the next bug-fix release silently drops it.
 
 ---
 

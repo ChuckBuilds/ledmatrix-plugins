@@ -500,27 +500,19 @@ def main():
     check("but 0 others is an explicit favourites-only, and stays quiet",
           probe._favorites_first(games, 3, 0) == [])
 
-    print("\na league with no broadcast data fails open too")
-    # The scoreboard payload always carries the key, so the per-check "missing
-    # means allowed" reading never fired here: picking `broadcast` in a league
-    # ESPN leaves empty -- the NHL and the soccer leagues, measured -- removed
-    # every non-favourite game instead of allowing them.
+    print("\nthe retired broadcast tier migrates instead of meaning nothing")
+    # Retired in football-scoreboard 3.0.0 and now here: measured on a real
+    # slate it passed 174 of 175 games, so it read as a quality bar and
+    # behaved as "any". A board still holding the old value gets the bar it
+    # thought it had rather than silently getting none.
     probe = make(sports, favs, 3, 3)
-    probe.other_games_min_quality = "broadcast"
-    others = [g for g in probe._favorites_first(games, 3, 3)
-              if not probe._is_favorite_game(g)]
-    check("nothing televised anywhere: other games still shown",
-          len(others) == 3, abbrs(others))
-
-    televised = [dict(g) for g in games]
-    televised[5]["broadcast"] = "ESPN"
-    televised[6]["broadcast"] = "ABC"
-    probe = make(sports, favs, 3, 3)
-    probe.other_games_min_quality = "broadcast"
-    others = [g for g in probe._favorites_first(televised, 3, 3)
-              if not probe._is_favorite_game(g)]
-    check("where the league does carry it, only televised games qualify",
-          bool(others) and all(g.get("broadcast") for g in others), abbrs(others))
+    check("'broadcast' is read as 'ranked'",
+          probe._normalise_quality("broadcast") == "ranked")
+    check("so is anything unusable, rather than silently meaning 'any'",
+          probe._normalise_quality("televised") == "ranked")
+    check("and the values that survive still pass through",
+          (probe._normalise_quality("any"), probe._normalise_quality(" Ranked "))
+          == ("any", "ranked"))
 
     print("\na poll that matches nothing says so, once")
     # The table is keyed by the abbreviation the RANKINGS endpoint returns and

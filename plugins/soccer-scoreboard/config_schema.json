@@ -609,7 +609,6 @@
                   "title": "Which other games to show",
                   "enum": [
                     "any",
-                    "broadcast",
                     "ranked"
                   ],
                   "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -776,7 +775,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1100,7 +1099,6 @@
                   "title": "Which other games to show",
                   "enum": [
                     "any",
-                    "broadcast",
                     "ranked"
                   ],
                   "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -1267,7 +1265,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1591,7 +1589,6 @@
                   "title": "Which other games to show",
                   "enum": [
                     "any",
-                    "broadcast",
                     "ranked"
                   ],
                   "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -1758,7 +1755,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2082,7 +2079,6 @@
                   "title": "Which other games to show",
                   "enum": [
                     "any",
-                    "broadcast",
                     "ranked"
                   ],
                   "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -2249,7 +2245,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2573,7 +2569,6 @@
                   "title": "Which other games to show",
                   "enum": [
                     "any",
-                    "broadcast",
                     "ranked"
                   ],
                   "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -2740,7 +2735,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3064,7 +3059,6 @@
                   "title": "Which other games to show",
                   "enum": [
                     "any",
-                    "broadcast",
                     "ranked"
                   ],
                   "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -3231,7 +3225,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3555,7 +3549,6 @@
                   "title": "Which other games to show",
                   "enum": [
                     "any",
-                    "broadcast",
                     "ranked"
                   ],
                   "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -3722,7 +3715,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -4046,7 +4039,6 @@
                   "title": "Which other games to show",
                   "enum": [
                     "any",
-                    "broadcast",
                     "ranked"
                   ],
                   "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -4213,7 +4205,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -4537,7 +4529,6 @@
                   "title": "Which other games to show",
                   "enum": [
                     "any",
-                    "broadcast",
                     "ranked"
                   ],
                   "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -4704,7 +4695,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -5028,7 +5019,6 @@
                   "title": "Which other games to show",
                   "enum": [
                     "any",
-                    "broadcast",
                     "ranked"
                   ],
                   "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -5195,7 +5185,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -5243,7 +5233,7 @@
     "custom_leagues": {
       "type": "array",
       "title": "Add More Leagues",
-      "description": "Add any soccer league available on ESPN. Click 'Add Item', then fill in BOTH a name and a league code. Common codes: eng.2 (English Championship), eng.3 (League One), eng.fa (FA Cup), eng.league_cup (EFL Cup), mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish S\u00fcper Lig), bel.1 (Belgian Pro League)",
+      "description": "Add any soccer league available on ESPN. Click 'Add Item', then fill in BOTH a name and a league code. Common codes: eng.2 (English Championship), eng.3 (League One), eng.fa (FA Cup), eng.league_cup (EFL Cup), mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish Süper Lig), bel.1 (Belgian Pro League)",
       "x-widget": "array-table",
       "x-columns": [
         "name",
@@ -5483,7 +5473,6 @@
                 "title": "Which other games to show",
                 "enum": [
                   "any",
-                  "broadcast",
                   "ranked"
                 ],
                 "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
@@ -6362,7 +6351,6 @@
       "title": "Which other games to show",
       "enum": [
         "any",
-        "broadcast",
         "ranked"
       ],
       "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",

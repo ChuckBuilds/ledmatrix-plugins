@@ -30,8 +30,15 @@
       "version": "2.20.0",
       "released": "2026-08-31",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "The other slots now fill with games worth watching, and the settings that govern them take effect. football-scoreboard has had this since 2.29.0; these eight lineages had the settings in their schema and nothing reading them, so a board could ask for ranked games only and still get the next N kickoffs. The non-favourite pool is now ordered by the matchup rather than the clock, filtered by quality and division, and re-cut on the display path every other_rotation_interval_seconds so a long pool rotates instead of showing its first N forever. Favourites keep their slots through every cut, one game per team, and the filters fail open as a set: if a filter matches nothing the mode shows the unfiltered list rather than going blank.",
-      "changelog": "The other slots now fill with games worth watching, and the settings that govern them take effect. football-scoreboard has had this since 2.29.0; these eight lineages had the settings in their schema and nothing reading them, so a board could ask for ranked games only and still get the next N kickoffs. The non-favourite pool is now ordered by the matchup rather than the clock, filtered by quality and division, and re-cut on the display path every other_rotation_interval_seconds so a long pool rotates instead of showing its first N forever. Favourites keep their slots through every cut, one game per team, and the filters fail open as a set: if a filter matches nothing the mode shows the unfiltered list rather than going blank."
+      "notes": "The other slots now fill with games worth watching, and the settings that govern them take effect. football-scoreboard has had this since 2.29.0; these eight lineages had the settings in their schema and nothing reading them, so a board could ask for ranked games only and still get the next N kickoffs. The non-favourite pool is now ordered by the matchup rather than the clock, filtered by quality and division, and re-cut on the display path every other_rotation_interval_seconds so a long pool rotates instead of showing its first N forever. Favourites keep their slots through every cut, one game per team, and the filters fail open as a set: if a filter matches nothing the mode shows the unfiltered list rather than going blank. Also retires the 'broadcast' tier of other_games_min_quality, matching football-scoreboard 3.0.0. Measured there against a real Week 1 and Week 2 college slate it passed 174 of 175 games -- ESPN publishes a broadcaster for nearly everything now, ESPN+ included -- so it read as a quality bar and behaved as 'any'. A board still holding the old value now migrates to 'ranked' with a warning rather than silently getting no filtering, and the option is gone from the settings UI.",
+      "changelog": "The other slots now fill with games worth watching, and the settings that govern them take effect. football-scoreboard has had this since 2.29.0; these eight lineages had the settings in their schema and nothing reading them, so a board could ask for ranked games only and still get the next N kickoffs. The non-favourite pool is now ordered by the matchup rather than the clock, filtered by quality and division, and re-cut on the display path every other_rotation_interval_seconds so a long pool rotates instead of showing its first N forever. Favourites keep their slots through every cut, one game per team, and the filters fail open as a set: if a filter matches nothing the mode shows the unfiltered list rather than going blank. Also retires the 'broadcast' tier of other_games_min_quality, matching football-scoreboard 3.0.0. Measured there against a real Week 1 and Week 2 college slate it passed 174 of 175 games -- ESPN publishes a broadcaster for nearly everything now, ESPN+ included -- so it read as a quality bar and behaved as 'any'. A board still holding the old value now migrates to 'ranked' with a warning rather than silently getting no filtering, and the option is gone from the settings UI."
+    },
+    {
+      "version": "2.19.2",
+      "released": "2026-08-31",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Hardening only, with no behaviour change here: this plugin's leagues publish no poll, so its rank badge reads nothing either way. The shared sports.py now chooses the ranking block rather than taking ESPN's first, because that endpoint fronts NCAA tournament SEEDINGS for college hockey and lower-division polls for college football, and the copies are kept in step rather than left to diverge. A repo guard holds every one of them to it. The never-populated upcoming_games/recent_games attributes are removed: nothing filled them and nothing read them, and their presence is what made a duration calculation reading them look correct. No behaviour change here.",
+      "changelog": "Hardening only, with no behaviour change here: this plugin's leagues publish no poll, so its rank badge reads nothing either way. The shared sports.py now chooses the ranking block rather than taking ESPN's first, because that endpoint fronts NCAA tournament SEEDINGS for college hockey and lower-division polls for college football, and the copies are kept in step rather than left to diverge. A repo guard holds every one of them to it. The never-populated upcoming_games/recent_games attributes are removed: nothing filled them and nothing read them, and their presence is what made a duration calculation reading them look correct. No behaviour change here."
     },
     {
       "version": "2.19.1",
@@ -249,15 +256,15 @@
       "ledmatrix_min": "2.0.0"
     },
     {
-      "released": "2026-07-31",
-      "version": "2.4.1",
-      "notes": "Fix adding a custom league (e.g. the English Championship, eng.2) failing to save with HTTP 400. The web UI's row editor sends unset list/object properties as null and typed team lists as comma-separated text, which the strict array/object/number types in custom_leagues rejected, so the whole config save was blocked no matter which league code was entered. Those properties now accept null (and comma-separated text for team lists), and the plugin normalizes them back to defaults on load. The league_code pattern also no longer rejects valid ESPN codes with underscores or long prefixes (eng.league_cup, conmebol.libertadores).",
-      "ledmatrix_min": "2.0.0"
-    },
-    {
       "released": "2026-07-29",
       "version": "2.5.0",
       "notes": "Corrected every team code in TEAMS.md against ESPN's live data — Manchester United is MAN (not MUN), Manchester City MNC (not MCI), Real Madrid RMA, and Ligue 1 had eight wrong codes. The plugin now also says why a league is empty: an unrecognised favorite team logs a warning naming the closest match, while a correct code in a league with no fixtures yet logs the date the season starts.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
+      "released": "2026-07-31",
+      "version": "2.4.1",
+      "notes": "Fix adding a custom league (e.g. the English Championship, eng.2) failing to save with HTTP 400. The web UI's row editor sends unset list/object properties as null and typed team lists as comma-separated text, which the strict array/object/number types in custom_leagues rejected, so the whole config save was blocked no matter which league code was entered. Those properties now accept null (and comma-separated text for team lists), and the plugin normalizes them back to defaults on load. The league_code pattern also no longer rejects valid ESPN codes with underscores or long prefixes (eng.league_cup, conmebol.libertadores).",
       "ledmatrix_min": "2.0.0"
     },
     {
