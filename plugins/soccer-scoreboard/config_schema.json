@@ -223,6 +223,14 @@
       "description": "Update interval for live games (seconds)",
       "x-advanced": true
     },
+    "stale_game_timeout": {
+      "type": "integer",
+      "default": 300,
+      "minimum": 60,
+      "maximum": 3600,
+      "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+      "x-advanced": true
+    },
     "recent_update_interval": {
       "type": "integer",
       "default": 3600,
@@ -499,6 +507,30 @@
               "description": "How often to update live game data (seconds)",
               "x-advanced": true
             },
+            "recent_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+              "x-advanced": true
+            },
+            "upcoming_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+              "x-advanced": true
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -570,6 +602,36 @@
                   "default": 1800,
                   "minimum": 0,
                   "maximum": 86400,
+                  "x-advanced": true
+                },
+                "other_games_min_quality": {
+                  "type": "string",
+                  "title": "Which other games to show",
+                  "enum": [
+                    "any",
+                    "ranked"
+                  ],
+                  "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+                  "default": "ranked",
+                  "x-advanced": true
+                },
+                "other_games_divisions": {
+                  "type": "array",
+                  "title": "Divisions to include (other games)",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "fbs",
+                      "fcs",
+                      "other"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "default": [
+                    "fbs"
+                  ],
+                  "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+                  "x-widget": "checkbox-group",
                   "x-advanced": true
                 }
               }
@@ -713,7 +775,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -935,6 +997,30 @@
               "description": "How often to update live game data (seconds)",
               "x-advanced": true
             },
+            "recent_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+              "x-advanced": true
+            },
+            "upcoming_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+              "x-advanced": true
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -1006,6 +1092,36 @@
                   "default": 1800,
                   "minimum": 0,
                   "maximum": 86400,
+                  "x-advanced": true
+                },
+                "other_games_min_quality": {
+                  "type": "string",
+                  "title": "Which other games to show",
+                  "enum": [
+                    "any",
+                    "ranked"
+                  ],
+                  "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+                  "default": "ranked",
+                  "x-advanced": true
+                },
+                "other_games_divisions": {
+                  "type": "array",
+                  "title": "Divisions to include (other games)",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "fbs",
+                      "fcs",
+                      "other"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "default": [
+                    "fbs"
+                  ],
+                  "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+                  "x-widget": "checkbox-group",
                   "x-advanced": true
                 }
               }
@@ -1149,7 +1265,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1371,6 +1487,30 @@
               "description": "How often to update live game data (seconds)",
               "x-advanced": true
             },
+            "recent_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+              "x-advanced": true
+            },
+            "upcoming_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+              "x-advanced": true
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -1442,6 +1582,36 @@
                   "default": 1800,
                   "minimum": 0,
                   "maximum": 86400,
+                  "x-advanced": true
+                },
+                "other_games_min_quality": {
+                  "type": "string",
+                  "title": "Which other games to show",
+                  "enum": [
+                    "any",
+                    "ranked"
+                  ],
+                  "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+                  "default": "ranked",
+                  "x-advanced": true
+                },
+                "other_games_divisions": {
+                  "type": "array",
+                  "title": "Divisions to include (other games)",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "fbs",
+                      "fcs",
+                      "other"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "default": [
+                    "fbs"
+                  ],
+                  "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+                  "x-widget": "checkbox-group",
                   "x-advanced": true
                 }
               }
@@ -1585,7 +1755,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -1807,6 +1977,30 @@
               "description": "How often to update live game data (seconds)",
               "x-advanced": true
             },
+            "recent_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+              "x-advanced": true
+            },
+            "upcoming_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+              "x-advanced": true
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -1878,6 +2072,36 @@
                   "default": 1800,
                   "minimum": 0,
                   "maximum": 86400,
+                  "x-advanced": true
+                },
+                "other_games_min_quality": {
+                  "type": "string",
+                  "title": "Which other games to show",
+                  "enum": [
+                    "any",
+                    "ranked"
+                  ],
+                  "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+                  "default": "ranked",
+                  "x-advanced": true
+                },
+                "other_games_divisions": {
+                  "type": "array",
+                  "title": "Divisions to include (other games)",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "fbs",
+                      "fcs",
+                      "other"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "default": [
+                    "fbs"
+                  ],
+                  "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+                  "x-widget": "checkbox-group",
                   "x-advanced": true
                 }
               }
@@ -2021,7 +2245,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2243,6 +2467,30 @@
               "description": "How often to update live game data (seconds)",
               "x-advanced": true
             },
+            "recent_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+              "x-advanced": true
+            },
+            "upcoming_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+              "x-advanced": true
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -2314,6 +2562,36 @@
                   "default": 1800,
                   "minimum": 0,
                   "maximum": 86400,
+                  "x-advanced": true
+                },
+                "other_games_min_quality": {
+                  "type": "string",
+                  "title": "Which other games to show",
+                  "enum": [
+                    "any",
+                    "ranked"
+                  ],
+                  "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+                  "default": "ranked",
+                  "x-advanced": true
+                },
+                "other_games_divisions": {
+                  "type": "array",
+                  "title": "Divisions to include (other games)",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "fbs",
+                      "fcs",
+                      "other"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "default": [
+                    "fbs"
+                  ],
+                  "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+                  "x-widget": "checkbox-group",
                   "x-advanced": true
                 }
               }
@@ -2457,7 +2735,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -2679,6 +2957,30 @@
               "description": "How often to update live game data (seconds)",
               "x-advanced": true
             },
+            "recent_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+              "x-advanced": true
+            },
+            "upcoming_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+              "x-advanced": true
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -2750,6 +3052,36 @@
                   "default": 1800,
                   "minimum": 0,
                   "maximum": 86400,
+                  "x-advanced": true
+                },
+                "other_games_min_quality": {
+                  "type": "string",
+                  "title": "Which other games to show",
+                  "enum": [
+                    "any",
+                    "ranked"
+                  ],
+                  "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+                  "default": "ranked",
+                  "x-advanced": true
+                },
+                "other_games_divisions": {
+                  "type": "array",
+                  "title": "Divisions to include (other games)",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "fbs",
+                      "fcs",
+                      "other"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "default": [
+                    "fbs"
+                  ],
+                  "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+                  "x-widget": "checkbox-group",
                   "x-advanced": true
                 }
               }
@@ -2893,7 +3225,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3115,6 +3447,30 @@
               "description": "How often to update live game data (seconds)",
               "x-advanced": true
             },
+            "recent_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+              "x-advanced": true
+            },
+            "upcoming_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+              "x-advanced": true
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -3186,6 +3542,36 @@
                   "default": 1800,
                   "minimum": 0,
                   "maximum": 86400,
+                  "x-advanced": true
+                },
+                "other_games_min_quality": {
+                  "type": "string",
+                  "title": "Which other games to show",
+                  "enum": [
+                    "any",
+                    "ranked"
+                  ],
+                  "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+                  "default": "ranked",
+                  "x-advanced": true
+                },
+                "other_games_divisions": {
+                  "type": "array",
+                  "title": "Divisions to include (other games)",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "fbs",
+                      "fcs",
+                      "other"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "default": [
+                    "fbs"
+                  ],
+                  "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+                  "x-widget": "checkbox-group",
                   "x-advanced": true
                 }
               }
@@ -3329,7 +3715,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3551,6 +3937,30 @@
               "description": "How often to update live game data (seconds)",
               "x-advanced": true
             },
+            "recent_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+              "x-advanced": true
+            },
+            "upcoming_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+              "x-advanced": true
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -3622,6 +4032,36 @@
                   "default": 1800,
                   "minimum": 0,
                   "maximum": 86400,
+                  "x-advanced": true
+                },
+                "other_games_min_quality": {
+                  "type": "string",
+                  "title": "Which other games to show",
+                  "enum": [
+                    "any",
+                    "ranked"
+                  ],
+                  "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+                  "default": "ranked",
+                  "x-advanced": true
+                },
+                "other_games_divisions": {
+                  "type": "array",
+                  "title": "Divisions to include (other games)",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "fbs",
+                      "fcs",
+                      "other"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "default": [
+                    "fbs"
+                  ],
+                  "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+                  "x-widget": "checkbox-group",
                   "x-advanced": true
                 }
               }
@@ -3765,7 +4205,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -3987,6 +4427,30 @@
               "description": "How often to update live game data (seconds)",
               "x-advanced": true
             },
+            "recent_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+              "x-advanced": true
+            },
+            "upcoming_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+              "x-advanced": true
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -4058,6 +4522,36 @@
                   "default": 1800,
                   "minimum": 0,
                   "maximum": 86400,
+                  "x-advanced": true
+                },
+                "other_games_min_quality": {
+                  "type": "string",
+                  "title": "Which other games to show",
+                  "enum": [
+                    "any",
+                    "ranked"
+                  ],
+                  "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+                  "default": "ranked",
+                  "x-advanced": true
+                },
+                "other_games_divisions": {
+                  "type": "array",
+                  "title": "Divisions to include (other games)",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "fbs",
+                      "fcs",
+                      "other"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "default": [
+                    "fbs"
+                  ],
+                  "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+                  "x-widget": "checkbox-group",
                   "x-advanced": true
                 }
               }
@@ -4201,7 +4695,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -4423,6 +4917,30 @@
               "description": "How often to update live game data (seconds)",
               "x-advanced": true
             },
+            "recent_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+              "x-advanced": true
+            },
+            "upcoming_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+              "x-advanced": true
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -4494,6 +5012,36 @@
                   "default": 1800,
                   "minimum": 0,
                   "maximum": 86400,
+                  "x-advanced": true
+                },
+                "other_games_min_quality": {
+                  "type": "string",
+                  "title": "Which other games to show",
+                  "enum": [
+                    "any",
+                    "ranked"
+                  ],
+                  "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+                  "default": "ranked",
+                  "x-advanced": true
+                },
+                "other_games_divisions": {
+                  "type": "array",
+                  "title": "Divisions to include (other games)",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "fbs",
+                      "fcs",
+                      "other"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "default": [
+                    "fbs"
+                  ],
+                  "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+                  "x-widget": "checkbox-group",
                   "x-advanced": true
                 }
               }
@@ -4637,7 +5185,7 @@
             "mode_durations": {
               "type": "object",
               "title": "Mode-Level Durations",
-              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+              "description": "Control total duration for each mode type. If not set, uses dynamic calculation (total_games × per_game_duration).",
               "properties": {
                 "recent_mode_duration": {
                   "type": [
@@ -4685,7 +5233,7 @@
     "custom_leagues": {
       "type": "array",
       "title": "Add More Leagues",
-      "description": "Add any soccer league available on ESPN. Click 'Add Item', then fill in BOTH a name and a league code. Common codes: eng.2 (English Championship), eng.3 (League One), eng.fa (FA Cup), eng.league_cup (EFL Cup), mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish S\u00fcper Lig), bel.1 (Belgian Pro League)",
+      "description": "Add any soccer league available on ESPN. Click 'Add Item', then fill in BOTH a name and a league code. Common codes: eng.2 (English Championship), eng.3 (League One), eng.fa (FA Cup), eng.league_cup (EFL Cup), mex.1 (Liga MX), arg.1 (Argentina), bra.1 (Brazil), ned.1 (Eredivisie), sco.1 (Scottish Premiership), tur.1 (Turkish Süper Lig), bel.1 (Belgian Pro League)",
       "x-widget": "array-table",
       "x-columns": [
         "name",
@@ -4919,6 +5467,17 @@
                 "minimum": 0,
                 "maximum": 86400,
                 "x-advanced": true
+              },
+              "other_games_min_quality": {
+                "type": "string",
+                "title": "Which other games to show",
+                "enum": [
+                  "any",
+                  "ranked"
+                ],
+                "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+                "default": "ranked",
+                "x-advanced": true
               }
             },
             "additionalProperties": false
@@ -5110,6 +5669,30 @@
             "minimum": 10,
             "maximum": 3600,
             "description": "How often to refresh live games in this league (seconds)",
+            "x-advanced": true
+          },
+          "recent_update_interval": {
+            "type": "integer",
+            "default": 3600,
+            "minimum": 60,
+            "maximum": 86400,
+            "description": "How often the finished-games list is rebuilt (seconds). This also sets how often a game that has just ended can appear. Lower it if you want results sooner; each rebuild is one request against a shared cache.",
+            "x-advanced": true
+          },
+          "upcoming_update_interval": {
+            "type": "integer",
+            "default": 3600,
+            "minimum": 60,
+            "maximum": 86400,
+            "description": "How often the upcoming-games list is rebuilt (seconds). Selection and the non-favorite rotation both run on the display side now, so this only governs how often NEW games enter the pool -- an hour is usually right for a schedule that changes daily.",
+            "x-advanced": true
+          },
+          "stale_game_timeout": {
+            "type": "integer",
+            "default": 300,
+            "minimum": 60,
+            "maximum": 3600,
+            "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
             "x-advanced": true
           }
         },
@@ -5762,6 +6345,36 @@
       "minimum": 0,
       "maximum": 86400,
       "x-advanced": true
+    },
+    "other_games_min_quality": {
+      "type": "string",
+      "title": "Which other games to show",
+      "enum": [
+        "any",
+        "ranked"
+      ],
+      "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+      "default": "ranked",
+      "x-advanced": true
+    },
+    "other_games_divisions": {
+      "type": "array",
+      "title": "Divisions to include (other games)",
+      "items": {
+        "type": "string",
+        "enum": [
+          "fbs",
+          "fcs",
+          "other"
+        ]
+      },
+      "uniqueItems": true,
+      "default": [
+        "fbs"
+      ],
+      "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+      "x-widget": "checkbox-group",
+      "x-advanced": true
     }
   },
   "additionalProperties": false,
@@ -5777,11 +6390,14 @@
     "show_odds",
     "update_interval_seconds",
     "live_update_interval",
+    "stale_game_timeout",
     "recent_update_interval",
     "upcoming_update_interval",
     "recent_games_to_show",
     "other_recent_games_to_show",
     "other_rotation_interval_seconds",
+    "other_games_min_quality",
+    "other_games_divisions",
     "upcoming_games_to_show",
     "other_upcoming_games_to_show",
     "show_favorite_teams_only",

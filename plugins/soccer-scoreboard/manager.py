@@ -422,6 +422,27 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "exclude_teams": league_config.get("exclude_teams", []),
                 "display_modes": manager_display_modes,
                 "recent_games_to_show": game_limits.get("recent_games_to_show", league_config.get("recent_games_to_show", 5)),
+                # These ride the same source as the limits above, which is where the
+                # schema declares them. Managers read a translated config, not the
+                # plugin config, so a key missing here is a setting the user can
+                # change in the web UI that silently never reaches the code.
+                "other_upcoming_games_to_show": game_limits.get(
+                    "other_upcoming_games_to_show",
+                    game_limits.get("upcoming_games_to_show", 10),
+                ),
+                "other_recent_games_to_show": game_limits.get(
+                    "other_recent_games_to_show",
+                    game_limits.get("recent_games_to_show", 5),
+                ),
+                "other_rotation_interval_seconds": game_limits.get(
+                    "other_rotation_interval_seconds", 1800
+                ),
+                "other_games_min_quality": game_limits.get(
+                    "other_games_min_quality", "ranked"
+                ),
+                "other_games_divisions": list(
+                    game_limits.get("other_games_divisions", ["fbs"])
+                ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", league_config.get("upcoming_games_to_show", 10)),
                 "show_records": self.config.get("show_records", False),
                 "show_ranking": self.config.get("show_ranking", False),
@@ -430,6 +451,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "update_interval_seconds", 3600
                 ),
                 "live_update_interval": league_config.get("live_update_interval", 30),
+                "recent_update_interval": league_config.get("recent_update_interval", 3600),
+                "upcoming_update_interval": league_config.get("upcoming_update_interval", 3600),
+                "stale_game_timeout": league_config.get("stale_game_timeout", 300),
                 "live_game_duration": league_config.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": league_config.get(
                     "non_favorite_live_game_duration", 0
@@ -725,6 +749,27 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "exclude_teams": custom_league.get("exclude_teams", []),
                 "display_modes": manager_display_modes,
                 "recent_games_to_show": game_limits.get("recent_games_to_show", 5),
+                # These ride the same source as the limits above, which is where the
+                # schema declares them. Managers read a translated config, not the
+                # plugin config, so a key missing here is a setting the user can
+                # change in the web UI that silently never reaches the code.
+                "other_upcoming_games_to_show": game_limits.get(
+                    "other_upcoming_games_to_show",
+                    game_limits.get("upcoming_games_to_show", 10),
+                ),
+                "other_recent_games_to_show": game_limits.get(
+                    "other_recent_games_to_show",
+                    game_limits.get("recent_games_to_show", 5),
+                ),
+                "other_rotation_interval_seconds": game_limits.get(
+                    "other_rotation_interval_seconds", 1800
+                ),
+                "other_games_min_quality": game_limits.get(
+                    "other_games_min_quality", "ranked"
+                ),
+                "other_games_divisions": list(
+                    game_limits.get("other_games_divisions", ["fbs"])
+                ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", 10),
                 "show_records": self.config.get("show_records", False),
                 "show_ranking": self.config.get("show_ranking", False),
@@ -737,6 +782,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 # league can ask for one.
                 "update_interval_seconds": custom_league.get("update_interval_seconds", 3600),
                 "live_update_interval": custom_league.get("live_update_interval", 30),
+                "recent_update_interval": custom_league.get("recent_update_interval", 3600),
+                "upcoming_update_interval": custom_league.get("upcoming_update_interval", 3600),
+                "stale_game_timeout": custom_league.get("stale_game_timeout", 300),
                 "live_game_duration": custom_league.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": custom_league.get(
                     "non_favorite_live_game_duration", 0

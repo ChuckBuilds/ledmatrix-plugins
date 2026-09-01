@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.24.2",
+  "version": "1.25.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,13 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.25.0",
+      "released": "2026-08-31",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The other slots now fill with games worth watching, and the settings that govern them take effect. football-scoreboard has had this since 2.29.0; these eight lineages had the settings in their schema and nothing reading them, so a board could ask for ranked games only and still get the next N kickoffs. The non-favourite pool is now ordered by the matchup rather than the clock, filtered by quality and division, and re-cut on the display path every other_rotation_interval_seconds so a long pool rotates instead of showing its first N forever. Favourites keep their slots through every cut, one game per team, and the filters fail open as a set: if a filter matches nothing the mode shows the unfiltered list rather than going blank. Also retires the 'broadcast' tier of other_games_min_quality, matching football-scoreboard 3.0.0. Measured there against a real Week 1 and Week 2 college slate it passed 174 of 175 games -- ESPN publishes a broadcaster for nearly everything now, ESPN+ included -- so it read as a quality bar and behaved as 'any'. A board still holding the old value now migrates to 'ranked' with a warning rather than silently getting no filtering, and the option is gone from the settings UI.",
+      "changelog": "The other slots now fill with games worth watching, and the settings that govern them take effect. football-scoreboard has had this since 2.29.0; these eight lineages had the settings in their schema and nothing reading them, so a board could ask for ranked games only and still get the next N kickoffs. The non-favourite pool is now ordered by the matchup rather than the clock, filtered by quality and division, and re-cut on the display path every other_rotation_interval_seconds so a long pool rotates instead of showing its first N forever. Favourites keep their slots through every cut, one game per team, and the filters fail open as a set: if a filter matches nothing the mode shows the unfiltered list rather than going blank. Also retires the 'broadcast' tier of other_games_min_quality, matching football-scoreboard 3.0.0. Measured there against a real Week 1 and Week 2 college slate it passed 174 of 175 games -- ESPN publishes a broadcaster for nearly everything now, ESPN+ included -- so it read as a quality bar and behaved as 'any'. A board still holding the old value now migrates to 'ranked' with a warning rather than silently getting no filtering, and the option is gone from the settings UI."
+    },
     {
       "version": "1.24.2",
       "released": "2026-08-31",
