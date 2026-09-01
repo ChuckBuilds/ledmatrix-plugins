@@ -9,6 +9,9 @@
 - **The poll vocabulary now excludes tournament seedings too.** Shared with the sibling lineages, where it matters live: ESPN fronts men's and women's college hockey with *NCAA Tournament Seedings*, so their badge drew a 16-team bracket seed. College football publishes no seedings block, so this is hardening here — it keeps all nine `sports.py` copies identical, which `scripts/test_poll_choice.py` now enforces.
 - **An unusable `other_games_min_quality` falls back to `ranked` with a warning.** It used to fall through every branch of the filter and silently mean `any`: a quality bar the board believes it has and does not.
 
+### Fixed
+- **Dynamic duration sizes a recent or upcoming cycle from the games actually on the board.** `get_cycle_duration` asked the manager for `recent_games`/`upcoming_games` — lists `SportsRecent` and `SportsUpcoming` declared in `__init__` and never filled, since the selected games go to `games_list`. So `total_games` was always 0 and every cycle fell through to the "no games yet" default of three games' worth instead of scaling with the number of cards. Live mode reads `live_games`, which *is* populated, which is part of why it went unnoticed. It now uses `_get_games_from_manager` — the resolution the scroll path already used, and the one `afl` and `nrl` already called here. The two dead attributes are removed across every lineage, and `scripts/test_cycle_duration_counts_real_games.py` holds all 13 copies of the function to it.
+
 ### Removed
 - **The `broadcast` quality tier.** Measured against a real Week 1 and Week 2 college slate it passed **174 of 175** games — ESPN lists a broadcaster for nearly everything now, ESPN+ included — so it read as a quality bar in the dropdown and behaved as `any`. Boards still holding it are read as `ranked` and say so once in the log; changing the setting clears the schema warning the core raises for a value no longer in the enum.
 

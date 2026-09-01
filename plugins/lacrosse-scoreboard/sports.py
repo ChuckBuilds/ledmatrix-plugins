@@ -2031,7 +2031,6 @@ class SportsUpcoming(SportsCore):
         sport_key: str,
     ):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        self.upcoming_games = []  # Store all fetched upcoming games initially
         self.games_list = []  # Filtered list for display (favorite teams)
         self.current_game_index = 0
         self.last_update = 0
@@ -2564,7 +2563,6 @@ class SportsRecent(SportsCore):
         sport_key: str,
     ):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        self.recent_games = []  # Store all fetched recent games initially
         self.games_list = []  # Filtered list for display (favorite teams)
         self.current_game_index = 0
         self.last_update = 0
