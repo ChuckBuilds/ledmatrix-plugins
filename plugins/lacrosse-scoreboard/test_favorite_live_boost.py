@@ -226,6 +226,7 @@ def test_recent_games_hide_excluded_team():
     recent._games_lock = threading.RLock()
     recent._zero_clock_timestamps = {}
     recent.is_enabled = True
+    recent.show_odds = False  # update() offers the selected finals their odds
 
     final_game = _game("g1", "DUKE", "UNC")
     final_game.update({"is_final": True, "start_time_utc": datetime.now(timezone.utc) - timedelta(days=1)})
