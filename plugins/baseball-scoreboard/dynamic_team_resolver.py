@@ -117,6 +117,44 @@ class DynamicTeamResolver:
             self.logger.error(f"Error resolving dynamic team {dynamic_team}: {e}")
             return []
 
+    # Polls AP_TOP_n may resolve from. ESPN answers the college football
+    # rankings endpoint with four blocks -- AP Top 25, the AFCA Coaches Poll,
+    # the FCS Coaches Poll and the AFCA Division II Poll -- and taking the
+    # first is FBS by luck rather than by choice: nothing in the payload
+    # promises that order, and ESPN changes it, adding the CFP rankings in
+    # November. With a lower-division poll leading, AP_TOP_25 resolves to 25
+    # FCS schools and makes them the user's FAVOURITE teams -- and favourites
+    # are never filtered by quality or division, so every one of those games
+    # reaches the panel.
+    #
+    # An EXCLUDE list, not an allow list, so a poll ESPN invents at the top
+    # division still counts. Kept in step with SportsCore._choose_poll in
+    # sports.py, which cannot be imported here: sports.py imports this module,
+    # and the core loads both as bare top-level names with no package context,
+    # so the dependency has to point one way.
+    _NON_TOP_POLL_TYPES = frozenset({'fcs'})
+    _NON_TOP_POLL_NAMES = ('fcs', 'division ii', 'division iii',
+                           'div ii', 'div iii')
+
+    def _choose_poll(self, rankings_data):
+        """The first poll ESPN lists that is not a lower-division one.
+
+        ESPN's own order is otherwise kept, so whichever poll it fronts is
+        still the one AP_TOP_n slices.
+        """
+        for block in rankings_data or []:
+            name = str(block.get('name') or '').lower()
+            kind = str(block.get('type') or '').lower()
+            if kind in self._NON_TOP_POLL_TYPES or any(
+                marker in name for marker in self._NON_TOP_POLL_NAMES
+            ):
+                self.logger.debug(
+                    "Skipping %s -- not a top-division poll",
+                    block.get('name') or kind)
+                continue
+            return block
+        return {}
+
     def _fetch_rankings(self, sport: str) -> List[str]:
         """
         Fetch current rankings from ESPN API.
@@ -153,8 +191,8 @@ class DynamicTeamResolver:
 
             # Extract team abbreviations from rankings
             teams = []
-            if 'rankings' in data and data['rankings']:
-                ranking = data['rankings'][0]  # Use first ranking (usually AP)
+            ranking = self._choose_poll(data.get('rankings'))
+            if ranking:
                 if 'ranks' in ranking:
                     for rank_item in ranking['ranks']:
                         team_info = rank_item.get('team', {})

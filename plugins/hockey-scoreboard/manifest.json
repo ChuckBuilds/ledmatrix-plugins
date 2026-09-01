@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.20.1",
+  "version": "1.20.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,13 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.20.2",
+      "released": "2026-08-31",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The AP_TOP_n favourite groups now resolve from the top division's poll. ESPN answers the college football rankings endpoint with four blocks -- AP Top 25, the AFCA Coaches Poll, the FCS Coaches Poll and the AFCA Division II Poll -- and the resolver took whichever came first. AP leads today, so it was FBS by luck rather than by choice: nothing in the payload promises that order and ESPN changes it, adding the CFP rankings in November. With a lower-division poll leading, AP_TOP_25 resolved to 25 FCS schools and installed them as the user's FAVOURITE teams -- and favourites are never filtered by quality or division, so every one of those games would have reached the panel. ESPN's own order is kept among top-division polls; only the divisions below FBS are stepped over.",
+      "changelog": "The AP_TOP_n favourite groups now resolve from the top division's poll. ESPN answers the college football rankings endpoint with four blocks -- AP Top 25, the AFCA Coaches Poll, the FCS Coaches Poll and the AFCA Division II Poll -- and the resolver took whichever came first. AP leads today, so it was FBS by luck rather than by choice: nothing in the payload promises that order and ESPN changes it, adding the CFP rankings in November. With a lower-division poll leading, AP_TOP_25 resolved to 25 FCS schools and installed them as the user's FAVOURITE teams -- and favourites are never filtered by quality or division, so every one of those games would have reached the panel. ESPN's own order is kept among top-division polls; only the divisions below FBS are stepped over."
+    },
     {
       "version": "1.20.1",
       "released": "2026-08-30",

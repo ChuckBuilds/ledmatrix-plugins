@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.35.2] - 2026-08-31
+
+### Changed
+- **`DynamicTeamResolver` no longer takes ESPN's first ranking block on trust.** Hardening only, with no behaviour change here: this plugin's `AP_TOP_n` patterns resolve from the college baseball poll, and nothing routes to the college football endpoint its resolver also maps. In the copies where that endpoint *is* reachable, ESPN returns four blocks — AP Top 25, AFCA Coaches, FCS Coaches, AFCA Division II — and taking the first made `AP_TOP_25` resolve to 25 FCS schools the moment ESPN reordered them. The shared resolver is kept in step across all four copies, and `scripts/test_dynamic_poll_choice.py` now holds every one of them to it.
+
 ## [1.35.1] - 2026-08-30
 
 ### Fixed
