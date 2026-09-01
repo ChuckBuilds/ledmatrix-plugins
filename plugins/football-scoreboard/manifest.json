@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,13 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.1.0",
+      "released": "2026-09-01",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "The bundled scroll fallback is gone, and the plugin now requires LEDMatrix 3.2.0. scroll_display.py carried a guarded import of the core's src.common.sports_scroll with a frozen pre-adoption copy, scroll_display_legacy.py, behind it, so it kept working on a core that predated the module (B5). The copy is deleted and the import is now plain -- keeping the try/except with nothing behind it would only mislabel the failure, naming the missing scroll_display_legacy instead of the core module actually absent, which is the single log line a user gets before the scoreboard stops appearing. The floor rises to 3.2.0, the release that ships the module, and the store refuses to install or update this version onto anything older. Unlike the other scoreboards, the frozen copy here was not identical to the live path: its _default_game_card_width returned max(128, height*2 + 40) while the adopted class measures the score gap with a probe renderer, which is what stopped the score being drawn across the logos on tall cards. Measured by building both classes across every supported panel, the two agree exactly on all 32-tall panels (128px) and differ by 8px on taller ones -- 168 to 176 at 64 tall, 232 to 240 at 96, 296 to 304 at 128 -- in classic and adaptive layout alike. That difference only ever reached users on a pre-3.2.0 core, since everyone on 3.2.0 or newer has been on the measured path since 2.29.0; and those users keep the version they have, because the new floor stops this one reaching them. So no board changes what it draws. 709 lines removed.",
+      "changelog": "The bundled scroll fallback is gone, and the plugin now requires LEDMatrix 3.2.0. scroll_display.py carried a guarded import of the core's src.common.sports_scroll with a frozen pre-adoption copy, scroll_display_legacy.py, behind it, so it kept working on a core that predated the module (B5). The copy is deleted and the import is now plain -- keeping the try/except with nothing behind it would only mislabel the failure, naming the missing scroll_display_legacy instead of the core module actually absent, which is the single log line a user gets before the scoreboard stops appearing. The floor rises to 3.2.0, the release that ships the module, and the store refuses to install or update this version onto anything older. Unlike the other scoreboards, the frozen copy here was not identical to the live path: its _default_game_card_width returned max(128, height*2 + 40) while the adopted class measures the score gap with a probe renderer, which is what stopped the score being drawn across the logos on tall cards. Measured by building both classes across every supported panel, the two agree exactly on all 32-tall panels (128px) and differ by 8px on taller ones -- 168 to 176 at 64 tall, 232 to 240 at 96, 296 to 304 at 128 -- in classic and adaptive layout alike. That difference only ever reached users on a pre-3.2.0 core, since everyone on 3.2.0 or newer has been on the measured path since 2.29.0; and those users keep the version they have, because the new floor stops this one reaching them. So no board changes what it draws. 709 lines removed."
+    },
     {
       "version": "3.0.0",
       "released": "2026-08-31",
@@ -630,7 +637,7 @@
   "config_schema": "config_schema.json",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.2.0"
   ],
   "display": {
     "design_size": {
