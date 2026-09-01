@@ -57,8 +57,9 @@ usually a minimum-core-version key and a description:
 > entry, prefer **`ledmatrix_min_version`** and **`notes`** for consistency — but
 > check what your plugin already uses and match it until a repo-wide normalization
 > lands.
-
-> **⚠️ A top-level floor overrides `versions[]` entirely.** The core resolves the
+>
+> **⚠️ And the floor is not only a `versions[]` field.** A top-level
+> `min_ledmatrix_version` overrides that array entirely. The core resolves the
 > floor in this order (`src/plugin_system/compatibility.py:declared_min_version`),
 > stopping at the first one it finds:
 >
