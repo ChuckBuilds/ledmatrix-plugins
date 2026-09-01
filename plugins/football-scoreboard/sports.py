@@ -2260,9 +2260,10 @@ class SportsCore(ABC):
     # Type is checked first and name second, because the Division II block
     # types as "afca" while the FBS coaches poll -- also an AFCA poll -- types
     # as "usa", so the type alone cannot tell those two apart.
-    _NON_TOP_POLL_TYPES: ClassVar[frozenset] = frozenset({"fcs"})
+    _NON_TOP_POLL_TYPES: ClassVar[frozenset] = frozenset({"tournament", "fcs"})
     _NON_TOP_POLL_NAMES: ClassVar[Tuple[str, ...]] = (
-        "fcs", "division ii", "division iii", "div ii", "div iii",
+        "tournament", "seedings", "fcs",
+        "division ii", "division iii", "div ii", "div iii",
     )
     # What other_games_min_quality may be. "broadcast" is retired and migrates
     # to "ranked" -- see _normalise_quality.

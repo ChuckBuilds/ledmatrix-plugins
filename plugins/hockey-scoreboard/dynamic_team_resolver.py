@@ -138,8 +138,9 @@ class DynamicTeamResolver:
     # sports.py, which cannot be imported here: sports.py imports this module,
     # and the core loads both as bare top-level names with no package context,
     # so the dependency has to point one way.
-    _NON_TOP_POLL_TYPES = frozenset({'fcs'})
-    _NON_TOP_POLL_NAMES = ('fcs', 'division ii', 'division iii',
+    _NON_TOP_POLL_TYPES = frozenset({'tournament', 'fcs'})
+    _NON_TOP_POLL_NAMES = ('tournament', 'seedings', 'fcs',
+                           'division ii', 'division iii',
                            'div ii', 'div iii')
 
     def _choose_poll(self, rankings_data):

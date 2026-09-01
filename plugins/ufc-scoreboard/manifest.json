@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,13 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.7.2",
+      "released": "2026-08-31",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Hardening only, with no behaviour change here: this plugin's leagues publish no poll, so its rank badge reads nothing either way. The shared sports.py now chooses the ranking block rather than taking ESPN's first, because that endpoint fronts NCAA tournament SEEDINGS for college hockey and lower-division polls for college football, and the copies are kept in step rather than left to diverge. A repo guard holds every one of them to it.",
+      "changelog": "Hardening only, with no behaviour change here: this plugin's leagues publish no poll, so its rank badge reads nothing either way. The shared sports.py now chooses the ranking block rather than taking ESPN's first, because that endpoint fronts NCAA tournament SEEDINGS for college hockey and lower-division polls for college football, and the copies are kept in step rather than left to diverge. A repo guard holds every one of them to it."
+    },
     {
       "version": "1.7.1",
       "released": "2026-08-30",
