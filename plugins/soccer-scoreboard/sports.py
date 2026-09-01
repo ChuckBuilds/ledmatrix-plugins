@@ -3075,6 +3075,17 @@ class SportsRecent(SportsCore):
                     len(team_games)
                 )
 
+            # Odds are fetched for the games that survived selection, same as
+            # SportsUpcoming does -- this class never fetched them at all, so
+            # the Recent screen drew its "odds if available" without anything
+            # ever attaching them, and every final rendered bare. ESPN keeps a
+            # completed game's closing line on the same endpoint, so a final
+            # is as answerable as an upcoming game. Same fix as
+            # football-scoreboard 2.29.3.
+            if self.show_odds:
+                for game in team_games:
+                    self._fetch_odds(game)
+
             # Check if the list of games to display has changed (protected by lock for thread safety)
             with self._games_lock:
                 new_game_ids = {g["id"] for g in team_games}
