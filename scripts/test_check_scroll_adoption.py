@@ -21,6 +21,14 @@ So these pin the two ways the gate could quietly stop working:
   `SyntaxError` and returning no findings would let a malformed
   `scroll_display.py` skip the check and exit 0.
 
+`sunset_violations` gets its own table, because it takes a DIRECTORY rather
+than a file and asks the opposite question: not "is the fallback inlined" but
+"is the fallback gone". Its most important case is the negative one -- an
+unrelated `try/except` must not read as the guard returning. These files carry
+two of those already (ScrollHelper, the Pillow resample constant) and
+basketball has three, so a check that fired on any try/except would fail every
+sunset plugin the day it landed.
+
 Exit codes follow the convention in `run_plugin_tests.py`: 0 pass, 1 fail.
 """
 
@@ -91,6 +99,57 @@ CASES = {
 }
 
 
+CORE_IMPORT = "from src.common.sports_scroll import SportsScrollDisplay\n"
+
+# name -> (scroll_display.py source, bundled copy present, expected problems)
+SUNSET_CASES = {
+    "collapsed and unguarded": (
+        CORE_IMPORT + "class ScrollDisplay(SportsScrollDisplay):\n    pass\n",
+        False, 0),
+    "the guard came back": (
+        "try:\n"
+        "    from src.common.sports_scroll import SportsScrollDisplay\n"
+        "except ModuleNotFoundError:\n"
+        "    SportsScrollDisplay = None\n",
+        False, 2),           # guarded, and no top-level import
+    "the bundled copy came back": (
+        CORE_IMPORT, True, 1),
+    "the import moved into an if": (
+        "if True:\n"
+        "    from src.common.sports_scroll import SportsScrollDisplay\n",
+        False, 1),
+    # The negative case, and the one most likely to be got wrong: these files
+    # legitimately guard OTHER imports.
+    "an unrelated try/except is fine": (
+        "try:\n    import ujson as json\nexcept ImportError:\n    import json\n"
+        + CORE_IMPORT,
+        False, 0),
+}
+
+
+def check_sunset_cases() -> list[str]:
+    failures = []
+    with tempfile.TemporaryDirectory() as tmp:
+        plugin_dir = Path(tmp)
+        scroll = plugin_dir / "scroll_display.py"
+        legacy = plugin_dir / "scroll_display_legacy.py"
+        for name, (source, has_copy, expected) in SUNSET_CASES.items():
+            scroll.write_text(source, encoding="utf-8")
+            if has_copy:
+                legacy.write_text("class LegacyScrollDisplay:\n    pass\n",
+                                  encoding="utf-8")
+            elif legacy.exists():
+                legacy.unlink()
+            actual = gate.sunset_violations(plugin_dir)
+            if len(actual) == expected:
+                print(f"  ok   sunset: {name}")
+            else:
+                print(f"  FAIL sunset: {name}: expected {expected} problem(s), "
+                      f"got {len(actual)}: {actual}")
+                failures.append(f"sunset {name}: expected {expected}, got {actual}")
+    return failures
+
+
 def main() -> int:
     failures: list[str] = []
 
@@ -115,13 +174,15 @@ def main() -> int:
             print(f"  FAIL malformed file returned {actual} instead of raising")
             failures.append(f"malformed file returned {actual} instead of raising")
 
+        failures.extend(check_sunset_cases())
+
     print()
     if failures:
         print(f"{len(failures)} failure(s):", file=sys.stderr)
         for failure in failures:
             print(f"  - {failure}", file=sys.stderr)
         return 1
-    print(f"All {len(CASES) + 1} cases passed.")
+    print(f"All {len(CASES) + len(SUNSET_CASES) + 1} cases passed.")
     return 0
 
 
