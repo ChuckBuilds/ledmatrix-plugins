@@ -240,9 +240,8 @@
                 "enum": [
                   "press_start",
                   "four_by_six",
+                  "five_by_seven",
                   "tom_thumb",
-                  "tiny",
-                  "picopixel",
                   null
                 ],
                 "default": null,
@@ -288,9 +287,8 @@
                 "enum": [
                   "press_start",
                   "four_by_six",
+                  "five_by_seven",
                   "tom_thumb",
-                  "tiny",
-                  "picopixel",
                   null
                 ],
                 "default": null,
@@ -359,9 +357,8 @@
       "enum": [
         "press_start",
         "four_by_six",
-        "tom_thumb",
-        "tiny",
-        "picopixel"
+        "five_by_seven",
+        "tom_thumb"
       ],
       "default": "press_start",
       "description": "Global font family for countdown text (can be overridden per countdown)"
@@ -404,9 +401,8 @@
       "enum": [
         "press_start",
         "four_by_six",
+        "five_by_seven",
         "tom_thumb",
-        "tiny",
-        "picopixel",
         null
       ],
       "default": null,

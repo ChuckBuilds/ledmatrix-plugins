@@ -150,7 +150,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Flight Tracker](./plugins/ledmatrix-flights/) | Real-time ADS-B aircraft tracking with map display | |
-| [Countdown Display](./plugins/countdown/) | Customizable countdowns for birthdays, events, holidays | |
+| [Countdown Display](./plugins/countdown/) | Customizable countdowns for birthdays, events, holidays | <a href="./plugins/countdown/"><img src="./docs/assets/countdown/hero.png" width="240" alt="countdown on an LED panel"></a> |
 | [Election Results](./plugins/ledmatrix-elections/) | Live election results ticker with full-screen race interrupts | |
 
 ### Holiday (1)

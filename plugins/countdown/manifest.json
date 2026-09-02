@@ -1,7 +1,7 @@
 {
   "id": "countdown",
   "name": "Countdown Display",
-  "version": "3.2.1",
+  "version": "3.3.0",
   "author": "ChuckBuilds",
   "description": "Create and manage customizable countdowns with images. Perfect for birthdays, holidays, events, and special occasions.",
   "entry_point": "manager.py",
@@ -21,6 +21,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "3.3.0",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Make every font in the picker actually work. Only two of the five offered families rendered: tiny and picopixel have no font file anywhere, and every bitmap family fell back silently because a .bdf exists at exactly one pixel size and the loader asked for font_size. Bitmap faces are now loaded at the size the file's PIXEL_SIZE header declares, and bitmap families use the plugin's own loader even when the core's catalog claims them -- the core resolver degrades to the default face without signalling it, which is why five_by_seven silently did nothing. tom_thumb is wired up (the file was always shipped, just unmapped), and the enum now lists the four families that verifiably render distinctly: press_start, four_by_six, five_by_seven, tom_thumb. Also rewrites the README around real rendered screenshots and documents all 40 settings, including the countdown-value ladder, which the old README got wrong: there is no '1 Day' and no 'TODAY!' string -- between one and two days out the plugin writes 'Tomorrow', and a passed countdown reads 'Nd ago' and is hidden unless show_expired is on."
+    },
     {
       "version": "3.2.1",
       "released": "2026-08-13",
@@ -93,5 +99,5 @@
   "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/countdown",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-08-13"
+  "last_updated": "2026-09-02"
 }
