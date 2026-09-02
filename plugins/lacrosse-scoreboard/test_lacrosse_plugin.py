@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
 import types
 import urllib.error
@@ -53,6 +54,22 @@ def _install_host_stubs() -> None:
     ]
     for name in stub_modules:
         sys.modules.setdefault(name, types.ModuleType(name))
+    # src.common.sports_card is pure Python with no hardware dependency, so the
+    # real module is loaded rather than stubbed: game_renderer calls into it for
+    # colours, dates and font sizes, and a bare stub would satisfy the import
+    # and then fail at the first call. Located from the core on sys.path.
+    if "src.common.sports_card" not in sys.modules:
+        import importlib.util
+        for _cand in sys.path:
+            _p = os.path.join(_cand, "src", "common", "sports_card.py") if _cand else ""
+            if _p and os.path.isfile(_p):
+                _spec = importlib.util.spec_from_file_location(
+                    "src.common.sports_card", _p)
+                _mod = importlib.util.module_from_spec(_spec)
+                _spec.loader.exec_module(_mod)
+                sys.modules["src.common.sports_card"] = _mod
+                sys.modules["src.common"].sports_card = _mod
+                break
     sys.modules["src.plugin_system.base_plugin"].BasePlugin = object
     sys.modules["src.plugin_system.base_plugin"].VegasDisplayMode = None
     sys.modules["src.background_data_service"].get_background_service = (
