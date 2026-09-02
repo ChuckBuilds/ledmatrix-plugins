@@ -17,14 +17,15 @@ real 2026 finals series.*
 ## Table of Contents
 
 1. [What's On Screen](#whats-on-screen)
-2. [Quick Start](#quick-start)
-3. [How Games Are Picked](#how-games-are-picked)
+2. [Installation](#installation)
+3. [Quick Start](#quick-start)
+4. [How Games Are Picked](#how-games-are-picked)
    - [The three selection modes](#the-three-selection-modes)
    - [What the "games to show" numbers mean](#what-the-games-to-show-numbers-mean)
    - [Which games exist to pick from](#which-games-exist-to-pick-from)
    - [Live games and priority](#live-games-and-priority)
    - [Seeing live games more often in the Vegas ticker](#seeing-live-games-more-often-in-the-vegas-ticker)
-4. [Configuration Reference](#configuration-reference)
+5. [Configuration Reference](#configuration-reference)
    - [Teams and filtering](#teams-and-filtering)
    - [Display modes and rotation](#display-modes-and-rotation)
    - [How long things stay on screen](#how-long-things-stay-on-screen)
@@ -34,12 +35,12 @@ real 2026 finals series.*
    - [Celebrations](#celebrations)
    - [Fonts, colours and offsets](#fonts-colours-and-offsets)
    - [Timezone](#timezone)
-5. [Panel Sizes](#panel-sizes)
-6. [Team Abbreviations](#team-abbreviations)
-7. [Known Limitations](#known-limitations)
-8. [Troubleshooting](#troubleshooting)
-9. [Development](#development)
-10. [Support](#support)
+6. [Panel Sizes](#panel-sizes)
+7. [Team Abbreviations](#team-abbreviations)
+8. [Known Limitations](#known-limitations)
+9. [Troubleshooting](#troubleshooting)
+10. [Development](#development)
+11. [Support](#support)
 
 ---
 
@@ -60,6 +61,17 @@ time](../../docs/assets/afl-scoreboard/display-modes.png)
 
 The away team's logo is always on the left and the home team's on the right, so
 a separator like `at` or `@` reads correctly as "away at home".
+
+---
+
+## Installation
+
+**From the Plugin Store (recommended).** Open the LEDMatrix web interface at
+`http://<your-pi-ip>:5000`, go to **Plugin Manager**, find **AFL Scoreboard**
+in the **Plugin Store** section, and click **Install**.
+
+**Manually.** Copy this directory into your LEDMatrix `plugins_directory`
+(default `plugin-repos/`) and restart the display service.
 
 ---
 
@@ -152,6 +164,26 @@ board works through the round rather than resampling the front of it. Set
 > `favorite_teams` is empty, the favourites filter is skipped entirely and you
 > get mode 1 — every game. An empty favourites list never means "show nothing".
 
+### Two settings that do nothing in this league
+
+`other_games_min_quality` and `other_games_divisions` filter which *non-favourite*
+games earn a slot in the favourites-first path. Both come from the shared sports
+engine, and neither has anything to work with here:
+
+- `other_games_min_quality: "ranked"` needs a national poll. The AFL publishes
+  none, so the filter lets every game through and no poll is requested.
+- `other_games_divisions: ["fbs"]` needs ESPN's FBS/FCS group rosters, which
+  exist for **college football and nothing else**. Asked for any other league
+  they come back empty, so no lookup is made.
+
+Your favourite teams are never filtered by either setting in any case — they
+only decide what fills the remaining slots. Leave both at their defaults.
+
+Both filters also **fail open**: if the data behind them cannot be fetched the
+game is allowed through, and if they would between them leave nothing at all,
+the unfiltered list is used instead. Setting `other_upcoming_games_to_show` to
+`0` is the one way to ask for favourites only, and that is honoured.
+
 ### What the "games to show" numbers mean
 
 `upcoming_games_to_show` and `recent_games_to_show` change meaning depending on
@@ -166,6 +198,12 @@ plugin's configuration:
 
 So with three favourite teams and `upcoming_games_to_show: 3`, exclusive mode
 can produce up to nine cards, while the other two modes produce three.
+
+**And it is a pool size, not a card count.** The panel shows one game at a time
+and keeps its place between visits, cycling through the pool. Raising
+`upcoming_games_to_show` therefore gives you a *longer lap* — any one game comes
+round **less** often, not more. To see your team's next game more, make the
+number smaller.
 
 `exclude_teams` is applied on top of all of this and beats everything — a team
 listed there is hidden from the live rotation and from recent scores even if it
@@ -336,6 +374,8 @@ also driving a panel, and raising the polling rate rarely helps.
 | `other_recent_games_to_show` | `1` | **Advanced.** Non-favourite recent games, in "favourites first" mode |
 | `other_upcoming_games_to_show` | `1` | **Advanced.** Non-favourite upcoming games, in "favourites first" mode |
 | `other_rotation_interval_seconds` | `1800` | **Advanced.** How often the non-favourite window advances |
+| `other_games_min_quality` | `ranked` | **Advanced.** Which non-favourite games earn a slot: `any` or `ranked`. **Inert for AFL** — see below |
+| `other_games_divisions` | `["fbs"]` | **Advanced.** Which divisions non-favourite games may come from. **Inert for AFL** — see below |
 | `show_records` | `false` | **Advanced.** Draw each team's season record in the bottom corners |
 | `show_ranking` | `false` | **Advanced.** Draw a rank badge. AFL publishes no poll, so this shows nothing |
 | `show_odds` | `true` | Draw the betting line. **ESPN publishes no odds for AFL** — see [Known Limitations](#known-limitations) |
@@ -497,6 +537,9 @@ name:
 
 ESPN's team list also exposes a stale `GCFC` entry mislabelled as "Sydney
 Swans". Use `SUNS` for Gold Coast.
+
+If you are ever unsure of a code, enable debug logging: the plugin logs
+`home_abbr` and `away_abbr` for every game it processes.
 
 ---
 

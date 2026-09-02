@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.19.2",
+  "version": "1.19.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,13 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.19.3",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "Documentation only. Fills gaps left by the previous README rewrite. Documents other_games_min_quality and other_games_divisions, which the rewrite dropped entirely, and records that both are inert in this league: 'ranked' needs a national poll the AFL does not publish, and the divisions filter needs ESPN's FBS/FCS group rosters, which exist for college football and nothing else. Adds that both filters fail open and that favourites are never filtered by either. Corrects the framing of upcoming_games_to_show: it is a pool the panel cycles through one card at a time, so raising it makes any one game come round less often, not more. Restores the debug-logging tip for finding team abbreviations and a manual-installation section.",
+      "changelog": "Documentation only. Fills gaps left by the previous README rewrite. Documents other_games_min_quality and other_games_divisions, which the rewrite dropped entirely, and records that both are inert in this league: 'ranked' needs a national poll the AFL does not publish, and the divisions filter needs ESPN's FBS/FCS group rosters, which exist for college football and nothing else. Adds that both filters fail open and that favourites are never filtered by either. Corrects the framing of upcoming_games_to_show: it is a pool the panel cycles through one card at a time, so raising it makes any one game come round less often, not more. Restores the debug-logging tip for finding team abbreviations and a manual-installation section."
+    },
     {
       "version": "1.19.2",
       "released": "2026-09-02",
