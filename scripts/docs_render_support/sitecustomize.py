@@ -44,3 +44,11 @@ if _ISO:
 
     _datetime_module.datetime = _FrozenDateTime
     _time_module.time = lambda: _timestamp
+
+# Recorded HTTP responses, for managers that fetch without reading the cache.
+try:
+    import _docs_http_replay
+
+    _docs_http_replay.install()
+except Exception:  # never let doc tooling break the render it is measuring
+    pass

@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.37.1",
+  "version": "1.37.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,13 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.37.2",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "Documentation only, no behaviour change. Rewrites the README around real rendered screenshots and documents every configuration option. Leads with the structural thing that trips people up: almost every setting lives inside a per-league block (mlb/milb/ncaa_baseball), and only nine are plugin-wide, so favorite_teams at the top level does nothing. Explains the three game-selection paths and that upcoming_games_to_show is a per-team budget under show_favorite_teams_only but a total otherwise. Documents the four extra baseball screens (pitcher/batter, last play, player card, traditional scoreboard), all off by default and all costing an extra per-game fetch, and notes show_odds is fetched asynchronously so the line appears a moment after the card is drawn.",
+      "changelog": "Documentation only, no behaviour change. Rewrites the README around real rendered screenshots and documents every configuration option. Leads with the structural thing that trips people up: almost every setting lives inside a per-league block (mlb/milb/ncaa_baseball), and only nine are plugin-wide, so favorite_teams at the top level does nothing. Explains the three game-selection paths and that upcoming_games_to_show is a per-team budget under show_favorite_teams_only but a total otherwise. Documents the four extra baseball screens (pitcher/batter, last play, player card, traditional scoreboard), all off by default and all costing an extra per-game fetch, and notes show_odds is fetched asynchronously so the line appears a moment after the card is drawn."
+    },
     {
       "version": "1.37.1",
       "released": "2026-09-02",
