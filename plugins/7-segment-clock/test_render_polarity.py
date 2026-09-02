@@ -7,11 +7,12 @@ Run standalone from the plugin directory:
     cd plugins/7-segment-clock
     python test_render_polarity.py
 
-The digit assets encode lit segments as fully *transparent* pixels and unlit
-areas as opaque black. The renderer must therefore color the transparent
-pixels. A previous version colored the opaque pixels instead, which produced a
-fully blank frame (nothing colored) or, when "color every opaque pixel" was
-tried, garbled blocks (e.g. "1" rendered as a solid rectangle).
+The digit assets are 1-bit bitmaps: a *bright* pixel is a lit segment and a
+black pixel is unlit. The renderer must therefore color the bright pixels. A
+previous version keyed off alpha instead ("transparent means lit"), which the
+1-bit assets never satisfy, so every frame came out completely blank. Coloring
+the black pixels instead is the other failure mode: it produces garbled blocks
+(e.g. "1" rendered as a solid rectangle).
 
 This test renders digits through the real `_render_digit` and asserts:
   1. a digit with all segments lit ("8") produces visible pixels  -> not blank

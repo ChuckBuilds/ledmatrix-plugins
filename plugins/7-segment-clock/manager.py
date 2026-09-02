@@ -177,6 +177,42 @@ class SevenSegmentClockPlugin(BasePlugin):
 
         return f"{hour_str}:{minute_str}", separator_visible
 
+    def _colorize(
+        self, base_image: Image.Image, color: Tuple[int, int, int], scale: float = 1.0
+    ) -> Image.Image:
+        """Recolor a digit/separator asset and return it on a transparent field.
+
+        The assets are 1-bit bitmaps: a *bright* pixel is a lit segment and a
+        black pixel is unlit. Unlit pixels come back fully transparent so the
+        caller can paste the result straight over whatever is already on the
+        panel.
+        """
+        rgba = base_image.convert("RGBA")
+        colored_image = Image.new("RGBA", rgba.size, (0, 0, 0, 0))
+        lit = (*color, 255)
+        clear = (0, 0, 0, 0)
+
+        source = rgba.load()
+        target = colored_image.load()
+        for x in range(rgba.width):
+            for y in range(rgba.height):
+                r, g, b, a = source[x, y]
+                # Visible and not black => a lit segment.
+                target[x, y] = lit if (a > 0 and (r or g or b)) else clear
+
+        if scale != 1.0:
+            new_width = max(1, int(colored_image.width * scale))
+            new_height = max(1, int(colored_image.height * scale))
+            try:
+                # Try new PIL API first
+                resample = Image.Resampling.LANCZOS
+            except AttributeError:
+                # Fall back to old PIL API
+                resample = Image.LANCZOS
+            colored_image = colored_image.resize((new_width, new_height), resample)
+
+        return colored_image
+
     def _render_digit(
         self, digit: int, color: Tuple[int, int, int], scale: float = 1.0
     ) -> Optional[Image.Image]:
@@ -195,49 +231,7 @@ class SevenSegmentClockPlugin(BasePlugin):
             self.logger.warning(f"Digit image not available: {digit}")
             return None
 
-        # Get the base image (transparent foreground on black background)
-        base_image = self.number_images[digit].copy()
-
-        # Create a colored version with transparent background.
-        # The digit assets encode lit segments as fully transparent pixels and
-        # unlit areas as opaque black, so a transparent pixel is a lit segment.
-        colored_image = Image.new("RGBA", base_image.size, (0, 0, 0, 0))
-
-        # Color the lit (transparent) pixels; keep the unlit (opaque) ones clear.
-        for x in range(base_image.width):
-            for y in range(base_image.height):
-                pixel = base_image.getpixel((x, y))
-                if len(pixel) == 4:  # RGBA
-                    r, g, b, a = pixel
-                    if a == 0:
-                        # Transparent pixel = lit segment - apply the configured color
-                        colored_image.putpixel((x, y), (*color, 255))
-                    else:
-                        # Opaque pixel = unlit - keep fully transparent so it doesn't draw
-                        colored_image.putpixel((x, y), (0, 0, 0, 0))
-                else:
-                    # Not RGBA format - convert and handle
-                    if pixel != (0, 0, 0):  # Not black
-                        colored_image.putpixel((x, y), (*color, 255))
-                    else:
-                        colored_image.putpixel((x, y), (0, 0, 0, 0))
-
-        # Scale the image if needed
-        if scale != 1.0:
-            new_width = int(colored_image.width * scale)
-            new_height = int(colored_image.height * scale)
-            try:
-                # Try new PIL API first
-                colored_image = colored_image.resize(
-                    (new_width, new_height), Image.Resampling.LANCZOS
-                )
-            except AttributeError:
-                # Fall back to old PIL API
-                colored_image = colored_image.resize(
-                    (new_width, new_height), Image.LANCZOS
-                )
-
-        return colored_image
+        return self._colorize(self.number_images[digit], color, scale)
 
     def _render_separator(
         self, color: Tuple[int, int, int], scale: float = 1.0
@@ -255,45 +249,7 @@ class SevenSegmentClockPlugin(BasePlugin):
         if self.separator_image is None:
             return None
 
-        # Similar to digit rendering
-        base_image = self.separator_image.copy()
-        colored_image = Image.new("RGBA", base_image.size, (0, 0, 0, 0))
-
-        for x in range(base_image.width):
-            for y in range(base_image.height):
-                pixel = base_image.getpixel((x, y))
-                if len(pixel) == 4:  # RGBA
-                    r, g, b, a = pixel
-                    # Lit segments are transparent, unlit areas are opaque black.
-                    if a == 0:
-                        # Transparent pixel = lit segment - apply the configured color
-                        colored_image.putpixel((x, y), (*color, 255))
-                    else:
-                        # Opaque pixel = unlit - keep fully transparent so it doesn't draw
-                        colored_image.putpixel((x, y), (0, 0, 0, 0))
-                else:
-                    # Not RGBA format - convert and handle
-                    if pixel != (0, 0, 0):  # Not black
-                        colored_image.putpixel((x, y), (*color, 255))
-                    else:
-                        colored_image.putpixel((x, y), (0, 0, 0, 0))
-
-        # Scale the image if needed
-        if scale != 1.0:
-            new_width = int(colored_image.width * scale)
-            new_height = int(colored_image.height * scale)
-            try:
-                # Try new PIL API first
-                colored_image = colored_image.resize(
-                    (new_width, new_height), Image.Resampling.LANCZOS
-                )
-            except AttributeError:
-                # Fall back to old PIL API
-                colored_image = colored_image.resize(
-                    (new_width, new_height), Image.LANCZOS
-                )
-
-        return colored_image
+        return self._colorize(self.separator_image, color, scale)
 
     def update(self) -> None:
         """Update current time."""
@@ -354,9 +310,13 @@ class SevenSegmentClockPlugin(BasePlugin):
     def display(self, force_clear: bool = False) -> None:
         """Render the 7-segment clock display."""
         try:
-            # Use cached time and color from update()
-            if self.current_time is None:
-                self.update()
+            # Re-read the clock on every render tick. The scheduler only calls
+            # update() once per manifest update_interval, so relying on its
+            # cached value would leave the panel showing a minute-old time and
+            # would freeze the flashing separator (whose state comes from the
+            # seconds field) for that whole minute. Reading the system clock is
+            # not I/O, so this belongs in display() -- same as clock-simple.
+            self.update()
 
             # Format time string
             time_str, separator_visible = self._format_time(self.current_time)

@@ -1,7 +1,7 @@
 {
   "id": "7-segment-clock",
   "name": "7-Segment Clock",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Display a retro-style 7-segment clock with customizable colors",
   "author": "LEDMatrix",
   "entry_point": "manager.py",
@@ -25,6 +25,12 @@
   "config_schema": "config_schema.json",
   "versions": [
     {
+      "released": "2026-09-02",
+      "version": "1.0.4",
+      "notes": "Fix the clock rendering a completely blank panel: the digit assets are 1-bit bitmaps with no alpha channel, but the renderer only lit pixels whose alpha was 0, so no segment was ever drawn on any panel size. Lit segments are now taken from the bright pixels, and the digit and separator paths share one colorize helper. Also re-read the clock in display() instead of relying on the 60s update() cadence, so the time is no longer up to a minute stale and the flashing separator actually flashes. Rewrite the README with real rendered screenshots for every display option.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "released": "2026-07-08",
       "version": "1.0.3",
       "notes": "Rewrite the README to match the actual config schema: remove the documented-but-removed sunrise/sunset color-transition options and location lat/lng/locality keys, and document the real color and digit_spacing options. Normalize the versions changelog key to ledmatrix_min_version.",
@@ -46,5 +52,5 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-08"
+  "last_updated": "2026-09-02"
 }

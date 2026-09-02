@@ -1,0 +1,302 @@
+{
+  "plugin": "7-segment-clock",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T20:47:04+00:00",
+    "config": {
+      "location": {
+        "timezone": "US/Eastern"
+      }
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "config": {
+        "color": "#FFFFFF"
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "scale": 4,
+      "standalone": false
+    },
+    {
+      "name": "fmt-24h",
+      "config": {
+        "is_24_hour_format": true,
+        "has_leading_zero": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-12h",
+      "config": {
+        "is_24_hour_format": false,
+        "has_leading_zero": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-24h-zero",
+      "freeze_time": "2026-09-02T13:09:04+00:00",
+      "config": {
+        "is_24_hour_format": true,
+        "has_leading_zero": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-24h-nozero",
+      "freeze_time": "2026-09-02T13:09:04+00:00",
+      "config": {
+        "is_24_hour_format": true,
+        "has_leading_zero": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "sep-on",
+      "freeze_time": "2026-09-02T20:47:04+00:00",
+      "standalone": false
+    },
+    {
+      "name": "sep-off",
+      "freeze_time": "2026-09-02T20:47:05+00:00",
+      "standalone": false
+    },
+    {
+      "name": "color-white",
+      "config": {
+        "color": "#FFFFFF"
+      },
+      "standalone": false
+    },
+    {
+      "name": "color-amber",
+      "config": {
+        "color": "#FFA500"
+      },
+      "standalone": false
+    },
+    {
+      "name": "color-red",
+      "config": {
+        "color": "#FF0000"
+      },
+      "standalone": false
+    },
+    {
+      "name": "color-cyan",
+      "config": {
+        "color": "#00E5FF"
+      },
+      "standalone": false
+    },
+    {
+      "name": "spacing-0",
+      "config": {
+        "digit_spacing": 0
+      },
+      "standalone": false
+    },
+    {
+      "name": "spacing-2",
+      "config": {
+        "digit_spacing": 2
+      },
+      "standalone": false
+    },
+    {
+      "name": "spacing-6",
+      "config": {
+        "digit_spacing": 6
+      },
+      "standalone": false
+    },
+    {
+      "name": "spacing-10",
+      "config": {
+        "digit_spacing": 10
+      },
+      "standalone": false
+    },
+    {
+      "name": "narrow-spacing-2",
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "config": {
+        "digit_spacing": 2
+      },
+      "standalone": false
+    },
+    {
+      "name": "narrow-spacing-10",
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "config": {
+        "digit_spacing": 10
+      },
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32",
+          "sublabel": "the clock scales down to fit the narrow panel"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32",
+          "sublabel": "the common two-panel chain"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64",
+          "sublabel": "extra height lets the digits scale up"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32",
+          "sublabel": "height still caps the scale; the clock centres"
+        }
+      ]
+    },
+    {
+      "name": "time-formats",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "fmt-24h",
+          "label": "24-hour",
+          "sublabel": "is_24_hour_format: true (default)"
+        },
+        {
+          "shot": "fmt-12h",
+          "label": "12-hour",
+          "sublabel": "is_24_hour_format: false"
+        },
+        {
+          "shot": "fmt-24h-nozero",
+          "label": "No leading zero",
+          "sublabel": "has_leading_zero: false (default)"
+        },
+        {
+          "shot": "fmt-24h-zero",
+          "label": "Leading zero",
+          "sublabel": "has_leading_zero: true"
+        }
+      ]
+    },
+    {
+      "name": "separator",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "sep-on",
+          "label": "Even second",
+          "sublabel": "colon lit"
+        },
+        {
+          "shot": "sep-off",
+          "label": "Odd second",
+          "sublabel": "colon blanked"
+        }
+      ]
+    },
+    {
+      "name": "colors",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "color-white",
+          "label": "#FFFFFF",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "color-amber",
+          "label": "#FFA500",
+          "sublabel": "classic clock-radio amber"
+        },
+        {
+          "shot": "color-red",
+          "label": "#FF0000",
+          "sublabel": "dimmest at night"
+        },
+        {
+          "shot": "color-cyan",
+          "label": "#00E5FF",
+          "sublabel": "high contrast on a dark wall"
+        }
+      ]
+    },
+    {
+      "name": "digit-spacing",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "spacing-0",
+          "label": "digit_spacing: 0",
+          "sublabel": "digits touch; hard to read at a glance"
+        },
+        {
+          "shot": "spacing-2",
+          "label": "digit_spacing: 2",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "spacing-6",
+          "label": "digit_spacing: 6",
+          "sublabel": "clearly separated, still comfortably on-panel"
+        },
+        {
+          "shot": "spacing-10",
+          "label": "digit_spacing: 10",
+          "sublabel": "the maximum; fine on a 128-wide panel"
+        },
+        {
+          "shot": "narrow-spacing-2",
+          "label": "64 x 32, spacing 2",
+          "sublabel": "fits with room to spare"
+        },
+        {
+          "shot": "narrow-spacing-10",
+          "label": "64 x 32, spacing 10",
+          "sublabel": "too wide: the outer digits are clipped"
+        }
+      ]
+    }
+  ]
+}
