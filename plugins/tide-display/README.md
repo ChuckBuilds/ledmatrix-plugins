@@ -25,6 +25,7 @@ size from recorded NOAA responses for station 8443970 (Boston) on 2 September
    - [Fonts](#fonts)
 5. [Panel Sizes](#panel-sizes)
 6. [Where the Data Comes From](#where-the-data-comes-from)
+   - [Caching and what happens offline](#caching-and-what-happens-offline)
 7. [Troubleshooting](#troubleshooting)
 8. [Development](#development)
 9. [Support](#support)
@@ -89,6 +90,16 @@ Tide predictions are per-station, so this is the one setting you must supply.
 `station_name` is only a label. Leave it blank and the ID is shown instead —
 useful while you are checking you picked the right station, less so afterwards.
 
+Some stations to start from:
+
+| Location | ID | Location | ID |
+|----------|-----|----------|-----|
+| Seattle, WA | `9447130` | Boston, MA | `8443970` |
+| San Francisco, CA | `9414290` | New York, NY | `8518750` |
+| Los Angeles, CA | `9410660` | Bar Harbor, ME | `8413320` |
+| Key West, FL | `8724580` | Galveston, TX | `8771341` |
+| Miami, FL | `8723170` | Honolulu, HI | `1612340` |
+
 Stations differ in what they offer. All have tide *predictions*; only some have
 a live water-level sensor. A station with no sensor still fills every screen,
 using predictions throughout.
@@ -128,6 +139,10 @@ the authoritative figures either way, not a rounding of one into the other.
 Turning a screen off shortens the rotation rather than leaving a gap. With all
 four on and the default 12 seconds each, a full cycle takes just under a
 minute.
+
+**Turning all four off shows all four.** The plugin treats an empty selection
+as "no preference" rather than "show nothing", so it can never go dark by
+configuration alone.
 
 `show_moon_phase` only affects the stats screen — the rest of that screen keeps
 its layout, so the phase name is replaced by space rather than everything
@@ -205,9 +220,20 @@ Three requests per refresh, all for the configured station:
 
 Predictions use the **MLLW** datum and the station's local time including
 daylight saving, which is why the times shown match published local tide
-tables. `update_interval` in the manifest sets the refresh cadence, hourly by
-default — tide predictions for a day do not change, so there is nothing to gain
-from polling faster.
+tables.
+
+### Caching and what happens offline
+
+Requests are kept to a minimum, because a day's predictions do not change once
+published:
+
+- **Predictions** are cached under a stable per-station key and refetched only
+  when the cached entry is for a different day.
+- **The live water level** is cached for 6 minutes.
+- **If NOAA is unreachable**, the last good predictions keep being served for up
+  to **two days**. Past that the plugin shows a placeholder instead: tides shift
+  roughly 50 minutes a day, so three-day-old times would be confidently wrong,
+  which is worse than admitting there is no data.
 
 ---
 
