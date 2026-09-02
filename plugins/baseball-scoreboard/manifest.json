@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.35.3",
+  "version": "1.36.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,13 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.36.0",
+      "released": "2026-08-31",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The other slots now fill with games worth watching, and the settings that govern them take effect. football-scoreboard has had this since 2.29.0; these eight lineages had the settings in their schema and nothing reading them, so a board could ask for ranked games only and still get the next N kickoffs. The non-favourite pool is now ordered by the matchup rather than the clock, filtered by quality and division, and re-cut on the display path every other_rotation_interval_seconds so a long pool rotates instead of showing its first N forever. Favourites keep their slots through every cut, one game per team, and the filters fail open as a set: if a filter matches nothing the mode shows the unfiltered list rather than going blank. Also retires the 'broadcast' tier of other_games_min_quality, matching football-scoreboard 3.0.0. Measured there against a real Week 1 and Week 2 college slate it passed 174 of 175 games -- ESPN publishes a broadcaster for nearly everything now, ESPN+ included -- so it read as a quality bar and behaved as 'any'. A board still holding the old value now migrates to 'ranked' with a warning rather than silently getting no filtering, and the option is gone from the settings UI.",
+      "changelog": "The other slots now fill with games worth watching, and the settings that govern them take effect. football-scoreboard has had this since 2.29.0; these eight lineages had the settings in their schema and nothing reading them, so a board could ask for ranked games only and still get the next N kickoffs. The non-favourite pool is now ordered by the matchup rather than the clock, filtered by quality and division, and re-cut on the display path every other_rotation_interval_seconds so a long pool rotates instead of showing its first N forever. Favourites keep their slots through every cut, one game per team, and the filters fail open as a set: if a filter matches nothing the mode shows the unfiltered list rather than going blank. Also retires the 'broadcast' tier of other_games_min_quality, matching football-scoreboard 3.0.0. Measured there against a real Week 1 and Week 2 college slate it passed 174 of 175 games -- ESPN publishes a broadcaster for nearly everything now, ESPN+ included -- so it read as a quality bar and behaved as 'any'. A board still holding the old value now migrates to 'ranked' with a warning rather than silently getting no filtering, and the option is gone from the settings UI."
+    },
     {
       "version": "1.35.3",
       "released": "2026-09-01",
@@ -333,7 +340,7 @@
     {
       "released": "2026-07-08",
       "version": "1.14.2",
-      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team \u25b2/\u25bc indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
+      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team ▲/▼ indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -351,7 +358,7 @@
     {
       "released": "2026-07-07",
       "version": "1.13.1",
-      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team \u25b2/\u25bc arrow, which wasn't factored into the width check at all.",
+      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team ▲/▼ arrow, which wasn't factored into the width check at all.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -393,7 +400,7 @@
     {
       "released": "2026-07-02",
       "version": "1.7.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u2014 spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
       "ledmatrix_min": "2.0.0"
     },
     {

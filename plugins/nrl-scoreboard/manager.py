@@ -238,6 +238,21 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         game_limits = cfg.get("game_limits", {})
         filtering = cfg.get("filtering", {})
+
+        def limit(key, default):
+            """A limit from wherever the schema offers it.
+
+            These keys are declared twice, at the root of the config and inside
+            game_limits, and both render in the web UI. Reading one location
+            meant the other was accepted, saved, and silently ignored -- the
+            same class of gap as leaving the key out of this translation
+            altogether. game_limits wins where present, matching how the two
+            older limits already resolved.
+            """
+            if key in game_limits:
+                return game_limits[key]
+            return cfg.get(key, default)
+
         display_options = cfg.get("display_options", {})
 
         manager_config = {
@@ -246,12 +261,29 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "favorite_teams": cfg.get("favorite_teams", []),
                 "exclude_teams": cfg.get("exclude_teams", []),
                 "display_modes": manager_display_modes,
-                "recent_games_to_show": game_limits.get(
-                    "recent_games_to_show", cfg.get("recent_games_to_show", 5)
+                "recent_games_to_show": limit("recent_games_to_show", 5),
+                # These ride the same source as the limits above, which is where the
+                # schema declares them. Managers read a translated config, not the
+                # plugin config, so a key missing here is a setting the user can
+                # change in the web UI that silently never reaches the code.
+                "other_upcoming_games_to_show": limit(
+                    "other_upcoming_games_to_show",
+                    limit("upcoming_games_to_show", 10),
                 ),
-                "upcoming_games_to_show": game_limits.get(
-                    "upcoming_games_to_show", cfg.get("upcoming_games_to_show", 10)
+                "other_recent_games_to_show": limit(
+                    "other_recent_games_to_show",
+                    limit("recent_games_to_show", 5),
                 ),
+                "other_rotation_interval_seconds": limit(
+                    "other_rotation_interval_seconds", 1800
+                ),
+                "other_games_min_quality": limit(
+                    "other_games_min_quality", "ranked"
+                ),
+                "other_games_divisions": list(
+                    limit("other_games_divisions", ["fbs"])
+                ),
+                "upcoming_games_to_show": limit("upcoming_games_to_show", 10),
                 "show_records": display_options.get(
                     "show_records", cfg.get("show_records", False)
                 ),
@@ -263,6 +295,9 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 ),
                 "update_interval_seconds": cfg.get("update_interval_seconds", 300),
                 "live_update_interval": cfg.get("live_update_interval", 30),
+                "recent_update_interval": cfg.get("recent_update_interval", 3600),
+                "upcoming_update_interval": cfg.get("upcoming_update_interval", 3600),
+                "stale_game_timeout": cfg.get("stale_game_timeout", 300),
                 "live_game_duration": cfg.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": cfg.get(
                     "non_favorite_live_game_duration", 0

@@ -429,6 +429,36 @@
               "minimum": 0,
               "maximum": 86400,
               "x-advanced": true
+            },
+            "other_games_min_quality": {
+              "type": "string",
+              "title": "Which other games to show",
+              "enum": [
+                "any",
+                "ranked"
+              ],
+              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+              "default": "ranked",
+              "x-advanced": true
+            },
+            "other_games_divisions": {
+              "type": "array",
+              "title": "Divisions to include (other games)",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "fbs",
+                  "fcs",
+                  "other"
+                ]
+              },
+              "uniqueItems": true,
+              "default": [
+                "fbs"
+              ],
+              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+              "x-widget": "checkbox-group",
+              "x-advanced": true
             }
           }
         },
@@ -451,6 +481,14 @@
               "minimum": 10,
               "maximum": 300,
               "description": "Update interval for live NCAA Men's Lacrosse games"
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
             },
             "recent": {
               "x-advanced": true,
@@ -556,7 +594,7 @@
         "mode_durations": {
           "type": "object",
           "title": "Mode-Level Durations",
-          "description": "Control total duration for each mode type for NCAA Men's Lacrosse. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+          "description": "Control total duration for each mode type for NCAA Men's Lacrosse. If not set, uses dynamic calculation (total_games × per_game_duration).",
           "properties": {
             "recent_mode_duration": {
               "x-advanced": true,
@@ -873,6 +911,36 @@
               "minimum": 0,
               "maximum": 86400,
               "x-advanced": true
+            },
+            "other_games_min_quality": {
+              "type": "string",
+              "title": "Which other games to show",
+              "enum": [
+                "any",
+                "ranked"
+              ],
+              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+              "default": "ranked",
+              "x-advanced": true
+            },
+            "other_games_divisions": {
+              "type": "array",
+              "title": "Divisions to include (other games)",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "fbs",
+                  "fcs",
+                  "other"
+                ]
+              },
+              "uniqueItems": true,
+              "default": [
+                "fbs"
+              ],
+              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+              "x-widget": "checkbox-group",
+              "x-advanced": true
             }
           }
         },
@@ -895,6 +963,14 @@
               "minimum": 10,
               "maximum": 300,
               "description": "Update interval for live NCAA Women's Lacrosse games"
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
             },
             "recent": {
               "x-advanced": true,
@@ -1000,7 +1076,7 @@
         "mode_durations": {
           "type": "object",
           "title": "Mode-Level Durations",
-          "description": "Control total duration for each mode type for NCAA Women's Lacrosse. If not set, uses dynamic calculation (total_games \u00d7 per_game_duration).",
+          "description": "Control total duration for each mode type for NCAA Women's Lacrosse. If not set, uses dynamic calculation (total_games × per_game_duration).",
           "properties": {
             "recent_mode_duration": {
               "x-advanced": true,
