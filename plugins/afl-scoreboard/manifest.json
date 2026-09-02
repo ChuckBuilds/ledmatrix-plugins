@@ -26,6 +26,20 @@
       "changelog": "The card helpers move to the core. Twenty methods in this plugin's game_renderer.py were byte-identical to the same twenty in every other scoreboard: the colour pickers, the scroll_card settings lookup, the date and time formatting, the favourite-team rules and the font-size grid snapping. They now live in src.common.sports_card and this plugin delegates to them, so a fix to any of that reaches every scoreboard at once instead of needing eight identical edits, and a new scoreboard gets them by importing one module. 245 lines removed here. Nothing about what is drawn changes: the bodies were moved rather than rewritten, and all 176 safety-harness renders across the eight plugins are byte-identical to before. The floor rises to 3.3.0, the release that first ships the helper."
     },
     {
+      "version": "1.19.2",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "Documentation only, no behaviour change. Rewrites the README around real rendered screenshots of the 2026 finals series and documents every configuration option. Writes down the game-selection logic in full: the three selection paths, and that upcoming_games_to_show/recent_games_to_show mean a per-team budget under show_favorite_teams_only but a total otherwise. Records four verified dead ends so they stop costing people time: show_odds is a no-op for AFL because ESPN publishes no odds block for the league (though it still issues one odds request per selected game), show_ranking has no poll to draw, dynamic_duration.min_duration_seconds is never read, and background_service.max_workers is ignored in favour of a single worker. Also corrects README defaults that had drifted from the schema (show_favorite_teams_only, display_duration, show_odds).",
+      "changelog": "Documentation only, no behaviour change. Rewrites the README around real rendered screenshots of the 2026 finals series and documents every configuration option. Writes down the game-selection logic in full: the three selection paths, and that upcoming_games_to_show/recent_games_to_show mean a per-team budget under show_favorite_teams_only but a total otherwise. Records four verified dead ends so they stop costing people time: show_odds is a no-op for AFL because ESPN publishes no odds block for the league (though it still issues one odds request per selected game), show_ranking has no poll to draw, dynamic_duration.min_duration_seconds is never read, and background_service.max_workers is ignored in favour of a single worker. Also corrects README defaults that had drifted from the schema (show_favorite_teams_only, display_duration, show_odds)."
+    },
+    {
+      "version": "1.19.1",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage.",
+      "changelog": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage."
+    },
+    {
       "version": "1.19.0",
       "released": "2026-09-02",
       "ledmatrix_min_version": "3.2.0",
@@ -280,7 +294,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-13",
+  "last_updated": "2026-09-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

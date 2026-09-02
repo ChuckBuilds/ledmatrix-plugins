@@ -1,0 +1,521 @@
+{
+  "plugin": "afl-scoreboard",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T12:00:00+00:00",
+    "mock_data": "fixtures/finals-week.json",
+    "config": {
+      "enabled": true,
+      "timezone": "Australia/Melbourne",
+      "favorite_teams": [],
+      "show_favorite_teams_only": false,
+      "recent_games_to_show": 5,
+      "upcoming_games_to_show": 10
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": true,
+          "upcoming": false,
+          "recent_display_mode": "switch"
+        }
+      }
+    },
+    {
+      "name": "mode-live",
+      "config": {
+        "display_modes": {
+          "live": true,
+          "recent": false,
+          "upcoming": false,
+          "live_display_mode": "switch"
+        }
+      },
+      "freeze_time": "2026-08-29T11:35:00+00:00",
+      "mock_data": "fixtures/live-three-quarter-time.json",
+      "standalone": false
+    },
+    {
+      "name": "mode-recent",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": true,
+          "upcoming": false,
+          "recent_display_mode": "switch"
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "mode-upcoming",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": false,
+          "upcoming": true,
+          "upcoming_display_mode": "switch"
+        },
+        "favorite_teams": [
+          "GEEL"
+        ],
+        "show_favorite_teams_only": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "size-64x32",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": true,
+          "upcoming": false,
+          "recent_display_mode": "switch"
+        }
+      },
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": true,
+          "upcoming": false,
+          "recent_display_mode": "switch"
+        }
+      },
+      "width": 128,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": true,
+          "upcoming": false,
+          "recent_display_mode": "switch"
+        }
+      },
+      "width": 128,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": true,
+          "upcoming": false,
+          "recent_display_mode": "switch"
+        }
+      },
+      "width": 256,
+      "height": 32,
+      "scale": 4,
+      "standalone": false
+    },
+    {
+      "name": "records-on",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": false,
+          "upcoming": true,
+          "upcoming_display_mode": "switch"
+        },
+        "show_records": true,
+        "favorite_teams": [
+          "GEEL"
+        ],
+        "show_favorite_teams_only": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "records-off",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": false,
+          "upcoming": true,
+          "upcoming_display_mode": "switch"
+        },
+        "show_records": false,
+        "favorite_teams": [
+          "GEEL"
+        ],
+        "show_favorite_teams_only": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "favcolor-off",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": true,
+          "upcoming": false,
+          "recent_display_mode": "switch"
+        },
+        "favorite_teams": [
+          "CARL"
+        ],
+        "customization": {
+          "favorite_result_colors": {
+            "enabled": false
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "favcolor-win",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": true,
+          "upcoming": false,
+          "recent_display_mode": "switch"
+        },
+        "favorite_teams": [
+          "CARL"
+        ],
+        "customization": {
+          "favorite_result_colors": {
+            "enabled": true
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "favcolor-loss",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": true,
+          "upcoming": false,
+          "recent_display_mode": "switch"
+        },
+        "favorite_teams": [
+          "MELB"
+        ],
+        "customization": {
+          "favorite_result_colors": {
+            "enabled": true
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "center-datetime",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": false,
+          "upcoming": true,
+          "upcoming_display_mode": "switch"
+        },
+        "scroll_card": {
+          "switch_upcoming_center": "date_time"
+        },
+        "favorite_teams": [
+          "GEEL"
+        ],
+        "show_favorite_teams_only": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "center-vs",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": false,
+          "upcoming": true,
+          "upcoming_display_mode": "switch"
+        },
+        "scroll_card": {
+          "switch_upcoming_center": "vs",
+          "vs_text": "VS"
+        },
+        "favorite_teams": [
+          "GEEL"
+        ],
+        "show_favorite_teams_only": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "center-at",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": false,
+          "upcoming": true,
+          "upcoming_display_mode": "switch"
+        },
+        "scroll_card": {
+          "switch_upcoming_center": "vs",
+          "vs_text": "at"
+        },
+        "favorite_teams": [
+          "GEEL"
+        ],
+        "show_favorite_teams_only": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "center-none",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": false,
+          "upcoming": true,
+          "upcoming_display_mode": "switch"
+        },
+        "scroll_card": {
+          "switch_upcoming_center": "none"
+        },
+        "favorite_teams": [
+          "GEEL"
+        ],
+        "show_favorite_teams_only": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-12h",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": false,
+          "upcoming": true,
+          "upcoming_display_mode": "switch"
+        },
+        "scroll_card": {
+          "time_format": "12h",
+          "switch_date_format": "numeric"
+        },
+        "favorite_teams": [
+          "GEEL"
+        ],
+        "show_favorite_teams_only": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-24h",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": false,
+          "upcoming": true,
+          "upcoming_display_mode": "switch"
+        },
+        "scroll_card": {
+          "time_format": "24h",
+          "switch_date_format": "numeric"
+        },
+        "favorite_teams": [
+          "GEEL"
+        ],
+        "show_favorite_teams_only": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-abbrev",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": false,
+          "upcoming": true,
+          "upcoming_display_mode": "switch"
+        },
+        "scroll_card": {
+          "switch_date_format": "abbrev"
+        },
+        "favorite_teams": [
+          "GEEL"
+        ],
+        "show_favorite_teams_only": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-weekday",
+      "config": {
+        "display_modes": {
+          "live": false,
+          "recent": false,
+          "upcoming": true,
+          "upcoming_display_mode": "switch"
+        },
+        "scroll_card": {
+          "switch_date_format": "weekday"
+        },
+        "favorite_teams": [
+          "GEEL"
+        ],
+        "show_favorite_teams_only": true
+      },
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "display-modes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "mode-live",
+          "label": "afl_live",
+          "sublabel": "quarter and running clock while the game is on"
+        },
+        {
+          "shot": "mode-recent",
+          "label": "afl_recent",
+          "sublabel": "final score of a completed game"
+        },
+        {
+          "shot": "mode-upcoming",
+          "label": "afl_upcoming",
+          "sublabel": "date and start time of a scheduled game"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32",
+          "sublabel": "logos shrink; the score keeps the centre"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32",
+          "sublabel": "the common two-panel chain"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64",
+          "sublabel": "extra height gives the logos room"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32",
+          "sublabel": "a long chain"
+        }
+      ]
+    },
+    {
+      "name": "show-records",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "records-off",
+          "label": "show_records: false",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "records-on",
+          "label": "show_records: true",
+          "sublabel": "each team's season record in the bottom corners"
+        }
+      ]
+    },
+    {
+      "name": "favorite-result-colors",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "favcolor-off",
+          "label": "enabled: false",
+          "sublabel": "the default; the score is white whatever the result"
+        },
+        {
+          "shot": "favcolor-win",
+          "label": "enabled: true, favourite won",
+          "sublabel": "favorite_teams: [CARL] - Carlton won 74-55, so the score is green"
+        },
+        {
+          "shot": "favcolor-loss",
+          "label": "enabled: true, favourite lost",
+          "sublabel": "favorite_teams: [MELB] - the same game from the other side, in red"
+        }
+      ]
+    },
+    {
+      "name": "upcoming-center",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "center-datetime",
+          "label": "date_time",
+          "sublabel": "the default: date over start time"
+        },
+        {
+          "shot": "center-vs",
+          "label": "vs",
+          "sublabel": "vs_text: VS"
+        },
+        {
+          "shot": "center-at",
+          "label": "vs, vs_text: at",
+          "sublabel": "away team on the left reads correctly"
+        },
+        {
+          "shot": "center-none",
+          "label": "none",
+          "sublabel": "nothing between the logos"
+        }
+      ]
+    },
+    {
+      "name": "date-time-formats",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "fmt-12h",
+          "label": "time_format: 12h",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "fmt-24h",
+          "label": "time_format: 24h",
+          "sublabel": "for a 24-hour household"
+        },
+        {
+          "shot": "fmt-abbrev",
+          "label": "switch_date_format: abbrev",
+          "sublabel": "Sep 4"
+        },
+        {
+          "shot": "fmt-weekday",
+          "label": "switch_date_format: weekday",
+          "sublabel": "Fri Sep 4"
+        }
+      ]
+    }
+  ]
+}
