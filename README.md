@@ -129,7 +129,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Music Player](./plugins/ledmatrix-music/) | Now playing with album art (Spotify & YouTube Music) | |
-| [Static Image Display](./plugins/static-image/) | Image display with scaling and transparency | |
+| [Static Image Display](./plugins/static-image/) | Image display with scaling and transparency | <a href="./plugins/static-image/"><img src="./docs/assets/static-image/hero.png" width="240" alt="static-image on an LED panel"></a> |
 
 ### Content (2)
 
