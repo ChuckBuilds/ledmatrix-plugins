@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.20.0",
+  "version": "1.21.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -17,7 +17,7 @@
   ],
   "icon": "fas fa-baseball-ball",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.2.0"
   ],
   "requires": {
     "python": ">=3.9",
@@ -50,6 +50,13 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.21.0",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "The bundled scroll fallback is gone, and the plugin now requires LEDMatrix 3.2.0. scroll_display.py carried a guarded import of the core's src.common.sports_scroll with a frozen pre-adoption copy, scroll_display_legacy.py, behind it, so it kept working on a core that predated the module (B5). The copy is deleted and the import is now plain -- keeping the try/except with nothing behind it would only mislabel the failure, naming the missing scroll_display_legacy instead of the core module actually absent, which is the single log line a user gets before the scoreboard stops appearing. The floor rises to 3.2.0, the release that ships the module, and the store refuses to install or update this version onto anything older. Nothing about what is drawn changes: the frozen copy was compared method by method against the core before deleting it and carried no orchestration logic the core lacks, and every safety-harness render is unchanged.",
+      "changelog": "The bundled scroll fallback is gone, and the plugin now requires LEDMatrix 3.2.0. scroll_display.py carried a guarded import of the core's src.common.sports_scroll with a frozen pre-adoption copy, scroll_display_legacy.py, behind it, so it kept working on a core that predated the module (B5). The copy is deleted and the import is now plain -- keeping the try/except with nothing behind it would only mislabel the failure, naming the missing scroll_display_legacy instead of the core module actually absent, which is the single log line a user gets before the scoreboard stops appearing. The floor rises to 3.2.0, the release that ships the module, and the store refuses to install or update this version onto anything older. Nothing about what is drawn changes: the frozen copy was compared method by method against the core before deleting it and carried no orchestration logic the core lacks, and every safety-harness render is unchanged."
+    },
     {
       "version": "1.20.0",
       "released": "2026-08-31",
