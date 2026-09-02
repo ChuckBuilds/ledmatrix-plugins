@@ -62,14 +62,21 @@ only exists to be pasted into a composite.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
-import shutil
-import subprocess  # nosec B404 - runs the core renderer, argv built from a local shot list
+import re
+# Runs the core renderer; argv is a list built from validated local inputs.
+import subprocess  # nosec B404
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+
+if TYPE_CHECKING:  # Pillow is imported lazily so --help works without it
+    from PIL.Image import Image as PILImage
+
+PLUGIN_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PLUGINS_DIR = REPO_ROOT / "plugins"
@@ -144,8 +151,23 @@ def find_core_repo(explicit: Optional[str]) -> Path:
     )
 
 
+def validate_plugin_id(plugin_id: str) -> str:
+    """Reject anything that is not a plain plugin id.
+
+    The id is interpolated into the renderer's argv and into the
+    ``docs/assets/<id>`` path, so a value containing a path separator or a
+    leading dash would either escape the assets tree or be read as a flag.
+    """
+    if not PLUGIN_ID_RE.match(plugin_id or ""):
+        raise SystemExit(
+            f"Invalid plugin id {plugin_id!r}: expected lowercase letters, "
+            "digits, dot, dash or underscore."
+        )
+    return plugin_id
+
+
 def shot_list_path(plugin_id: str) -> Path:
-    return ASSETS_ROOT / plugin_id / "shots.json"
+    return ASSETS_ROOT / validate_plugin_id(plugin_id) / "shots.json"
 
 
 def load_shot_list(plugin_id: str) -> Dict[str, Any]:
@@ -191,10 +213,16 @@ def render_shot(
     config.update(shot.get("config", {}))
 
     raw_path = tmpdir / f"{name}-raw.png"
+    renderer = core_repo / "scripts" / "render_plugin.py"
+    if not renderer.is_file():
+        raise SystemExit(f"Core renderer not found at {renderer}")
+
+    # Every element of argv is either fixed, a path this script resolved, or a
+    # validated plugin id -- never a shell string.
     cmd: List[str] = [
         sys.executable,
-        str(core_repo / "scripts" / "render_plugin.py"),
-        "--plugin", plugin_id,
+        str(renderer),
+        "--plugin", validate_plugin_id(plugin_id),
         "--plugin-dir", str(PLUGINS_DIR),
         "--config", json.dumps(config),
         "--width", str(width),
@@ -224,8 +252,16 @@ def render_shot(
     env.update({str(k): str(v) for k, v in defaults.get("env", {}).items()})
     env.update({str(k): str(v) for k, v in shot.get("env", {}).items()})
 
-    result = subprocess.run(  # nosec B603 - fixed interpreter, argv from a local shot list
-        cmd, cwd=str(core_repo), env=env, capture_output=True, text=True
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use
+    # argv list, shell=False, validated plugin id, no untrusted input.
+    result = subprocess.run(  # nosec B603
+        cmd,
+        cwd=str(core_repo),
+        env=env,
+        shell=False,
+        capture_output=True,
+        text=True,
+        check=False,
     )
     if result.returncode != 0 or not raw_path.is_file():
         sys.stderr.write(result.stdout)
@@ -243,7 +279,7 @@ def render_shot(
     return raw_path, scale
 
 
-def upscale(raw_path: Path, scale: int) -> "Image.Image":
+def upscale(raw_path: Path, scale: int) -> "PILImage":
     from PIL import Image
 
     with Image.open(raw_path) as image:
@@ -251,7 +287,7 @@ def upscale(raw_path: Path, scale: int) -> "Image.Image":
         return rgb.resize((rgb.width * scale, rgb.height * scale), Image.NEAREST)
 
 
-def build_composite(spec: Dict[str, Any], panels: Dict[str, "Image.Image"]) -> "Image.Image":
+def build_composite(spec: Dict[str, Any], panels: Dict[str, "PILImage"]) -> "PILImage":
     """Lay labelled panels out in a grid on a dark card."""
     from PIL import Image, ImageDraw
 
@@ -277,7 +313,7 @@ def build_composite(spec: Dict[str, Any], panels: Dict[str, "Image.Image"]) -> "
             height += sub_h
         return height
 
-    rows: List[List[Tuple[Dict[str, Any], "Image.Image"]]] = [
+    rows: List[List[Tuple[Dict[str, Any], "PILImage"]]] = [
         prepared[i:i + columns] for i in range(0, len(prepared), columns)
     ]
     col_widths = [0] * columns
@@ -326,7 +362,7 @@ def render_plugin_assets(
     out_dir.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
         tmpdir = Path(tmp)
-        panels: Dict[str, "Image.Image"] = {}
+        panels: Dict[str, "PILImage"] = {}
 
         for shot in shot_list.get("shots", []):
             name = shot["name"]
@@ -389,9 +425,7 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="Verify committed images still match")
     args = parser.parse_args()
 
-    try:
-        from PIL import Image  # noqa: F401
-    except ImportError:
+    if importlib.util.find_spec("PIL") is None:
         raise SystemExit("Pillow is required: pip install Pillow")
 
     core_repo = find_core_repo(args.core_repo)
