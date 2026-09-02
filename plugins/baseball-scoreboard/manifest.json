@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.35.2",
+  "version": "1.36.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,13 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.36.0",
+      "released": "2026-09-01",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "The bundled scroll fallback is gone, and the plugin now requires LEDMatrix 3.2.0. scroll_display.py carried a guarded import of the core's src.common.sports_scroll with a frozen pre-adoption copy, scroll_display_legacy.py, behind it, so it kept working on a core that predated the module (B5). The copy is deleted and the import is now plain -- keeping the try/except with nothing behind it would only mislabel the failure, naming the missing scroll_display_legacy instead of the core module actually absent, which is the single log line a user gets before the scoreboard stops appearing. The floor rises to 3.2.0, the release that ships the module. One behaviour is deliberately standardised on the core's. Baseball's frozen copy was the only one of the eight that carried an extra branch in _configure_scroll_helper: when scroll_speed x scroll_delay fell outside the 0.1-5.0 pixels-per-frame window but scroll_speed alone sat inside it, it silently reinterpreted scroll_speed as pixels-per-frame rather than the pixels-per-second the setting is documented as. At the 50.0 default both agree exactly (0.5 px/frame); the branch only differed for a scroll_speed between the schema minimum of 1.0 and 5.0, where it ran roughly 10-20x faster than the configured value by ignoring the unit. The core honours the configured pixels-per-second and clamps to the same window, which is now what every scoreboard does. In practice this changes nothing for anyone receiving this release: the branch only ever ran on a pre-3.2.0 core, everyone on 3.2.0 or newer has used the core path since 1.22.0, and the new floor stops this version reaching the rest. 764 lines removed.",
+      "changelog": "The bundled scroll fallback is gone, and the plugin now requires LEDMatrix 3.2.0. scroll_display.py carried a guarded import of the core's src.common.sports_scroll with a frozen pre-adoption copy, scroll_display_legacy.py, behind it, so it kept working on a core that predated the module (B5). The copy is deleted and the import is now plain -- keeping the try/except with nothing behind it would only mislabel the failure, naming the missing scroll_display_legacy instead of the core module actually absent, which is the single log line a user gets before the scoreboard stops appearing. The floor rises to 3.2.0, the release that ships the module. One behaviour is deliberately standardised on the core's. Baseball's frozen copy was the only one of the eight that carried an extra branch in _configure_scroll_helper: when scroll_speed x scroll_delay fell outside the 0.1-5.0 pixels-per-frame window but scroll_speed alone sat inside it, it silently reinterpreted scroll_speed as pixels-per-frame rather than the pixels-per-second the setting is documented as. At the 50.0 default both agree exactly (0.5 px/frame); the branch only differed for a scroll_speed between the schema minimum of 1.0 and 5.0, where it ran roughly 10-20x faster than the configured value by ignoring the unit. The core honours the configured pixels-per-second and clamps to the same window, which is now what every scoreboard does. In practice this changes nothing for anyone receiving this release: the branch only ever ran on a pre-3.2.0 core, everyone on 3.2.0 or newer has used the core path since 1.22.0, and the new floor stops this version reaching the rest. 764 lines removed."
+    },
     {
       "version": "1.35.2",
       "released": "2026-08-31",
@@ -512,6 +519,6 @@
   "class_name": "BaseballScoreboardPlugin",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.2.0"
   ]
 }
