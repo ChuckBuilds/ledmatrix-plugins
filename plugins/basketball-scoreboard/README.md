@@ -490,6 +490,46 @@ Two things to keep in mind:
   proportionally less often. And appearing more often only helps if the data is
   fresh, which is governed by this plugin's own live update interval.
 
+## 🎯 Which Games Get Shown
+
+**`upcoming_games_to_show` is not "how many cards you see".** It is the size of a *pool*. The panel cycles through that pool one card at a time and keeps its place between visits, so a pool of 3 means the board rotates through the same 3 games until the schedule moves on. Making the number bigger gives you a *longer lap*, so any one game comes round **less** often.
+
+Which mode you are in depends on whether `favorite_teams` is set and whether `show_favorite_teams_only` is on:
+
+| `favorite_teams` | `show_favorite_teams_only` | What you get |
+|---|---|---|
+| empty | either | The next N games league-wide, chronologically. Every game shown is a non-favorite game, so the two filters below apply to all of them. |
+| set | **on** | Only your teams. The limit is a budget **per team**. |
+| set | **off** | **Your teams first, then other games to fill.** Both limits are **totals**. |
+
+The third row is what most people want, and it did not exist before: with the flag off, favorites used to be ignored *entirely*.
+
+### The settings
+
+| Option | Default | Description |
+|---|---|---|
+| `upcoming_games_to_show` | varies | How many **favorite** upcoming games to show. |
+| `recent_games_to_show` | varies | The same, for finished games. |
+| `other_upcoming_games_to_show` | matches `upcoming_games_to_show` | How many **non-favorite** upcoming games to add. `0` gives you favorites only. |
+| `other_recent_games_to_show` | matches `recent_games_to_show` | The same, for finished games. |
+| `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
+| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked`, `broadcast`, or `any`. |
+| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. College football only — see the note below. |
+
+**Your favorite teams are never filtered by the last two** — follow a smaller-division team and its games always appear. Those settings only decide what fills the *remaining* slots.
+
+Within the other-games pool, **the better matchup leads**, and each team appears once. The pool is each team's *next* game ordered by the best poll position of either side, so a top-five matchup sits in the first window rather than whichever kicks off soonest — and the #1 team's whole season does not sort above everyone else's opener. Ties fall back to kickoff order, and a league with no poll keeps chronological order. Your favorite teams are ordered by when they play, not by rank -- for your own team the next game is the point.
+
+### Variety comes from turnover
+
+Rather than widening the pool, the non-favorite slice **moves**: the window advances by its own width every `other_rotation_interval_seconds`, so consecutive windows do not overlap and the board works through the schedule instead of resampling the front of it. Your favorites are not rotated — for upcoming games the soonest ones are the point.
+
+Both filters **fail open**: if the data behind them cannot be fetched, the game is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
+
+They fail open a second time, as a set: if the filters between them leave **nothing at all** — your teams idle and every other game rejected — the unfiltered list is used instead. Setting `other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one way to ask for an empty slate, and that is honoured.
+
+> `other_games_min_quality` needs a national poll, which only the college leagues publish — set to `ranked` in a professional league it lets every game through, and no poll is requested. `other_games_divisions` needs ESPN's FBS/FCS group rosters, which exist for **college football and nothing else**: asked for any other college league they come back empty or 500, so the setting is inert here and no lookup is made.
+
 ## Matchup separator and the upcoming card middle
 
 The **Matchup Card Layout** section (advanced) controls what sits between the

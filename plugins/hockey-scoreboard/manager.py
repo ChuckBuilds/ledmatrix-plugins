@@ -777,12 +777,21 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Resolve filtering settings
         recent_games_to_show = resolve_value(["filtering", "recent_games_to_show"], ["recent_games_to_show"], 5)
         upcoming_games_to_show = resolve_value(["filtering", "upcoming_games_to_show"], ["upcoming_games_to_show"], 10)
+        # Resolved the same way as the limits above, and from the same place
+        # the schema declares them. A key missing from this translation is a
+        # setting the user can change in the web UI that never reaches the code.
+        other_upcoming_games_to_show = resolve_value(["filtering", "other_upcoming_games_to_show"], ["other_upcoming_games_to_show"], upcoming_games_to_show)
+        other_recent_games_to_show = resolve_value(["filtering", "other_recent_games_to_show"], ["other_recent_games_to_show"], recent_games_to_show)
+        other_rotation_interval_seconds = resolve_value(["filtering", "other_rotation_interval_seconds"], ["other_rotation_interval_seconds"], 1800)
+        other_games_min_quality = resolve_value(["filtering", "other_games_min_quality"], ["other_games_min_quality"], "ranked")
+        other_games_divisions = resolve_value(["filtering", "other_games_divisions"], ["other_games_divisions"], ["fbs"])
 
         # Resolve update intervals
         update_interval_seconds = resolve_value(["update_intervals", "base"], ["update_interval_seconds"], 60)
         live_update_interval = resolve_value(["update_intervals", "live"], ["live_update_interval"], 15)
         recent_update_interval = resolve_value(["update_intervals", "recent"], ["recent_update_interval"], 3600)
         upcoming_update_interval = resolve_value(["update_intervals", "upcoming"], ["upcoming_update_interval"], 3600)
+        stale_game_timeout = resolve_value(["update_intervals", "stale_game_timeout"], ["stale_game_timeout"], 300)
 
         # Resolve display durations
         def resolve_live_duration() -> int:
@@ -828,6 +837,11 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 },
                 "recent_games_to_show": recent_games_to_show,
                 "upcoming_games_to_show": upcoming_games_to_show,
+                "other_upcoming_games_to_show": other_upcoming_games_to_show,
+                "other_recent_games_to_show": other_recent_games_to_show,
+                "other_rotation_interval_seconds": other_rotation_interval_seconds,
+                "other_games_min_quality": other_games_min_quality,
+                "other_games_divisions": list(other_games_divisions or []),
                 "show_records": show_records,
                 "show_ranking": show_ranking,
                 "show_odds": show_odds,
@@ -841,6 +855,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "live_update_interval": live_update_interval,
                 "recent_update_interval": recent_update_interval,
                 "upcoming_update_interval": upcoming_update_interval,
+                "stale_game_timeout": stale_game_timeout,
                 "live_game_duration": resolve_live_duration(),
                 "non_favorite_live_game_duration": resolve_non_favorite_live_duration(),
                 "background_service": {

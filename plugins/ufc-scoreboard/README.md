@@ -80,6 +80,47 @@ fails to download, the plugin falls back to a placeholder icon.
 ESPN's public MMA endpoints. No API key required. Be mindful of
 `update_interval` — the default of 3600s is suitable for normal use.
 
+## 🎯 Which Fights Get Shown
+
+**`upcoming_games_to_show` is not "how many cards you see".** It is the size of a *pool*. The panel cycles through that pool one card at a time and keeps its place between visits, so a pool of 3 means the board rotates through the same 3 fights until the schedule moves on. Making the number bigger gives you a *longer lap*, so any one fight comes round **less** often.
+
+Which mode you are in depends on whether `ufc.favorite_fighters` is set and whether `ufc.filtering.show_favorite_fighters_only` is on:
+
+| `favorite_fighters` | `show_favorite_fighters_only` | What you get |
+|---|---|---|
+| empty | either | The next N fights chronologically. Every fight shown is a non-favorite fight, so the two filters below apply to all of them. |
+| set | **on** | Only your fighters. The limit is a budget **per fighter**. |
+| set | **off** | **Your fighters first, then other fights to fill.** Both limits are **totals**. |
+
+The third row is what most people want, and it did not exist before: with the flag off, favorite fighters used to be ignored *entirely*.
+
+### The settings
+
+| Option | Default | Description |
+|---|---|---|
+| `upcoming_games_to_show` | varies | How many upcoming fights with a **favorite** fighter to show. |
+| `recent_games_to_show` | varies | The same, for finished fights. |
+| `other_upcoming_games_to_show` | matches `upcoming_games_to_show` | How many **non-favorite** upcoming fights to add. `0` gives you favorites only. |
+| `other_recent_games_to_show` | matches `recent_games_to_show` | The same, for finished fights. |
+| `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
+| `other_games_min_quality` | `ranked` | Which non-favorite fights qualify: `ranked`, `broadcast`, or `any`. |
+| `other_games_divisions` | `["fbs"]` | A college-football setting that this plugin inherits from the shared code — see the note below. |
+
+**Your favorite fighters are never filtered by the last two** — a fighter you follow always appears. Those settings only decide what fills the *remaining* slots.
+
+Within the other-games pool, **the better matchup leads**, and each team appears once. The pool is each team's *next* game ordered by the best poll position of either side, so a top-five matchup sits in the first window rather than whichever kicks off soonest — and the #1 team's whole season does not sort above everyone else's opener. Ties fall back to kickoff order, and a league with no poll keeps chronological order. Your favorite teams are ordered by when they play, not by rank -- for your own team the next game is the point.
+
+### Variety comes from turnover
+
+Rather than widening the pool, the non-favorite slice **moves**: the window advances by its own width every `other_rotation_interval_seconds`, so consecutive windows do not overlap and the board works through the card instead of resampling the front of it. Your favorites are not rotated — for upcoming fights the soonest ones are the point.
+
+Both filters **fail open**: if the data behind them cannot be fetched, the fight is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
+
+They fail open a second time, as a set: if the filters between them leave **nothing at all** — your teams idle and every other fight rejected — the unfiltered list is used instead. Setting `other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one way to ask for an empty slate, and that is honoured.
+
+> Both `other_games_min_quality` and `other_games_divisions` are inert in this plugin. `ranked` needs a national poll and the division filter needs ESPN's FBS/FCS group rosters; UFC has neither, so every fight passes both, and neither costs a request — no poll is fetched and no division lookup is made. `broadcast` does work here: ESPN carries a broadcaster for UFC cards.
+
+
 ## License
 
 GPL-3.0, same as the LEDMatrix project.
