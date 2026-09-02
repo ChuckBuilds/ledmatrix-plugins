@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.24.2",
+  "version": "1.25.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,13 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.25.0",
+      "released": "2026-09-01",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "The bundled scroll fallback is gone, and the plugin now requires LEDMatrix 3.2.0. scroll_display.py carried a guarded import of the core's src.common.sports_scroll with a frozen pre-adoption copy, scroll_display_legacy.py, behind it, so it kept working on a core that predated the module (B5). The copy is deleted and the import is now plain -- keeping the try/except with nothing behind it would only mislabel the failure, naming the missing scroll_display_legacy instead of the core module actually absent, which is the single log line a user gets before the scoreboard stops appearing. The floor rises to 3.2.0, the release that ships the module, and the store refuses to install or update this version onto anything older. Nothing about what is drawn changes: the frozen copy was compared method by method against the core before deleting it and carried no orchestration logic the core lacks, and every safety-harness render is unchanged.",
+      "changelog": "The bundled scroll fallback is gone, and the plugin now requires LEDMatrix 3.2.0. scroll_display.py carried a guarded import of the core's src.common.sports_scroll with a frozen pre-adoption copy, scroll_display_legacy.py, behind it, so it kept working on a core that predated the module (B5). The copy is deleted and the import is now plain -- keeping the try/except with nothing behind it would only mislabel the failure, naming the missing scroll_display_legacy instead of the core module actually absent, which is the single log line a user gets before the scoreboard stops appearing. The floor rises to 3.2.0, the release that ships the module, and the store refuses to install or update this version onto anything older. Nothing about what is drawn changes: the frozen copy was compared method by method against the core before deleting it and carried no orchestration logic the core lacks, and every safety-harness render is unchanged."
+    },
     {
       "version": "1.24.2",
       "released": "2026-08-31",
@@ -348,6 +355,6 @@
   "entry_point": "manager.py",
   "class_name": "BasketballScoreboardPlugin",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.2.0"
   ]
 }

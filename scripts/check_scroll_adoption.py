@@ -50,8 +50,14 @@ CORE_SCROLL_MODULE = "src.common.sports_scroll"
 #: is the point -- it is the moment somebody states, in the same PR as the
 #: deletion, that the sunset holds for that plugin.
 SUNSET_PLUGINS = frozenset({
-    "football-scoreboard",
+    "afl-scoreboard",
     "baseball-scoreboard",
+    "basketball-scoreboard",
+    "football-scoreboard",
+    "hockey-scoreboard",
+    "lacrosse-scoreboard",
+    "nrl-scoreboard",
+    "soccer-scoreboard",
 })
 
 

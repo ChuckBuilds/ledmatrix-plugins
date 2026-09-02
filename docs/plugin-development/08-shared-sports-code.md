@@ -113,32 +113,50 @@ are true:
 3. The core **enforces** that floor at install/update time, and has done so long
    enough that few users run a core without the enforcement.
 
-Condition 3 is new, and it is the one that matters. Conditions 1 and 2 were
-written as if declaring a floor protected anyone; it does not:
+**Condition 3 now holds for `src.common.sports_scroll`, and B6 has run.** All
+eight scoreboards have deleted their bundled `scroll_display_legacy.py`, their
+imports are plain, and their floors are at 3.2.0 — the release that ships the
+module.
+
+The history matters, because conditions 1 and 2 were written as if declaring a
+floor protected anyone, and for a long time it did not:
 
 - The loader's compatibility check is **advisory only** — it logs a warning and
-  never blocks.
+  never blocks. That is still true.
 - It doesn't even warn for the users most at risk. It skips entirely when the
   core's parsed version is below `2.0.0`, and the `v3.1.0` release ships
-  `__version__ = "1.0.0"` (tagged 2026-05-31; the string was not bumped to
-  `"3.1.0"` until 2026-07-12, six weeks later).
-- Neither `StoreManager.install_plugin` nor `.update_plugin` compares the core
-  version at all. `update_plugin` compares the plugin's manifest version against
-  the registry's `latest_version` and nothing else — so a store update happily
-  delivers a plugin that floors above the user's core.
+  `__version__ = "1.0.0"`.
+- The store did not compare the core version at all.
 
-Delete the copy anyway and the plugin raises `ModuleNotFoundError` at load; the
-core catches it, marks the plugin `ERROR`, logs one line, and carries on. The
-user just loses that scoreboard with no explanation.
+That last point is what changed. The store now refuses on **all three** routes
+in — `install_plugin` (core #431/#433), the git-pull branch of `update_plugin`
+(#508), and `install_from_url` (#510) — so a plugin whose floor exceeds the
+running core cannot be installed or updated onto it, and a refused update
+leaves the user on the version they already had.
 
-**Until condition 3 holds, keep the guarded try-core/except-local import** — the
-fallback is the only real protection. Note that the guard must name the exact
-dotted path: a missing `src/common/sports_scroll.py` raises with
+Delete a copy without the floor and the plugin still raises
+`ModuleNotFoundError` at load; the core catches it, marks the plugin `ERROR`,
+logs one line, and carries on. The user just loses that scoreboard with no
+explanation. **The floor is what prevents that, so raise it in the same commit
+that deletes the copy.**
+
+**For a module that has NOT been through a sunset, keep the guarded
+try-core/except-local import** — the fallback is still the only protection
+until its own condition 3 is met. The guard must name the exact dotted path: a
+missing `src/common/sports_scroll.py` raises with
 `exc.name == 'src.common.sports_scroll'`, which `{"src"}` does not match.
 
-The core-side plan for condition 3 is phase **B6** in the core repo's
+And when you do sunset one, drop the guard along with the copy. Keeping
+`try/except` with nothing behind it names the missing *fallback* rather than
+the core module that is actually absent — and that name is the single line the
+user gets. `scripts/check_scroll_adoption.py` enforces this for the plugins
+listed in its `SUNSET_PLUGINS` set; add yours there in the same PR.
+
+The core-side record is phase **B6** in the core repo's
 `docs/SPORTS_UNIFICATION.md`. Keep these two documents in agreement — if you
-change the sunset rule here, change it there in the same PR.
+change the sunset rule here, change it there in the same change. (They live in
+different repositories, so "the same PR" is impossible; land them together and
+cross-link the numbers.)
 
 ### Worked example: the scroll display
 
