@@ -20,6 +20,7 @@ registry or the whole new one.
 Run: <core-venv>/bin/python plugins/soccer-scoreboard/test_league_registry_atomic_swap.py
 """
 
+import os
 import sys
 import types
 from pathlib import Path
@@ -43,6 +44,23 @@ def _stub_core_src():
     mod("src.common.scroll_helper", ScrollHelper=object)
     mod("src.plugin_system.base_plugin", BasePlugin=None, VegasDisplayMode=object)
     mod("src.background_data_service", get_background_service=lambda *a, **k: None)
+
+    # The stubs above are plain ModuleTypes, so `from src.common.X import Y`
+    # fails with "'src.common' is not a package" even when a real core is on
+    # the path. Giving them a __path__ lets genuine submodules -- sports_shared,
+    # sports_card -- resolve from the core while the stubbed ones stay stubbed.
+    # Stubbing those too would make this test pass against dummies instead of
+    # the code under test.
+    _core = os.environ.get("LEDMATRIX_CORE") or next(
+        (p for p in sys.path
+         if p and os.path.isdir(os.path.join(p, "src", "common"))), None)
+    if _core:
+        if "src" in sys.modules and not hasattr(sys.modules["src"], "__path__"):
+            sys.modules["src"].__path__ = [os.path.join(_core, "src")]
+        if ("src.common" in sys.modules
+                and not hasattr(sys.modules["src.common"], "__path__")):
+            sys.modules["src.common"].__path__ = [
+                os.path.join(_core, "src", "common")]
 
 
 _stub_core_src()

@@ -22,6 +22,7 @@ Run: <core-venv>/bin/python plugins/soccer-scoreboard/test_schedule_horizon.py
 """
 
 import ast
+import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -35,6 +36,18 @@ for candidate in (Path("/home/rackpi/projects/LEDMatrix"),
         break
 
 import sports  # noqa: E402
+
+
+def _shared_mixin_path():
+    """Where the core keeps the bodies shared by every scoreboard, if present."""
+    from pathlib import Path as _P
+    for cand in [os.environ.get("LEDMATRIX_CORE", "")] + sys.path:
+        if not cand:
+            continue
+        probe = _P(cand) / "src" / "common" / "sports_shared.py"
+        if probe.is_file():
+            return probe
+    return None
 
 failures = []
 
@@ -112,10 +125,26 @@ def main():
           and sports._clamp_window(-5, 7) == sports._MIN_WINDOW_DAYS)
 
     print("\n_get_weeks_data uses the setting rather than its own numbers")
-    src = (plugin_dir / "sports.py").read_text(encoding="utf-8")
-    fn = next((n for n in ast.walk(ast.parse(src)) if isinstance(n, ast.FunctionDef)
-               and n.name == "_get_weeks_data"), None)
+    # _get_weeks_data is byte-identical in all eight scoreboards, so it now
+    # lives in the core's SportsCoreSharedMixin. Look there when it is no
+    # longer in sports.py -- the assertions below are about the body, which
+    # moved verbatim, so they hold wherever it is defined.
+    def _find_get_weeks_data():
+        for candidate in (plugin_dir / "sports.py", _shared_mixin_path()):
+            if candidate and candidate.is_file():
+                tree = ast.parse(candidate.read_text(encoding="utf-8"))
+                fn = next((n for n in ast.walk(tree)
+                           if isinstance(n, ast.FunctionDef)
+                           and n.name == "_get_weeks_data"), None)
+                if fn is not None:
+                    return fn
+        return None
+
+    fn = _find_get_weeks_data()
     check("_get_weeks_data exists", fn is not None)
+    if fn is None:
+        print("  [skip] _get_weeks_data not found in sports.py or the core mixin")
+        raise SystemExit(2)
     literal_deltas = [n for n in ast.walk(fn)
                       if isinstance(n, ast.Call)
                       and getattr(n.func, "id", "") == "timedelta"

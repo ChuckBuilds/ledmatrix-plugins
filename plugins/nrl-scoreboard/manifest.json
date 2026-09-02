@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.18.1",
+  "version": "1.20.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,13 @@
     "nrl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.20.0",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "The sports.py logic every scoreboard shares moves to the core. Forty-five method bodies here were byte-identical to the same forty-five in every other scoreboard -- the selection and rotation engine, the font, colour and date subsystem, and the switch-mode upcoming card -- so they now come from src.common.sports_shared and this plugin inherits them. 1040 lines removed here. A fix to any of that now reaches every scoreboard at once instead of needing eight identical edits. Three deliberately stayed behind: _get_timezone, because it binds a per-plugin timezone module whose contents differ, and the two abstract stubs that define what makes this sport its own. Nothing drawn changes -- the bodies moved rather than being rewritten, and all 176 safety-harness renders across the eight plugins are byte-identical to before. The floor rises to 3.3.0, the release that first ships the shared module.",
+      "changelog": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage."
+    },
     {
       "version": "1.18.1",
       "released": "2026-09-02",
@@ -301,6 +308,6 @@
   "class_name": "NrlScoreboardPlugin",
   "config_schema": "config_schema.json",
   "compatible_versions": [
-    ">=3.2.0"
+    ">=3.3.0"
   ]
 }

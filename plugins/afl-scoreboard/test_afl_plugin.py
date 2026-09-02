@@ -17,6 +17,7 @@ Covers:
 from __future__ import annotations
 
 import logging
+import os
 import sys
 import types
 from pathlib import Path
@@ -82,6 +83,23 @@ def _install_host_stubs() -> None:
     sys.modules["src.common.scroll_helper"].ScrollHelper = None
     sys.modules["src.logo_downloader"].LogoDownloader = object
     sys.modules["src.logo_downloader"].download_missing_logo = lambda *a, **k: None
+
+    # The stubs above are plain ModuleTypes, so `from src.common.X import Y`
+    # fails with "'src.common' is not a package" even when a real core is on
+    # the path. Giving them a __path__ lets genuine submodules -- sports_shared,
+    # sports_card -- resolve from the core while the stubbed ones stay stubbed.
+    # Stubbing those too would make this test pass against dummies instead of
+    # the code under test.
+    _core = os.environ.get("LEDMATRIX_CORE") or next(
+        (p for p in sys.path
+         if p and os.path.isdir(os.path.join(p, "src", "common"))), None)
+    if _core:
+        if "src" in sys.modules and not hasattr(sys.modules["src"], "__path__"):
+            sys.modules["src"].__path__ = [os.path.join(_core, "src")]
+        if ("src.common" in sys.modules
+                and not hasattr(sys.modules["src.common"], "__path__")):
+            sys.modules["src.common"].__path__ = [
+                os.path.join(_core, "src", "common")]
 
 
 _install_thirdparty_stubs()
