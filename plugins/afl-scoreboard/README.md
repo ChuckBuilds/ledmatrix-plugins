@@ -23,6 +23,7 @@ real 2026 finals series.*
    - [What the "games to show" numbers mean](#what-the-games-to-show-numbers-mean)
    - [Which games exist to pick from](#which-games-exist-to-pick-from)
    - [Live games and priority](#live-games-and-priority)
+   - [Seeing live games more often in the Vegas ticker](#seeing-live-games-more-often-in-the-vegas-ticker)
 4. [Configuration Reference](#configuration-reference)
    - [Teams and filtering](#teams-and-filtering)
    - [Display modes and rotation](#display-modes-and-rotation)
@@ -195,6 +196,46 @@ The live screen has its own selection:
   an even rotation.
 - `live_priority` (default `true`) lets a live game interrupt the normal mode
   rotation rather than waiting its turn.
+
+### Seeing live games more often in the Vegas ticker
+
+By default a live game **takes over** the display: the Vegas ticker stops and
+this scoreboard goes full screen until the game ends. If you would rather keep
+the marquee scrolling and still see scores, the relevant settings live in the
+**core** LEDMatrix config rather than in this plugin:
+
+```json
+{
+  "display": {
+    "vegas_scroll": {
+      "live_in_ticker": true,
+      "live_weight": 3,
+      "favorite_live_weight": 5
+    }
+  }
+}
+```
+
+The ticker is otherwise a strict round robin — every plugin appears once per
+cycle — so with a dozen plugins enabled a score comes round once a lap. These
+weights let this scoreboard claim several slots per cycle, spaced evenly through
+it rather than bunched together.
+
+`live_weight` applies whenever this scoreboard has any live game.
+`favorite_live_weight` applies when one of your `favorite_teams` is playing, so
+your club's game comes round more often than other live games. That distinction
+has to be made here rather than in the core, which can tell *that* a game is
+live but not *whose*.
+
+Two things to keep in mind:
+
+- The weight is per **plugin**, not per game. With four games live this
+  scoreboard still occupies one slot at a time and picks between its own games
+  using `filtering.favorite_live_boost`; these weights control how often the
+  scoreboard itself comes round.
+- More slots make the cycle **longer**, not faster — everything else appears
+  proportionally less often. And appearing more often only helps if the data is
+  fresh, which is governed by `live_update_interval` above.
 
 ---
 
