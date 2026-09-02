@@ -236,7 +236,6 @@ def _unresolvable_globals(cls, module):
     import builtins
     import inspect
     import textwrap
-    import types
 
     # Resolve against the module the CLASS lives in, not the one we imported.
     # On the fallback path ScrollDisplay is LegacyScrollDisplay, whose globals

@@ -49,8 +49,19 @@ if "src.logo_downloader" not in sys.modules:
             if _cand and os.path.isdir(os.path.join(_cand, "src", "common")):
                 _core = _cand
                 break
-    if _core and os.path.isdir(os.path.join(_core, "src")):
-        src_pkg.__path__ = [os.path.join(_core, "src")]
+    if not (_core and os.path.isdir(os.path.join(_core, "src"))):
+        # Say so HERE rather than letting the stub go out without a __path__.
+        # Silently shadowing the core is what produces the
+        # "'src' is not a package" the comment above calls misleading -- the
+        # failure would surface later, from scroll_display's import, naming
+        # the wrong cause. Skip (exit 2) rather than fail: no core on the path
+        # is a "cannot run here", not a broken plugin.
+        print("SKIP: no LEDMatrix core found -- set LEDMATRIX_CORE or run via "
+              "scripts/run_plugin_tests.py --core <path>. Stubbing `src` "
+              "without one would shadow the real package and this file's "
+              "imports would fail naming `src` instead of the core module.")
+        sys.exit(2)
+    src_pkg.__path__ = [os.path.join(_core, "src")]
     logo_mod = types.ModuleType("src.logo_downloader")
 
     class _StubLogoDownloader:
