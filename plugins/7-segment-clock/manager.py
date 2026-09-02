@@ -186,19 +186,26 @@ class SevenSegmentClockPlugin(BasePlugin):
         black pixel is unlit. Unlit pixels come back fully transparent so the
         caller can paste the result straight over whatever is already on the
         panel.
-        """
-        rgba = base_image.convert("RGBA")
-        colored_image = Image.new("RGBA", rgba.size, (0, 0, 0, 0))
-        lit = (*color, 255)
-        clear = (0, 0, 0, 0)
 
-        source = rgba.load()
-        target = colored_image.load()
-        for x in range(rgba.width):
-            for y in range(rgba.height):
-                r, g, b, a = source[x, y]
-                # Visible and not black => a lit segment.
-                target[x, y] = lit if (a > 0 and (r or g or b)) else clear
+        Brightness decides which pixels are lit, and alpha is deliberately
+        ignored. Every asset on disk is mode "1" carrying a tRNS chunk, and both
+        loaders open them with .convert("RGBA"), which turns the WHITE (lit)
+        pixels into alpha 0 and the black ones into alpha 255 -- exactly
+        inverted. The previous rule, `a > 0 and (r or g or b)`, was therefore
+        false for every pixel: lit ones failed the alpha half, unlit ones failed
+        the colour half. The result was a fully transparent tile, so the clock
+        drew nothing at all.
+
+        Do not "restore" an alpha check here. By the time this runs the alpha is
+        already inverted, so honouring it blanks the display again.
+        """
+        # Lit == bright. `point` flattens to a hard 0/255 mask; the sources are
+        # 1-bit, so there are no midtones to lose.
+        mask = base_image.convert("L").point(lambda v: 255 if v > 0 else 0)
+
+        colored_image = Image.new("RGBA", base_image.size, (0, 0, 0, 0))
+        colored_image.paste(Image.new("RGBA", base_image.size, (*color, 255)),
+                            (0, 0), mask)
 
         if scale != 1.0:
             new_width = max(1, int(colored_image.width * scale))

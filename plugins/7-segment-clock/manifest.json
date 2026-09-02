@@ -1,7 +1,7 @@
 {
   "id": "7-segment-clock",
   "name": "7-Segment Clock",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Display a retro-style 7-segment clock with customizable colors",
   "author": "LEDMatrix",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "released": "2026-09-02",
+      "version": "1.0.5",
+      "notes": "Fix the clock rendering nothing at all. The digit and separator assets are 1-bit bitmaps with a transparency chunk, so loading them with .convert(\"RGBA\") hands back alpha 0 for the lit (white) pixels and alpha 255 for the unlit black ones -- exactly inverted. The recolour step asked for \"visible AND not black\", which was false for every pixel: lit ones failed the visibility half and unlit ones failed the colour half, so each frame came out fully transparent and the panel stayed dark. Lit-ness is now read from brightness, which the inverted alpha cannot affect. All eight safety-harness renders match the goldens captured before the regression, so the display returns to exactly what it drew before rather than merely drawing something.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-02",
       "version": "1.0.4",
