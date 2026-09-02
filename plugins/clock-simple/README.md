@@ -320,6 +320,21 @@ clock-simple/
 Fonts are not shipped with the plugin — they come from the core's
 `assets/fonts/` directory.
 
+### Previewing a change without a panel
+
+The fastest way to see a change is the core's dev preview server, which renders
+the plugin in a browser with no hardware:
+
+```bash
+cd /path/to/LEDMatrix
+python3 scripts/dev_server.py --extra-dir /path/to/ledmatrix-plugins/plugins/clock-simple
+# then open http://localhost:5001
+```
+
+To render a single still frame to a PNG instead, use `scripts/render_plugin.py`
+in the core — see
+[docs/DEV_PREVIEW.md](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/DEV_PREVIEW.md).
+
 ### Regenerating the images in this README
 
 Every screenshot comes from a declarative shot list against a frozen clock, so
