@@ -16,9 +16,11 @@ Run from the repo root:
     python scripts/test_logo_placeholder_refresh.py
 """
 
-import ast
+import importlib.util
 import re
+import shutil
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -91,11 +93,26 @@ class HelperBehaviour(unittest.TestCase):
     """Exercise a copy of the helper against stub core modules."""
 
     def _load_helper(self, downloader_module):
+        """Import the helper as a real module, extracted from a plugin copy.
+
+        Written to a temp file and imported through importlib rather than
+        exec()'d: importing the whole sports.py would drag in the core, and a
+        normal import keeps this a module with a filename that tracebacks and
+        coverage can point at.
+        """
         source = HELPER_RE.search(
             (PLUGINS / "afl-scoreboard" / "sports.py").read_text(encoding="utf-8")
         ).group(0)
-        namespace = {}
-        exec(compile(ast.parse(source), "<helper>", "exec"), namespace)  # nosec B102
+        tmpdir = tempfile.mkdtemp(prefix="logo-helper-")
+        self.addCleanup(shutil.rmtree, tmpdir, True)
+        module_path = Path(tmpdir) / "logo_helper_under_test.py"
+        module_path.write_text(source, encoding="utf-8")
+
+        spec = importlib.util.spec_from_file_location(
+            "logo_helper_under_test", module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
         saved = {k: sys.modules.get(k) for k in ("src", "src.logo_downloader")}
         if downloader_module is not None:
             import types
@@ -106,7 +123,7 @@ class HelperBehaviour(unittest.TestCase):
         else:
             sys.modules.pop("src.logo_downloader", None)
         self.addCleanup(self._restore, saved)
-        return namespace["_logo_needs_refresh"]
+        return module._logo_needs_refresh
 
     @staticmethod
     def _restore(saved):
