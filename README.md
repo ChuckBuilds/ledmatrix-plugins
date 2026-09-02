@@ -169,7 +169,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [Scrolling Text](./plugins/text-display/) | Custom scrolling/static text with configurable fonts and colors | |
+| [Scrolling Text](./plugins/text-display/) | Custom scrolling/static text with configurable fonts and colors | <a href="./plugins/text-display/"><img src="./docs/assets/text-display/hero.png" width="240" alt="text-display on an LED panel"></a> |
 
 ### System (1)
 
