@@ -1,0 +1,253 @@
+{
+  "plugin": "news",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T21:00:00+00:00",
+    "mock_data": "fixtures/espn-feeds.json",
+    "config": {
+      "enabled": true,
+      "feeds": {
+        "enabled_feeds": [
+          "MLB",
+          "NFL",
+          "TOP SPORTS"
+        ]
+      }
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "frames": 60,
+      "config": {
+        "global": {
+          "font_size": 8
+        }
+      },
+      "width": 256,
+      "scale": 4
+    },
+    {
+      "name": "size-12",
+      "frames": 60,
+      "config": {
+        "global": {
+          "font_size": 12
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "size-8",
+      "frames": 60,
+      "config": {
+        "global": {
+          "font_size": 8
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "size-6",
+      "frames": 60,
+      "config": {
+        "global": {
+          "font_size": 6
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-default",
+      "frames": 300,
+      "config": {
+        "global": {
+          "font_size": 8
+        }
+      },
+      "width": 256,
+      "scale": 4,
+      "standalone": false
+    },
+    {
+      "name": "col-amber",
+      "frames": 300,
+      "config": {
+        "global": {
+          "font_size": 8
+        },
+        "feeds": {
+          "text_color": [
+            255,
+            176,
+            0
+          ],
+          "separator_color": [
+            255,
+            90,
+            0
+          ]
+        }
+      },
+      "width": 256,
+      "scale": 4,
+      "standalone": false
+    },
+    {
+      "name": "col-green",
+      "frames": 300,
+      "config": {
+        "global": {
+          "font_size": 8
+        },
+        "feeds": {
+          "text_color": [
+            0,
+            255,
+            120
+          ],
+          "separator_color": [
+            0,
+            140,
+            200
+          ]
+        }
+      },
+      "width": 256,
+      "scale": 4,
+      "standalone": false
+    },
+    {
+      "name": "col-mono",
+      "frames": 300,
+      "config": {
+        "global": {
+          "font_size": 8
+        },
+        "feeds": {
+          "text_color": [
+            255,
+            255,
+            255
+          ],
+          "separator_color": [
+            255,
+            255,
+            255
+          ]
+        }
+      },
+      "width": 256,
+      "scale": 4,
+      "standalone": false
+    },
+    {
+      "name": "panel-64",
+      "frames": 60,
+      "config": {
+        "global": {
+          "font_size": 6
+        }
+      },
+      "width": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "panel-128",
+      "frames": 60,
+      "config": {
+        "global": {
+          "font_size": 8
+        }
+      },
+      "width": 128,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "panel-256",
+      "frames": 60,
+      "config": {
+        "global": {
+          "font_size": 8
+        }
+      },
+      "width": 256,
+      "scale": 4,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "font-size",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "size-12",
+          "label": "font_size: 12",
+          "sublabel": "the default; about ten characters on a 128-wide panel"
+        },
+        {
+          "shot": "size-8",
+          "label": "font_size: 8",
+          "sublabel": "noticeably more headline on screen at once"
+        },
+        {
+          "shot": "size-6",
+          "label": "font_size: 6",
+          "sublabel": "the most text, at the limit of legibility across a room"
+        }
+      ]
+    },
+    {
+      "name": "colors",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "col-default",
+          "label": "The defaults",
+          "sublabel": "white headlines, red separator"
+        },
+        {
+          "shot": "col-amber",
+          "label": "Amber",
+          "sublabel": "feeds.text_color and feeds.separator_color"
+        },
+        {
+          "shot": "col-green",
+          "label": "Green",
+          "sublabel": ""
+        },
+        {
+          "shot": "col-mono",
+          "label": "All white",
+          "sublabel": "separator matched to the text"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "panel-64",
+          "label": "64 x 32",
+          "sublabel": "font_size 6; only a few characters at a time"
+        },
+        {
+          "shot": "panel-128",
+          "label": "128 x 32",
+          "sublabel": "font_size 8; the common two-panel chain"
+        },
+        {
+          "shot": "panel-256",
+          "label": "256 x 32",
+          "sublabel": "font_size 8; a headline fragment you can actually read"
+        }
+      ]
+    }
+  ]
+}

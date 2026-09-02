@@ -1,381 +1,386 @@
------------------------------------------------------------------------------------
-### Connect with ChuckBuilds
+# News Ticker
 
-- Show support on Youtube: https://www.youtube.com/@ChuckBuilds
-- Stay in touch on Instagram: https://www.instagram.com/ChuckBuilds/
-- Want to chat or need support? Reach out on the ChuckBuilds Discord: https://discord.com/invite/uW36dVAtcT
-- Feeling Generous? Support the project:
-  - Github Sponsorship: https://github.com/sponsors/ChuckBuilds
-  - Buy Me a Coffee: https://buymeacoffee.com/chuckbuilds
-  - Ko-fi: https://ko-fi.com/chuckbuilds/ 
+A scrolling headline ticker for your LED matrix, fed by RSS. Nine sports feeds
+are built in, and it takes any RSS URL you point it at.
 
------------------------------------------------------------------------------------
+![Real ESPN headlines scrolling across a 256x32 panel](../../docs/assets/news/hero.png)
 
-# News Ticker Plugin
+*Every image in this README is real plugin output, rendered at the true panel
+size from a recorded ESPN RSS response and then scaled up so the pixels stay
+pixels. The headlines are genuine ESPN copy from 2 September 2026.*
 
-A plugin for LEDMatrix that displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources.
+---
 
-## Features
+## Table of Contents
 
-- **Multiple RSS Sources**: ESPN sports feeds, NCAA updates, and custom RSS URLs
-- **Scrolling Headlines**: Continuous scrolling ticker display
-- **Headline Paging**: Each turn shows as many headlines as can finish scrolling, then the next turn picks up where the last one stopped — headlines aren't cut off part-way through, and the tail of a long feed list still reaches the panel
-- **Pixel-Perfect Text**: Glyphs render 1-bit with anti-aliasing off, so every pixel is fully lit or fully off — no blurred edges on the LED grid
-- **News Source Logos**: Display logos for news sources (ESPN, NFL Network, MLB Network, etc.)
-- **Headline Rotation**: Cycle through headlines after multiple viewings
-- **Custom Feeds**: Add your own RSS feed URLs
-- **Sports Focus**: Pre-configured feeds for NFL, NBA, MLB, NCAA, and more
-- **Configurable Display**: Adjustable scroll speed, colors, and timing
-- **Background Data Fetching**: Efficient RSS parsing without blocking display
+1. [What's On Screen](#whats-on-screen)
+2. [Installation](#installation)
+3. [Quick Start](#quick-start)
+4. [Choosing Feeds](#choosing-feeds)
+   - [Built-in feeds](#built-in-feeds)
+   - [Custom feeds](#custom-feeds)
+   - [How many headlines you see](#how-many-headlines-you-see)
+5. [Scrolling and Timing](#scrolling-and-timing)
+   - [How fast it moves](#how-fast-it-moves)
+   - [Dynamic duration and paging](#dynamic-duration-and-paging)
+6. [Appearance](#appearance)
+   - [Font size](#font-size)
+   - [Fonts](#fonts)
+   - [Colours and logos](#colours-and-logos)
+   - [Background fetching](#background-fetching)
+7. [Panel Sizes](#panel-sizes)
+8. [Troubleshooting](#troubleshooting)
+9. [Development](#development)
+10. [Support](#support)
 
-## Configuration
+---
 
-### Global Settings
+## What's On Screen
 
-All scrolling/timing/font settings live under the `global.*` namespace
-in [`config_schema.json`](config_schema.json) — that file is the source
-of truth. The keys you'll touch most often:
+A single strip of headlines scrolling right to left, with a coloured separator
+between them. Headlines are pulled from every enabled feed, interleaved, and
+drawn as one continuous strip — so the panel is never blank between items.
 
-- `global.display_duration`: How long to show the ticker (10–300s, default 30)
-- `global.update_interval`: Seconds between RSS fetches (default 300)
-- `global.display.scroll_speed`: Pixels per frame (0.5–5.0, default 1.0)
-- `global.display.scroll_delay`: Sleep between scroll steps in seconds (0.001–0.1, default 0.01)
-- `global.target_fps`: Target frames per second cap (30–200, default 100)
-- `global.font_size`: Headline font size (8–20, default 12)
-- `global.font_path`: Path to TTF/BDF font (default `assets/fonts/PressStart2P-Regular.ttf`)
-- `global.dynamic_duration`: Object — `enabled` (default `true`),
-  `min_duration_seconds` (default `30`), `max_duration_seconds`
-  (default `300`), `buffer_ratio` (default `0.1`)
-- `global.headline_paging`: Object — `enabled` (default `true`),
-  `max_headlines_per_page` (default `0` = fit as many as time allows),
-  `page_hold_seconds` (default `2.0`), `duration_overrun_allowance`
-  (default `0.25`). See [Headline Paging](#headline-paging).
-- `global.rotation_enabled`: Enable headline rotation (default `true`; only
-  used when `headline_paging.enabled` is `false`)
-- `global.rotation_threshold`: Cycles before rotating headlines (1–10, default 3;
-  only used when `headline_paging.enabled` is `false`)
-- `global.headlines_per_feed`: Headlines to fetch per feed (1–10, default 2)
-- `global.background_service.*`: Background fetch tuning —
-  `enabled`, `request_timeout`, `max_retries`, `priority`
+Because it scrolls, **the first moment of a turn is legitimately an empty
+panel**: the strip starts fully off the right edge and travels in.
 
-### Feed Settings
-
-#### Enabled Predefined Feeds
-
-```json
-{
-  "feeds": {
-    "enabled_feeds": ["NFL", "NCAA FB", "NBA", "MLB"]
-  }
-}
-```
-
-#### Custom RSS Feeds
-
-Custom feeds are configured as an array of feed objects, each with a name, URL, enabled status, and optional logo:
-
-```json
-{
-  "feeds": {
-    "custom_feeds": [
-      {
-        "name": "Tech News",
-        "url": "https://example.com/rss.xml",
-        "enabled": true,
-        "logo": {
-          "id": "tech-news-logo",
-          "path": "plugins/ledmatrix-news/assets/logos/tech-news-logo.png",
-          "uploaded_at": "2024-01-01T00:00:00Z"
-        }
-      },
-      {
-        "name": "Local Sports",
-        "url": "https://local-sports.com/feed.xml",
-        "enabled": true
-      }
-    ]
-  }
-}
-```
-
-- `name` (required): Feed name (1-100 characters)
-- `url` (required): RSS feed URL (must be valid URI)
-- `enabled` (optional, default: true): Whether this feed is enabled
-- `logo` (optional): Logo file upload object (upload via web UI)
-
-**Feed Management:**
-- Enable/disable individual feeds using the `enabled` field
-- Feeds are processed in the order they appear in the `custom_feeds` array
-- Upload custom logos directly via the web UI (similar to static-image plugin)
-- Maximum 50 custom feeds allowed
-
-#### Display Colors
-
-```json
-{
-  "feeds": {
-    "text_color": [255, 255, 255],
-    "separator_color": [255, 0, 0]
-  }
-}
-```
-
-#### News Source Logos
-
-```json
-{
-  "feeds": {
-    "show_logos": true,
-    "logo_size": 28,
-    "custom_feeds": [
-      {
-        "name": "Tech News",
-        "url": "https://example.com/rss.xml",
-        "enabled": true,
-        "logo": {
-          "id": "tech-news-logo",
-          "path": "plugins/ledmatrix-news/assets/logos/tech-news-logo.png",
-          "uploaded_at": "2024-01-01T00:00:00Z"
-        }
-      }
-    ]
-  }
-}
-```
-
-- `show_logos`: Enable/disable news source logos (default: true)
-- `logo_size`: Logo size in pixels (default: display height - 4 pixels)
-- `logo`: Optional logo object in each custom feed (upload via web UI file upload widget)
-
-**Logo Behavior:**
-- When a logo is present: Logo replaces the "[Feed Name]: " prefix and " • " separator
-  - Format: `[Logo] Title`
-- When a logo is missing: Shows original format with feed name and separator
-  - Format: `[Feed Name]: Title • `
-
-**Logo Resolution Priority:**
-1. Integrated logo from feed object (`logo.path` field) - **New format**
-2. Predefined feed mappings (ESPN, NFL Network, MLB Network)
-3. Inferred from feed name (checks for "espn", "nfl", "mlb", etc.)
-4. Normalized feed name as filename (fallback)
-
-**Logo Directory Search Order:**
-1. Uploaded logo path from feed object (if present)
-2. `assets/news_logos/` (primary location for news source logos)
-3. `assets/broadcast_logos/` (fallback for broadcast network logos)
-4. Plugin `assets/logos/` (plugin-specific logos)
-
-**Adding Custom Logos:**
-1. Upload logo via the web UI file upload widget in the feed configuration
-2. The logo will be automatically associated with the feed
-3. Logos are stored in the plugin's asset directory
-
-**Default Feed Mappings (Predefined Feeds):**
-- ESPN feeds (NFL, NBA, NHL, NCAA, etc.) → `espn.png`
-- MLB feed → `mlbn.png`
-- NFL feed → `nfln.png`
-- Custom feeds → Use uploaded logo or inferred from name
-
-## Available Predefined Feeds
-
-The plugin includes these predefined RSS feeds:
-
-- **MLB**: ESPN MLB News (`http://espn.com/espn/rss/mlb/news`)
-- **NFL**: ESPN NFL News (`http://espn.go.com/espn/rss/nfl/news`)
-- **NCAA FB**: ESPN NCAA Football News (`https://www.espn.com/espn/rss/ncf/news`)
-- **NHL**: ESPN NHL News (`https://www.espn.com/espn/rss/nhl/news`)
-- **NBA**: ESPN NBA News (`https://www.espn.com/espn/rss/nba/news`)
-- **TOP SPORTS**: ESPN Top Sports News (`https://www.espn.com/espn/rss/news`)
-- **BIG10**: Big Ten Conference News (`https://www.espn.com/blog/feed?blog=bigten`)
-- **NCAA**: ESPN NCAA News (`https://www.espn.com/espn/rss/ncaa/news`)
-- **Other**: Alternative Sports News (`https://www.coveringthecorner.com/rss/current.xml`)
-
-## Display Format
-
-The news ticker displays information in a scrolling format showing:
-
-- **Feed Source**: Name of the RSS feed (e.g., "NFL", "ESPN") — replaced by the
-  feed's logo when one is available
-- **Headline**: Full news headline text, never abbreviated
-- **Separator**: Visual separator between headlines (shown when there's no logo)
-
-## Pixel-Perfect Text
-
-All text is drawn with anti-aliasing disabled (`fontmode = "1"`), so every
-pixel is either fully lit or fully off. PIL anti-aliases by default, which
-blends glyph edges into dim partial-lit pixels — on a 1:1 LED matrix those read
-as blur rather than as smoothing.
-
-This matters most at font sizes that don't land on the font's design grid. Press
-Start 2P is drawn on an 8px grid: at size 8 or 16 it happens to align and stays
-crisp either way, but at the default size of 12 a single headline picks up
-roughly 150 blended pixels with anti-aliasing left on. Sizes on the grid (8, 16,
-24) also give the most even stroke widths, so they're worth preferring if you
-want the sharpest possible result.
-
-Nothing to configure — it applies to headlines, feed labels, separators and the
-fallback screens alike.
-
-## Headline Paging
-
-Headlines are never shortened, so a full set of feeds can easily produce a strip
-of scrolling text several minutes long — far more than the display controller
-will keep any one plugin on screen. Paging solves that.
-
-Before each turn the plugin measures how much text can actually finish scrolling
-in the time it will be given, fills the strip up to that point, and defers the
-rest. When the strip finishes, the next turn resumes at the first headline that
-didn't fit. Nothing is drawn that can't be read to the end, and every headline
-reaches the panel in a few turns instead of the list's tail never being seen.
-
-The time budget is derived from the scroll rate and the shortest ceiling that
-will be enforced — the plugin's own `dynamic_duration.max_duration_seconds` and
-the core's `display.dynamic_duration.max_duration_seconds`, whichever is lower.
-
-Tuning:
-
-- `enabled` (default `true`) — set `false` to go back to one long strip
-  containing every headline, paced by `rotation_enabled`/`rotation_threshold`
-- `max_headlines_per_page` (default `0`) — cap headlines per turn regardless of
-  available time; `0` fits as many as will scroll
-- `page_hold_seconds` (default `2.0`) — how long the finished strip stays on
-  screen before the next page starts, when the ticker isn't rotated away (for
-  example when News is the only enabled display mode)
-- `duration_overrun_allowance` (default `0.25`) — extra time requested from the
-  controller so a scroll running behind its nominal speed still reaches the end.
-  Raise it if headlines still get clipped on a heavily loaded Pi.
-
-## Background Service
-
-The plugin uses background data fetching for efficient RSS parsing:
-
-- Requests timeout after 30 seconds (configurable)
-- Up to 3 retries for failed requests
-- Priority level 2 (medium priority)
-- Updates every 5 minutes by default (configurable)
-
-## Adding Custom Feeds
-
-You can add custom RSS feeds by specifying them in the configuration using the array format:
-
-```json
-{
-  "feeds": {
-    "custom_feeds": [
-      {
-        "name": "My Sports",
-        "url": "https://mysportsfeed.com/rss",
-        "enabled": true
-      },
-      {
-        "name": "Local News",
-        "url": "https://localnews.com/sports.xml",
-        "enabled": true
-      }
-    ]
-  }
-}
-```
-
-**Note:** The old dictionary format (`{"Feed Name": "URL"}`) is deprecated but still supported for backward compatibility. It will be automatically migrated to the new array format on first load. We recommend using the new array format for new configurations.
-
-## Data Processing
-
-- **RSS Parsing**: Uses Python's xml.etree.ElementTree for reliable parsing
-- **Text Cleaning**: Removes HTML entities and extra whitespace
-- **Length Limiting**: Truncates long headlines for display
-- **Caching**: Stores headlines for 10 minutes to avoid excessive API calls
-
-## Dependencies
-
-This plugin requires the main LEDMatrix installation and uses the cache manager for data storage.
+---
 
 ## Installation
 
-1. Copy this plugin directory to your `ledmatrix-plugins/plugins/` folder
-2. Ensure the plugin is enabled in your LEDMatrix configuration
-3. Configure your preferred RSS feeds and display options
-4. Restart LEDMatrix to load the new plugin
+**From the Plugin Store (recommended).** Open the LEDMatrix web interface at
+`http://<your-pi-ip>:5000`, go to **Plugin Manager**, find **News Ticker** in
+the **Plugin Store** section, and click **Install**.
 
-## Troubleshooting
+**Manually.** Copy this directory into your LEDMatrix `plugin-repos/` and
+restart the display service.
 
-- **No headlines showing**: Check if feeds are enabled and URLs are accessible
-- **RSS parsing errors**: Verify feed URLs are valid and return proper XML
-- **Slow scrolling**: Adjust scroll speed and delay settings
-- **Network errors**: Check your internet connection and RSS server availability
-- **Blurry or muddy text**: Text is rendered 1-bit, so blur usually means the
-  font size sits off the font's design grid and stroke widths are uneven. Try a
-  multiple of 8 for Press Start 2P (`global.font_size`: 8, 16 or 24).
-- **Headlines still cut off mid-word**: The scroll is running behind its nominal
-  speed. Raise `global.headline_paging.duration_overrun_allowance`, or lower
-  `global.display.scroll_speed` so less content is packed into each turn.
-- **Only ever seeing the same first few headlines**: Confirm
-  `global.headline_paging.enabled` is `true` — with paging off, the legacy
-  rotation only advances one headline every `rotation_threshold` cycles.
-- **Fewer headlines per turn than expected**: Each turn is sized to the shortest
-  enforced duration cap. Raise `global.dynamic_duration.max_duration_seconds`
-  *and* the core's `display.dynamic_duration.max_duration_seconds` (default
-  180s) — the lower of the two wins.
+> **A fresh install shows nothing.** `enabled` defaults to `false`, and
+> `feeds.enabled_feeds` defaults to an **empty list** — so even switched on,
+> there is nothing to fetch until you pick at least one feed.
 
-## Advanced Features
+---
 
-- **Pixel-Perfect Text**: 1-bit glyph rendering with anti-aliasing disabled, so nothing renders half-lit
-- **Headline Paging**: Sizes each turn to what can actually finish scrolling, then resumes where it left off
-- **Headline Rotation**: Legacy fallback that rotates headlines after multiple cycles when paging is disabled
-- **Dynamic Duration**: Holds the display until the strip has scrolled to the end, rather than cutting at a fixed time
-- **Color Customization**: Configure text and separator colors
-- **Font Sizing**: Adjustable font size for readability
-- **Feed Prioritization**: Control which feeds are displayed and in what order
-
-## Performance Notes
-
-- The plugin uses the **ScrollHelper API** for high-performance scrolling with numpy array optimization
-- **Frame-based scrolling** provides smooth, consistent scrolling at 100+ FPS
-- **Dynamic duration** automatically calculates display time based on content width and scroll speed
-- RSS parsing happens in background to avoid blocking the display
-- Configurable update intervals balance freshness vs. network load
-- Caching reduces unnecessary network requests
-
-## Scrolling Implementation
-
-This plugin uses the LEDMatrix **ScrollHelper** API for optimized scrolling:
-
-- **High-FPS Mode**: Automatically enables high frame rate (100+ FPS) for smooth scrolling
-- **Frame-Based Scrolling**: Uses `display.scroll_speed` (pixels per frame) and `display.scroll_delay` (seconds per frame) for precise control
-- **Dynamic Duration**: Automatically calculates display duration based on content width, ensuring all headlines are shown
-- **Numpy Optimization**: Uses fast numpy array slicing for minimal CPU usage
-- **Smooth Animation**: Pre-allocated buffers and optimized rendering for consistent performance
-
-### Recommended Configuration
-
-For best performance, use the frame-based scrolling format:
+## Quick Start
 
 ```json
 {
-  "global": {
-    "display": {
-      "scroll_speed": 1.0,
-      "scroll_delay": 0.01
+  "news": {
+    "enabled": true,
+    "feeds": { "enabled_feeds": ["TOP SPORTS", "MLB"] }
+  }
+}
+```
+
+A fuller configuration:
+
+```json
+{
+  "news": {
+    "enabled": true,
+    "feeds": {
+      "enabled_feeds": ["MLB", "NFL", "TOP SPORTS"],
+      "text_color": [255, 255, 255],
+      "separator_color": [255, 0, 0],
+      "show_logos": true,
+      "logo_size": 28
     },
-    "target_fps": 100,
-    "dynamic_duration": {
-      "enabled": true,
-      "min_duration_seconds": 30,
-      "max_duration_seconds": 300,
-      "buffer_ratio": 0.1
-    },
-    "headline_paging": {
-      "enabled": true,
-      "max_headlines_per_page": 0,
-      "page_hold_seconds": 2.0,
-      "duration_overrun_allowance": 0.25
+    "global": {
+      "display_duration": 30,
+      "update_interval": 300,
+      "font_size": 8,
+      "headlines_per_feed": 2,
+      "rotation_enabled": true,
+      "rotation_threshold": 3
     }
   }
 }
 ```
 
-This configuration provides:
-- 1 pixel per frame scrolling
-- 0.01 second delay = 100 FPS effective rate
-- Dynamic duration that adjusts to content length
-- Smooth, consistent scrolling performance
+---
+
+## Choosing Feeds
+
+### Built-in feeds
+
+`feeds.enabled_feeds` takes any of these names:
+
+| Name | Source |
+|------|--------|
+| `TOP SPORTS` | ESPN top headlines |
+| `MLB` | ESPN MLB |
+| `NFL` | ESPN NFL |
+| `NBA` | ESPN NBA |
+| `NHL` | ESPN NHL |
+| `NCAA FB` | ESPN college football |
+| `NCAA` | ESPN college sports |
+| `BIG10` | A Google News search for Big Ten football |
+| `Other` | Covering the Corner (Cleveland Guardians) |
+
+`BIG10` is a Google News query rather than an official feed, because
+`btn.com/feed/` returns HTML and the ESPN Big Ten blog feed was retired. It is
+therefore looser in scope than the other entries.
+
+### Custom feeds
+
+Any RSS URL works. `feeds.custom_feeds` takes a list of objects:
+
+```json
+{
+  "feeds": {
+    "custom_feeds": [
+      { "name": "Local", "url": "https://example.com/rss", "enabled": true }
+    ]
+  }
+}
+```
+
+| Key | What it does |
+|-----|--------------|
+| `name` | Shown as the source label and used in the cache key |
+| `url` | The RSS URL. Standard RSS `<item>` elements with `<title>` are required |
+| `enabled` | Include this feed |
+| `logo` | Optional logo for the feed. An object with a `path` to an image file |
+
+The parser reads `title`, `description`, `pubDate` and `link` from each
+`<item>`, unescapes HTML entities, and tidies whitespace. Atom-only feeds
+without `<item>` elements will fetch successfully and yield nothing.
+
+### How many headlines you see
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `global.headlines_per_feed` | `2` | Headlines taken from each enabled feed per fetch |
+| `global.rotation_enabled` | `true` | Rotate which feeds appear when many are enabled |
+| `global.rotation_threshold` | `3` | Number of feeds above which rotation kicks in |
+
+With three feeds and the default `headlines_per_feed: 2`, a cycle carries six
+headlines. Raising it makes the strip longer, and therefore each lap slower —
+the same trade as any ticker.
+
+---
+
+## Scrolling and Timing
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `global.display_duration` | `30` | Seconds the ticker holds the panel per turn |
+| `global.update_interval` | `300` | Seconds between feed fetches |
+| `global.display.scroll_speed` | `1.0` | Pixels moved per step |
+| `global.display.scroll_delay` | `0.01` | Seconds per step |
+| `global.target_fps` | `100` | Target frame rate |
+
+### How fast it moves
+
+As with the scrolling-text plugin, the rate is:
+
+```text
+pixels per second = scroll_speed / scroll_delay
+```
+
+The defaults — 1 pixel every 0.01s — give 100 px/s, which the plugin logs on
+startup so you can check what it actually resolved to.
+
+### Dynamic duration and paging
+
+Two features stop a long strip from being cut off mid-headline.
+
+**`global.dynamic_duration`** sizes the turn to the content instead of using a
+fixed `display_duration`. It accepts `true`/`false` or an object:
+
+| Key | Default | What it does |
+|-----|---------|--------------|
+| `enabled` | `true` | Size the turn to how long one full pass takes |
+| `min_duration_seconds` | `30` | Never shorter than this |
+| `max_duration_seconds` | `300` | Never longer than this |
+| `buffer_ratio` | `0.1` | Extra headroom added to the computed time |
+
+**`global.headline_paging`** splits a strip too long for one turn into pages,
+so each headline gets fully seen across successive turns rather than the tail
+never appearing.
+
+| Key | Default | What it does |
+|-----|---------|--------------|
+| `enabled` | `true` | Break a long strip into pages |
+| `max_headlines_per_page` | `0` | `0` means auto — as many as fit the time budget |
+| `page_hold_seconds` | `2.0` | Pause at a page boundary |
+| `duration_overrun_allowance` | `0.25` | Fraction of overrun tolerated before splitting again |
+
+Together these mean you rarely need to tune `display_duration` by hand: the
+plugin works out how long a pass takes and asks for that much time.
+
+---
+
+## Appearance
+
+### Font size
+
+`global.font_size` (default `12`) is the biggest lever on how much headline is
+readable at once.
+
+![Three 128x32 panels at font_size 12, 8 and 6](../../docs/assets/news/font-size.png)
+
+At the default 12 on a 128-wide panel only about ten characters are on screen
+at a time, which reads more like a stream of letters than a headline. Dropping
+to 8 roughly doubles it. This is the setting to change first if the ticker feels
+unreadable.
+
+### Fonts
+
+`customization.headline_text` and `customization.source_text` each take a
+`font`, `font_size` and (for the source) `text_color`. Five faces are
+available and all five render distinctly:
+
+| Font | Kind | Notes |
+|------|------|-------|
+| `PressStart2P-Regular.ttf` | Scalable | The default; chunky and very legible |
+| `4x6-font.ttf` | Scalable | Fits far more text per line |
+| `5by7.regular.ttf` | Scalable | A rounder 5×7 face |
+| `5x7.bdf` | Bitmap | Crisp; drawn at its native 7px |
+| `4x6.bdf` | Bitmap | The smallest; native 6px |
+
+**`font_size` only affects the scalable faces.** A `.bdf` is a bitmap font that
+exists at exactly one pixel size, so it is drawn at the size its file declares
+and ignores `font_size`.
+
+`global.font_path` (default `assets/fonts/PressStart2P-Regular.ttf`) sets the
+face used when no `customization.headline_text.font` is given. It takes a path
+rather than a name, resolved relative to the LEDMatrix project root, so it can
+point at a font that is not in the picker. `customization` wins where both are
+set.
+
+### Colours and logos
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `feeds.text_color` | `[255, 255, 255]` | Headline colour |
+| `feeds.separator_color` | `[255, 0, 0]` | Colour of the mark between headlines |
+| `feeds.show_logos` | `true` | Draw each feed's logo before its headlines |
+| `feeds.logo_size` | `28` | Logo height in pixels |
+| `customization.source_text.text_color` | `[150, 150, 150]` | The source label |
+
+![Four 256x32 panels showing white, amber, green and all-white
+tickers](../../docs/assets/news/colors.png)
+
+The separator is visible at the right edge of each panel above — it is the mark
+that keeps two headlines from reading as one sentence, so a colour that
+contrasts with `text_color` is worth keeping.
+
+---
+
+### Background fetching
+
+Feeds are fetched on a background thread so the panel never stalls on a slow
+server. Under `global.background_service`:
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `enabled` | `true` | Fetch in the background rather than inline |
+| `request_timeout` | `30` | Seconds before a feed request gives up |
+| `max_retries` | `3` | Retries per failed feed |
+| `priority` | `2` | Queue priority against other plugins' fetches |
+
+A feed that times out is skipped for that cycle rather than blocking the
+others, so one dead source does not empty the ticker.
+
+---
+
+## Panel Sizes
+
+![The ticker on 64x32, 128x32 and 256x32 panels](../../docs/assets/news/panel-sizes.png)
+
+Width matters more here than for any other plugin in this repo, because the
+ticker's usefulness is how much of a headline you can take in at a glance:
+
+- **64×32** shows a few characters at a time even at `font_size: 6`. Legible,
+  but you read it letter by letter.
+- **128×32** is workable at `font_size: 8`.
+- **256×32** is where a ticker starts to feel like one — a readable fragment of
+  a real headline sits on the panel at once.
+
+If you are choosing a panel with a news ticker in mind, buy width.
+
+---
+
+## Troubleshooting
+
+**Nothing appears at all.**
+`enabled` defaults to `false`, and `feeds.enabled_feeds` defaults to an empty
+list. Both need setting.
+
+**The panel is blank for a moment when the ticker's turn starts.**
+Expected — the strip begins off the right edge and travels in.
+
+**A feed shows no headlines.**
+Check the log for a fetch error. The parser needs standard RSS `<item>`
+elements; an Atom-only feed fetches fine and yields nothing. `Other` and
+`BIG10` point at third-party sources that can change or disappear.
+
+**I can't read the headlines.**
+Lower `global.font_size` — the default of 12 is large for a 128-wide panel.
+See [Font size](#font-size).
+
+**The end of the strip never appears.**
+That is what `headline_paging` exists for; check it is enabled. Alternatively
+leave `dynamic_duration` on so the turn is sized to the content.
+
+**I picked a font and nothing changed.**
+On a current version all five faces work. Older versions offered `cozette.bdf`,
+which had no font file at all, and both `.bdf` faces silently fell back to the
+default because they were requested at `font_size` rather than at their own
+pixel size.
+
+**Headlines are stale.**
+`global.update_interval` (default 300s) sets the fetch cadence, and results are
+cached per feed per hour. A feed that publishes rarely will simply repeat.
+
+---
+
+## Development
+
+### Project structure
+
+```text
+news/
+├── manifest.json        # Plugin metadata and version history
+├── manager.py           # NewsTickerPlugin
+├── config_schema.json   # Settings schema; source of truth for defaults
+├── requirements.txt
+├── test_news_ticker.py
+├── test_unchanged_headlines_keep_strip.py
+└── README.md
+```
+
+### Dependencies
+
+`requests` for fetching and Pillow for drawing, both already provided by the
+LEDMatrix core — `requirements.txt` lists them as comments rather than pins for
+exactly that reason. RSS is parsed with Python's built-in
+`xml.etree.ElementTree`, so there is no feed-parser dependency to install.
+
+Headlines are cached under `news_<feed>_<YYYYMMDDHH>`, so the cache key rolls
+over hourly and a restart within the same hour reuses what was already fetched.
+
+### Regenerating the images in this README
+
+```bash
+python scripts/render_docs_assets.py --plugin news
+```
+
+The fixture under `docs/assets/news/fixtures/` is a recorded ESPN RSS response,
+so the images are real data and reproducible. Because the ticker scrolls, the
+shot list advances the plugin a number of frames before capturing — a single
+frame would be the empty panel the strip starts from.
+
+---
+
+## Support
+
+- YouTube: <https://www.youtube.com/@ChuckBuilds>
+- Instagram: <https://www.instagram.com/ChuckBuilds/>
+- Discord: <https://discord.com/invite/uW36dVAtcT>
+- Sponsor: [GitHub Sponsors](https://github.com/sponsors/ChuckBuilds) ·
+  [Buy Me a Coffee](https://buymeacoffee.com/chuckbuilds) ·
+  [Ko-fi](https://ko-fi.com/chuckbuilds/)
+
+Released under the GNU General Public License v3.0 — see [LICENSE](LICENSE).

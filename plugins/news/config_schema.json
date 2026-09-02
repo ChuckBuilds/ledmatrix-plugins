@@ -73,7 +73,10 @@
           "x-advanced": true
         },
         "dynamic_duration": {
-          "type": ["boolean", "object"],
+          "type": [
+            "boolean",
+            "object"
+          ],
           "description": "Dynamic duration settings for synchronising display time with content width",
           "default": {
             "enabled": true,
@@ -241,7 +244,17 @@
           },
           "items": {
             "type": "string",
-            "enum": ["MLB", "NFL", "NCAA FB", "NHL", "NBA", "TOP SPORTS", "BIG10", "NCAA", "Other"],
+            "enum": [
+              "MLB",
+              "NFL",
+              "NCAA FB",
+              "NHL",
+              "NBA",
+              "TOP SPORTS",
+              "BIG10",
+              "NCAA",
+              "Other"
+            ],
             "description": "Predefined RSS feed categories"
           },
           "uniqueItems": true,
@@ -285,7 +298,11 @@
                   "endpoint": "/api/v3/plugins/assets/upload",
                   "plugin_id": "news",
                   "max_files": 1,
-                  "allowed_types": ["image/png", "image/jpeg", "image/bmp"],
+                  "allowed_types": [
+                    "image/png",
+                    "image/jpeg",
+                    "image/bmp"
+                  ],
                   "max_size_mb": 2
                 },
                 "description": "Optional logo for this feed. Upload via the file upload widget.",
@@ -304,10 +321,16 @@
                     "description": "Upload timestamp"
                   }
                 },
-                "required": ["id", "path"]
+                "required": [
+                  "id",
+                  "path"
+                ]
               }
             },
-            "required": ["name", "url"],
+            "required": [
+              "name",
+              "url"
+            ],
             "additionalProperties": false
           }
         },
@@ -321,7 +344,11 @@
           },
           "minItems": 3,
           "maxItems": 3,
-          "default": [255, 255, 255],
+          "default": [
+            255,
+            255,
+            255
+          ],
           "description": "RGB color for headline text"
         },
         "separator_color": {
@@ -334,7 +361,11 @@
           },
           "minItems": 3,
           "maxItems": 3,
-          "default": [255, 0, 0],
+          "default": [
+            255,
+            0,
+            0
+          ],
           "description": "RGB color for separators between headlines",
           "x-advanced": true
         },
@@ -373,8 +404,7 @@
                 "4x6-font.ttf",
                 "5by7.regular.ttf",
                 "5x7.bdf",
-                "4x6.bdf",
-                "cozette.bdf"
+                "4x6.bdf"
               ],
               "default": "PressStart2P-Regular.ttf",
               "x-advanced": true
@@ -389,7 +419,10 @@
               "x-advanced": true
             }
           },
-          "x-propertyOrder": ["font", "font_size"],
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
           "additionalProperties": false
         },
         "source_text": {
@@ -406,8 +439,7 @@
                 "4x6-font.ttf",
                 "5by7.regular.ttf",
                 "5x7.bdf",
-                "4x6.bdf",
-                "cozette.bdf"
+                "4x6.bdf"
               ],
               "default": "PressStart2P-Regular.ttf",
               "x-advanced": true
@@ -432,17 +464,30 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [150, 150, 150]
+              "default": [
+                150,
+                150,
+                150
+              ]
             }
           },
-          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "x-propertyOrder": [
+            "font",
+            "font_size",
+            "text_color"
+          ],
           "additionalProperties": false
         }
       },
-      "x-propertyOrder": ["headline_text", "source_text"],
+      "x-propertyOrder": [
+        "headline_text",
+        "source_text"
+      ],
       "additionalProperties": false
     }
   },
   "additionalProperties": false,
-  "required": ["enabled"]
+  "required": [
+    "enabled"
+  ]
 }
