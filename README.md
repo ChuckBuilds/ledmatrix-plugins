@@ -81,107 +81,107 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 ### Sports (17)
 
-| Plugin | Description |
-|--------|-------------|
-| [Football Scoreboard](./plugins/football-scoreboard/) | NFL & NCAA Football live scores, down/distance, possession |
-| [Hockey Scoreboard](./plugins/hockey-scoreboard/) | NHL & NCAA Hockey live scores and schedules |
-| [Basketball Scoreboard](./plugins/basketball-scoreboard/) | NBA, NCAA & WNBA live scores and schedules |
-| [Baseball Scoreboard](./plugins/baseball-scoreboard/) | MLB, MiLB & NCAA Baseball live scores |
-| [Soccer Scoreboard](./plugins/soccer-scoreboard/) | Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS |
-| [Lacrosse Scoreboard](./plugins/lacrosse-scoreboard/) | NCAA lacrosse live scores and schedules |
-| [Cricket Scoreboard](./plugins/cricket-scoreboard/) | Live, recent & upcoming international (Test/ODI/T20I) and major domestic cricket |
-| [AFL Scoreboard](./plugins/afl-scoreboard/) | Australian Football League live, recent & upcoming games |
-| [NRL Scoreboard](./plugins/nrl-scoreboard/) | National Rugby League live, recent & upcoming games |
-| [F1 Scoreboard](./plugins/f1-scoreboard/) | Formula 1 race results, schedules, and standings |
-| [UFC Scoreboard](./plugins/ufc-scoreboard/) | UFC/MMA live fights, fighter headshots, records, odds & results &mdash; *by [LegoGuy1000](https://github.com/legoguy1000)* |
-| [Masters Tournament](./plugins/masters-tournament/) | Live Masters golf leaderboard, hole tracking, player cards |
-| [March Madness](./plugins/march-madness/) | NCAA tournament bracket tracker with round branding and live scores |
-| [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN |
-| [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NHL, NCAA |
-| [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records |
-| [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Football Scoreboard](./plugins/football-scoreboard/) | NFL & NCAA Football live scores, down/distance, possession | |
+| [Hockey Scoreboard](./plugins/hockey-scoreboard/) | NHL & NCAA Hockey live scores and schedules | |
+| [Basketball Scoreboard](./plugins/basketball-scoreboard/) | NBA, NCAA & WNBA live scores and schedules | |
+| [Baseball Scoreboard](./plugins/baseball-scoreboard/) | MLB, MiLB & NCAA Baseball live scores | |
+| [Soccer Scoreboard](./plugins/soccer-scoreboard/) | Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS | |
+| [Lacrosse Scoreboard](./plugins/lacrosse-scoreboard/) | NCAA lacrosse live scores and schedules | |
+| [Cricket Scoreboard](./plugins/cricket-scoreboard/) | Live, recent & upcoming international (Test/ODI/T20I) and major domestic cricket | |
+| [AFL Scoreboard](./plugins/afl-scoreboard/) | Australian Football League live, recent & upcoming games | |
+| [NRL Scoreboard](./plugins/nrl-scoreboard/) | National Rugby League live, recent & upcoming games | |
+| [F1 Scoreboard](./plugins/f1-scoreboard/) | Formula 1 race results, schedules, and standings | |
+| [UFC Scoreboard](./plugins/ufc-scoreboard/) | UFC/MMA live fights, fighter headshots, records, odds & results &mdash; *by [LegoGuy1000](https://github.com/legoguy1000)* | |
+| [Masters Tournament](./plugins/masters-tournament/) | Live Masters golf leaderboard, hole tracking, player cards | |
+| [March Madness](./plugins/march-madness/) | NCAA tournament bracket tracker with round branding and live scores | |
+| [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN | |
+| [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NHL, NCAA | |
+| [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records | |
+| [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts | |
 
 ### Financial (2)
 
-| Plugin | Description |
-|--------|-------------|
-| [Stocks Ticker](./plugins/ledmatrix-stocks/) | Real-time stock & crypto prices with charts |
-| [Stock News](./plugins/stock-news/) | Financial headlines from RSS feeds |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Stocks Ticker](./plugins/ledmatrix-stocks/) | Real-time stock & crypto prices with charts | |
+| [Stock News](./plugins/stock-news/) | Financial headlines from RSS feeds | |
 
 ### Time & Calendar (4)
 
-| Plugin | Description |
-|--------|-------------|
-| [Simple Clock](./plugins/clock-simple/) | Time and date display |
-| [7-Segment Clock](./plugins/7-segment-clock/) | Retro-style 7-segment clock with customizable colors |
-| [Google Calendar](./plugins/calendar/) | Upcoming events from Google Calendar |
-| [Geochron World Clock](./plugins/geochron/) | World map with the real-time day/night terminator |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Simple Clock](./plugins/clock-simple/) | Time and date display | |
+| [7-Segment Clock](./plugins/7-segment-clock/) | Retro-style 7-segment clock with customizable colors | <a href="./plugins/7-segment-clock/"><img src="./docs/assets/7-segment-clock/hero.png" width="240" alt="7-segment-clock on an LED panel"></a> |
+| [Google Calendar](./plugins/calendar/) | Upcoming events from Google Calendar | |
+| [Geochron World Clock](./plugins/geochron/) | World map with the real-time day/night terminator | |
 
 ### Weather (2)
 
-| Plugin | Description |
-|--------|-------------|
-| [Weather Display](./plugins/ledmatrix-weather/) | Current conditions, hourly & daily forecasts (Open-Meteo) |
-| [Tide Display](./plugins/tide-display/) | Coastal tides with animated wave level, schedule & 24-hour chart (NOAA) |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Weather Display](./plugins/ledmatrix-weather/) | Current conditions, hourly & daily forecasts (Open-Meteo) | |
+| [Tide Display](./plugins/tide-display/) | Coastal tides with animated wave level, schedule & 24-hour chart (NOAA) | |
 
 ### Media (2)
 
-| Plugin | Description |
-|--------|-------------|
-| [Music Player](./plugins/ledmatrix-music/) | Now playing with album art (Spotify & YouTube Music) |
-| [Static Image Display](./plugins/static-image/) | Image display with scaling and transparency |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Music Player](./plugins/ledmatrix-music/) | Now playing with album art (Spotify & YouTube Music) | |
+| [Static Image Display](./plugins/static-image/) | Image display with scaling and transparency | |
 
 ### Content (2)
 
-| Plugin | Description |
-|--------|-------------|
-| [News Ticker](./plugins/news/) | RSS news headlines from ESPN, NCAA, custom sources |
-| [Of The Day](./plugins/of-the-day/) | Daily quotes, Bible verses, word of the day |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [News Ticker](./plugins/news/) | RSS news headlines from ESPN, NCAA, custom sources | |
+| [Of The Day](./plugins/of-the-day/) | Daily quotes, Bible verses, word of the day | |
 
 ### Integrations (2)
 
-| Plugin | Description |
-|--------|-------------|
-| [MQTT Notifications](./plugins/mqtt-notifications/) | HomeAssistant notifications via MQTT |
-| [On Air Light](./plugins/on-air/) | Broadcast ON AIR tally light, triggered remotely via MQTT / Home Assistant |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [MQTT Notifications](./plugins/mqtt-notifications/) | HomeAssistant notifications via MQTT | |
+| [On Air Light](./plugins/on-air/) | Broadcast ON AIR tally light, triggered remotely via MQTT / Home Assistant | |
 
 ### Custom (3)
 
-| Plugin | Description |
-|--------|-------------|
-| [Flight Tracker](./plugins/ledmatrix-flights/) | Real-time ADS-B aircraft tracking with map display |
-| [Countdown Display](./plugins/countdown/) | Customizable countdowns for birthdays, events, holidays |
-| [Election Results](./plugins/ledmatrix-elections/) | Live election results ticker with full-screen race interrupts |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Flight Tracker](./plugins/ledmatrix-flights/) | Real-time ADS-B aircraft tracking with map display | |
+| [Countdown Display](./plugins/countdown/) | Customizable countdowns for birthdays, events, holidays | |
+| [Election Results](./plugins/ledmatrix-elections/) | Live election results ticker with full-screen race interrupts | |
 
 ### Holiday (1)
 
-| Plugin | Description |
-|--------|-------------|
-| [Christmas Countdown](./plugins/christmas-countdown/) | Festive countdown with Christmas tree display |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Christmas Countdown](./plugins/christmas-countdown/) | Festive countdown with Christmas tree display | |
 
 ### Social (1)
 
-| Plugin | Description |
-|--------|-------------|
-| [YouTube Stats](./plugins/youtube-stats/) | Channel subscriber count, total views |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [YouTube Stats](./plugins/youtube-stats/) | Channel subscriber count, total views | |
 
 ### Text (1)
 
-| Plugin | Description |
-|--------|-------------|
-| [Scrolling Text](./plugins/text-display/) | Custom scrolling/static text with configurable fonts and colors |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Scrolling Text](./plugins/text-display/) | Custom scrolling/static text with configurable fonts and colors | |
 
 ### System (1)
 
-| Plugin | Description |
-|--------|-------------|
-| [Web UI Info](./plugins/web-ui-info/) | Displays web UI URL for device access |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Web UI Info](./plugins/web-ui-info/) | Displays web UI URL for device access | |
 
 ### Development (1)
 
-| Plugin | Description |
-|--------|-------------|
-| [Hello World](./plugins/hello-world/) | Plugin development example and starter template |
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Hello World](./plugins/hello-world/) | Plugin development example and starter template | |
 
 ---
 
