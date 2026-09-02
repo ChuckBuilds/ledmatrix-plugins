@@ -123,6 +123,37 @@ def _clamp_seconds(value: Any, fallback: int, low: int = 5,
     return max(low, min(high, seconds))
 
 
+def _logo_needs_refresh(logo_file) -> bool:
+    """True if this file is a placeholder stale enough to retry the real logo.
+
+    A failed logo download is cached as a placeholder wearing the real logo's
+    filename, so "the file exists" is not proof the logo was ever fetched.
+    Without this check one transient failure leaves a team a grey box forever.
+
+    Returns False on a core that predates placeholder marking, which keeps the
+    previous behaviour rather than breaking the load.
+    """
+    # Imported from the core by its full path, never as a bare name: a
+    # deferred bare-name import can bind another plugin's vendored
+    # logo_downloader once the core isolates top-level plugin modules.
+    try:
+        from src.logo_downloader import (
+            PLACEHOLDER_RETRY_SECONDS,
+            is_placeholder_logo,
+            placeholder_age_seconds,
+        )
+    except ImportError:
+        return False
+
+    try:
+        if not is_placeholder_logo(logo_file):
+            return False
+        age = placeholder_age_seconds(logo_file)
+        return age is None or age >= PLACEHOLDER_RETRY_SECONDS
+    except Exception:
+        return False
+
+
 class SportsCore(ABC):
     def __init__(
         self,
@@ -1633,13 +1664,13 @@ class SportsCore(ABC):
             
             for filename in filename_variations:
                 test_path = logo_path.parent / filename
-                if test_path.exists():
+                if test_path.exists() and not _logo_needs_refresh(test_path):
                     actual_logo_path = test_path
                     self.logger.debug(f"Found logo at alternative path: {actual_logo_path}")
                     break
             
             # If no variation found, try to download missing logo
-            if not actual_logo_path and not logo_path.exists():
+            if not actual_logo_path:
                 self.logger.info(f"Logo not found for {team_abbrev} at {logo_path}. Attempting to download.")
                 
                 # The logo downloader keys its cache folders off sport_key ("nrl"),
