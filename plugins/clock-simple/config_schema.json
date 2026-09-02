@@ -25,13 +25,19 @@
       "x-advanced": true
     },
     "timezone": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "default": null,
       "description": "Timezone for the clock display (e.g., 'America/New_York', 'Europe/London'). Use IANA timezone database names. If not specified or set to null, inherits from LEDMatrix global timezone setting."
     },
     "time_format": {
       "type": "string",
-      "enum": ["12h", "24h"],
+      "enum": [
+        "12h",
+        "24h"
+      ],
       "default": "12h",
       "description": "Time format: '12h' for 12-hour format with AM/PM, '24h' for 24-hour format"
     },
@@ -53,7 +59,12 @@
     },
     "date_format": {
       "type": "string",
-      "enum": ["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "OLD_CLOCK"],
+      "enum": [
+        "MM/DD/YYYY",
+        "DD/MM/YYYY",
+        "YYYY-MM-DD",
+        "OLD_CLOCK"
+      ],
       "default": "OLD_CLOCK",
       "description": "Date format to display. OLD_CLOCK matches the original clock layout with weekday and month/day with ordinal suffix (e.g., 'Monday, January 1st')"
     },
@@ -88,8 +99,7 @@
                 "4x6-font.ttf",
                 "5by7.regular.ttf",
                 "5x7.bdf",
-                "4x6.bdf",
-                "cozette.bdf"
+                "4x6.bdf"
               ],
               "default": "PressStart2P-Regular.ttf",
               "x-advanced": true
@@ -114,10 +124,18 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [255, 255, 255]
+              "default": [
+                255,
+                255,
+                255
+              ]
             }
           },
-          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "x-propertyOrder": [
+            "font",
+            "font_size",
+            "text_color"
+          ],
           "additionalProperties": false
         },
         "date_text": {
@@ -134,8 +152,7 @@
                 "4x6-font.ttf",
                 "5by7.regular.ttf",
                 "5x7.bdf",
-                "4x6.bdf",
-                "cozette.bdf"
+                "4x6.bdf"
               ],
               "default": "PressStart2P-Regular.ttf",
               "x-advanced": true
@@ -160,10 +177,18 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [255, 128, 64]
+              "default": [
+                255,
+                128,
+                64
+              ]
             }
           },
-          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "x-propertyOrder": [
+            "font",
+            "font_size",
+            "text_color"
+          ],
           "additionalProperties": false
         },
         "ampm_text": {
@@ -180,8 +205,7 @@
                 "4x6-font.ttf",
                 "5by7.regular.ttf",
                 "5x7.bdf",
-                "4x6.bdf",
-                "cozette.bdf"
+                "4x6.bdf"
               ],
               "default": "PressStart2P-Regular.ttf",
               "x-advanced": true
@@ -206,17 +230,31 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [255, 255, 128]
+              "default": [
+                255,
+                255,
+                128
+              ]
             }
           },
-          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "x-propertyOrder": [
+            "font",
+            "font_size",
+            "text_color"
+          ],
           "additionalProperties": false
         }
       },
-      "x-propertyOrder": ["time_text", "date_text", "ampm_text"],
+      "x-propertyOrder": [
+        "time_text",
+        "date_text",
+        "ampm_text"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["enabled"],
+  "required": [
+    "enabled"
+  ],
   "additionalProperties": false
 }
