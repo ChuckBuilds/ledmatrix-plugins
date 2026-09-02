@@ -279,17 +279,16 @@ tide-display/
 ├── manifest.json        # Plugin metadata and version history
 ├── manager.py           # TideDisplayPlugin — all four screens
 ├── config_schema.json   # Settings schema; source of truth for defaults
-├── render_preview.py    # Standalone preview generator (see note below)
-├── preview_*.png        # Its output
 ├── requirements.txt
 └── README.md
 ```
 
-`render_preview.py` draws mock versions of the screens with its own copy of the
-palette — its header notes the colours "must match manager.py". The images in
-this README are made a different way: `scripts/render_docs_assets.py` runs the
-real plugin against recorded NOAA responses, so they cannot drift from what the
-plugin actually draws.
+Screenshots come from `scripts/render_docs_assets.py`, which runs the **real
+plugin** against recorded NOAA responses. An earlier `render_preview.py` drew
+mock versions of the screens from its own copy of the palette — its header
+asked that the colours "must match manager.py" — so its output could drift from
+what the plugin actually draws, with nothing to catch it. It has been removed
+now that the images are generated from the plugin itself.
 
 ### Regenerating the images in this README
 
