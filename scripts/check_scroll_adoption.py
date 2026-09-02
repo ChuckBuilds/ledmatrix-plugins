@@ -54,6 +54,7 @@ SUNSET_PLUGINS = frozenset({
     "baseball-scoreboard",
     "basketball-scoreboard",
     "football-scoreboard",
+    "hockey-scoreboard",
     "lacrosse-scoreboard",
     "nrl-scoreboard",
     "soccer-scoreboard",
