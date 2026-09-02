@@ -122,7 +122,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Weather Display](./plugins/ledmatrix-weather/) | Current conditions, hourly & daily forecasts (Open-Meteo) | |
-| [Tide Display](./plugins/tide-display/) | Coastal tides with animated wave level, schedule & 24-hour chart (NOAA) | |
+| [Tide Display](./plugins/tide-display/) | Coastal tides with animated wave level, schedule & 24-hour chart (NOAA) | <a href="./plugins/tide-display/"><img src="./docs/assets/tide-display/hero.png" width="240" alt="tide-display on an LED panel"></a> |
 
 ### Media (2)
 
