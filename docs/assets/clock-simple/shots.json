@@ -1,0 +1,448 @@
+{
+  "plugin": "clock-simple",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T19:07:09+00:00",
+    "config": {
+      "enabled": true,
+      "timezone": "America/New_York"
+    }
+  },
+  "shots": [
+    {
+      "name": "hero"
+    },
+    {
+      "name": "fmt-12h",
+      "config": {
+        "time_format": "12h"
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-24h",
+      "config": {
+        "time_format": "24h"
+      },
+      "standalone": false
+    },
+    {
+      "name": "sec-off",
+      "config": {
+        "show_seconds": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "sec-on",
+      "config": {
+        "show_seconds": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "date-old",
+      "config": {
+        "date_format": "OLD_CLOCK"
+      },
+      "standalone": false
+    },
+    {
+      "name": "date-mdy",
+      "config": {
+        "date_format": "MM/DD/YYYY"
+      },
+      "standalone": false
+    },
+    {
+      "name": "date-dmy",
+      "config": {
+        "date_format": "DD/MM/YYYY"
+      },
+      "standalone": false
+    },
+    {
+      "name": "date-iso",
+      "config": {
+        "date_format": "YYYY-MM-DD"
+      },
+      "standalone": false
+    },
+    {
+      "name": "date-none",
+      "config": {
+        "show_date": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "ampm-off",
+      "config": {
+        "time_format": "12h",
+        "center_time_with_ampm": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "ampm-on",
+      "config": {
+        "time_format": "12h",
+        "center_time_with_ampm": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "scale": 4,
+      "standalone": false
+    },
+    {
+      "name": "colour-default",
+      "standalone": false
+    },
+    {
+      "name": "colour-amber",
+      "config": {
+        "customization": {
+          "time_text": {
+            "text_color": [
+              255,
+              176,
+              0
+            ]
+          },
+          "date_text": {
+            "text_color": [
+              255,
+              120,
+              0
+            ]
+          },
+          "ampm_text": {
+            "text_color": [
+              255,
+              200,
+              80
+            ]
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "colour-cyan",
+      "config": {
+        "customization": {
+          "time_text": {
+            "text_color": [
+              0,
+              229,
+              255
+            ]
+          },
+          "date_text": {
+            "text_color": [
+              0,
+              150,
+              200
+            ]
+          },
+          "ampm_text": {
+            "text_color": [
+              140,
+              240,
+              255
+            ]
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "colour-mono",
+      "config": {
+        "customization": {
+          "time_text": {
+            "text_color": [
+              255,
+              255,
+              255
+            ]
+          },
+          "date_text": {
+            "text_color": [
+              255,
+              255,
+              255
+            ]
+          },
+          "ampm_text": {
+            "text_color": [
+              255,
+              255,
+              255
+            ]
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "font-PressStart2P_Regular",
+      "config": {
+        "customization": {
+          "time_text": {
+            "font": "PressStart2P-Regular.ttf"
+          },
+          "date_text": {
+            "font": "PressStart2P-Regular.ttf"
+          },
+          "ampm_text": {
+            "font": "PressStart2P-Regular.ttf"
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "font-4x6_font",
+      "config": {
+        "customization": {
+          "time_text": {
+            "font": "4x6-font.ttf"
+          },
+          "date_text": {
+            "font": "4x6-font.ttf"
+          },
+          "ampm_text": {
+            "font": "4x6-font.ttf"
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "font-5by7",
+      "config": {
+        "customization": {
+          "time_text": {
+            "font": "5by7.regular.ttf"
+          },
+          "date_text": {
+            "font": "5by7.regular.ttf"
+          },
+          "ampm_text": {
+            "font": "5by7.regular.ttf"
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "font-5x7",
+      "config": {
+        "customization": {
+          "time_text": {
+            "font": "5x7.bdf"
+          },
+          "date_text": {
+            "font": "5x7.bdf"
+          },
+          "ampm_text": {
+            "font": "5x7.bdf"
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "font-4x6",
+      "config": {
+        "customization": {
+          "time_text": {
+            "font": "4x6.bdf"
+          },
+          "date_text": {
+            "font": "4x6.bdf"
+          },
+          "ampm_text": {
+            "font": "4x6.bdf"
+          }
+        }
+      },
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "time-format",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "fmt-12h",
+          "label": "time_format: 12h",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "fmt-24h",
+          "label": "time_format: 24h",
+          "sublabel": "no AM/PM line is drawn"
+        },
+        {
+          "shot": "sec-off",
+          "label": "show_seconds: false",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "sec-on",
+          "label": "show_seconds: true",
+          "sublabel": "narrower digits to fit HH:MM:SS"
+        }
+      ]
+    },
+    {
+      "name": "date-format",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "date-old",
+          "label": "OLD_CLOCK",
+          "sublabel": "the default: weekday over 'September 2nd'"
+        },
+        {
+          "shot": "date-mdy",
+          "label": "MM/DD/YYYY",
+          "sublabel": "US numeric"
+        },
+        {
+          "shot": "date-dmy",
+          "label": "DD/MM/YYYY",
+          "sublabel": "day-first numeric"
+        },
+        {
+          "shot": "date-iso",
+          "label": "YYYY-MM-DD",
+          "sublabel": "ISO 8601"
+        },
+        {
+          "shot": "date-none",
+          "label": "show_date: false",
+          "sublabel": "time only, drawn larger"
+        },
+        {
+          "shot": "ampm-on",
+          "label": "center_time_with_ampm: true",
+          "sublabel": "centres time and AM/PM as one block"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32",
+          "sublabel": "text shrinks and the date abbreviates to fit"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32",
+          "sublabel": "the common two-panel chain"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64",
+          "sublabel": "room for full weekday and date"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32",
+          "sublabel": "a long chain"
+        }
+      ]
+    },
+    {
+      "name": "fonts",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "font-PressStart2P_Regular",
+          "label": "PressStart2P-Regular.ttf",
+          "sublabel": "the default; chunky 8-bit"
+        },
+        {
+          "shot": "font-4x6_font",
+          "label": "4x6-font.ttf",
+          "sublabel": "small, fits more on a line"
+        },
+        {
+          "shot": "font-5by7",
+          "label": "5by7.regular.ttf",
+          "sublabel": "a rounder 5x7"
+        },
+        {
+          "shot": "font-5x7",
+          "label": "5x7.bdf",
+          "sublabel": "bitmap; loaded at its native 7px size"
+        },
+        {
+          "shot": "font-4x6",
+          "label": "4x6.bdf",
+          "sublabel": "the smallest bitmap; native 6px"
+        }
+      ]
+    },
+    {
+      "name": "colors",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "colour-default",
+          "label": "The defaults",
+          "sublabel": "white time, orange date, pale yellow AM/PM"
+        },
+        {
+          "shot": "colour-amber",
+          "label": "Amber",
+          "sublabel": "the clock-radio look"
+        },
+        {
+          "shot": "colour-cyan",
+          "label": "Cyan",
+          "sublabel": "high contrast on a dark wall"
+        },
+        {
+          "shot": "colour-mono",
+          "label": "All white",
+          "sublabel": "set every element the same for a plain look"
+        }
+      ]
+    }
+  ]
+}

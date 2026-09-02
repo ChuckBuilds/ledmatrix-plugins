@@ -132,6 +132,24 @@ class SimpleClock(BasePlugin):
                     font = ImageFont.truetype(path, size)
                     break
                 except OSError as e:
+                    # A .bdf is a bitmap face and only exists at the one pixel
+                    # size it was drawn at; FreeType rejects any other with
+                    # "invalid pixel size". Asking for font_size (8 by default)
+                    # therefore failed for every .bdf in the picker, and the
+                    # clock silently fell back to the default font -- the
+                    # setting looked like it did nothing. Retry at the size the
+                    # file declares.
+                    native = self._bdf_pixel_size(path)
+                    if native is not None and native != size:
+                        try:
+                            font = ImageFont.truetype(path, native)
+                            self.logger.debug(
+                                "Loaded bitmap font %s at its native size %d "
+                                "(requested %d)", name, native, size
+                            )
+                            break
+                        except OSError:
+                            pass
                     # OSError only: that is what FreeType raises for a missing,
                     # unreadable or malformed face. Catching everything here
                     # would turn a programming error into a silent fallback to
@@ -141,6 +159,20 @@ class SimpleClock(BasePlugin):
                 self.logger.warning(f"Font file not found: {name}; using default font")
             self._font_cache[key] = font
         return self._font_cache[key]
+
+    @staticmethod
+    def _bdf_pixel_size(path: str) -> Optional[int]:
+        """The pixel size a .bdf font declares, or None if it does not."""
+        try:
+            with open(path, "r", encoding="latin-1") as handle:
+                for line in handle:
+                    if line.startswith("PIXEL_SIZE"):
+                        return int(line.split()[1])
+                    if line.startswith("CHARS"):
+                        break  # past the header; no point reading the glyphs
+        except (OSError, ValueError, IndexError):
+            return None
+        return None
 
     def _get_global_timezone(self) -> str:
         """Get the global timezone from the main config."""
