@@ -6,17 +6,17 @@ Returns images instead of updating display directly.
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 import os
 from typing import Any, ClassVar, Dict, Optional, Tuple
-from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
 
 from baseball_timezone import resolve_timezone
 
 from src.common import sports_card as _card
+from src.common.sports_game_renderer import SportsGameRendererMixin
 
 #: This plugin's own schema, for the shared font-size resolver.
 _SCHEMA_PATH = os.path.join(
@@ -96,7 +96,7 @@ except AttributeError:
 _DERIVE_TOP_SPAN = object()
 
 
-class GameRenderer:
+class GameRenderer(SportsGameRendererMixin):
     """Renders individual baseball game cards as PIL Images."""
 
     def __init__(
@@ -170,7 +170,6 @@ class GameRenderer:
                 fonts = {k: default_font for k in ["score", "time", "team", "status", "detail", "rank"]}
 
         return fonts
-
 
     #: Sizes each pixel font renders crisply at. Off the grid the glyphs are
     #: anti-aliased, and on an LED matrix a part-lit pixel reads as a dim
@@ -354,10 +353,6 @@ class GameRenderer:
         for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
             draw.text((x + dx, y + dy), text, font=font, fill=outline_color)
         draw.text((x, y), text, font=font, fill=fill)
-
-    def set_rankings_cache(self, rankings: Dict[str, int]) -> None:
-        """Set the team rankings cache for display."""
-        self._team_rankings_cache = rankings
 
     # ------------------------------------------------------------------
     # Favorite-team result colors for finished games.
@@ -647,16 +642,15 @@ class GameRenderer:
     # Card options -- config["scroll_card"], plus the shared
     # customization.layout offsets and per-element colours.
     #
-    # The center-gap keys size this renderer's cards alone. The rest --
-    # upcoming_center, vs_text, the date and time formats -- are also read by
+    # The center-gap keys size this renderer's cards alone; they are read by
+    # SportsGameRendererMixin, which owns the geometry those keys drive. The
+    # rest -- upcoming_center, vs_text, the date and time formats -- are also
+    # read by
     # sports.py's full-screen scorebug (SportsCore._draw_upcoming_center_switch
     # and friends, gated there on switch_upcoming_center), so those two copies
     # have to stay in step: a change to the formatting rules here needs the
     # same change there, or the ticker and the scoreboard disagree.
     # ------------------------------------------------------------------
-    CENTER_GAP_RATIO: ClassVar[float] = 0.28
-    CENTER_GAP_MIN_PX: ClassVar[int] = 22
-    CENTER_GAP_MAX_PX: ClassVar[int] = 40
     _MONTH_ABBR: ClassVar[Tuple[str, ...]] = (
         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -669,79 +663,9 @@ class GameRenderer:
         """Delegates to src.common.sports_card, shared by every scoreboard."""
         return _card.scroll_card_option(self.config, key, default)
 
-    def _layout_offset(self, element: str, axis: str, default: int = 0) -> int:
-        """X/Y nudge for one element, from customization.layout.
-
-        Same block the full-screen scorebug reads (sports.py
-        _get_layout_offset), so a nudge configured in the web UI now moves
-        the element on the scroll/Vegas card too -- previously the schema
-        advertised these offsets but this renderer ignored them.
-        """
-        try:
-            layout = (self.config or {}).get("customization", {}).get("layout", {})
-            value = (layout.get(element) or {}).get(axis, default)
-            if isinstance(value, bool):
-                return default
-            if isinstance(value, (int, float)):
-                return int(value)
-            if isinstance(value, str):
-                return int(float(value))
-        except (TypeError, ValueError):
-            pass
-        return default
-
     def _element_color(self, element: str, default: Tuple[int, int, int] = (255, 255, 255)):
         """Delegates to src.common.sports_card, shared by every scoreboard."""
         return _card.element_color(self.config, element, default)
-
-    #: Clear pixels kept between the score and each logo, so the score's
-    #: outermost column cannot land on the logo's first lit column.
-    _SCORE_LOGO_GUTTER_PX: ClassVar[int] = 4
-
-    #: Widest score the centre strip is sized to hold. Two digits a side covers this sport's realistic range.
-    #: The reserve is a fixed width so the strip does not jitter between
-    #: cards, so it has to assume the worst case rather than measure the
-    #: score in hand.
-    _SCORE_PROBE: ClassVar[str] = "00-00"
-
-    def _score_reserve_width(self) -> int:
-        """Centre strip the score actually needs, measured rather than assumed.
-
-        The gap was derived from the card width alone (width x
-        CENTER_GAP_RATIO, clamped to CENTER_GAP_MAX_PX) while the score's size
-        comes from config and the element-style resolver. Nothing compared the
-        two, so any score wider than the clamp was drawn over the logos.
-        Measuring it keeps the strip wide enough for whatever font is in play.
-        """
-        try:
-            probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
-            width = probe.textlength(self._SCORE_PROBE, font=self.fonts['score'])
-            return int(width) + 2 * self._SCORE_LOGO_GUTTER_PX
-        except Exception:
-            self.logger.debug("Score reserve measurement failed", exc_info=True)
-            return 0
-
-    def _center_gap_width(self) -> int:
-        """Width of the middle strip kept clear of logos.
-
-        ``scroll_card.center_gap`` pins it outright; otherwise it scales with
-        the card width between the configurable min and max. 0 restores
-        edge-to-edge logos.
-        """
-        configured = self._scroll_card_option("center_gap")
-        if isinstance(configured, (int, float)) and configured >= 0:
-            return int(configured)
-        ratio = self._scroll_card_option("center_gap_ratio", self.CENTER_GAP_RATIO)
-        low = self._scroll_card_option("center_gap_min", self.CENTER_GAP_MIN_PX)
-        high = self._scroll_card_option("center_gap_max", self.CENTER_GAP_MAX_PX)
-        try:
-            scaled = round(self.display_width * float(ratio))
-            derived = int(max(int(low), min(int(high), scaled)))
-            # A strip narrower than the score is the bug, not a style choice.
-            # An explicit ``center_gap`` is still honoured above, including 0.
-            return max(derived, self._score_reserve_width())
-        except (TypeError, ValueError):
-            return self.CENTER_GAP_MIN_PX
 
     def _logo_slot_width(self) -> int:
         """Per-side logo slot, leaving the center gap clear.
@@ -777,58 +701,6 @@ class GameRenderer:
         """Delegates to src.common.sports_card, shared by every scoreboard."""
         return _card.format_game_time(self.config, time_text)
 
-    def _draw_upcoming_center(self, draw: "ImageDraw.ImageDraw", game: Dict) -> None:
-        """Draw the middle of an upcoming card.
-
-        Never a score: an upcoming game has not started, so the extractor's
-        0-0 is noise. Either the VS text (default), the date and time stacked,
-        or nothing at all.
-        """
-        mode = self._upcoming_center_mode()
-        if mode == "none":
-            return
-
-        if mode == "vs":
-            vs_text = self._vs_text()
-            if not vs_text:
-                return
-            vs_width = draw.textlength(vs_text, font=self.fonts['score'])
-            vs_x = (self.display_width - vs_width) // 2 + self._layout_offset('score', 'x_offset')
-            vs_y = (self.display_height // 2) - 3 + self._layout_offset('score', 'y_offset')
-            self._draw_text_with_outline(
-                draw, vs_text, (vs_x, vs_y), self.fonts['score'],
-                fill=self._element_color('score_text')
-            )
-            return
-
-        date_text, time_text = self._upcoming_date_and_time(game)
-        lines = []
-        if self._scroll_card_option("show_date", True):
-            lines.append(self._format_game_date(date_text, game))
-        if self._scroll_card_option("show_time", True):
-            lines.append(self._format_game_time(time_text))
-        lines = [t for t in lines if t]
-        if not lines:
-            return
-        font = self.fonts.get('detail') or self.fonts['time']
-        line_h = 7
-        top = (self.display_height // 2) - (len(lines) * line_h) // 2
-        top += self._layout_offset('score', 'y_offset')
-        for i, line in enumerate(lines):
-            width = draw.textlength(line, font=font)
-            x = (self.display_width - width) // 2 + self._layout_offset('score', 'x_offset')
-            self._draw_text_with_outline(
-                draw, line, (x, top + i * line_h), font,
-                fill=self._element_color('detail_text')
-            )
-
-    def _upcoming_date_and_time(self, game: Dict) -> Tuple[str, str]:
-        """(date, time) for an upcoming card, from the extractor's flat keys."""
-        return (
-            str(game.get("game_date", "") or ""),
-            str(game.get("game_time", "") or ""),
-        )
-
     def _upcoming_date_time_texts(self, game: Dict):
         """The date and time strings an upcoming card would draw."""
         date_raw, time_raw = self._upcoming_date_and_time(game)
@@ -837,7 +709,6 @@ class GameRenderer:
         time_text = (self._format_game_time(time_raw)
                      if self._scroll_card_option("show_time", True) else "")
         return date_text, time_text
-
 
     def _draw_upcoming_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw the date and time around an upcoming card.
