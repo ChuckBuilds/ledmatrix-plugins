@@ -1,203 +1,208 @@
------------------------------------------------------------------------------------
-### Connect with ChuckBuilds
+# AFL Scoreboard
 
-- Show support on Youtube: https://www.youtube.com/@ChuckBuilds
-- Stay in touch on Instagram: https://www.instagram.com/ChuckBuilds/
-- Want to chat or need support? Reach out on the ChuckBuilds Discord: https://discord.com/invite/uW36dVAtcT
-- Feeling Generous? Support the project:
-  - Github Sponsorship: https://github.com/sponsors/ChuckBuilds
-  - Buy Me a Coffee: https://buymeacoffee.com/chuckbuilds
-  - Ko-fi: https://ko-fi.com/chuckbuilds/ 
+Live, recent, and upcoming **AFL (Australian Football League)** games on your LED
+matrix — real-time scores, the quarter and running clock, club logos, and start
+times in your own timezone.
 
------------------------------------------------------------------------------------
+![Carlton 74 def. Melbourne 55, shown on a 128x32 panel with both club logos and
+the match date](../../docs/assets/afl-scoreboard/hero.png)
 
-# AFL Scoreboard Plugin
+*Every image in this README is real plugin output, rendered at the true panel
+size from archived ESPN data and then scaled up so the pixels stay pixels.
+Nothing here is a mockup — the scores, logos, records and start times are the
+real 2026 finals series.*
 
-A plugin for LEDMatrix that displays live, recent, and upcoming **AFL (Australian
-Football League)** games with real-time scores and game status.
+---
 
-## Features
+## Table of Contents
 
-- **Live Game Tracking**: Real-time scores, quarter (Q1–Q4), and running clock
-- **Recent Games**: Recently completed games with final scores
-- **Upcoming Games**: Scheduled games with start times
-- **Favorite Teams**: Prioritize (or exclusively show) games involving your favorite teams
-- **Switch or Scroll**: Show one game at a time, or scroll all games horizontally
-- **Dynamic Duration & Live Priority**: Spend more time on live games; let live games interrupt the rotation
-- **Background Data Fetching**: Efficient API calls without blocking the display
-- **Favorite Team Result Colors**: Optionally show a finished game's score in green when your favorite team won and red when it lost
+1. [What's On Screen](#whats-on-screen)
+2. [Quick Start](#quick-start)
+3. [How Games Are Picked](#how-games-are-picked)
+   - [The three selection modes](#the-three-selection-modes)
+   - [What the "games to show" numbers mean](#what-the-games-to-show-numbers-mean)
+   - [Which games exist to pick from](#which-games-exist-to-pick-from)
+   - [Live games and priority](#live-games-and-priority)
+   - [Seeing live games more often in the Vegas ticker](#seeing-live-games-more-often-in-the-vegas-ticker)
+4. [Configuration Reference](#configuration-reference)
+   - [Teams and filtering](#teams-and-filtering)
+   - [Display modes and rotation](#display-modes-and-rotation)
+   - [How long things stay on screen](#how-long-things-stay-on-screen)
+   - [How often data is fetched](#how-often-data-is-fetched)
+   - [What appears on the card](#what-appears-on-the-card)
+   - [Card layout and text](#card-layout-and-text)
+   - [Celebrations](#celebrations)
+   - [Fonts, colours and offsets](#fonts-colours-and-offsets)
+   - [Timezone](#timezone)
+5. [Panel Sizes](#panel-sizes)
+6. [Team Abbreviations](#team-abbreviations)
+7. [Known Limitations](#known-limitations)
+8. [Troubleshooting](#troubleshooting)
+9. [Development](#development)
+10. [Support](#support)
 
-## Display Modes
+---
 
-The plugin exposes three display modes:
+## What's On Screen
 
-1. **afl_live** — currently active games (quarter + clock)
-2. **afl_recent** — recently completed games with final scores
-3. **afl_upcoming** — scheduled upcoming games with start times
+The plugin provides three display modes. Each is a separate entry in your
+LEDMatrix rotation, and each can be turned on or off independently.
 
-During a live game the status area shows:
+![The three display modes on a 128x32 panel: afl_live showing Q3 and a running
+score, afl_recent showing a final score, afl_upcoming showing a date and start
+time](../../docs/assets/afl-scoreboard/display-modes.png)
 
-- **Q1 / Q2 / Q3 / Q4** — the current quarter, followed by the running clock (e.g. `Q3 12:45`)
-- **HALF** — the main break after the second quarter
-- **Final** — completed game
-- the scheduled start time for upcoming games
+| Mode | Shows | Status area |
+|------|-------|-------------|
+| `afl_live` | Games in progress | `Q1`–`Q4` plus the running clock, or `HALF` at the main break |
+| `afl_recent` | Completed games | `Final`, the score, and the match date |
+| `afl_upcoming` | Scheduled games | The date and start time, in your timezone |
 
-## Configuration
+The away team's logo is always on the left and the home team's on the right, so
+a separator like `at` or `@` reads correctly as "away at home".
 
-AFL is a single league, so all settings live at the top level of the plugin
-config (there is no per-league nesting).
+---
+
+## Quick Start
+
+The minimum useful configuration is your teams:
 
 ```json
 {
-  "enabled": true,
-  "favorite_teams": ["COLL", "GEEL", "RICH"],
-  "exclude_teams": [],
-  "show_favorite_teams_only": false,
-  "display_modes": {
-    "live": true,
-    "recent": true,
-    "upcoming": true,
-    "live_display_mode": "switch",
-    "recent_display_mode": "switch",
-    "upcoming_display_mode": "switch"
-  },
-  "display_duration": 30,
-  "live_game_duration": 20,
-  "non_favorite_live_game_duration": 0,
-  "recent_game_duration": 15,
-  "upcoming_game_duration": 15,
-  "recent_games_to_show": 5,
-  "upcoming_games_to_show": 10,
-  "update_interval_seconds": 300,
-  "live_update_interval": 30,
-  "show_records": false,
-  "show_odds": false,
-  "live_priority": false,
-  "celebration_enabled": true,
-  "celebration_duration": 8
+  "afl-scoreboard": {
+    "enabled": true,
+    "favorite_teams": ["CARL", "GEEL"]
+  }
 }
 ```
 
-### Key settings
-
-| Setting | Default | Effect |
-|---|---|---|
-| `favorite_teams` | `[]` | AFL team abbreviations to prioritize (e.g. `COLL`, `GEEL`, `RICH`). |
-| `exclude_teams` | `[]` | Teams to always hide — from both the live rotation and recent/final scores (spoiler protection). |
-| `show_favorite_teams_only` | `false` | Only show games involving `favorite_teams`. |
-| `display_modes.*_display_mode` | `switch` | `switch` shows one game at a time; `scroll` scrolls all games horizontally. |
-| `display_duration` | `30` | How long each display mode stays on screen before cycling. |
-| `live_game_duration` | `20` | Seconds each live game stays on screen. |
-| `non_favorite_live_game_duration` | `0` | Shorter dwell for live games with no favorite team (0 = off). |
-| `live_priority` | `false` | Let live AFL games interrupt the recent/upcoming rotation. |
-| `dynamic_duration` | off | Size a mode's total on-screen time to the number of games it has. |
-| `mode_durations` | null | Fix the total duration of each mode (overrides dynamic calculation). |
-
-### Timezone
-
-- `timezone` (Advanced): IANA name used to display event start times, e.g.
-  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
-  timezone; if that isn't set, the host system's timezone is used, and only if
-  neither is available do times fall back to UTC.
-
-## Team Names & Abbreviations
-
-The `favorite_teams` / `exclude_teams` fields require the **ESPN API
-abbreviation** for each team (e.g. `"COLL"` for Collingwood, `"GEEL"` for
-Geelong). Full team names are not supported.
-
-> **Tip:** If you're unsure of an abbreviation, enable debug logging — the plugin
-> logs `home_abbr` and `away_abbr` for every game it processes.
-
-## Team Logos
-
-Team logos are downloaded automatically from ESPN's CDN on first use and cached to
-disk — no manual asset work is required. If a logo can't be fetched, a generated
-text-abbreviation placeholder is drawn instead.
-
-## Data Source
-
-Game data is fetched from ESPN's public AFL scoreboard endpoint (no API key
-required):
-
-```
-https://site.api.espn.com/apis/site/v2/sports/australian-football/afl/scoreboard
-```
-
-## Dependencies
-
-This plugin requires the main LEDMatrix installation and uses the plugin system
-base classes.
-
-## Installation
-
-The easiest way is the Plugin Store in the LEDMatrix web UI:
-
-1. Open `http://your-pi-ip:5000`
-2. Open the **Plugin Manager** tab
-3. Find **AFL Scoreboard** in the **Plugin Store** section and click **Install**
-4. Open the plugin's tab in the second nav row to configure favorite teams and
-   display modes
-
-Manual install: copy this directory into your LEDMatrix `plugins_directory`
-(default `plugin-repos/`) and restart the display service.
-
-## Testing
-
-- `python test_afl_plugin.py` — standalone smoke tests (display modes, mode
-  routing, live content, AFL quarter parsing). No network or host required.
-- `test/harness.json` — a deterministic fixture (one live, one recent, one
-  upcoming game) for the core plugin safety harness
-  (`LEDMatrix/scripts/check_plugin.py`).
-
-## Favorite Team Result Colors
-
-A run of games against the same opponent is hard to read at a glance: in scroll
-and Vegas mode the same two logos go past several times and only the digits
-change. Turn on **Customization -> Favorite Team Result Colors** to color a
-finished game's score by how your favorite team did - green for a win, red for
-a loss.
+A fuller example — favourites first, but other games still get a look in:
 
 ```json
 {
-  "customization": {
-    "favorite_result_colors": {
-      "enabled": true,
-      "win_color": [0, 255, 0],
-      "loss_color": [255, 0, 0],
-      "tie_color": [255, 200, 0]
+  "afl-scoreboard": {
+    "enabled": true,
+    "favorite_teams": ["CARL", "GEEL"],
+    "show_favorite_teams_only": false,
+    "upcoming_games_to_show": 2,
+    "other_upcoming_games_to_show": 2,
+    "recent_games_to_show": 2,
+    "timezone": "Australia/Melbourne",
+    "show_odds": false,
+    "display_modes": {
+      "live": true,
+      "recent": true,
+      "upcoming": true,
+      "live_display_mode": "switch",
+      "recent_display_mode": "switch",
+      "upcoming_display_mode": "switch"
+    },
+    "customization": {
+      "favorite_result_colors": { "enabled": true }
     }
   }
 }
 ```
 
-- Off by default. Until you enable it the score keeps exactly the color it has
-  today.
-- Only finished games are colored. Live and upcoming cards are untouched.
-- A game needs exactly one favorite team. If neither side is a favorite, or both
-  are, the score keeps its normal color.
-- Applies to both the one-game-at-a-time switch view and the scroll/Vegas
-  ticker.
-- The three colors are Advanced settings; leave them alone for the defaults
-  above.
+You can set all of this from the web UI instead — the settings form is generated
+from `config_schema.json`, which is the source of truth for every default listed
+below.
 
-## Troubleshooting
+---
 
-- **Start times look like UTC** (a 6:45pm Central start showing as 11:45PM):
-  the plugin couldn't read your global timezone. Set `timezone` under the
-  plugin's Advanced Settings to your IANA zone, e.g. `America/Chicago`.
-- **No games showing**: Confirm the ESPN endpoint is reachable and that at least
-  one display mode is enabled.
-- **Missing team logos**: The plugin auto-downloads logos; check the display's
-  internet access and logo cache directory permissions.
-- **Slow updates**: Adjust `update_interval_seconds` / `live_update_interval`.
-- **API errors**: Check your internet connection and ESPN API availability.
+## How Games Are Picked
 
-## Vegas ticker: seeing live games more often
+This is the part that surprises people, so it is worth reading once. The plugin
+does not simply show "the next game". It runs a selection pass every update,
+separately for each mode, and which of three code paths it takes depends
+entirely on two settings: whether `favorite_teams` is empty, and whether
+`show_favorite_teams_only` is on.
+
+### The three selection modes
+
+**1. No favourites configured** (`favorite_teams: []`)
+
+The next *N* games league-wide, sorted by start time. `N` is
+`upcoming_games_to_show` (or `recent_games_to_show` for the recent screen).
+Simple, and the right setting for a neutral scoreboard.
+
+**2. Favourites, exclusively** (`favorite_teams` set, `show_favorite_teams_only: true`)
+
+Only games involving your teams. The plugin walks the schedule in time order and
+keeps a per-team counter: each favourite team gets up to `upcoming_games_to_show`
+games. A game between two of your favourites counts toward **both** teams'
+budgets. Once every favourite team has hit its budget, selection stops early.
+
+**3. Favourites first, then others** (`favorite_teams` set, `show_favorite_teams_only: false`)
+
+This is the middle setting most people actually want. Your favourites' games are
+taken first — up to `upcoming_games_to_show` of them — and then the list is
+topped up with `other_upcoming_games_to_show` non-favourite games. The combined
+list is then **re-sorted by start time**, so the cards still read as a schedule:
+tonight's neutral game appears before next week's game involving your club.
+
+The non-favourite games are not the same handful every time. They come from a
+window that advances through the schedule every
+`other_rotation_interval_seconds` (default 30 minutes), so over an evening the
+board works through the round rather than resampling the front of it. Set
+`other_upcoming_games_to_show: 0` to get favourites only while still leaving
+`show_favorite_teams_only` off.
+
+> **Edge case worth knowing.** If `show_favorite_teams_only` is `true` but
+> `favorite_teams` is empty, the favourites filter is skipped entirely and you
+> get mode 1 — every game. An empty favourites list never means "show nothing".
+
+### What the "games to show" numbers mean
+
+`upcoming_games_to_show` and `recent_games_to_show` change meaning depending on
+which selection mode you are in. This is the single most confusing thing in the
+plugin's configuration:
+
+| Selection mode | `upcoming_games_to_show` means |
+|----------------|-------------------------------|
+| No favourites | A **total** across the league |
+| Favourites, exclusively | A budget **per favourite team** |
+| Favourites first, then others | A **total** for the favourites portion only |
+
+So with three favourite teams and `upcoming_games_to_show: 3`, exclusive mode
+can produce up to nine cards, while the other two modes produce three.
+
+`exclude_teams` is applied on top of all of this and beats everything — a team
+listed there is hidden from the live rotation and from recent scores even if it
+is also a favourite. That is what makes it useful for spoiler protection.
+
+### Which games exist to pick from
+
+Selection can only choose from games the plugin actually fetched. The fetch
+window is controlled by two settings:
+
+- `schedule_lookback_days` (default `14`) — how far back the recent screen can see.
+- `schedule_lookahead_days` (default `7`) — how far ahead the upcoming screen can see.
+
+A fixture beyond the lookahead horizon is never fetched, so it cannot appear no
+matter how high you set `upcoming_games_to_show`. If your upcoming screen looks
+empty during a bye or between finals weeks, this is usually why — raise
+`schedule_lookahead_days`.
+
+### Live games and priority
+
+The live screen has its own selection:
+
+- By default it shows only live games involving your favourite teams. Set
+  `filtering.show_all_live: true` to include every live game regardless.
+- `filtering.favorite_live_boost` (default `2`) gives your favourite's live game
+  that many turns in the live rotation for every one turn another live game
+  gets, and queues it first whenever the rotation refreshes. Set it to `1` for
+  an even rotation.
+- `live_priority` (default `true`) lets a live game interrupt the normal mode
+  rotation rather than waiting its turn.
+
+### Seeing live games more often in the Vegas ticker
 
 By default a live game **takes over** the display: the Vegas ticker stops and
-this scoreboard shows full screen until the game ends. If you would rather keep
-the marquee scrolling and still see scores, set this in the core config:
+this scoreboard goes full screen until the game ends. If you would rather keep
+the marquee scrolling and still see scores, the relevant settings live in the
+**core** LEDMatrix config rather than in this plugin:
 
 ```json
 {
@@ -213,12 +218,12 @@ the marquee scrolling and still see scores, set this in the core config:
 
 The ticker is otherwise a strict round robin — every plugin appears once per
 cycle — so with a dozen plugins enabled a score comes round once a lap. These
-weights let this plugin claim several slots per cycle, spaced evenly through
+weights let this scoreboard claim several slots per cycle, spaced evenly through
 it rather than bunched together.
 
-`live_weight` applies whenever this scoreboard has a live game.
+`live_weight` applies whenever this scoreboard has any live game.
 `favorite_live_weight` applies when one of your `favorite_teams` is playing, so
-your team's game comes round more often than other live games. That distinction
+your club's game comes round more often than other live games. That distinction
 has to be made here rather than in the core, which can tell *that* a game is
 live but not *whose*.
 
@@ -226,80 +231,385 @@ Two things to keep in mind:
 
 - The weight is per **plugin**, not per game. With four games live this
   scoreboard still occupies one slot at a time and picks between its own games
-  using `favorite_live_boost`; these weights control how often the scoreboard
-  itself comes round.
+  using `filtering.favorite_live_boost`; these weights control how often the
+  scoreboard itself comes round.
 - More slots make the cycle **longer**, not faster — everything else appears
   proportionally less often. And appearing more often only helps if the data is
-  fresh, which is governed by this plugin's own live update interval.
+  fresh, which is governed by `live_update_interval` above.
 
-## Matchup separator and the upcoming card middle
+---
 
-The **Matchup Card Layout** section (advanced) controls what sits between the
-two team logos before a game starts, and how the date and time are written.
-These settings now apply to every display mode -- the scroll ticker, the Vegas
-ticker, and the full-screen scoreboard -- rather than only the tickers.
+## Configuration Reference
 
-| Setting | Key | Default | What it does |
-|---|---|---|---|
-| Matchup Separator | `vs_text` | `VS` | Text drawn between the teams: `VS`, `@`, `at`, `v`. The away team is always on the left, so `@` and `at` read as "away at home". Blank draws nothing. |
-| Middle of an Upcoming Card | `upcoming_center` | `vs` | Scroll and Vegas cards: the separator, the date and time stacked, or nothing. |
-| Middle of a Full-Screen Upcoming Scoreboard | `switch_upcoming_center` | `date_time` | The same choice for the full-screen scoreboard, plus `inherit` to follow the setting above. It defaults to the stacked date and time, which is what this display has always shown, so nothing changes until you pick something else. |
-| Date Format | `date_format` | `abbrev` | How the scroll and Vegas cards write the date: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
-| Full-Screen Date Format | `switch_date_format` | `numeric` | The same choice for the full-screen scoreboard, plus `inherit` to follow the row above. It has its own default because the two displays disagree about what is normal: the cards have always written `Sep 19` and the full-screen scoreboard `9/19`, so a single shared default would restyle one of them. |
-| Time Format | `time_format` | `12h` | 12- or 24-hour clock. |
-| Show Date / Show Time | `show_date`, `show_time` | `true` | Drop either line. |
-| Swap Date and Time | `swap_date_time` | `false` | Swap the two lines over. Each display starts from its own order, so this flips them rather than forcing one: the scroll and Vegas cards put the time on top, the full-screen date/time stack puts the date on top. |
+Every option below is real and read by the plugin unless explicitly marked
+otherwise. Options marked **advanced** are hidden behind the "advanced" toggle
+in the web UI; they are safe to ignore.
 
-Choosing the separator for the full-screen scoreboard moves the date and time
-out of the middle and onto the top and bottom rows, the same way the scroll
-card lays them out; the "Next Game" header gives up the top row to them.
+### Teams and filtering
 
-The center-gap settings in the same section size the scroll and Vegas card's
-middle strip only -- the full-screen scoreboard pins its logos to the panel
-edges and is unaffected.
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `enabled` | `true` | Whether the plugin takes part in the rotation at all |
+| `favorite_teams` | `[]` | Team abbreviations to prioritise, e.g. `["CARL", "GEEL"]`. See [Team Abbreviations](#team-abbreviations) |
+| `exclude_teams` | `[]` | Teams to always hide, from live *and* recent screens. Beats `favorite_teams` and `show_all_live` |
+| `show_favorite_teams_only` | `true` | Restrict to games involving `favorite_teams`. See [the three selection modes](#the-three-selection-modes) |
+| `filtering.show_all_live` | `false` | Show every live game, not just favourites' |
+| `filtering.favorite_live_boost` | `2` | **Advanced.** Turns your favourite's live game gets per turn for other live games |
 
-Example:
+`favorite_teams` also does more than filter. It decides whose result the
+[favourite result colours](#what-appears-on-the-card) apply to, and which team's
+score triggers a [celebration](#celebrations).
 
-```json
-{
-  "scroll_card": {
-    "vs_text": "@",
-    "switch_upcoming_center": "vs",
-    "date_format": "weekday"
-  }
-}
-```
+> **A default worth checking.** The schema default for
+> `show_favorite_teams_only` is `true`, which is what the web UI shows and what a
+> store install gets. If you hand-write `config.json` and leave the key out
+> entirely, the plugin's own fallback is `false` instead. Set it explicitly if
+> you edit config by hand.
 
-### Text Colours
+### Display modes and rotation
 
-Each text element in the **Customization** section carries a colour, and it now
-applies to the text drawn in that element's face — on the full-screen scoreboard
-and on the scroll and Vegas cards alike. Until this version the picker changed
-only which font was loaded; every string was drawn white.
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `display_modes.live` | `true` | Enable the live screen |
+| `display_modes.recent` | `true` | Enable the recent screen |
+| `display_modes.upcoming` | `true` | Enable the upcoming screen |
+| `display_modes.live_display_mode` | `switch` | `switch` = one full-screen game at a time; `scroll` = all games scrolling horizontally |
+| `display_modes.recent_display_mode` | `switch` | As above, for recent games |
+| `display_modes.upcoming_display_mode` | `switch` | As above, for upcoming games |
+| `live_priority` | `true` | Let live games interrupt the normal rotation |
 
-| Element | Key | Colours |
-|---|---|---|
-| Score | `score_text` | The score, and the matchup separator on an upcoming card |
-| Period / clock | `period_text` | The clock, period, and the date and time on an upcoming scoreboard |
-| Team name | `team_name` | Team names and abbreviations |
-| Status | `status_text` | Status lines such as "Next Game" |
-| Detail | `detail_text` | Small detail lines |
-| Ranking | `rank_text` | Team rankings drawn in the ranking face |
+**`switch` vs `scroll`.** Switch mode is the full-screen scoreboard shown
+throughout this README: two large logos with the score or start time between
+them. Scroll mode instead draws a compact card per game and scrolls the whole
+strip sideways, which fits more games on a long panel at the cost of size. The
+`scroll_card` and `scroll_settings` groups only affect scroll mode, except for
+the handful of `switch_*` keys called out below.
 
-Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white, so a display
-nobody has recoloured looks exactly as it did.
+### How long things stay on screen
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `display_duration` | `15` | Seconds each mode holds the panel |
+| `live_game_duration` | `20` | Seconds per live game before rotating to the next |
+| `recent_game_duration` | `15` | **Advanced.** Seconds per recent game |
+| `upcoming_game_duration` | `15` | **Advanced.** Seconds per upcoming game |
+| `game_display_duration` | `15` | **Advanced.** Generic per-game duration within a mode |
+| `non_favorite_live_game_duration` | `0` | **Advanced.** Separate, usually shorter duration for live games with no favourite in them. `0` means "use `live_game_duration` for everything" |
+| `mode_durations.live_mode_duration` | `null` | **Advanced.** Fixed total duration for the whole live mode, overriding the per-game maths |
+| `mode_durations.recent_mode_duration` | `null` | **Advanced.** As above, for recent |
+| `mode_durations.upcoming_mode_duration` | `null` | **Advanced.** As above, for upcoming |
+| `dynamic_duration.enabled` | `false` | **Advanced.** Size a mode's duration from how many games it actually has |
+| `dynamic_duration.max_duration_seconds` | `null` | **Advanced.** Cap for the above |
+| `dynamic_duration.modes.<mode>.enabled` | `false` | **Advanced.** Per-mode override of `dynamic_duration.enabled` |
+
+`non_favorite_live_game_duration` is the setting to reach for when four games
+are on at once and you only care about one: set `live_game_duration: 30` and
+`non_favorite_live_game_duration: 8`, and your club's game gets most of the
+airtime while the others still tick past.
+
+### How often data is fetched
+
+All of these are **advanced** — the defaults are tuned for a Raspberry Pi that is
+also driving a panel, and raising the polling rate rarely helps.
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `update_interval_seconds` | `3600` | Base fetch interval for schedule data |
+| `live_update_interval` | `30` | Fetch interval while a game is live |
+| `recent_update_interval` | `3600` | Fetch interval for the recent screen |
+| `upcoming_update_interval` | `3600` | Fetch interval for the upcoming screen |
+| `no_data_interval_seconds` | `300` | How long to wait between live checks when nothing is on. Backs off further the longer nothing is found |
+| `live_idle_max_interval_seconds` | `900` | Ceiling for that back-off. Raise it out of season; lower it to notice the first game of the night sooner |
+| `schedule_lookback_days` | `14` | How far back the recent screen can see |
+| `schedule_lookahead_days` | `7` | How far ahead the upcoming screen can see |
+| `background_service.enabled` | `true` | Fetch in a background thread so the panel never stalls on the network |
+| `background_service.request_timeout` | `30` | Seconds before a fetch gives up |
+| `background_service.max_retries` | `3` | Retries per failed fetch |
+| `background_service.priority` | `2` | Queue priority against other plugins' fetches |
+
+### What appears on the card
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `recent_games_to_show` | `1` | How many recent games — see [what the numbers mean](#what-the-games-to-show-numbers-mean) |
+| `upcoming_games_to_show` | `1` | How many upcoming games — same caveat |
+| `other_recent_games_to_show` | `1` | **Advanced.** Non-favourite recent games, in "favourites first" mode |
+| `other_upcoming_games_to_show` | `1` | **Advanced.** Non-favourite upcoming games, in "favourites first" mode |
+| `other_rotation_interval_seconds` | `1800` | **Advanced.** How often the non-favourite window advances |
+| `show_records` | `false` | **Advanced.** Draw each team's season record in the bottom corners |
+| `show_ranking` | `false` | **Advanced.** Draw a rank badge. AFL publishes no poll, so this shows nothing |
+| `show_odds` | `true` | Draw the betting line. **ESPN publishes no odds for AFL** — see [Known Limitations](#known-limitations) |
+| `customization.favorite_result_colors.enabled` | `false` | Colour a finished game's score by whether your favourite won |
+| `customization.favorite_result_colors.win_color` | `[0, 255, 0]` | **Advanced.** Colour for a win |
+| `customization.favorite_result_colors.loss_color` | `[255, 0, 0]` | **Advanced.** Colour for a loss |
+| `customization.favorite_result_colors.tie_color` | `[255, 200, 0]` | **Advanced.** Colour for a draw |
+
+![The same Carlton-Melbourne final three times: score in white with the feature
+off, green with Carlton as the favourite, red with Melbourne as the
+favourite](../../docs/assets/afl-scoreboard/favorite-result-colors.png)
+
+Favourite result colours only apply to *finished* games, and only when one of
+the two teams is in `favorite_teams`. A neutral game is always drawn in the
+normal score colour, which is why the feature is invisible until you set your
+teams.
+
+![The same upcoming card with show_records off and on; with it on, each team's
+record appears in the bottom corners](../../docs/assets/afl-scoreboard/show-records.png)
+
+### Card layout and text
+
+These control what sits between the two logos and how dates and times are
+written. `switch_*` keys apply to the full-screen scoreboard; the others apply to
+scroll mode.
+
+| Option | Default | Values |
+|--------|---------|--------|
+| `scroll_card.switch_upcoming_center` | `date_time` | `date_time`, `vs`, `none`, `inherit` |
+| `scroll_card.upcoming_center` | `vs` | `vs`, `date_time`, `none` |
+| `scroll_card.vs_text` | `VS` | Any short string — `VS`, `@`, `at`, `v`. Blank draws nothing |
+| `scroll_card.switch_date_format` | `numeric` | `numeric` (9/4), `abbrev` (Sep 4), `day_first` (4 Sep), `numeric_day_first` (4/9), `weekday` (Fri Sep 4), `inherit` |
+| `scroll_card.date_format` | `abbrev` | Same set, minus `inherit` |
+| `scroll_card.time_format` | `12h` | `12h` (7:40PM) or `24h` (19:40) |
+| `scroll_card.show_date` | `true` | Draw the date at all |
+| `scroll_card.show_time` | `true` | Draw the start time at all |
+| `scroll_card.swap_date_time` | `false` | Put the time above the date instead of below |
+| `scroll_card.center_gap` | *(auto)* | Fixed pixel gap in the middle of a scroll card |
+| `scroll_card.center_gap_ratio` | `0.28` | **Advanced.** Gap as a fraction of card width, when `center_gap` is unset |
+| `scroll_card.center_gap_min` | `22` | **Advanced.** Floor for the computed gap |
+| `scroll_card.center_gap_max` | `40` | **Advanced.** Ceiling for the computed gap |
+
+![Four upcoming cards showing the centre as date_time, VS, at, and
+nothing](../../docs/assets/afl-scoreboard/upcoming-center.png)
+
+Note how `at` reads correctly in the third panel: the away team is on the left,
+so "Carlton at Geelong" is what the card actually says.
+
+![Four upcoming cards comparing 12-hour against 24-hour time, and numeric
+against abbreviated and weekday date
+formats](../../docs/assets/afl-scoreboard/date-time-formats.png)
+
+Scroll-mode-only settings:
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `scroll_settings.scroll_speed` | `1.0` | **Advanced.** Pixels per step |
+| `scroll_settings.scroll_delay` | `0.01` | **Advanced.** Seconds between steps. Lower is faster and costs more CPU |
+| `scroll_settings.gap_between_games` | `48` | **Advanced.** Blank pixels between cards |
+| `scroll_settings.game_card_width` | `128` | **Advanced.** Width of one card |
+| `scroll_settings.show_league_separators` | `true` | **Advanced.** Divider between leagues (single-league here, so rarely visible) |
+| `scroll_settings.dynamic_duration` | `true` | **Advanced.** Let the scroll run as long as one full pass takes |
+
+### Celebrations
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `celebration_enabled` | `true` | Show a takeover screen when a favourite scores or wins a live game |
+| `celebration_duration` | `8` | **Advanced.** Seconds the celebration holds the panel |
+| `celebrate_opponent_goals` | `false` | **Advanced.** Also celebrate the opponent's goals |
+
+Celebrations need `favorite_teams` to be set — with no favourites there is
+nobody to celebrate for.
+
+### Fonts, colours and offsets
+
+Every text element on the card can be restyled independently. All of these are
+**advanced**, and the defaults are tuned to be legible at 128×32.
+
+| Group | Font default | Size | Colour |
+|-------|--------------|------|--------|
+| `customization.score_text` | `PressStart2P-Regular.ttf` | `10` | `[255, 255, 255]` |
+| `customization.period_text` | `PressStart2P-Regular.ttf` | `8` | `[255, 255, 255]` |
+| `customization.team_name` | `PressStart2P-Regular.ttf` | `8` | `[255, 255, 255]` |
+| `customization.status_text` | `4x6-font.ttf` | `6` | `[255, 255, 255]` |
+| `customization.detail_text` | `4x6-font.ttf` | `6` | `[255, 255, 255]` |
+| `customization.rank_text` | `PressStart2P-Regular.ttf` | `10` | `[255, 255, 255]` |
+
+Each group takes `font`, `font_size` and `text_color` (an RGB array):
 
 ```json
 {
   "customization": {
-    "score_text": { "text_color": [255, 200, 0] },
-    "status_text": { "text_color": "#00A0FF" }
+    "score_text": { "font_size": 12, "text_color": [255, 220, 0] }
   }
 }
 ```
 
-Two things keep their own colours on purpose: the betting-odds figures, which
-are coloured by which side is favoured, and a finished game's score when
-**Favorite Team Result Colors** is on — that tint wins, and your score colour
-shows on every other game. Records and rankings drawn in the small fixed face
-stay white; no element in the schema owns that face.
+`customization.layout` nudges individual elements by a pixel offset, for panels
+where something sits slightly wrong. Each entry takes `x_offset` and `y_offset`,
+both defaulting to `0`: `home_logo`, `away_logo`, `score`, `status_text`, `date`,
+`time` and `odds`. The `records` entry takes `away_x_offset`, `home_x_offset`
+and `y_offset` instead, since the two records are positioned separately.
+
+### Timezone
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `timezone` | `""` | **Advanced.** IANA timezone for start times, e.g. `Australia/Melbourne` |
+
+Resolution order, first match wins:
+
+1. `timezone` in this plugin's config
+2. The global LEDMatrix `timezone` setting
+3. The system timezone
+
+For AFL specifically this matters more than for most sports: matches are played
+across three Australian timezones, and ESPN reports every start time in UTC.
+Leave it blank unless you want this plugin to differ from the rest of your board.
+
+---
+
+## Panel Sizes
+
+The scoreboard lays itself out from the panel dimensions rather than assuming a
+size. Logos scale to the available height, and the score keeps the centre.
+
+![The same final rendered on 64x32, 128x32, 128x64 and 256x32
+panels](../../docs/assets/afl-scoreboard/panel-sizes.png)
+
+- **64×32** is tight. The logos are drawn behind the text rather than beside it,
+  and the score takes priority. It works, but a longer panel is much easier to
+  read across a room.
+- **128×32** is the size everything is tuned for.
+- **128×64** gives the logos real estate and separates the status line, score and
+  date into three bands.
+- **256×32** keeps the same element sizes and simply centres them, so a long
+  chain buys width rather than a bigger scoreboard. Scroll mode is what makes a
+  long panel pay off, since it can show several cards at once.
+
+---
+
+## Team Abbreviations
+
+`favorite_teams` and `exclude_teams` take the ESPN abbreviation, not the club
+name:
+
+| Abbrev | Club | Abbrev | Club |
+|--------|------|--------|------|
+| `ADEL` | Adelaide Crows | `MELB` | Melbourne |
+| `BL` | Brisbane Lions | `NMFC` | North Melbourne |
+| `CARL` | Carlton | `PORT` | Port Adelaide |
+| `COLL` | Collingwood | `RICH` | Richmond |
+| `ESS` | Essendon | `STK` | St Kilda |
+| `FRE` | Fremantle | `SUNS` | Gold Coast Suns |
+| `GEEL` | Geelong Cats | `SYD` | Sydney Swans |
+| `GWS` | GWS Giants | `WB` | Western Bulldogs |
+| `HAW` | Hawthorn | `WCE` | West Coast Eagles |
+
+ESPN's team list also exposes a stale `GCFC` entry mislabelled as "Sydney
+Swans". Use `SUNS` for Gold Coast.
+
+---
+
+## Known Limitations
+
+These are real, verified against the live ESPN feed — they are documented here
+rather than left for you to discover on the panel.
+
+**`show_odds` does nothing for AFL.** The setting defaults to `true`, but ESPN
+publishes no odds block for any AFL fixture — a full finals-week payload
+contains zero. The card is byte-identical with the setting on or off. It is not
+free, though: with it on, the plugin still issues one odds request per selected
+game on every update. **Set `show_odds: false`** to save those calls.
+
+**`show_ranking` does nothing for AFL.** The AFL publishes no poll, so the rank
+badge has nothing to draw. The setting exists because this plugin shares its
+rendering code with the college-sport scoreboards, where it does work.
+
+**`dynamic_duration.min_duration_seconds` is not applied.** The schema exposes it
+with a default of `30`, but only `max_duration_seconds` is read. Setting a
+minimum has no effect.
+
+**`background_service.max_workers` is not applied.** The schema exposes it with a
+default of `3`, but the plugin creates its background service with a single
+worker regardless.
+
+---
+
+## Troubleshooting
+
+**The upcoming screen is empty, but I know there are fixtures.**
+The most likely cause is the fetch window: `schedule_lookahead_days` defaults to
+`7`, and during a bye or between finals weeks the next fixture can sit beyond
+that. Raise it to `14`. The second most likely cause is
+`show_favorite_teams_only: true` with favourites who are not playing this round.
+
+**I see far more games than I asked for.**
+`upcoming_games_to_show` is a *per-team* budget when `show_favorite_teams_only`
+is on. Three favourites and a value of 3 is up to nine cards. See
+[what the numbers mean](#what-the-games-to-show-numbers-mean).
+
+**A team shows as a grey box with text instead of a logo.**
+Logos are downloaded on demand and cached under
+`assets/sports/afl_logos/` in your LEDMatrix install. A failed download is
+cached as a tiny placeholder file that is never retried, so the team stays
+logo-less. Delete the undersized file (a real logo is tens of kilobytes; a
+placeholder is well under 1 KB) and restart to force a fresh download.
+
+**Start times are wrong by hours.**
+Check `timezone`. ESPN reports every AFL start time in UTC and the plugin
+converts on display, so an unset or wrong timezone shifts every card.
+
+**The score is white even though I enabled favourite result colours.**
+The feature only applies to finished games in which one of the two teams is in
+`favorite_teams`. Check the abbreviation matches the table above exactly.
+
+**Nothing updates during a live game.**
+Check `display_modes.live` is on and that the game involves a favourite, or set
+`filtering.show_all_live: true`.
+
+---
+
+## Development
+
+### File structure
+
+```text
+afl-scoreboard/
+├── manifest.json           # Metadata and version history
+├── manager.py              # AflScoreboardPlugin: mode rotation and config plumbing
+├── afl_managers.py         # AFL-specific fetching and cache keys
+├── sports.py               # Shared sports engine: selection, extraction, rendering
+├── game_renderer.py        # Card drawing
+├── scroll_display.py       # Scroll-mode display
+├── config_schema.json      # Settings schema; source of truth for defaults
+└── test_*.py               # Standalone regression tests
+```
+
+`sports.py`, `game_renderer.py` and `scroll_display.py` are **shared copies**
+carried by every sports scoreboard in this monorepo. A fix in one must be
+ported to its siblings in the same change — see
+[docs/plugin-development/08-shared-sports-code.md](../../docs/plugin-development/08-shared-sports-code.md).
+
+### Data source
+
+ESPN's public `australian-football/afl` scoreboard API. No key required, and no
+account needed. The plugin fetches one date-range request per update and shares
+the result across all three modes, rather than one request per mode.
+
+### Regenerating the images in this README
+
+Every screenshot is produced from a declarative shot list against archived ESPN
+payloads and a frozen clock, so re-rendering is reproducible:
+
+```bash
+python scripts/render_docs_assets.py --plugin afl-scoreboard
+```
+
+The fixtures under `docs/assets/afl-scoreboard/fixtures/` are real ESPN
+responses from the 2026 finals series. The live-mode fixture is that same real
+data with one match's status rewound to three-quarter time and its score set to
+the real cumulative three-quarter total, so the live card shows a moment that
+genuinely happened rather than an invented one.
+
+---
+
+## Support
+
+- YouTube: <https://www.youtube.com/@ChuckBuilds>
+- Instagram: <https://www.instagram.com/ChuckBuilds/>
+- Discord: <https://discord.com/invite/uW36dVAtcT>
+- Sponsor: [GitHub Sponsors](https://github.com/sponsors/ChuckBuilds) ·
+  [Buy Me a Coffee](https://buymeacoffee.com/chuckbuilds) ·
+  [Ko-fi](https://ko-fi.com/chuckbuilds/)
+
+Released under the GNU General Public License v3.0 — see [LICENSE](LICENSE).
