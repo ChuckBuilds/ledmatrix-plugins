@@ -1,7 +1,7 @@
 {
   "id": "olympics",
   "name": "Olympics",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "author": "ChuckBuilds",
   "description": "Enhanced Olympics plugin with live medal counts, upcoming events, results, and countdown. Supports Vegas scroll mode and regular display mode.",
   "category": "sports",
@@ -38,6 +38,12 @@
   },
   "versions": [
     {
+      "version": "2.0.2",
+      "released": "2026-09-03",
+      "notes": "Documentation. The configuration section listed 7 of the 25 settings, and four of the seven it did list were wrong: display_duration and update_interval gave defaults of 15 and 3600 where the schema says 30 and 300; logo_size does not exist in the schema at all, and because additionalProperties is false a config containing it is rejected rather than ignored; and the Transitions section documented a block no code reads. All 25 settings are now covered, with the four dead ones marked. Records two defects on the countdown screen (#410): the day count has gone negative since Milano Cortina closed, because the plugin carries one hardcoded Games and no roll-forward, and DAYS UNTIL is clipped on every panel narrower than 256, which fails six of the harness's eight sizes on main. Adds real rendered screenshots.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
       "released": "2026-05-15",
       "version": "2.0.1",
       "ledmatrix_min": "2.0.0"
@@ -54,7 +60,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-09-03",
   "stars": 0,
   "downloads": 0,
   "verified": true,
