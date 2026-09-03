@@ -145,6 +145,12 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [MQTT Notifications](./plugins/mqtt-notifications/) | HomeAssistant notifications via MQTT | |
 | [On Air Light](./plugins/on-air/) | Broadcast ON AIR tally light, triggered remotely via MQTT / Home Assistant | |
 
+### Productivity (1)
+
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Incoming Packages](./plugins/incoming-packages/) | Rotating carrier cards for packages arriving today, via Home Assistant | <a href="./plugins/incoming-packages/"><img src="./docs/assets/incoming-packages/hero.png" width="240" alt="incoming-packages on an LED panel"></a> |
+
 ### Custom (3)
 
 | Plugin | Description | Preview |
