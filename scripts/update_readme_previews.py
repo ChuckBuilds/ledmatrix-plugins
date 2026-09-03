@@ -4,7 +4,8 @@
 The "Available Plugins" tables in ``README.md`` carry a thumbnail of each
 plugin's hero screenshot. This script rewrites that column from what is
 actually on disk: a plugin gets a thumbnail once
-``docs/assets/<plugin-id>/hero.png`` exists, and an empty cell until then.
+``docs/assets/<plugin-id>/hero.png`` (or ``plugins/<plugin-id>/assets/hero.png``,
+for plugins that ship their own renderer) exists, and an empty cell until then.
 
 Run it after adding a plugin's README screenshots::
 
@@ -40,14 +41,30 @@ HEADER = "| Plugin | Description | Preview |"
 SEPARATOR = "|--------|-------------|---------|"
 
 
+def hero_path(plugin_id: str) -> str | None:
+    """Where this plugin's hero image lives, as a repo-relative URL.
+
+    Most plugins render theirs into ``docs/assets/<id>/``. A few carry their own
+    renderer and keep the image beside the plugin, so look there too rather than
+    leaving those rows blank.
+    """
+    shared = ASSETS_ROOT / plugin_id / "hero.png"
+    if shared.is_file():
+        return f"./docs/assets/{plugin_id}/hero.png"
+    local = REPO_ROOT / "plugins" / plugin_id / "assets" / "hero.png"
+    if local.is_file():
+        return f"./plugins/{plugin_id}/assets/hero.png"
+    return None
+
+
 def preview_cell(plugin_id: str) -> str:
     """The Preview cell for one plugin: a thumbnail, or empty if none yet."""
-    hero = ASSETS_ROOT / plugin_id / "hero.png"
-    if not hero.is_file():
+    hero = hero_path(plugin_id)
+    if hero is None:
         return " "
     return (
         f' <a href="./plugins/{plugin_id}/">'
-        f'<img src="./docs/assets/{plugin_id}/hero.png" width="{THUMB_WIDTH}"'
+        f'<img src="{hero}" width="{THUMB_WIDTH}"'
         f' alt="{plugin_id} on an LED panel"></a> '
     )
 

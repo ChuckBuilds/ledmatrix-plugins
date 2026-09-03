@@ -42,6 +42,21 @@ _LOGOS = os.path.join(PLUGIN_DIR, "assets", "sports", "nfl_logos")
 # stub is never actually called.
 if "src.logo_downloader" not in sys.modules:
     src_pkg = types.ModuleType("src")
+    # Point the stub at the real core so `from src.common import ...` still
+    # resolves through to it. Without a __path__ this stub SHADOWS the core,
+    # and game_renderer's top-level import of src.common.sports_card fails
+    # naming `src` rather than the module actually wanted.
+    _core = os.environ.get("LEDMATRIX_CORE")
+    if not _core:
+        for _cand in sys.path:
+            if _cand and os.path.isdir(os.path.join(_cand, "src", "common")):
+                _core = _cand
+                break
+    if not (_core and os.path.isdir(os.path.join(_core, "src"))):
+        print("SKIP: no LEDMatrix core found -- set LEDMATRIX_CORE or run via "
+              "scripts/run_plugin_tests.py --core <path>.")
+        sys.exit(2)
+    src_pkg.__path__ = [os.path.join(_core, "src")]
     logo_mod = types.ModuleType("src.logo_downloader")
 
     class _StubLogoDownloader:

@@ -1,7 +1,7 @@
 {
   "id": "calendar",
   "name": "Google Calendar",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "author": "ChuckBuilds",
   "description": "Display upcoming events from Google Calendar with date, time, and event details. Shows next 1-3 events with automatic rotation and timezone support.",
   "category": "productivity",
@@ -35,6 +35,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.2.4",
+      "released": "2026-09-02",
+      "notes": "Documentation. The README's three ASCII mock-ups of the display are replaced with real rendered screenshots of the same four screens (timed, all-day, a long title being ellipsized, and the empty state) plus a panel-size sheet. Documents google_auth, which is the web UI's Connect Your Google Account button rather than a value you type, and splits the two combined font rows so each customization key appears on its own. All 13 schema settings are now documented by key.",
+      "ledmatrix_min_version": "3.3.0"
+    },
     {
       "version": "1.2.3",
       "released": "2026-08-31",
@@ -106,7 +112,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-13",
+  "last_updated": "2026-09-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

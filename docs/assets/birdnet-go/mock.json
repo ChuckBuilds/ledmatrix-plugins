@@ -1,0 +1,61 @@
+{
+  "birdnet-go_last_detection": {
+    "common_name": "Northern Cardinal",
+    "scientific_name": "Cardinalis cardinalis",
+    "confidence": 0.87,
+    "time_str": "07:42:10",
+    "received_at": 1781000000.0,
+    "key": "demo-1"
+  },
+  "birdnet-go_daily_stats": {
+    "species_today": 7,
+    "detections_today": 35,
+    "top": [
+      {
+        "name": "Northern Cardinal",
+        "count": 9,
+        "received_at": 1781000000.0
+      },
+      {
+        "name": "Carolina Wren",
+        "count": 7,
+        "received_at": 1780999400.0
+      },
+      {
+        "name": "Blue Jay",
+        "count": 6,
+        "received_at": 1780998800.0
+      },
+      {
+        "name": "Tufted Titmouse",
+        "count": 5,
+        "received_at": 1780998200.0
+      },
+      {
+        "name": "American Robin",
+        "count": 4,
+        "received_at": 1780997600.0
+      },
+      {
+        "name": "Mourning Dove",
+        "count": 3,
+        "received_at": 1780997000.0
+      },
+      {
+        "name": "Downy Woodpecker",
+        "count": 1,
+        "received_at": 1780996400.0
+      }
+    ],
+    "counts": {
+      "Northern Cardinal": 9,
+      "Carolina Wren": 7,
+      "Blue Jay": 6,
+      "Tufted Titmouse": 5,
+      "American Robin": 4,
+      "Mourning Dove": 3,
+      "Downy Woodpecker": 1
+    },
+    "fetched_at": 1781000000.0
+  }
+}

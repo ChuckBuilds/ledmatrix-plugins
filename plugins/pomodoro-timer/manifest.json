@@ -1,7 +1,7 @@
 {
   "id": "pomodoro-timer",
   "name": "Pomodoro Timer",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "author": "ChuckBuilds",
   "description": "A configurable Pomodoro focus/break timer for your matrix. Set the work and break lengths, then start, pause, skip, or reset it over MQTT \u2014 with Home Assistant auto-discovery so the whole timer shows up as a device with no YAML.",
   "entry_point": "manager.py",
@@ -22,6 +22,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "released": "2026-09-02",
+      "version": "1.3.5",
+      "notes": "Documentation. Every setting in the README now carries its config.json key alongside the web-UI label, so the tables can be used when editing the file directly rather than only when clicking through the form; all 46 schema properties are covered. Corrects two claims: 'enabled' is the tab's header toggle rather than a form field, and the advanced settings appear in a collapsed 'Advanced Settings' section. No functional change.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-08-15",
       "version": "1.3.4",
@@ -88,7 +94,7 @@
   "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/pomodoro-timer",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-07-29",
+  "last_updated": "2026-09-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

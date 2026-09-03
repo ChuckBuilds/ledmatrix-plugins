@@ -54,6 +54,27 @@ def _install_host_stubs() -> None:
     ]
     for name in stub_modules:
         sys.modules.setdefault(name, types.ModuleType(name))
+    # These two are pure Python with no hardware dependency, so the real
+    # modules are loaded rather than stubbed: game_renderer calls into them for
+    # colours, dates, font sizes and the card geometry, and a bare stub would
+    # satisfy the import and then fail at the first call. Located from the core
+    # on sys.path. Note "src.common" above is a plain ModuleType, not a
+    # package, so `from src.common.X import ...` only resolves because the
+    # entry is planted in sys.modules here.
+    for _name in ("sports_card", "sports_game_renderer"):
+        _full = f"src.common.{_name}"
+        if _full in sys.modules:
+            continue
+        import importlib.util
+        for _cand in sys.path:
+            _p = os.path.join(_cand, "src", "common", f"{_name}.py") if _cand else ""
+            if _p and os.path.isfile(_p):
+                _spec = importlib.util.spec_from_file_location(_full, _p)
+                _mod = importlib.util.module_from_spec(_spec)
+                _spec.loader.exec_module(_mod)
+                sys.modules[_full] = _mod
+                setattr(sys.modules["src.common"], _name, _mod)
+                break
     sys.modules["src.plugin_system.base_plugin"].BasePlugin = object
     sys.modules["src.plugin_system.base_plugin"].VegasDisplayMode = None
     sys.modules["src.background_data_service"].get_background_service = (

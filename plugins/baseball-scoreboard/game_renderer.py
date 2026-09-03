@@ -6,15 +6,21 @@ Returns images instead of updating display directly.
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 import os
 from typing import Any, ClassVar, Dict, Optional, Tuple
-from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
 
 from baseball_timezone import resolve_timezone
+
+from src.common import sports_card as _card
+from src.common.sports_game_renderer import SportsGameRendererMixin
+
+#: This plugin's own schema, for the shared font-size resolver.
+_SCHEMA_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'config_schema.json')
 
 
 def _resolve_font_path(path: str) -> str:
@@ -90,7 +96,7 @@ except AttributeError:
 _DERIVE_TOP_SPAN = object()
 
 
-class GameRenderer:
+class GameRenderer(SportsGameRendererMixin):
     """Renders individual baseball game cards as PIL Images."""
 
     def __init__(
@@ -138,6 +144,9 @@ class GameRenderer:
         team_config = customization.get('team_name', {})
         status_config = customization.get('status_text', {})
         detail_config = customization.get('detail_text', {})
+        # Falls back to detail_text so a config written before this
+        # setting existed keeps rendering odds exactly as it did.
+        odds_config = customization.get('odds_text') or detail_config
         rank_config = customization.get('rank_text', {})
 
         try:
@@ -146,6 +155,7 @@ class GameRenderer:
             fonts["team"] = self._load_custom_font(team_config, default_size=8, element_key='team_name')
             fonts["status"] = self._load_custom_font(status_config, default_size=6, element_key='status_text')
             fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6-font.ttf', element_key='detail_text')
+            fonts["odds"] = self._load_custom_font(odds_config, default_size=6, default_font='4x6-font.ttf', element_key='odds_text')
             fonts["rank"] = self._load_custom_font(rank_config, default_size=10, element_key='rank_text')
             self.logger.debug("Successfully loaded fonts from config")
         except Exception:
@@ -165,7 +175,6 @@ class GameRenderer:
 
         return fonts
 
-
     #: Sizes each pixel font renders crisply at. Off the grid the glyphs are
     #: anti-aliased, and on an LED matrix a part-lit pixel reads as a dim
     #: lamp rather than a soft edge.
@@ -184,59 +193,19 @@ class GameRenderer:
 
     @classmethod
     def _crisp_size(cls, font_file, desired):
-        """Snap *desired* to the nearest size *font_file* renders crisply at.
-
-        A face with no known grid is returned unchanged, so a user-supplied
-        font is never second-guessed.
-        """
-        font_file = cls._FONT_NAME_ALIASES.get(font_file, font_file)
-        grid = cls._FONT_PIXEL_GRID.get(font_file)
-        if not grid or not desired or desired <= 0:
-            return desired
-        return max(grid, int(round(float(desired) / grid)) * grid)
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.crisp_size(font_file, desired,
+                                cls._FONT_NAME_ALIASES, cls._FONT_PIXEL_GRID)
 
     def _schema_font_size(self, element_key):
-        """The font_size this plugin's config_schema.json declares, or None."""
-        if not element_key:
-            return None
-        cache = getattr(self.__class__, '_SCHEMA_FONT_SIZES', None)
-        if cache is None:
-            cache = {}
-            try:
-                import json
-                schema_path = os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)), 'config_schema.json')
-                with open(schema_path) as fh:
-                    schema = json.load(fh)
-                props = (schema.get('properties', {})
-                               .get('customization', {})
-                               .get('properties', {}))
-                for key, spec in props.items():
-                    size = spec.get('properties', {}).get('font_size', {}).get('default')
-                    if size is not None:
-                        cache[key] = int(size)
-            except Exception:
-                cache = {}
-            self.__class__._SCHEMA_FONT_SIZES = cache
-        return cache.get(element_key)
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.schema_font_size(_SCHEMA_PATH, element_key)
 
     def _resolve_font_size(self, element_config, element_key, default_size, font_name):
-        """Size to render at: the user's choice, or a grid-snapped default.
-
-        A configured size counts as a real choice only when it differs from
-        the schema default. The web UI writes the whole schema default block
-        on every save, so "font_size == schema default" carries no intent and
-        would otherwise pin every install to an anti-aliased size forever.
-        """
-        configured = (element_config or {}).get('font_size')
-        if configured is not None:
-            try:
-                configured = int(configured)
-                if configured != self._schema_font_size(element_key):
-                    return configured
-            except (TypeError, ValueError):
-                pass
-        return self._crisp_size(font_name, default_size)
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.resolve_font_size(_SCHEMA_PATH, element_config, element_key,
+                                       default_size, font_name,
+                                       self._FONT_NAME_ALIASES, self._FONT_PIXEL_GRID)
 
     def _load_custom_font(self, element_config: Dict[str, Any], default_size: int = 8, default_font: str = 'PressStart2P-Regular.ttf', element_key=None) -> ImageFont.FreeTypeFont:
         """Load a custom font from an element configuration dictionary."""
@@ -352,6 +321,7 @@ class GameRenderer:
     #: resolving the colour from the face keeps the two in step by
     #: construction, rather than by every draw site remembering to agree.
     _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
+        "odds": "odds_text",
         "score": "score_text",
         "time": "period_text",
         "team": "team_name",
@@ -361,60 +331,12 @@ class GameRenderer:
     }
 
     def _unshare_element_fonts(self, fonts):
-        """Give each colourable element its own face object.
-
-        The colour a draw gets is resolved from the face it was handed, and
-        several of these loaders legitimately hand one object to more than one
-        element -- a size resolver that lands two elements on the same face, a
-        fallback that fills every key from one default, football's narrowing
-        step that deliberately shrinks the clock along with the score. Sharing
-        the object makes the element ambiguous and the colour unresolvable.
-
-        Re-instantiating from the same path and size gives a distinct object
-        with identical metrics, so nothing about the rendering changes; only
-        the ability to tell two elements apart does. Faces that cannot be
-        rebuilt (a BDF loaded through freetype.Face, anything without a usable
-        path) are left shared, and their draws stay white as before.
-        """
-        try:
-            from PIL import ImageFont as _IF
-        except ImportError:  # pragma: no cover
-            return fonts
-        seen = {}
-        for key in self._ELEMENT_FOR_FONT:
-            font = fonts.get(key)
-            if font is None:
-                continue
-            if id(font) not in seen:
-                seen[id(font)] = key
-                continue
-            path, size = getattr(font, "path", None), getattr(font, "size", None)
-            if not path or not size:
-                continue
-            try:
-                fonts[key] = _IF.truetype(path, size)
-            except (OSError, ValueError, TypeError):
-                self.logger.debug(
-                    "Could not un-share the %s face; it keeps the default colour", key)
-        return fonts
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.unshare_element_fonts(self.logger, fonts)
 
     def _font_color(self, font, default: Tuple[int, int, int] = (255, 255, 255)):
-        """Colour for whichever element owns this face.
-
-        Matched on identity, and deliberately gives up when one object is
-        shared: the last-resort font path can hand the same face to several
-        keys, and there is no right answer for which element's colour that is.
-        White is what those draws used before, so ambiguity costs nothing.
-        """
-        try:
-            fonts = getattr(self, "fonts", None) or {}
-            matches = [element for key, element in self._ELEMENT_FOR_FONT.items()
-                       if fonts.get(key) is font]
-            if len(matches) == 1:
-                return self._element_color(matches[0], default)
-        except (AttributeError, TypeError):
-            pass
-        return default
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.font_color(self.config, getattr(self, "fonts", None), font, default)
 
     def _draw_text_with_outline(self, draw, text, position, font,
                                fill=None, outline_color=(0, 0, 0)):
@@ -437,10 +359,6 @@ class GameRenderer:
             draw.text((x + dx, y + dy), text, font=font, fill=outline_color)
         draw.text((x, y), text, font=font, fill=fill)
 
-    def set_rankings_cache(self, rankings: Dict[str, int]) -> None:
-        """Set the team rankings cache for display."""
-        self._team_rankings_cache = rankings
-
     # ------------------------------------------------------------------
     # Favorite-team result colors for finished games.
     #
@@ -459,131 +377,34 @@ class GameRenderer:
 
     @staticmethod
     def _coerce_rgb(value, fallback):
-        """Turn a configured [R, G, B] list into a clamped (r, g, b) tuple."""
-        # Checked before unpacking: a 3-character string ("123") would otherwise
-        # iterate into three digits and yield a colour rather than the fallback.
-        if not isinstance(value, (list, tuple)) or len(value) != 3:
-            return fallback
-        try:
-            r, g, b = (max(0, min(255, int(channel))) for channel in value)
-        except (TypeError, ValueError):
-            return fallback
-        return (r, g, b)
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.coerce_rgb(value, fallback)
 
     def _favorite_teams_for(self, game: Dict[str, Any]) -> list:
-        """Favorite teams that apply to this game.
-
-        Both sources are used. Games carry the league manager's *resolved*
-        favorites, which is the only place dynamic groups such as AP_TOP_25
-        appear expanded; the config is read as well so an edit takes effect on
-        already-fetched games, and so hand-built game dicts (tests, other
-        callers) still work.
-        """
-        favorites = list(game.get("favorite_teams") or [])
-        league_config = self.config.get(str(game.get("league", "") or ""))
-        if isinstance(league_config, dict):
-            favorites += list(league_config.get("favorite_teams") or [])
-        else:
-            favorites += list(self.config.get("favorite_teams") or [])
-        return favorites
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.favorite_teams_for(self.config, game)
 
     @staticmethod
     def _side_is_favorite(game: Dict[str, Any], side: str, favorites: set) -> bool:
-        """Is the home/away side of this game a favorite team?
-
-        Reads both the flat (``home_abbr``) and nested (``home_team.abbrev``)
-        payload shapes, and matches on the ESPN id too, because a couple of
-        leagues (NRL) key favorites by id where abbreviations collide.
-        """
-        candidates = [game.get(f"{side}_abbr"), game.get(f"{side}_id")]
-        team = game.get(f"{side}_team")
-        if isinstance(team, dict):
-            candidates += [team.get("abbrev"), team.get("abbreviation"), team.get("id")]
-        for value in candidates:
-            if value is not None and str(value).strip().upper() in favorites:
-                return True
-        return False
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.side_is_favorite(game, side, favorites)
 
     @staticmethod
     def _side_score(game: Dict[str, Any], side: str) -> Optional[int]:
-        """Numeric score for one side, from either payload shape."""
-        raw = None
-        team = game.get(f"{side}_team")
-        if isinstance(team, dict) and team.get("score") is not None:
-            raw = team.get("score")
-        if raw is None:
-            raw = game.get(f"{side}_score")
-        try:
-            return int(float(str(raw).strip()))
-        except (TypeError, ValueError):
-            return None
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.side_score(game, side)
 
     def _favorite_result(self, game: Dict[str, Any]) -> Optional[str]:
-        """Say how the favorite team did in a finished game.
-
-        Returns 'win', 'loss' or 'tie', or None when there is no single team
-        to root for: no favorites configured, neither side is a favorite, or
-        *both* are -- a favorite-vs-favorite game has no losing side worth
-        flagging in red. Also None when the scores are not usable numbers.
-        """
-        favorites = {
-            str(team).strip().upper()
-            for team in self._favorite_teams_for(game)
-            if str(team).strip()
-        }
-        if not favorites:
-            return None
-
-        home_fav = self._side_is_favorite(game, "home", favorites)
-        away_fav = self._side_is_favorite(game, "away", favorites)
-        if home_fav == away_fav:
-            return None
-
-        home_score = self._side_score(game, "home")
-        away_score = self._side_score(game, "away")
-        if home_score is None or away_score is None:
-            return None
-
-        if home_score == away_score:
-            return "tie"
-        favorite_score, other_score = (
-            (home_score, away_score) if home_fav else (away_score, home_score)
-        )
-        return "win" if favorite_score > other_score else "loss"
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.favorite_result(self.config, game)
 
     def _score_color_for(self, game: Dict[str, Any], game_type: str, default=None):
-        """Fill color for a game card's score. Only finished games are tinted.
-
-        The default is the configured score colour rather than a flat white,
-        so customization.score_text.text_color shows on games the favourite
-        tint does not apply to. The tint still wins where it applies.
-        """
-        if default is None:
-            default = self._element_color('score_text')
-        if game_type != "recent":
-            return default
-        return self._recent_score_color(game, default)
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.score_color_for(self.config, self.logger, game, game_type, default)
 
     def _recent_score_color(self, game: Dict[str, Any], default):
-        """Fill color for a finished game's score, per favorite_result_colors."""
-        try:
-            settings = (self.config.get("customization") or {}).get(
-                "favorite_result_colors"
-            ) or {}
-            if not settings.get("enabled", False):
-                return default
-            result = self._favorite_result(game)
-            if result is None:
-                return default
-            return self._coerce_rgb(
-                settings.get(f"{result}_color"),
-                self.FAVORITE_RESULT_COLOR_DEFAULTS[result],
-            )
-        except Exception:
-            self.logger.debug(
-                "Could not resolve favorite result color", exc_info=True
-            )
-            return default
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.recent_score_color(self.config, self.logger, game, default)
 
     def render_game_card(self, game: Dict, game_type: str) -> Image.Image:
         """
@@ -826,16 +647,15 @@ class GameRenderer:
     # Card options -- config["scroll_card"], plus the shared
     # customization.layout offsets and per-element colours.
     #
-    # The center-gap keys size this renderer's cards alone. The rest --
-    # upcoming_center, vs_text, the date and time formats -- are also read by
+    # The center-gap keys size this renderer's cards alone; they are read by
+    # SportsGameRendererMixin, which owns the geometry those keys drive. The
+    # rest -- upcoming_center, vs_text, the date and time formats -- are also
+    # read by
     # sports.py's full-screen scorebug (SportsCore._draw_upcoming_center_switch
     # and friends, gated there on switch_upcoming_center), so those two copies
     # have to stay in step: a change to the formatting rules here needs the
     # same change there, or the ticker and the scoreboard disagree.
     # ------------------------------------------------------------------
-    CENTER_GAP_RATIO: ClassVar[float] = 0.28
-    CENTER_GAP_MIN_PX: ClassVar[int] = 22
-    CENTER_GAP_MAX_PX: ClassVar[int] = 40
     _MONTH_ABBR: ClassVar[Tuple[str, ...]] = (
         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -845,94 +665,12 @@ class GameRenderer:
     )
 
     def _scroll_card_option(self, key: str, default: Any = None) -> Any:
-        """Read one key from the scroll_card config block."""
-        block = (self.config or {}).get("scroll_card")
-        if isinstance(block, dict) and block.get(key) is not None:
-            return block.get(key)
-        return default
-
-    def _layout_offset(self, element: str, axis: str, default: int = 0) -> int:
-        """X/Y nudge for one element, from customization.layout.
-
-        Same block the full-screen scorebug reads (sports.py
-        _get_layout_offset), so a nudge configured in the web UI now moves
-        the element on the scroll/Vegas card too -- previously the schema
-        advertised these offsets but this renderer ignored them.
-        """
-        try:
-            layout = (self.config or {}).get("customization", {}).get("layout", {})
-            value = (layout.get(element) or {}).get(axis, default)
-            if isinstance(value, bool):
-                return default
-            if isinstance(value, (int, float)):
-                return int(value)
-            if isinstance(value, str):
-                return int(float(value))
-        except (TypeError, ValueError):
-            pass
-        return default
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.scroll_card_option(self.config, key, default)
 
     def _element_color(self, element: str, default: Tuple[int, int, int] = (255, 255, 255)):
-        """Per-element text colour from customization.<element>.text_color."""
-        try:
-            cfg = (self.config or {}).get("customization", {}).get(element, {})
-            value = cfg.get("text_color")
-            if isinstance(value, (list, tuple)) and len(value) == 3:
-                return tuple(max(0, min(255, int(c))) for c in value)
-            if isinstance(value, str) and value.startswith("#") and len(value) == 7:
-                return tuple(int(value[i:i + 2], 16) for i in (1, 3, 5))
-        except (TypeError, ValueError):
-            pass
-        return default
-
-    #: Clear pixels kept between the score and each logo, so the score's
-    #: outermost column cannot land on the logo's first lit column.
-    _SCORE_LOGO_GUTTER_PX: ClassVar[int] = 4
-
-    #: Widest score the centre strip is sized to hold. Two digits a side covers this sport's realistic range.
-    #: The reserve is a fixed width so the strip does not jitter between
-    #: cards, so it has to assume the worst case rather than measure the
-    #: score in hand.
-    _SCORE_PROBE: ClassVar[str] = "00-00"
-
-    def _score_reserve_width(self) -> int:
-        """Centre strip the score actually needs, measured rather than assumed.
-
-        The gap was derived from the card width alone (width x
-        CENTER_GAP_RATIO, clamped to CENTER_GAP_MAX_PX) while the score's size
-        comes from config and the element-style resolver. Nothing compared the
-        two, so any score wider than the clamp was drawn over the logos.
-        Measuring it keeps the strip wide enough for whatever font is in play.
-        """
-        try:
-            probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
-            width = probe.textlength(self._SCORE_PROBE, font=self.fonts['score'])
-            return int(width) + 2 * self._SCORE_LOGO_GUTTER_PX
-        except Exception:
-            self.logger.debug("Score reserve measurement failed", exc_info=True)
-            return 0
-
-    def _center_gap_width(self) -> int:
-        """Width of the middle strip kept clear of logos.
-
-        ``scroll_card.center_gap`` pins it outright; otherwise it scales with
-        the card width between the configurable min and max. 0 restores
-        edge-to-edge logos.
-        """
-        configured = self._scroll_card_option("center_gap")
-        if isinstance(configured, (int, float)) and configured >= 0:
-            return int(configured)
-        ratio = self._scroll_card_option("center_gap_ratio", self.CENTER_GAP_RATIO)
-        low = self._scroll_card_option("center_gap_min", self.CENTER_GAP_MIN_PX)
-        high = self._scroll_card_option("center_gap_max", self.CENTER_GAP_MAX_PX)
-        try:
-            scaled = round(self.display_width * float(ratio))
-            derived = int(max(int(low), min(int(high), scaled)))
-            # A strip narrower than the score is the bug, not a style choice.
-            # An explicit ``center_gap`` is still honoured above, including 0.
-            return max(derived, self._score_reserve_width())
-        except (TypeError, ValueError):
-            return self.CENTER_GAP_MIN_PX
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.element_color(self.config, element, default)
 
     def _logo_slot_width(self) -> int:
         """Per-side logo slot, leaving the center gap clear.
@@ -945,134 +683,28 @@ class GameRenderer:
         return max(8, min(self.display_height, available))
 
     def _upcoming_center_mode(self) -> str:
-        """Middle of an upcoming card: 'vs', 'date_time' or 'none'."""
-        mode = str(self._scroll_card_option("upcoming_center", "vs") or "vs").lower()
-        return mode if mode in ("vs", "date_time", "none") else "vs"
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.upcoming_center_mode(self.config)
 
     def _vs_text(self) -> str:
-        """Separator drawn between the teams -- "VS", "@", "at", anything."""
-        return str(self._scroll_card_option("vs_text", "VS"))
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.vs_text(self.config)
 
     def _format_game_date(self, date_text: str, game: Optional[Dict] = None) -> str:
-        """Format an upcoming card's date per scroll_card.date_format."""
-        raw = str(date_text or "").strip()
-        if not raw:
-            return ""
-        fmt = str(self._scroll_card_option("date_format", "abbrev") or "abbrev")
-        if fmt == "numeric":
-            return raw
-        parts = raw.replace("-", "/").split("/")
-        if not (len(parts) >= 2 and parts[0].strip().isdigit() and parts[1].strip().isdigit()):
-            return raw
-        month, day = int(parts[0]), int(parts[1])
-        if not 1 <= month <= 12:
-            return raw
-        name = self._MONTH_ABBR[month - 1]
-        if fmt == "numeric_day_first":
-            return f"{day}/{month}"
-        if fmt == "day_first":
-            return f"{day} {name}"
-        if fmt == "weekday":
-            weekday = self._weekday_for(game)
-            return f"{weekday} {name} {day}" if weekday else f"{name} {day}"
-        return f"{name} {day}"
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.format_game_date(self.config, self.logger, date_text, game)
 
     def _weekday_for(self, game: Optional[Dict]) -> str:
-        """Weekday abbreviation from the game's start time, or ''."""
-        if not game:
-            return ""
-        raw = game.get("start_time_utc") or game.get("start_time")
-        if not raw:
-            return ""
-        try:
-            start = raw if isinstance(raw, datetime) else datetime.fromisoformat(
-                str(raw).replace("Z", "+00:00"))
-            return self._WEEKDAY_ABBR[start.astimezone(self._card_tzinfo()).weekday()]
-        except (ValueError, TypeError):
-            return ""
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.weekday_for(self.config, self.logger, game)
 
     def _card_tzinfo(self):
-        """Timezone for weekday/24h conversions; falls back to UTC."""
-        configured = (self.config or {}).get("timezone")
-        if configured:
-            try:
-                return ZoneInfo(configured)
-            except (KeyError, ValueError, TypeError, OSError) as exc:
-                # KeyError covers ZoneInfoNotFoundError. A bad zone name in
-                # config should fall back to UTC, not blank the card.
-                self.logger.debug("Unusable timezone %r: %s", configured, exc)
-        return timezone.utc
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.card_tzinfo(self.config, self.logger)
 
     def _format_game_time(self, time_text: str) -> str:
-        """Return the time as-is (12h) or converted to 24h."""
-        raw = str(time_text or "").strip()
-        if not raw or str(self._scroll_card_option("time_format", "12h")) != "24h":
-            return raw
-        cleaned = raw.upper().replace(" ", "")
-        meridiem = "AM" if cleaned.endswith("AM") else "PM" if cleaned.endswith("PM") else ""
-        if not meridiem:
-            return raw
-        try:
-            hh, _, mm = cleaned[:-2].partition(":")
-            hour, minute = int(hh), int(mm or 0)
-        except ValueError:
-            return raw
-        if not (0 <= hour <= 12 and 0 <= minute <= 59):
-            return raw
-        hour = hour % 12 + (12 if meridiem == "PM" else 0)
-        return f"{hour:02d}:{minute:02d}"
-
-    def _draw_upcoming_center(self, draw: "ImageDraw.ImageDraw", game: Dict) -> None:
-        """Draw the middle of an upcoming card.
-
-        Never a score: an upcoming game has not started, so the extractor's
-        0-0 is noise. Either the VS text (default), the date and time stacked,
-        or nothing at all.
-        """
-        mode = self._upcoming_center_mode()
-        if mode == "none":
-            return
-
-        if mode == "vs":
-            vs_text = self._vs_text()
-            if not vs_text:
-                return
-            vs_width = draw.textlength(vs_text, font=self.fonts['score'])
-            vs_x = (self.display_width - vs_width) // 2 + self._layout_offset('score', 'x_offset')
-            vs_y = (self.display_height // 2) - 3 + self._layout_offset('score', 'y_offset')
-            self._draw_text_with_outline(
-                draw, vs_text, (vs_x, vs_y), self.fonts['score'],
-                fill=self._element_color('score_text')
-            )
-            return
-
-        date_text, time_text = self._upcoming_date_and_time(game)
-        lines = []
-        if self._scroll_card_option("show_date", True):
-            lines.append(self._format_game_date(date_text, game))
-        if self._scroll_card_option("show_time", True):
-            lines.append(self._format_game_time(time_text))
-        lines = [t for t in lines if t]
-        if not lines:
-            return
-        font = self.fonts.get('detail') or self.fonts['time']
-        line_h = 7
-        top = (self.display_height // 2) - (len(lines) * line_h) // 2
-        top += self._layout_offset('score', 'y_offset')
-        for i, line in enumerate(lines):
-            width = draw.textlength(line, font=font)
-            x = (self.display_width - width) // 2 + self._layout_offset('score', 'x_offset')
-            self._draw_text_with_outline(
-                draw, line, (x, top + i * line_h), font,
-                fill=self._element_color('detail_text')
-            )
-
-    def _upcoming_date_and_time(self, game: Dict) -> Tuple[str, str]:
-        """(date, time) for an upcoming card, from the extractor's flat keys."""
-        return (
-            str(game.get("game_date", "") or ""),
-            str(game.get("game_time", "") or ""),
-        )
+        """Delegates to src.common.sports_card, shared by every scoreboard."""
+        return _card.format_game_time(self.config, time_text)
 
     def _upcoming_date_time_texts(self, game: Dict):
         """The date and time strings an upcoming card would draw."""
@@ -1082,7 +714,6 @@ class GameRenderer:
         time_text = (self._format_game_time(time_raw)
                      if self._scroll_card_option("show_time", True) else "")
         return date_text, time_text
-
 
     def _draw_upcoming_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw the date and time around an upcoming card.
@@ -1333,6 +964,23 @@ class GameRenderer:
         return any(x < right + 1 and x + width > left - 1
                    for _text, x, width in placements)
 
+    def _odds_color(self) -> Tuple[int, int, int]:
+        """Colour for the odds text; the green it always drew unless configured.
+
+        Guarded with getattr because not every class that reaches
+        _draw_dynamic_odds carries the element-colour helper -- the plugins'
+        own test harnesses build minimal manager objects, and a bare
+        AttributeError here is swallowed by the surrounding except, which
+        drops the odds off the card instead of failing loudly.
+        """
+        getter = getattr(self, "_element_color", None)
+        if getter is None:
+            return (0, 255, 0)
+        try:
+            return getter("odds_text", (0, 255, 0))
+        except Exception:
+            return (0, 255, 0)
+
     def _draw_dynamic_odds(self, draw, odds: Dict, game: Optional[Dict] = None,
                            top_span=_DERIVE_TOP_SPAN) -> None:
         """Draw odds with dynamic positioning based on favored team.
@@ -1391,7 +1039,7 @@ class GameRenderer:
             # soccer and the rest. Odds are drawn hard left and hard right
             # while the inning sits centred, so they only meet on a narrow
             # panel -- and odds_y_offset is there to nudge it when they do.
-            font = self.fonts['detail']
+            font = self.fonts.get('odds') or self.fonts['detail']
 
             # Work out both texts and their spans before drawing either, so the
             # row can be chosen once with full knowledge of what has to fit.
@@ -1441,7 +1089,7 @@ class GameRenderer:
                 odds_y += row
 
             for text, x, _width in placements:
-                self._draw_text_with_outline(draw, text, (x, odds_y), font, fill=(0, 255, 0))
+                self._draw_text_with_outline(draw, text, (x, odds_y), font, fill=self._odds_color())
 
         except Exception:
             self.logger.exception("Error drawing odds")

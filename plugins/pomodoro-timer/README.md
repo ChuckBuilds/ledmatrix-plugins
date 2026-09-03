@@ -153,62 +153,89 @@ durations you configured.
 
 ## Plugin Configuration
 
+Settings are edited in the plugin's tab in the LEDMatrix web UI. The **Field**
+column is the label you see there; the **Key** is the same setting as it appears
+in `config/config.json` under `pomodoro-timer`, which is what you need if you
+edit the file directly or read it back in a log line. The full schema is
+[`config_schema.json`](config_schema.json).
+
 ### Timer
 
-| Field | Default | Description |
-|---|---|---|
-| **Work Session (minutes)** | `25` | Length of a focus session. Also settable live from Home Assistant. |
-| **Short Break (minutes)** | `5` | Break after each work session. |
-| **Long Break (minutes)** | `15` | Break after a full set of work sessions. |
-| **Sessions Before Long Break** | `4` | How many work sessions make a set — this is the number of dots on screen. |
-| **Auto-Start Breaks** | `true` | Roll straight into the break when work ends. Off makes the break wait for a Start/Resume. |
-| **Auto-Start Next Work Session** | `false` | Roll straight back into work when a break ends. Off by default so you decide when to go again. |
-| **Start Timer When Plugin Is Enabled** | `false` | Begin a work session as soon as the plugin loads. Handy without MQTT. |
+| Field | Key | Default | Description |
+|---|---|---|---|
+| *(header toggle)* | `enabled` | `true` | Master switch. It is the toggle in the tab's header rather than a field in the form. Off removes the timer from the rotation entirely. |
+| **Work Session (minutes)** | `work_minutes` | `25` | Length of a focus session (1–180). Also settable live from Home Assistant. |
+| **Short Break (minutes)** | `short_break_minutes` | `5` | Break after each work session (1–60). |
+| **Long Break (minutes)** | `long_break_minutes` | `15` | Break after a full set of work sessions (1–120). |
+| **Sessions Before Long Break** | `sessions_before_long_break` | `4` | How many work sessions make a set (1–12) — this is the number of dots on screen. |
+| **Auto-Start Breaks** | `auto_start_breaks` | `true` | Roll straight into the break when work ends. Off makes the break wait for a Start/Resume. |
+| **Auto-Start Next Work Session** | `auto_start_work` | `false` | Roll straight back into work when a break ends. Off by default so you decide when to go again. |
+| **Start Timer When Plugin Is Enabled** | `auto_start_on_enable` | `false` | Begin a work session as soon as the plugin loads. Handy without MQTT. |
 
 ### MQTT
 
-| Field | Default | Description |
-|---|---|---|
-| **Enable MQTT Control** | `true` | Connect to a broker so the timer can be driven remotely. |
-| **Broker Address** | `localhost` | IP or hostname of your MQTT broker. |
-| **Broker Port** | `1883` | Use 8883 for TLS. |
-| **Username / Password** | *(blank)* | Leave blank for an anonymous broker. |
-| **Command Topic** | `ledmatrix/pomodoro/set` | Everything the plugin publishes is derived from this topic's base. |
-| **State Topic** | `ledmatrix/pomodoro/state` | `ON` while a session is active, `OFF` when idle. |
-| **Enable Home Assistant Auto-Discovery** | `true` | Announce the device to HA over MQTT. |
-| **HA Discovery Prefix** | `homeassistant` | Only change this if you changed it in HA. |
-| **Device Name in Home Assistant** | `LED Matrix — Pomodoro` | How the device is labelled in HA. |
-| **State Publish Interval (seconds)** | `1` | How often the countdown is published while running. Raise it to cut broker traffic — state *changes* are always published immediately. |
+| Field | Key | Default | Description |
+|---|---|---|---|
+| **Enable MQTT Control** | `mqtt_enabled` | `true` | Connect to a broker so the timer can be driven remotely. |
+| **Broker Address** | `mqtt_host` | `localhost` | IP or hostname of your MQTT broker. |
+| **Broker Port** | `mqtt_port` | `1883` | Use 8883 for TLS. |
+| **Username / Password** | `mqtt_username`<br>`mqtt_password` | *(blank)* | Leave blank for an anonymous broker. The password is marked secret, so the web UI masks it. |
+| **Command Topic** | `command_topic` | `ledmatrix/pomodoro/set` | Everything the plugin publishes is derived from this topic's base. |
+| **State Topic** | `state_topic` | `ledmatrix/pomodoro/state` | `ON` while a session is active, `OFF` when idle. |
+| **Enable Home Assistant Auto-Discovery** | `ha_discovery` | `true` | Announce the device to HA over MQTT. |
+| **HA Discovery Prefix** | `discovery_prefix` | `homeassistant` | Only change this if you changed it in HA. |
+| **Device Name in Home Assistant** | `device_name` | `LED Matrix — Pomodoro` | How the device is labelled in HA. |
+| **State Publish Interval (seconds)** | `publish_interval_seconds` | `1` | How often the countdown is published while running (1–60). Raise it to cut broker traffic — state *changes* are always published immediately. |
 
 ### Appearance
 
-| Field | Default | Description |
-|---|---|---|
-| **Countdown Color** | `phase` | `phase` colors the countdown by what's running; `fixed` always uses the Countdown Text Color. |
-| **Colour Theme** | `classic` | `classic` uses the individual phase colours below. `calm` overrides them with a softer palette — warm terracotta, sage, soft indigo. |
-| **Work / Short Break / Long Break Color** | red / green / blue | Phase colors. |
-| **Idle / Paused Color** | grey / amber | Used when nothing is running and when paused. |
-| **How Paused Looks** | `amber` | `amber` switches the countdown to the Paused Colour. `desaturate` keeps the phase's own hue but drains it, so a held timer reads as halted without changing which phase you're in. |
-| **Countdown Text Color** | white | Only used when Countdown Color is `fixed`. |
-| **Background Color** | black | Panel background. |
-| **Countdown Digits** | `seven_segment` | `seven_segment` draws clock-radio style segments sized to the panel. `pixel` uses the display's pixel font. |
-| **Show Unlit Segments** | `false` | Faintly light the unlit segments, like a real LED clock. Authentic, but it costs legibility — every digit gains a faint `8` behind it. Ignored when the stroke is only one pixel wide, where the effect would just be noise. |
-| **Burndown Indicator** | `perimeter` | `perimeter` drains a ring around the edge of the panel; `bar` empties a bar along the bottom; `segments` puts out a row of blocks one at a time; `none` hides it. |
-| **Show Phase Label** | `true` | The phase name above the countdown. |
-| **Show Session Dots** | `true` | One pip per session in the set. Completed are solid, upcoming are hollow, and the one you're in is picked out. |
-| **Pulse the Current Session Dot** | `true` | Slowly blink the pip for the session you're in, so the row reads as "two done, on the third" rather than just a count. |
-| **Work / Short Break / Long Break / Idle / Paused Label** | `FOCUS` / `BREAK` / `LONG BREAK` / `POMODORO` / `PAUSED` | The on-screen text for each state. Blank the Paused Label to keep showing the phase name while paused. |
-| **Font** | *(blank)* | Path to a TTF relative to the LEDMatrix root, e.g. `assets/fonts/PressStart2P-Regular.ttf`. Blank uses the display's default font. |
-| **Font Size (px)** | `0` | Fix the countdown height in pixels. `0` sizes it automatically to the panel. |
+| Field | Key | Default | Description |
+|---|---|---|---|
+| **Countdown Color** | `color_mode` | `phase` | `phase` colors the countdown by what's running; `fixed` always uses the Countdown Text Color. |
+| **Colour Theme** | `color_theme` | `classic` | `classic` uses the individual phase colours below. `calm` overrides them with a softer palette — warm terracotta, sage, soft indigo. |
+| **Work / Short Break / Long Break Color** | `work_color`<br>`short_break_color`<br>`long_break_color` | red / green / blue | Phase colors, each `[r, g, b]`. |
+| **Idle / Paused Color** | `idle_color`<br>`paused_color` | grey / amber | Used when nothing is running and when paused. |
+| **How Paused Looks** | `paused_style` | `amber` | `amber` switches the countdown to the Paused Colour. `desaturate` keeps the phase's own hue but drains it, so a held timer reads as halted without changing which phase you're in. |
+| **Countdown Text Color** | `time_color` | white | Only used when Countdown Color is `fixed`. |
+| **Background Color** | `background_color` | black | Panel background. |
+| **Countdown Digits** | `digit_style` | `seven_segment` | `seven_segment` draws clock-radio style segments sized to the panel. `pixel` uses the display's pixel font. |
+| **Show Unlit Segments** | `show_ghost_segments` | `false` | Faintly light the unlit segments, like a real LED clock. Authentic, but it costs legibility — every digit gains a faint `8` behind it. Ignored when the stroke is only one pixel wide, where the effect would just be noise. |
+| **Burndown Indicator** | `progress_style` | `perimeter` | `perimeter` drains a ring around the edge of the panel; `bar` empties a bar along the bottom; `segments` puts out a row of blocks one at a time; `none` hides it. |
+| **Show Phase Label** | `show_phase_label` | `true` | The phase name above the countdown. |
+| **Show Session Dots** | `show_session_dots` | `true` | One pip per session in the set. Completed are solid, upcoming are hollow, and the one you're in is picked out. |
+| **Pulse the Current Session Dot** | `pulse_active_pip` | `true` | Slowly blink the pip for the session you're in, so the row reads as "two done, on the third" rather than just a count. |
+| **Work / Short Break / Long Break / Idle / Paused Label** | `work_label`<br>`short_break_label`<br>`long_break_label`<br>`idle_label`<br>`paused_label` | `FOCUS` / `BREAK` / `LONG BREAK` / `POMODORO` / `PAUSED` | The on-screen text for each state, up to 24 characters. Blank the Paused Label to keep showing the phase name while paused. |
+| **Font** | `font_path` | *(blank)* | Path to a TTF relative to the LEDMatrix root, e.g. `assets/fonts/PressStart2P-Regular.ttf`. Blank uses the display's default font. |
+| **Font Size (px)** | `font_size` | `0` | Fix the countdown height in pixels. `0` sizes it automatically to the panel. |
 
 ### Behavior
 
-| Field | Default | Description |
-|---|---|---|
-| **Hold the Display While Running** | `true` | Take over the matrix while a session is active instead of rotating. Off lets the timer take a normal turn in the rotation. |
-| **Phase-Change Alert (seconds)** | `8` | How long the timer grabs the display when a phase ends. `0` disables it. |
-| **Flash on Phase Change** | `true` | Flash the panel during that alert. |
-| **Display Duration (seconds)** | `10` | Time on screen per rotation cycle when it isn't holding the display. |
+| Field | Key | Default | Description |
+|---|---|---|---|
+| **Hold the Display While Running** | `pin_while_running` | `true` | Take over the matrix while a session is active instead of rotating. Off lets the timer take a normal turn in the rotation. |
+| **Phase-Change Alert (seconds)** | `alert_seconds` | `8` | How long the timer grabs the display when a phase ends. `0` disables it. |
+| **Flash on Phase Change** | `alert_flash` | `true` | Flash the panel during that alert. |
+| **Display Duration (seconds)** | `display_duration` | `10` | Time on screen per rotation cycle when it isn't holding the display. |
+
+Fine-tuning settings are collected into a collapsed **Advanced Settings**
+section below the main fields in the web UI. They are listed above alongside
+everything else.
+
+### A minimal configuration
+
+```json
+{
+  "pomodoro-timer": {
+    "enabled": true,
+    "work_minutes": 25,
+    "short_break_minutes": 5,
+    "long_break_minutes": 15,
+    "sessions_before_long_break": 4,
+    "mqtt_enabled": true,
+    "mqtt_host": "homeassistant.local"
+  }
+}
+```
 
 ---
 

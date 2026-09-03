@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.39.0",
+  "version": "1.40.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -32,11 +32,32 @@
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
     {
-      "version": "1.39.0",
+      "version": "1.40.0",
       "released": "2026-09-02",
       "ledmatrix_min_version": "3.3.0",
       "notes": "The sports.py logic every scoreboard shares moves to the core. Forty-five method bodies here were byte-identical to the same forty-five in every other scoreboard -- the selection and rotation engine, the font, colour and date subsystem, and the switch-mode upcoming card -- so they now come from src.common.sports_shared and this plugin inherits them. 1041 lines removed here. A fix to any of that now reaches every scoreboard at once instead of needing eight identical edits. Three deliberately stayed behind: _get_timezone, because it binds a per-plugin timezone module whose contents differ, and the two abstract stubs that define what makes this sport its own. Nothing drawn changes -- the bodies moved rather than being rewritten, and all 176 safety-harness renders across the eight plugins are byte-identical to before. The floor rises to 3.3.0, the release that first ships the shared module.",
       "changelog": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage."
+    },
+    {
+      "version": "1.39.0",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "The card helpers move to the core. Twenty methods in this plugin's game_renderer.py were byte-identical to the same twenty in every other scoreboard: the colour pickers, the scroll_card settings lookup, the date and time formatting, the favourite-team rules and the font-size grid snapping. They now live in src.common.sports_card and this plugin delegates to them, so a fix to any of that reaches every scoreboard at once instead of needing eight identical edits, and a new scoreboard gets them by importing one module. 245 lines removed here. Nothing about what is drawn changes: the bodies were moved rather than rewritten, and all 176 safety-harness renders across the eight plugins are byte-identical to before. The floor rises to 3.3.0, the release that first ships the helper. The scroll-card geometry follows it. Nine more methods -- the centre-gap width, the logo slot and its cache key, the layout offsets and the whole upcoming-card date and time layout -- were the same in every scoreboard, and now come from src.common.sports_game_renderer.SportsGameRendererMixin; its own _logo_slot_width and _draw_upcoming_game_status stay behind as overrides. A further 129 lines removed. Again nothing drawn changes: the bodies moved rather than being rewritten, and the renders stay byte-identical.",
+      "changelog": "The card helpers move to the core. Twenty methods in this plugin's game_renderer.py were byte-identical to the same twenty in every other scoreboard: the colour pickers, the scroll_card settings lookup, the date and time formatting, the favourite-team rules and the font-size grid snapping. They now live in src.common.sports_card and this plugin delegates to them, so a fix to any of that reaches every scoreboard at once instead of needing eight identical edits, and a new scoreboard gets them by importing one module. 245 lines removed here. Nothing about what is drawn changes: the bodies were moved rather than rewritten, and all 176 safety-harness renders across the eight plugins are byte-identical to before. The floor rises to 3.3.0, the release that first ships the helper."
+    },
+    {
+      "version": "1.38.0",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "Odds get their own font, size and colour. The betting line and over/under borrowed the detail_text settings, so making them bigger on a large panel also enlarged the team records and the date row, and their green was hard-coded in the drawing call where no setting could reach it. A new customization.odds_text block controls the odds alone, in both the full-screen scorebug and the scroll/Vegas card. Nothing changes unless you set it: the defaults are exactly what was rendered before -- the same 4x6 font at the same size, and the same green -- and a config saved before this setting existed falls back to detail_text, so all 176 safety-harness renders are byte-identical to the previous version. Sizes still snap to the font's pixel grid to stay crisp, so 4x6-font.ttf gives 7, 14 or 21 and press_start gives 8 or 16.",
+      "changelog": "Documentation only, no behaviour change. Rewrites the README around real rendered screenshots and documents every configuration option. Leads with the structural thing that trips people up: almost every setting lives inside a per-league block (mlb/milb/ncaa_baseball), and only nine are plugin-wide, so favorite_teams at the top level does nothing. Explains the three game-selection paths and that upcoming_games_to_show is a per-team budget under show_favorite_teams_only but a total otherwise. Documents the four extra baseball screens (pitcher/batter, last play, player card, traditional scoreboard), all off by default and all costing an extra per-game fetch, and notes show_odds is fetched asynchronously so the line appears a moment after the card is drawn."
+    },
+    {
+      "version": "1.37.2",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "Documentation only, no behaviour change. Rewrites the README around real rendered screenshots and documents every configuration option. Leads with the structural thing that trips people up: almost every setting lives inside a per-league block (mlb/milb/ncaa_baseball), and only nine are plugin-wide, so favorite_teams at the top level does nothing. Explains the three game-selection paths and that upcoming_games_to_show is a per-team budget under show_favorite_teams_only but a total otherwise. Documents the four extra baseball screens (pitcher/batter, last play, player card, traditional scoreboard), all off by default and all costing an extra per-game fetch, and notes show_odds is fetched asynchronously so the line appears a moment after the card is drawn.",
+      "changelog": "Documentation only, no behaviour change. Rewrites the README around real rendered screenshots and documents every configuration option. Leads with the structural thing that trips people up: almost every setting lives inside a per-league block (mlb/milb/ncaa_baseball), and only nine are plugin-wide, so favorite_teams at the top level does nothing. Explains the three game-selection paths and that upcoming_games_to_show is a per-team budget under show_favorite_teams_only but a total otherwise. Documents the four extra baseball screens (pitcher/batter, last play, player card, traditional scoreboard), all off by default and all costing an extra per-game fetch, and notes show_odds is fetched asynchronously so the line appears a moment after the card is drawn."
     },
     {
       "version": "1.37.1",

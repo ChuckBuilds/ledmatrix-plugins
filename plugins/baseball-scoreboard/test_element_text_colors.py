@@ -126,9 +126,18 @@ def main():
                     if "text_color" in v.get("properties", {})}
     defaults = draw_with({"customization": materialised}, "time")
     check("schema defaults render identically to no config", defaults == plain)
+    # odds_text is the one deliberate exception. The betting line and
+    # over/under have always drawn green -- it was hard-coded in the draw call
+    # before the setting existed -- so advertising white would both lie about
+    # the default and change what is rendered the moment the store
+    # materialises it. Green here IS "unset", which is what the check above
+    # actually cares about.
     check("every advertised text_color default is white",
           all(tuple(v["text_color"]) == (255, 255, 255)
-              for v in materialised.values()))
+              for k, v in materialised.items() if k != "odds_text"))
+    check("odds_text advertises the green it has always drawn",
+          tuple(materialised.get("odds_text", {}).get("text_color", (0, 255, 0)))
+          == (0, 255, 0))
 
     # -- 2. a configured colour reaches that element's face -------------------
     cfg = {"customization": {"period_text": {"text_color": list(CYAN)},

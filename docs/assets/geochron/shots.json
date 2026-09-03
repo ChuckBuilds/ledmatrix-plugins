@@ -1,0 +1,524 @@
+{
+  "plugin": "geochron",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T12:00:00+00:00",
+    "config": {
+      "enabled": true,
+      "timezone": "America/New_York"
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "width": 256,
+      "height": 128,
+      "scale": 4
+    },
+    {
+      "name": "term-bands",
+      "config": {
+        "show_terminator_bands": true
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "term-hard",
+      "config": {
+        "show_terminator_bands": false
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "night-02",
+      "config": {
+        "night_brightness": 0.2
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "night-05",
+      "config": {
+        "night_brightness": 0.5
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "night-10",
+      "config": {
+        "night_brightness": 1.0
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "night-00",
+      "config": {
+        "night_brightness": 0.0
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "grid-15",
+      "config": {
+        "show_grid": true,
+        "graticule_step_deg": 15
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "grid-30",
+      "config": {
+        "show_grid": true,
+        "graticule_step_deg": 30
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "grid-45",
+      "config": {
+        "show_grid": true,
+        "graticule_step_deg": 45
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "grid-90",
+      "config": {
+        "show_grid": true,
+        "graticule_step_deg": 90
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "grid-off",
+      "config": {
+        "show_grid": false
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "markers-all",
+      "config": {
+        "show_sun_marker": true,
+        "show_cities": true
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "markers-sun",
+      "config": {
+        "show_sun_marker": true,
+        "show_cities": false
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "markers-city",
+      "config": {
+        "show_sun_marker": false,
+        "show_cities": true
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "markers-none",
+      "config": {
+        "show_sun_marker": false,
+        "show_cities": false
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "clock-24",
+      "config": {
+        "clock_format": "24h",
+        "show_seconds": true
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "clock-12",
+      "config": {
+        "clock_format": "12h",
+        "show_seconds": true
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "clock-nosec",
+      "config": {
+        "clock_format": "24h",
+        "show_seconds": false
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "clock-off",
+      "config": {
+        "show_digital_clock": false
+      },
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "season-mar",
+      "freeze_time": "2026-03-20T12:00:00+00:00",
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "season-jun",
+      "freeze_time": "2026-06-21T12:00:00+00:00",
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "season-sep",
+      "freeze_time": "2026-09-22T12:00:00+00:00",
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "season-dec",
+      "freeze_time": "2026-12-21T12:00:00+00:00",
+      "standalone": false,
+      "width": 256,
+      "height": 128,
+      "scale": 3
+    },
+    {
+      "name": "p-64x32",
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "p-128x32",
+      "width": 128,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "p-128x64",
+      "width": 128,
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "p-256x128",
+      "width": 256,
+      "height": 128,
+      "scale": 3,
+      "standalone": false
+    },
+    {
+      "name": "centre-auto",
+      "width": 64,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "centre-0",
+      "config": {
+        "map_center_longitude": 0
+      },
+      "width": 64,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "centre-neg",
+      "config": {
+        "map_center_longitude": -100
+      },
+      "width": 64,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "centre-pos",
+      "config": {
+        "map_center_longitude": 140
+      },
+      "width": 64,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "terminator",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "term-bands",
+          "label": "show_terminator_bands: true",
+          "sublabel": "the default; civil, nautical and astronomical twilight blend into night"
+        },
+        {
+          "shot": "term-hard",
+          "label": "show_terminator_bands: false",
+          "sublabel": "a hard day/night line"
+        }
+      ]
+    },
+    {
+      "name": "night-brightness",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "night-00",
+          "label": "night_brightness: 0.0",
+          "sublabel": "the night side goes black"
+        },
+        {
+          "shot": "night-02",
+          "label": "night_brightness: 0.2",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "night-05",
+          "label": "night_brightness: 0.5",
+          "sublabel": "land still readable at night"
+        },
+        {
+          "shot": "night-10",
+          "label": "night_brightness: 1.0",
+          "sublabel": "no darkening at all; only the tint remains"
+        }
+      ]
+    },
+    {
+      "name": "graticule",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "grid-15",
+          "label": "graticule_step_deg: 15",
+          "sublabel": "one line per hour of longitude"
+        },
+        {
+          "shot": "grid-30",
+          "label": "graticule_step_deg: 30",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "grid-45",
+          "label": "graticule_step_deg: 45",
+          "sublabel": ""
+        },
+        {
+          "shot": "grid-90",
+          "label": "graticule_step_deg: 90",
+          "sublabel": "equator and prime meridian only"
+        },
+        {
+          "shot": "grid-off",
+          "label": "show_grid: false",
+          "sublabel": "no graticule"
+        }
+      ]
+    },
+    {
+      "name": "markers",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "markers-all",
+          "label": "Both (the default)",
+          "sublabel": "subsolar point in yellow, cities in red"
+        },
+        {
+          "shot": "markers-sun",
+          "label": "show_cities: false",
+          "sublabel": "just the subsolar point"
+        },
+        {
+          "shot": "markers-city",
+          "label": "show_sun_marker: false",
+          "sublabel": "just the cities"
+        },
+        {
+          "shot": "markers-none",
+          "label": "Neither",
+          "sublabel": "the bare map"
+        }
+      ]
+    },
+    {
+      "name": "clock",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "clock-24",
+          "label": "24h with seconds",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "clock-12",
+          "label": "clock_format: 12h",
+          "sublabel": ""
+        },
+        {
+          "shot": "clock-nosec",
+          "label": "show_seconds: false",
+          "sublabel": "a shorter readout"
+        },
+        {
+          "shot": "clock-off",
+          "label": "show_digital_clock: false",
+          "sublabel": "map only"
+        }
+      ]
+    },
+    {
+      "name": "seasons",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "season-mar",
+          "label": "20 March",
+          "sublabel": "equinox: the terminator runs pole to pole"
+        },
+        {
+          "shot": "season-jun",
+          "label": "21 June",
+          "sublabel": "northern solstice: the Arctic is in full daylight"
+        },
+        {
+          "shot": "season-sep",
+          "label": "22 September",
+          "sublabel": "equinox again, tilted the other way through the year"
+        },
+        {
+          "shot": "season-dec",
+          "label": "21 December",
+          "sublabel": "southern solstice: the Antarctic never sets"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "p-64x32",
+          "label": "64 x 32",
+          "sublabel": "a slice of the map, centred on your timezone"
+        },
+        {
+          "shot": "p-128x32",
+          "label": "128 x 32",
+          "sublabel": "the common two-panel chain"
+        },
+        {
+          "shot": "p-128x64",
+          "label": "128 x 64",
+          "sublabel": "most of the globe"
+        },
+        {
+          "shot": "p-256x128",
+          "label": "256 x 128",
+          "sublabel": "the full 360 degrees, which is what this plugin wants"
+        }
+      ]
+    },
+    {
+      "name": "map-centre",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "centre-auto",
+          "label": "auto (null)",
+          "sublabel": "derived from your timezone"
+        },
+        {
+          "shot": "centre-0",
+          "label": "map_center_longitude: 0",
+          "sublabel": "Greenwich"
+        },
+        {
+          "shot": "centre-neg",
+          "label": "-100",
+          "sublabel": "North America"
+        },
+        {
+          "shot": "centre-pos",
+          "label": "140",
+          "sublabel": "East Asia and Australia"
+        }
+      ]
+    }
+  ]
+}

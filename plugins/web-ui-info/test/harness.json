@@ -1,5 +1,5 @@
 {
-  "_comment": "Harness config for the web-UI info panel. The rendered address line contains the host machine's IP, which differs per machine, so this plugin ships no golden images — the harness still exercises crash/overflow checks on every panel size deterministically enough (layout is fixed; only the digits vary).",
+  "_comment": "Harness config for the web-UI info panel. The rendered address line carries the host machine's own hostname (and, once it rotates, its IP), both of which differ per machine, so this plugin ships no golden images -- the harness still exercises crash and overflow checks on every panel size. Reproducible screenshots live in docs/assets/web-ui-info, where the renderer pins the hostname.",
   "config": {
     "enabled": true
   }

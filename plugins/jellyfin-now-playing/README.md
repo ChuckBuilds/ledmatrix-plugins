@@ -3,6 +3,13 @@
 Shows what's currently playing on your Jellyfin media server: the poster on the
 left, with the title, a subtitle, and a playback progress bar on the right.
 
+![A movie playing on a 128x32 panel: poster on the left, title and user name on
+the right, with a partly filled progress bar](../../docs/assets/jellyfin-now-playing/hero.png)
+
+*Every image in this README is real plugin output, rendered at the true panel
+size against a recorded Jellyfin response and scaled up so the pixels stay
+pixels. The poster art in them is generated, not real cover art.*
+
 - **Movies** show the movie poster with the title and the watching user's name.
 - **TV episodes** show the *series* poster with the episode title and series name.
 - **Music** shows the album art with the track title and artist.
@@ -10,8 +17,17 @@ left, with the title, a subtitle, and a playback progress bar on the right.
 - The progress bar moves smoothly between polls and turns **amber with a ⏸
   indicator** while playback is paused.
 - When nothing is playing, a dim "Nothing Playing" screen is shown.
-- Works on all supported panel sizes (64×32, 128×32, 128×64, 256×32). Wide and
-  tall panels also get a `position / duration` time readout.
+- Works on all supported panel sizes. Wide and tall panels also get a
+  `position / duration` time readout.
+
+![The three content types side by side](../../docs/assets/jellyfin-now-playing/content-types.png)
+
+The subtitle row is what changes between them: a movie shows who is watching,
+an episode shows its series, and a track shows its artist.
+
+![Playing, paused, and nothing playing](../../docs/assets/jellyfin-now-playing/playback-states.png)
+
+![The same session on four panel sizes](../../docs/assets/jellyfin-now-playing/panel-sizes.png)
 
 ## Setup
 
@@ -46,7 +62,48 @@ Until both are set, the panel shows `Jellyfin: Set URL/API Key`.
 | `scroll_enabled` | `true` | Marquee-scroll text that doesn't fit |
 | `scroll_speed` | `5` | Frames per one-character scroll step; higher is slower (advanced) |
 | `scroll_separator` | `"   "` | Gap text between marquee repetitions (advanced) |
-| `customization` | — | Fonts, sizes, and colors for the title, subtitle, and progress bar |
+| `progress_bar_match_text` | `true` | Size the bar to the text rather than the whole text area (advanced) — see below |
+
+### Fonts and colors
+
+These live under `customization` in `config.json`, and under **Display
+Customization** in the web UI.
+
+| Key | Default | Description |
+|---|---|---|
+| `customization.title_text.font` | `5by7.regular.ttf` | Font for the media title (advanced) |
+| `customization.title_text.font_size` | `7` | Title height in pixels, 4–16 (advanced) |
+| `customization.title_text.text_color` | `[255, 255, 255]` | Title color |
+| `customization.subtitle_text.font` | `4x6-font.ttf` | Font for the subtitle and the time readout (advanced) |
+| `customization.subtitle_text.font_size` | `6` | Subtitle height in pixels, 4–16 (advanced) |
+| `customization.subtitle_text.text_color` | `[170, 170, 170]` | Subtitle color |
+| `customization.progress_bar.bar_color` | `[124, 77, 255]` | Filled portion of the bar. Ignored while paused, when the bar is amber |
+| `customization.progress_bar.background_color` | `[40, 40, 40]` | Unfilled portion of the bar |
+
+Five fonts are offered. Three are TrueType and work at every size in the 4–16
+range; two are `.bdf` bitmap faces, which exist at exactly one size each:
+
+| Font | Kind | Sizes |
+|---|---|---|
+| `5by7.regular.ttf` | TrueType | any |
+| `4x6-font.ttf` | TrueType | any |
+| `PressStart2P-Regular.ttf` | TrueType | any |
+| `5x7.bdf` | bitmap | 7 only |
+| `4x6.bdf` | bitmap | 6 only |
+
+Picking a bitmap font at a size it does not have used to fall back to a much
+smaller built-in font with only a log warning. It now loads at the font's own
+size instead, so the **Font Size** setting is simply ignored for those two.
+
+### Progress bar width
+
+`progress_bar_match_text` decides how far the bar runs. It matters most on a
+wide panel, where a short title otherwise leaves a bar stretched across the
+whole display:
+
+![The bar matching the text versus spanning the text area](../../docs/assets/jellyfin-now-playing/progress-bar-width.png)
+
+A title long enough to scroll fills the bar either way.
 
 ## Multiple sessions
 

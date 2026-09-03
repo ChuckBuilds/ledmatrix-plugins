@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.21.0",
+  "version": "1.22.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -19,11 +19,32 @@
   ],
   "versions": [
     {
-      "version": "1.21.0",
+      "version": "1.22.0",
       "released": "2026-09-02",
       "ledmatrix_min_version": "3.3.0",
       "notes": "The sports.py logic every scoreboard shares moves to the core. Forty-five method bodies here were byte-identical to the same forty-five in every other scoreboard -- the selection and rotation engine, the font, colour and date subsystem, and the switch-mode upcoming card -- so they now come from src.common.sports_shared and this plugin inherits them. 1038 lines removed here. A fix to any of that now reaches every scoreboard at once instead of needing eight identical edits. Three deliberately stayed behind: _get_timezone, because it binds a per-plugin timezone module whose contents differ, and the two abstract stubs that define what makes this sport its own. Nothing drawn changes -- the bodies moved rather than being rewritten, and all 176 safety-harness renders across the eight plugins are byte-identical to before. The floor rises to 3.3.0, the release that first ships the shared module.",
       "changelog": "Documentation only, no behaviour change. Rewrites the README around real rendered screenshots of the 2026 finals series and documents every configuration option. Writes down the game-selection logic in full: the three selection paths, and that upcoming_games_to_show/recent_games_to_show mean a per-team budget under show_favorite_teams_only but a total otherwise. Records four verified dead ends so they stop costing people time: show_odds is a no-op for AFL because ESPN publishes no odds block for the league (though it still issues one odds request per selected game), show_ranking has no poll to draw, dynamic_duration.min_duration_seconds is never read, and background_service.max_workers is ignored in favour of a single worker. Also corrects README defaults that had drifted from the schema (show_favorite_teams_only, display_duration, show_odds)."
+    },
+    {
+      "version": "1.21.0",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "The card helpers move to the core. Twenty methods in this plugin's game_renderer.py were byte-identical to the same twenty in every other scoreboard: the colour pickers, the scroll_card settings lookup, the date and time formatting, the favourite-team rules and the font-size grid snapping. They now live in src.common.sports_card and this plugin delegates to them, so a fix to any of that reaches every scoreboard at once instead of needing eight identical edits, and a new scoreboard gets them by importing one module. 245 lines removed here. Nothing about what is drawn changes: the bodies were moved rather than rewritten, and all 176 safety-harness renders across the eight plugins are byte-identical to before. The floor rises to 3.3.0, the release that first ships the helper. The scroll-card geometry follows it. Nine more methods -- the centre-gap width, the logo slot and its cache key, the layout offsets and the whole upcoming-card date and time layout -- were the same in every scoreboard, and now come from src.common.sports_game_renderer.SportsGameRendererMixin; only _SCORE_PROBE stays behind, since this league reaches three digits a side. A further 196 lines removed. Again nothing drawn changes: the bodies moved rather than being rewritten, and the renders stay byte-identical.",
+      "changelog": "The card helpers move to the core. Twenty methods in this plugin's game_renderer.py were byte-identical to the same twenty in every other scoreboard: the colour pickers, the scroll_card settings lookup, the date and time formatting, the favourite-team rules and the font-size grid snapping. They now live in src.common.sports_card and this plugin delegates to them, so a fix to any of that reaches every scoreboard at once instead of needing eight identical edits, and a new scoreboard gets them by importing one module. 245 lines removed here. Nothing about what is drawn changes: the bodies were moved rather than rewritten, and all 176 safety-harness renders across the eight plugins are byte-identical to before. The floor rises to 3.3.0, the release that first ships the helper."
+    },
+    {
+      "version": "1.20.0",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "Odds get their own font, size and colour. The betting line and over/under borrowed the detail_text settings, so making them bigger on a large panel also enlarged the team records and the date row, and their green was hard-coded in the drawing call where no setting could reach it. A new customization.odds_text block controls the odds alone, in both the full-screen scorebug and the scroll/Vegas card. Nothing changes unless you set it: the defaults are exactly what was rendered before -- the same 4x6 font at the same size, and the same green -- and a config saved before this setting existed falls back to detail_text, so all 176 safety-harness renders are byte-identical to the previous version. Sizes still snap to the font's pixel grid to stay crisp, so 4x6-font.ttf gives 7, 14 or 21 and press_start gives 8 or 16.",
+      "changelog": "Documentation only. Fills gaps left by the previous README rewrite. Documents other_games_min_quality and other_games_divisions, which the rewrite dropped entirely, and records that both are inert in this league: 'ranked' needs a national poll the AFL does not publish, and the divisions filter needs ESPN's FBS/FCS group rosters, which exist for college football and nothing else. Adds that both filters fail open and that favourites are never filtered by either. Corrects the framing of upcoming_games_to_show: it is a pool the panel cycles through one card at a time, so raising it makes any one game come round less often, not more. Restores the debug-logging tip for finding team abbreviations and a manual-installation section."
+    },
+    {
+      "version": "1.19.3",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "Documentation only. Fills gaps left by the previous README rewrite. Documents other_games_min_quality and other_games_divisions, which the rewrite dropped entirely, and records that both are inert in this league: 'ranked' needs a national poll the AFL does not publish, and the divisions filter needs ESPN's FBS/FCS group rosters, which exist for college football and nothing else. Adds that both filters fail open and that favourites are never filtered by either. Corrects the framing of upcoming_games_to_show: it is a pool the panel cycles through one card at a time, so raising it makes any one game come round less often, not more. Restores the debug-logging tip for finding team abbreviations and a manual-installation section.",
+      "changelog": "Documentation only. Fills gaps left by the previous README rewrite. Documents other_games_min_quality and other_games_divisions, which the rewrite dropped entirely, and records that both are inert in this league: 'ranked' needs a national poll the AFL does not publish, and the divisions filter needs ESPN's FBS/FCS group rosters, which exist for college football and nothing else. Adds that both filters fail open and that favourites are never filtered by either. Corrects the framing of upcoming_games_to_show: it is a pool the panel cycles through one card at a time, so raising it makes any one game come round less often, not more. Restores the debug-logging tip for finding team abbreviations and a manual-installation section."
     },
     {
       "version": "1.19.2",

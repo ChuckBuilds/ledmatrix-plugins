@@ -1,0 +1,304 @@
+{
+  "plugin": "text-display",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T16:00:00+00:00",
+    "config": {
+      "enabled": true
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "config": {
+        "scroll": false,
+        "text": "Subscribe to ChuckBuilds",
+        "font_mode": "auto"
+      }
+    },
+    {
+      "name": "mode-manual-long",
+      "config": {
+        "scroll": false,
+        "text": "Subscribe to ChuckBuilds",
+        "font_mode": "manual"
+      },
+      "standalone": false
+    },
+    {
+      "name": "mode-auto-long",
+      "config": {
+        "scroll": false,
+        "text": "Subscribe to ChuckBuilds",
+        "font_mode": "auto"
+      },
+      "standalone": false
+    },
+    {
+      "name": "mode-manual-short",
+      "config": {
+        "scroll": false,
+        "text": "HELLO",
+        "font_mode": "manual"
+      },
+      "standalone": false
+    },
+    {
+      "name": "mode-auto-short",
+      "config": {
+        "scroll": false,
+        "text": "HELLO",
+        "font_mode": "auto"
+      },
+      "standalone": false
+    },
+    {
+      "name": "size-6",
+      "config": {
+        "scroll": false,
+        "text": "Subscribe to ChuckBuilds",
+        "font_size": 6
+      },
+      "standalone": false
+    },
+    {
+      "name": "size-8",
+      "config": {
+        "scroll": false,
+        "text": "Subscribe to ChuckBuilds",
+        "font_size": 8
+      },
+      "standalone": false
+    },
+    {
+      "name": "size-12",
+      "config": {
+        "scroll": false,
+        "text": "Subscribe to ChuckBuilds",
+        "font_size": 12
+      },
+      "standalone": false
+    },
+    {
+      "name": "size-16",
+      "config": {
+        "scroll": false,
+        "text": "Subscribe to ChuckBuilds",
+        "font_size": 16
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-white",
+      "config": {
+        "scroll": false,
+        "text": "READY",
+        "font_mode": "auto"
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-amber",
+      "config": {
+        "scroll": false,
+        "text": "READY",
+        "font_mode": "auto",
+        "text_color": [
+          255,
+          176,
+          0
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-green",
+      "config": {
+        "scroll": false,
+        "text": "READY",
+        "font_mode": "auto",
+        "text_color": [
+          0,
+          255,
+          120
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-invert",
+      "config": {
+        "scroll": false,
+        "text": "READY",
+        "font_mode": "auto",
+        "text_color": [
+          0,
+          0,
+          0
+        ],
+        "background_color": [
+          255,
+          60,
+          60
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "size-64x32",
+      "config": {
+        "scroll": false,
+        "text": "Subscribe to ChuckBuilds",
+        "font_mode": "auto"
+      },
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "config": {
+        "scroll": false,
+        "text": "Subscribe to ChuckBuilds",
+        "font_mode": "auto"
+      },
+      "width": 128,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "config": {
+        "scroll": false,
+        "text": "Subscribe to ChuckBuilds",
+        "font_mode": "auto"
+      },
+      "width": 128,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "config": {
+        "scroll": false,
+        "text": "Subscribe to ChuckBuilds",
+        "font_mode": "auto"
+      },
+      "width": 256,
+      "height": 32,
+      "scale": 4,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "font-mode",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "mode-manual-long",
+          "label": "manual, long text",
+          "sublabel": "font_size 8; the text runs off both edges"
+        },
+        {
+          "shot": "mode-auto-long",
+          "label": "auto, long text",
+          "sublabel": "shrunk to fit the panel exactly"
+        },
+        {
+          "shot": "mode-manual-short",
+          "label": "manual, short text",
+          "sublabel": "stays at font_size 8"
+        },
+        {
+          "shot": "mode-auto-short",
+          "label": "auto, short text",
+          "sublabel": "grown to fill the panel"
+        }
+      ]
+    },
+    {
+      "name": "font-size",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-6",
+          "label": "font_size: 6",
+          "sublabel": "more characters fit before overflow"
+        },
+        {
+          "shot": "size-8",
+          "label": "font_size: 8",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "size-12",
+          "label": "font_size: 12",
+          "sublabel": ""
+        },
+        {
+          "shot": "size-16",
+          "label": "font_size: 16",
+          "sublabel": "only a few characters remain on-panel"
+        }
+      ]
+    },
+    {
+      "name": "colors",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "col-white",
+          "label": "[255, 255, 255]",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "col-amber",
+          "label": "[255, 176, 0]",
+          "sublabel": "amber"
+        },
+        {
+          "shot": "col-green",
+          "label": "[0, 255, 120]",
+          "sublabel": "green"
+        },
+        {
+          "shot": "col-invert",
+          "label": "black on red",
+          "sublabel": "text_color [0,0,0], background_color [255,60,60]"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32",
+          "sublabel": "auto mode shrinks hard to fit"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32",
+          "sublabel": "the common two-panel chain"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64",
+          "sublabel": "extra height lets auto pick a taller face"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32",
+          "sublabel": "a long chain; auto uses the width"
+        }
+      ]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "id": "news",
   "name": "News Ticker",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
   "author": "ChuckBuilds",
   "category": "content",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/news",
   "versions": [
+    {
+      "version": "1.4.0",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Make every font in the picker work, and document every setting. Three of the six font faces rendered identically to the default: cozette.bdf has no font file anywhere, and both .bdf faces failed because a bitmap font exists at exactly one pixel size while the loader asked for font_size. Bitmap faces are now loaded at the size the file's PIXEL_SIZE header declares, and cozette.bdf is removed from the pickers -- the same fix already landed for clock-simple, which shared this code. Verified by hashing renders: before, four of six were the same image; after, all five remaining faces are distinct. The README is rewritten around real recorded ESPN headlines and covers all 31 settings, including that a fresh install shows nothing because enabled_feeds is empty by default, and that font_size is the first thing to lower if the ticker reads as a stream of letters rather than a headline."
+    },
     {
       "version": "1.3.2",
       "released": "2026-08-14",
@@ -94,7 +100,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-08-05",
+  "last_updated": "2026-09-02",
   "verified": true,
   "screenshot": "",
   "display_modes": [

@@ -1,0 +1,54 @@
+{
+  "plugin": "calendar",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T14:05:00+00:00",
+    "skip_update": true,
+    "config": {
+      "enabled": true
+    },
+    "attrs": {
+      "events": [
+        {"summary": "Team Standup",
+         "start": {"dateTime": "2026-09-03T09:30:00+00:00"}}
+      ]
+    }
+  },
+  "shots": [
+    { "name": "hero" },
+    { "name": "timed", "standalone": false },
+    { "name": "all-day", "standalone": false,
+      "attrs": { "events": [{"summary": "Ada's Birthday", "start": {"date": "2026-09-05"}}] } },
+    { "name": "long-title", "standalone": false,
+      "attrs": { "events": [{"summary": "Quarterly Planning Review With Engineering", "start": {"dateTime": "2026-09-04T13:00:00+00:00"}}] } },
+    { "name": "no-events", "standalone": false, "attrs": { "events": [] } },
+    { "name": "size-64x32", "width": 64, "standalone": false },
+    { "name": "size-128x32", "width": 128, "standalone": false },
+    { "name": "size-128x64", "width": 128, "height": 64, "standalone": false },
+    { "name": "size-256x32", "width": 256, "standalone": false }
+  ],
+  "composites": [
+    {
+      "name": "event-kinds",
+      "columns": 1,
+      "cells": [
+        {"shot": "timed", "label": "Timed event", "sublabel": "date, then start time"},
+        {"shot": "all-day", "label": "All-day event", "sublabel": "date, then \"All Day\""},
+        {"shot": "long-title", "label": "Long title", "sublabel": "wraps, then ellipsizes"},
+        {"shot": "no-events", "label": "Nothing upcoming"}
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {"shot": "size-64x32", "label": "64 x 32"},
+        {"shot": "size-128x32", "label": "128 x 32"},
+        {"shot": "size-128x64", "label": "128 x 64"},
+        {"shot": "size-256x32", "label": "256 x 32"}
+      ]
+    }
+  ]
+}

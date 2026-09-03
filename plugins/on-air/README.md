@@ -2,6 +2,12 @@
 
 A retro broadcast tally light for your LED matrix. Publish a single MQTT message to take over the display with a bold "ON AIR" sign — it holds until you send the off command, so it works as a persistent do-not-disturb signal during calls, recordings, or livestreams. Text, text color, and background color are all customizable.
 
+![The ON AIR sign on a 128x32 panel: white PressStart2P lettering filling a
+broadcast-red field](../../docs/assets/on-air/hero.png)
+
+*Every image in this README is real plugin output, rendered at the true panel
+size and scaled up so the pixels stay pixels.*
+
 ---
 
 ## Table of Contents
@@ -49,23 +55,58 @@ mosquitto_pub -h <your-broker-ip> -t ledmatrix/on-air/set -m OFF
 
 ## Plugin Configuration
 
-| Field | Default | Description |
-|---|---|---|
-| **Sign Text** | `ON AIR` | Text shown when activated (max 32 chars). Overridable per-message via JSON. |
-| **Text Color** | `[255, 255, 255]` | RGB color of the sign text. |
-| **Background Color** | `[200, 10, 10]` | RGB background color — broadcast red by default. |
-| **Font** | *(blank)* | Path to a TTF font relative to the LEDMatrix root (e.g. `assets/fonts/PressStart2P-Regular.ttf`). Blank uses the default font, auto-sized to 80% of display height. |
-| **Font Size (px)** | `0` | Font height in pixels when a custom Font is set. `0` auto-sizes to 80% of display height. |
-| **MQTT Broker Host** | `localhost` | IP or hostname of your MQTT broker. |
-| **MQTT Port** | `1883` | Broker port (use 8883 for TLS). |
-| **MQTT Username** | *(blank)* | Leave blank if no auth required. |
-| **MQTT Password** | *(blank)* | Leave blank if no auth required. |
-| **Command Topic** | `ledmatrix/on-air/set` | Topic the plugin **subscribes** to (publish `ON`/`OFF` or JSON). |
-| **State Topic** | `ledmatrix/on-air/state` | Topic the plugin **publishes** to after each state change. |
-| **Enable Home Assistant Auto-Discovery** | `true` | Announce to HA via MQTT discovery so it auto-creates the device (switch, label sensor, connectivity) — no `configuration.yaml` needed. |
-| **HA Discovery Prefix** | `homeassistant` | MQTT topic prefix your HA MQTT integration listens on. |
-| **Device Name in Home Assistant** | `LED Matrix — On Air` | How the device appears under Settings → Devices & Services → MQTT. |
-| **Display Duration (seconds)** | `5` | How long the sign stays on screen each rotation cycle while active (1–60). |
+Settings are edited in the plugin's tab in the LEDMatrix web UI. **Field** is the
+label shown there; **Key** is the same setting as it appears in
+`config/config.json` under `on-air`, which is what you need when editing the file
+directly. The full schema is [`config_schema.json`](config_schema.json).
+
+| Field | Key | Default | Description |
+|---|---|---|---|
+| *(header toggle)* | `enabled` | `true` | Master switch, shown as the toggle in the tab header rather than a field in the form. |
+| **Sign Text** | `default_label` | `ON AIR` | Text shown when activated (up to 32 characters). Overridable per-message via JSON. |
+| **Text Color** | `text_color` | `[255, 255, 255]` | RGB color of the sign text. |
+| **Background Color** | `background_color` | `[200, 10, 10]` | RGB background color — broadcast red by default. |
+| **Font** | `font_path` | *(blank)* | Path to a TTF font relative to the LEDMatrix root (e.g. `assets/fonts/PressStart2P-Regular.ttf`). Blank auto-selects one from the LEDMatrix assets folder, sized to 80% of display height. |
+| **Font Size (px)** | `font_size` | `0` | Font height in pixels when a custom Font is set. `0` auto-sizes to 80% of display height. |
+| **MQTT Broker Host** | `mqtt_host` | `localhost` | IP or hostname of your MQTT broker. |
+| **MQTT Port** | `mqtt_port` | `1883` | Broker port (use 8883 for TLS). |
+| **MQTT Username** | `mqtt_username` | *(blank)* | Leave blank if no auth required. |
+| **MQTT Password** | `mqtt_password` | *(blank)* | Leave blank if no auth required. Marked secret, so the web UI masks it. |
+| **Command Topic** | `command_topic` | `ledmatrix/on-air/set` | Topic the plugin **subscribes** to (publish `ON`/`OFF` or JSON). |
+| **State Topic** | `state_topic` | `ledmatrix/on-air/state` | Topic the plugin **publishes** to after each state change. |
+| **Enable Home Assistant Auto-Discovery** | `ha_discovery` | `true` | Announce to HA via MQTT discovery so it auto-creates the device (switch, label sensor, connectivity) — no `configuration.yaml` needed. |
+| **HA Discovery Prefix** | `discovery_prefix` | `homeassistant` | MQTT topic prefix your HA MQTT integration listens on. |
+| **Device Name in Home Assistant** | `device_name` | `LED Matrix — On Air` | How the device appears under Settings → Devices & Services → MQTT. |
+| **Display Duration (seconds)** | `display_duration` | `5` | How long the sign stays on screen each rotation cycle while active (1–60). |
+
+```json
+{
+  "on-air": {
+    "enabled": true,
+    "default_label": "ON AIR",
+    "background_color": [200, 10, 10],
+    "mqtt_host": "homeassistant.local"
+  }
+}
+```
+
+### What the two states look like
+
+![The sign on and off](../../docs/assets/on-air/on-off.png)
+
+**ON** pins the display: the sign holds the panel and your other plugins do not
+get a turn until an off command arrives. **OFF** renders a plain black frame
+rather than dropping out of the rotation — the display duration cycles past it
+almost instantly, and it avoids the display controller briefly falling back to
+its "Initializing" screen while the stop request is processed.
+
+### Sizing
+
+The sign auto-sizes: the font is loaded at 80% of the panel height, then scaled
+down if the text would be wider than 95% of the panel. A longer label therefore
+comes out smaller rather than clipped.
+
+![The same sign on four panel sizes](../../docs/assets/on-air/panel-sizes.png)
 
 ---
 
@@ -95,7 +136,7 @@ Case-insensitive. Any of these work.
 {"state": "on", "label": "LIVE"}
 ```
 
-The label (max 16 chars) replaces "ON AIR" on the display. On panels 128 px wide or larger, "ON AIR" appears as the header with your label as a subtitle below it.
+The label replaces the sign text entirely — "ON AIR" is not kept as a header, and the label is not truncated. It is drawn on its own, centred, at whatever size fits the panel, so a long label simply comes out smaller. It lasts until the next command; an `ON` with no label restores the configured **Sign Text**.
 
 ### JSON — state + label + color
 
@@ -113,6 +154,16 @@ The label (max 16 chars) replaces "ON AIR" on the display. On panels 128 px wide
 | In a meeting / call | `[255, 140, 0]` — amber |
 | Livestreaming | `[255, 0, 80]` — hot pink |
 | Do Not Disturb | `[180, 0, 180]` — purple |
+
+![The four background presets](../../docs/assets/on-air/presets.png)
+
+> **`bg` sets the sign; `color` sets only the lettering.** They are easy to mix
+> up, and the result is very different:
+>
+> ![The same label sent with color versus bg](../../docs/assets/on-air/color-vs-bg.png)
+>
+> If you want an amber sign, send `bg`. Sending `color` leaves the background at
+> its configured red and just tints the text.
 
 ---
 
@@ -333,13 +384,13 @@ action:
       payload: >
         {% set mode = trigger.to_state.state %}
         {% if mode == 'Recording' %}
-          {"state": "on", "label": "RECORDING", "color": [255, 20, 20]}
+          {"state": "on", "label": "RECORDING", "bg": [255, 20, 20]}
         {% elif mode == 'Meeting' %}
-          {"state": "on", "label": "IN MEETING", "color": [255, 140, 0]}
+          {"state": "on", "label": "IN MEETING", "bg": [255, 140, 0]}
         {% elif mode == 'Livestream' %}
-          {"state": "on", "label": "LIVE", "color": [255, 0, 80]}
+          {"state": "on", "label": "LIVE", "bg": [255, 0, 80]}
         {% elif mode == 'Focus' %}
-          {"state": "on", "label": "DO NOT DISTURB", "color": [180, 0, 180]}
+          {"state": "on", "label": "DO NOT DISTURB", "bg": [180, 0, 180]}
         {% else %}
           OFF
         {% endif %}
@@ -379,13 +430,13 @@ action:
         {% if s == 'Off' %}
           OFF
         {% elif s == 'On Air' %}
-          {"state": "on", "label": "ON AIR", "color": [255, 20, 20]}
+          {"state": "on", "label": "ON AIR", "bg": [255, 20, 20]}
         {% elif s == 'Recording' %}
-          {"state": "on", "label": "RECORDING", "color": [255, 20, 20]}
+          {"state": "on", "label": "RECORDING", "bg": [255, 20, 20]}
         {% elif s == 'In Meeting' %}
-          {"state": "on", "label": "IN MEETING", "color": [255, 140, 0]}
+          {"state": "on", "label": "IN MEETING", "bg": [255, 140, 0]}
         {% elif s == 'Live' %}
-          {"state": "on", "label": "LIVE", "color": [255, 0, 80]}
+          {"state": "on", "label": "LIVE", "bg": [255, 0, 80]}
         {% endif %}
 ```
 
@@ -411,7 +462,7 @@ mosquitto_pub -h <broker-ip> -t ledmatrix/on-air/set \
 
 # Turn on with label + amber color
 mosquitto_pub -h <broker-ip> -t ledmatrix/on-air/set \
-  -m '{"state": "on", "label": "IN MEETING", "color": [255, 140, 0]}'
+  -m '{"state": "on", "label": "IN MEETING", "bg": [255, 140, 0]}'
 
 # Watch state feedback in another terminal
 mosquitto_sub -h <broker-ip> -t ledmatrix/on-air/state

@@ -159,7 +159,21 @@ class JellyfinNowPlayingPlugin(BasePlugin):
                 try:
                     font = ImageFont.truetype(candidate, font_size)
                     break
-                except Exception as e:
+                except OSError as e:
+                    # A .bdf is a bitmap face that exists at exactly one pixel
+                    # size; FreeType refuses every other. Without this the
+                    # offered bitmap fonts fall back to PIL's default at all
+                    # but one of the sizes the schema allows.
+                    native = self._bdf_pixel_size(candidate)
+                    if native is not None and native != font_size:
+                        try:
+                            font = ImageFont.truetype(candidate, native)
+                            self.logger.debug(
+                                "Loaded bitmap font %s at its native size %d "
+                                "(requested %d)", font_name, native, font_size)
+                            break
+                        except OSError:
+                            pass
                     self.logger.warning("Could not load font %s: %s", candidate, e)
         if font is None:
             self.logger.warning("Font %s not found, using default", font_name)
@@ -167,6 +181,20 @@ class JellyfinNowPlayingPlugin(BasePlugin):
 
         self._font_cache[cache_key] = font
         return font
+
+    @staticmethod
+    def _bdf_pixel_size(path: str) -> Optional[int]:
+        """The pixel size a .bdf font declares, or None if it does not."""
+        try:
+            with open(path, "r", encoding="latin-1") as handle:
+                for line in handle:
+                    if line.startswith("PIXEL_SIZE"):
+                        return int(line.split()[1])
+                    if line.startswith("CHARS"):
+                        break  # past the header; no point reading the glyphs
+        except (OSError, ValueError, IndexError):
+            return None
+        return None
 
     def _dims(self) -> Tuple[int, int]:
         """Panel (width, height); prefers .width/.height, falls back to .matrix."""

@@ -1,0 +1,23 @@
+{
+  "matches": [
+    {
+      "url_contains": "/Sessions",
+      "body": []
+    },
+    {
+      "url_contains": "/Items/movie1/Images/Primary",
+      "body_file": "poster-movie.png",
+      "content_type": "image/png"
+    },
+    {
+      "url_contains": "/Items/series1/Images/Primary",
+      "body_file": "poster-series.png",
+      "content_type": "image/png"
+    },
+    {
+      "url_contains": "/Items/album1/Images/Primary",
+      "body_file": "poster-album.png",
+      "content_type": "image/png"
+    }
+  ]
+}
