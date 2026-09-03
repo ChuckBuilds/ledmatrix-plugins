@@ -135,7 +135,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [News Ticker](./plugins/news/) | RSS news headlines from ESPN, NCAA, custom sources | |
+| [News Ticker](./plugins/news/) | RSS news headlines from ESPN, NCAA, custom sources | <a href="./plugins/news/"><img src="./docs/assets/news/hero.png" width="240" alt="news on an LED panel"></a> |
 | [Of The Day](./plugins/of-the-day/) | Daily quotes, Bible verses, word of the day | <a href="./plugins/of-the-day/"><img src="./docs/assets/of-the-day/hero.png" width="240" alt="of-the-day on an LED panel"></a> |
 
 ### Integrations (2)
