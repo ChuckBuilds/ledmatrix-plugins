@@ -1140,10 +1140,10 @@
       "plugin_path": "plugins/incoming-packages",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-27",
+      "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/incoming-packages/assets/screenshot.png",
-      "latest_version": "1.0.0",
+      "latest_version": "1.0.1",
       "icon": "fas fa-box"
     },
     {
