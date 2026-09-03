@@ -114,7 +114,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 |--------|-------------|---------|
 | [Simple Clock](./plugins/clock-simple/) | Time and date display | <a href="./plugins/clock-simple/"><img src="./docs/assets/clock-simple/hero.png" width="240" alt="clock-simple on an LED panel"></a> |
 | [7-Segment Clock](./plugins/7-segment-clock/) | Retro-style 7-segment clock with customizable colors | <a href="./plugins/7-segment-clock/"><img src="./docs/assets/7-segment-clock/hero.png" width="240" alt="7-segment-clock on an LED panel"></a> |
-| [Google Calendar](./plugins/calendar/) | Upcoming events from Google Calendar | |
+| [Google Calendar](./plugins/calendar/) | Upcoming events from Google Calendar | <a href="./plugins/calendar/"><img src="./docs/assets/calendar/hero.png" width="240" alt="calendar on an LED panel"></a> |
 | [Geochron World Clock](./plugins/geochron/) | World map with the real-time day/night terminator | |
 
 ### Weather (2)

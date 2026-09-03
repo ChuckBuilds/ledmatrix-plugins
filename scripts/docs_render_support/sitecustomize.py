@@ -52,3 +52,65 @@ try:
     _docs_http_replay.install()
 except Exception:  # never let doc tooling break the render it is measuring
     pass
+
+
+# Some plugins hold their interesting state in memory, put there by an event
+# the renderer cannot produce -- an MQTT message, a webhook, a button press.
+# No configuration reaches that state, so a documentation render would only
+# ever show the idle frame. LEDMATRIX_DOCS_ATTRS names attributes to set on the
+# plugin instance once the core's loader has built it, which is the same thing
+# the event would have done, without the plugin knowing it is being rendered.
+_ATTRS = os.environ.get("LEDMATRIX_DOCS_ATTRS")
+if _ATTRS:
+    import json as _json
+    import sys as _sys
+
+    _WANTED = _json.loads(_ATTRS)
+    _TARGET = "src.plugin_system.plugin_loader"
+
+    def _apply(instance):
+        for name, value in _WANTED.items():
+            if isinstance(value, list) and len(value) == 3 and all(
+                    isinstance(v, int) for v in value):
+                value = tuple(value)  # colours are tuples everywhere in the core
+            setattr(instance, name, value)
+        return instance
+
+    class _PatchingLoader:
+        """Wraps the real loader so the module is patched right after it runs."""
+
+        def __init__(self, inner):
+            self._inner = inner
+
+        def create_module(self, spec):
+            return self._inner.create_module(spec)
+
+        def exec_module(self, module):
+            self._inner.exec_module(module)
+            real = module.PluginLoader.load_plugin
+
+            def load_plugin(self, *args, **kwargs):
+                instance, mod = real(self, *args, **kwargs)
+                return _apply(instance), mod
+
+            module.PluginLoader.load_plugin = load_plugin
+
+        def __getattr__(self, name):
+            return getattr(self._inner, name)
+
+    class _AttrFinder:
+        """Hands back the real spec with its loader wrapped, once."""
+
+        def find_spec(self, name, path=None, target=None):
+            if name != _TARGET:
+                return None
+            index = _sys.meta_path.index(self)
+            for finder in _sys.meta_path[index + 1:]:
+                find = getattr(finder, "find_spec", None)
+                spec = find(name, path, target) if find else None
+                if spec is not None and spec.loader is not None:
+                    spec.loader = _PatchingLoader(spec.loader)
+                    return spec
+            return None
+
+    _sys.meta_path.insert(0, _AttrFinder())
