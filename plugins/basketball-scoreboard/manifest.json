@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.29.0",
+  "version": "1.29.1",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,13 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.29.1",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Fix every grid-snapped font rendering a pixel narrow. The shared code reads this plugin's config_schema.json to tell a default font size from one the user chose; a default gets snapped to the font's pixel grid, a choice is left alone. It located the schema by inspecting loaded modules, which fails under the real plugin loader -- the loader renames a plugin's modules and removes their original names, so nothing was left to inspect. The lookup returned nothing, every size then looked user-chosen, and the snap was skipped: 4x6-font.ttf drew at 6 instead of 7, which is 3-pixel-wide glyphs instead of 4. On a 256x64 panel the betting odds, team records and the date row were hard to read. The plugin now tells the shared code where it lives instead of leaving it to guess.",
+      "changelog": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage."
+    },
     {
       "version": "1.29.0",
       "released": "2026-09-02",
