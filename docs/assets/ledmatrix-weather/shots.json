@@ -1,0 +1,151 @@
+{
+  "plugin": "ledmatrix-weather",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-06-14T17:00:00",
+    "mock_data": "../../../plugins/ledmatrix-weather/test/fixtures/mock.json",
+    "config": {
+      "enabled": true,
+      "location_city": "Dallas",
+      "location_state": "Texas",
+      "location_country": "US",
+      "units": "imperial",
+      "show_current_weather": false,
+      "show_hourly_forecast": false,
+      "show_daily_forecast": false,
+      "show_almanac": false,
+      "show_radar": false
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "config": {
+        "show_current_weather": true
+      }
+    },
+    {
+      "name": "mode-current",
+      "standalone": false,
+      "config": {
+        "show_current_weather": true
+      }
+    },
+    {
+      "name": "mode-hourly",
+      "standalone": false,
+      "config": {
+        "show_hourly_forecast": true
+      }
+    },
+    {
+      "name": "mode-daily",
+      "standalone": false,
+      "config": {
+        "show_daily_forecast": true
+      }
+    },
+    {
+      "name": "mode-almanac",
+      "standalone": false,
+      "config": {
+        "show_almanac": true
+      }
+    },
+    {
+      "name": "mode-radar",
+      "standalone": false,
+      "config": {
+        "show_radar": true
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "standalone": false,
+      "config": {
+        "show_current_weather": true
+      }
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "standalone": false,
+      "config": {
+        "show_current_weather": true
+      }
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "standalone": false,
+      "config": {
+        "show_current_weather": true
+      }
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "standalone": false,
+      "config": {
+        "show_current_weather": true
+      }
+    }
+  ],
+  "composites": [
+    {
+      "name": "modes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "mode-current",
+          "label": "Current conditions"
+        },
+        {
+          "shot": "mode-hourly",
+          "label": "Hourly forecast"
+        },
+        {
+          "shot": "mode-daily",
+          "label": "Daily forecast"
+        },
+        {
+          "shot": "mode-almanac",
+          "label": "Almanac"
+        },
+        {
+          "shot": "mode-radar",
+          "label": "Radar"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}
