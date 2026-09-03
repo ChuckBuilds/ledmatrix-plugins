@@ -1,7 +1,7 @@
 {
   "id": "christmas-countdown",
   "name": "Christmas Countdown",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "ChuckBuilds",
   "description": "Display a countdown to Christmas with a stylized Christmas tree logo and festive text",
   "category": "holiday",
@@ -17,6 +17,12 @@
     "christmas-countdown"
   ],
   "versions": [
+    {
+      "released": "2026-09-02",
+      "version": "1.0.3",
+      "ledmatrix_min": "2.0.0",
+      "notes": "Documentation only, no behaviour change. Adds real rendered screenshots and documents all ten settings -- including, plainly, that five of them do nothing. The four transition settings appear nowhere in manager.py and the core implements no display transitions; tree_size is read and validated but never applied, so the tree is always fitted to the left half of the panel whatever it is set to. Those are tracked as issue #377 rather than removed here. Also corrects the layout description: the old README said the tree is centred with text below it, but the panel is split down the middle with the tree on the left and the text on the right at every size. Records that tree_color only applies when the bundled tree image is missing."
+    },
     {
       "released": "2026-07-17",
       "version": "1.0.2",
@@ -34,7 +40,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-17",
+  "last_updated": "2026-09-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

@@ -55,7 +55,8 @@ Keys on a shot: ``name`` (required, becomes ``<name>.png``), ``width``,
 (inline object, or a path relative to the shot list), ``skip_update``,
 ``freeze_time`` (ISO-8601 instant; pins "now" so the image is reproducible),
 ``http_replay`` (a recorded-responses file, for managers that fetch without
-reading the cache) and
+reading the cache), ``frames`` (advance a scrolling plugin this many display
+steps before snapshotting) and
 ``env`` (extra environment variables for the render subprocess). Anything
 omitted falls back to ``defaults``. Set ``"standalone": false`` on a shot that
 only exists to be pasted into a composite.
@@ -232,15 +233,26 @@ def render_shot(
     config = deep_merge(defaults.get("config", {}), shot.get("config", {}))
 
     raw_path = tmpdir / f"{name}-raw.png"
-    renderer = core_repo / "scripts" / "render_plugin.py"
+    frames = int(shot.get("frames", defaults.get("frames", 1)))
+
+    # A scrolling plugin starts its strip off the right edge, so one frame is an
+    # empty panel. Those shots go through our own runner, which drives the same
+    # core testing API and steps display() before snapshotting.
+    if frames > 1:
+        renderer = Path(__file__).resolve().parent / "docs_render_support" / "_docs_frame_runner.py"
+        extra = ["--core-repo", str(core_repo), "--frames", str(frames)]
+    else:
+        renderer = core_repo / "scripts" / "render_plugin.py"
+        extra = []
     if not renderer.is_file():
-        raise SystemExit(f"Core renderer not found at {renderer}")
+        raise SystemExit(f"Renderer not found at {renderer}")
 
     # Every element of argv is either fixed, a path this script resolved, or a
     # validated plugin id -- never a shell string.
     cmd: List[str] = [
         sys.executable,
         str(renderer),
+        *extra,
         "--plugin", validate_plugin_id(plugin_id),
         "--plugin-dir", str(PLUGINS_DIR),
         "--config", json.dumps(config),
@@ -263,12 +275,16 @@ def render_shot(
     # clock, a countdown, or a "starts in 2h" line differs on every run.
     freeze_time = shot.get("freeze_time", defaults.get("freeze_time"))
     http_replay = shot.get("http_replay", defaults.get("http_replay"))
-    if freeze_time or http_replay:
+    # Runtime state that an event would normally have set; see the shim.
+    attrs = shot.get("attrs", defaults.get("attrs"))
+    if freeze_time or http_replay or attrs:
         support_dir = str(Path(__file__).resolve().parent / "docs_render_support")
         existing = env.get("PYTHONPATH")
         env["PYTHONPATH"] = f"{support_dir}{os.pathsep}{existing}" if existing else support_dir
     if freeze_time:
         env["LEDMATRIX_DOCS_FREEZE_TIME"] = str(freeze_time)
+    if attrs:
+        env["LEDMATRIX_DOCS_ATTRS"] = json.dumps(attrs)
     if http_replay:
         replay_path = (shot_list_dir / http_replay).resolve()
         if not replay_path.is_file():

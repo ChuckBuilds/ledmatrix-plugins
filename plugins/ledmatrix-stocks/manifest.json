@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-stocks",
   "name": "Stock & Crypto Ticker",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "Displays stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies. Supports scroll and switch display modes.",
   "author": "LEDMatrix Team",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",
@@ -40,6 +40,12 @@
   ],
   "versions": [
     {
+      "version": "2.9.0",
+      "released": "2026-09-03",
+      "notes": "Bitmap fonts and documentation. A .bdf face exists at exactly one pixel size, so choosing 5x7.bdf or 4x6.bdf at any other size raised inside FreeType and the renderer silently substituted PressStart2P; they now load at their own declared size. cozette.bdf is removed from all six font menus because the core ships no such file, so it could never load (#387). The README gains real rendered screenshots -- a gain, a loss, a crypto entry, both display modes, the inline chart on and off, and four panel sizes -- and documents the eight per-element colour keys that were previously summarised in a sentence.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "version": "2.8.0",
       "released": "2026-08-19",
       "ledmatrix_min_version": "2.0.0",
@@ -71,7 +77,7 @@
     {
       "released": "2026-07-10",
       "version": "2.3.2",
-      "notes": "Bump logo_x (2px→4px) and logo_gap (4px→8px) so the ~26px-tall logo isn't cramped against the display edge and the symbol/price text on the 32px-tall display.",
+      "notes": "Bump logo_x (2px\u21924px) and logo_gap (4px\u21928px) so the ~26px-tall logo isn't cramped against the display edge and the symbol/price text on the 32px-tall display.",
       "ledmatrix_min_version": "2.0.0"
     },
     {
@@ -116,7 +122,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-05",
+  "last_updated": "2026-09-03",
   "stars": 0,
   "downloads": 0,
   "verified": true,

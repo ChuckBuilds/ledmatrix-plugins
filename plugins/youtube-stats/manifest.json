@@ -1,7 +1,7 @@
 {
   "id": "youtube-stats",
   "name": "YouTube Stats",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "author": "ChuckBuilds",
   "description": "Display YouTube channel statistics including subscriber count, total views, and channel name on your LED matrix",
   "category": "social",
@@ -34,6 +34,12 @@
   ],
   "versions": [
     {
+      "version": "1.2.0",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Load a bitmap font at its own pixel size. A .bdf exists at exactly one pixel size and FreeType rejects any other, so every .bdf in the font picker failed at the configured font_size and silently fell back to the default face -- choosing one appeared to do nothing. Bitmap faces are now retried at the size the file's PIXEL_SIZE header declares. Same fix already landed for clock-simple, news and tide-display, which share this loader."
+    },
+    {
       "version": "1.1.1",
       "released": "2026-08-22",
       "ledmatrix_min_version": "2.0.0",
@@ -61,7 +67,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-31",
+  "last_updated": "2026-09-02",
   "compatible_versions": [
     ">=2.0.0"
   ]

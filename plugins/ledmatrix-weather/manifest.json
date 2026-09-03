@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.6.5",
+  "version": "2.6.6",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -26,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "version": "2.6.6",
+      "released": "2026-09-03",
+      "notes": "Radar overlay font, and documentation. weather_radar.py resolved the 4x6 face three levels above itself, which is only the LEDMatrix root when the plugins directory sits inside the core tree. Anywhere else it fell back to PIL's default font -- taller than the 6px the overlay is laid out for -- and the radar timestamp label was drawn past the bottom edge of the panel, where the safety harness cannot see it because PIL clips at draw time. It now asks the imported core where it lives. The README gains real rendered screenshots of all five display modes and four panel sizes, documents api_key, location_latitude/longitude and both dynamic_duration keys, and corrects the radar_range_miles default, which the table gave as 50 where the schema says 75.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "2.6.5",
       "released": "2026-08-21",
@@ -162,7 +168,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-05",
+  "last_updated": "2026-09-03",
   "stars": 0,
   "downloads": 0,
   "verified": true,

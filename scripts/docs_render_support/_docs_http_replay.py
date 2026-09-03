@@ -17,6 +17,16 @@ repeatable::
 ``body`` is served as JSON; ``body_file`` names a file beside the replay file
 and is served as raw bytes, for poster art, album covers and icons.
 
+An entry may also carry ``params_contain``, for an API that puts several
+endpoints behind one URL and tells them apart by query string::
+
+    {"url_contains": "datagetter",
+     "params_contain": {"product": "water_level"},
+     "body": { ... }}
+
+Entries are tried in order and the first whose URL *and* params both match
+wins, so put the more specific entries first.
+
 Only matching URLs are intercepted. Everything else -- logo downloads in
 particular -- goes to the real network untouched.
 """
@@ -82,9 +92,13 @@ def install():
 
     _MISS = object()
 
-    def _match(url):
+    def _match(url, params):
+        params = params or {}
         for entry in matches:
             if entry.get("url_contains", "") not in url:
+                continue
+            wanted = entry.get("params_contain") or {}
+            if any(str(params.get(key)) != str(value) for key, value in wanted.items()):
                 continue
             body_file = entry.get("body_file")
             if body_file:
@@ -99,13 +113,13 @@ def install():
     real_get = requests.get
 
     def session_get(self, url, *args, **kwargs):
-        response = _match(str(url))
+        response = _match(str(url), kwargs.get("params"))
         if response is _MISS:
             return real_session_get(self, url, *args, **kwargs)
         return response
 
     def plain_get(url, *args, **kwargs):
-        response = _match(str(url))
+        response = _match(str(url), kwargs.get("params"))
         if response is _MISS:
             return real_get(url, *args, **kwargs)
         return response
