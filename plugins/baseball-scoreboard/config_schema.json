@@ -2904,6 +2904,7 @@
         "team_name",
         "status_text",
         "detail_text",
+        "odds_text",
         "rank_text",
         "layout",
         "bases",
