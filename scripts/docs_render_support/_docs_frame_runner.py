@@ -34,6 +34,9 @@ def main() -> int:
     parser.add_argument("--width", type=int, default=128)
     parser.add_argument("--height", type=int, default=32)
     parser.add_argument("--frames", type=int, default=1)
+    parser.add_argument("--skip-update", action="store_true",
+                        help="do not call update(), matching render_plugin.py; "
+                             "needed when the shot supplies its state directly")
     parser.add_argument("--frame-seconds", type=float, default=0.05,
                         help="Frozen-clock seconds to advance between frames")
     parser.add_argument("--output", required=True)
@@ -73,10 +76,11 @@ def main() -> int:
         install_deps=False,
     )
 
-    try:
-        instance.update()
-    except Exception as exc:  # matches render_plugin.py: update failures are not fatal
-        sys.stderr.write(f"update() raised: {exc} -- continuing to display()\n")
+    if not args.skip_update:
+        try:
+            instance.update()
+        except Exception as exc:  # matches render_plugin.py: update failures are not fatal
+            sys.stderr.write(f"update() raised: {exc} -- continuing to display()\n")
 
     # Animation is driven by elapsed wall-clock time, not by how many times
     # display() was called, so the frozen clock has to move between frames or
