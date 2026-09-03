@@ -139,6 +139,9 @@ class GameRenderer(SportsGameRendererMixin):
         team_config = customization.get('team_name', {})
         status_config = customization.get('status_text', {})
         detail_config = customization.get('detail_text', {})
+        # Falls back to detail_text so a config written before this
+        # setting existed keeps rendering odds exactly as it did.
+        odds_config = customization.get('odds_text') or detail_config
         rank_config = customization.get('rank_text', {})
 
         try:
@@ -147,6 +150,7 @@ class GameRenderer(SportsGameRendererMixin):
             fonts["team"] = self._load_custom_font(team_config, default_size=8, element_key='team_name')
             fonts["status"] = self._load_custom_font(status_config, default_size=6, element_key='status_text')
             fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6-font.ttf', element_key='detail_text')
+            fonts["odds"] = self._load_custom_font(odds_config, default_size=6, default_font='4x6-font.ttf', element_key='odds_text')
             fonts["rank"] = self._load_custom_font(rank_config, default_size=10, element_key='rank_text')
             self.logger.debug("Successfully loaded fonts from config")
         except Exception:
@@ -330,6 +334,7 @@ class GameRenderer(SportsGameRendererMixin):
     #: resolving the colour from the face keeps the two in step by
     #: construction, rather than by every draw site remembering to agree.
     _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
+        "odds": "odds_text",
         "score": "score_text",
         "time": "period_text",
         "team": "team_name",
@@ -714,6 +719,23 @@ class GameRenderer(SportsGameRendererMixin):
         """Delegates to src.common.sports_card, shared by every scoreboard."""
         return _card.format_game_time(self.config, time_text)
 
+    def _odds_color(self) -> Tuple[int, int, int]:
+        """Colour for the odds text; the green it always drew unless configured.
+
+        Guarded with getattr because not every class that reaches
+        _draw_dynamic_odds carries the element-colour helper -- the plugins'
+        own test harnesses build minimal manager objects, and a bare
+        AttributeError here is swallowed by the surrounding except, which
+        drops the odds off the card instead of failing loudly.
+        """
+        getter = getattr(self, "_element_color", None)
+        if getter is None:
+            return (0, 255, 0)
+        try:
+            return getter("odds_text", (0, 255, 0))
+        except Exception:
+            return (0, 255, 0)
+
     def _draw_dynamic_odds(
         self,
         draw: ImageDraw.Draw,
@@ -751,7 +773,7 @@ class GameRenderer(SportsGameRendererMixin):
                 favored_spread = away_spread
                 favored_side = "away"
 
-            font = self.fonts["detail"]
+            font = self.fonts.get("odds") or self.fonts["detail"]
             # Edge-anchored labels share this row with the centred time text,
             # so on a narrow Vegas card (pinned to 128px) they overprint.
             # Budget each side against the widest time string the centre holds.
@@ -768,7 +790,7 @@ class GameRenderer(SportsGameRendererMixin):
                         spread_x = width - spread_width - 1
                     else:
                         spread_x = 0
-                    self._draw_text_with_outline(draw, spread_text, (spread_x, 0), font, fill=(0, 255, 0))
+                    self._draw_text_with_outline(draw, spread_text, (spread_x, 0), font, fill=self._odds_color())
 
             over_under = odds.get("over_under")
             if over_under is not None and isinstance(over_under, (int, float)):
@@ -784,7 +806,7 @@ class GameRenderer(SportsGameRendererMixin):
                     ou_x = width - ou_width
                 else:
                     ou_x = (width - ou_width) // 2
-                self._draw_text_with_outline(draw, ou_text, (ou_x, 0), font, fill=(0, 255, 0))
+                self._draw_text_with_outline(draw, ou_text, (ou_x, 0), font, fill=self._odds_color())
 
         except Exception as e:
             self.logger.warning(f"Error drawing odds: {e} | odds={repr(odds)[:120]}")

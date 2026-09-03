@@ -1221,13 +1221,13 @@
         "adaptive"
       ],
       "default": "classic",
-      "description": "Layout engine. 'classic' is the original fixed layout (unchanged). 'adaptive' (beta) scales fonts, logos, and element regions to the panel size \u2014 content grows on large panels and degrades gracefully on small ones. Your customization fonts and x/y offsets still apply in adaptive mode. Requires LEDMatrix core with the adaptive layout system; falls back to classic on older cores. Switch back to 'classic' at any time to restore the original rendering."
+      "description": "Layout engine. 'classic' is the original fixed layout (unchanged). 'adaptive' (beta) scales fonts, logos, and element regions to the panel size — content grows on large panels and degrades gracefully on small ones. Your customization fonts and x/y offsets still apply in adaptive mode. Requires LEDMatrix core with the adaptive layout system; falls back to classic on older cores. Switch back to 'classic' at any time to restore the original rendering."
     },
     "timezone": {
       "x-advanced": true,
       "type": "string",
       "default": "",
-      "description": "IANA timezone used to display event start times (e.g. America/Chicago). Leave blank to follow the LEDMatrix global timezone, or the system timezone if none is set. A bare \"UTC\" here is treated as a leftover from the old write-back bug and ignored when your global or system timezone disagrees \u2014 use \"Etc/UTC\" if you really want UTC."
+      "description": "IANA timezone used to display event start times (e.g. America/Chicago). Leave blank to follow the LEDMatrix global timezone, or the system timezone if none is set. A bare \"UTC\" here is treated as a leftover from the old write-back bug and ignored when your global or system timezone disagrees — use \"Etc/UTC\" if you really want UTC."
     },
     "customization": {
       "type": "object",
@@ -1512,6 +1512,45 @@
             "font_size",
             "text_color"
           ],
+          "additionalProperties": false
+        },
+        "odds_text": {
+          "type": "object",
+          "title": "Odds Text",
+          "description": "Customize the betting line and over/under text.",
+          "properties": {
+            "font": {
+              "x-advanced": true,
+              "type": "string",
+              "default": "4x6-font.ttf",
+              "description": "Font family for odds text. Defaults to the same 4x6 font the detail text uses; press_start is chunkier and easier to read on a large panel, but roughly twice as wide."
+            },
+            "font_size": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 6,
+              "description": "Font size for odds text. Sizes snap to the font's pixel grid to stay crisp: 4x6-font.ttf snaps to 7, 14, 21; press_start to 8, 16."
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Colour [R, G, B] for the odds text.",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                0,
+                255,
+                0
+              ],
+              "x-advanced": true
+            }
+          },
           "additionalProperties": false
         },
         "rank_text": {

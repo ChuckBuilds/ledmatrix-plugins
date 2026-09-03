@@ -141,6 +141,9 @@ class GameRenderer(SportsGameRendererMixin):
         team_config = customization.get('team_name', {})
         status_config = customization.get('status_text', {})
         detail_config = customization.get('detail_text', {})
+        # Falls back to detail_text so a config written before this
+        # setting existed keeps rendering odds exactly as it did.
+        odds_config = customization.get('odds_text') or detail_config
         rank_config = customization.get('rank_text', {})
 
         try:
@@ -149,6 +152,7 @@ class GameRenderer(SportsGameRendererMixin):
             fonts["team"] = self._load_custom_font(team_config, default_size=8, element_key='team_name')
             fonts["status"] = self._load_custom_font(status_config, default_size=6, element_key='status_text')
             fonts["detail"] = self._load_custom_font(detail_config, default_size=6, element_key='detail_text')
+            fonts["odds"] = self._load_custom_font(odds_config, default_size=6, element_key='odds_text')
             fonts["rank"] = self._load_custom_font(rank_config, default_size=10, element_key='rank_text')
             self.logger.debug("Successfully loaded fonts from config")
         except Exception:
@@ -323,6 +327,7 @@ class GameRenderer(SportsGameRendererMixin):
     #: resolving the colour from the face keeps the two in step by
     #: construction, rather than by every draw site remembering to agree.
     _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
+        "odds": "odds_text",
         "score": "score_text",
         "time": "period_text",
         "team": "team_name",

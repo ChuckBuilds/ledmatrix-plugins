@@ -1353,6 +1353,9 @@ class SportsCore(ABC):
         team_config = customization.get('team_name', {})
         status_config = customization.get('status_text', {})
         detail_config = customization.get('detail_text', {})
+        # Falls back to detail_text so a config written before this
+        # setting existed keeps rendering odds exactly as it did.
+        odds_config = customization.get('odds_text') or detail_config
         rank_config = customization.get('rank_text', {})
         
         try:
@@ -1361,6 +1364,7 @@ class SportsCore(ABC):
             fonts["team"] = self._load_custom_font_from_element_config(team_config, default_size=8, element_key='team_name')
             fonts["status"] = self._load_custom_font_from_element_config(status_config, default_size=6, element_key='status_text')
             fonts["detail"] = self._load_custom_font_from_element_config(detail_config, default_size=6, element_key='detail_text', default_font='4x6-font.ttf')
+            fonts["odds"] = self._load_custom_font_from_element_config(odds_config, default_size=6, element_key='odds_text', default_font='4x6-font.ttf')
             fonts["rank"] = self._load_custom_font_from_element_config(rank_config, default_size=10, element_key='rank_text')
             self.logger.info("Successfully loaded fonts from config")
         except Exception as e:
@@ -1392,6 +1396,23 @@ class SportsCore(ABC):
         # the panel height, and _fit_score_font is the guard that swaps in a
         # narrower FACE rather than let a grown score crowd out the logos.
         return self._fit_score_font(self._scale_headline_fonts(fonts))
+
+    def _odds_color(self) -> Tuple[int, int, int]:
+        """Colour for the odds text; the green it always drew unless configured.
+
+        Guarded with getattr because not every class that reaches
+        _draw_dynamic_odds carries the element-colour helper -- the plugins'
+        own test harnesses build minimal manager objects, and a bare
+        AttributeError here is swallowed by the surrounding except, which
+        drops the odds off the card instead of failing loudly.
+        """
+        getter = getattr(self, "_element_color", None)
+        if getter is None:
+            return (0, 255, 0)
+        try:
+            return getter("odds_text", (0, 255, 0))
+        except Exception:
+            return (0, 255, 0)
 
     def _draw_dynamic_odds(
         self, draw: ImageDraw.Draw, odds: Dict[str, Any], width: int, height: int
@@ -1457,7 +1478,7 @@ class SportsCore(ABC):
             # Show the negative spread on the appropriate side
             if favored_spread is not None:
                 spread_text = str(favored_spread)
-                font = self.fonts["detail"]  # Use detail font for odds
+                font = self.fonts.get("odds") or self.fonts["detail"]
 
                 if favored_side == "home":
                     # Home team is favored, show spread on right side
@@ -1465,7 +1486,7 @@ class SportsCore(ABC):
                     spread_x = width - spread_width  # Top right
                     spread_y = 0
                     self._draw_text_with_outline(
-                        draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0)
+                        draw, spread_text, (spread_x, spread_y), font, fill=self._odds_color()
                     )
                     self.logger.debug(
                         f"Showing home spread '{spread_text}' on right side"
@@ -1475,7 +1496,7 @@ class SportsCore(ABC):
                     spread_x = 0  # Top left
                     spread_y = 0
                     self._draw_text_with_outline(
-                        draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0)
+                        draw, spread_text, (spread_x, spread_y), font, fill=self._odds_color()
                     )
                     self.logger.debug(
                         f"Showing away spread '{spread_text}' on left side"
@@ -1485,7 +1506,7 @@ class SportsCore(ABC):
             over_under = odds.get("over_under")
             if over_under is not None and isinstance(over_under, (int, float)):
                 ou_text = f"O/U: {over_under}"
-                font = self.fonts["detail"]  # Use detail font for odds
+                font = self.fonts.get("odds") or self.fonts["detail"]
                 ou_width = draw.textlength(ou_text, font=font)
 
                 if favored_side == "home":
@@ -1511,7 +1532,7 @@ class SportsCore(ABC):
                     )
 
                 self._draw_text_with_outline(
-                    draw, ou_text, (ou_x, ou_y), font, fill=(0, 255, 0)
+                    draw, ou_text, (ou_x, ou_y), font, fill=self._odds_color()
                 )
 
         except Exception as e:
@@ -1522,6 +1543,7 @@ class SportsCore(ABC):
     #: resolving the colour from the face keeps the two in step by
     #: construction, rather than by every draw site remembering to agree.
     _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
+        "odds": "odds_text",
         "score": "score_text",
         "time": "period_text",
         "team": "team_name",

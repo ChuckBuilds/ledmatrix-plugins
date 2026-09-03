@@ -31,6 +31,11 @@ class _Draw:
 
 class _Manager:
     _draw_dynamic_odds = sports.SportsCore._draw_dynamic_odds
+    # Borrowed for the same reason as the method above: _draw_dynamic_odds now
+    # asks for the odds colour, and this probe deliberately carries only the
+    # surface that method needs. Stubbing it instead would let the real
+    # resolution regress unnoticed.
+    _odds_color = sports.SportsCore._odds_color
 
     def __init__(self):
         self.fonts = {"detail": object()}
