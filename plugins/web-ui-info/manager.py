@@ -13,7 +13,7 @@ import socket
 import subprocess
 import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict, List
 from PIL import Image, ImageDraw, ImageFont
 
 from src.plugin_system.base_plugin import BasePlugin
@@ -203,6 +203,33 @@ class WebUIInfoPlugin(BasePlugin):
                 self.device_ip = new_ip
             self.last_ip_refresh = current_time
     
+    def _fit_address(self, draw, font, width: int, address: str) -> List[str]:
+        """Lay ``address`` out in as few lines as fit ``width`` pixels.
+
+        The 4x6 face is a fixed size, so a long hostname on a narrow panel
+        cannot be shrunk to fit. Drop the "at " prefix first, and only then
+        wrap the address itself -- a wrapped hostname is still readable, while
+        a clipped one is not.
+        """
+        def text_width(text: str) -> int:
+            bbox = draw.textbbox((0, 0), text, font=font)
+            return bbox[2] - bbox[0]
+
+        if text_width(f"at {address}") <= width:
+            return [f"at {address}"]
+        if text_width(address) <= width:
+            return [address]
+
+        lines: List[str] = []
+        remaining = address
+        while remaining:
+            take = len(remaining)
+            while take > 1 and text_width(remaining[:take]) > width:
+                take -= 1
+            lines.append(remaining[:take])
+            remaining = remaining[take:]
+        return lines
+
     def display(self, force_clear: bool = False) -> None:
         """
         Display the web UI URL message.
@@ -263,15 +290,17 @@ class WebUIInfoPlugin(BasePlugin):
             else:
                 address = self.device_id
             
-            # Prepare text to display
-            lines = [
-                "visit web ui",
-                f"at {address}:5000"
-            ]
-            
-            # Calculate text positions (centered)
-            y_start = 5
+            # Prepare text to display. PIL clips silently at draw time, so a
+            # line wider than the panel just loses its ends: on a 64x32 panel
+            # "at ledmatrix:5000" used to render as "t ledmatrix:500".
+            lines = ["visit web ui"] + self._fit_address(
+                draw, font_small, width, f"{address}:5000")
+
+            # Centre the block vertically rather than pinning it 5px from the
+            # top, which left the text stranded at the top of a tall panel.
             line_height = 8
+            block_height = (len(lines) - 1) * line_height + 6
+            y_start = max(0, (height - block_height) // 2)
 
             # Draw each line
             for i, line in enumerate(lines):

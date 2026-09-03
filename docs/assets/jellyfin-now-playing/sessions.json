@@ -1,0 +1,69 @@
+{
+  "matches": [
+    {
+      "url_contains": "/Sessions",
+      "body": [
+        {
+          "UserName": "alex",
+          "NowPlayingItem": {
+            "Id": "movie1",
+            "Name": "Northern Lights",
+            "Type": "Movie",
+            "RunTimeTicks": 69600000000
+          },
+          "PlayState": {
+            "IsPaused": false,
+            "PositionTicks": 25200000000
+          }
+        },
+        {
+          "UserName": "sam",
+          "NowPlayingItem": {
+            "Id": "ep1",
+            "Name": "The Deep Field",
+            "Type": "Episode",
+            "RunTimeTicks": 28800000000,
+            "SeriesName": "Cosmos Unfolded",
+            "SeriesId": "series1"
+          },
+          "PlayState": {
+            "IsPaused": false,
+            "PositionTicks": 7200000000
+          }
+        },
+        {
+          "UserName": "jo",
+          "NowPlayingItem": {
+            "Id": "track1",
+            "Name": "Neon Harbour",
+            "Type": "Audio",
+            "RunTimeTicks": 2400000000,
+            "Artists": [
+              "The Glass Hours"
+            ],
+            "AlbumId": "album1"
+          },
+          "PlayState": {
+            "IsPaused": false,
+            "PositionTicks": 1200000000
+          }
+        }
+      ]
+    },
+    {
+      "url_contains": "/Items/movie1/Images/Primary",
+      "body_file": "poster-movie.png",
+      "content_type": "image/png"
+    },
+    {
+      "url_contains": "/Items/series1/Images/Primary",
+      "body_file": "poster-series.png",
+      "content_type": "image/png"
+    },
+    {
+      "url_contains": "/Items/album1/Images/Primary",
+      "body_file": "poster-album.png",
+      "content_type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,182 @@
+{
+  "plugin": "christmas-countdown",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T12:00:00+00:00",
+    "config": {
+      "enabled": true
+    }
+  },
+  "shots": [
+    {
+      "name": "hero"
+    },
+    {
+      "name": "count-far",
+      "freeze_time": "2026-09-02T12:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "count-week",
+      "freeze_time": "2026-12-18T12:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "count-one",
+      "freeze_time": "2026-12-24T12:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "count-day",
+      "freeze_time": "2026-12-25T09:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "col-default",
+      "standalone": false
+    },
+    {
+      "name": "col-white",
+      "config": {
+        "text_color": [
+          255,
+          255,
+          255
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-gold",
+      "config": {
+        "text_color": [
+          255,
+          200,
+          40
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-ice",
+      "config": {
+        "text_color": [
+          140,
+          220,
+          255
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "p-64",
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "p-128",
+      "width": 128,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "p-12864",
+      "width": 128,
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "p-256",
+      "width": 256,
+      "height": 32,
+      "scale": 4,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "countdown",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "count-far",
+          "label": "114 days out",
+          "sublabel": "2 September"
+        },
+        {
+          "shot": "count-week",
+          "label": "A week out",
+          "sublabel": "18 December"
+        },
+        {
+          "shot": "count-one",
+          "label": "The day before",
+          "sublabel": "24 December"
+        },
+        {
+          "shot": "count-day",
+          "label": "Christmas Day",
+          "sublabel": "the countdown gives way to MERRY CHRISTMAS"
+        }
+      ]
+    },
+    {
+      "name": "text-color",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "col-default",
+          "label": "[255, 0, 0]",
+          "sublabel": "the default red"
+        },
+        {
+          "shot": "col-white",
+          "label": "[255, 255, 255]",
+          "sublabel": "white"
+        },
+        {
+          "shot": "col-gold",
+          "label": "[255, 200, 40]",
+          "sublabel": "gold"
+        },
+        {
+          "shot": "col-ice",
+          "label": "[140, 220, 255]",
+          "sublabel": "pale blue"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "p-64",
+          "label": "64 x 32",
+          "sublabel": "tree and text share very little width"
+        },
+        {
+          "shot": "p-128",
+          "label": "128 x 32",
+          "sublabel": "the common two-panel chain"
+        },
+        {
+          "shot": "p-12864",
+          "label": "128 x 64",
+          "sublabel": "a taller tree and roomier text"
+        },
+        {
+          "shot": "p-256",
+          "label": "256 x 32",
+          "sublabel": "a long chain"
+        }
+      ]
+    }
+  ]
+}

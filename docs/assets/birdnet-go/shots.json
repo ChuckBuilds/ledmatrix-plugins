@@ -1,0 +1,193 @@
+{
+  "plugin": "birdnet-go",
+  "_comment": "show_time is off in every shot on purpose: the age line is computed from time.time(), which the docs shim does not freeze, so an image with it would differ on every render and --check could never pass.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "skip_update": true,
+    "mock_data": "mock.json",
+    "config": {
+      "enabled": true,
+      "birdnet_api": {
+        "base_url": "http://birdnet.local:8080"
+      },
+      "display": {
+        "show_time": false,
+        "stale_after_minutes": 0
+      }
+    },
+    "attrs": {
+      "last_detection": {
+        "common_name": "Blue Jay",
+        "scientific_name": "Cyanocitta cristata",
+        "confidence": 0.92,
+        "time_str": "07:42:10",
+        "received_at": 1781000000.0,
+        "key": "demo-bj"
+      }
+    }
+  },
+  "shots": [
+    {
+      "name": "hero"
+    },
+    {
+      "name": "conf-on",
+      "standalone": false,
+      "config": {
+        "display": {
+          "show_confidence": true,
+          "show_time": false,
+          "stale_after_minutes": 0
+        }
+      }
+    },
+    {
+      "name": "conf-off",
+      "standalone": false,
+      "config": {
+        "display": {
+          "show_confidence": false,
+          "show_time": false,
+          "stale_after_minutes": 0
+        }
+      }
+    },
+    {
+      "name": "count-on",
+      "standalone": false,
+      "config": {
+        "display": {
+          "show_today_count": true,
+          "show_time": false,
+          "stale_after_minutes": 0
+        }
+      }
+    },
+    {
+      "name": "count-off",
+      "standalone": false,
+      "config": {
+        "display": {
+          "show_today_count": false,
+          "show_time": false,
+          "stale_after_minutes": 0
+        }
+      }
+    },
+    {
+      "name": "long-128",
+      "standalone": false,
+      "attrs": {
+        "last_detection": {
+          "common_name": "Northern Cardinal",
+          "scientific_name": "Cardinalis cardinalis",
+          "confidence": 0.87,
+          "time_str": "07:12:03",
+          "received_at": 1781000000.0,
+          "key": "demo-nc"
+        }
+      }
+    },
+    {
+      "name": "long-256",
+      "width": 256,
+      "standalone": false,
+      "attrs": {
+        "last_detection": {
+          "common_name": "Northern Cardinal",
+          "scientific_name": "Cardinalis cardinalis",
+          "confidence": 0.87,
+          "time_str": "07:12:03",
+          "received_at": 1781000000.0,
+          "key": "demo-nc"
+        }
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "toggles",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "conf-on",
+          "label": "show_confidence: true"
+        },
+        {
+          "shot": "conf-off",
+          "label": "show_confidence: false"
+        },
+        {
+          "shot": "count-on",
+          "label": "show_today_count: true",
+          "sublabel": "the x6 is today's tally for this species"
+        },
+        {
+          "shot": "count-off",
+          "label": "show_today_count: false"
+        }
+      ]
+    },
+    {
+      "name": "long-names",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "long-128",
+          "label": "128 x 32",
+          "sublabel": "\"Northern Cardinal\" does not fit, so it marquee-scrolls"
+        },
+        {
+          "shot": "long-256",
+          "label": "256 x 32",
+          "sublabel": "the same name fits outright"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

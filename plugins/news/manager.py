@@ -361,11 +361,41 @@ class NewsTickerPlugin(BasePlugin):
                     font = ImageFont.truetype(path, size)
                     break
                 except Exception as e:
+                    # A .bdf is a bitmap face and exists at exactly one pixel
+                    # size; FreeType rejects any other with "invalid pixel
+                    # size". Asking for font_size therefore failed for every
+                    # bitmap face in the picker, and the ticker silently fell
+                    # back to the default -- so choosing one appeared to do
+                    # nothing. Retry at the size the file declares.
+                    native = self._bdf_pixel_size(path)
+                    if native is not None and native != size:
+                        try:
+                            font = ImageFont.truetype(path, native)
+                            self.logger.debug(
+                                "Loaded bitmap font %s at its native size %d "
+                                "(requested %d)", name, native, size)
+                            break
+                        except Exception:
+                            pass
                     self.logger.warning(f"Could not load font {name}@{size}: {e}")
             if font is None and not any(os.path.exists(p) for p in candidates):
                 self.logger.warning(f"Font file not found: {name}; using default font")
             self._font_cache[key] = font
         return self._font_cache[key]
+
+    @staticmethod
+    def _bdf_pixel_size(path):
+        """The pixel size a .bdf font declares, or None if it does not."""
+        try:
+            with open(path, "r", encoding="latin-1") as handle:
+                for line in handle:
+                    if line.startswith("PIXEL_SIZE"):
+                        return int(line.split()[1])
+                    if line.startswith("CHARS"):
+                        break  # past the header
+        except (OSError, ValueError, IndexError):
+            return None
+        return None
 
     def _apply_font_customization(self, customization: Dict[str, Any]) -> None:
         """Apply the `customization` block's per-element font overrides.

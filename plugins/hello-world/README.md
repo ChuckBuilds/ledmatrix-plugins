@@ -1,65 +1,136 @@
-# Hello World Plugin
+# Hello World
 
-A minimal LEDMatrix plugin that displays a customizable greeting and the
-current time. It's primarily here as a working starter template you can
-copy when building your own plugin.
+A deliberately tiny plugin that shows a message and the time. It exists for two
+reasons: to prove your plugin setup works end to end, and to be **the thing you
+copy when starting a new plugin**.
 
-## What it does
+![Hello, World! in white above the time in cyan, centred on a 128x32
+panel](../../docs/assets/hello-world/hero.png)
 
-- Displays a configurable message
-- Optionally shows the current time underneath
-- Lets you set the colors of both lines
+*Every image in this README is real plugin output, rendered at the true panel
+size against a frozen clock and then scaled up so the pixels stay pixels.*
+
+---
+
+## Table of Contents
+
+1. [Installation](#installation)
+2. [Checking It Loaded](#checking-it-loaded)
+3. [Configuration Reference](#configuration-reference)
+   - [message and show_time](#message-and-show_time)
+   - [Colours](#colours)
+   - [Examples](#examples)
+4. [Panel Sizes](#panel-sizes)
+5. [Using This as a Template](#using-this-as-a-template)
+6. [Troubleshooting](#troubleshooting)
+7. [Development](#development)
+8. [Support](#support)
+
+---
 
 ## Installation
 
-The Hello World plugin ships with the default Plugin Store, so the easiest
-way to install it is from the LEDMatrix web UI:
+**From the Plugin Store (recommended).** Open the LEDMatrix web interface at
+`http://<your-pi-ip>:5000`, go to **Plugin Manager**, find **Hello World** in
+the **Plugin Store** section, and click **Install**.
 
-1. Open the web interface (`http://your-pi-ip:5000`)
-2. Open the **Plugin Manager** tab
-3. Find **Hello World** in the **Plugin Store** section and click **Install**
-4. Toggle it on, then click **Restart Display Service** on the **Overview**
-   tab
+**Manually.** Copy this directory into your LEDMatrix `plugin-repos/` and
+restart the display service.
 
-If you'd rather install it from source for local development, copy this
-directory into your LEDMatrix installation's configured plugins
-directory (default `plugin-repos/`):
+Unlike most plugins here, `enabled` defaults to **`true`** — it is meant to show
+something the moment it is installed.
 
-```bash
-cp -r plugins/hello-world ~/LEDMatrix/plugin-repos/
-sudo systemctl restart ledmatrix
-```
+A ready-made config block is in
+[`example_config.json`](example_config.json):
 
-## Configuration
-
-Once installed, configuration lives in the plugin's tab in the web UI.
-Under the hood it's stored in `config/config.json` under the `hello-world`
-key.
-
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `enabled` | boolean | `true` | Enable/disable the plugin |
-| `message` | string | `"Hello, World!"` | The greeting message (1–50 chars) |
-| `show_time` | boolean | `true` | Show current time below message |
-| `color` | `[r, g, b]` | `[255, 255, 255]` | RGB color for the message (white) |
-| `time_color` | `[r, g, b]` | `[0, 255, 255]` | RGB color for the time (cyan) |
-| `display_duration` | number | `10` | Seconds the plugin holds the screen (1–300) |
-
-The full schema lives in [`config_schema.json`](config_schema.json) and is
-what the web UI's form is generated from.
-
-### Examples
-
-**Minimal:**
 ```json
 {
   "hello-world": {
-    "enabled": true
+    "enabled": true,
+    "message": "Hello, World!",
+    "show_time": true,
+    "color": [255, 255, 255],
+    "time_color": [0, 255, 255],
+    "display_duration": 10
   }
 }
 ```
 
-**Custom message and color:**
+---
+
+## Checking It Loaded
+
+The quickest check is the **Plugin Manager** tab: installed plugins appear
+under **Installed Plugins**, and a `hello-world` tab appears in the plugin row
+at the top.
+
+From SSH, tail the display log:
+
+```bash
+sudo journalctl -u ledmatrix -f | grep hello-world
+```
+
+You should see something like:
+
+```text
+Discovered plugin: hello-world v1.1.0
+Loaded plugin: hello-world
+Hello World plugin initialized with message: 'Hello, World!'
+```
+
+To see it immediately rather than waiting for the rotation, open its tab in the
+web UI and click **Run On-Demand**.
+
+---
+
+## Configuration Reference
+
+Six settings, and all six do something:
+
+| Option | Type | Default | What it does |
+|--------|------|---------|--------------|
+| `enabled` | boolean | `true` | Whether the plugin runs at all |
+| `message` | string | `"Hello, World!"` | The greeting text |
+| `show_time` | boolean | `true` | Show the clock beneath the message |
+| `color` | array | `[255, 255, 255]` | Message colour, `[R, G, B]` |
+| `time_color` | array | `[0, 255, 255]` | Clock colour, `[R, G, B]` |
+| `display_duration` | number | `10` | Seconds on screen before the rotation moves on |
+
+### `message` and `show_time`
+
+![The plugin with the clock shown and hidden](../../docs/assets/hello-world/show-time.png)
+
+With `show_time` on, the message sits a third of the way down and the clock two
+thirds. With it off, the message alone is drawn on the centre line.
+
+**The message is not shrunk or wrapped.** It is drawn centred at whatever size
+the font gives, so a message wider than the panel is clipped at both ends:
+
+![Hi, Hello World! and a message too long to fit, on a 128x32
+panel](../../docs/assets/hello-world/message-length.png)
+
+The default `Hello, World!` just fits a 128-wide panel. On a 64-wide panel it
+does not — keep the message short, or use the
+[Scrolling Text](../text-display/) plugin, which scrolls and can auto-size.
+
+### Colours
+
+![The plugin in its default white-on-cyan, amber, green, and all
+white](../../docs/assets/hello-world/colors.png)
+
+Both are `[R, G, B]` arrays of integers from 0 to 255. The defaults deliberately
+differ so the two lines read as separate things at a glance.
+
+### Examples
+
+**Minimal** — everything else takes its default:
+
+```json
+{ "hello-world": { "enabled": true } }
+```
+
+**A custom message and colour:**
+
 ```json
 {
   "hello-world": {
@@ -71,7 +142,8 @@ what the web UI's form is generated from.
 }
 ```
 
-**Message only, no time:**
+**Message only, no clock:**
+
 ```json
 {
   "hello-world": {
@@ -83,70 +155,122 @@ what the web UI's form is generated from.
 }
 ```
 
-## Verifying the plugin loaded
+---
 
-The fastest way is the **Plugin Manager** tab — installed plugins show up
-under **Installed Plugins** and a tab for `hello-world` appears in the
-plugin row at the top.
+## Panel Sizes
 
-From SSH you can also tail the display log:
+![The plugin on 64x32, 128x32, 128x64 and 256x32
+panels](../../docs/assets/hello-world/panel-sizes.png)
 
-```bash
-sudo journalctl -u ledmatrix -f | grep hello-world
-```
+Text is centred horizontally and placed by fractions of the panel height, so
+the layout holds at any size. The only real constraint is message width — see
+above.
 
-You should see something like:
+---
 
-```text
-Discovered plugin: hello-world v1.0.2
-Loaded plugin: hello-world
-Hello World plugin initialized with message: 'Hello, World!'
-```
+## Using This as a Template
 
-To run the plugin once on demand instead of waiting for it in the
-rotation, open its tab in the web UI and click **Run On-Demand**.
+This plugin is intentionally small enough to read in one sitting, which is why
+it is the recommended starting point for a new plugin.
 
-## Using this as a template
+| File | What it is |
+|------|-----------|
+| [`manager.py`](manager.py) | `HelloWorldPlugin`, implementing `update()` and `display()` from `BasePlugin` |
+| [`manifest.json`](manifest.json) | Metadata, entry point, and class name — `class_name` must match the class in `manager.py` exactly |
+| [`config_schema.json`](config_schema.json) | JSON Schema that generates the web UI settings form |
+| [`requirements.txt`](requirements.txt) | Dependencies the plugin loader installs on first run |
+| [`example_config.json`](example_config.json) | A config block to paste into `config/config.json` |
 
-Hello World is intentionally tiny so you can read the whole thing in one
-sitting.
+To start a new plugin: copy this directory, rename it, update `manifest.json`
+(especially `id`, `class_name` and `entry_point`), and replace the bodies of
+`update()` and `display()`.
 
-- [`manager.py`](manager.py) — `HelloWorldPlugin` class implementing
-  `update()` and `display()` from `BasePlugin`
-- [`manifest.json`](manifest.json) — plugin metadata, entry point, and
-  class name (must match the class in `manager.py` exactly)
-- [`config_schema.json`](config_schema.json) — JSON Schema that drives
-  the web UI configuration form
-- [`requirements.txt`](requirements.txt) — Python dependencies the
-  plugin loader will install on first run
+**Two things worth copying deliberately**, because both are easy to get wrong
+and this plugin got them wrong until recently:
 
-To start a new plugin, copy this directory, rename it, update
-`manifest.json` (especially `id`, `class_name`, and `entry_point`), and
-replace the body of `update()` / `display()`.
+- **`draw_text(x=...)` is the left edge, not the centre.** To centre text,
+  either omit `x` entirely — the display manager centres it for you — or pass
+  `centered=True` alongside it. Passing `x=width // 2` on its own starts the
+  text at the midpoint and runs it off the right side.
+- **Pass `color` on every `draw_text` call.** It is tempting to branch on which
+  font you got and only pass the colour in one branch; the other branch then
+  silently falls back to white, and the bug only shows up on installs where the
+  font manager is available.
 
-For deeper details see the LEDMatrix docs:
+Fetch in `update()` and draw in `display()` — never hit the network from
+`display()`, which runs every frame.
+
+For deeper details, see the LEDMatrix core docs:
 
 - [Plugin Development Guide](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/PLUGIN_DEVELOPMENT_GUIDE.md)
 - [Plugin API Reference](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/PLUGIN_API_REFERENCE.md)
 - [Plugin Architecture Spec](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/PLUGIN_ARCHITECTURE_SPEC.md)
+- [Advanced Plugin Development](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/ADVANCED_PLUGIN_DEVELOPMENT.md)
+
+and this repository's own
+[plugin development docs](../../docs/plugin-development/).
+
+---
 
 ## Troubleshooting
 
-**Plugin doesn't appear in the rotation**
-- Make sure it's enabled in **Plugin Manager** and that you restarted the
-  display service afterward.
-- Check the **Logs** tab in the web UI (or `journalctl -u ledmatrix`) for
-  errors mentioning `hello-world`.
+**The plugin does not appear in the rotation.**
+Check it is enabled in **Plugin Manager** and that you restarted the display
+service afterwards. Then check the **Logs** tab, or
+`journalctl -u ledmatrix`, for errors mentioning `hello-world`.
 
-**`Class HelloWorldPlugin not found in module`**
-- The `class_name` field in `manifest.json` must exactly match the class
-  defined in `manager.py`. They are case-sensitive and must not contain
-  spaces.
+**`Class HelloWorldPlugin not found in module`.**
+`class_name` in `manifest.json` must match the class in `manager.py` exactly —
+case-sensitive, no spaces. This is the single most common mistake when copying
+this plugin to start a new one.
 
-**Colors look wrong**
-- Each color value must be a 3-element array of integers from `0` to
-  `255`. The form rejects anything else.
+**The message is cut off at both ends.**
+It is wider than the panel. The plugin centres but does not resize or wrap; use
+a shorter message or a wider panel.
 
-## License
+**Colours look wrong.**
+Each value must be a three-element array of integers from 0 to 255. The
+settings form rejects anything else, but a hand-edited `config.json` will not.
 
-GPL-3.0, same as the LEDMatrix project.
+---
+
+## Development
+
+### Project structure
+
+```text
+hello-world/
+├── manifest.json         # Plugin metadata and version history
+├── manager.py            # HelloWorldPlugin
+├── config_schema.json    # Settings schema; source of truth for defaults
+├── example_config.json   # A config block to copy
+├── requirements.txt      # None beyond the core
+├── QUICK_START.md        # Enabling it and verifying it on a Pi
+└── README.md
+```
+
+[`QUICK_START.md`](QUICK_START.md) covers getting it running on a real Pi and
+checking it through the web API; this README covers what the settings do and
+how to build on it.
+
+### Regenerating the images in this README
+
+```bash
+python scripts/render_docs_assets.py --plugin hello-world
+```
+
+`--check` verifies the committed images still match. The clock is frozen in the
+shot list so the time readout does not change on every run.
+
+---
+
+## Support
+
+- YouTube: <https://www.youtube.com/@ChuckBuilds>
+- Instagram: <https://www.instagram.com/ChuckBuilds/>
+- Discord: <https://discord.com/invite/uW36dVAtcT>
+- Sponsor: [GitHub Sponsors](https://github.com/sponsors/ChuckBuilds) ·
+  [Buy Me a Coffee](https://buymeacoffee.com/chuckbuilds) ·
+  [Ko-fi](https://ko-fi.com/chuckbuilds/)
+
+Released under the GNU General Public License v3.0 — see [LICENSE](LICENSE).

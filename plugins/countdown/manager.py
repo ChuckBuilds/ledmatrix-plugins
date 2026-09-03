@@ -293,7 +293,39 @@ class CountdownPlugin(BasePlugin):
         "press_start": "assets/fonts/PressStart2P-Regular.ttf",
         "four_by_six": "assets/fonts/4x6-font.ttf",
         "five_by_seven": "assets/fonts/5x7.bdf",
+        "tom_thumb": "assets/fonts/tom-thumb.bdf",
     }
+
+    @staticmethod
+    def _bdf_pixel_size(path) -> Optional[int]:
+        """The pixel size a .bdf font declares, or None if it does not."""
+        try:
+            with open(path, "r", encoding="latin-1") as handle:
+                for line in handle:
+                    if line.startswith("PIXEL_SIZE"):
+                        return int(line.split()[1])
+                    if line.startswith("CHARS"):
+                        break  # past the header
+        except (OSError, ValueError, IndexError):
+            return None
+        return None
+
+    @classmethod
+    def _truetype_or_native(cls, path, size_px: int):
+        """Load a font, falling back to a bitmap face's own pixel size.
+
+        A .bdf exists at exactly one size, and FreeType rejects any other with
+        "invalid pixel size". Asking for the configured font_size therefore
+        failed for every bitmap family, and the text silently fell back to the
+        default face -- so picking one of them appeared to do nothing.
+        """
+        try:
+            return ImageFont.truetype(str(path), size_px)
+        except OSError:
+            native = cls._bdf_pixel_size(path)
+            if native is None or native == size_px:
+                raise
+            return ImageFont.truetype(str(path), native)
 
     def _load_family_font_direct(self, family: str, size_px: int):
         """Load a family's font file without relying on the process cwd.
@@ -325,8 +357,9 @@ class CountdownPlugin(BasePlugin):
         for candidate in candidates:
             try:
                 if candidate.exists():
-                    font = ImageFont.truetype(str(candidate), int(size_px))
-                    break
+                    font = self._truetype_or_native(candidate, int(size_px))
+                    if font is not None:
+                        break
             except Exception as exc:
                 self.logger.debug("Font candidate %s failed to load: %s", candidate, exc)
                 continue
@@ -388,7 +421,16 @@ class CountdownPlugin(BasePlugin):
                 # signal. Detect the miss via the catalog and prefer loading
                 # the real file cwd-independently so rendering doesn't depend
                 # on the working directory.
-                if font is not None and self._is_family_missing(fm, family):
+                # Bitmap families go through our own loader even when the
+                # catalog has them: resolve_font asks for size_px, FreeType
+                # rejects any .bdf at a size other than the one it was drawn
+                # at, and the degraded default comes back looking like a
+                # successful load. _load_family_font_direct retries at the
+                # face's own PIXEL_SIZE.
+                if font is not None and (
+                    self._is_family_missing(fm, family)
+                    or str(self._FAMILY_FILES.get(family, "")).endswith(".bdf")
+                ):
                     direct = self._load_family_font_direct(family, size_px)
                     if direct is not None:
                         return direct

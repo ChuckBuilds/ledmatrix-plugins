@@ -1,424 +1,547 @@
------------------------------------------------------------------------------------
-### Connect with ChuckBuilds
+# Baseball Scoreboard
 
-- Show support on Youtube: https://www.youtube.com/@ChuckBuilds
-- Stay in touch on Instagram: https://www.instagram.com/ChuckBuilds/
-- Want to chat or need support? Reach out on the ChuckBuilds Discord: https://discord.com/invite/uW36dVAtcT
-- Feeling Generous? Support the project:
-  - Github Sponsorship: https://github.com/sponsors/ChuckBuilds
-  - Buy Me a Coffee: https://buymeacoffee.com/chuckbuilds
-  - Ko-fi: https://ko-fi.com/chuckbuilds/ 
+Live, recent, and upcoming baseball on your LED matrix across three leagues —
+**MLB**, **MiLB** (Minor League Baseball), and **NCAA Baseball**. The live
+screen is a real scorebug: the score, the inning and whether it's the top or
+bottom, the bases, the outs, and the count.
 
------------------------------------------------------------------------------------
+![A live MLB game on a 128x32 panel: San Diego 3, Cincinnati 4, top of the 4th,
+bases empty, two out](../../docs/assets/baseball-scoreboard/hero.png)
 
-# Baseball Scoreboard Plugin
+*Every image in this README is real plugin output, rendered at the true panel
+size from a recorded ESPN response and then scaled up so the pixels stay pixels.
+The live shot is an actual game in progress on 2 September 2026 — the score,
+inning, bases, outs and count are what the panel showed at that moment.*
 
-A plugin for LEDMatrix that displays live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball leagues.
+---
 
-## Features
+## Table of Contents
 
-- **Multiple League Support**: MLB, MiLB (Minor League Baseball), NCAA Baseball
-- **Live Game Tracking**: Real-time scores, innings, time remaining
-- **Recent Games**: Recently completed games with final scores
-- **Upcoming Games**: Scheduled games with start times
-- **Favorite Teams**: Prioritize games involving your favorite teams
-- **Background Data Fetching**: Efficient API calls without blocking display
-- **Favorite Team Result Colors**: Optionally show a finished game's score in green when your favorite team won and red when it lost
+1. [What's On Screen](#whats-on-screen)
+2. [Quick Start](#quick-start)
+3. [Installation](#installation)
+4. [Three Leagues, Three Config Blocks](#three-leagues-three-config-blocks)
+5. [How Games Are Picked](#how-games-are-picked)
+6. [Configuration Reference](#configuration-reference)
+   - [Plugin-wide settings](#plugin-wide-settings)
+   - [Per-league: teams and filtering](#per-league-teams-and-filtering)
+   - [Per-league: display modes](#per-league-display-modes)
+   - [Per-league: how many games](#per-league-how-many-games)
+   - [Per-league: durations](#per-league-durations)
+   - [Per-league: update intervals](#per-league-update-intervals)
+   - [Per-league: background fetching](#per-league-background-fetching)
+   - [Per-league: what appears on the card](#per-league-what-appears-on-the-card)
+   - [The extra baseball screens](#the-extra-baseball-screens)
+   - [The matchup card: separator, date and time](#the-matchup-card-separator-date-and-time)
+   - [Favourite team result colours](#favourite-team-result-colours)
+   - [Seeing live games more often in the Vegas ticker](#seeing-live-games-more-often-in-the-vegas-ticker)
+   - [Fonts, colours and offsets](#fonts-colours-and-offsets)
+7. [Team Abbreviations](#team-abbreviations)
+8. [Panel Sizes](#panel-sizes)
+9. [Troubleshooting](#troubleshooting)
+10. [Development](#development)
+11. [Support](#support)
 
-## Configuration
+---
 
-### Global Settings
+## What's On Screen
 
-- `display_duration`: How long to show each game (5-60 seconds, default: 15)
-- `show_records`: Display team win-loss records (default: false)
-- `show_ranking`: Display team rankings when available (default: false)
-- `background_service`: Configure API request settings
-- `timezone` (Advanced): IANA name used to display game start times, e.g.
-  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
-  timezone; if that isn't set, the host system's timezone is used, and only if
-  neither is available do times fall back to UTC.
+Each league contributes three display modes, so the plugin exposes nine in
+total — `mlb_live`, `mlb_recent`, `mlb_upcoming`, `milb_live`, `milb_recent`,
+`milb_upcoming`, `ncaa_baseball_live`, `ncaa_baseball_recent` and
+`ncaa_baseball_upcoming`. Every one can be enabled or disabled independently,
+via the `show_live` / `show_recent` / `show_upcoming` flags inside that
+league's `display_modes` block.
 
-  **Leftover `"UTC"` from an older version?** Before the write-back fix this
-  plugin could persist `"timezone": "UTC"` into your saved config, where it
-  then shadowed your real global timezone. That stale value is now detected
-  and ignored automatically whenever your global or system timezone disagrees
-  — no manual edit needed. If you genuinely want UTC here, set `Etc/UTC`,
-  which is always honored.
+![The three MLB display modes on a 128x32 panel: a live scorebug, a final
+score, and an upcoming game with its first-pitch
+time](../../docs/assets/baseball-scoreboard/display-modes.png)
 
+| Mode | Shows | Centre of the card |
+|------|-------|--------------------|
+| `*_live` | Games in progress | Inning with a top/bottom arrow, the bases diamond, outs, and the count |
+| `*_recent` | Completed games | `Final`, the score, and the date |
+| `*_upcoming` | Scheduled games | `Next Game`, the date and first pitch in your timezone |
 
-### Per-League Settings
+Reading the live scorebug, from the hero image above:
 
-#### MLB Configuration
+```text
+        ▲4        top of the 4th (▼ for the bottom)
+   ●   ◇          bases: filled = runner on. The diamond is
+   ●  ◇ ◇         second at the top, third left, first right
+   ◌             outs: filled = out recorded, hollow = still to come
+       3-3        the count, balls-strikes
+```
+
+The away team is always on the left and the home team on the right.
+
+---
+
+## Quick Start
+
+The minimum useful configuration is one league and your teams:
 
 ```json
 {
-  "mlb": {
+  "baseball-scoreboard": {
     "enabled": true,
-    "favorite_teams": ["NYY", "BOS", "LAD"],
-    "display_modes": {
-      "show_live": true,
-      "show_recent": true,
-      "show_upcoming": true
+    "mlb": {
+      "enabled": true,
+      "favorite_teams": ["STL", "LAD"]
     },
-    "recent_games_to_show": 5,
-    "upcoming_games_to_show": 10
+    "milb": { "enabled": false },
+    "ncaa_baseball": { "enabled": false }
   }
 }
 ```
 
-#### MiLB Configuration
+Turning off the leagues you don't follow matters more here than in a
+single-league plugin: each enabled league fetches on its own schedule, and
+NCAA Baseball in particular is out of season for most of the year, so leaving
+it on costs requests for screens that will never have anything to show.
 
-```json
-{
-  "milb": {
-    "enabled": true,
-    "favorite_teams": ["DUR", "SWB", "MEM"],
-    "display_modes": {
-      "show_live": true,
-      "show_recent": true,
-      "show_upcoming": true
-    },
-    "recent_games_to_show": 5,
-    "upcoming_games_to_show": 10
-  }
-}
-```
-
-#### NCAA Baseball Configuration
-
-```json
-{
-  "ncaa_baseball": {
-    "enabled": true,
-    "favorite_teams": ["LSU", "FLA", "VANDY"],
-    "display_modes": {
-      "show_live": true,
-      "show_recent": true,
-      "show_upcoming": true
-    },
-    "recent_games_to_show": 5,
-    "upcoming_games_to_show": 10
-  }
-}
-```
-
-### Filtering & Live Priority
-
-Each league's `filtering` block controls which live games are shown, and
-`favorite_teams` / `exclude_teams` control which teams are eligible:
-
-```json
-{
-  "mlb": {
-    "favorite_teams": ["SF"],
-    "exclude_teams": [],
-    "filtering": {
-      "show_favorite_teams_only": false,
-      "show_all_live": false,
-      "favorite_live_boost": 2
-    }
-  }
-}
-```
-
-- `favorite_teams`: teams you follow. When a favorite is live, it's always
-  queued first as soon as the live rotation refreshes.
-- `exclude_teams`: teams to always hide from the live rotation **and**
-  recent/final scores (e.g. to avoid spoilers if you're watching delayed).
-  This always wins — even over `show_all_live` or a team also listed in
-  `favorite_teams`.
-- `show_favorite_teams_only`: only show live games involving a favorite team.
-- `show_all_live`: show every live game regardless of favorites.
-- With both `show_favorite_teams_only` and `show_all_live` off, every live
-  game is shown and rotated evenly — this is the same set as `show_all_live`,
-  the difference is in *how* they rotate (see `favorite_live_boost` below).
-- `favorite_live_boost` (1-5, default 2): how many turns your favorite's live
-  game gets in the rotation for every 1 turn other live games get. Set to `1`
-  for perfectly even rotation. Only matters when more than one live game is
-  eligible to show (i.e. not when `show_favorite_teams_only` is on with a
-  single favorite).
-
-#### Shorter dwell for non-favorite live games
-
-`non_favorite_live_game_duration` (0-120, default 0 = off) gives live games that
-involve **none** of your favorite teams a shorter on-screen turn than your
-favorites. For example `live_game_duration: 30` with
-`non_favorite_live_game_duration: 5` shows your teams for 30s each while everyone
-else's games flash by in 5s. It sits next to `live_game_duration` in each league
-block.
-
-This **only takes effect** when favorite teams are configured **and**
-non-favorite live games are being shown — `show_favorite_teams_only` off, or
-`show_all_live` on (otherwise non-favorite games are never on screen to
-shorten). Leave it at `0` to display every live game for `live_game_duration`.
-
-| Favorite teams set? | Non-favorite games shown? | Live game has a favorite? | Duration used |
-|---|---|---|---|
-| No | — | — | `live_game_duration` (unchanged) |
-| Yes | No (`show_favorite_teams_only` on, `show_all_live` off) | favorite | `live_game_duration` |
-| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | favorite | `live_game_duration` |
-| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | none | `non_favorite_live_game_duration` (when > 0) |
-
-## Display Modes
-
-The plugin registers per-league granular modes in `manifest.json`. The
-display controller rotates through any that are enabled:
-
-**MLB:** `mlb_live`, `mlb_recent`, `mlb_upcoming`
-**MiLB:** `milb_live`, `milb_recent`, `milb_upcoming`
-**NCAA Baseball:** `ncaa_baseball_live`, `ncaa_baseball_recent`, `ncaa_baseball_upcoming`
-
-Toggle individual modes per league with the `show_live` / `show_recent`
-/ `show_upcoming` flags inside each league's `display_modes` block.
-
-## Traditional Scoreboard Screen
-
-A dedicated full-screen view styled after a real outfield ballpark
-scoreboard: an inning-by-inning line score with R/H/E, the current
-inning highlighted, small team logos and team-colored abbreviations
-when there's room, and (for live at-bats) a compact column of lit
-ball/strike/out indicators. Available for **MLB and NCAA Baseball
-only** (MiLB's data doesn't come from ESPN's API in the same shape, so
-it isn't wired up for that league).
-
-### How it works
-
-This isn't a separate display mode you select — it periodically
-*rotates into* whichever game the normal live/recent rotation is
-already showing, replacing the usual compact scorebug for a few
-seconds at a time, then reverting. Nothing needs to be "currently
-selected" for it to appear; as long as the toggle is on, it takes over
-automatically on its own timer while a live or final game is on screen.
-
-The layout adapts to your display size automatically:
-- The font auto-fits as large as your panel allows (see `font_size`).
-- The ball/strike/out column only appears if there's enough width to
-  fit it without shrinking the number of innings shown; on very narrow
-  displays it's dropped entirely rather than clipped or forced in.
-- Team logos only appear if there's leftover width to spare after
-  everything else — they never cost a displayed inning or push out the
-  ball/strike/out column.
-
-### Enabling it
-
-Turn it on per league under that league's `display_options`:
-
-```json
-{
-  "mlb": {
-    "display_options": {
-      "show_traditional_scoreboard": true
-    }
-  }
-}
-```
-
-The same flag exists under `ncaa_baseball.display_options`. It's off
-by default.
-
-### Toggles and customization
-
-All of the following live under `customization.traditional_scoreboard`
-in the config (this block is shared across leagues that support the
-screen):
-
-| Option | Default | What it does |
-|---|---|---|
-| `game_scope` | `"both"` | Which games this screen rotates in for. `"live"` — only during live action. `"recent"` — only for final/completed games (handy for glancing at the final line score and picking out the winner without watching the whole game). `"both"` — either. |
-| `favorites_only` | `false` | When `true`, only rotates in for games involving one of this league's `favorite_teams`. This is independent of `show_all_live`/`show_favorite_teams_only` (which control the *normal* rotation) — so you can watch every team's live games in the compact scorebug, but reserve the full-screen ballpark treatment for your own team. Has no effect if `favorite_teams` is empty. |
-| `dwell_seconds` | `6` | How many seconds this screen stays on screen each time it rotates in. |
-| `interval_seconds` | `30` | How often (in seconds) it rotates in. |
-| `font` | `"9x15.bdf"` | Font for all text on this screen. The default is a clean, bold bitmap font sized to fit the display; a fixed-size `.bdf` font always renders at its own native pixel size (with an automatic fallback to a smaller sibling font if your display is too small to fit it) rather than scaling to `font_size`. Use a scalable `.ttf` font (e.g. `"press_start"` for a chunkier 8-bit retro look) if you want `font_size` to directly control the size. |
-| `font_size` | `24` | Maximum font size cap, for scalable `.ttf` fonts only (ignored by fixed-size `.bdf` fonts like the default). The screen auto-fits the largest text that still leaves room for the ball/strike/out column, so the default effectively means "as big as the display allows" — lower it to force a smaller, more consistent size. |
-| `use_team_colors` | `true` | Color each team's abbreviation with their real ESPN team colors (brightness-adjusted for legibility on black) instead of a flat `text_color`. |
-| `show_team_color_backgrounds` | `true` | Tint each team's row with a subtle (~12% brightness) wash of their real ESPN color, plus a solid team-color accent strip on the left edge — a colorful ballpark look. Requires `use_team_colors`; a team with no ESPN color simply gets no tint. Text stays legible because it's drawn with a black outline over the wash. |
-| `show_logos` | `true` | Show a small team logo beside each abbreviation when there's spare width (see "How it works" above). |
-| `show_dividers` | `true` | Draw thin 1px grid lines between innings, rows, and the R/H/E columns for readability. |
-| `highlight_winner` | `true` | On a final game, color the winning team's run total in `winner_color` so the winner is obvious at a glance instead of having to compare both R values yourself. Pairs naturally with `game_scope: "recent"`. No effect on live games. |
-| `text_color` | `[255, 255, 255]` | `[R, G, B]` for score digits, and team abbreviations when `use_team_colors` is off or a team's color is unavailable. |
-| `header_color` | `[180, 180, 180]` | `[R, G, B]` for the inning-number and R/H/E header row. |
-| `highlight_color` | `[255, 140, 0]` | `[R, G, B]` accent color for the current-inning highlight, the batting-team ▲/▼ indicator, and lit ball/strike/out indicators. |
-| `divider_color` | `[90, 90, 90]` | `[R, G, B]` for the grid divider lines. |
-| `winner_color` | `[0, 200, 0]` | `[R, G, B]` for the winning team's run total on a final game (see `highlight_winner`). |
-
-Example — only show this screen for your favorite team, and only once
-the game is final (a simple "check the final score" use case):
-
-```json
-{
-  "mlb": {
-    "display_options": {
-      "show_traditional_scoreboard": true
-    }
-  },
-  "customization": {
-    "traditional_scoreboard": {
-      "game_scope": "recent",
-      "favorites_only": true
-    }
-  }
-}
-```
-
-## Pitcher / Batter / Last Play Screen
-
-A dedicated full-screen view showing the current at-bat's pitcher,
-batter, and a short code for the most recently completed play (`1B`,
-`HR`, `K`, `BB`, etc.), replacing the normal scorebug for a few
-seconds at a time. The pitcher and batter lines are labeled in full —
-`Pitcher: G. Cole` / `Batter: J. Soto` — so there's no ambiguity with
-the grid's `B` (Balls) indicator. Available for **MLB and NCAA Baseball only**, and
-**live games only** — this data only exists during an actual live
-at-bat, so unlike the Traditional Scoreboard there's no `game_scope`
-option (nothing analogous exists for a final or upcoming game).
-
-Text is centered both horizontally and vertically, and auto-fits the
-largest font that still fits every line's actual text — a long name
-falls back to a smaller font (and, as a last resort, gets truncated)
-before it would otherwise run off the edge.
-
-### Enabling it
-
-Turn on the parts you want per league under that league's
-`display_options`:
-
-```json
-{
-  "mlb": {
-    "display_options": {
-      "show_pitcher_batter": true,
-      "show_last_play": true
-    }
-  }
-}
-```
-
-Both flags exist under `ncaa_baseball.display_options` too, and both
-default to off. You can enable just one (e.g. only `show_last_play`
-for a compact "what just happened" ticker).
-
-### Toggles and customization
-
-All of the following live under `customization.at_bat_info`:
-
-| Option | Default | What it does |
-|---|---|---|
-| `favorites_only` | `false` | Only rotates in for games involving one of this league's `favorite_teams` — independent of `show_all_live`/`show_favorite_teams_only`, which control the *normal* rotation. Has no effect if `favorite_teams` is empty. |
-| `dwell_seconds` | `4` | How many seconds this screen stays on screen each time it rotates in. |
-| `interval_seconds` | `25` | How often (in seconds) it rotates in. |
-| `font` | `"9x15.bdf"` | Font for all text on this screen. The default auto-fits as large as the display and each line's actual text allow, falling back to a smaller same-family font rather than overflowing. Use a scalable `.ttf` font (e.g. `"press_start"`) if you want `font_size` to directly control the size. |
-| `font_size` | `24` | Maximum font size cap, for scalable `.ttf` fonts only (ignored by fixed-size `.bdf` fonts like the default). Lower it to force a smaller, more consistent size. |
-| `use_team_colors` | `true` | Color the pitcher's name with the fielding team's real ESPN color and the batter's name with the batting team's color, instead of the flat colors below. |
-| `pitcher_color` | `[255, 255, 255]` | `[R, G, B]` for the pitcher line when `use_team_colors` is off or unavailable. |
-| `batter_color` | `[255, 255, 0]` | `[R, G, B]` for the batter line when `use_team_colors` is off or unavailable. |
-| `last_play_color` | `[0, 255, 255]` | `[R, G, B]` for the last-play code line (always this flat color — there's no "team" a play code belongs to). |
-
-## Player Card Screen
-
-A dedicated full-screen "baseball card" that rotates in for the current
-batter (and optionally the pitcher): a **headshot image**, **jersey
-number**, **position**, **bat/throw hand**, and **season stats** —
-`AVG` / `HR` / `RBI` for hitters, `ERA` / `W-L` / `K` for pitchers.
-The headshot and bio are fetched from ESPN's athlete API and cached
-(in memory and on disk under `assets/headshots/`, which is gitignored).
-Available for **MLB and NCAA Baseball only** and **live games only**
-(the pitcher/batter are only known during a live at-bat); MiLB is
-skipped because it has no ESPN player data.
-
-The layout adapts to your panel size: on larger displays the headshot
-sits on the left with a team-colored frame and the text stacks beside
-it; on tiny panels (e.g. 64×32) the headshot is hidden and a compact
-two-line text card is shown instead. If a headshot can't be loaded the
-card renders text-only, and if no bio is available yet the card is
-simply skipped that rotation (never shown blank).
-
-### Enabling it
-
-Turn it on per league under that league's `display_options`:
-
-```json
-{
-  "mlb": {
-    "display_options": {
-      "show_player_card": true
-    }
-  }
-}
-```
-
-The same flag exists under `ncaa_baseball.display_options`, off by
-default. Enabling it works alongside (and independently of) the
-Pitcher/Batter and Traditional Scoreboard screens — each rotates in on
-its own schedule.
-
-### Toggles and customization
-
-All of the following live under `customization.player_card`:
-
-| Option | Default | What it does |
-|---|---|---|
-| `show_batter` | `true` | Show a card for the current batter. |
-| `show_pitcher` | `false` | Also show a card for the current pitcher (the batter is preferred when both are available). |
-| `favorites_only` | `false` | Only rotate the card in for games involving one of this league's `favorite_teams`. Has no effect if `favorite_teams` is empty. |
-| `dwell_seconds` | `6` | How many seconds the card stays on screen each time it rotates in. |
-| `interval_seconds` | `40` | How often (in seconds) the card rotates in. |
-| `font` | `"9x15.bdf"` | Font for the card's text; auto-fits within the space beside the headshot. Use a scalable `.ttf` font (e.g. `"press_start"`) if you want `font_size` to directly control the size. |
-| `font_size` | `24` | Maximum font size cap, for scalable `.ttf` fonts only (ignored by fixed-size `.bdf` fonts like the default). |
-| `use_team_colors` | `true` | Color the player's name with their real ESPN team color instead of the flat `text_color`. |
-| `use_team_colors_border` | `true` | Draw the headshot's frame in the player's team color instead of the flat `border_color`. |
-| `border_color` | `[255, 200, 0]` | `[R, G, B]` for the headshot frame when `use_team_colors_border` is off or the team color is unavailable. |
-| `text_color` | `[255, 255, 255]` | `[R, G, B]` for the name (when team colors are off) and the jersey/position/bat-throw line. |
-| `stat_color` | `[0, 220, 255]` | `[R, G, B]` for the season-stats line. |
-
-## Team Abbreviations
-
-### MLB Teams
-Common abbreviations: NYY (Yankees), BOS (Red Sox), LAD (Dodgers), HOU (Astros), ATL (Braves), PHI (Phillies), TOR (Blue Jays), TB (Rays), MIL (Brewers), CHC (Cubs), CIN (Reds), PIT (Pirates), STL (Cardinals), MIN (Twins), CLE (Guardians), CHW (White Sox), DET (Tigers), KC (Royals), LAA (Angels), OAK (Athletics), SEA (Mariners), TEX (Rangers), ARI (Diamondbacks), COL (Rockies), SD (Padres), SF (Giants), BAL (Orioles), MIA (Marlins), NYM (Mets), WAS (Nationals)
-
-### MiLB Teams
-Common abbreviations vary by league and level (AAA, AA, A+, A, etc.). Examples: DUR (Durham Bulls), SWB (Scranton/Wilkes-Barre RailRiders), MEM (Memphis Redbirds), etc.
-
-### NCAA Baseball Teams
-Common abbreviations: LSU (LSU), FLA (Florida), VANDY (Vanderbilt), ARK (Arkansas), MISS (Ole Miss), TAMU (Texas A&M), TENN (Tennessee), UK (Kentucky), UGA (Georgia), BAMA (Alabama), AUB (Auburn), SCAR (South Carolina), CLEM (Clemson), FSU (Florida State), MIA (Miami), UNC (North Carolina), DUKE, WAKE (Wake Forest), VT (Virginia Tech), LOU (Louisville)
-
-## Background Service
-
-The plugin uses background data fetching for efficient API calls:
-
-- Requests timeout after 30 seconds (configurable)
-- Up to 3 retries for failed requests
-- Priority level 2 (medium priority)
-
-## Data Source
-
-Game data is fetched from ESPN's public API endpoints for all supported baseball leagues.
-
-## Dependencies
-
-This plugin requires the main LEDMatrix installation and inherits functionality from the Baseball base classes.
+---
 
 ## Installation
 
-The easiest way is the Plugin Store in the LEDMatrix web UI:
+**From the Plugin Store (recommended).** Open the LEDMatrix web interface at
+`http://<your-pi-ip>:5000`, go to **Plugin Manager**, find **Baseball
+Scoreboard** in the **Plugin Store** section, and click **Install**. Its own tab
+appears in the second nav row for configuring leagues and favourite teams.
 
-1. Open `http://your-pi-ip:5000`
-2. Open the **Plugin Manager** tab
-3. Find **Baseball Scoreboard** in the **Plugin Store** section and click
-   **Install**
-4. Open the plugin's tab in the second nav row to configure favorite
-   teams and per-league preferences
+**Manually.** Copy this directory into your LEDMatrix `plugins_directory`
+(default `plugin-repos/`) and restart the display service. The plugin's
+metadata, including the nine display modes it registers, lives in
+`manifest.json`.
 
-Manual install: copy this directory into your LEDMatrix
-`plugins_directory` (default `plugin-repos/`) and restart the display
-service.
+---
 
-## Favorite Team Result Colors
+## Three Leagues, Three Config Blocks
 
-A run of games against the same opponent is hard to read at a glance: in scroll
-and Vegas mode the same two logos go past several times and only the digits
-change. Turn on **Customization -> Favorite Team Result Colors** to color a
-finished game's score by how your favorite team did - green for a win, red for
-a loss.
+This is the biggest structural difference from the single-league scoreboards.
+Almost every setting lives **inside a league block**, not at the top level:
+
+```json
+{
+  "baseball-scoreboard": {
+    "enabled": true,
+    "timezone": "America/Chicago",
+
+    "mlb":           { "enabled": true,  "favorite_teams": ["STL"] },
+    "milb":          { "enabled": true,  "favorite_teams": ["MEM"] },
+    "ncaa_baseball": { "enabled": false }
+  }
+}
+```
+
+Only nine settings are plugin-wide — see
+[Plugin-wide settings](#plugin-wide-settings). Everything else
+(`favorite_teams`, `display_modes`, durations, update intervals, filtering,
+game limits, display options) exists **once per league** and is configured
+independently. Setting `favorite_teams` at the top level does nothing.
+
+The practical consequence: if you follow one MLB team and one MiLB affiliate,
+you set two separate `favorite_teams` lists, and you can give them different
+durations and different filtering.
+
+---
+
+## How Games Are Picked
+
+Selection runs per league, per mode, on every update. Which of three code paths
+runs depends on two settings in that league's block: whether `favorite_teams`
+is empty, and whether `filtering.show_favorite_teams_only` is on.
+
+**1. No favourites** (`favorite_teams: []`) — the next *N* games league-wide,
+sorted by time.
+
+**2. Favourites, exclusively** (`show_favorite_teams_only: true`) — only games
+involving your teams, with a per-team budget: each favourite gets up to
+`game_limits.upcoming_games_to_show` games, and a game between two favourites
+counts toward both.
+
+**3. Favourites first, then others** (`show_favorite_teams_only: false`) — your
+favourites' games first, then a top-up of `game_limits.other_upcoming_games_to_show`
+non-favourite games, with the combined list re-sorted by start time so the
+cards still read as a schedule. The non-favourite games come from a window that
+advances every `other_rotation_interval_seconds` (default 30 minutes), so the
+board works through the day rather than resampling the same handful.
+
+**What the numbers mean changes with the path.** This is the single most
+confusing thing in the configuration:
+
+| Selection path | `upcoming_games_to_show` means |
+|----------------|-------------------------------|
+| No favourites | A **total** across the league |
+| Favourites, exclusively | A budget **per favourite team** |
+| Favourites first, then others | A **total** for the favourites portion only |
+
+Three favourite teams with a value of `3` is up to nine cards in the exclusive
+path and three in the others.
+
+**And it is a pool size, not a card count.** This catches people out: the panel
+shows one game at a time and keeps its place between visits, cycling through
+the pool. So raising `upcoming_games_to_show` gives you a *longer lap* — any
+one game comes round **less** often, not more. If you want your team's next
+game on screen more, make the number smaller, not bigger.
+
+### Which non-favourite games fill the remaining slots
+
+Two settings decide what qualifies, and both have important limits in baseball:
+
+| Option | Values | Reality in this plugin |
+|--------|--------|------------------------|
+| `other_games_min_quality` | `ranked`, `broadcast`, `any` | `ranked` needs a national poll. MLB and MiLB publish none, so it lets every game through and no poll is requested. It only bites for NCAA Baseball |
+| `other_games_divisions` | e.g. `["fbs"]` | Needs ESPN's FBS/FCS group rosters, which exist for **college football and nothing else**. Inert here — no lookup is made |
+
+**Your favourite teams are never filtered by either.** Follow a lower-division
+side and its games always appear; these only decide what fills the *remaining*
+slots.
+
+Within the non-favourite pool the better matchup leads and each team appears
+once: it is each team's *next* game, ordered by the best poll position of
+either side, so a top-five matchup sits in the first window rather than
+whichever starts soonest. Ties fall back to start time, and a league with no
+poll — MLB, MiLB — simply stays chronological. Favourites are always ordered by
+when they play; for your own team the next game is the point.
+
+Both filters **fail open**. If the data behind them cannot be fetched the game
+is allowed through, and if the filters between them leave nothing at all — your
+teams idle and every other game rejected — the unfiltered list is used instead.
+A board showing filler beats a board showing nothing. Setting
+`other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the
+one way to ask for an empty slate, and that is honoured.
+
+Two more rules that apply on top:
+
+- `exclude_teams` beats everything — a team listed there is hidden from the
+  live rotation and from finished scores even if it is also a favourite. That
+  is what makes it useful for spoiler protection.
+- If `show_favorite_teams_only` is `true` but `favorite_teams` is empty, the
+  filter is skipped entirely and you get path 1. An empty favourites list never
+  means "show nothing".
+
+**Selection can only choose from games that were fetched.**
+`schedule_lookback_days` (default `14`) and `schedule_lookahead_days`
+(default `7`) bound the window. A fixture beyond the lookahead horizon cannot
+appear no matter how high you set the limits.
+
+### Live games
+
+The live screen has its own selection. By default it shows only live games
+involving your favourites; `filtering.show_all_live: true` includes every live
+game. `filtering.favorite_live_boost` (default `2`) gives your team's game that
+many turns per one turn for other live games, and queues it first when the
+rotation refreshes. `live_priority` (default `false` here) lets a live game
+interrupt the normal mode rotation.
+
+`stale_game_timeout` (default `300`) drops a live game that has gone that long
+without an update, which is what stops a suspended or abandoned game holding a
+slot forever.
+
+---
+
+## Configuration Reference
+
+Options marked **advanced** are behind the "advanced" toggle in the web UI and
+are safe to ignore.
+
+### Plugin-wide settings
+
+These nine sit at the top level, outside any league block.
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `enabled` | `true` | Whether the plugin takes part in the rotation at all |
+| `display_duration` | `30` | Seconds each mode holds the panel before the rotation moves on |
+| `game_display_duration` | `15` | Seconds each individual game shows before the next one within the same mode |
+| `update_interval` | `3600` | Base fetch interval |
+| `timezone` | `""` | **Advanced.** IANA timezone for start times, e.g. `America/Chicago`. Blank follows the global LEDMatrix timezone, then the system one |
+
+> **A leftover `"UTC"` from an older version?** This plugin used to persist
+> `"timezone": "UTC"` into your saved config, where it then shadowed your real
+> global timezone. That stale value is now detected and ignored automatically
+> whenever your global or system timezone disagrees — no manual edit needed. If
+> you genuinely want UTC here, set `Etc/UTC`, which is always honoured.
+| `schedule_lookback_days` | `14` | **Advanced.** How far back the recent screens can see |
+| `schedule_lookahead_days` | `7` | **Advanced.** How far ahead the upcoming screens can see |
+| `no_data_interval_seconds` | `300` | **Advanced.** Gap between live checks when nothing is on, backing off the longer it stays quiet |
+| `live_idle_max_interval_seconds` | `900` | **Advanced.** Ceiling for that back-off |
+
+Baseball is a daily sport in season and dormant out of it, so the back-off pair
+matters: out of season the plugin settles to one check every 15 minutes rather
+than one every five.
+
+### Per-league: teams and filtering
+
+Set these inside `mlb`, `milb`, or `ncaa_baseball`.
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `enabled` | `true` | Whether this league is fetched and displayed at all |
+| `favorite_teams` | `[]` | Team abbreviations, e.g. `["STL", "LAD"]` |
+| `exclude_teams` | `[]` | Teams to always hide, from live *and* finished scores |
+| `filtering.show_favorite_teams_only` | `true` | Restrict to games involving `favorite_teams` |
+| `filtering.show_all_live` | `false` | Show every live game, not just favourites' |
+| `filtering.favorite_live_boost` | `2` | **Advanced.** Turns your favourite's live game gets per turn for others |
+
+Abbreviations are ESPN's, not the club name — `STL`, `LAD`, `NYY`, `SD`, `CIN`.
+If you are unsure of one, enable debug logging and the plugin logs
+`home_abbr` and `away_abbr` for every game it processes.
+
+### Per-league: display modes
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `display_modes.show_live` | `true` | Enable this league's live screen |
+| `display_modes.show_recent` | `true` | Enable its recent screen |
+| `display_modes.show_upcoming` | `true` | Enable its upcoming screen |
+| `display_modes.live_display_mode` | `switch` | `switch` = one full-screen game at a time; `scroll` = all games scrolling sideways |
+| `display_modes.recent_display_mode` | `switch` | As above, for recent |
+| `display_modes.upcoming_display_mode` | `switch` | As above, for upcoming |
+
+Every screenshot in this README is `switch` mode. `scroll` draws a compact card
+per game and scrolls the strip, which fits more games on a long panel at the
+cost of size; the `scroll_card` and `scroll_settings` groups only affect it.
+
+### Per-league: how many games
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `game_limits.recent_games_to_show` | `5` | Finished games — see [what the numbers mean](#how-games-are-picked) |
+| `game_limits.upcoming_games_to_show` | `1` | Scheduled games — same caveat |
+| `game_limits.other_recent_games_to_show` | `5` | **Advanced.** Non-favourite finished games, in the favourites-first path |
+| `game_limits.other_upcoming_games_to_show` | `1` | **Advanced.** Non-favourite scheduled games, same path |
+| `game_limits.other_rotation_interval_seconds` | `1800` | **Advanced.** How often the non-favourite window advances |
+| `game_limits.other_games_min_quality` | `ranked` | **Advanced.** Which non-favourite games earn a slot. Meaningful for NCAA, where a national ranking exists |
+| `game_limits.other_games_divisions` | `["fbs"]` | **Advanced.** Divisions non-favourite games may come from. NCAA only |
+
+Note the asymmetric defaults: five recent games but one upcoming. That suits
+baseball's daily schedule — yesterday produced a full slate of finals worth
+rotating through, while "the next game" is usually the only upcoming one you
+care about.
+
+### Per-league: durations
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `live_game_duration` | `30` | Seconds per live game before rotating to the next |
+| `non_favorite_live_game_duration` | `0` | **Advanced.** Separate, usually shorter duration for live games with no favourite in them. `0` means "use `live_game_duration` for everything" |
+| `recent_game_duration` | `15` | **Advanced.** Seconds per finished game |
+| `upcoming_game_duration` | `15` | **Advanced.** Seconds per scheduled game |
+| `live_priority` | `false` | Let a live game in this league interrupt the normal rotation |
+| `mode_durations.*` | `null` | **Advanced.** Fixed total duration for a whole mode, overriding the per-game maths |
+| `dynamic_duration.enabled` | `false` | **Advanced.** Size a mode's duration from how many games it actually has |
+
+`non_favorite_live_game_duration` is the setting for a full slate: with fifteen
+games on at once, `live_game_duration: 30` and
+`non_favorite_live_game_duration: 8` keeps your club's game on screen while the
+rest still tick past.
+
+It only takes effect when favourites are configured **and** non-favourite live
+games are actually being shown — otherwise there is nothing on screen to
+shorten:
+
+| Favourites set? | Non-favourite games shown? | Game has a favourite? | Duration used |
+|---|---|---|---|
+| No | — | — | `live_game_duration` |
+| Yes | No (`show_favorite_teams_only` on, `show_all_live` off) | yes | `live_game_duration` |
+| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | yes | `live_game_duration` |
+| Yes | Yes | no | `non_favorite_live_game_duration`, when above `0` |
+
+### Per-league: update intervals
+
+All **advanced**. The defaults are tuned for a Raspberry Pi that is also driving
+a panel.
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `live_update_interval` | `30` | How often live game data is refreshed |
+| `recent_update_interval` | `3600` | How often the finished-games list is rebuilt |
+| `upcoming_update_interval` | `3600` | How often the upcoming list is rebuilt |
+| `update_interval_seconds` | `3600` | Base fetch interval for this league |
+| `stale_game_timeout` | `300` | How long a live game may go without an update before it is dropped |
+
+### Per-league: background fetching
+
+Data is fetched on a background thread so the panel never stalls on the
+network. Under each league's `background_service`, all **advanced**:
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `enabled` | `true` | Fetch in the background rather than inline |
+| `request_timeout` | `30` | Seconds before a request gives up |
+| `max_retries` | `3` | Retries per failed request |
+| `priority` | `2` | Queue priority against other plugins' fetches (medium) |
+
+---
+
+### Per-league: what appears on the card
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `display_options.show_records` | `false` | **Advanced.** Each team's win-loss record in the bottom corners |
+| `display_options.show_odds` | `true` | Draw the betting line when ESPN has one |
+| `display_options.show_ranking` | `false` | **Advanced.** Rank badge. Meaningful for NCAA; MLB and MiLB publish no poll |
+| `display_options.show_series_summary` | `false` | **Advanced.** Where the teams stand in the current series |
+
+![The same finished game with show_records off and on; with it on, 69-70 and
+82-56 appear in the bottom corners](../../docs/assets/baseball-scoreboard/show-records.png)
+
+`show_odds` is not shown here because it cannot be captured in a still: odds
+are fetched asynchronously on a background thread after the card is first
+drawn, so the line appears a moment later, once the fetch returns. That also
+means it costs an extra request per selected game — worth turning off if you
+do not want the line.
+
+### The extra baseball screens
+
+Baseball has more to say than most sports mid-at-bat, so the plugin can
+periodically take over with a dedicated screen. All are **off by default** and
+all cost an extra per-game data fetch.
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `display_options.show_pitcher_batter` | `false` | A screen naming the current pitcher and batter during a live at-bat |
+| `display_options.show_last_play` | `false` | Adds a short code for the last completed play (`1B`, `HR`, `K`, `BB`) to that screen |
+| `display_options.show_player_card` | `false` | A full card for the current batter: headshot, number, position, bat/throw and season stats |
+| `display_options.show_traditional_scoreboard` | `false` | A full-screen ballpark scoreboard: inning-by-inning line score, R/H/E, and an at-bat panel |
+
+`show_last_play` only does anything with `show_pitcher_batter` on — it adds a
+field to that screen rather than being a screen of its own.
+
+**All four are MLB and NCAA Baseball only.** MiLB's data does not come from
+ESPN in the same shape, so the flags exist under `milb.display_options` but
+nothing is wired up behind them. The pitcher/batter and player-card screens are
+additionally **live-games only**, since the current at-bat is the data they are
+built from; only the traditional scoreboard has a `game_scope` option, because
+only it has anything to say about a finished game.
+
+They also need panel height. The traditional scoreboard wants 64 rows or more
+for a line score; the player card hides the headshot and falls back to a
+compact two-line text card on a 64×32 panel.
+
+#### Traditional scoreboard: `customization.traditional_scoreboard`
+
+A full-screen ballpark scoreboard — inning-by-inning line score with R/H/E, the
+current inning highlighted, and a lit ball/strike/out column during a live
+at-bat. It is not a display mode you select: it periodically *rotates into*
+whichever game the normal rotation is already showing, then reverts.
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `game_scope` | `both` | `live`, `recent`, or `both`. `recent` is the "glance at the final line score" setting |
+| `favorites_only` | `false` | Only rotate in for games involving this league's `favorite_teams`. Independent of the normal rotation's filtering, so you can watch every live game in the compact scorebug but reserve the full-screen treatment for your team |
+| `dwell_seconds` | `6` | How long it stays each time it rotates in |
+| `interval_seconds` | `30` | How often it rotates in |
+| `font` | `9x15.bdf` | A fixed-size `.bdf` renders at its native pixel size with a smaller-sibling fallback; use a scalable `.ttf` (e.g. `press_start`) if you want `font_size` to control the size |
+| `font_size` | `24` | Cap for scalable fonts only; ignored by `.bdf`. The screen auto-fits, so the default means "as big as the panel allows" |
+| `use_team_colors` | `true` | Colour each abbreviation with the team's real ESPN colours instead of flat `text_color` |
+| `show_team_color_backgrounds` | `true` | Tint each row with a ~12% wash of the team's colour plus an accent strip. Requires `use_team_colors` |
+| `show_logos` | `true` | Small team logo beside each abbreviation when there is spare width |
+| `show_dividers` | `true` | 1px grid lines between innings, rows and the R/H/E columns |
+| `highlight_winner` | `true` | On a final game, colour the winner's run total in `winner_color`. Pairs with `game_scope: recent` |
+| `text_color` | `[255, 255, 255]` | Score digits, and abbreviations when team colours are off |
+| `header_color` | `[180, 180, 180]` | The inning-number and R/H/E header row |
+| `highlight_color` | `[255, 140, 0]` | Current-inning highlight, the batting-team arrow, and lit ball/strike/out indicators |
+| `divider_color` | `[90, 90, 90]` | The grid lines |
+| `winner_color` | `[0, 200, 0]` | The winning team's run total on a final game |
+
+```json
+{
+  "mlb": { "display_options": { "show_traditional_scoreboard": true } },
+  "customization": {
+    "traditional_scoreboard": { "game_scope": "recent", "favorites_only": true }
+  }
+}
+```
+
+#### Pitcher / batter: `customization.at_bat_info`
+
+Names the current at-bat's pitcher and batter, labelled in full
+(`Pitcher: G. Cole` / `Batter: J. Soto`) so there is no confusing the `B` with
+the balls indicator. Text auto-fits, falling back to a smaller font — and only
+as a last resort truncating — rather than running off the edge.
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `favorites_only` | `false` | Only rotate in for favourites' games |
+| `dwell_seconds` | `4` | How long it stays |
+| `interval_seconds` | `25` | How often it rotates in |
+| `font` | `9x15.bdf` | As above |
+| `font_size` | `24` | Cap for scalable fonts only |
+| `use_team_colors` | `true` | Pitcher in the fielding team's colour, batter in the batting team's |
+| `pitcher_color` | `[255, 255, 255]` | Fallback when team colours are off |
+| `batter_color` | `[255, 255, 0]` | Fallback when team colours are off |
+| `last_play_color` | `[0, 255, 255]` | The last-play code — always flat, since a play code belongs to no team |
+
+#### Player card
+
+A "baseball card" for the current batter, and optionally the pitcher: headshot,
+jersey number, position, bat/throw, and season stats (`AVG`/`HR`/`RBI` for
+hitters, `ERA`/`W-L`/`K` for pitchers). Headshots come from ESPN's athlete API
+and are cached in memory and on disk under `assets/headshots/`, which is
+gitignored. If a headshot cannot be loaded the card renders text-only.
+
+Under `customization.player_card`:
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `show_batter` | `true` | A card for the current batter |
+| `show_pitcher` | `false` | Also a card for the pitcher. The batter wins when both are available |
+| `favorites_only` | `false` | Only rotate in for favourites' games |
+| `dwell_seconds` | `6` | How long the card stays |
+| `interval_seconds` | `40` | How often it rotates in |
+| `font` / `font_size` | `9x15.bdf` / `24` | As for the other screens; the cap applies to scalable fonts only |
+| `use_team_colors` | `true` | The player's name in their team's ESPN colour |
+| `use_team_colors_border` | `true` | The headshot frame in the team's colour |
+| `border_color` | `[255, 200, 0]` | Frame colour when the team colour is off or unavailable |
+| `text_color` | `[255, 255, 255]` | Name and the jersey/position/bat-throw line |
+| `stat_color` | `[0, 220, 255]` | The season-stats line |
+
+### The matchup card: separator, date and time
+
+The **Matchup Card Layout** group (`scroll_card`, advanced) controls what sits
+between the two logos before a game starts and how the date and time are
+written. It applies to every display mode — the scroll ticker, the Vegas ticker
+and the full-screen scoreboard.
+
+| Key | Default | Values |
+|-----|---------|--------|
+| `vs_text` | `VS` | Any short string: `VS`, `@`, `at`, `v`. The away team is on the left, so `@` and `at` read as "away at home". Blank draws nothing |
+| `upcoming_center` | `vs` | Scroll and Vegas cards: `vs`, `date_time`, `none` |
+| `switch_upcoming_center` | `date_time` | The full-screen scoreboard: `date_time`, `vs`, `none`, `inherit` |
+| `date_format` | `abbrev` | Scroll and Vegas: `abbrev` (Sep 19), `numeric` (9/19), `day_first` (19 Sep), `numeric_day_first` (19/9), `weekday` (Fri Sep 19) |
+| `switch_date_format` | `numeric` | The same set for the full-screen scoreboard, plus `inherit` |
+| `time_format` | `12h` | `12h` (7:40PM) or `24h` (19:40) |
+| `show_date` / `show_time` | `true` | Drop either line |
+| `swap_date_time` | `false` | Swap the two lines. Each display starts from its own order, so this flips rather than forces: cards put the time on top, the full-screen stack puts the date on top |
+
+The two `*_date_format` keys have different defaults on purpose: the cards have
+always written `Sep 19` and the full-screen scoreboard `9/19`, so one shared
+default would have restyled one of them.
+
+Choosing the separator for the full-screen scoreboard moves the date and time
+out of the middle and onto the top and bottom rows, and the "Next Game" header
+gives up the top row to them. The `center_gap*` keys size the scroll and Vegas
+card's middle strip only — the full-screen scoreboard pins its logos to the
+panel edges and ignores them.
+
+```json
+{
+  "scroll_card": {
+    "vs_text": "@",
+    "switch_upcoming_center": "vs",
+    "date_format": "weekday"
+  }
+}
+```
+
+### Favourite team result colours
+
+A run of games against the same opponent is hard to read at a glance: the same
+two logos go past and only the digits change. Turn this on to colour a finished
+game's score by how your team did — green for a win, red for a loss.
 
 ```json
 {
@@ -433,37 +556,17 @@ a loss.
 }
 ```
 
-- Off by default. Until you enable it the score is drawn in the plain white the
-  scorebug uses everywhere else. (Before this release the scroll/Vegas recent
-  card drew the final score gold, out of step with the switch view and with
-  every other scoreboard; it is white now.)
-- Only finished games are colored. Live and upcoming cards are untouched.
-- A game needs exactly one favorite team. If neither side is a favorite, or both
-  are, the score keeps its normal color.
-- Applies to both the one-game-at-a-time switch view and the scroll/Vegas
-  ticker.
-- The three colors are Advanced settings; leave them alone for the defaults
-  above.
+Off by default. Only *finished* games are coloured — live and upcoming cards are
+untouched — and a game needs exactly one favourite in it: if neither side is a
+favourite, or both are, the score keeps its normal colour. The three colours are
+advanced settings; leave them alone for the defaults above.
 
-## Troubleshooting
-
-- **Game times look like UTC** (a 6:45pm Central first pitch showing as
-  11:45PM): the plugin couldn't read your global timezone. Set `timezone`
-  under the plugin's Advanced Settings to your IANA zone, e.g.
-  `America/Chicago`. A `timezone` entry stuck on `"UTC"` from a version
-  before 1.20.0 no longer needs clearing — since 1.20.1 it's ignored
-  automatically whenever your global or system timezone disagrees. (Set
-  `Etc/UTC` if you actually want UTC; that's always honored.)
-- **No games showing**: Check if leagues are enabled and API endpoints are accessible
-- **Missing team logos**: Ensure team logo files exist in your assets/sports/ directory
-- **Slow updates**: Adjust the update interval in league configuration
-- **API errors**: Check your internet connection and ESPN API availability
-
-## Vegas ticker: seeing live games more often
+### Seeing live games more often in the Vegas ticker
 
 By default a live game **takes over** the display: the Vegas ticker stops and
-this scoreboard shows full screen until the game ends. If you would rather keep
-the marquee scrolling and still see scores, set this in the core config:
+this scoreboard goes full screen until the game ends. To keep the marquee
+scrolling and still see scores, the settings live in the **core** LEDMatrix
+config rather than in this plugin:
 
 ```json
 {
@@ -478,134 +581,179 @@ the marquee scrolling and still see scores, set this in the core config:
 ```
 
 The ticker is otherwise a strict round robin — every plugin appears once per
-cycle — so with a dozen plugins enabled a score comes round once a lap. These
-weights let this plugin claim several slots per cycle, spaced evenly through
-it rather than bunched together.
+cycle — so with a dozen plugins a score comes round once a lap. `live_weight`
+applies whenever this scoreboard has any live game; `favorite_live_weight`
+applies when one of your teams is playing, a distinction that has to be made
+here because the core can tell *that* a game is live but not *whose*.
 
-`live_weight` applies whenever this scoreboard has a live game.
-`favorite_live_weight` applies when one of your `favorite_teams` is playing, so
-your team's game comes round more often than other live games. That distinction
-has to be made here rather than in the core, which can tell *that* a game is
-live but not *whose*.
+The weight is per **plugin**, not per game: with fifteen games live this
+scoreboard still occupies one slot at a time and picks between its own games
+using `filtering.favorite_live_boost`. And more slots make the cycle *longer*,
+not faster — everything else appears proportionally less often.
 
-Two things to keep in mind:
+### Fonts, colours and offsets
 
-- The weight is per **plugin**, not per game. With four games live this
-  scoreboard still occupies one slot at a time and picks between its own games
-  using `favorite_live_boost`; these weights control how often the scoreboard
-  itself comes round.
-- More slots make the cycle **longer**, not faster — everything else appears
-  proportionally less often. And appearing more often only helps if the data is
-  fresh, which is governed by this plugin's own live update interval.
+`customization` restyles each text element independently, and is plugin-wide
+rather than per-league. Each group takes `font`, `font_size` and `text_color`,
+and the colour applies to the text drawn in that element's face on the
+full-screen scoreboard and on the scroll and Vegas cards alike.
 
-## 🎯 Which Games Get Shown
+| Group | Covers |
+|-------|--------|
+| `score_text` | The score, and the matchup separator on an upcoming card |
+| `period_text` | The clock, the inning, and the date and time on an upcoming scoreboard |
+| `team_name` | Team names and abbreviations |
+| `status_text` | Status lines such as "Next Game" |
+| `detail_text` | Small detail lines |
+| `rank_text` | Team rankings |
 
-**`upcoming_games_to_show` is not "how many cards you see".** It is the size of a *pool*. The panel cycles through that pool one card at a time and keeps its place between visits, so a pool of 3 means the board rotates through the same 3 games until the schedule moves on. Making the number bigger gives you a *longer lap*, so any one game comes round **less** often.
-
-Which mode you are in depends on whether `favorite_teams` is set and whether `show_favorite_teams_only` is on:
-
-| `favorite_teams` | `show_favorite_teams_only` | What you get |
-|---|---|---|
-| empty | either | The next N games league-wide, chronologically. Every game shown is a non-favorite game, so the two filters below apply to all of them. |
-| set | **on** | Only your teams. The limit is a budget **per team**. |
-| set | **off** | **Your teams first, then other games to fill.** Both limits are **totals**. |
-
-The third row is what most people want, and it did not exist before: with the flag off, favorites used to be ignored *entirely*.
-
-### The settings
-
-| Option | Default | Description |
-|---|---|---|
-| `upcoming_games_to_show` | varies | How many **favorite** upcoming games to show. |
-| `recent_games_to_show` | varies | The same, for finished games. |
-| `other_upcoming_games_to_show` | matches `upcoming_games_to_show` | How many **non-favorite** upcoming games to add. `0` gives you favorites only. |
-| `other_recent_games_to_show` | matches `recent_games_to_show` | The same, for finished games. |
-| `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
-| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked`, `broadcast`, or `any`. |
-| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. College football only — see the note below. |
-
-**Your favorite teams are never filtered by the last two** — follow a smaller-division team and its games always appear. Those settings only decide what fills the *remaining* slots.
-
-Within the other-games pool, **the better matchup leads**, and each team appears once. The pool is each team's *next* game ordered by the best poll position of either side, so a top-five matchup sits in the first window rather than whichever kicks off soonest — and the #1 team's whole season does not sort above everyone else's opener. Ties fall back to kickoff order, and a league with no poll keeps chronological order. Your favorite teams are ordered by when they play, not by rank -- for your own team the next game is the point.
-
-### Variety comes from turnover
-
-Rather than widening the pool, the non-favorite slice **moves**: the window advances by its own width every `other_rotation_interval_seconds`, so consecutive windows do not overlap and the board works through the schedule instead of resampling the front of it. Your favorites are not rotated — for upcoming games the soonest ones are the point.
-
-Both filters **fail open**: if the data behind them cannot be fetched, the game is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
-
-They fail open a second time, as a set: if the filters between them leave **nothing at all** — your teams idle and every other game rejected — the unfiltered list is used instead. Setting `other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one way to ask for an empty slate, and that is honoured.
-
-> `other_games_min_quality` needs a national poll, which only the college leagues publish — set to `ranked` in a professional league it lets every game through, and no poll is requested. `other_games_divisions` needs ESPN's FBS/FCS group rosters, which exist for **college football and nothing else**: asked for any other college league they come back empty or 500, so the setting is inert here and no lookup is made.
-
-## Matchup separator and the upcoming card middle
-
-The **Matchup Card Layout** section (advanced) controls what sits between the
-two team logos before a game starts, and how the date and time are written.
-These settings now apply to every display mode -- the scroll ticker, the Vegas
-ticker, and the full-screen scoreboard -- rather than only the tickers.
-
-| Setting | Key | Default | What it does |
-|---|---|---|---|
-| Matchup Separator | `vs_text` | `VS` | Text drawn between the teams: `VS`, `@`, `at`, `v`. The away team is always on the left, so `@` and `at` read as "away at home". Blank draws nothing. |
-| Middle of an Upcoming Card | `upcoming_center` | `vs` | Scroll and Vegas cards: the separator, the date and time stacked, or nothing. |
-| Middle of a Full-Screen Upcoming Scoreboard | `switch_upcoming_center` | `date_time` | The same choice for the full-screen scoreboard, plus `inherit` to follow the setting above. It defaults to the stacked date and time, which is what this display has always shown, so nothing changes until you pick something else. |
-| Date Format | `date_format` | `abbrev` | How the scroll and Vegas cards write the date: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
-| Full-Screen Date Format | `switch_date_format` | `numeric` | The same choice for the full-screen scoreboard, plus `inherit` to follow the row above. It has its own default because the two displays disagree about what is normal: the cards have always written `Sep 19` and the full-screen scoreboard `9/19`, so a single shared default would restyle one of them. |
-| Time Format | `time_format` | `12h` | 12- or 24-hour clock. |
-| Show Date / Show Time | `show_date`, `show_time` | `true` | Drop either line. |
-| Swap Date and Time | `swap_date_time` | `false` | Swap the two lines over. Each display starts from its own order, so this flips them rather than forcing one: the scroll and Vegas cards put the time on top, the full-screen date/time stack puts the date on top. |
-
-Choosing the separator for the full-screen scoreboard moves the date and time
-out of the middle and onto the top and bottom rows, the same way the scroll
-card lays them out; the "Next Game" header gives up the top row to them.
-
-The center-gap settings in the same section size the scroll and Vegas card's
-middle strip only -- the full-screen scoreboard pins its logos to the panel
-edges and is unaffected.
-
-Example:
-
-```json
-{
-  "scroll_card": {
-    "vs_text": "@",
-    "switch_upcoming_center": "vs",
-    "date_format": "weekday"
-  }
-}
-```
-
-### Text Colours
-
-Each text element in the **Customization** section carries a colour, and it now
-applies to the text drawn in that element's face — on the full-screen scoreboard
-and on the scroll and Vegas cards alike. Until this version the picker changed
-only which font was loaded; every string was drawn white.
-
-| Element | Key | Colours |
-|---|---|---|
-| Score | `score_text` | The score, and the matchup separator on an upcoming card |
-| Period / clock | `period_text` | The clock, period, and the date and time on an upcoming scoreboard |
-| Team name | `team_name` | Team names and abbreviations |
-| Status | `status_text` | Status lines such as "Next Game" |
-| Detail | `detail_text` | Small detail lines |
-| Ranking | `rank_text` | Team rankings drawn in the ranking face |
-
-Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white, so a display
-nobody has recoloured looks exactly as it did.
+Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white:
 
 ```json
 {
   "customization": {
-    "score_text": { "text_color": [255, 200, 0] },
-    "status_text": { "text_color": "#00A0FF" }
+    "score_text": { "font_size": 12, "text_color": [255, 220, 0] }
   }
 }
 ```
 
-Two things keep their own colours on purpose: the betting-odds figures, which
-are coloured by which side is favoured, and a finished game's score when
-**Favorite Team Result Colors** is on — that tint wins, and your score colour
-shows on every other game. Records and rankings drawn in the small fixed face
-stay white; no element in the schema owns that face.
+`customization.layout` nudges individual elements by `x_offset` / `y_offset`
+for panels where something sits slightly wrong.
+
+---
+
+## Team Abbreviations
+
+`favorite_teams` and `exclude_teams` take ESPN's abbreviation, not the club
+name. If you are unsure of one, enable debug logging — the plugin logs
+`home_abbr` and `away_abbr` for every game it processes.
+
+**MLB.** `ARI` `ATL` `BAL` `BOS` `CHC` `CHW` `CIN` `CLE` `COL` `DET` `HOU`
+`KC` `LAA` `LAD` `MIA` `MIL` `MIN` `NYM` `NYY` `OAK` `PHI` `PIT` `SD` `SEA`
+`SF` `STL` `TB` `TEX` `TOR` `WAS`
+
+**NCAA Baseball.** `LSU` `FLA` `VANDY` `ARK` `MISS` `TAMU` `TENN` `UK` `UGA`
+`BAMA` `AUB` `SCAR` `CLEM` `FSU` `MIA` `UNC` `DUKE` `WAKE` `VT` `LOU`, among
+many others.
+
+**MiLB.** Abbreviations vary by league and level (AAA, AA, A+, A) — for example
+`DUR` (Durham Bulls), `SWB` (Scranton/Wilkes-Barre RailRiders), `MEM` (Memphis
+Redbirds). The debug-log trick is the reliable way to find an affiliate's code.
+
+---
+
+## Panel Sizes
+
+The scoreboard lays itself out from the panel dimensions rather than assuming a
+size.
+
+![The same live game rendered on 64x32, 128x32, 128x64 and 256x32
+panels](../../docs/assets/baseball-scoreboard/panel-sizes.png)
+
+- **64×32** is tight for baseball specifically: the bases diamond, outs and
+  count all compete for the centre with the score. It works, but a wider panel
+  is much easier to read across a room.
+- **128×32** is the size everything is tuned for.
+- **128×64** gives the scorebug room and is what the traditional scoreboard and
+  player-card screens want.
+- **256×32** keeps element sizes and centres them, so a long chain buys width
+  rather than a bigger scoreboard — `scroll` mode is what makes a long panel
+  pay off.
+
+---
+
+## Troubleshooting
+
+**Nothing shows for a league I enabled.**
+Check that league's `display_modes` — all three can be off. Then check whether
+the league is in season: NCAA Baseball runs roughly February to June, and MiLB
+finishes before MLB does.
+
+**The upcoming screen is empty but I know there are games.**
+`schedule_lookahead_days` defaults to `7`; during an All-Star break or between
+series the next fixture can sit beyond it. The other common cause is
+`show_favorite_teams_only: true` with favourites who are not playing.
+
+**I see far more games than I asked for.**
+`upcoming_games_to_show` is a *per-team* budget when `show_favorite_teams_only`
+is on. See [How Games Are Picked](#how-games-are-picked).
+
+**My settings seem to be ignored.**
+Check they are inside the league block. `favorite_teams` at the top level does
+nothing — it has to be `mlb.favorite_teams`. See
+[Three Leagues, Three Config Blocks](#three-leagues-three-config-blocks).
+
+**Start times are wrong by hours.**
+Set `timezone`. ESPN reports first pitch in UTC and the plugin converts on
+display.
+
+**A team shows as a grey box instead of a logo.**
+Logos are downloaded on demand and cached. A failed download used to be cached
+permanently; on a current core it is retried automatically after six hours. If
+you are on an older core, delete the undersized file (a real logo is tens of
+kilobytes) and restart.
+
+**The pitcher/batter or player-card screen never appears.**
+Both need an extra per-game fetch and only appear during a live at-bat. They
+also need panel height — check a 128×64 panel before concluding they are
+broken.
+
+---
+
+## Development
+
+### File structure
+
+```text
+baseball-scoreboard/
+├── manifest.json                  # Metadata and version history
+├── manager.py                     # BaseballScoreboardPlugin: league and mode routing
+├── mlb_managers.py                # MLB fetching and cache keys
+├── milb_managers.py               # MiLB fetching
+├── ncaa_baseball_managers.py      # NCAA fetching
+├── sports.py                      # Shared sports engine: selection, extraction, rendering
+├── logo_manager.py                # Logo loading and download
+├── config_schema.json             # Settings schema; source of truth for defaults
+└── test_*.py                      # Standalone regression tests
+```
+
+`sports.py` and the other shared files are **copies** carried by every sports
+scoreboard in this monorepo. A fix in one must be ported to its siblings in the
+same change — see
+[docs/plugin-development/08-shared-sports-code.md](../../docs/plugin-development/08-shared-sports-code.md).
+
+### Data source
+
+ESPN's public scoreboard APIs for `baseball/mlb`,
+`baseball/college-baseball` and the MiLB feeds. No API key required.
+
+One wrinkle worth knowing if you are testing: the recent and upcoming managers
+read through the cache, but the live manager calls
+`_fetch_todays_games()` straight over HTTP with no cache read. Seeded cache
+fixtures therefore cannot drive the live screen.
+
+### Regenerating the images in this README
+
+```bash
+python scripts/render_docs_assets.py --plugin baseball-scoreboard
+```
+
+The fixtures under `docs/assets/baseball-scoreboard/fixtures/` are real ESPN
+responses captured on 2 September 2026. Because the live manager bypasses the
+cache, its screen is fed by a **recorded HTTP response** rather than seeded
+cache data — that is what `http_replay` in `shots.json` does. The result is
+real data that re-renders identically every time, which
+`--check` verifies.
+
+---
+
+## Support
+
+- YouTube: <https://www.youtube.com/@ChuckBuilds>
+- Instagram: <https://www.instagram.com/ChuckBuilds/>
+- Discord: <https://discord.com/invite/uW36dVAtcT>
+- Sponsor: [GitHub Sponsors](https://github.com/sponsors/ChuckBuilds) ·
+  [Buy Me a Coffee](https://buymeacoffee.com/chuckbuilds) ·
+  [Ko-fi](https://ko-fi.com/chuckbuilds/)
+
+Released under the GNU General Public License v3.0 — see [LICENSE](LICENSE).

@@ -53,7 +53,13 @@ Shot list format
 Keys on a shot: ``name`` (required, becomes ``<name>.png``), ``width``,
 ``height``, ``scale``, ``config`` (merged over schema defaults), ``mock_data``
 (inline object, or a path relative to the shot list), ``skip_update``,
-``freeze_time`` (ISO-8601 instant; pins "now" so the image is reproducible) and
+``freeze_time`` (ISO-8601 instant; pins "now" so the image is reproducible),
+``http_replay`` (a recorded-responses file, for managers that fetch without
+reading the cache), ``frames`` (advance a scrolling plugin this many display
+steps before snapshotting), ``attrs`` (runtime state to set on the plugin
+instance, for plugins whose interesting state arrives by event rather than by
+configuration), ``hostname`` (pins ``socket.gethostname``, for plugins that
+print the device name) and
 ``env`` (extra environment variables for the render subprocess). Anything
 omitted falls back to ``defaults``. Set ``"standalone": false`` on a shot that
 only exists to be pasted into a composite.
@@ -115,6 +121,24 @@ FONT_CANDIDATES = {
         "/System/Library/Fonts/Supplemental/Arial.ttf",
     ],
 }
+
+
+def deep_merge(base: Dict[str, Any], overlay: Dict[str, Any]) -> Dict[str, Any]:
+    """Merge ``overlay`` into ``base``, recursing into nested dicts.
+
+    A shot that overrides one key of a per-league block must not wipe the rest
+    of it. With a shallow update, a shot setting only ``mlb.display_modes``
+    replaces the whole ``mlb`` block from ``defaults`` -- including
+    ``mlb.enabled`` -- and the plugin renders nothing for reasons that look
+    nothing like the cause.
+    """
+    merged = dict(base)
+    for key, value in overlay.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
 
 
 def _load_font(weight: str, size: int):
@@ -209,19 +233,29 @@ def render_shot(
     height = int(shot.get("height", defaults.get("height", DEFAULT_HEIGHT)))
     scale = int(shot.get("scale", defaults.get("scale", DEFAULT_SCALE)))
 
-    config = dict(defaults.get("config", {}))
-    config.update(shot.get("config", {}))
+    config = deep_merge(defaults.get("config", {}), shot.get("config", {}))
 
     raw_path = tmpdir / f"{name}-raw.png"
-    renderer = core_repo / "scripts" / "render_plugin.py"
+    frames = int(shot.get("frames", defaults.get("frames", 1)))
+
+    # A scrolling plugin starts its strip off the right edge, so one frame is an
+    # empty panel. Those shots go through our own runner, which drives the same
+    # core testing API and steps display() before snapshotting.
+    if frames > 1:
+        renderer = Path(__file__).resolve().parent / "docs_render_support" / "_docs_frame_runner.py"
+        extra = ["--core-repo", str(core_repo), "--frames", str(frames)]
+    else:
+        renderer = core_repo / "scripts" / "render_plugin.py"
+        extra = []
     if not renderer.is_file():
-        raise SystemExit(f"Core renderer not found at {renderer}")
+        raise SystemExit(f"Renderer not found at {renderer}")
 
     # Every element of argv is either fixed, a path this script resolved, or a
     # validated plugin id -- never a shell string.
     cmd: List[str] = [
         sys.executable,
         str(renderer),
+        *extra,
         "--plugin", validate_plugin_id(plugin_id),
         "--plugin-dir", str(PLUGINS_DIR),
         "--config", json.dumps(config),
@@ -243,11 +277,29 @@ def render_shot(
     # A frozen clock is what makes a README image reproducible: without it a
     # clock, a countdown, or a "starts in 2h" line differs on every run.
     freeze_time = shot.get("freeze_time", defaults.get("freeze_time"))
-    if freeze_time:
-        env["LEDMATRIX_DOCS_FREEZE_TIME"] = str(freeze_time)
+    http_replay = shot.get("http_replay", defaults.get("http_replay"))
+    # Runtime state that an event would normally have set; see the shim.
+    attrs = shot.get("attrs", defaults.get("attrs"))
+    # A plugin that prints the device hostname would otherwise bake whoever ran
+    # the renderer into the committed image, and --check would fail for anyone
+    # else. Pinning it keeps the screenshot generic and reproducible.
+    hostname = shot.get("hostname", defaults.get("hostname"))
+    if freeze_time or http_replay or attrs or hostname:
         support_dir = str(Path(__file__).resolve().parent / "docs_render_support")
         existing = env.get("PYTHONPATH")
         env["PYTHONPATH"] = f"{support_dir}{os.pathsep}{existing}" if existing else support_dir
+    if freeze_time:
+        env["LEDMATRIX_DOCS_FREEZE_TIME"] = str(freeze_time)
+    if attrs:
+        env["LEDMATRIX_DOCS_ATTRS"] = json.dumps(attrs)
+    if hostname:
+        env["LEDMATRIX_DOCS_HOSTNAME"] = str(hostname)
+    if http_replay:
+        replay_path = (shot_list_dir / http_replay).resolve()
+        if not replay_path.is_file():
+            raise SystemExit(
+                f"http_replay file not found for shot '{name}': {replay_path}")
+        env["LEDMATRIX_DOCS_HTTP_REPLAY"] = str(replay_path)
 
     env.update({str(k): str(v) for k, v in defaults.get("env", {}).items()})
     env.update({str(k): str(v) for k, v in shot.get("env", {}).items()})

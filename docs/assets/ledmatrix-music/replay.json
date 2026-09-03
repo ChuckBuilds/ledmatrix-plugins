@@ -1,0 +1,9 @@
+{
+  "matches": [
+    {
+      "url_contains": "cover",
+      "body_file": "cover.png",
+      "content_type": "image/png"
+    }
+  ]
+}

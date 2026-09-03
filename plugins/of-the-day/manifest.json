@@ -1,7 +1,7 @@
 {
   "id": "of-the-day",
   "name": "Of The Day Display",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "author": "ChuckBuilds",
   "description": "Display daily featured content like Word of the Day, Bible verses, or custom daily items. Supports multiple categories with rotating display and configurable data sources.",
   "category": "information",
@@ -21,6 +21,13 @@
     "of_the_day"
   ],
   "versions": [
+    {
+      "version": "1.4.2",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Documentation only, no behaviour change. Rewrites the README around real rendered screenshots and documents all 13 settings. Leads with the reason a fresh install shows 'No Data': the categories block is empty by default, so the bundled data files exist but nothing points at them until a category is added. Corrects the data-file format, which the old README described as keyed by YYYY-MM-DD -- the files and the loader both use the day-of-year number, so a file written with date keys loads cleanly and then shows nothing. Documents that the customization keys are font_size and text_color, not the size and color used by the schema's x-style-elements declaration; the short names are silently ignored. Also separates the three rotation intervals and notes that auto_fit_text only has a visible effect where shrinking can gain a line.",
+      "changelog": "Documentation only, no behaviour change. Rewrites the README around real rendered screenshots and documents all 13 settings. Leads with the reason a fresh install shows 'No Data': the categories block is empty by default, so the bundled data files exist but nothing points at them until a category is added. Corrects the data-file format, which the old README described as keyed by YYYY-MM-DD -- the files and the loader both use the day-of-year number, so a file written with date keys loads cleanly and then shows nothing. Documents that the customization keys are font_size and text_color, not the size and color used by the schema's x-style-elements declaration; the short names are silently ignored. Also separates the three rotation intervals and notes that auto_fit_text only has a visible effect where shrinking can gain a line."
+    },
     {
       "version": "1.4.1",
       "released": "2026-08-06",
@@ -66,7 +73,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-06",
+  "last_updated": "2026-09-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

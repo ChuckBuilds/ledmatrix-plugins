@@ -4,6 +4,12 @@ A scrolling ticker for the LEDMatrix display showing live stock and
 cryptocurrency prices, percent changes, and optional inline price charts.
 Data comes from Yahoo Finance — no API key required.
 
+![AAPL scrolling across a 128x32 panel: the Apple logo, the symbol, the price,
+and a green gain](../../docs/assets/ledmatrix-stocks/hero.png)
+
+*Every image in this README is real plugin output, rendered at the true panel
+size from a recorded quote so it reproduces exactly.*
+
 ## Features
 
 - Live stock and crypto prices via Yahoo Finance (no API key)
@@ -70,10 +76,38 @@ generated from it. The most-used keys, with their actual nesting:
 
 ### `customization.*`
 
-Per-element font, size, and color overrides for stocks and crypto. Each
-of `symbol`, `price`, and `price_delta` has its own `font`, `font_size`,
-and color settings. Defaults use `PressStart2P-Regular.ttf` at size 8,
-with green for positive deltas and red for negative.
+Per-element font, size, and colour overrides, kept separately for stocks and
+crypto so the two are distinguishable at a glance. Each of `symbol`, `price`
+and `price_delta` has its own `font` and `font_size`; the colour keys differ
+by element:
+
+| Key | Default | Notes |
+|---|---|---|
+| `customization.stocks.symbol.text_color` | `[255, 255, 255]` | Ticker symbol, stocks |
+| `customization.stocks.price.text_color` | `[255, 255, 255]` | Price line, stocks |
+| `customization.stocks.price_delta.positive_color` | `[0, 255, 0]` | Change when up, stocks |
+| `customization.stocks.price_delta.negative_color` | `[255, 0, 0]` | Change when down, stocks |
+| `customization.crypto.symbol.text_color` | `[255, 215, 0]` | Ticker symbol, crypto |
+| `customization.crypto.price.text_color` | `[255, 215, 0]` | Price line, crypto |
+| `customization.crypto.price_delta.positive_color` | `[0, 255, 0]` | Change when up, crypto |
+| `customization.crypto.price_delta.negative_color` | `[255, 0, 0]` | Change when down, crypto |
+
+`price_delta` has no `text_color` — its colour is chosen by the sign of the
+change, from the two keys above.
+
+![A gain, a loss, and a crypto entry](../../docs/assets/ledmatrix-stocks/gain-loss.png)
+
+Five fonts are offered per element. Three are TrueType and work at every size
+in the 4–16 range; two are `.bdf` bitmap faces, which exist at exactly one
+size each and are loaded at that size whatever `font_size` says:
+
+| Font | Kind | Sizes |
+|---|---|---|
+| `PressStart2P-Regular.ttf` | TrueType | any |
+| `4x6-font.ttf` | TrueType | any |
+| `5by7.regular.ttf` | TrueType | any |
+| `5x7.bdf` | bitmap | 7 only |
+| `4x6.bdf` | bitmap | 6 only |
 
 ## Symbol format
 
@@ -118,6 +152,25 @@ Name the quote currency to price a coin in something other than dollars:
 Symbols are upper-case only (`aapl` is rejected — use `AAPL`), and cannot
 contain spaces. If the field refuses what you typed, the web UI names the
 value it rejected.
+
+### The two display modes
+
+![scroll versus switch](../../docs/assets/ledmatrix-stocks/display-mode.png)
+
+`scroll` renders every symbol into one continuous ribbon and slides it past;
+`switch` shows a single symbol at a time and cuts to the next after
+`switch_duration` seconds.
+
+### The inline chart
+
+`display.toggle_chart` draws the day's price history behind the text, sized by
+`chart_width_px` and `chart_height_px`:
+
+![toggle_chart on and off](../../docs/assets/ledmatrix-stocks/toggle-chart.png)
+
+### Panel sizes
+
+![The same symbol on four panel sizes](../../docs/assets/ledmatrix-stocks/panel-sizes.png)
 
 ### A note on display width
 

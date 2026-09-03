@@ -1,0 +1,277 @@
+{
+  "plugin": "of-the-day",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T16:00:00+00:00",
+    "config": {
+      "enabled": true,
+      "categories": {
+        "word_of_the_day": {
+          "enabled": true,
+          "data_file": "of_the_day/word_of_the_day.json",
+          "display_name": "Word of the Day"
+        }
+      },
+      "category_order": [
+        "word_of_the_day"
+      ]
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "height": 64,
+      "scale": 6
+    },
+    {
+      "name": "cat-english",
+      "config": {
+        "categories": {
+          "word_of_the_day": {
+            "enabled": true,
+            "data_file": "of_the_day/word_of_the_day.json",
+            "display_name": "Word of the Day"
+          }
+        },
+        "category_order": [
+          "word_of_the_day"
+        ]
+      },
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "cat-slovenian",
+      "config": {
+        "categories": {
+          "slovenian_word_of_the_day": {
+            "enabled": true,
+            "data_file": "of_the_day/slovenian_word_of_the_day.json",
+            "display_name": "Slovenian Word of the Day"
+          }
+        },
+        "category_order": [
+          "slovenian_word_of_the_day"
+        ]
+      },
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "fit-on",
+      "config": {
+        "auto_fit_text": true,
+        "customization": {
+          "body_text": {
+            "font_size": 12
+          }
+        }
+      },
+      "standalone": false,
+      "height": 64,
+      "scale": 6
+    },
+    {
+      "name": "fit-off",
+      "config": {
+        "auto_fit_text": false,
+        "customization": {
+          "body_text": {
+            "font_size": 12
+          }
+        }
+      },
+      "standalone": false,
+      "height": 64,
+      "scale": 6
+    },
+    {
+      "name": "col-default",
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "col-amber",
+      "config": {
+        "customization": {
+          "title_text": {
+            "text_color": [
+              255,
+              176,
+              0
+            ]
+          },
+          "body_text": {
+            "text_color": [
+              200,
+              130,
+              0
+            ]
+          }
+        }
+      },
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "col-cyan",
+      "config": {
+        "customization": {
+          "title_text": {
+            "text_color": [
+              0,
+              229,
+              255
+            ]
+          },
+          "body_text": {
+            "text_color": [
+              120,
+              180,
+              200
+            ]
+          }
+        }
+      },
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "col-big",
+      "config": {
+        "customization": {
+          "title_text": {
+            "font_size": 10
+          },
+          "body_text": {
+            "font_size": 8
+          }
+        }
+      },
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "scale": 4,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "categories",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "cat-english",
+          "label": "word_of_the_day",
+          "sublabel": "the bundled English list, 365 entries"
+        },
+        {
+          "shot": "cat-slovenian",
+          "label": "slovenian_word_of_the_day",
+          "sublabel": "the bundled Slovenian list"
+        }
+      ]
+    },
+    {
+      "name": "auto-fit",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "fit-on",
+          "label": "auto_fit_text: true",
+          "sublabel": "the default; body font_size 12 is stepped down until the whole definition fits"
+        },
+        {
+          "shot": "fit-off",
+          "label": "auto_fit_text: false",
+          "sublabel": "held at 12, so the text is cut to the lines that fit and ellipsized"
+        }
+      ]
+    },
+    {
+      "name": "customization",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "col-default",
+          "label": "The defaults",
+          "sublabel": "white title, grey body"
+        },
+        {
+          "shot": "col-amber",
+          "label": "Amber",
+          "sublabel": "title_text.text_color and body_text.text_color"
+        },
+        {
+          "shot": "col-cyan",
+          "label": "Cyan",
+          "sublabel": ""
+        },
+        {
+          "shot": "col-big",
+          "label": "Larger sizes",
+          "sublabel": "title_text.font_size 10, body_text.font_size 8"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32",
+          "sublabel": "only the title and a fragment fit"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32",
+          "sublabel": "title plus one truncated body line"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64",
+          "sublabel": "the definition wraps and fits in full"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32",
+          "sublabel": "a long chain; width buys a longer body line"
+        }
+      ]
+    }
+  ]
+}

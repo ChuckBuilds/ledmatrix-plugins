@@ -1,0 +1,301 @@
+{
+  "plugin": "baseball-scoreboard",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T17:50:00+00:00",
+    "mock_data": "fixtures/season-schedule.json",
+    "http_replay": "fixtures/live-today.json",
+    "config": {
+      "enabled": true,
+      "timezone": "America/New_York",
+      "milb": {
+        "enabled": false
+      },
+      "ncaa_baseball": {
+        "enabled": false
+      },
+      "mlb": {
+        "enabled": true,
+        "favorite_teams": [],
+        "filtering": {
+          "show_favorite_teams_only": false,
+          "show_all_live": true
+        },
+        "display_options": {
+          "show_records": false,
+          "show_odds": false
+        },
+        "recent_games_to_show": 1,
+        "upcoming_games_to_show": 1
+      }
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": true,
+            "show_recent": false,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          }
+        }
+      }
+    },
+    {
+      "name": "mode-live",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": true,
+            "show_recent": false,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "mode-recent",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": false,
+            "show_recent": true,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "mode-upcoming",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": false,
+            "show_recent": false,
+            "show_upcoming": true,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "size-64x32",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": true,
+            "show_recent": false,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          }
+        }
+      },
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": true,
+            "show_recent": false,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          }
+        }
+      },
+      "width": 128,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": true,
+            "show_recent": false,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          }
+        }
+      },
+      "width": 128,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": true,
+            "show_recent": false,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          }
+        }
+      },
+      "width": 256,
+      "height": 32,
+      "scale": 4,
+      "standalone": false
+    },
+    {
+      "name": "records-off",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": false,
+            "show_recent": true,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          },
+          "display_options": {
+            "show_records": false
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "records-on",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": false,
+            "show_recent": true,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          },
+          "display_options": {
+            "show_records": true
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "traditional",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": true,
+            "show_recent": false,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          },
+          "display_options": {
+            "show_traditional_scoreboard": true
+          }
+        }
+      },
+      "width": 128,
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "display-modes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "mode-live",
+          "label": "mlb_live",
+          "sublabel": "score, inning, bases, outs and the count"
+        },
+        {
+          "shot": "mode-recent",
+          "label": "mlb_recent",
+          "sublabel": "final score of a completed game"
+        },
+        {
+          "shot": "mode-upcoming",
+          "label": "mlb_upcoming",
+          "sublabel": "date and first pitch, in your timezone"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32",
+          "sublabel": "logos behind the text; score keeps priority"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32",
+          "sublabel": "the common two-panel chain"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64",
+          "sublabel": "extra height separates the bands"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32",
+          "sublabel": "a long chain"
+        }
+      ]
+    },
+    {
+      "name": "show-records",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "records-off",
+          "label": "show_records: false",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "records-on",
+          "label": "show_records: true",
+          "sublabel": "each team's win-loss record in the bottom corners"
+        }
+      ]
+    }
+  ]
+}

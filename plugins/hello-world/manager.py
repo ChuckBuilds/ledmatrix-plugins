@@ -150,63 +150,50 @@ class HelloWorldPlugin(BasePlugin):
             except Exception as e:
                 self.logger.warning(f"Error getting fonts from font manager: {e}")
 
-            # Calculate positions for centered text
+            # draw_text treats x as the LEFT edge unless centered=True is
+            # passed, so x=width // 2 alone starts the text at the midpoint and
+            # runs it off the right. Passing centered=True makes x the centre,
+            # which is what the layout below assumes.
             if self.show_time:
                 # Display message at top, time at bottom
                 message_y = height // 3
                 time_y = (2 * height) // 3
 
-                # Draw the greeting message
-                if message_font:
-                    self.display_manager.draw_text(
-                        self.message,
-                        x=width // 2,
-                        y=message_y,
-                        font=message_font
-                    )
-                else:
-                    self.display_manager.draw_text(
-                        self.message,
-                        x=width // 2,
-                        y=message_y,
-                        color=self.color,
-                        font=self.bdf_font
-                    )
+                # Draw the greeting message. The font manager's face is used
+                # when there is one, and the bundled BDF otherwise -- but the
+                # configured colour is passed either way. Selecting the font in
+                # a branch that also dropped `color` is how a custom colour
+                # silently stopped applying on any install that has a font
+                # manager.
+                self.display_manager.draw_text(
+                    self.message,
+                    x=width // 2,
+                    y=message_y,
+                    color=self.color,
+                    font=message_font or self.bdf_font,
+                    centered=True
+                )
 
                 # Draw the current time
                 if self.current_time_str:
-                    if time_font:
-                        self.display_manager.draw_text(
-                            self.current_time_str,
-                            x=width // 2,
-                            y=time_y,
-                            font=time_font
-                        )
-                    else:
-                        self.display_manager.draw_text(
-                            self.current_time_str,
-                            x=width // 2,
-                            y=time_y,
-                            color=self.time_color,
-                            font=self.bdf_font
-                        )
+                    self.display_manager.draw_text(
+                        self.current_time_str,
+                        x=width // 2,
+                        y=time_y,
+                        color=self.time_color,
+                        font=time_font or self.bdf_font,
+                        centered=True
+                    )
             else:
-                # Display message centered
-                if message_font:
-                    self.display_manager.draw_text(
-                        self.message,
-                        x=width // 2,
-                        y=height // 2,
-                        font=message_font
-                    )
-                else:
-                    self.display_manager.draw_text(
-                        self.message,
-                        x=width // 2,
-                        y=height // 2,
-                        color=self.color,
-                        font=self.bdf_font
-                    )
+                # Message only, on the vertical centre line
+                self.display_manager.draw_text(
+                    self.message,
+                    x=width // 2,
+                    y=height // 2,
+                    color=self.color,
+                    font=message_font or self.bdf_font,
+                    centered=True
+                )
             
             # Update the physical display
             self.display_manager.update_display()

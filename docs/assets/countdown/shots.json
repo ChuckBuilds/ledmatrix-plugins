@@ -1,0 +1,561 @@
+{
+  "plugin": "countdown",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T15:00:00+00:00",
+    "config": {
+      "enabled": true,
+      "show_expired": false
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "image_path": "docs/assets/countdown/sample/gift.png",
+            "layout_preset": "image-left"
+          }
+        ]
+      }
+    },
+    {
+      "name": "layout-image-left",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "image_path": "docs/assets/countdown/sample/gift.png",
+            "layout_preset": "image-left"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "layout-image-right",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "image_path": "docs/assets/countdown/sample/gift.png",
+            "layout_preset": "image-right"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "layout-text-only",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "image_path": "docs/assets/countdown/sample/gift.png",
+            "layout_preset": "text-only"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "layout-image-only",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "image_path": "docs/assets/countdown/sample/gift.png",
+            "layout_preset": "image-only"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "mode-until",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "New Year",
+            "target_date": "2027-01-01",
+            "mode": "until",
+            "layout_preset": "text-only"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "mode-since",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Launched",
+            "target_date": "2026-04-07",
+            "mode": "since",
+            "layout_preset": "text-only"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "align-left",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "layout_preset": "text-only",
+            "text_align": "left"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "align-center",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "layout_preset": "text-only",
+            "text_align": "center"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "align-right",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "layout_preset": "text-only",
+            "text_align": "right"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "size-64x32",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "image_path": "docs/assets/countdown/sample/gift.png"
+          }
+        ]
+      },
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "image_path": "docs/assets/countdown/sample/gift.png"
+          }
+        ]
+      },
+      "width": 128,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "image_path": "docs/assets/countdown/sample/gift.png"
+          }
+        ]
+      },
+      "width": 128,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "image_path": "docs/assets/countdown/sample/gift.png"
+          }
+        ]
+      },
+      "width": 256,
+      "height": 32,
+      "scale": 4,
+      "standalone": false
+    },
+    {
+      "name": "fmt-days",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "layout_preset": "text-only",
+            "name": "Christmas",
+            "target_date": "2026-12-25"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-tomorrow",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "layout_preset": "text-only",
+            "name": "Results Day",
+            "target_date": "2026-09-04"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-hours",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "layout_preset": "text-only",
+            "name": "Doors Open",
+            "target_date": "2026-09-02",
+            "target_time": "21:30"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-minutes",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "layout_preset": "text-only",
+            "name": "Standup",
+            "target_date": "2026-09-02",
+            "target_time": "11:30"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-now",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "layout_preset": "text-only",
+            "name": "Liftoff",
+            "target_date": "2026-09-02",
+            "target_time": "11:00"
+          }
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "fmt-expired",
+      "config": {
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "layout_preset": "text-only",
+            "name": "Deadline",
+            "target_date": "2026-08-30"
+          }
+        ],
+        "show_expired": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "font-press_start",
+      "standalone": false,
+      "config": {
+        "font_family": "press_start",
+        "name_font_family": "press_start",
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "layout_preset": "text-only"
+          }
+        ]
+      }
+    },
+    {
+      "name": "font-four_by_six",
+      "standalone": false,
+      "config": {
+        "font_family": "four_by_six",
+        "name_font_family": "four_by_six",
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "layout_preset": "text-only"
+          }
+        ]
+      }
+    },
+    {
+      "name": "font-five_by_seven",
+      "standalone": false,
+      "config": {
+        "font_family": "five_by_seven",
+        "name_font_family": "five_by_seven",
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "layout_preset": "text-only"
+          }
+        ]
+      }
+    },
+    {
+      "name": "font-tom_thumb",
+      "standalone": false,
+      "config": {
+        "font_family": "tom_thumb",
+        "name_font_family": "tom_thumb",
+        "countdowns": [
+          {
+            "id": "a",
+            "enabled": true,
+            "name": "Christmas",
+            "target_date": "2026-12-25",
+            "layout_preset": "text-only"
+          }
+        ]
+      }
+    }
+  ],
+  "composites": [
+    {
+      "name": "layout-presets",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "layout-image-left",
+          "label": "image-left",
+          "sublabel": "the default: image on the left third"
+        },
+        {
+          "shot": "layout-image-right",
+          "label": "image-right",
+          "sublabel": "mirrored"
+        },
+        {
+          "shot": "layout-text-only",
+          "label": "text-only",
+          "sublabel": "any image is ignored"
+        },
+        {
+          "shot": "layout-image-only",
+          "label": "image-only",
+          "sublabel": "no text at all"
+        }
+      ]
+    },
+    {
+      "name": "count-formats",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "fmt-days",
+          "label": "\"113 Days\"",
+          "sublabel": "more than 2 days away"
+        },
+        {
+          "shot": "fmt-tomorrow",
+          "label": "\"Tomorrow\"",
+          "sublabel": "1 to 2 days away -- no number is shown"
+        },
+        {
+          "shot": "fmt-hours",
+          "label": "\"10h 30m\"",
+          "sublabel": "1 to 24 hours away"
+        },
+        {
+          "shot": "fmt-minutes",
+          "label": "\"30m\"",
+          "sublabel": "1 to 60 minutes away"
+        },
+        {
+          "shot": "fmt-now",
+          "label": "\"NOW!\"",
+          "sublabel": "less than a minute away"
+        },
+        {
+          "shot": "fmt-expired",
+          "label": "\"3d ago\"",
+          "sublabel": "past, and only visible with show_expired on"
+        }
+      ]
+    },
+    {
+      "name": "modes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "mode-until",
+          "label": "mode: until",
+          "sublabel": "the default; counts down to the date"
+        },
+        {
+          "shot": "mode-since",
+          "label": "mode: since",
+          "sublabel": "counts up from a date that has passed"
+        }
+      ]
+    },
+    {
+      "name": "text-align",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "align-left",
+          "label": "text_align: left",
+          "sublabel": ""
+        },
+        {
+          "shot": "align-center",
+          "label": "text_align: center",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "align-right",
+          "label": "text_align: right",
+          "sublabel": ""
+        }
+      ]
+    },
+    {
+      "name": "fonts",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "font-press_start",
+          "label": "press_start",
+          "sublabel": "the default; chunky 8-bit, scalable"
+        },
+        {
+          "shot": "font-four_by_six",
+          "label": "four_by_six",
+          "sublabel": "scalable; fits more per line"
+        },
+        {
+          "shot": "font-five_by_seven",
+          "label": "five_by_seven",
+          "sublabel": "bitmap, drawn at its native 7px"
+        },
+        {
+          "shot": "font-tom_thumb",
+          "label": "tom_thumb",
+          "sublabel": "bitmap, native 6px -- the smallest"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32",
+          "sublabel": "image and text share very little width"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32",
+          "sublabel": "the common two-panel chain"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64",
+          "sublabel": "the image gets real room"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32",
+          "sublabel": "a long chain"
+        }
+      ]
+    }
+  ]
+}

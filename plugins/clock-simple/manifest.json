@@ -1,7 +1,7 @@
 {
   "id": "clock-simple",
   "name": "Simple Clock",
-  "version": "1.0.10",
+  "version": "1.1.0",
   "author": "ChuckBuilds",
   "description": "A simple clock display with current time and date",
   "category": "time",
@@ -17,6 +17,11 @@
   ],
   "versions": [
     {
+      "version": "1.1.0",
+      "released": "2026-09-02",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
       "version": "1.0.10",
       "released": "2026-07-31",
       "ledmatrix_min": "2.0.0"
@@ -25,13 +30,13 @@
       "released": "2026-07-21",
       "version": "1.0.8",
       "ledmatrix_min": "2.0.0",
-      "notes": "Actually stop the per-second flash. The previous fix only avoided a full hardware clear on unchanged frames, but it still called display_manager.clear() whenever the visible content changed — and clear() writes black straight to the panel's front buffer, so the panel blanked between the clear and the redraw on the core's ~1 Hz loop. With seconds shown that content changes every second, so it flashed every second (and once a minute otherwise). The clock now rebuilds each frame on a fresh in-memory buffer and lets update_display() swap it in atomically (SwapOnVSync); dirty-tracking skips the push when pixels are unchanged. No hardware clear, so the panel never blanks — whether or not seconds are shown."
+      "notes": "Actually stop the per-second flash. The previous fix only avoided a full hardware clear on unchanged frames, but it still called display_manager.clear() whenever the visible content changed \u2014 and clear() writes black straight to the panel's front buffer, so the panel blanked between the clear and the redraw on the core's ~1 Hz loop. With seconds shown that content changes every second, so it flashed every second (and once a minute otherwise). The clock now rebuilds each frame on a fresh in-memory buffer and lets update_display() swap it in atomically (SwapOnVSync); dirty-tracking skips the push when pixels are unchanged. No hardware clear, so the panel never blanks \u2014 whether or not seconds are shown."
     },
     {
       "released": "2026-07-19",
       "version": "1.0.7",
       "ledmatrix_min": "2.0.0",
-      "notes": "Fix the clock flashing/blinking periodically. The plugin now redraws its content on every render tick and only clears the buffer when the displayed time or date changes, instead of skipping frames — so the panel stays lit steadily regardless of update_interval. Also fit the time/AM-PM and date to the panel width so content no longer overflows the edge on narrow (64px-wide) matrices; the weekday and date are abbreviated only when the full text wouldn't fit, so wider panels are unchanged."
+      "notes": "Fix the clock flashing/blinking periodically. The plugin now redraws its content on every render tick and only clears the buffer when the displayed time or date changes, instead of skipping frames \u2014 so the panel stays lit steadily regardless of update_interval. Also fit the time/AM-PM and date to the panel width so content no longer overflows the edge on narrow (64px-wide) matrices; the weekday and date are abbreviated only when the full text wouldn't fit, so wider panels are unchanged."
     },
     {
       "released": "2026-07-17",
@@ -50,7 +55,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-31",
+  "last_updated": "2026-09-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,
