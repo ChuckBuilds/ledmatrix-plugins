@@ -34,6 +34,13 @@
       "changelog": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage."
     },
     {
+      "version": "2.23.1",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Make the odds text settings visible in the web UI. The odds_text block shipped in the schema but not in x-propertyOrder, and the config form iterates that list and nothing else -- so the font, size and colour controls existed and could not be reached. Nothing about what is drawn changes; the settings simply become editable.",
+      "changelog": "The card helpers move to the core. Twenty methods in this plugin's game_renderer.py were byte-identical to the same twenty in every other scoreboard: the colour pickers, the scroll_card settings lookup, the date and time formatting, the favourite-team rules and the font-size grid snapping. They now live in src.common.sports_card and this plugin delegates to them, so a fix to any of that reaches every scoreboard at once instead of needing eight identical edits, and a new scoreboard gets them by importing one module. 245 lines removed here. Nothing about what is drawn changes: the bodies were moved rather than rewritten, and all 176 safety-harness renders across the eight plugins are byte-identical to before. The floor rises to 3.3.0, the release that first ships the helper."
+    },
+    {
       "version": "2.23.0",
       "released": "2026-09-02",
       "ledmatrix_min_version": "3.3.0",
