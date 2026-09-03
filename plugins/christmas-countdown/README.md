@@ -1,146 +1,236 @@
------------------------------------------------------------------------------------
-### Connect with ChuckBuilds
+# Christmas Countdown
 
-- Show support on Youtube: https://www.youtube.com/@ChuckBuilds
-- Stay in touch on Instagram: https://www.instagram.com/ChuckBuilds/
-- Want to chat or need support? Reach out on the ChuckBuilds Discord: https://discord.com/invite/uW36dVAtcT
-- Feeling Generous? Support the project:
-  - Github Sponsorship: https://github.com/sponsors/ChuckBuilds
-  - Buy Me a Coffee: https://buymeacoffee.com/chuckbuilds
-  - Ko-fi: https://ko-fi.com/chuckbuilds/ 
+A festive countdown to Christmas — a pixel-art tree beside the number of days
+left, switching to "MERRY CHRISTMAS" on the day itself.
 
------------------------------------------------------------------------------------
+![114 DAYS UNTIL CHRISTMAS in red beside a green pixel-art tree, on a 128x32
+panel](../../docs/assets/christmas-countdown/hero.png)
 
-# Christmas Countdown Plugin
+*Every image in this README is real plugin output, rendered at the true panel
+size against a frozen clock and then scaled up so the pixels stay pixels. The
+day counts are what the plugin computes for the dates shown.*
 
-A festive LEDMatrix plugin that displays a countdown to Christmas with a stylized Christmas tree logo and holiday text.
+---
 
-Screenshot of Christmas Countdown:
-<img width="768" height="192" alt="led_matrix_1765383616554" src="https://github.com/user-attachments/assets/899cb576-e7bc-41ee-853e-100395fc22dc" />
+## Table of Contents
 
+1. [What's On Screen](#whats-on-screen)
+2. [Installation](#installation)
+3. [Configuration Reference](#configuration-reference)
+   - [Settings that have no effect](#settings-that-have-no-effect)
+4. [Panel Sizes](#panel-sizes)
+5. [The Tree Image](#the-tree-image)
+6. [Troubleshooting](#troubleshooting)
+7. [Development](#development)
+8. [Support](#support)
 
+---
 
-## Features
+## What's On Screen
 
-- **Stylized Christmas Tree**: Displays a pixel-art style Christmas tree logo (image or programmatically drawn)
-- **Adaptive Text Display**: 
-  - Large displays: "N DAYS UNTIL CHRISTMAS"
-  - Small displays (width < 64px): "N DAYS UNTIL XMAS"
-- **Merry Christmas Message**: Automatically shows "MERRY CHRISTMAS" on and after December 25th
-- **Traditional Colors**: Green tree, red text with white accents
-- **Customizable**: Configurable colors and tree size
+The tree sits on the **left** and the countdown text on the **right**, at every
+panel size. The panel is split down the middle: the tree is fitted into the
+left half less a 2px margin, and the text is centred in the right half.
 
-## Configuration
+The text has three states, driven by the date:
 
-The plugin supports the following configuration options:
+| When | Shows |
+|------|-------|
+| Before 25 December | `N DAYS UNTIL CHRISTMAS` |
+| On 25 December | `MERRY CHRISTMAS` |
+| After 25 December | `MERRY CHRISTMAS`, until the count to next year begins |
 
-### Configuration options
+![The countdown 114 days out, a week out, the day before, and on Christmas Day
+itself](../../docs/assets/christmas-countdown/countdown.png)
 
-Full schema lives in [`config_schema.json`](config_schema.json):
+On a panel **narrower than 64 pixels** the last word is abbreviated to `XMAS`
+so the text still fits. Everything is computed from the host's local date, so
+the count changes at local midnight.
 
-| Key | Default | Notes |
-|---|---|---|
-| `enabled` | `false` | Master switch |
-| `display_duration` | `15` | Seconds the plugin holds the screen (1–300) |
-| `update_interval` | `3600` | Seconds between updates (60–86400). Default 1 hour since the countdown only changes daily. |
-| `high_performance_transitions` | `false` | Use a faster path for transitions on weaker Pis |
-| `transition.enabled` | `true` | Toggle transition animation between displays |
-| `transition.type` | `"redraw"` | Transition style |
-| `transition.speed` | `2` | Animation speed |
-| `text_color` | `[255, 0, 0]` | RGB color for the countdown text (default red) |
-| `tree_color` | `[0, 128, 0]` | RGB color for the programmatically-drawn tree (default green) |
-| `tree_size` | _auto_ | Override the auto-sized tree height in pixels |
+---
 
-## Display Behavior
+## Installation
 
-### Countdown Display
+**From the Plugin Store (recommended).** Open the LEDMatrix web interface at
+`http://<your-pi-ip>:5000`, go to **Plugin Manager**, find **Christmas
+Countdown** in the **Plugin Store** section, and click **Install**.
 
-- Before December 25th: Shows "N DAYS UNTIL CHRISTMAS" (or "N DAYS UNTIL XMAS" on small displays)
-- On December 25th: Shows "MERRY CHRISTMAS"
-- After December 25th: Shows "MERRY CHRISTMAS" (countdown to next year's Christmas)
+**Manually.** Copy this directory into your LEDMatrix `plugin-repos/` and
+restart the display service.
 
-### Layout
+`enabled` defaults to **`false`**. Being seasonal, it is also worth turning
+back off in January rather than leaving it counting down 300-odd days.
 
-- Christmas tree logo is centered horizontally and positioned in the upper portion of the display
-- Countdown text is centered below the tree
-- Layout automatically adjusts for different display sizes
+---
 
-### Display Size Detection
+## Configuration Reference
 
-- Displays with width < 64 pixels automatically use "XMAS" instead of "CHRISTMAS" to fit the text
-- Tree size is automatically calculated based on display height (25-40% of height)
-- All content is centered for optimal viewing
+Five settings work:
 
-## Assets
+| Option | Type | Default | What it does |
+|--------|------|---------|--------------|
+| `enabled` | boolean | `false` | Whether the plugin runs at all |
+| `display_duration` | number | `15` | Seconds on screen before the rotation moves on (1–300) |
+| `update_interval` | integer | `3600` | Seconds between recomputes (60–86400). The count changes daily, so an hour is already generous |
+| `text_color` | array | `[255, 0, 0]` | Countdown text colour, `[R, G, B]` |
+| `tree_color` | array | `[0, 128, 0]` | Tree colour — **only used when the tree image is missing**, see [The Tree Image](#the-tree-image) |
 
-The plugin includes a stylized Christmas tree image at `assets/christmas_tree.png`. If the image is not found, the plugin will automatically draw a simple tree programmatically.
+![The countdown in red, white, gold and pale
+blue](../../docs/assets/christmas-countdown/text-color.png)
 
-To regenerate the tree image, run:
+`text_color` is the one worth changing. The default red is traditional but the
+least bright colour an LED panel produces; white or gold reads considerably
+further across a room.
+
+### Settings that have no effect
+
+The remaining five appear in the web UI with descriptions, and **do nothing**.
+This is documented rather than quietly omitted, because a setting that silently
+ignores you is worse than one that is absent — and each of these is checked
+against the source, not guessed:
+
+| Option | Schema promises | Reality |
+|--------|-----------------|---------|
+| `transition.type` | One of `redraw`, `fade`, `slide`, `wipe`, `dissolve`, `pixelate` | The string `transition` does not appear anywhere in `manager.py`, and the core implements no display transitions |
+| `transition.speed` | "1=slow, 10=fast" | As above |
+| `transition.enabled` | "Enable or disable transitions" | As above |
+| `high_performance_transitions` | "120 FPS instead of 30 FPS" | `high_performance` does not appear in `manager.py` |
+| `tree_size` | "Size of the Christmas tree logo in pixels" | Read and *validated* — a value ≤ 0 is rejected with a warning — but never applied. The tree is always fitted to the left half minus a 2px margin |
+
+`tree_size` is the most misleading of the five, because rejecting a bad value
+is fair evidence to anyone testing that the setting is live.
+
+Tracked in [#377](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/377).
+Leave all five alone; changing them costs nothing but will do nothing.
+
+---
+
+## Panel Sizes
+
+![The countdown on 64x32, 128x32, 128x64 and 256x32
+panels](../../docs/assets/christmas-countdown/panel-sizes.png)
+
+- **64×32** is where the `XMAS` abbreviation kicks in; tree and text share very
+  little width.
+- **128×32** is the size the layout suits best.
+- **128×64** gives the tree real presence — it is the most attractive size for
+  this plugin by some margin.
+- **256×32** keeps the same proportions, so the tree stays small and a wide gap
+  opens between it and the text. A long chain does not improve this plugin the
+  way extra height does.
+
+---
+
+## The Tree Image
+
+The tree is `assets/christmas_tree.png`, a small pixel-art PNG that ships with
+the plugin and is scaled to the space available.
+
+If that file is missing, the plugin draws a simple tree programmatically
+instead — and **that** is the only situation in which `tree_color` applies. With
+the bundled image present, as it is on any normal install, `tree_color` has no
+visible effect. The schema says so; it is repeated here because "green tree
+colour" reads like a setting that should work.
+
+To regenerate the bundled image:
+
 ```bash
 python3 generate_tree_image.py
 ```
 
-## Dependencies
+That script writes `assets/christmas_tree.png` and nothing else — it is an
+asset generator, not a preview of the plugin, so it cannot drift from what the
+plugin draws.
 
-- Python 3.7+
-- PIL/Pillow (for image handling)
-- LEDMatrix 2.0.0 or higher
-
-No additional Python packages are required beyond what LEDMatrix provides.
+---
 
 ## Troubleshooting
 
-### Tree Image Not Displaying
+**Nothing appears.**
+`enabled` defaults to `false`.
 
-If the tree image doesn't appear:
-1. Check that `assets/christmas_tree.png` exists in the plugin directory
-2. The plugin will automatically fall back to programmatic drawing if the image is missing
-3. Verify file permissions allow reading the image file
+**The day count looks off by one.**
+The count is computed from the host's local date and changes at local midnight,
+not UTC midnight. Check the Pi's timezone if it disagrees with your calendar.
 
-### Countdown Not Updating
+**It says MERRY CHRISTMAS in July.**
+It should not — that message is shown on and shortly after 25 December only. If
+you see it out of season, check the system date.
 
-- The countdown updates based on `update_interval` (default: 1 hour)
-- The countdown changes once per day, so hourly updates are sufficient
-- Check the plugin logs for any errors
+**The text says XMAS instead of CHRISTMAS.**
+That is deliberate on panels narrower than 64 pixels, where the full word does
+not fit.
 
-### Text Not Fitting
+**I changed the tree colour and nothing happened.**
+`tree_color` only applies when `assets/christmas_tree.png` is missing. With the
+bundled image in place the tree comes from the PNG.
 
-- On small displays (width < 64px), the plugin automatically uses "XMAS" instead of "CHRISTMAS"
-- If text still doesn't fit, reduce `tree_size` in configuration
-- The plugin automatically adjusts layout based on display dimensions
+**I changed the tree size and nothing happened.**
+`tree_size` is not applied — see
+[Settings that have no effect](#settings-that-have-no-effect).
+
+**I changed the transition and nothing happened.**
+None of the transition settings are implemented. Same section.
+
+---
 
 ## Development
 
-### Project Structure
+### Project structure
 
-```
+```text
 christmas-countdown/
-├── manifest.json          # Plugin metadata
-├── manager.py             # Main plugin class
-├── config_schema.json     # Configuration schema
-├── README.md             # This file
-├── requirements.txt      # Python dependencies
-├── generate_tree_image.py # Utility to generate tree image
-└── assets/
-    └── christmas_tree.png # Christmas tree image
+├── manifest.json            # Plugin metadata and version history
+├── manager.py               # ChristmasCountdownPlugin
+├── config_schema.json       # Settings schema; source of truth for defaults
+├── generate_tree_image.py   # Regenerates assets/christmas_tree.png
+├── assets/
+│   └── christmas_tree.png
+├── test/
+└── README.md
 ```
+
+### Requirements
+
+None beyond the LEDMatrix core. The plugin uses only the standard library and
+Pillow, which the core already provides — `requirements.txt` says as much and
+pins nothing.
 
 ### Testing
 
-Test the plugin using the LEDMatrix emulator:
+The plugin ships a harness fixture and golden images, so the core's safety
+harness can check it renders correctly at every panel size:
+
+```bash
+# from a LEDMatrix core checkout
+python scripts/check_plugin.py --plugin christmas-countdown   --plugin-dir /path/to/ledmatrix-plugins/plugins --out-dir /tmp/preview
+```
+
+To watch it live in the emulator instead:
+
 ```bash
 python run.py --emulator
 ```
 
-## License
+### Regenerating the images in this README
 
-This plugin follows the same license as the LEDMatrix project.
+```bash
+python scripts/render_docs_assets.py --plugin christmas-countdown
+```
 
-## Author
+`--check` verifies the committed images still match. The clock is frozen in the
+shot list, which is what pins the day counts — without that every image would
+change daily.
 
-ChuckBuilds
+---
 
-## Version
+## Support
 
-1.0.0
+- YouTube: <https://www.youtube.com/@ChuckBuilds>
+- Instagram: <https://www.instagram.com/ChuckBuilds/>
+- Discord: <https://discord.com/invite/uW36dVAtcT>
+- Sponsor: [GitHub Sponsors](https://github.com/sponsors/ChuckBuilds) ·
+  [Buy Me a Coffee](https://buymeacoffee.com/chuckbuilds) ·
+  [Ko-fi](https://ko-fi.com/chuckbuilds/)
 
+Released under the GNU General Public License v3.0 — see [LICENSE](LICENSE).

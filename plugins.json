@@ -143,10 +143,10 @@
       "plugin_path": "plugins/christmas-countdown",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "clock-simple",
@@ -263,10 +263,10 @@
       "plugin_path": "plugins/geochron",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.3",
+      "latest_version": "1.0.4",
       "icon": "fa-globe"
     },
     {
@@ -308,10 +308,10 @@
       "plugin_path": "plugins/hello-world",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-05-15",
+      "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.3"
+      "latest_version": "1.1.0"
     },
     {
       "id": "hockey-scoreboard",
@@ -507,10 +507,10 @@
       "plugin_path": "plugins/mqtt-notifications",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.1"
+      "latest_version": "1.2.0"
     },
     {
       "id": "music",
@@ -554,10 +554,10 @@
       "plugin_path": "plugins/news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-08-05",
+      "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.2"
+      "latest_version": "1.4.0"
     },
     {
       "id": "on-air",
@@ -578,10 +578,10 @@
       "plugin_path": "plugins/on-air",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.5",
+      "latest_version": "1.2.6",
       "icon": "fa-circle-dot"
     },
     {
@@ -653,10 +653,10 @@
       "plugin_path": "plugins/of-the-day",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-08-06",
+      "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.1"
+      "latest_version": "1.4.2"
     },
     {
       "id": "olympics",
@@ -780,10 +780,10 @@
       "plugin_path": "plugins/static-image",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-17",
+      "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.5"
+      "latest_version": "1.0.6"
     },
     {
       "id": "stock-news",
@@ -877,10 +877,10 @@
       "plugin_path": "plugins/tide-display",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.0",
+      "latest_version": "1.3.0",
       "icon": "fa-water"
     },
     {
@@ -975,10 +975,10 @@
       "plugin_path": "plugins/youtube-stats",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.1"
+      "latest_version": "1.2.0"
     },
     {
       "id": "ledmatrix-elections",
@@ -1165,10 +1165,10 @@
       "plugin_path": "plugins/pomodoro-timer",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-07-29",
+      "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.4",
+      "latest_version": "1.3.5",
       "icon": "fa-hourglass-half"
     }
   ]

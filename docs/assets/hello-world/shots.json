@@ -1,0 +1,220 @@
+{
+  "plugin": "hello-world",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T20:26:00+00:00",
+    "config": {
+      "enabled": true
+    }
+  },
+  "shots": [
+    {
+      "name": "hero"
+    },
+    {
+      "name": "time-on",
+      "config": {
+        "show_time": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "time-off",
+      "config": {
+        "show_time": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-default",
+      "standalone": false
+    },
+    {
+      "name": "col-amber",
+      "config": {
+        "color": [
+          255,
+          176,
+          0
+        ],
+        "time_color": [
+          255,
+          90,
+          0
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-green",
+      "config": {
+        "color": [
+          0,
+          255,
+          120
+        ],
+        "time_color": [
+          0,
+          160,
+          90
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-mono",
+      "config": {
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "time_color": [
+          255,
+          255,
+          255
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "msg-short",
+      "config": {
+        "message": "Hi"
+      },
+      "standalone": false
+    },
+    {
+      "name": "msg-default",
+      "standalone": false
+    },
+    {
+      "name": "msg-long",
+      "config": {
+        "message": "Welcome to the workshop"
+      },
+      "standalone": false
+    },
+    {
+      "name": "p-64",
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "p-128",
+      "width": 128,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "p-12864",
+      "width": 128,
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "p-256",
+      "width": 256,
+      "height": 32,
+      "scale": 4,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "show-time",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "time-on",
+          "label": "show_time: true",
+          "sublabel": "the default; message above, clock below"
+        },
+        {
+          "shot": "time-off",
+          "label": "show_time: false",
+          "sublabel": "message alone, on the centre line"
+        }
+      ]
+    },
+    {
+      "name": "colors",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "col-default",
+          "label": "The defaults",
+          "sublabel": "white message, cyan time"
+        },
+        {
+          "shot": "col-amber",
+          "label": "Amber",
+          "sublabel": "color and time_color"
+        },
+        {
+          "shot": "col-green",
+          "label": "Green",
+          "sublabel": ""
+        },
+        {
+          "shot": "col-mono",
+          "label": "All white",
+          "sublabel": "both set the same"
+        }
+      ]
+    },
+    {
+      "name": "message-length",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "msg-short",
+          "label": "\"Hi\"",
+          "sublabel": "short messages sit centred with room to spare"
+        },
+        {
+          "shot": "msg-default",
+          "label": "\"Hello, World!\"",
+          "sublabel": "the default, which just fits a 128-wide panel"
+        },
+        {
+          "shot": "msg-long",
+          "label": "\"Welcome to the workshop\"",
+          "sublabel": "too long: the plugin does not shrink or wrap, so the ends are clipped"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "p-64",
+          "label": "64 x 32",
+          "sublabel": "the default message no longer fits"
+        },
+        {
+          "shot": "p-128",
+          "label": "128 x 32",
+          "sublabel": "the common two-panel chain"
+        },
+        {
+          "shot": "p-12864",
+          "label": "128 x 64",
+          "sublabel": "the same content, more breathing room"
+        },
+        {
+          "shot": "p-256",
+          "label": "256 x 32",
+          "sublabel": "a long chain; the text stays centred"
+        }
+      ]
+    }
+  ]
+}

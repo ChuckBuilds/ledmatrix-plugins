@@ -25,25 +25,46 @@ if _ISO:
         _instant = _instant.replace(tzinfo=_datetime_module.timezone.utc)
     _timestamp = _instant.timestamp()
 
+    # Held in a one-element list so advance() can move it without rebinding a
+    # closure variable the classmethods below already captured.
+    _offset = [0.0]
+
+    def _current():
+        return _instant + _datetime_module.timedelta(seconds=_offset[0])
+
     class _FrozenDateTime(_RealDateTime):
-        """A datetime whose idea of "now" never moves."""
+        """A datetime whose "now" only moves when advance() says so."""
 
         @classmethod
         def now(cls, tz=None):
             if tz is None:
-                return _instant.astimezone().replace(tzinfo=None)
-            return _instant.astimezone(tz)
+                return _current().astimezone().replace(tzinfo=None)
+            return _current().astimezone(tz)
 
         @classmethod
         def utcnow(cls):
-            return _instant.astimezone(_datetime_module.timezone.utc).replace(tzinfo=None)
+            return _current().astimezone(_datetime_module.timezone.utc).replace(tzinfo=None)
 
         @classmethod
         def today(cls):
             return cls.now()
 
     _datetime_module.datetime = _FrozenDateTime
-    _time_module.time = lambda: _timestamp
+    _time_module.time = lambda: _timestamp + _offset[0]
+
+    def advance(seconds):
+        """Move the frozen clock forward.
+
+        Animation is usually driven by elapsed wall-clock time rather than by
+        how many times display() was called, so stepping frames against a
+        clock that never moves renders the same first frame forever. The
+        documentation frame runner calls this between frames.
+        """
+        _offset[0] += float(seconds)
+
+    # Published for the frame runner; harmless if nothing imports it.
+    import builtins as _builtins
+    _builtins.__ledmatrix_docs_advance_clock__ = advance
 
 # Recorded HTTP responses, for managers that fetch without reading the cache.
 try:
