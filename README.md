@@ -96,7 +96,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [UFC Scoreboard](./plugins/ufc-scoreboard/) | UFC/MMA live fights, fighter headshots, records, odds & results &mdash; *by [LegoGuy1000](https://github.com/legoguy1000)* | |
 | [Masters Tournament](./plugins/masters-tournament/) | Live Masters golf leaderboard, hole tracking, player cards | |
 | [March Madness](./plugins/march-madness/) | NCAA tournament bracket tracker with round branding and live scores | |
-| [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN | |
+| [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN | <a href="./plugins/nfl-draft/"><img src="./docs/assets/nfl-draft/hero.png" width="240" alt="nfl-draft on an LED panel"></a> |
 | [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NHL, NCAA | |
 | [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records | |
 | [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts | |
