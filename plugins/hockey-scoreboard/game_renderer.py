@@ -150,9 +150,9 @@ class GameRenderer(SportsGameRendererMixin):
             fonts["score"] = self._load_custom_font(score_config, default_size=10, element_key='score_text')
             fonts["time"] = self._load_custom_font(period_config, default_size=8, element_key='period_text')
             fonts["team"] = self._load_custom_font(team_config, default_size=8, element_key='team_name')
-            fonts["status"] = self._load_custom_font(status_config, default_size=6, element_key='status_text')
-            fonts["detail"] = self._load_custom_font(detail_config, default_size=6, element_key='detail_text')
-            fonts["odds"] = self._load_custom_font(odds_config, default_size=6, element_key='odds_text')
+            fonts["status"] = self._load_custom_font(status_config, default_size=6, element_key='status_text', default_font='4x6-font.ttf')
+            fonts["detail"] = self._load_custom_font(detail_config, default_size=6, element_key='detail_text', default_font='4x6-font.ttf')
+            fonts["odds"] = self._load_custom_font(odds_config, default_size=6, element_key='odds_text', default_font='4x6-font.ttf')
             fonts["rank"] = self._load_custom_font(rank_config, default_size=10, element_key='rank_text')
             self.logger.debug("Successfully loaded fonts from config")
         except Exception:
@@ -204,9 +204,9 @@ class GameRenderer(SportsGameRendererMixin):
                                        default_size, font_name,
                                        self._FONT_NAME_ALIASES, self._FONT_PIXEL_GRID)
 
-    def _load_custom_font(self, element_config: Dict[str, Any], default_size: int = 8, element_key=None) -> ImageFont.FreeTypeFont:
+    def _load_custom_font(self, element_config: Dict[str, Any], default_size: int = 8, default_font: str = 'PressStart2P-Regular.ttf', element_key=None) -> ImageFont.FreeTypeFont:
         """Load a custom font from an element configuration dictionary."""
-        font_name = element_config.get('font', 'PressStart2P-Regular.ttf')
+        font_name = element_config.get('font', default_font)
         # Resolve a family alias to its filename BEFORE the path is built.
         # The grid table understands aliases, so a configured
         # "four_by_six" was sized on the 4x6 grid (7px) while the path
