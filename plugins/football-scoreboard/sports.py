@@ -237,6 +237,13 @@ class _LogoFetcher:
 
 
 class SportsCore(SportsCoreSharedMixin, ABC):
+    #: Absolute path of this plugin, handed to the shared mixin. It cannot
+    #: deduce it: __file__ there is src/common/, and inferring the directory
+    #: from the MRO returns None under the real plugin loader, which silently
+    #: disabled the schema lookup and shrank every grid-snapped font by a
+    #: pixel. See SportsCoreSharedMixin._plugin_dir.
+    _PLUGIN_DIR: ClassVar[str] = os.path.dirname(os.path.abspath(__file__))
+
     def __init__(
         self,
         config: Dict[str, Any],
