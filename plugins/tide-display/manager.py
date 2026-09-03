@@ -211,11 +211,41 @@ class TidePlugin(BasePlugin):
                     font = ImageFont.truetype(path, size)
                     break
                 except Exception as e:
+                    # A .bdf exists at exactly one pixel size and FreeType
+                    # rejects any other. That made the picker's behaviour depend
+                    # on font_size by coincidence: 4x6.bdf loaded because its
+                    # native 6 happens to match the default, while 5x7.bdf
+                    # silently fell back to the default face. Retry at the size
+                    # the file declares.
+                    native = self._bdf_pixel_size(path)
+                    if native is not None and native != size:
+                        try:
+                            font = ImageFont.truetype(path, native)
+                            self.logger.debug(
+                                "Loaded bitmap font %s at its native size %d "
+                                "(requested %d)", name, native, size)
+                            break
+                        except Exception:
+                            pass
                     self.logger.warning("Could not load font %s@%d: %s", name, size, e)
             if font is None and not any(os.path.exists(p) for p in candidates):
                 self.logger.warning("Font file not found: %s; using default font", name)
             self._font_cache[key] = font
         return self._font_cache[key]
+
+    @staticmethod
+    def _bdf_pixel_size(path):
+        """The pixel size a .bdf font declares, or None if it does not."""
+        try:
+            with open(path, "r", encoding="latin-1") as handle:
+                for line in handle:
+                    if line.startswith("PIXEL_SIZE"):
+                        return int(line.split()[1])
+                    if line.startswith("CHARS"):
+                        break  # past the header
+        except (OSError, ValueError, IndexError):
+            return None
+        return None
 
     def _element_style(self, color, small: bool):
         """Map a draw call's palette colour to its customization element.
