@@ -143,7 +143,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [MQTT Notifications](./plugins/mqtt-notifications/) | HomeAssistant notifications via MQTT | |
-| [On Air Light](./plugins/on-air/) | Broadcast ON AIR tally light, triggered remotely via MQTT / Home Assistant | |
+| [On Air Light](./plugins/on-air/) | Broadcast ON AIR tally light, triggered remotely via MQTT / Home Assistant | <a href="./plugins/on-air/"><img src="./docs/assets/on-air/hero.png" width="240" alt="on-air on an LED panel"></a> |
 
 ### Custom (3)
 
