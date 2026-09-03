@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-03",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -829,10 +829,10 @@
       "plugin_path": "plugins/ledmatrix-stocks",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-08-05",
+      "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.8.0",
+      "latest_version": "2.9.0",
       "icon": "fas fa-chart-line"
     },
     {
