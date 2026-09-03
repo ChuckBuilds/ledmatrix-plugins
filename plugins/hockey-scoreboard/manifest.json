@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.24.0",
+  "version": "1.24.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,13 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.24.1",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Make the odds text settings visible in the web UI. The odds_text block shipped in the schema but not in x-propertyOrder, and the config form iterates that list and nothing else -- so the font, size and colour controls existed and could not be reached. Nothing about what is drawn changes; the settings simply become editable.",
+      "changelog": "The card helpers move to the core. Twenty methods in this plugin's game_renderer.py were byte-identical to the same twenty in every other scoreboard: the colour pickers, the scroll_card settings lookup, the date and time formatting, the favourite-team rules and the font-size grid snapping. They now live in src.common.sports_card and this plugin delegates to them, so a fix to any of that reaches every scoreboard at once instead of needing eight identical edits, and a new scoreboard gets them by importing one module. 245 lines removed here. Nothing about what is drawn changes: the bodies were moved rather than rewritten, and all 176 safety-harness renders across the eight plugins are byte-identical to before. The floor rises to 3.3.0, the release that first ships the helper."
+    },
     {
       "version": "1.24.0",
       "released": "2026-09-02",
