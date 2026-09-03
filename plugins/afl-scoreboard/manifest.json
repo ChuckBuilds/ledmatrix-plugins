@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.19.3",
+  "version": "1.20.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,13 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.20.0",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "Odds get their own font, size and colour. The betting line and over/under borrowed the detail_text settings, so making them bigger on a large panel also enlarged the team records and the date row, and their green was hard-coded in the drawing call where no setting could reach it. A new customization.odds_text block controls the odds alone, in both the full-screen scorebug and the scroll/Vegas card. Nothing changes unless you set it: the defaults are exactly what was rendered before -- the same 4x6 font at the same size, and the same green -- and a config saved before this setting existed falls back to detail_text, so all 176 safety-harness renders are byte-identical to the previous version. Sizes still snap to the font's pixel grid to stay crisp, so 4x6-font.ttf gives 7, 14 or 21 and press_start gives 8 or 16.",
+      "changelog": "Documentation only. Fills gaps left by the previous README rewrite. Documents other_games_min_quality and other_games_divisions, which the rewrite dropped entirely, and records that both are inert in this league: 'ranked' needs a national poll the AFL does not publish, and the divisions filter needs ESPN's FBS/FCS group rosters, which exist for college football and nothing else. Adds that both filters fail open and that favourites are never filtered by either. Corrects the framing of upcoming_games_to_show: it is a pool the panel cycles through one card at a time, so raising it makes any one game come round less often, not more. Restores the debug-logging tip for finding team abbreviations and a manual-installation section."
+    },
     {
       "version": "1.19.3",
       "released": "2026-09-02",

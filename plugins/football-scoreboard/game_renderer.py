@@ -460,7 +460,7 @@ class GameRenderer:
         if self._style_resolver is not None:
             for font_key, (loader_font, loader_size) in self._LOADER_DEFAULTS.items():
                 element = self._FONT_ELEMENT_KEYS.get(font_key, font_key)
-                if font_key == 'detail':
+                if font_key in ('detail', 'odds'):
                     # _detail_font_size already picks a size deliberately --
                     # grid-aligned on tall panels, and off-grid at 6px on 32
                     # tall ones where the over/under would not survive 7px.
@@ -486,6 +486,9 @@ class GameRenderer:
         team_config = customization.get('team_name', {})
         status_config = customization.get('status_text', {})
         detail_config = customization.get('detail_text', {})
+        # Falls back to detail_text so a config written before this
+        # setting existed keeps rendering odds exactly as it did.
+        odds_config = customization.get('odds_text') or detail_config
         rank_config = customization.get('rank_text', {})
 
         try:
@@ -510,6 +513,10 @@ class GameRenderer:
             fonts["detail"] = self._load_custom_font(
                 detail_config,
                 default_size=self._detail_font_size(), element_key='detail_text',
+                default_font='4x6-font.ttf')
+            fonts["odds"] = self._load_custom_font(
+                odds_config,
+                default_size=self._detail_font_size(), element_key='odds_text',
                 default_font='4x6-font.ttf')
             fonts["rank"] = self._load_custom_font(
                 rank_config, default_size=rank_size, element_key='rank_text')
@@ -686,11 +693,13 @@ class GameRenderer:
     #: resolving the colour from the face keeps the two in step by
     #: construction, rather than by every draw site remembering to agree.
     _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
+        "odds": "odds_text",
         "score": "score_text",
         "time": "period_text",
         "team": "team_name",
         "status": "status_text",
         "detail": "detail_text",
+        "odds": "odds_text",
         "rank": "rank_text",
     }
 
@@ -1063,6 +1072,7 @@ class GameRenderer:
         "status": "status_text",
         "detail": "detail_text",
         "rank": "rank_text",
+        "odds": "odds_text",
     }
 
     # Per-element (font, size) the local loader falls back to when a config
@@ -1076,6 +1086,9 @@ class GameRenderer:
         'team': ('PressStart2P-Regular.ttf', 8),
         'status': ('PressStart2P-Regular.ttf', 6),
         'detail': ('4x6-font.ttf', 6),
+        # Same default as detail: odds rendered with the detail font until
+        # this setting existed, and the default must not change that.
+        'odds': ('4x6-font.ttf', 6),
         'rank': ('PressStart2P-Regular.ttf', 10),
     }
 
@@ -1092,6 +1105,7 @@ class GameRenderer:
         'team': ('PressStart2P-Regular.ttf', 8),
         'status': ('4x6-font.ttf', 6),
         'detail': ('4x6-font.ttf', 6),
+        'odds': ('4x6-font.ttf', 6),
         'rank': ('PressStart2P-Regular.ttf', 10),
     }
 
@@ -2197,6 +2211,23 @@ class GameRenderer:
         _date, time_text = self._upcoming_date_and_time(game)
         return str(time_text or "")
 
+    def _odds_color(self) -> Tuple[int, int, int]:
+        """Colour for the odds text; the green it always drew unless configured.
+
+        Guarded with getattr because not every class that reaches
+        _draw_dynamic_odds carries the element-colour helper -- the plugins'
+        own test harnesses build minimal manager objects, and a bare
+        AttributeError here is swallowed by the surrounding except, which
+        drops the odds off the card instead of failing loudly.
+        """
+        getter = getattr(self, "_element_color", None)
+        if getter is None:
+            return (0, 255, 0)
+        try:
+            return getter("odds_text", (0, 255, 0))
+        except Exception:
+            return (0, 255, 0)
+
     def _draw_dynamic_odds(self, draw: ImageDraw.Draw, odds: Dict[str, Any],
                            centre_text: str = "") -> None:
         """Draw odds with dynamic positioning.
@@ -2254,7 +2285,7 @@ class GameRenderer:
             # the widest time string the centre can hold, measured in the same
             # font the renderer will use, so this tracks font changes instead
             # of hard-coding a width.
-            font = self.fonts["detail"]
+            font = self.fonts.get("odds") or self.fonts["detail"]
             time_font = self.fonts.get("time", font)
             # Reserve for what this card actually puts in the centre, not the
             # widest string any card could. "12:00 PM" is an upcoming card's
@@ -2284,7 +2315,7 @@ class GameRenderer:
                         spread_x = 0 + odds_x_offset
                     spread_y = 0 + odds_y_offset
 
-                    self._draw_text_with_outline(draw, spread_text, (spread_x, spread_y), font, fill=(0, 255, 0))
+                    self._draw_text_with_outline(draw, spread_text, (spread_x, spread_y), font, fill=self._odds_color())
             
             # Show over/under on opposite side
             over_under = odds.get("over_under")
@@ -2320,7 +2351,7 @@ class GameRenderer:
                     ou_x = 0 + odds_x_offset
                 ou_y = 0 + odds_y_offset
                 
-                self._draw_text_with_outline(draw, ou_text, (ou_x, ou_y), font, fill=(0, 255, 0))
+                self._draw_text_with_outline(draw, ou_text, (ou_x, ou_y), font, fill=self._odds_color())
                 
         except Exception as e:
             self.logger.error(f"Error drawing odds: {e}")
