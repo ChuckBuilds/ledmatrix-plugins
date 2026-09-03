@@ -175,7 +175,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [Web UI Info](./plugins/web-ui-info/) | Displays web UI URL for device access | |
+| [Web UI Info](./plugins/web-ui-info/) | Displays web UI URL for device access | <a href="./plugins/web-ui-info/"><img src="./docs/assets/web-ui-info/hero.png" width="240" alt="web-ui-info on an LED panel"></a> |
 
 ### Development (1)
 

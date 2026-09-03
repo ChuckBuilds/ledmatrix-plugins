@@ -1,0 +1,121 @@
+{
+  "plugin": "web-ui-info",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "hostname": "ledmatrix",
+    "config": {
+      "enabled": true
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "width": 128,
+      "height": 32
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "host-short",
+      "hostname": "pi",
+      "standalone": false
+    },
+    {
+      "name": "host-long",
+      "hostname": "raspberrypi-livingroom",
+      "standalone": false
+    },
+    {
+      "name": "host-long-64",
+      "width": 64,
+      "height": 32,
+      "scale": 6,
+      "hostname": "raspberrypi-livingroom",
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        }
+      ]
+    },
+    {
+      "name": "hostname-length",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "host-short",
+          "label": "\"pi\" - \"at\" prefix fits"
+        },
+        {
+          "shot": "hero",
+          "label": "\"ledmatrix\" - \"at\" prefix fits"
+        },
+        {
+          "shot": "host-long",
+          "label": "\"raspberrypi-livingroom\" - prefix dropped"
+        }
+      ]
+    },
+    {
+      "name": "narrow-wrap",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "\"ledmatrix\" on 64x32"
+        },
+        {
+          "shot": "host-long-64",
+          "label": "long hostname wraps"
+        }
+      ]
+    }
+  ]
+}

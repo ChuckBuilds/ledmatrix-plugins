@@ -263,12 +263,18 @@ def render_shot(
     # clock, a countdown, or a "starts in 2h" line differs on every run.
     freeze_time = shot.get("freeze_time", defaults.get("freeze_time"))
     http_replay = shot.get("http_replay", defaults.get("http_replay"))
-    if freeze_time or http_replay:
+    # A plugin that prints the device hostname would otherwise bake whoever ran
+    # the renderer into the committed image, and --check would fail for anyone
+    # else. Pinning it keeps the screenshot generic and reproducible.
+    hostname = shot.get("hostname", defaults.get("hostname"))
+    if freeze_time or http_replay or hostname:
         support_dir = str(Path(__file__).resolve().parent / "docs_render_support")
         existing = env.get("PYTHONPATH")
         env["PYTHONPATH"] = f"{support_dir}{os.pathsep}{existing}" if existing else support_dir
     if freeze_time:
         env["LEDMATRIX_DOCS_FREEZE_TIME"] = str(freeze_time)
+    if hostname:
+        env["LEDMATRIX_DOCS_HOSTNAME"] = str(hostname)
     if http_replay:
         replay_path = (shot_list_dir / http_replay).resolve()
         if not replay_path.is_file():
