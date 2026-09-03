@@ -1,0 +1,310 @@
+{
+  "plugin": "static-image",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T16:30:00+00:00"
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "mark-a",
+            "path": "docs/assets/static-image/sample/mark-a.png",
+            "display_order": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "fit-on",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "wide",
+            "path": "docs/assets/static-image/sample/wide.png",
+            "display_order": 0
+          }
+        ],
+        "fit_to_display": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "fit-off",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "wide",
+            "path": "docs/assets/static-image/sample/wide.png",
+            "display_order": 0
+          }
+        ],
+        "fit_to_display": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "aspect-on",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "wide",
+            "path": "docs/assets/static-image/sample/wide.png",
+            "display_order": 0
+          }
+        ],
+        "fit_to_display": true,
+        "preserve_aspect_ratio": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "aspect-off",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "wide",
+            "path": "docs/assets/static-image/sample/wide.png",
+            "display_order": 0
+          }
+        ],
+        "fit_to_display": true,
+        "preserve_aspect_ratio": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "bg-black",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "transparent",
+            "path": "docs/assets/static-image/sample/transparent.png",
+            "display_order": 0
+          }
+        ],
+        "background_color": [
+          0,
+          0,
+          0
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "bg-navy",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "transparent",
+            "path": "docs/assets/static-image/sample/transparent.png",
+            "display_order": 0
+          }
+        ],
+        "background_color": [
+          20,
+          30,
+          90
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "bg-red",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "transparent",
+            "path": "docs/assets/static-image/sample/transparent.png",
+            "display_order": 0
+          }
+        ],
+        "background_color": [
+          120,
+          20,
+          20
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "bg-grey",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "transparent",
+            "path": "docs/assets/static-image/sample/transparent.png",
+            "display_order": 0
+          }
+        ],
+        "background_color": [
+          60,
+          60,
+          60
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "size-64x32",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "mark-a",
+            "path": "docs/assets/static-image/sample/mark-a.png",
+            "display_order": 0
+          }
+        ]
+      },
+      "width": 64,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "mark-a",
+            "path": "docs/assets/static-image/sample/mark-a.png",
+            "display_order": 0
+          }
+        ]
+      },
+      "width": 128,
+      "height": 32,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "mark-a",
+            "path": "docs/assets/static-image/sample/mark-a.png",
+            "display_order": 0
+          }
+        ]
+      },
+      "width": 128,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "config": {
+        "enabled": true,
+        "images": [
+          {
+            "id": "mark-a",
+            "path": "docs/assets/static-image/sample/mark-a.png",
+            "display_order": 0
+          }
+        ]
+      },
+      "width": 256,
+      "height": 32,
+      "scale": 4,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "fit-and-aspect",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "fit-on",
+          "label": "fit_to_display: true",
+          "sublabel": "the default; the 192x64 image is scaled to the panel"
+        },
+        {
+          "shot": "fit-off",
+          "label": "fit_to_display: false",
+          "sublabel": "drawn at native size, so it overflows"
+        },
+        {
+          "shot": "aspect-on",
+          "label": "preserve_aspect_ratio: true",
+          "sublabel": "the default; proportions kept, letterboxed"
+        },
+        {
+          "shot": "aspect-off",
+          "label": "preserve_aspect_ratio: false",
+          "sublabel": "stretched to fill the panel exactly"
+        }
+      ]
+    },
+    {
+      "name": "background-color",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "bg-black",
+          "label": "[0, 0, 0]",
+          "sublabel": "the default; transparent areas stay unlit"
+        },
+        {
+          "shot": "bg-navy",
+          "label": "[20, 30, 90]",
+          "sublabel": "transparent areas fill with the colour"
+        },
+        {
+          "shot": "bg-red",
+          "label": "[120, 20, 20]",
+          "sublabel": ""
+        },
+        {
+          "shot": "bg-grey",
+          "label": "[60, 60, 60]",
+          "sublabel": "every pixel lit \u2014 brightest and most power"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32",
+          "sublabel": "the square mark is capped by panel height"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32",
+          "sublabel": "the common two-panel chain"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64",
+          "sublabel": "twice the height, so twice the mark"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32",
+          "sublabel": "height still caps it; the image centres"
+        }
+      ]
+    }
+  ]
+}
