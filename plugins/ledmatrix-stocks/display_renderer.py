@@ -138,6 +138,20 @@ class StockDisplayRenderer:
             self.price_font = self._load_custom_font_from_element_config(stocks_custom.get('price', {}))
             self.price_delta_font = self._load_custom_font_from_element_config(stocks_custom.get('price_delta', {}))
     
+    @staticmethod
+    def _bdf_pixel_size(path):
+        """The pixel size a .bdf font declares, or None if it does not."""
+        try:
+            with open(path, "r", encoding="latin-1") as handle:
+                for line in handle:
+                    if line.startswith("PIXEL_SIZE"):
+                        return int(line.split()[1])
+                    if line.startswith("CHARS"):
+                        break  # past the header; no point reading the glyphs
+        except (OSError, ValueError, IndexError):
+            return None
+        return None
+
     def _load_custom_font_from_element_config(self, element_config: Dict[str, Any]) -> ImageFont.FreeTypeFont:
         """
         Load a custom font from an element configuration dictionary.
@@ -165,13 +179,25 @@ class StockDisplayRenderer:
                     self.logger.debug(f"Loaded font: {font_name} at size {font_size}")
                     return font
                 elif font_path.lower().endswith('.bdf'):
-                    # PIL's ImageFont.truetype() can sometimes handle BDF files
-                    # If it fails, we'll fall through to the default font
+                    # A .bdf is a bitmap face that exists at exactly one pixel
+                    # size; FreeType refuses every other. Retry at the size the
+                    # file declares rather than dropping to the default font --
+                    # otherwise picking 5x7.bdf works at size 7 and nowhere else.
                     try:
                         font = ImageFont.truetype(font_path, font_size)
                         self.logger.debug(f"Loaded BDF font: {font_name} at size {font_size}")
                         return font
-                    except Exception:
+                    except OSError:
+                        native = self._bdf_pixel_size(font_path)
+                        if native is not None and native != font_size:
+                            try:
+                                font = ImageFont.truetype(font_path, native)
+                                self.logger.debug(
+                                    "Loaded bitmap font %s at its native size %d "
+                                    "(requested %d)", font_name, native, font_size)
+                                return font
+                            except OSError:
+                                pass
                         self.logger.warning(f"Could not load BDF font {font_name} with PIL, using default")
                         # Fall through to default
                 else:

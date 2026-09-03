@@ -1,0 +1,314 @@
+{
+  "plugin": "ledmatrix-stocks",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T15:30:00",
+    "mock_data": "mock.json",
+    "config": {
+      "enabled": true,
+      "stocks": {
+        "enabled": true,
+        "symbols": [
+          "AAPL",
+          "MSFT",
+          "NVDA"
+        ]
+      },
+      "crypto": {
+        "enabled": false
+      }
+    },
+    "frames": 60
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "config": {
+        "stocks": {
+          "enabled": true,
+          "symbols": [
+            "AAPL"
+          ]
+        },
+        "crypto": {
+          "enabled": false,
+          "symbols": []
+        }
+      }
+    },
+    {
+      "name": "up",
+      "standalone": false,
+      "config": {
+        "stocks": {
+          "enabled": true,
+          "symbols": [
+            "AAPL"
+          ]
+        },
+        "crypto": {
+          "enabled": false,
+          "symbols": []
+        }
+      }
+    },
+    {
+      "name": "down",
+      "standalone": false,
+      "config": {
+        "stocks": {
+          "enabled": true,
+          "symbols": [
+            "MSFT"
+          ]
+        },
+        "crypto": {
+          "enabled": false,
+          "symbols": []
+        }
+      }
+    },
+    {
+      "name": "crypto",
+      "standalone": false,
+      "config": {
+        "stocks": {
+          "enabled": false,
+          "symbols": []
+        },
+        "crypto": {
+          "enabled": true,
+          "symbols": [
+            "BTC-USD"
+          ]
+        }
+      },
+      "frames": 60,
+      "width": 256
+    },
+    {
+      "name": "chart-on",
+      "standalone": false,
+      "config": {
+        "stocks": {
+          "enabled": true,
+          "symbols": [
+            "NVDA"
+          ]
+        },
+        "crypto": {
+          "enabled": false,
+          "symbols": []
+        },
+        "display": {
+          "toggle_chart": true
+        }
+      }
+    },
+    {
+      "name": "chart-off",
+      "standalone": false,
+      "config": {
+        "stocks": {
+          "enabled": true,
+          "symbols": [
+            "NVDA"
+          ]
+        },
+        "crypto": {
+          "enabled": false,
+          "symbols": []
+        },
+        "display": {
+          "toggle_chart": false
+        }
+      }
+    },
+    {
+      "name": "mode-scroll",
+      "standalone": false,
+      "config": {
+        "stocks": {
+          "enabled": true,
+          "symbols": [
+            "AAPL"
+          ]
+        },
+        "crypto": {
+          "enabled": false,
+          "symbols": []
+        },
+        "display": {
+          "display_mode": "scroll"
+        }
+      }
+    },
+    {
+      "name": "mode-switch",
+      "standalone": false,
+      "frames": 5,
+      "config": {
+        "stocks": {
+          "enabled": true,
+          "symbols": [
+            "AAPL"
+          ]
+        },
+        "crypto": {
+          "enabled": false,
+          "symbols": []
+        },
+        "display": {
+          "display_mode": "switch"
+        }
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "standalone": false,
+      "config": {
+        "stocks": {
+          "enabled": true,
+          "symbols": [
+            "AAPL"
+          ]
+        },
+        "crypto": {
+          "enabled": false,
+          "symbols": []
+        }
+      }
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "standalone": false,
+      "config": {
+        "stocks": {
+          "enabled": true,
+          "symbols": [
+            "AAPL"
+          ]
+        },
+        "crypto": {
+          "enabled": false,
+          "symbols": []
+        }
+      }
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "standalone": false,
+      "config": {
+        "stocks": {
+          "enabled": true,
+          "symbols": [
+            "AAPL"
+          ]
+        },
+        "crypto": {
+          "enabled": false,
+          "symbols": []
+        }
+      }
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "stocks": {
+          "enabled": true,
+          "symbols": [
+            "AAPL"
+          ]
+        },
+        "crypto": {
+          "enabled": false,
+          "symbols": []
+        }
+      }
+    }
+  ],
+  "composites": [
+    {
+      "name": "gain-loss",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "up",
+          "label": "A gain",
+          "sublabel": "positive_color, green by default"
+        },
+        {
+          "shot": "down",
+          "label": "A loss",
+          "sublabel": "negative_color, red by default"
+        },
+        {
+          "shot": "crypto",
+          "label": "Crypto",
+          "sublabel": "its own colour block, gold by default (256 wide, where the whole line fits)"
+        }
+      ]
+    },
+    {
+      "name": "toggle-chart",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "chart-on",
+          "label": "toggle_chart: true"
+        },
+        {
+          "shot": "chart-off",
+          "label": "toggle_chart: false"
+        }
+      ]
+    },
+    {
+      "name": "display-mode",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "mode-scroll",
+          "label": "display_mode: scroll",
+          "sublabel": "one continuous ribbon of every symbol"
+        },
+        {
+          "shot": "mode-switch",
+          "label": "display_mode: switch",
+          "sublabel": "one symbol at a time, held for switch_duration"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ],
+  "_comment": "Scroll shots use frames: the ticker starts off-panel, so frame 0 is blank. Company logos are downloaded by the plugin and cached on disk, so the very first render on a fresh machine needs network access; later runs are offline and byte-identical."
+}
