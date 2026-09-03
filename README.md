@@ -145,6 +145,12 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [MQTT Notifications](./plugins/mqtt-notifications/) | HomeAssistant notifications via MQTT | |
 | [On Air Light](./plugins/on-air/) | Broadcast ON AIR tally light, triggered remotely via MQTT / Home Assistant | |
 
+### Productivity (1)
+
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Pomodoro Timer](./plugins/pomodoro-timer/) | Focus/break timer with MQTT control and Home Assistant discovery | <a href="./plugins/pomodoro-timer/"><img src="./plugins/pomodoro-timer/assets/hero.png" width="240" alt="pomodoro-timer on an LED panel"></a> |
+
 ### Custom (3)
 
 | Plugin | Description | Preview |
