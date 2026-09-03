@@ -138,10 +138,11 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [News Ticker](./plugins/news/) | RSS news headlines from ESPN, NCAA, custom sources | |
 | [Of The Day](./plugins/of-the-day/) | Daily quotes, Bible verses, word of the day | |
 
-### Integrations (2)
+### Integrations (3)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
+| [BirdNET-Go](./plugins/birdnet-go/) | Live bird detections and daily species stats from a BirdNET-Go server | <a href="./plugins/birdnet-go/"><img src="./docs/assets/birdnet-go/hero.png" width="240" alt="birdnet-go on an LED panel"></a> |
 | [MQTT Notifications](./plugins/mqtt-notifications/) | HomeAssistant notifications via MQTT | |
 | [On Air Light](./plugins/on-air/) | Broadcast ON AIR tally light, triggered remotely via MQTT / Home Assistant | |
 

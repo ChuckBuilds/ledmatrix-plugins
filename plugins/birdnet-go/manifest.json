@@ -1,7 +1,7 @@
 {
   "id": "birdnet-go",
   "name": "BirdNET-Go",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": "ChuckBuilds",
   "description": "Show what BirdNET-Go is hearing. One screen cycles a different species each turn \u2014 name, confidence, how many times it has been heard today, and a photo \u2014 and a second shows today's stats: species count, total detections and the most-heard species. Polls the BirdNET-Go REST API, with optional MQTT for instant pop-ups.",
   "category": "integration",
@@ -21,6 +21,12 @@
   "entry_point": "manager.py",
   "class_name": "BirdNetGoPlugin",
   "versions": [
+    {
+      "released": "2026-09-03",
+      "version": "1.2.2",
+      "notes": "Documentation. The README explained the setup and the cycling logic well but had no configuration reference at all: 36 of the 39 settings were never named, including every text colour, the whole field_mapping block, and most of the display block. All 39 are now documented by key, grouped by area. Adds real rendered screenshots -- the detection card, show_confidence and show_today_count on and off, a long species name scrolling on a narrow panel and fitting on a wide one, and four panel sizes.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-08-15",
       "version": "1.2.1",
@@ -48,7 +54,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-05",
+  "last_updated": "2026-09-03",
   "stars": 0,
   "downloads": 0,
   "verified": true,
