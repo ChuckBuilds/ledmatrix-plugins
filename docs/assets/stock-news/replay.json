@@ -1,0 +1,9 @@
+{
+  "matches": [
+    {
+      "url_contains": "docs-logo",
+      "body_file": "logo.png",
+      "content_type": "image/png"
+    }
+  ]
+}

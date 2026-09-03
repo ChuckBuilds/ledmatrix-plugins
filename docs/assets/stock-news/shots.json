@@ -1,0 +1,242 @@
+{
+  "plugin": "stock-news",
+  "_comment": "The ticker is a Vegas scroll: frame 0 is off-panel and renders blank, so every shot steps frames. Headlines are seeded onto the plugin instance because the fetch cache key includes a time bucket derived from time.time(), which the docs shim does not freeze. The ticker symbols and companies are invented, and the logo is a generated stand-in served by the replay file, so no third-party logo is committed and the render needs no network.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "skip_update": true,
+    "frames": 60,
+    "config": {
+      "enabled": true,
+      "global": {
+        "logo_url_template": "http://docs-logo.invalid/{symbol}.png"
+      }
+    },
+    "attrs": {
+      "initialized": true,
+      "all_news_items": [
+        {
+          "symbol": "NRTH",
+          "title": "Northwind Systems lifts its services revenue outlook for the December quarter",
+          "publisher": "Reuters",
+          "published_ts": 1788442200.0,
+          "price": 231.44,
+          "price_change": 1.82
+        },
+        {
+          "symbol": "GLSS",
+          "title": "Glasshouse Compute expands datacentre capacity in the Midwest",
+          "publisher": "Bloomberg",
+          "published_ts": 1788438600.0,
+          "price": 418.9,
+          "price_change": -3.55
+        },
+        {
+          "symbol": "TDWR",
+          "title": "Tidewater Robotics extends supply commitments through next fiscal year",
+          "publisher": "CNBC",
+          "published_ts": 1788447600.0,
+          "price": 176.12,
+          "price_change": 4.31
+        }
+      ],
+      "last_update": 1788449400.0
+    },
+    "freeze_time": "2026-09-03T15:30:00+00:00",
+    "http_replay": "replay.json"
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "frames": 24
+    },
+    {
+      "name": "style-logo-ticker",
+      "standalone": false,
+      "frames": 24,
+      "config": {
+        "global": {
+          "logo_url_template": "http://docs-logo.invalid/{symbol}.png",
+          "display_style": "logo_and_ticker"
+        }
+      }
+    },
+    {
+      "name": "style-ticker-only",
+      "standalone": false,
+      "frames": 24,
+      "config": {
+        "global": {
+          "logo_url_template": "http://docs-logo.invalid/{symbol}.png",
+          "display_style": "ticker_only"
+        }
+      }
+    },
+    {
+      "name": "style-logo-only",
+      "standalone": false,
+      "frames": 24,
+      "config": {
+        "global": {
+          "logo_url_template": "http://docs-logo.invalid/{symbol}.png",
+          "display_style": "logo_only"
+        }
+      }
+    },
+    {
+      "name": "meta-all",
+      "standalone": false,
+      "width": 256,
+      "frames": 24,
+      "config": {
+        "global": {
+          "logo_url_template": "http://docs-logo.invalid/{symbol}.png",
+          "show_publisher": true,
+          "show_age": true,
+          "show_price": true
+        }
+      }
+    },
+    {
+      "name": "meta-none",
+      "standalone": false,
+      "width": 256,
+      "frames": 24,
+      "config": {
+        "global": {
+          "logo_url_template": "http://docs-logo.invalid/{symbol}.png",
+          "show_publisher": false,
+          "show_age": false,
+          "show_price": false
+        }
+      }
+    },
+    {
+      "name": "price-fixed",
+      "standalone": false,
+      "width": 256,
+      "frames": 24,
+      "config": {
+        "global": {
+          "logo_url_template": "http://docs-logo.invalid/{symbol}.png",
+          "show_price": true,
+          "price_color_mode": "fixed"
+        }
+      }
+    },
+    {
+      "name": "price-change",
+      "standalone": false,
+      "width": 256,
+      "frames": 24,
+      "config": {
+        "global": {
+          "logo_url_template": "http://docs-logo.invalid/{symbol}.png",
+          "show_price": true,
+          "price_color_mode": "change"
+        }
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "standalone": false,
+      "frames": 24
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "standalone": false,
+      "frames": 24
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "standalone": false,
+      "frames": 24
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "standalone": false,
+      "frames": 24
+    }
+  ],
+  "composites": [
+    {
+      "name": "display-style",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "style-logo-ticker",
+          "label": "display_style: logo_and_ticker",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "style-ticker-only",
+          "label": "display_style: ticker_only"
+        },
+        {
+          "shot": "style-logo-only",
+          "label": "display_style: logo_only",
+          "sublabel": "logo plus the symbol, no headline"
+        }
+      ]
+    },
+    {
+      "name": "headline-extras",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "meta-all",
+          "label": "publisher, age and price all on"
+        },
+        {
+          "shot": "meta-none",
+          "label": "all three off",
+          "sublabel": "headline only"
+        }
+      ]
+    },
+    {
+      "name": "price-color-mode",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "price-fixed",
+          "label": "price_color_mode: fixed",
+          "sublabel": "price uses text_color"
+        },
+        {
+          "shot": "price-change",
+          "label": "price_color_mode: change",
+          "sublabel": "price_up_color / price_down_color"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,340 @@
+{
+  "plugin": "ledmatrix-flights",
+  "_comment": "Aircraft are seeded onto the plugin instance rather than fetched: the live source is a local SkyAware receiver. Positions are invented and placed within the default 10-mile radius of the schema's default centre. map_background is off in every shot because the basemap tiles come from a live tile server, so a render including them could not reproduce.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-03T15:30:00+00:00",
+    "skip_update": true,
+    "config": {
+      "enabled": true
+    },
+    "attrs": {
+      "aircraft_data": {
+        "A1B2C3": {
+          "icao": "A1B2C3",
+          "callsign": "DAL482",
+          "lat": 28.01,
+          "lon": -82.52,
+          "altitude": 34000,
+          "speed": 452,
+          "heading": 78,
+          "distance_miles": 4.2,
+          "origin": "TPA",
+          "destination": "ATL",
+          "aircraft_type": "B738",
+          "airline_icao": "DAL",
+          "vertical_rate": 0,
+          "last_seen": 1788449400.0,
+          "timestamp": 1788449400.0,
+          "color": [
+            255,
+            190,
+            0
+          ]
+        },
+        "D4E5F6": {
+          "icao": "D4E5F6",
+          "callsign": "AAL119",
+          "lat": 27.905,
+          "lon": -82.398,
+          "altitude": 12500,
+          "speed": 310,
+          "heading": 190,
+          "distance_miles": 6.8,
+          "origin": "TPA",
+          "destination": "DFW",
+          "aircraft_type": "A321",
+          "airline_icao": "AAL",
+          "vertical_rate": 0,
+          "last_seen": 1788449400.0,
+          "timestamp": 1788449400.0,
+          "color": [
+            90,
+            200,
+            255
+          ]
+        },
+        "07A8B9": {
+          "icao": "07A8B9",
+          "callsign": "SWA2210",
+          "lat": 27.972,
+          "lon": -82.56,
+          "altitude": 5200,
+          "speed": 265,
+          "heading": 341,
+          "distance_miles": 8.4,
+          "origin": "TPA",
+          "destination": "BNA",
+          "aircraft_type": "B737",
+          "airline_icao": "SWA",
+          "vertical_rate": 0,
+          "last_seen": 1788449400.0,
+          "timestamp": 1788449400.0,
+          "color": [
+            255,
+            120,
+            120
+          ]
+        },
+        "C0D1E2": {
+          "icao": "C0D1E2",
+          "callsign": "JBU765",
+          "lat": 27.93,
+          "lon": -82.43,
+          "altitude": 2100,
+          "speed": 190,
+          "heading": 265,
+          "distance_miles": 2.9,
+          "origin": "TPA",
+          "destination": "JFK",
+          "aircraft_type": "A320",
+          "airline_icao": "JBU",
+          "vertical_rate": 0,
+          "last_seen": 1788449400.0,
+          "timestamp": 1788449400.0,
+          "color": [
+            140,
+            255,
+            140
+          ]
+        }
+      }
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "config": {
+        "enabled": true,
+        "display_mode": "overhead",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "mode-overhead",
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "display_mode": "overhead",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "mode-map",
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "display_mode": "map",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "mode-stats",
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "display_mode": "stats",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "mode-area",
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "display_mode": "area",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "units-imperial",
+      "standalone": false,
+      "width": 256,
+      "config": {
+        "enabled": true,
+        "display_mode": "overhead",
+        "units": "imperial",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "units-metric",
+      "standalone": false,
+      "width": 256,
+      "config": {
+        "enabled": true,
+        "display_mode": "overhead",
+        "units": "metric",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "track-deg",
+      "standalone": false,
+      "width": 256,
+      "config": {
+        "enabled": true,
+        "display_mode": "overhead",
+        "track_format": "deg",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "track-cardinal",
+      "standalone": false,
+      "width": 256,
+      "config": {
+        "enabled": true,
+        "display_mode": "overhead",
+        "track_format": "cardinal",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "display_mode": "overhead",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "display_mode": "overhead",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "display_mode": "overhead",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "display_mode": "overhead",
+        "map_background": {
+          "enabled": false
+        }
+      }
+    }
+  ],
+  "composites": [
+    {
+      "name": "display-modes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "mode-overhead",
+          "label": "display_mode: overhead",
+          "sublabel": "one aircraft at a time, in detail"
+        },
+        {
+          "shot": "mode-map",
+          "label": "display_mode: map",
+          "sublabel": "positions plotted around you"
+        },
+        {
+          "shot": "mode-stats",
+          "label": "display_mode: stats"
+        },
+        {
+          "shot": "mode-area",
+          "label": "display_mode: area"
+        }
+      ]
+    },
+    {
+      "name": "units",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "units-imperial",
+          "label": "units: imperial",
+          "sublabel": "feet and knots"
+        },
+        {
+          "shot": "units-metric",
+          "label": "units: metric"
+        }
+      ]
+    },
+    {
+      "name": "track-format",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "track-deg",
+          "label": "track_format: deg"
+        },
+        {
+          "shot": "track-cardinal",
+          "label": "track_format: cardinal"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

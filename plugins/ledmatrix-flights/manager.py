@@ -3200,8 +3200,11 @@ class FlightTrackerPlugin(BasePlugin):
                 continue
 
             x, y = pixel
-            # Brighten the plane colors by boosting RGB values
-            base_color = aircraft['color']
+            # Brighten the plane colors by boosting RGB values.
+            # Every other read of this field uses .get with a fallback; a record
+            # that reached the map without one took the whole mode to ERR: map
+            # while the other modes rendered it fine.
+            base_color = aircraft.get('color') or (255, 255, 255)
             color = tuple(min(255, int(c * 1.3)) for c in base_color)
 
             # Draw single pixel for each aircraft

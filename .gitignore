@@ -52,3 +52,8 @@ emulator_config.json
 # It lands in the process CWD, which on an install is the core checkout.
 debug_composite.png
 debug_cropped.png
+
+# Company logos the stock-news ticker downloads at runtime. The plugin caches
+# them next to itself (plugins/stock-news/assets/logos), so without this a
+# local run leaves third-party logo files sitting untracked in the plugin tree.
+plugins/stock-news/assets/logos/

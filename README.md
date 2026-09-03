@@ -106,7 +106,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Stocks Ticker](./plugins/ledmatrix-stocks/) | Real-time stock & crypto prices with charts | <a href="./plugins/ledmatrix-stocks/"><img src="./docs/assets/ledmatrix-stocks/hero.png" width="240" alt="ledmatrix-stocks on an LED panel"></a> |
-| [Stock News](./plugins/stock-news/) | Financial headlines from RSS feeds | |
+| [Stock News](./plugins/stock-news/) | Financial headlines from RSS feeds | <a href="./plugins/stock-news/"><img src="./docs/assets/stock-news/hero.png" width="240" alt="stock-news on an LED panel"></a> |
 
 ### Time & Calendar (4)
 
@@ -163,7 +163,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [Flight Tracker](./plugins/ledmatrix-flights/) | Real-time ADS-B aircraft tracking with map display | |
+| [Flight Tracker](./plugins/ledmatrix-flights/) | Real-time ADS-B aircraft tracking with map display | <a href="./plugins/ledmatrix-flights/"><img src="./docs/assets/ledmatrix-flights/hero.png" width="240" alt="ledmatrix-flights on an LED panel"></a> |
 | [Countdown Display](./plugins/countdown/) | Customizable countdowns for birthdays, events, holidays | <a href="./plugins/countdown/"><img src="./docs/assets/countdown/hero.png" width="240" alt="countdown on an LED panel"></a> |
 | [Election Results](./plugins/ledmatrix-elections/) | Live election results ticker with full-screen race interrupts | |
 
