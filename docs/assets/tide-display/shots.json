@@ -1,0 +1,442 @@
+{
+  "plugin": "tide-display",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T22:30:00+00:00",
+    "http_replay": "fixtures/noaa-boston.json"
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": true,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": false
+      }
+    },
+    {
+      "name": "m-current",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": true,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "m-schedule",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": false,
+        "show_schedule": true,
+        "show_chart": false,
+        "show_stats": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "m-chart",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": false,
+        "show_schedule": false,
+        "show_chart": true,
+        "show_stats": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "m-stats",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": false,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": true
+      },
+      "standalone": false
+    },
+    {
+      "name": "m64-stats",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": false,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": true
+      },
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "m64-chart",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": false,
+        "show_schedule": false,
+        "show_chart": true,
+        "show_stats": false
+      },
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "u-imperial",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": false,
+        "show_schedule": true,
+        "show_chart": false,
+        "show_stats": false,
+        "units": "imperial"
+      },
+      "standalone": false
+    },
+    {
+      "name": "u-metric",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": false,
+        "show_schedule": true,
+        "show_chart": false,
+        "show_stats": false,
+        "units": "metric"
+      },
+      "standalone": false
+    },
+    {
+      "name": "moon-on",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": false,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": true,
+        "show_moon_phase": true
+      },
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "moon-off",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": false,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": true,
+        "show_moon_phase": false
+      },
+      "height": 64,
+      "scale": 6,
+      "standalone": false
+    },
+    {
+      "name": "col-default",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": true,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": false
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-teal",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": true,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": false,
+        "tide_color": [
+          0,
+          140,
+          130
+        ],
+        "highlight_color": [
+          120,
+          255,
+          220
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-amber",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": true,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": false,
+        "tide_color": [
+          150,
+          80,
+          0
+        ],
+        "highlight_color": [
+          255,
+          200,
+          60
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "col-violet",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": true,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": false,
+        "tide_color": [
+          70,
+          40,
+          150
+        ],
+        "highlight_color": [
+          200,
+          150,
+          255
+        ]
+      },
+      "standalone": false
+    },
+    {
+      "name": "p-64",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": true,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": false
+      },
+      "width": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "p-128",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": true,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": false
+      },
+      "width": 128,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "p-12864",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": true,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": false
+      },
+      "width": 128,
+      "height": 64,
+      "scale": 8,
+      "standalone": false
+    },
+    {
+      "name": "p-256",
+      "config": {
+        "enabled": true,
+        "station_id": "8443970",
+        "station_name": "BOSTON",
+        "show_current": true,
+        "show_schedule": false,
+        "show_chart": false,
+        "show_stats": false
+      },
+      "width": 256,
+      "scale": 4,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "display-modes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "m-current",
+          "label": "current",
+          "sublabel": "live level, direction, and the next tide either side"
+        },
+        {
+          "shot": "m-schedule",
+          "label": "schedule",
+          "sublabel": "today's four tides in columns; the next one is highlighted"
+        },
+        {
+          "shot": "m-chart",
+          "label": "chart",
+          "sublabel": "the 24-hour curve with H/L markers and a now line"
+        },
+        {
+          "shot": "m-stats",
+          "label": "stats",
+          "sublabel": "moon phase, spring/neap, and today's range"
+        }
+      ]
+    },
+    {
+      "name": "taller-panel",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "m-stats",
+          "label": "stats on 128x32",
+          "sublabel": "the range line and the percentage overlap"
+        },
+        {
+          "shot": "m64-stats",
+          "label": "stats on 128x64",
+          "sublabel": "the same screen with room to breathe"
+        },
+        {
+          "shot": "m64-chart",
+          "label": "chart on 128x64",
+          "sublabel": "a taller curve is easier to read at a glance"
+        }
+      ]
+    },
+    {
+      "name": "units",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "u-imperial",
+          "label": "units: imperial",
+          "sublabel": "the default; heights in feet"
+        },
+        {
+          "shot": "u-metric",
+          "label": "units: metric",
+          "sublabel": "heights in metres"
+        }
+      ]
+    },
+    {
+      "name": "moon-phase",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "moon-on",
+          "label": "show_moon_phase: true",
+          "sublabel": "the default; icon and phase name"
+        },
+        {
+          "shot": "moon-off",
+          "label": "show_moon_phase: false",
+          "sublabel": "the rest of the stats screen keeps its place"
+        }
+      ]
+    },
+    {
+      "name": "colors",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "col-default",
+          "label": "The defaults",
+          "sublabel": "tide_color [0,100,200], highlight_color [0,220,255]"
+        },
+        {
+          "shot": "col-teal",
+          "label": "Teal",
+          "sublabel": ""
+        },
+        {
+          "shot": "col-amber",
+          "label": "Amber",
+          "sublabel": "warmer water, for a dim room"
+        },
+        {
+          "shot": "col-violet",
+          "label": "Violet",
+          "sublabel": ""
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "p-64",
+          "label": "64 x 32",
+          "sublabel": "the level and direction only"
+        },
+        {
+          "shot": "p-128",
+          "label": "128 x 32",
+          "sublabel": "the common two-panel chain"
+        },
+        {
+          "shot": "p-12864",
+          "label": "128 x 64",
+          "sublabel": "more water, and the text stops competing"
+        },
+        {
+          "shot": "p-256",
+          "label": "256 x 32",
+          "sublabel": "a long chain"
+        }
+      ]
+    }
+  ]
+}

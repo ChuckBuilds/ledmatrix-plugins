@@ -1,7 +1,7 @@
 {
   "id": "hello-world",
   "name": "Hello World",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "author": "ChuckBuilds",
   "description": "A simple test plugin that displays a customizable message",
   "entry_point": "manager.py",
@@ -16,6 +16,11 @@
     "hello-world"
   ],
   "versions": [
+    {
+      "released": "2026-09-02",
+      "version": "1.1.0",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-05-15",
       "version": "1.0.3",
@@ -32,7 +37,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-09-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

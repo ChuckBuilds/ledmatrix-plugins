@@ -1,5 +1,11 @@
 # BirdNET-Go Plugin
 
+![A detection on a 128x32 panel: "Blue Jay" across the top, with 92% confidence
+and today's tally below](../../docs/assets/birdnet-go/hero.png)
+
+*Every image in this README is real plugin output, rendered at the true panel
+size from a recorded detection so it reproduces exactly.*
+
 Show what [BirdNET-Go](https://github.com/tphakala/birdnet-go) is hearing on your LED matrix, across two screens:
 
 - **`birdnet_go`** — the latest identified bird: common name, scientific name, confidence, time since detection, and a species photo
@@ -63,6 +69,20 @@ If more than `stale_after_minutes` pass without a detection, the slot shows "No 
 `birdnet_stats` shows today's numbers. Turn it off with `"stats": {"enabled": false}` and its rotation slot is skipped. `stats.top_n` caps how many species are kept; the panel renders as many as physically fit, so a short panel shows fewer without any config change.
 
 Interrupts only fire for a bird heard within the last couple of poll intervals. Polling surfaces old detections at startup, and popping those over the rotation is just noise.
+
+### What the detection card shows
+
+The species name leads, with the confidence and today's tally for that species
+below. Both of those can be turned off:
+
+![show_confidence and show_today_count, on and off](../../docs/assets/birdnet-go/toggles.png)
+
+A name too wide for the panel marquee-scrolls rather than truncating, so the
+whole species is readable on any size:
+
+![A long name scrolling on 128x32 and fitting on 256x32](../../docs/assets/birdnet-go/long-names.png)
+
+![The same detection on four panel sizes](../../docs/assets/birdnet-go/panel-sizes.png)
 
 ## Species cycling
 
@@ -155,6 +175,93 @@ sudo journalctl -u ledmatrix -f | grep -i birdnet
 ```
 
 You should see `Connected to MQTT broker` and `Subscribed to topic: birdnet`.
+
+## Configuration reference
+
+Settings live in the plugin's tab in the web UI and in `config/config.json`
+under `birdnet-go`. The full schema is [`config_schema.json`](config_schema.json).
+
+
+### Top level
+
+| Key | Default | Notes |
+|---|---|---|
+| `enabled` | `false` | Enable or disable the BirdNET-Go plugin |
+| `update_interval` | `30` | How often (seconds) to run background update tasks (image warmup, connection health) (min 1) |
+
+
+### BirdNET-Go API
+
+| Key | Default | Notes |
+|---|---|---|
+| `birdnet_api.base_url` | *(blank)* | Base URL of the BirdNET-Go web server, e.g. http://birdnet-go.local:8080 or http://192.168.1.20:8084. Required: a self-hosted service has no useful default, and a placeholder host would just produce repeated connection warnings. |
+| `birdnet_api.request_timeout` | `5.0` | HTTP timeout in seconds for API requests (1–30) |
+| `birdnet_api.poll_interval` | `60` | How often (seconds) to poll for new detections and refresh daily stats (min 5) |
+
+
+### Detection display
+
+| Key | Default | Notes |
+|---|---|---|
+| `display.mode` | `both` | rotation: always shows most recent bird during plugin's rotation slot. interrupt: pops up only on new detections. both: rotation slot plus interrupt on new detections. `rotation`, `interrupt`, `both` |
+| `display.interrupt_duration` | `10` | Seconds to show a pop-up detection in interrupt mode (1–300) |
+| `display.rotation_duration` | `15` | Seconds to show the bird during the plugin's rotation slot (1–300) |
+| `display.min_confidence` | `0.5` | Ignore detections with confidence below this threshold (0.0-1.0) (0–1) |
+| `display.stale_after_minutes` | `120` | If no detection arrives within this many minutes, show a 'no recent detection' frame instead (min 1) |
+| `display.show_image` | `true` | Fetch and display the species image |
+| `display.show_confidence` | `true` | Show the confidence percentage |
+| `display.show_time` | `true` | Show how long ago the bird was detected |
+| `display.unique_species` | `true` | Show a different species each rotation slot instead of repeating whatever called last. On a busy feed one or two loud species would otherwise fill nearly every slot. |
+| `display.max_species` | `8` | How many of today's species to cycle through (1–50) |
+| `display.species_order` | `recent` | recent: most recently heard species first. frequency: most-heard species first. `recent`, `frequency` |
+| `display.show_today_count` | `true` | Show how many times the species has been heard today (e.g. x203) |
+
+
+### Stats screen
+
+| Key | Default | Notes |
+|---|---|---|
+| `stats.enabled` | `true` | Show the stats screen. When off, the plugin's stats rotation slot is skipped. |
+| `stats.top_n` | `5` | How many of the most-heard species to keep. The panel shows as many as fit. (1–20) |
+| `stats.rotation_duration` | `15` | Seconds to show the stats screen during its rotation slot (1–300) |
+
+
+### Text and colours
+
+| Key | Default | Notes |
+|---|---|---|
+| `text.font_path` | `assets/fonts/PressStart2P-Regular.ttf` | Path to font file (TTF). Relative to project root or absolute path. |
+| `text.font_size` | `8` | Font size in pixels (4–32) |
+| `text.text_color` | `[255, 255, 255]` | RGB text color [R, G, B] |
+| `text.background_color` | `[0, 0, 0]` | RGB background color [R, G, B] |
+| `text.accent_color` | `[255, 190, 0]` | RGB accent color [R, G, B] for the stats header and per-species counts |
+| `text.scroll_speed` | `30` | Scroll speed in pixels per second for long bird names (1–200) |
+| `text.scroll_gap_width` | `32` | Gap width in pixels between scroll loops (min 0) |
+
+
+### MQTT push (optional)
+
+| Key | Default | Notes |
+|---|---|---|
+| `mqtt.enabled` | `false` | Subscribe to an MQTT broker for pushed detections. Leave off to rely on REST polling alone. |
+| `mqtt.host` | *(blank)* | MQTT broker hostname or IP address |
+| `mqtt.port` | `1883` | MQTT broker port (1–65535) |
+| `mqtt.username` | *(blank)* | MQTT broker username (optional) |
+| `mqtt.password` | *(blank)* | MQTT broker password (optional) |
+| `mqtt.client_id` | `ledmatrix-birdnet-go` | MQTT client ID |
+| `mqtt.keepalive` | `60` | MQTT keepalive interval in seconds (10–300) |
+| `mqtt.topic` | `birdnet/detections` | MQTT topic BirdNET-Go publishes detections to. Supports wildcards (+ and #). |
+
+
+### Field mapping
+
+| Key | Default | Notes |
+|---|---|---|
+| `field_mapping.common_name` | `CommonName` |  |
+| `field_mapping.scientific_name` | `ScientificName` |  |
+| `field_mapping.confidence` | `Confidence` |  |
+| `field_mapping.time` | `Time` |  |
+
 
 ## Troubleshooting
 

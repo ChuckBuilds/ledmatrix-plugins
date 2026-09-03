@@ -25,7 +25,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -100,6 +100,29 @@ class OnAirPlugin(BasePlugin):
 
     # ── Font helpers ────────────────────────────────────────────────────────────
 
+    @staticmethod
+    def _project_roots() -> List[Path]:
+        """Directories that may hold the LEDMatrix ``assets/fonts`` folder.
+
+        The plugin normally sits at ``<LEDMatrix>/plugin-repos/<id>``, so two
+        levels up is the root -- but the plugins directory is configurable, and
+        when it lives outside the core tree that guess finds nothing and the
+        sign silently drops to a built-in font a fraction of the intended size.
+        Ask the imported core where it is first, and keep the old guess and the
+        working directory as fallbacks.
+        """
+        roots: List[Path] = []
+        try:
+            import src  # the LEDMatrix core package
+            if getattr(src, '__file__', None):
+                roots.append(Path(src.__file__).resolve().parent.parent)
+        except Exception:  # nosec B110 - absence is expected off a real install
+            pass
+        roots.append(Path(__file__).resolve().parent.parent.parent)
+        roots.append(Path.cwd())
+        seen = set()
+        return [r for r in roots if not (str(r) in seen or seen.add(str(r)))]
+
     def _load_configured_font(self) -> Optional[ImageFont.FreeTypeFont]:
         """Load font from font_path at font_size; returns None to use built-ins."""
         path = (self.font_path or '').strip()
@@ -109,10 +132,7 @@ class OnAirPlugin(BasePlugin):
         # Resolve path: absolute → cwd-relative → project-root-relative
         candidates = [path]
         if not os.path.isabs(path):
-            candidates.append(os.path.join(os.getcwd(), path))
-            plugin_dir   = Path(__file__).parent
-            project_root = plugin_dir.parent.parent
-            candidates.append(str(project_root / path))
+            candidates.extend(str(root / path) for root in self._project_roots())
         for candidate in candidates:
             if os.path.exists(candidate):
                 try:
@@ -126,21 +146,20 @@ class OnAirPlugin(BasePlugin):
 
     def _find_system_ttf(self) -> Optional[str]:
         """Search the LEDMatrix assets folder for a usable TTF font file."""
-        plugin_dir   = Path(__file__).parent
-        project_root = plugin_dir.parent.parent
         preferred = [
             'assets/fonts/PressStart2P-Regular.ttf',
             'assets/fonts/4x6-font.ttf',
         ]
-        for rel in preferred:
-            p = project_root / rel
-            if p.exists():
-                return str(p)
-        # Fall back to any .ttf found in assets/fonts/
-        fonts_dir = project_root / 'assets' / 'fonts'
-        if fonts_dir.is_dir():
-            for p in sorted(fonts_dir.glob('*.ttf')):
-                return str(p)
+        for project_root in self._project_roots():
+            for rel in preferred:
+                p = project_root / rel
+                if p.exists():
+                    return str(p)
+            # Fall back to any .ttf found in assets/fonts/
+            fonts_dir = project_root / 'assets' / 'fonts'
+            if fonts_dir.is_dir():
+                for p in sorted(fonts_dir.glob('*.ttf')):
+                    return str(p)
         return None
 
     def _auto_font(self, dh: int):

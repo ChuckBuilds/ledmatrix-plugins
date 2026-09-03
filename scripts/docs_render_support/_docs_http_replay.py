@@ -12,6 +12,16 @@ repeatable::
       {"url_contains": "baseball/mlb/scoreboard", "body": { ...ESPN JSON... }}
     ]}
 
+An entry may also carry ``params_contain``, for an API that puts several
+endpoints behind one URL and tells them apart by query string::
+
+    {"url_contains": "datagetter",
+     "params_contain": {"product": "water_level"},
+     "body": { ... }}
+
+Entries are tried in order and the first whose URL *and* params both match
+wins, so put the more specific entries first.
+
 Only matching URLs are intercepted. Everything else -- logo downloads in
 particular -- goes to the real network untouched.
 """
@@ -65,24 +75,31 @@ def install():
     if not matches:
         return
 
-    def _match(url):
+    _MISS = object()
+
+    def _match(url, params):
+        params = params or {}
         for entry in matches:
-            if entry.get("url_contains", "") in url:
-                return entry.get("body")
-        return None
+            if entry.get("url_contains", "") not in url:
+                continue
+            wanted = entry.get("params_contain") or {}
+            if any(str(params.get(key)) != str(value) for key, value in wanted.items()):
+                continue
+            return entry.get("body")
+        return _MISS
 
     real_session_get = requests.Session.get
     real_get = requests.get
 
     def session_get(self, url, *args, **kwargs):
-        body = _match(str(url))
-        if body is None:
+        body = _match(str(url), kwargs.get("params"))
+        if body is _MISS:
             return real_session_get(self, url, *args, **kwargs)
         return _ReplayResponse(body)
 
     def plain_get(url, *args, **kwargs):
-        body = _match(str(url))
-        if body is None:
+        body = _match(str(url), kwargs.get("params"))
+        if body is _MISS:
             return real_get(url, *args, **kwargs)
         return _ReplayResponse(body)
 

@@ -180,6 +180,20 @@ class MQTTNotificationsPlugin(BasePlugin):
             self.logger.error("Failed to load font %s: %s", font_path, e)
             return ImageFont.load_default()
 
+    @staticmethod
+    def _bdf_pixel_size(path):
+        """The pixel size a .bdf font declares, or None if it does not."""
+        try:
+            with open(path, "r", encoding="latin-1") as handle:
+                for line in handle:
+                    if line.startswith("PIXEL_SIZE"):
+                        return int(line.split()[1])
+                    if line.startswith("CHARS"):
+                        break  # past the header
+        except (OSError, ValueError, IndexError):
+            return None
+        return None
+
     def _load_element_font(self, element_cfg: Dict[str, Any]):
         """Resolve the message_text customization font, or None for the default.
 
@@ -213,6 +227,19 @@ class MQTTNotificationsPlugin(BasePlugin):
                     font = ImageFont.truetype(path, size)
                     break
                 except Exception as e:
+                    # A .bdf is a bitmap face and exists at exactly one pixel
+                    # size; FreeType rejects any other with "invalid pixel
+                    # size". Asking for the configured size therefore failed
+                    # for every bitmap face in the picker and fell back to the
+                    # default, so choosing one appeared to do nothing. Retry at
+                    # the size the file declares.
+                    native = self._bdf_pixel_size(path)
+                    if native is not None and native != size:
+                        try:
+                            font = ImageFont.truetype(path, native)
+                            break
+                        except Exception:
+                            pass
                     self.logger.warning("Could not load font %s@%s: %s", name, size, e)
             if font is None and not any(os.path.exists(p) for p in candidates):
                 self.logger.warning("Font file not found: %s; using default font", name)

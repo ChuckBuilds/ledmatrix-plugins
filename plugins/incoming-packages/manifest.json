@@ -1,7 +1,7 @@
 {
   "id": "incoming-packages",
   "name": "Incoming Packages",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "ChuckBuilds",
   "description": "Rotating cards for packages headed your way - per carrier, with the count arriving today highlighted. Reads a normalized snapshot from a pluggable provider: the Home Assistant Mail and Packages integration (default), AfterShip, or a built-in demo. Email scanning stays inside Home Assistant; the plugin only stores an API URL + token.",
   "category": "productivity",
@@ -28,13 +28,19 @@
   ],
   "versions": [
     {
+      "released": "2026-09-03",
+      "version": "1.0.1",
+      "notes": "Documentation. The README's 'Key options' table listed 7 of the 25 settings and said to read config_schema.json for the rest; it now documents all 25, grouped by connection, card contents, and rotation, with the advanced ones marked. Adds real rendered screenshots throughout -- the three card types, four panel sizes, and before/after pairs for show_dashboard, highlight_today, show_carrier_logo and show_delivered -- all produced by the built-in mock provider, so they need no credentials to reproduce.",
+      "ledmatrix_min": "2.0.0"
+    },
+    {
       "released": "2026-07-24",
       "version": "1.0.0",
       "ledmatrix_min": "2.0.0",
       "notes": "Initial release. Provider-agnostic incoming-package display with a Home Assistant Mail and Packages provider (default, auto-discovers sensor.mail_* entities over the HA REST API), an AfterShip provider, and a built-in demo provider. Size-adaptive rotating cards: one per active carrier with a drawn carrier badge, the count arriving today (prioritized and shown in an accent color), the count in transit, and a lead summary card, plus optional USPS mail count. Renders on all panel sizes from 64x32 to 256x64 with adaptive font tiers and marquee text; on-panel setup/error messages."
     }
   ],
-  "last_updated": "2026-07-27",
+  "last_updated": "2026-09-03",
   "stars": 0,
   "downloads": 0,
   "verified": true,
