@@ -181,7 +181,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [Hello World](./plugins/hello-world/) | Plugin development example and starter template | |
+| [Hello World](./plugins/hello-world/) | Plugin development example and starter template | <a href="./plugins/hello-world/"><img src="./docs/assets/hello-world/hero.png" width="240" alt="hello-world on an LED panel"></a> |
 
 ---
 
