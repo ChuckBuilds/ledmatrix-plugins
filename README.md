@@ -106,7 +106,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Stocks Ticker](./plugins/ledmatrix-stocks/) | Real-time stock & crypto prices with charts | <a href="./plugins/ledmatrix-stocks/"><img src="./docs/assets/ledmatrix-stocks/hero.png" width="240" alt="ledmatrix-stocks on an LED panel"></a> |
-| [Stock News](./plugins/stock-news/) | Financial headlines from RSS feeds | |
+| [Stock News](./plugins/stock-news/) | Financial headlines from RSS feeds | <a href="./plugins/stock-news/"><img src="./docs/assets/stock-news/hero.png" width="240" alt="stock-news on an LED panel"></a> |
 
 ### Time & Calendar (4)
 
