@@ -1,7 +1,7 @@
 {
   "id": "static-image",
   "name": "Static Image Display",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "author": "ChuckBuilds",
   "description": "Display static images on your LED matrix with automatic scaling, aspect ratio preservation, and transparency support. Perfect for logos, artwork, or custom graphics.",
   "entry_point": "manager.py",
@@ -18,6 +18,12 @@
     "static_image"
   ],
   "versions": [
+    {
+      "released": "2026-09-02",
+      "version": "1.0.6",
+      "notes": "Documentation only, no behaviour change. Rewrites the README around real rendered screenshots and documents all 23 settings including the per-image schedule object. Records two things a user would otherwise discover by staring at an unchanging panel: rotation_mode 'date_based' is a stub in the source that always returns the first image, and 'time_based' does nothing unless rotation_settings.time_intervals.enabled is also turned on. Separates the two rotation intervals that look interchangeable -- image_rotation_interval always applies, while time_intervals.interval_seconds is only read in time_based mode -- and notes that schedule.enabled defaults to false, so a configured window is ignored until it is switched on.",
+      "ledmatrix_min": "2.0.0"
+    },
     {
       "released": "2026-07-17",
       "version": "1.0.5",
@@ -46,7 +52,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-17",
+  "last_updated": "2026-09-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,
