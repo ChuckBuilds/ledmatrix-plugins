@@ -105,7 +105,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [Stocks Ticker](./plugins/ledmatrix-stocks/) | Real-time stock & crypto prices with charts | |
+| [Stocks Ticker](./plugins/ledmatrix-stocks/) | Real-time stock & crypto prices with charts | <a href="./plugins/ledmatrix-stocks/"><img src="./docs/assets/ledmatrix-stocks/hero.png" width="240" alt="ledmatrix-stocks on an LED panel"></a> |
 | [Stock News](./plugins/stock-news/) | Financial headlines from RSS feeds | |
 
 ### Time & Calendar (4)
@@ -114,36 +114,49 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 |--------|-------------|---------|
 | [Simple Clock](./plugins/clock-simple/) | Time and date display | <a href="./plugins/clock-simple/"><img src="./docs/assets/clock-simple/hero.png" width="240" alt="clock-simple on an LED panel"></a> |
 | [7-Segment Clock](./plugins/7-segment-clock/) | Retro-style 7-segment clock with customizable colors | <a href="./plugins/7-segment-clock/"><img src="./docs/assets/7-segment-clock/hero.png" width="240" alt="7-segment-clock on an LED panel"></a> |
-| [Google Calendar](./plugins/calendar/) | Upcoming events from Google Calendar | |
-| [Geochron World Clock](./plugins/geochron/) | World map with the real-time day/night terminator | |
+| [Google Calendar](./plugins/calendar/) | Upcoming events from Google Calendar | <a href="./plugins/calendar/"><img src="./docs/assets/calendar/hero.png" width="240" alt="calendar on an LED panel"></a> |
+| [Geochron World Clock](./plugins/geochron/) | World map with the real-time day/night terminator | <a href="./plugins/geochron/"><img src="./docs/assets/geochron/hero.png" width="240" alt="geochron on an LED panel"></a> |
 
 ### Weather (2)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [Weather Display](./plugins/ledmatrix-weather/) | Current conditions, hourly & daily forecasts (Open-Meteo) | |
-| [Tide Display](./plugins/tide-display/) | Coastal tides with animated wave level, schedule & 24-hour chart (NOAA) | |
+| [Weather Display](./plugins/ledmatrix-weather/) | Current conditions, hourly & daily forecasts (Open-Meteo) | <a href="./plugins/ledmatrix-weather/"><img src="./docs/assets/ledmatrix-weather/hero.png" width="240" alt="ledmatrix-weather on an LED panel"></a> |
+| [Tide Display](./plugins/tide-display/) | Coastal tides with animated wave level, schedule & 24-hour chart (NOAA) | <a href="./plugins/tide-display/"><img src="./docs/assets/tide-display/hero.png" width="240" alt="tide-display on an LED panel"></a> |
 
 ### Media (2)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Music Player](./plugins/ledmatrix-music/) | Now playing with album art (Spotify & YouTube Music) | |
-| [Static Image Display](./plugins/static-image/) | Image display with scaling and transparency | |
+| [Static Image Display](./plugins/static-image/) | Image display with scaling and transparency | <a href="./plugins/static-image/"><img src="./docs/assets/static-image/hero.png" width="240" alt="static-image on an LED panel"></a> |
 
 ### Content (2)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [News Ticker](./plugins/news/) | RSS news headlines from ESPN, NCAA, custom sources | |
-| [Of The Day](./plugins/of-the-day/) | Daily quotes, Bible verses, word of the day | |
+| [News Ticker](./plugins/news/) | RSS news headlines from ESPN, NCAA, custom sources | <a href="./plugins/news/"><img src="./docs/assets/news/hero.png" width="240" alt="news on an LED panel"></a> |
+| [Of The Day](./plugins/of-the-day/) | Daily quotes, Bible verses, word of the day | <a href="./plugins/of-the-day/"><img src="./docs/assets/of-the-day/hero.png" width="240" alt="of-the-day on an LED panel"></a> |
 
-### Integrations (2)
+### Integrations (3)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
+| [BirdNET-Go](./plugins/birdnet-go/) | Live bird detections and daily species stats from a BirdNET-Go server | <a href="./plugins/birdnet-go/"><img src="./docs/assets/birdnet-go/hero.png" width="240" alt="birdnet-go on an LED panel"></a> |
 | [MQTT Notifications](./plugins/mqtt-notifications/) | HomeAssistant notifications via MQTT | |
-| [On Air Light](./plugins/on-air/) | Broadcast ON AIR tally light, triggered remotely via MQTT / Home Assistant | |
+| [On Air Light](./plugins/on-air/) | Broadcast ON AIR tally light, triggered remotely via MQTT / Home Assistant | <a href="./plugins/on-air/"><img src="./docs/assets/on-air/hero.png" width="240" alt="on-air on an LED panel"></a> |
+
+### Productivity (1)
+
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Pomodoro Timer](./plugins/pomodoro-timer/) | Focus/break timer with MQTT control and Home Assistant discovery | <a href="./plugins/pomodoro-timer/"><img src="./plugins/pomodoro-timer/assets/hero.png" width="240" alt="pomodoro-timer on an LED panel"></a> |
+
+### Productivity (1)
+
+| Plugin | Description | Preview |
+|--------|-------------|---------|
+| [Incoming Packages](./plugins/incoming-packages/) | Rotating carrier cards for packages arriving today, via Home Assistant | <a href="./plugins/incoming-packages/"><img src="./docs/assets/incoming-packages/hero.png" width="240" alt="incoming-packages on an LED panel"></a> |
 
 ### Custom (3)
 
@@ -157,7 +170,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [Christmas Countdown](./plugins/christmas-countdown/) | Festive countdown with Christmas tree display | |
+| [Christmas Countdown](./plugins/christmas-countdown/) | Festive countdown with Christmas tree display | <a href="./plugins/christmas-countdown/"><img src="./docs/assets/christmas-countdown/hero.png" width="240" alt="christmas-countdown on an LED panel"></a> |
 
 ### Social (1)
 
@@ -181,7 +194,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [Hello World](./plugins/hello-world/) | Plugin development example and starter template | |
+| [Hello World](./plugins/hello-world/) | Plugin development example and starter template | <a href="./plugins/hello-world/"><img src="./docs/assets/hello-world/hero.png" width="240" alt="hello-world on an LED panel"></a> |
 
 ---
 

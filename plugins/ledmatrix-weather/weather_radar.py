@@ -42,7 +42,26 @@ _GEOJSON_PATH = os.path.join(os.path.dirname(__file__), "data", "us-states.geojs
 
 # Core-repo font, resolved relative to this file (plugin dir -> plugins -> root),
 # matching how manager.py locates assets. CWD-independent.
-_FONT_PATH = Path(__file__).resolve().parent.parent.parent / "assets" / "fonts" / "4x6-font.ttf"
+def _font_candidates():
+    """Where the 4x6 face may live, best guess first.
+
+    The plugin normally sits at <LEDMatrix>/plugin-repos/<id>, so three levels
+    up is the core root -- but the plugins directory is configurable, and from
+    anywhere else that guess finds nothing. The fallback is PIL's default font,
+    which is taller than the 6px this overlay is laid out for, so the timestamp
+    label ends up drawn past the bottom edge of the panel. Ask the imported
+    core where it is first.
+    """
+    roots = []
+    try:
+        import src  # the LEDMatrix core package
+        if getattr(src, "__file__", None):
+            roots.append(Path(src.__file__).resolve().parent.parent)
+    except Exception:  # nosec B110 - absence is expected off a real install
+        pass
+    roots.append(Path(__file__).resolve().parent.parent.parent)
+    roots.append(Path.cwd())
+    return [r / "assets" / "fonts" / "4x6-font.ttf" for r in roots]
 
 _FETCH_BUDGET_SECONDS = 20   # per refresh_data() call; work resumes next tick
 _NOWCAST_FRAMES = 3          # RainViewer publishes 3 nowcast frames (10/20/30 min)
@@ -560,9 +579,13 @@ class RadarFetcher:
 
     def _load_font(self):
         if self._font is None:
-            try:
-                self._font = ImageFont.truetype(str(_FONT_PATH), 6)
-            except (OSError, ValueError):
+            for candidate in _font_candidates():
+                try:
+                    self._font = ImageFont.truetype(str(candidate), 6)
+                    break
+                except (OSError, ValueError):
+                    continue
+            if self._font is None:
                 self._font = ImageFont.load_default()
         return self._font
 

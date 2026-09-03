@@ -69,11 +69,16 @@
           "items": {
             "type": "string"
           },
-          "default": ["homeassistant/ledmatrix/+"],
+          "default": [
+            "homeassistant/ledmatrix/+"
+          ],
           "description": "Array of MQTT topics to subscribe to. Supports wildcards: + (single level) and # (multi-level)"
         }
       },
-      "required": ["host", "port"],
+      "required": [
+        "host",
+        "port"
+      ],
       "additionalProperties": false
     },
     "display": {
@@ -115,7 +120,11 @@
           },
           "minItems": 3,
           "maxItems": 3,
-          "default": [255, 255, 255],
+          "default": [
+            255,
+            255,
+            255
+          ],
           "description": "RGB text color [R, G, B]",
           "x-advanced": true
         },
@@ -128,7 +137,11 @@
           },
           "minItems": 3,
           "maxItems": 3,
-          "default": [0, 0, 0],
+          "default": [
+            0,
+            0,
+            0
+          ],
           "description": "RGB background color [R, G, B]",
           "x-advanced": true
         },
@@ -174,8 +187,7 @@
                 "4x6-font.ttf",
                 "5by7.regular.ttf",
                 "5x7.bdf",
-                "4x6.bdf",
-                "cozette.bdf"
+                "4x6.bdf"
               ],
               "default": "PressStart2P-Regular.ttf",
               "x-advanced": true
@@ -190,14 +202,22 @@
               "x-advanced": true
             }
           },
-          "x-propertyOrder": ["font", "font_size"],
+          "x-propertyOrder": [
+            "font",
+            "font_size"
+          ],
           "additionalProperties": false
         }
       },
-      "x-propertyOrder": ["message_text"],
+      "x-propertyOrder": [
+        "message_text"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["enabled", "mqtt"],
+  "required": [
+    "enabled",
+    "mqtt"
+  ],
   "additionalProperties": false
 }

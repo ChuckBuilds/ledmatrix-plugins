@@ -13,6 +13,13 @@
 
 # Weather Display Plugin
 
+![Current conditions on a 128x32 panel: a cloud icon, "Partly Cloudy", the
+temperature, the day's high and low, and UV, humidity, wind and feels-like
+readings](../../docs/assets/ledmatrix-weather/hero.png)
+
+*Every image in this README is real plugin output, rendered from a recorded
+Open-Meteo response for Dallas on 2026-06-14 so it reproduces exactly.*
+
 Comprehensive weather display plugin for LEDMatrix showing current conditions, hourly forecast, and daily forecast.
 
 Current Weather:
@@ -60,6 +67,8 @@ generated from it. The keys you'll touch most often:
 | Key | Default | Notes |
 |---|---|---|
 | `enabled` | `false` | Master switch |
+| `location_latitude` / `location_longitude` | `null` | Set both to skip geocoding and pin an exact position. Left null, the city/state/country above are geocoded once and cached. Advanced |
+| `api_key` | `null` | Not needed for the default setup — Open-Meteo requires no key. Kept for deployments that proxy a keyed weather service. Advanced |
 | `location_city` | `"Dallas"` | City name |
 | `location_state` | `"Texas"` | State/province (optional, helps US disambiguation) |
 | `location_country` | `"US"` | ISO 3166-1 alpha-2 code |
@@ -75,7 +84,7 @@ generated from it. The keys you'll touch most often:
 | `show_alerts` | `true` | Show active weather alerts (preempts rotation, US only) |
 | `show_feels_like` / `show_dew_point` / `show_visibility` / `show_pressure` | `true` | Extra current-conditions metrics (need height ≥ 48px) |
 | `radar_map_style` | `"osm"` | Basemap: `osm`, `carto`, `carto_dark`, `esri` (real tiles, worldwide) or `vector` (retro WeatherStar state outlines, US-only). Tile styles fall back to the vector map automatically when tiles can't be fetched |
-| `radar_range_miles` | `50` | Distance from your location to the panel edge (10–500). Replaces the deprecated `radar_zoom`, which is still honored for old configs |
+| `radar_range_miles` | `75` | Distance from your location to the panel edge (10–500). Replaces the deprecated `radar_zoom`, which is still honored for old configs |
 | `radar_show_nowcast` | `true` | Append ~30 min of predicted radar (`FCST +10m` … with yellow dots) after the observed frames |
 | `radar_tile_server` | `"https://maps.chuck-builds.com"` | Self-hosted OSM tile server for the `osm` style (`{server}/tile/{z}/{x}/{y}.png`); public mirrors are the fallback |
 | `radar_map_brightness` | `0.5` | Dim the tile basemap so precipitation pops on the matrix |
@@ -84,7 +93,8 @@ generated from it. The keys you'll touch most often:
 | `radar_update_interval` | `180` | Seconds between new-frame checks (60–1800). Checks are cheap; tiles only download when RainViewer publishes a new frame |
 | `radar_past_frames` | `6` | Observed frames to animate (~10 min apart) |
 | `radar_frame_seconds` / `radar_loop_pause_seconds` | `0.5` / `1.5` | Animation pacing: per-frame time and the hold on the newest frame |
-| `dynamic_duration` | `{"enabled": false}` | Opt-in: hold the radar until a full animation loop completes (capped by `max_duration_seconds`) |
+| `dynamic_duration.enabled` | `false` | Opt-in: hold the radar until a full animation loop completes rather than cutting mid-loop |
+| `dynamic_duration.max_duration_seconds` | `60` | Ceiling on that hold, in seconds (10–300), so a slow loop cannot monopolise the panel |
 
 ## Display modes
 
@@ -98,6 +108,20 @@ controller rotates through them in order:
 | `daily_forecast` | 3–7 day high/low forecast |
 | `almanac` | Sunrise, sunset, moon phase, day length |
 | `radar` | Animated precipitation radar (RainViewer) over an OSM or vector basemap, with optional nowcast frames |
+
+![The five display modes](../../docs/assets/ledmatrix-weather/modes.png)
+
+The radar panel above is rendered with no network access, so it shows the
+overlay — the location crosshair and the frame timestamp — over an empty
+basemap. On a connected display the basemap tiles and the precipitation frames
+fill it; those come from live tile servers, which is why this one screen cannot
+be reproduced from a recording the way the others are.
+
+Every mode adapts to the panel. The current-conditions screen adds the
+feels-like, dew point, visibility and pressure readings only when the panel is
+at least 48px tall:
+
+![Current conditions on four panel sizes](../../docs/assets/ledmatrix-weather/panel-sizes.png)
 
 When an active weather alert is available and `show_alerts` is true, the
 alert takes priority over the normal rotation. Alerts are sourced from the
