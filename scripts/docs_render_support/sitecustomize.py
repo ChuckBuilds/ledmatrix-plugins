@@ -135,3 +135,14 @@ if _ATTRS:
             return None
 
     _sys.meta_path.insert(0, _AttrFinder())
+
+
+# A plugin that shows the device hostname would otherwise bake whoever ran the
+# renderer into the committed image, and --check would then fail for everyone
+# else. Pinning it keeps the screenshot generic and reproducible.
+_HOSTNAME = os.environ.get("LEDMATRIX_DOCS_HOSTNAME")
+if _HOSTNAME:
+    import socket as _socket
+
+    _socket.gethostname = lambda: _HOSTNAME
+    _socket.getfqdn = lambda *_a: _HOSTNAME

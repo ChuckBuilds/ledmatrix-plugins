@@ -56,7 +56,10 @@ Keys on a shot: ``name`` (required, becomes ``<name>.png``), ``width``,
 ``freeze_time`` (ISO-8601 instant; pins "now" so the image is reproducible),
 ``http_replay`` (a recorded-responses file, for managers that fetch without
 reading the cache), ``frames`` (advance a scrolling plugin this many display
-steps before snapshotting) and
+steps before snapshotting), ``attrs`` (runtime state to set on the plugin
+instance, for plugins whose interesting state arrives by event rather than by
+configuration), ``hostname`` (pins ``socket.gethostname``, for plugins that
+print the device name) and
 ``env`` (extra environment variables for the render subprocess). Anything
 omitted falls back to ``defaults``. Set ``"standalone": false`` on a shot that
 only exists to be pasted into a composite.
@@ -277,7 +280,11 @@ def render_shot(
     http_replay = shot.get("http_replay", defaults.get("http_replay"))
     # Runtime state that an event would normally have set; see the shim.
     attrs = shot.get("attrs", defaults.get("attrs"))
-    if freeze_time or http_replay or attrs:
+    # A plugin that prints the device hostname would otherwise bake whoever ran
+    # the renderer into the committed image, and --check would fail for anyone
+    # else. Pinning it keeps the screenshot generic and reproducible.
+    hostname = shot.get("hostname", defaults.get("hostname"))
+    if freeze_time or http_replay or attrs or hostname:
         support_dir = str(Path(__file__).resolve().parent / "docs_render_support")
         existing = env.get("PYTHONPATH")
         env["PYTHONPATH"] = f"{support_dir}{os.pathsep}{existing}" if existing else support_dir
@@ -285,6 +292,8 @@ def render_shot(
         env["LEDMATRIX_DOCS_FREEZE_TIME"] = str(freeze_time)
     if attrs:
         env["LEDMATRIX_DOCS_ATTRS"] = json.dumps(attrs)
+    if hostname:
+        env["LEDMATRIX_DOCS_HOSTNAME"] = str(hostname)
     if http_replay:
         replay_path = (shot_list_dir / http_replay).resolve()
         if not replay_path.is_file():
