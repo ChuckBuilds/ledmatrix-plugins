@@ -15,6 +15,12 @@
 
 Display upcoming events from Google Calendar with automatic updates, event rotation, and timezone support.
 
+![An upcoming event on a 128x32 panel: the date and start time on one line, the
+event title below it](../../docs/assets/calendar/hero.png)
+
+*Every image in this README is real plugin output, rendered at the true panel
+size and scaled up so the pixels stay pixels.*
+
 ## Features
 
 - **Google Calendar Integration**: OAuth2 authentication
@@ -104,6 +110,7 @@ widget and first-time authentication) and rarely need editing by hand.
 |-----|---------|-------|
 | `enabled` | `false` | Enable or disable the plugin |
 | `credentials_file` | `"credentials.json"` | Google OAuth credentials file (uploaded via the config UI) |
+| `google_auth` | `""` | Not a setting you type into. It is the **Step 2: Connect Your Google Account** button in the web UI (`x-widget: google-oauth`), which runs the consent flow described above. Google redirects to a page that fails to load — that is expected; copy the address back into the field to finish. |
 | `token_file` | `"token.pickle"` | Where the OAuth token is stored after first-time auth (auto-created) |
 | `calendars` | `["primary"]` | Calendar IDs to display — use the calendar picker after authenticating, or `"primary"` for your default |
 | `max_events` | `3` | Maximum upcoming events to show (1–10) |
@@ -111,34 +118,29 @@ widget and first-time authentication) and rarely need editing by hand.
 | `event_rotation_interval` | `10` | Seconds between rotating displayed events (min 5) |
 | `display_duration` | `30` | Total seconds on screen before moving to the next plugin (min 5) |
 | `update_interval` | `3600` | Seconds between refreshes from Google (60–86400) |
-| `customization.datetime_text.font` / `.font_size` | `PressStart2P-Regular.ttf` / `8` | Font family + size (4–16px) for the event date/time line |
-| `customization.title_text.font` / `.font_size` | `PressStart2P-Regular.ttf` / `8` | Font family + size (4–16px) for the event title |
+| `customization.datetime_text.font` | `PressStart2P-Regular.ttf` | Font for the date/time line |
+| `customization.datetime_text.font_size` | `8` | Size of the date/time line in pixels (4–16) |
+| `customization.title_text.font` | `PressStart2P-Regular.ttf` | Font for the event title |
+| `customization.title_text.font_size` | `8` | Size of the event title in pixels (4–16) |
 
 ## Display Format
 
-### Timed Event
-```
-    03/15 2:30pm
-    
-    Team Meeting
-    
-```
+The date sits on the top line with the start time beside it, and the event title
+fills the space below, wrapped across as many lines as fit.
 
-### All-Day Event
-```
-    03/20 All Day
-    
-    Birthday Party
-    
-```
+![Timed, all-day, long-title and empty screens](../../docs/assets/calendar/event-kinds.png)
 
-### Long Title (Wrapped)
-```
-    03/22 10:00am
-    
-   Project Review
-   and Planning
-```
+- A **timed** event shows its start time next to the date.
+- An **all-day** event shows `All Day` in place of the time. Set
+  `show_all_day_events` to `false` to leave these out.
+- A **long title** wraps, and the last visible line is ellipsized rather than
+  simply stopping, so a title that did not fit is recognisable as truncated.
+- When nothing upcoming is left, the panel shows `No Events`.
+
+The layout is the same on every panel; the taller the panel, the more lines of
+title fit before ellipsis.
+
+![The same event on four panel sizes](../../docs/assets/calendar/panel-sizes.png)
 
 ## Multiple Calendars
 
