@@ -138,6 +138,9 @@ class GameRenderer:
         team_config = customization.get('team_name', {})
         status_config = customization.get('status_text', {})
         detail_config = customization.get('detail_text', {})
+        # Falls back to detail_text so a config written before this
+        # setting existed keeps rendering odds exactly as it did.
+        odds_config = customization.get('odds_text') or detail_config
         rank_config = customization.get('rank_text', {})
 
         try:
@@ -146,6 +149,7 @@ class GameRenderer:
             fonts["team"] = self._load_custom_font(team_config, default_size=8, element_key='team_name')
             fonts["status"] = self._load_custom_font(status_config, default_size=6, element_key='status_text')
             fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6-font.ttf', element_key='detail_text')
+            fonts["odds"] = self._load_custom_font(odds_config, default_size=6, default_font='4x6-font.ttf', element_key='odds_text')
             fonts["rank"] = self._load_custom_font(rank_config, default_size=10, element_key='rank_text')
             self.logger.debug("Successfully loaded fonts from config")
         except Exception:
@@ -352,6 +356,7 @@ class GameRenderer:
     #: resolving the colour from the face keeps the two in step by
     #: construction, rather than by every draw site remembering to agree.
     _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
+        "odds": "odds_text",
         "score": "score_text",
         "time": "period_text",
         "team": "team_name",
@@ -1333,6 +1338,23 @@ class GameRenderer:
         return any(x < right + 1 and x + width > left - 1
                    for _text, x, width in placements)
 
+    def _odds_color(self) -> Tuple[int, int, int]:
+        """Colour for the odds text; the green it always drew unless configured.
+
+        Guarded with getattr because not every class that reaches
+        _draw_dynamic_odds carries the element-colour helper -- the plugins'
+        own test harnesses build minimal manager objects, and a bare
+        AttributeError here is swallowed by the surrounding except, which
+        drops the odds off the card instead of failing loudly.
+        """
+        getter = getattr(self, "_element_color", None)
+        if getter is None:
+            return (0, 255, 0)
+        try:
+            return getter("odds_text", (0, 255, 0))
+        except Exception:
+            return (0, 255, 0)
+
     def _draw_dynamic_odds(self, draw, odds: Dict, game: Optional[Dict] = None,
                            top_span=_DERIVE_TOP_SPAN) -> None:
         """Draw odds with dynamic positioning based on favored team.
@@ -1391,7 +1413,7 @@ class GameRenderer:
             # soccer and the rest. Odds are drawn hard left and hard right
             # while the inning sits centred, so they only meet on a narrow
             # panel -- and odds_y_offset is there to nudge it when they do.
-            font = self.fonts['detail']
+            font = self.fonts.get('odds') or self.fonts['detail']
 
             # Work out both texts and their spans before drawing either, so the
             # row can be chosen once with full knowledge of what has to fit.
@@ -1441,7 +1463,7 @@ class GameRenderer:
                 odds_y += row
 
             for text, x, _width in placements:
-                self._draw_text_with_outline(draw, text, (x, odds_y), font, fill=(0, 255, 0))
+                self._draw_text_with_outline(draw, text, (x, odds_y), font, fill=self._odds_color())
 
         except Exception:
             self.logger.exception("Error drawing odds")
