@@ -124,10 +124,11 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [Weather Display](./plugins/ledmatrix-weather/) | Current conditions, hourly & daily forecasts (Open-Meteo) | <a href="./plugins/ledmatrix-weather/"><img src="./docs/assets/ledmatrix-weather/hero.png" width="240" alt="ledmatrix-weather on an LED panel"></a> |
 | [Tide Display](./plugins/tide-display/) | Coastal tides with animated wave level, schedule & 24-hour chart (NOAA) | <a href="./plugins/tide-display/"><img src="./docs/assets/tide-display/hero.png" width="240" alt="tide-display on an LED panel"></a> |
 
-### Media (2)
+### Media (3)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
+| [Jellyfin Now Playing](./plugins/jellyfin-now-playing/) | Poster, title and playback progress from your Jellyfin server | <a href="./plugins/jellyfin-now-playing/"><img src="./docs/assets/jellyfin-now-playing/hero.png" width="240" alt="jellyfin-now-playing on an LED panel"></a> |
 | [Music Player](./plugins/ledmatrix-music/) | Now playing with album art (Spotify & YouTube Music) | |
 | [Static Image Display](./plugins/static-image/) | Image display with scaling and transparency | <a href="./plugins/static-image/"><img src="./docs/assets/static-image/hero.png" width="240" alt="static-image on an LED panel"></a> |
 

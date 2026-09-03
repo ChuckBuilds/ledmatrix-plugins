@@ -1,0 +1,73 @@
+{
+  "plugin": "jellyfin-now-playing",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-02T21:00:00+00:00",
+    "http_replay": "sessions.json",
+    "config": {
+      "enabled": true,
+      "jellyfin_url": "http://192.168.1.50:8096",
+      "api_key": "docs-render-key",
+      "content_types": ["Movie"]
+    }
+  },
+  "shots": [
+    { "name": "hero" },
+    { "name": "type-movie", "standalone": false },
+    { "name": "type-episode", "standalone": false,
+      "config": { "content_types": ["Episode"] } },
+    { "name": "type-audio", "standalone": false,
+      "config": { "content_types": ["Audio"] } },
+    { "name": "playing", "standalone": false },
+    { "name": "paused", "standalone": false, "http_replay": "sessions-paused.json" },
+    { "name": "idle", "standalone": false, "http_replay": "sessions-idle.json" },
+    { "name": "bar-match", "standalone": false,
+      "width": 256, "config": { "progress_bar_match_text": true } },
+    { "name": "bar-full", "standalone": false,
+      "width": 256, "config": { "progress_bar_match_text": false } },
+    { "name": "size-64x32", "width": 64, "standalone": false },
+    { "name": "size-128x32", "width": 128, "standalone": false },
+    { "name": "size-128x64", "width": 128, "height": 64, "standalone": false },
+    { "name": "size-256x32", "width": 256, "standalone": false }
+  ],
+  "composites": [
+    {
+      "name": "content-types",
+      "columns": 1,
+      "cells": [
+        {"shot": "type-movie", "label": "Movie", "sublabel": "title, then the watching user"},
+        {"shot": "type-episode", "label": "Episode", "sublabel": "episode title, then the series"},
+        {"shot": "type-audio", "label": "Audio", "sublabel": "track title, then the artist"}
+      ]
+    },
+    {
+      "name": "playback-states",
+      "columns": 1,
+      "cells": [
+        {"shot": "playing", "label": "Playing"},
+        {"shot": "paused", "label": "Paused", "sublabel": "the bar turns amber"},
+        {"shot": "idle", "label": "Nothing playing"}
+      ]
+    },
+    {
+      "name": "progress-bar-width",
+      "columns": 1,
+      "cells": [
+        {"shot": "bar-match", "label": "progress_bar_match_text: true", "sublabel": "bar matches the text width"},
+        {"shot": "bar-full", "label": "progress_bar_match_text: false", "sublabel": "bar spans the text area"}
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {"shot": "size-64x32", "label": "64 x 32"},
+        {"shot": "size-128x32", "label": "128 x 32"},
+        {"shot": "size-128x64", "label": "128 x 64"},
+        {"shot": "size-256x32", "label": "256 x 32"}
+      ]
+    }
+  ]
+}
