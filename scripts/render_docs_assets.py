@@ -275,12 +275,16 @@ def render_shot(
     # clock, a countdown, or a "starts in 2h" line differs on every run.
     freeze_time = shot.get("freeze_time", defaults.get("freeze_time"))
     http_replay = shot.get("http_replay", defaults.get("http_replay"))
-    if freeze_time or http_replay:
+    # Runtime state that an event would normally have set; see the shim.
+    attrs = shot.get("attrs", defaults.get("attrs"))
+    if freeze_time or http_replay or attrs:
         support_dir = str(Path(__file__).resolve().parent / "docs_render_support")
         existing = env.get("PYTHONPATH")
         env["PYTHONPATH"] = f"{support_dir}{os.pathsep}{existing}" if existing else support_dir
     if freeze_time:
         env["LEDMATRIX_DOCS_FREEZE_TIME"] = str(freeze_time)
+    if attrs:
+        env["LEDMATRIX_DOCS_ATTRS"] = json.dumps(attrs)
     if http_replay:
         replay_path = (shot_list_dir / http_replay).resolve()
         if not replay_path.is_file():

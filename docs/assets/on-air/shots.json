@@ -1,0 +1,78 @@
+{
+  "plugin": "on-air",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "config": {
+      "enabled": true,
+      "mqtt_host": "127.0.0.1",
+      "mqtt_port": 1
+    },
+    "attrs": {
+      "on_air": true
+    }
+  },
+  "shots": [
+    { "name": "hero" },
+    { "name": "off", "attrs": { "on_air": false }, "standalone": false },
+    { "name": "on", "standalone": false },
+
+    { "name": "size-64x32", "width": 64, "standalone": false },
+    { "name": "size-128x32", "width": 128, "standalone": false },
+    { "name": "size-128x64", "width": 128, "height": 64, "standalone": false },
+    { "name": "size-256x32", "width": 256, "standalone": false },
+
+    { "name": "preset-onair", "standalone": false,
+      "attrs": { "on_air": true, "label": "ON AIR", "active_bg_color": [200, 10, 10] } },
+    { "name": "preset-meeting", "standalone": false,
+      "attrs": { "on_air": true, "label": "IN MEETING", "active_bg_color": [255, 140, 0] } },
+    { "name": "preset-live", "standalone": false,
+      "attrs": { "on_air": true, "label": "LIVE", "active_bg_color": [255, 0, 80] } },
+    { "name": "preset-dnd", "standalone": false,
+      "attrs": { "on_air": true, "label": "DO NOT DISTURB", "active_bg_color": [180, 0, 180] } },
+
+    { "name": "color-only", "standalone": false,
+      "attrs": { "on_air": true, "label": "IN MEETING", "active_text_color": [255, 140, 0] } },
+    { "name": "bg-only", "standalone": false,
+      "attrs": { "on_air": true, "label": "IN MEETING", "active_bg_color": [255, 140, 0] } }
+  ],
+  "composites": [
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {"shot": "size-64x32", "label": "64 x 32"},
+        {"shot": "size-128x32", "label": "128 x 32"},
+        {"shot": "size-128x64", "label": "128 x 64"},
+        {"shot": "size-256x32", "label": "256 x 32"}
+      ]
+    },
+    {
+      "name": "presets",
+      "columns": 2,
+      "cells": [
+        {"shot": "preset-onair", "label": "broadcast red", "sublabel": "bg [200, 10, 10]"},
+        {"shot": "preset-meeting", "label": "amber", "sublabel": "bg [255, 140, 0]"},
+        {"shot": "preset-live", "label": "hot pink", "sublabel": "bg [255, 0, 80]"},
+        {"shot": "preset-dnd", "label": "purple", "sublabel": "bg [180, 0, 180]"}
+      ]
+    },
+    {
+      "name": "color-vs-bg",
+      "columns": 1,
+      "cells": [
+        {"shot": "color-only", "label": "\"color\": [255, 140, 0]", "sublabel": "sets the text only"},
+        {"shot": "bg-only", "label": "\"bg\": [255, 140, 0]", "sublabel": "sets the sign"}
+      ]
+    },
+    {
+      "name": "on-off",
+      "columns": 2,
+      "cells": [
+        {"shot": "on", "label": "ON", "sublabel": "holds the display"},
+        {"shot": "off", "label": "OFF", "sublabel": "a black frame, cycled past"}
+      ]
+    }
+  ]
+}
