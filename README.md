@@ -97,7 +97,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [Masters Tournament](./plugins/masters-tournament/) | Live Masters golf leaderboard, hole tracking, player cards | |
 | [March Madness](./plugins/march-madness/) | NCAA tournament bracket tracker with round branding and live scores | |
 | [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN | |
-| [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NHL, NCAA | |
+| [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NHL, NCAA | <a href="./plugins/odds-ticker/"><img src="./docs/assets/odds-ticker/hero.png" width="240" alt="odds-ticker on an LED panel"></a> |
 | [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records | |
 | [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts | |
 
