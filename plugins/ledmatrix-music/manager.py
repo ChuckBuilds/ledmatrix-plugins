@@ -1333,10 +1333,35 @@ class MusicPlugin(BasePlugin):
             except (TypeError, ValueError):
                 return fallback
 
+        def _row_height(font, element_config, fallback):
+            """The line height to stack rows by, never zero.
+
+            display_manager.get_font_height() reads a FreeType face's
+            size.height, and the 5x7 BDF face the artist and album rows default
+            to is built with freetype.Face(path) and no set_char_size(), so
+            size.height stays 0 and the call returns 0. Stacking on 0 puts the
+            album row a single line_gap below the artist row instead of a full
+            row, and the two strings are drawn on top of each other.
+
+            Fall back to the configured font_size, which is what the row was
+            asked to be, and finally to the caller's default.
+            """
+            try:
+                measured = int(self.display_manager.get_font_height(font) or 0)
+            except Exception:
+                measured = 0
+            if measured > 0:
+                return measured
+            try:
+                configured = int(element_config.get('font_size', 0) or 0)
+            except (TypeError, ValueError):
+                configured = 0
+            return configured if configured > 0 else fallback
+
         # Get actual font heights for layout
-        title_height = self.display_manager.get_font_height(font_title)
-        artist_height = self.display_manager.get_font_height(font_artist)
-        album_height = self.display_manager.get_font_height(font_album)
+        title_height = _row_height(font_title, title_layout_config, 8)
+        artist_height = _row_height(font_artist, artist_layout_config, 7)
+        album_height = _row_height(font_album, album_layout_config, 7)
 
         # Calculate progress bar position (needed for layout validation)
         if matrix_height <= 32:
@@ -1357,9 +1382,9 @@ class MusicPlugin(BasePlugin):
                 title_layout_config, artist_layout_config, album_layout_config,
                 text_area_x_start, text_area_width, matrix_height,
                 progress_bar_height, _safe_y_percent)
-            title_height = self.display_manager.get_font_height(font_title)
-            artist_height = self.display_manager.get_font_height(font_artist)
-            album_height = self.display_manager.get_font_height(font_album)
+            title_height = _row_height(font_title, title_layout_config, 8)
+            artist_height = _row_height(font_artist, artist_layout_config, 7)
+            album_height = _row_height(font_album, album_layout_config, 7)
         else:
             # Top-down stacking with proportional gaps
             top_padding = max(1, matrix_height // 32)

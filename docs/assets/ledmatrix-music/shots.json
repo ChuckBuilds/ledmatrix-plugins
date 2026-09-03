@@ -1,0 +1,161 @@
+{
+  "plugin": "ledmatrix-music",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-03T09:30:00",
+    "skip_update": true,
+    "http_replay": "replay.json",
+    "frames": 3,
+    "config": {
+      "enabled": true,
+      "preferred_source": "ytm"
+    },
+    "attrs": {
+      "current_track_info": {
+        "source": "YTM",
+        "title": "Neon Harbour",
+        "artist": "The Glass Hours",
+        "album": "Tidewater",
+        "is_playing": true,
+        "progress": 0.42,
+        "duration": 245,
+        "position": 103,
+        "album_art_url": "http://ytm.local/cover.png"
+      }
+    }
+  },
+  "shots": [
+    {
+      "name": "hero"
+    },
+    {
+      "name": "rows",
+      "standalone": false
+    },
+    {
+      "name": "rows-tall",
+      "height": 64,
+      "standalone": false
+    },
+    {
+      "name": "bar-match",
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "progress_bar_match_text": true
+      }
+    },
+    {
+      "name": "bar-full",
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "progress_bar_match_text": false
+      }
+    },
+    {
+      "name": "scroll-early",
+      "frames": 3,
+      "standalone": false
+    },
+    {
+      "name": "scroll-mid",
+      "frames": 40,
+      "standalone": false
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "rows",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "rows",
+          "label": "128 x 32",
+          "sublabel": "title, artist, album"
+        },
+        {
+          "shot": "rows-tall",
+          "label": "128 x 64",
+          "sublabel": "the same three rows, more room"
+        }
+      ]
+    },
+    {
+      "name": "progress-bar-width",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "bar-match",
+          "label": "progress_bar_match_text: true",
+          "sublabel": "bar matches the widest text row"
+        },
+        {
+          "shot": "bar-full",
+          "label": "progress_bar_match_text: false",
+          "sublabel": "bar spans the whole text area"
+        }
+      ]
+    },
+    {
+      "name": "scrolling",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "scroll-early",
+          "label": "a few frames in"
+        },
+        {
+          "shot": "scroll-mid",
+          "label": "further along the marquee"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ],
+  "_comment": "Scroll shots use frames: a marquee starts at offset 0 and the title is only part-way across after a few steps. The cover art is generated, not a real album cover."
+}

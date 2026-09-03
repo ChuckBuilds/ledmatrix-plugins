@@ -13,6 +13,13 @@
 
 # Music Player Plugin
 
+![A track playing on a 128x32 panel: album art on the left, then the title,
+artist and album stacked beside it](../../docs/assets/ledmatrix-music/hero.png)
+
+*Every image in this README is real plugin output, rendered at the true panel
+size from a recorded now-playing payload so it reproduces exactly. The cover
+art in them is generated, not a real album cover.*
+
 A plugin for LEDMatrix that displays real-time now playing information from Spotify and YouTube Music with album art, scrolling text, and progress bars.
 
 Screenshot
@@ -44,13 +51,81 @@ Use Web Ui to configure
 
 ### Configuration Options
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `enabled` | boolean | true | Enable or disable the music plugin |
-| `display_duration` | number | 30 | How long to show the music display (10-300 seconds) |
-| `preferred_source` | string | "spotify" | Preferred music source ("spotify" or "ytm") |
-| `polling_interval_seconds` | number | 2 | Polling interval for Spotify in seconds (1-60) |
-| `ytm_companion_url` | string | "http://localhost:9863" | YouTube Music Companion server URL |
+Settings live in the plugin's tab in the web UI and in `config/config.json`
+under `ledmatrix-music`. The full schema is
+[`config_schema.json`](config_schema.json).
+
+### Source and behaviour
+
+| Key | Default | Notes |
+|---|---|---|
+| `enabled` | `true` | Enable or disable the music player plugin. |
+| `display_duration` | `30` | How long to show the music display (10-300 seconds). |
+| `preferred_source` | `"spotify"` | Preferred music source — one of `spotify`, `ytm`. |
+| `polling_interval_seconds` | `2` | Polling interval for Spotify in seconds (1–60). Advanced. |
+| `ytm_companion_url` | `"http://localhost:9863"` | YouTube Music Companion server URL. |
+| `spotify_client_id` | — | Spotify API Client ID. Stored as a secret, so the web UI masks it. |
+| `spotify_client_secret` | — | Spotify API Client Secret. Stored as a secret, so the web UI masks it. |
+| `live_priority` | `false` | Enable live priority - music will interrupt normal display rotation when actively playing. |
+| `layout_mode` | `"classic"` | Layout engine. 'classic' is the original fixed-size layout (unchanged). 'adaptive' (beta) scales the title/artist/album fonts to the panel height, growing on large panels and shrinking gracefully on small ones — the album art already scales this way. Your customization fonts and y_percent offsets still apply in adaptive mode. Requires LEDMatrix core with the adaptive layout system; falls back to classic on older cores. Switch back to 'classic' at any time to restore the original rendering — one of `classic`, `adaptive`. Advanced. |
+| `progress_bar_match_text` | `true` | Size the progress bar to the widest of the title, artist and album lines instead of stretching it across the whole text area. On a wide panel a short title otherwise leaves a bar spanning the display, which reads as a full-width element in Vegas scroll mode. A line long enough to scroll still fills the bar, since it genuinely fills that width. Turn off for the original full-width bar. Advanced. |
+
+### Marquee scrolling
+
+Each of the three text rows scrolls independently and takes the same five keys.
+
+| Key | Default | Notes |
+|---|---|---|
+| `text_scrolling.title.enabled` | `true` | Enable scrolling for track title. Advanced. |
+| `text_scrolling.title.speed` | `5` | Scroll speed divisor (higher = slower, lower = faster). Controls how many frames between each character scroll. Range: 1-20. Advanced. |
+| `text_scrolling.title.separator` | `"   "` | Text separator between wrapped text (e.g., '   ' for 3 spaces, ' | ' for pipe). Advanced. |
+| `text_scrolling.title.initial_pause_frames` | `0` | Number of frames to pause before starting scroll (0 = no pause) (0–300). Advanced. |
+| `text_scrolling.title.end_pause_frames` | `0` | Number of frames to pause at end before wrapping (0 = no pause) (0–300). Advanced. |
+| `text_scrolling.artist.enabled` | `true` | Enable scrolling for artist name. Advanced. |
+| `text_scrolling.artist.speed` | `5` | Scroll speed divisor (higher = slower, lower = faster). Controls how many frames between each character scroll. Range: 1-20. Advanced. |
+| `text_scrolling.artist.separator` | `"   "` | Text separator between wrapped text (e.g., '   ' for 3 spaces, ' | ' for pipe). Advanced. |
+| `text_scrolling.artist.initial_pause_frames` | `0` | Number of frames to pause before starting scroll (0 = no pause) (0–300). Advanced. |
+| `text_scrolling.artist.end_pause_frames` | `0` | Number of frames to pause at end before wrapping (0 = no pause) (0–300). Advanced. |
+| `text_scrolling.album.enabled` | `true` | Enable scrolling for album name. Advanced. |
+| `text_scrolling.album.speed` | `5` | Scroll speed divisor (higher = slower, lower = faster). Controls how many frames between each character scroll. Range: 1-20. Advanced. |
+| `text_scrolling.album.separator` | `"   "` | Text separator between wrapped text (e.g., '   ' for 3 spaces, ' | ' for pipe). Advanced. |
+| `text_scrolling.album.initial_pause_frames` | `0` | Number of frames to pause before starting scroll (0 = no pause) (0–300). Advanced. |
+| `text_scrolling.album.end_pause_frames` | `0` | Number of frames to pause at end before wrapping (0 = no pause) (0–300). Advanced. |
+
+### Fonts and row positions
+
+There are no colour settings — the three rows use fixed shades, as described
+under [Color Customization](#color-customization).
+
+| Key | Default | Notes |
+|---|---|---|
+| `customization.title_text.font` | `"PressStart2P-Regular.ttf"` | Select the font to use — one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`, `5x7.bdf`, `4x6.bdf`, `cozette.bdf`. Advanced. |
+| `customization.title_text.font_size` | `8` | Font size in pixels (4–16). Advanced. |
+| `customization.title_text.y_percent` | — | Vertical position override as fraction of display height (0.0=top, 1.0=bottom). Leave empty for automatic positioning based on font size (0.0–1.0). Advanced. |
+| `customization.artist_text.font` | `"5x7.bdf"` | Select the font to use (default matches the display manager 5x7 font) — one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`, `5x7.bdf`, `4x6.bdf`, `cozette.bdf`. Advanced. |
+| `customization.artist_text.font_size` | `7` | Font size in pixels (4–16). Advanced. |
+| `customization.artist_text.y_percent` | — | Vertical position override as fraction of display height (0.0=top, 1.0=bottom). Leave empty for automatic positioning based on font size (0.0–1.0). Advanced. |
+| `customization.album_text.font` | `"5x7.bdf"` | Select the font to use (default matches the display manager 5x7 font) — one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`, `5x7.bdf`, `4x6.bdf`, `cozette.bdf`. Advanced. |
+| `customization.album_text.font_size` | `7` | Font size in pixels (4–16). Advanced. |
+| `customization.album_text.y_percent` | — | Vertical position override as fraction of display height (0.0=top, 1.0=bottom). Leave empty for automatic positioning based on font size (0.0–1.0). Advanced. |
+
+
+### What the rows look like
+
+![The three text rows on a 128x32 and a 128x64 panel](../../docs/assets/ledmatrix-music/rows.png)
+
+Album art takes the full panel height on the left; the title, artist and album
+stack in the space that is left. A row too wide for that space marquee-scrolls
+rather than truncating:
+
+![The title part-way through its marquee](../../docs/assets/ledmatrix-music/scrolling.png)
+
+`progress_bar_match_text` decides how far the playback bar runs. On a wide
+panel a short title otherwise leaves a bar stretched across the display:
+
+![progress_bar_match_text true and false](../../docs/assets/ledmatrix-music/progress-bar-width.png)
+
+![The same track on four panel sizes](../../docs/assets/ledmatrix-music/panel-sizes.png)
 
 ## Authentication Setup
 

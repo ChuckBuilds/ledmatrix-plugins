@@ -129,7 +129,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Jellyfin Now Playing](./plugins/jellyfin-now-playing/) | Poster, title and playback progress from your Jellyfin server | <a href="./plugins/jellyfin-now-playing/"><img src="./docs/assets/jellyfin-now-playing/hero.png" width="240" alt="jellyfin-now-playing on an LED panel"></a> |
-| [Music Player](./plugins/ledmatrix-music/) | Now playing with album art (Spotify & YouTube Music) | |
+| [Music Player](./plugins/ledmatrix-music/) | Now playing with album art (Spotify & YouTube Music) | <a href="./plugins/ledmatrix-music/"><img src="./docs/assets/ledmatrix-music/hero.png" width="240" alt="ledmatrix-music on an LED panel"></a> |
 | [Static Image Display](./plugins/static-image/) | Image display with scaling and transparency | <a href="./plugins/static-image/"><img src="./docs/assets/static-image/hero.png" width="240" alt="static-image on an LED panel"></a> |
 
 ### Content (2)
