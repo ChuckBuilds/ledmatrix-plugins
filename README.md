@@ -157,7 +157,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [Christmas Countdown](./plugins/christmas-countdown/) | Festive countdown with Christmas tree display | |
+| [Christmas Countdown](./plugins/christmas-countdown/) | Festive countdown with Christmas tree display | <a href="./plugins/christmas-countdown/"><img src="./docs/assets/christmas-countdown/hero.png" width="240" alt="christmas-countdown on an LED panel"></a> |
 
 ### Social (1)
 
