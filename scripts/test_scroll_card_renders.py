@@ -163,6 +163,12 @@ def main(update: bool) -> int:
             continue
 
         config = {
+            # Pin the zone. Without it the card's time renders in the machine's
+            # local zone -- America/New_York here, UTC on the runner -- and the
+            # goldens then encode where they were generated rather than what
+            # the plugin draws. "Etc/UTC" not "UTC": the plugins treat a bare
+            # "UTC" as a leftover from an old write-back bug and override it.
+            "timezone": "Etc/UTC",
             league: {"enabled": True},
             "scroll_card": {}, "customization": {},
             "display": {"use_short_date_format": False},
