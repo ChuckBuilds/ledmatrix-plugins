@@ -1,7 +1,7 @@
 {
   "id": "stock-news",
   "name": "Stock News Ticker",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "author": "ChuckBuilds",
   "description": "Live stock headlines via Yahoo Finance search API with RSS fallback, company logos, configurable display styles (logo+ticker, ticker only, logo only), Vegas scroll integration, and per-day/hour request budgeting",
   "entry_point": "manager.py",
@@ -26,10 +26,16 @@
   "plugin_path": "plugins/stock-news",
   "versions": [
     {
+      "version": "2.6.1",
+      "released": "2026-09-03",
+      "notes": "Documentation. The configuration section listed 9 of the 51 settings and four of the examples it gave would be rejected: custom_feeds was shown as an object map where the schema wants an array of {name, url}; the colour keys were shown as [r, g, b] arrays where the schema wants hex strings; separator_color does not exist at all and feeds sets additionalProperties false; and font_size was given as 8-16 default 10 where the schema says 0-24 default 0. All 51 settings are now documented by key, and the README gains real rendered screenshots of the three display styles, the headline extras and four panel sizes. Also gitignores the logo cache the ticker writes into its own plugin directory.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "version": "2.6.0",
       "released": "2026-08-13",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Publisher and age now default to a small, pixel-perfect size (the 4x6 font's crisp 7px grid) instead of matching the headline's font_size, so they read as a quiet afterthought instead of taking up as much space as the headline. Each segment is also vertically centered on its own text height (previously all segments shared the tallest segment's centering, so the smaller text floated instead of sitting level with the headline), and the '  •  ' separator is now a tighter ' - ' (the small pixel font has no bullet glyph). publisher_font_size/age_font_size/publisher_font_path/age_font_path still override the auto default."
+      "notes": "Publisher and age now default to a small, pixel-perfect size (the 4x6 font's crisp 7px grid) instead of matching the headline's font_size, so they read as a quiet afterthought instead of taking up as much space as the headline. Each segment is also vertically centered on its own text height (previously all segments shared the tallest segment's centering, so the smaller text floated instead of sitting level with the headline), and the '  \u2022  ' separator is now a tighter ' - ' (the small pixel font has no bullet glyph). publisher_font_size/age_font_size/publisher_font_path/age_font_path still override the auto default."
     },
     {
       "version": "2.5.0",
@@ -52,19 +58,19 @@
     {
       "released": "2026-07-08",
       "version": "2.4.4",
-      "notes": "Eager fetch on startup (eager_fetch_on_startup, default on) fills every configured symbol at update() cadence instead of trickling one per update_interval/n, so the ticker isn't sparse for minutes after a restart or config change. Also added manifest update_interval=30 (was defaulting to the core's 60s fallback since this plugin never declared one) so that cadence is itself twice as fast. Publisher and age are now independent segments with their own font_size/font_path/color (publisher_font_size, publisher_font_path, age_font_size, age_font_path, age_color — publisher_color no longer applies to age). Stock price can now be colored green/red by movement since market open via price_color_mode='change' (price_up_color/price_down_color), toggleable — default remains 'fixed' (text_color) for unchanged behavior.",
+      "notes": "Eager fetch on startup (eager_fetch_on_startup, default on) fills every configured symbol at update() cadence instead of trickling one per update_interval/n, so the ticker isn't sparse for minutes after a restart or config change. Also added manifest update_interval=30 (was defaulting to the core's 60s fallback since this plugin never declared one) so that cadence is itself twice as fast. Publisher and age are now independent segments with their own font_size/font_path/color (publisher_font_size, publisher_font_path, age_font_size, age_font_path, age_color \u2014 publisher_color no longer applies to age). Stock price can now be colored green/red by movement since market open via price_color_mode='change' (price_up_color/price_down_color), toggleable \u2014 default remains 'fixed' (text_color) for unchanged behavior.",
       "ledmatrix_min": "2.0.0"
     },
     {
       "released": "2026-07-08",
       "version": "2.4.3",
-      "notes": "Set self.enable_scrolling = True so the core display loop uses its 125 FPS high-FPS path instead of the 1 FPS default path — without this flag the ticker's frame-based scroll math (tuned for ~100 FPS) only got ~1 real frame/second, making it scroll at a fraction of the configured speed in visibly choppy jumps.",
+      "notes": "Set self.enable_scrolling = True so the core display loop uses its 125 FPS high-FPS path instead of the 1 FPS default path \u2014 without this flag the ticker's frame-based scroll math (tuned for ~100 FPS) only got ~1 real frame/second, making it scroll at a fraction of the configured speed in visibly choppy jumps.",
       "ledmatrix_min": "2.0.0"
     },
     {
       "released": "2026-07-08",
       "version": "2.4.2",
-      "notes": "Default scroll_pixels_per_second raised from 25 to 60 — the old default made the ticker 2-4x slower than sibling ticker plugins (odds-ticker: 50, news/ledmatrix-stocks: ~100 effective) and was never retuned when frame-based scrolling was introduced in 2.3.4.",
+      "notes": "Default scroll_pixels_per_second raised from 25 to 60 \u2014 the old default made the ticker 2-4x slower than sibling ticker plugins (odds-ticker: 50, news/ledmatrix-stocks: ~100 effective) and was never retuned when frame-based scrolling was introduced in 2.3.4.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -76,7 +82,7 @@
     {
       "released": "2026-05-21",
       "version": "2.4.0",
-      "notes": "config_schema: fix web UI rendering — max_headlines_per_symbol now type:integer; custom_feeds changed to array-table (name+url rows); color fields changed to hex string for color-picker widget. Manager accepts both new and legacy config formats.",
+      "notes": "config_schema: fix web UI rendering \u2014 max_headlines_per_symbol now type:integer; custom_feeds changed to array-table (name+url rows); color fields changed to hex string for color-picker widget. Manager accepts both new and legacy config formats.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -94,7 +100,7 @@
     {
       "released": "2026-05-19",
       "version": "2.3.2",
-      "notes": "sync_with_stocks_plugin option to mirror ledmatrix-stocks watchlist; defusedxml for RSS parsing; Optional[str] type hint on display(); fix schema descriptions (update_interval → update_interval_seconds); fix manifest/registry descriptions to reflect YF search API + RSS fallback",
+      "notes": "sync_with_stocks_plugin option to mirror ledmatrix-stocks watchlist; defusedxml for RSS parsing; Optional[str] type hint on display(); fix schema descriptions (update_interval \u2192 update_interval_seconds); fix manifest/registry descriptions to reflect YF search API + RSS fallback",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -154,7 +160,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-13",
+  "last_updated": "2026-09-03",
   "stars": 0,
   "downloads": 0,
   "verified": true,
