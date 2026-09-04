@@ -1,0 +1,180 @@
+{
+  "plugin": "odds-ticker",
+  "_comment": "Games are seeded onto the plugin instance rather than fetched from ESPN, and last_update is seeded too or display() would re-fetch and clear them. The ticker scrolls, so shots step frames. Team records are looked up live per team during update(), which these renders skip, so they show as (N/A). Matchups and lines are invented.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-12T18:00:00+00:00",
+    "skip_update": true,
+    "frames": 60,
+    "config": {
+      "enabled": true
+    },
+    "attrs": {
+      "games_data": [
+        {
+          "league": "nfl",
+          "away_team": "KC",
+          "away_id": "12",
+          "home_team": "BUF",
+          "home_id": "2",
+          "start_time": "2026-09-13T20:25:00Z",
+          "broadcast": "CBS",
+          "logo_dir": "assets/sports/nfl_logos",
+          "odds": {
+            "away_team_odds": {
+              "money_line": "+118"
+            },
+            "home_team_odds": {
+              "money_line": "-140"
+            },
+            "spread": -2.5,
+            "over_under": 48.5
+          }
+        },
+        {
+          "league": "nfl",
+          "away_team": "DAL",
+          "away_id": "6",
+          "home_team": "PHI",
+          "home_id": "21",
+          "start_time": "2026-09-14T00:20:00Z",
+          "broadcast": "NBC",
+          "logo_dir": "assets/sports/nfl_logos",
+          "odds": {
+            "away_team_odds": {
+              "money_line": "+165"
+            },
+            "home_team_odds": {
+              "money_line": "-195"
+            },
+            "spread": -4.0,
+            "over_under": 45.5
+          }
+        },
+        {
+          "league": "nba",
+          "away_team": "BOS",
+          "away_id": "2",
+          "home_team": "LAL",
+          "home_id": "13",
+          "start_time": "2026-09-14T02:30:00Z",
+          "broadcast": "ESPN",
+          "logo_dir": "assets/sports/nba_logos",
+          "odds": {
+            "away_team_odds": {
+              "money_line": "-105"
+            },
+            "home_team_odds": {
+              "money_line": "-115"
+            },
+            "spread": 1.5,
+            "over_under": 224.5
+          }
+        }
+      ],
+      "last_update": 1789236000.0,
+      "is_enabled": true
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "frames": 160,
+      "width": 256
+    },
+    {
+      "name": "card",
+      "frames": 160,
+      "width": 256,
+      "standalone": false
+    },
+    {
+      "name": "logos-on",
+      "frames": 160,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "display_options": {
+          "show_channel_logos": true
+        }
+      }
+    },
+    {
+      "name": "logos-off",
+      "frames": 160,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "display_options": {
+          "show_channel_logos": false
+        }
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "frames": 160,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "frames": 160,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "frames": 160,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "frames": 160,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "channel-logos",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "logos-on",
+          "label": "show_channel_logos: true",
+          "sublabel": "the broadcaster's mark, where one is available"
+        },
+        {
+          "shot": "logos-off",
+          "label": "show_channel_logos: false"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

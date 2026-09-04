@@ -1,5 +1,13 @@
 # F1 Scoreboard Plugin
 
+![The driver standings scrolling across a 256x32 panel: the F1 mark, a season
+progress bar, then a card showing P1 VER for Red Bull with points and
+wins](../../docs/assets/f1-scoreboard/hero.png)
+
+*Every image in this README is real plugin output, rendered at the true panel
+size from seeded standings so it reproduces exactly. Drivers, teams and points
+are invented.*
+
 A Formula 1 plugin for LEDMatrix that displays driver and constructor
 standings, race results, qualifying and practice times, sprint results,
 upcoming races, and the full season calendar — with team-colored visuals,
@@ -86,11 +94,11 @@ Each mode section has an `enabled` toggle and mode-specific options:
 | `recent_races` | `show_winners_summary` | `true` | Show a compact winners summary card at the start of the recent races section |
 | `recent_races` | `show_gap_chart` | `true` | Show a horizontal bar chart of each finisher's time gap from the winner (team-colored bars) |
 | `recent_races` | `gap_chart_drivers` | `5` | Number of drivers to show on the race gap bar chart (3–10) |
-| `upcoming` | `show_session_times` | `true` | Show practice / qualifying / race times |
-| `upcoming` | `countdown_enabled` | `true` | Live countdown to next session |
+| `upcoming` | `show_session_times` | `true` | **Not implemented.** Nothing reads it; the session times are always drawn. |
+| `upcoming` | `countdown_enabled` | `true` | **Not implemented.** Nothing reads it; the countdown is always drawn. |
 | `upcoming` | `show_circuit_info` | `true` | Show circuit stats card after upcoming race card (laps, km, lap record) |
 | `qualifying` | `show_q1` / `show_q2` / `show_q3` | `true` | Toggle each qualifying segment |
-| `qualifying` | `show_gaps` | `true` | Show gap-to-pole times |
+| `qualifying` | `show_gaps` | `true` | **Not implemented.** Nothing reads it. |
 | `qualifying` | `show_team_duel` | `true` | Show team H2H summary card (who outqualified their teammate) |
 | `practice` | `sessions_to_show` | `["FP1","FP2","FP3"]` | Which sessions to render |
 | `practice` | `top_n` | `10` | Drivers per practice session |
@@ -183,6 +191,17 @@ Override the font used for each text role. All fonts are bundled in `assets/font
 
 Available fonts: `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`
 
+Each role also takes a size, and `auto_scale` decides whether those sizes are
+used as written or scaled to the panel:
+
+| Key | Default | Description |
+|---|---|---|
+| `customization.auto_scale` | `true` | Leave the font fields below blank to auto-pick a crisp pixel (bitmap) font sized for your panel. This toggle only affects a scalable TTF you choose manually: on, it scales that TTF with panel size and snaps it to its pixel grid; off, it uses the exact size below. |
+| `customization.header_text.font_size` | `8` | Size in pixels. |
+| `customization.position_text.font_size` | `8` | Size in pixels. |
+| `customization.detail_text.font_size` | `6` | Size in pixels. |
+| `customization.small_text.font_size` | `6` | Size in pixels. |
+
 ### Driver and team codes
 
 Set `favorite_driver` to one of these three-letter codes:
@@ -211,6 +230,21 @@ Set `favorite_team` to one of these constructor IDs:
   `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
   timezone; if that isn't set, the host system's timezone is used, and only if
   neither is available do times fall back to UTC.
+
+### What the modes look like
+
+The two standings modes need no session data, so they are pictured here. The
+other six — recent races, upcoming, qualifying, practice, sprint and calendar
+— need a live race weekend to have anything to show.
+
+![Driver and constructor standings](../../docs/assets/f1-scoreboard/standings-modes.png)
+
+Each card is tinted with the team's colour, and the header carries a season
+progress bar showing the round.
+
+![show_driver_split on and off](../../docs/assets/f1-scoreboard/driver-split.png)
+
+![The same standings on four panel sizes](../../docs/assets/f1-scoreboard/panel-sizes.png)
 
 ## Data sources
 

@@ -1,0 +1,402 @@
+{
+  "plugin": "ledmatrix-leaderboard",
+  "_comment": "Standings are seeded onto the plugin instance rather than fetched from ESPN, and last_update is seeded so update() does not re-fetch and clear them. The ticker scrolls, so shots step frames. Teams and records are invented.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-03T18:00:00+00:00",
+    "skip_update": true,
+    "frames": 60,
+    "config": {
+      "enabled": true
+    },
+    "attrs": {
+      "leaderboard_data": [
+        {
+          "league": "nfl",
+          "league_config": {
+            "sport": "football",
+            "league": "nfl",
+            "logo_dir": "assets/sports/nfl_logos",
+            "league_logo": "assets/sports/nfl_logos/nfl.png",
+            "top_teams": 6,
+            "level": 1,
+            "show_ranking": false
+          },
+          "teams": [
+            {
+              "rank": 1,
+              "abbreviation": "KC",
+              "id": "100",
+              "record": "13-4",
+              "wins": 0,
+              "losses": 0,
+              "display_value": "13-4"
+            },
+            {
+              "rank": 2,
+              "abbreviation": "BUF",
+              "id": "101",
+              "record": "12-5",
+              "wins": 0,
+              "losses": 0,
+              "display_value": "12-5"
+            },
+            {
+              "rank": 3,
+              "abbreviation": "BAL",
+              "id": "102",
+              "record": "11-6",
+              "wins": 0,
+              "losses": 0,
+              "display_value": "11-6"
+            },
+            {
+              "rank": 4,
+              "abbreviation": "PHI",
+              "id": "103",
+              "record": "11-6",
+              "wins": 0,
+              "losses": 0,
+              "display_value": "11-6"
+            },
+            {
+              "rank": 5,
+              "abbreviation": "DET",
+              "id": "104",
+              "record": "10-7",
+              "wins": 0,
+              "losses": 0,
+              "display_value": "10-7"
+            },
+            {
+              "rank": 6,
+              "abbreviation": "SF",
+              "id": "105",
+              "record": "9-8",
+              "wins": 0,
+              "losses": 0,
+              "display_value": "9-8"
+            }
+          ]
+        }
+      ],
+      "last_update": 1788458400.0
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "frames": 160,
+      "width": 256
+    },
+    {
+      "name": "outline-on",
+      "frames": 160,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "global": {
+          "appearance": {
+            "text_outline": true
+          }
+        }
+      }
+    },
+    {
+      "name": "outline-off",
+      "frames": 160,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "global": {
+          "appearance": {
+            "text_outline": false
+          }
+        }
+      }
+    },
+    {
+      "name": "scale-1",
+      "frames": 160,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "global": {
+          "appearance": {
+            "logo_scale": 1.0
+          }
+        }
+      }
+    },
+    {
+      "name": "scale-06",
+      "frames": 160,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "global": {
+          "appearance": {
+            "logo_scale": 0.6
+          }
+        }
+      }
+    },
+    {
+      "name": "ncaa-rank",
+      "frames": 160,
+      "width": 256,
+      "standalone": false,
+      "attrs": {
+        "leaderboard_data": [
+          {
+            "league": "ncaa_fb",
+            "league_config": {
+              "sport": "football",
+              "league": "ncaa_fb",
+              "logo_dir": "assets/sports/ncaa_logos",
+              "league_logo": "assets/sports/ncaa_logos/ncaa_fb.png",
+              "top_teams": 6,
+              "level": 1,
+              "show_ranking": true
+            },
+            "teams": [
+              {
+                "rank": 1,
+                "abbreviation": "KC",
+                "id": "100",
+                "record": "13-4",
+                "wins": 0,
+                "losses": 0,
+                "display_value": "13-4",
+                "record_summary": "12-1"
+              },
+              {
+                "rank": 2,
+                "abbreviation": "BUF",
+                "id": "101",
+                "record": "12-5",
+                "wins": 0,
+                "losses": 0,
+                "display_value": "12-5",
+                "record_summary": "11-2"
+              },
+              {
+                "rank": 3,
+                "abbreviation": "BAL",
+                "id": "102",
+                "record": "11-6",
+                "wins": 0,
+                "losses": 0,
+                "display_value": "11-6",
+                "record_summary": "11-2"
+              },
+              {
+                "rank": 4,
+                "abbreviation": "PHI",
+                "id": "103",
+                "record": "11-6",
+                "wins": 0,
+                "losses": 0,
+                "display_value": "11-6",
+                "record_summary": "10-3"
+              },
+              {
+                "rank": 5,
+                "abbreviation": "DET",
+                "id": "104",
+                "record": "10-7",
+                "wins": 0,
+                "losses": 0,
+                "display_value": "10-7",
+                "record_summary": "10-3"
+              },
+              {
+                "rank": 6,
+                "abbreviation": "SF",
+                "id": "105",
+                "record": "9-8",
+                "wins": 0,
+                "losses": 0,
+                "display_value": "9-8",
+                "record_summary": "9-4"
+              }
+            ]
+          }
+        ],
+        "last_update": 1788458400.0
+      }
+    },
+    {
+      "name": "ncaa-record",
+      "frames": 160,
+      "width": 256,
+      "standalone": false,
+      "attrs": {
+        "leaderboard_data": [
+          {
+            "league": "ncaa_fb",
+            "league_config": {
+              "sport": "football",
+              "league": "ncaa_fb",
+              "logo_dir": "assets/sports/ncaa_logos",
+              "league_logo": "assets/sports/ncaa_logos/ncaa_fb.png",
+              "top_teams": 6,
+              "level": 1,
+              "show_ranking": false
+            },
+            "teams": [
+              {
+                "rank": 1,
+                "abbreviation": "KC",
+                "id": "100",
+                "record": "13-4",
+                "wins": 0,
+                "losses": 0,
+                "display_value": "13-4",
+                "record_summary": "12-1"
+              },
+              {
+                "rank": 2,
+                "abbreviation": "BUF",
+                "id": "101",
+                "record": "12-5",
+                "wins": 0,
+                "losses": 0,
+                "display_value": "12-5",
+                "record_summary": "11-2"
+              },
+              {
+                "rank": 3,
+                "abbreviation": "BAL",
+                "id": "102",
+                "record": "11-6",
+                "wins": 0,
+                "losses": 0,
+                "display_value": "11-6",
+                "record_summary": "11-2"
+              },
+              {
+                "rank": 4,
+                "abbreviation": "PHI",
+                "id": "103",
+                "record": "11-6",
+                "wins": 0,
+                "losses": 0,
+                "display_value": "11-6",
+                "record_summary": "10-3"
+              },
+              {
+                "rank": 5,
+                "abbreviation": "DET",
+                "id": "104",
+                "record": "10-7",
+                "wins": 0,
+                "losses": 0,
+                "display_value": "10-7",
+                "record_summary": "10-3"
+              },
+              {
+                "rank": 6,
+                "abbreviation": "SF",
+                "id": "105",
+                "record": "9-8",
+                "wins": 0,
+                "losses": 0,
+                "display_value": "9-8",
+                "record_summary": "9-4"
+              }
+            ]
+          }
+        ],
+        "last_update": 1788458400.0
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "frames": 160,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "frames": 160,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "frames": 160,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "frames": 160,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "appearance",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "outline-on",
+          "label": "text_outline: true",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "outline-off",
+          "label": "text_outline: false"
+        },
+        {
+          "shot": "scale-06",
+          "label": "logo_scale: 0.6",
+          "sublabel": "against the default 1.0 above"
+        }
+      ]
+    },
+    {
+      "name": "ncaa-ranking",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "ncaa-rank",
+          "label": "ncaa_fb show_ranking: true",
+          "sublabel": "the AP rank"
+        },
+        {
+          "shot": "ncaa-record",
+          "label": "ncaa_fb show_ranking: false",
+          "sublabel": "the record instead"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

@@ -333,6 +333,43 @@ care about.
 | `mode_durations.*` | `null` | **Advanced.** Fixed total duration for a whole mode, overriding the per-game maths |
 | `dynamic_duration.enabled` | `false` | **Advanced.** Size a mode's duration from how many games it actually has |
 
+Every league block carries the same two duration groups. `<league>` below stands
+for `mlb`, `milb` or `ncaa_baseball` — the keys and defaults are identical in
+all three.
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `<league>.mode_durations.live_mode_duration` | `null` | **Advanced.** Fixed total seconds for the live mode. `null` uses the per-game maths. |
+| `<league>.mode_durations.recent_mode_duration` | `null` | **Advanced.** The same for the recent mode. |
+| `<league>.mode_durations.upcoming_mode_duration` | `null` | **Advanced.** The same for the upcoming mode. |
+| `<league>.dynamic_duration.min_duration_seconds` | `30` | **Advanced.** Floor for a dynamically sized mode, so a single game still gets a reasonable turn. |
+| `<league>.dynamic_duration.max_duration_seconds` | — | **Advanced.** Ceiling, so a full slate does not hold the board for minutes. |
+| `<league>.dynamic_duration.modes.live.enabled` | `false` | **Advanced.** Per-mode override of `dynamic_duration.enabled`. |
+| `<league>.dynamic_duration.modes.live.min_duration_seconds` | — | **Advanced.** Floor for that mode alone. |
+| `<league>.dynamic_duration.modes.live.max_duration_seconds` | — | **Advanced.** Ceiling for that mode alone. |
+| `<league>.dynamic_duration.modes.recent.enabled` | `false` | **Advanced.** |
+| `<league>.dynamic_duration.modes.recent.min_duration_seconds` | — | **Advanced.** |
+| `<league>.dynamic_duration.modes.recent.max_duration_seconds` | — | **Advanced.** |
+| `<league>.dynamic_duration.modes.upcoming.enabled` | `false` | **Advanced.** |
+| `<league>.dynamic_duration.modes.upcoming.min_duration_seconds` | — | **Advanced.** |
+| `<league>.dynamic_duration.modes.upcoming.max_duration_seconds` | — | **Advanced.** |
+
+`mode_durations` is read by the LEDMatrix core rather than by this plugin, which
+is why the keys do not appear anywhere in the plugin's own source.
+
+### Per-league: scroll tuning
+
+Only used when a mode's `*_display_mode` is `scroll`. The same keys appear in all
+three league blocks, and all are **Advanced**.
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `<league>.scroll_settings.scroll_speed` | `50.0` | Pixels per second. Higher scrolls faster. |
+| `<league>.scroll_settings.scroll_delay` | `0.01` | Delay between frames; `0.01` is 100 FPS. Lower is smoother. |
+| `<league>.scroll_settings.gap_between_games` | `48` | Pixels between game cards. |
+| `<league>.scroll_settings.show_league_separators` | `true` | Draw a league icon between leagues in a mixed ticker. |
+| `<league>.scroll_settings.game_card_width` | `128` | Width of each card. Lower it on a multi-panel chain to fit more games on screen at once. |
+
 `non_favorite_live_game_duration` is the setting for a full slate: with fifteen
 games on at once, `live_game_duration: 30` and
 `non_favorite_live_game_duration: 8` keeps your club's game on screen while the
@@ -499,6 +536,38 @@ Under `customization.player_card`:
 | `text_color` | `[255, 255, 255]` | Name and the jersey/position/bat-throw line |
 | `stat_color` | `[0, 220, 255]` | The season-stats line |
 
+### The bases and outs indicators
+
+A live card carries baseball's own furniture: a diamond of three bases and a
+column of out circles. Both come from the feed and need no configuration, but
+`customization.bases` and `customization.outs` restyle them.
+
+![Default, recoloured and enlarged bases and outs](../../docs/assets/baseball-scoreboard/bases-and-outs.png)
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `customization.bases.diamond_size` | `7` | Size of each base diamond in pixels. |
+| `customization.bases.occupied_color` | `[255, 255, 255]` | Fill colour when a base has a runner on it. |
+| `customization.bases.empty_color` | `[255, 255, 255]` | Outline colour when a base is empty. |
+| `customization.bases.x_offset` | `0` | Nudge the whole bases cluster horizontally; positive is right. |
+| `customization.bases.y_offset` | `0` | Nudge it vertically; positive is down. |
+| `customization.outs.circle_diameter` | `3` | Diameter of each out circle in pixels. |
+| `customization.outs.counted_color` | `[255, 255, 255]` | Fill colour for outs already recorded. |
+| `customization.outs.empty_color` | `[100, 100, 100]` | Outline colour for the outs still to come. |
+| `customization.outs.spacing` | `2` | Vertical gap between the out circles. |
+| `customization.outs.distance_from_bases` | `3` | Horizontal gap between the out column and the bases cluster. |
+
+`occupied_color` and `empty_color` default to the same white, so a base reads as
+occupied by being filled rather than by changing colour. Setting them apart — a
+bright fill against a dim outline — makes the base state readable across a room.
+The middle image above shows the outs recoloured and the empty bases dimmed; the
+game behind it has nobody on base, so `occupied_color` has nothing to tint.
+
+> **Enlarging these crowds a 32-pixel panel.** The third image uses
+> `diamond_size: 9` and `circle_diameter: 4`, and the count below is pushed off
+> the bottom. On a 32px-high panel the defaults are close to the practical
+> maximum; there is room to grow on a 64px panel.
+
 ### The matchup card: separator, date and time
 
 The **Matchup Card Layout** group (`scroll_card`, advanced) controls what sits
@@ -618,7 +687,26 @@ Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white:
 ```
 
 `customization.layout` nudges individual elements by `x_offset` / `y_offset`
-for panels where something sits slightly wrong.
+for panels where something sits slightly wrong. The record group takes two extra
+keys, because the two records sit at opposite edges:
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `customization.layout.record.x_offset` | `0` | Shifts both records. |
+| `customization.layout.record.y_offset` | `0` | Vertical nudge for both. |
+| `customization.layout.record.away_x_offset` | `0` | Extra horizontal shift for the away record alone. |
+| `customization.layout.record.home_x_offset` | `0` | Extra horizontal shift for the home record alone. |
+
+The centre-gap settings size the strip kept clear down the middle of a scroll or
+Vegas card, so the score is not drawn over the team logos. They do not affect the
+full-screen scoreboard, which pins its logos to the panel edges.
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `scroll_card.center_gap` | unset | Pin the gap to an exact pixel width. Unset scales it with the card; `0` restores edge-to-edge logos. |
+| `scroll_card.center_gap_ratio` | `0.28` | **Advanced.** Fraction of card width used when the gap is not pinned. |
+| `scroll_card.center_gap_min` | `22` | **Advanced.** Floor in pixels for the scaled gap. |
+| `scroll_card.center_gap_max` | `40` | **Advanced.** Ceiling in pixels for the scaled gap. |
 
 ---
 

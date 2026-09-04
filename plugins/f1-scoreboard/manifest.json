@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,12 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.8.7",
+      "released": "2026-09-03",
+      "notes": "Documentation. This README was already close: 65 of the 70 settings were documented, and the five missing were customization.auto_scale and the four font sizes, which are now covered. Three settings are marked as not implemented -- upcoming.show_session_times, upcoming.countdown_enabled and qualifying.show_gaps appear nowhere in the plugin or the core, though the countdown they claim to gate is drawn regardless. Adds real rendered screenshots of both standings modes, the constructor driver-split toggle and four panel sizes; the other six modes need a live race weekend to have anything to show.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.8.6",
       "released": "2026-08-21",
@@ -286,7 +292,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-05",
+  "last_updated": "2026-09-03",
   "stars": 0,
   "downloads": 0,
   "verified": true,
