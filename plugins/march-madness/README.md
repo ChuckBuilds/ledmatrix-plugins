@@ -13,6 +13,13 @@
 
 # March Madness Plugin
 
+![A live tournament game on a 256x32 panel: Duke's logo, the seeds, the period
+and clock, and the running score](../../docs/assets/march-madness/hero.png)
+
+*Every image in this README is real plugin output, rendered at the true panel
+size from seeded games so it reproduces exactly. Teams, seeds and scores are
+invented; the team marks are the logo assets the plugin already ships.*
+
 A plugin for LEDMatrix that tracks the NCAA Division I basketball tournaments. It
 shows a horizontally-scrolling ticker of tournament games grouped by round — from
 the Round of 64 through the National Championship — with team seeds, round
@@ -65,6 +72,15 @@ pip install -r requirements.txt
 The plugin exposes one screen; its length adapts to how many games are on the
 board (see `dynamic_duration` below).
 
+A game is drawn differently depending on where it is:
+
+![A live game, an upset final, and one not yet tipped off](../../docs/assets/march-madness/game-states.png)
+
+Rounds are separated by a header carrying the round name and the tournament
+mark, and the ticker runs through them in bracket order.
+
+![The same ticker on four panel sizes](../../docs/assets/march-madness/panel-sizes.png)
+
 ## Configuration
 
 The web UI form is generated from `config_schema.json`, which is the source of
@@ -85,8 +101,8 @@ truth. The keys below are the ones you'll typically set.
 |-----|---------|-------|-------|
 | `show_seeds` | `true` | — | Show tournament seeds (1–16) next to team names. |
 | `show_round_logos` | `true` | — | Show round-logo separators between game groups. |
-| `highlight_upsets` | `true` | — | Highlight upset winners (higher seed beating lower seed) in gold. |
-| `show_bracket_progress` | `true` | — | Show which teams are still alive in each region. |
+| `highlight_upsets` | `true` | — | Draw an upset winner's name and score in gold. An upset is a bigger seed number beating a smaller one — an 11 seed past a 1 seed. |
+| `show_bracket_progress` | `true` | — | **Not implemented.** The value is read into the plugin and never used again; nothing on the panel changes. See [issue #406](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/406). |
 | `scroll_speed` | `1.0` | 0.5–5.0 | Scroll speed in pixels per frame. |
 | `scroll_delay` | `0.02` | 0.001–0.1 | Delay between scroll frames, in seconds (smaller = smoother, more CPU). |
 | `target_fps` | `120` | 30–200 | Target frames per second for the scroll. |
@@ -94,6 +110,14 @@ truth. The keys below are the ones you'll typically set.
 | `dynamic_duration` | `true` | — | Adjust the on-screen duration automatically based on content width. |
 | `min_duration` | `30` | 10–300 | Minimum display duration in seconds (used with `dynamic_duration`). |
 | `max_duration` | `300` | 30–600 | Maximum display duration in seconds (used with `dynamic_duration`). |
+
+Three of these change what you see on the panel directly:
+
+![show_seeds on and off](../../docs/assets/march-madness/show-seeds.png)
+
+![show_round_logos on and off](../../docs/assets/march-madness/show-round-logos.png)
+
+![highlight_upsets on and off](../../docs/assets/march-madness/highlight-upsets.png)
 
 ### Data Settings
 

@@ -1,0 +1,475 @@
+{
+  "plugin": "cricket-scoreboard",
+  "_comment": "Matches are seeded onto the plugin instance rather than fetched, and _last_update is seeded so display() does not re-fetch and clear them. Teams, scores and venues are invented but shaped like the plugin's normalised match records.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-13T12:00:00+00:00",
+    "skip_update": true,
+    "config": {
+      "enabled": true
+    },
+    "attrs": {
+      "live_matches": [
+        {
+          "name": "3rd ODI",
+          "format": "ODI",
+          "period": "2nd Innings",
+          "status_short": "LIVE",
+          "status_summary": "IND need 48 runs",
+          "venue": "Eden Gardens",
+          "target": 287,
+          "start_time_utc": "2026-09-13T08:30:00Z",
+          "teams": [
+            {
+              "abbr": "AUS",
+              "short_name": "AUS",
+              "name": "Australia",
+              "innings": [
+                {
+                  "runs": 286,
+                  "wickets": 8,
+                  "overs_raw": 50.0,
+                  "is_batting": false,
+                  "score_str": "286/8"
+                }
+              ],
+              "score_str": "286/8"
+            },
+            {
+              "abbr": "IND",
+              "short_name": "IND",
+              "name": "India",
+              "innings": [
+                {
+                  "runs": 239,
+                  "wickets": 4,
+                  "overs_raw": 42.3,
+                  "is_batting": true,
+                  "score_str": "239/4"
+                }
+              ],
+              "score_str": "239/4"
+            }
+          ]
+        }
+      ],
+      "recent_matches": [
+        {
+          "name": "2nd Test",
+          "format": "Test",
+          "period": "Day 4",
+          "status_short": "FT",
+          "status_summary": "ENG won by 5 wickets",
+          "venue": "Lord's",
+          "target": null,
+          "start_time_utc": "2026-09-09T10:00:00Z",
+          "teams": [
+            {
+              "abbr": "NZ",
+              "short_name": "NZ",
+              "name": "New Zealand",
+              "innings": [
+                {
+                  "runs": 301,
+                  "wickets": 10,
+                  "overs_raw": 92.4,
+                  "is_batting": false,
+                  "score_str": "301"
+                }
+              ],
+              "score_str": "301"
+            },
+            {
+              "abbr": "ENG",
+              "short_name": "ENG",
+              "name": "England",
+              "innings": [
+                {
+                  "runs": 305,
+                  "wickets": 5,
+                  "overs_raw": 78.2,
+                  "is_batting": false,
+                  "score_str": "305/5"
+                }
+              ],
+              "score_str": "305/5"
+            }
+          ]
+        }
+      ],
+      "upcoming_matches": [
+        {
+          "name": "1st T20I",
+          "format": "T20",
+          "period": "",
+          "status_short": "",
+          "status_summary": "Starts 19:00",
+          "venue": "Newlands",
+          "target": null,
+          "start_time_utc": "2026-09-15T17:00:00Z",
+          "teams": [
+            {
+              "abbr": "SA",
+              "short_name": "SA",
+              "name": "South Africa",
+              "innings": []
+            },
+            {
+              "abbr": "PAK",
+              "short_name": "PAK",
+              "name": "Pakistan",
+              "innings": []
+            }
+          ]
+        }
+      ],
+      "_last_update": 1789286400.0,
+      "is_enabled": true
+    }
+  },
+  "shots": [
+    {
+      "name": "hero"
+    },
+    {
+      "name": "mode-live",
+      "standalone": false,
+      "attrs": {
+        "live_matches": [
+          {
+            "name": "3rd ODI",
+            "format": "ODI",
+            "period": "2nd Innings",
+            "status_short": "LIVE",
+            "status_summary": "IND need 48 runs",
+            "venue": "Eden Gardens",
+            "target": 287,
+            "start_time_utc": "2026-09-13T08:30:00Z",
+            "teams": [
+              {
+                "abbr": "AUS",
+                "short_name": "AUS",
+                "name": "Australia",
+                "innings": [
+                  {
+                    "runs": 286,
+                    "wickets": 8,
+                    "overs_raw": 50.0,
+                    "is_batting": false,
+                    "score_str": "286/8"
+                  }
+                ],
+                "score_str": "286/8"
+              },
+              {
+                "abbr": "IND",
+                "short_name": "IND",
+                "name": "India",
+                "innings": [
+                  {
+                    "runs": 239,
+                    "wickets": 4,
+                    "overs_raw": 42.3,
+                    "is_batting": true,
+                    "score_str": "239/4"
+                  }
+                ],
+                "score_str": "239/4"
+              }
+            ]
+          }
+        ],
+        "recent_matches": [],
+        "upcoming_matches": [],
+        "_last_update": 1789286400.0,
+        "is_enabled": true
+      }
+    },
+    {
+      "name": "mode-recent",
+      "standalone": false,
+      "attrs": {
+        "live_matches": [],
+        "recent_matches": [
+          {
+            "name": "2nd Test",
+            "format": "Test",
+            "period": "Day 4",
+            "status_short": "FT",
+            "status_summary": "ENG won by 5 wickets",
+            "venue": "Lord's",
+            "target": null,
+            "start_time_utc": "2026-09-09T10:00:00Z",
+            "teams": [
+              {
+                "abbr": "NZ",
+                "short_name": "NZ",
+                "name": "New Zealand",
+                "innings": [
+                  {
+                    "runs": 301,
+                    "wickets": 10,
+                    "overs_raw": 92.4,
+                    "is_batting": false,
+                    "score_str": "301"
+                  }
+                ],
+                "score_str": "301"
+              },
+              {
+                "abbr": "ENG",
+                "short_name": "ENG",
+                "name": "England",
+                "innings": [
+                  {
+                    "runs": 305,
+                    "wickets": 5,
+                    "overs_raw": 78.2,
+                    "is_batting": false,
+                    "score_str": "305/5"
+                  }
+                ],
+                "score_str": "305/5"
+              }
+            ]
+          }
+        ],
+        "upcoming_matches": [],
+        "_last_update": 1789286400.0,
+        "is_enabled": true
+      }
+    },
+    {
+      "name": "mode-upcoming",
+      "standalone": false,
+      "attrs": {
+        "live_matches": [],
+        "recent_matches": [],
+        "upcoming_matches": [
+          {
+            "name": "1st T20I",
+            "format": "T20",
+            "period": "",
+            "status_short": "",
+            "status_summary": "Starts 19:00",
+            "venue": "Newlands",
+            "target": null,
+            "start_time_utc": "2026-09-15T17:00:00Z",
+            "teams": [
+              {
+                "abbr": "SA",
+                "short_name": "SA",
+                "name": "South Africa",
+                "innings": []
+              },
+              {
+                "abbr": "PAK",
+                "short_name": "PAK",
+                "name": "Pakistan",
+                "innings": []
+              }
+            ]
+          }
+        ],
+        "_last_update": 1789286400.0,
+        "is_enabled": true
+      }
+    },
+    {
+      "name": "venue-on",
+      "standalone": false,
+      "attrs": {
+        "live_matches": [],
+        "recent_matches": [
+          {
+            "name": "2nd Test",
+            "format": "Test",
+            "period": "Day 4",
+            "status_short": "FT",
+            "status_summary": "ENG won by 5 wickets",
+            "venue": "Lord's",
+            "target": null,
+            "start_time_utc": "2026-09-09T10:00:00Z",
+            "teams": [
+              {
+                "abbr": "NZ",
+                "short_name": "NZ",
+                "name": "New Zealand",
+                "innings": [
+                  {
+                    "runs": 301,
+                    "wickets": 10,
+                    "overs_raw": 92.4,
+                    "is_batting": false,
+                    "score_str": "301"
+                  }
+                ],
+                "score_str": "301"
+              },
+              {
+                "abbr": "ENG",
+                "short_name": "ENG",
+                "name": "England",
+                "innings": [
+                  {
+                    "runs": 305,
+                    "wickets": 5,
+                    "overs_raw": 78.2,
+                    "is_batting": false,
+                    "score_str": "305/5"
+                  }
+                ],
+                "score_str": "305/5"
+              }
+            ]
+          }
+        ],
+        "upcoming_matches": [],
+        "_last_update": 1789286400.0,
+        "is_enabled": true
+      },
+      "config": {
+        "show_venue": true
+      }
+    },
+    {
+      "name": "venue-off",
+      "standalone": false,
+      "attrs": {
+        "live_matches": [],
+        "recent_matches": [
+          {
+            "name": "2nd Test",
+            "format": "Test",
+            "period": "Day 4",
+            "status_short": "FT",
+            "status_summary": "ENG won by 5 wickets",
+            "venue": "Lord's",
+            "target": null,
+            "start_time_utc": "2026-09-09T10:00:00Z",
+            "teams": [
+              {
+                "abbr": "NZ",
+                "short_name": "NZ",
+                "name": "New Zealand",
+                "innings": [
+                  {
+                    "runs": 301,
+                    "wickets": 10,
+                    "overs_raw": 92.4,
+                    "is_batting": false,
+                    "score_str": "301"
+                  }
+                ],
+                "score_str": "301"
+              },
+              {
+                "abbr": "ENG",
+                "short_name": "ENG",
+                "name": "England",
+                "innings": [
+                  {
+                    "runs": 305,
+                    "wickets": 5,
+                    "overs_raw": 78.2,
+                    "is_batting": false,
+                    "score_str": "305/5"
+                  }
+                ],
+                "score_str": "305/5"
+              }
+            ]
+          }
+        ],
+        "upcoming_matches": [],
+        "_last_update": 1789286400.0,
+        "is_enabled": true
+      },
+      "config": {
+        "show_venue": false
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "display-modes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "mode-live",
+          "label": "cricket_live",
+          "sublabel": "batting side in the accent colour, overs and run rate below"
+        },
+        {
+          "shot": "mode-recent",
+          "label": "cricket_recent",
+          "sublabel": "the finished match and its result"
+        },
+        {
+          "shot": "mode-upcoming",
+          "label": "cricket_upcoming",
+          "sublabel": "the fixture, with no score yet"
+        }
+      ]
+    },
+    {
+      "name": "show-venue",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "venue-on",
+          "label": "show_venue: true"
+        },
+        {
+          "shot": "venue-off",
+          "label": "show_venue: false"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}
