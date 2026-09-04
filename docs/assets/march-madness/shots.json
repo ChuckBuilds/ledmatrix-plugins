@@ -1,0 +1,301 @@
+{
+  "plugin": "march-madness",
+  "_comment": "Games are seeded onto the plugin instance rather than fetched from ESPN. Scrolling is frame-based here, so shots step frames; teams, seeds and scores are invented.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-03-21T19:10:00+00:00",
+    "skip_update": true,
+    "frames": 20,
+    "config": {
+      "enabled": true
+    },
+    "attrs": {
+      "games_data": [
+        {
+          "tournament_round": "Sweet 16",
+          "tournament_region": "East",
+          "away_abbr": "DUKE",
+          "away_seed": 2,
+          "home_abbr": "UCONN",
+          "home_seed": 1,
+          "away_score": 58,
+          "home_score": 61,
+          "is_live": true,
+          "is_final": false,
+          "is_halftime": false,
+          "is_upset": false,
+          "winner_side": "",
+          "period_text": "2nd",
+          "clock": "4:12",
+          "game_date": "3/21",
+          "game_time": "7:10 PM"
+        },
+        {
+          "tournament_round": "Sweet 16",
+          "tournament_region": "West",
+          "away_abbr": "FLA",
+          "away_seed": 11,
+          "home_abbr": "HOU",
+          "home_seed": 1,
+          "away_score": 74,
+          "home_score": 71,
+          "is_live": false,
+          "is_final": true,
+          "is_halftime": false,
+          "is_upset": true,
+          "winner_side": "away",
+          "period_text": "Final",
+          "clock": "",
+          "game_date": "3/21",
+          "game_time": "7:10 PM"
+        },
+        {
+          "tournament_round": "Sweet 16",
+          "tournament_region": "South",
+          "away_abbr": "PUR",
+          "away_seed": 3,
+          "home_abbr": "TENN",
+          "home_seed": 2,
+          "away_score": 0,
+          "home_score": 0,
+          "is_live": false,
+          "is_final": false,
+          "is_halftime": false,
+          "is_upset": false,
+          "winner_side": "",
+          "period_text": "",
+          "clock": "",
+          "game_date": "3/21",
+          "game_time": "7:10 PM"
+        },
+        {
+          "tournament_round": "Elite 8",
+          "tournament_region": "Midwest",
+          "away_abbr": "ILL",
+          "away_seed": 4,
+          "home_abbr": "IOWA",
+          "home_seed": 8,
+          "away_score": 68,
+          "home_score": 80,
+          "is_live": false,
+          "is_final": true,
+          "is_halftime": false,
+          "is_upset": false,
+          "winner_side": "home",
+          "period_text": "Final",
+          "clock": "",
+          "game_date": "3/21",
+          "game_time": "7:10 PM"
+        }
+      ]
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "frames": 190,
+      "width": 256
+    },
+    {
+      "name": "state-live",
+      "frames": 190,
+      "width": 256,
+      "standalone": false
+    },
+    {
+      "name": "state-upset",
+      "frames": 310,
+      "width": 256,
+      "standalone": false
+    },
+    {
+      "name": "state-upcoming",
+      "frames": 395,
+      "width": 256,
+      "standalone": false
+    },
+    {
+      "name": "seeds-on",
+      "frames": 190,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "display_options": {
+          "show_seeds": true
+        }
+      }
+    },
+    {
+      "name": "seeds-off",
+      "frames": 190,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "display_options": {
+          "show_seeds": false
+        }
+      }
+    },
+    {
+      "name": "roundlogo-on",
+      "frames": 110,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "display_options": {
+          "show_round_logos": true
+        }
+      }
+    },
+    {
+      "name": "roundlogo-off",
+      "frames": 110,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "display_options": {
+          "show_round_logos": false
+        }
+      }
+    },
+    {
+      "name": "upset-on",
+      "frames": 310,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "display_options": {
+          "highlight_upsets": true
+        }
+      }
+    },
+    {
+      "name": "upset-off",
+      "frames": 310,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "display_options": {
+          "highlight_upsets": false
+        }
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "frames": 190,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "frames": 190,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "frames": 190,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "frames": 190,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "game-states",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "state-live",
+          "label": "Live",
+          "sublabel": "period, clock and the running score"
+        },
+        {
+          "shot": "state-upset",
+          "label": "Final, an upset",
+          "sublabel": "an 11 seed past a 1 seed"
+        },
+        {
+          "shot": "state-upcoming",
+          "label": "Not started",
+          "sublabel": "tip-off date and time"
+        }
+      ]
+    },
+    {
+      "name": "show-seeds",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "seeds-on",
+          "label": "show_seeds: true",
+          "sublabel": "(2)DUKE and UCONN(1)"
+        },
+        {
+          "shot": "seeds-off",
+          "label": "show_seeds: false"
+        }
+      ]
+    },
+    {
+      "name": "show-round-logos",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "roundlogo-on",
+          "label": "show_round_logos: true",
+          "sublabel": "the round header carries the tournament mark"
+        },
+        {
+          "shot": "roundlogo-off",
+          "label": "show_round_logos: false"
+        }
+      ]
+    },
+    {
+      "name": "highlight-upsets",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "upset-on",
+          "label": "highlight_upsets: true",
+          "sublabel": "the upset score is picked out"
+        },
+        {
+          "shot": "upset-off",
+          "label": "highlight_upsets: false"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

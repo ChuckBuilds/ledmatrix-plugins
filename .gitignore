@@ -57,3 +57,9 @@ debug_cropped.png
 # them next to itself (plugins/stock-news/assets/logos), so without this a
 # local run leaves third-party logo files sitting untracked in the plugin tree.
 plugins/stock-news/assets/logos/
+
+# nfl-draft copies its bundled logo into assets/sports/nfl_logos at start-up,
+# using a path relative to the working directory. On a real install that is the
+# LEDMatrix root; running the docs renderer or the harness from this repo drops
+# it here instead, where it does not belong.
+/assets/
