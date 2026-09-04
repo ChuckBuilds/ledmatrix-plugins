@@ -223,9 +223,17 @@ class GameRenderer(SportsGameRendererMixin):
         try:
             if os.path.exists(default_font_path):
                 return ImageFont.truetype(default_font_path, font_size)
-        except Exception:
-            pass
+        except Exception as e:
+            # Say so. Reaching PIL's built-in face means this element will
+            # not match the panel's pixel grid, which reads as a rendering
+            # bug rather than a missing font file.
+            self.logger.warning(
+                "Fallback font %s failed to load (%s: %s)",
+                default_font_path, type(e).__name__, e)
         
+        self.logger.warning(
+            "No usable font found; using PIL's built-in face, which will "
+            "not be pixel-crisp")
         return ImageFont.load_default()
     
     def preload_logos(self, games: list, logo_dir: Path) -> None:
