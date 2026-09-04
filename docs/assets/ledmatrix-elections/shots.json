@@ -1,0 +1,114 @@
+{
+  "plugin": "ledmatrix-elections",
+  "_comment": "Results are replayed as an NYT-shaped feed rather than seeded onto the plugin, because the plugin parses that JSON into Race and Candidate dataclasses and the renderer uses attribute access -- a dict pushed onto self.races would not survive. The replay therefore exercises the real provider parse. override.active skips the election-calendar window check so the plugin fetches on any day. Candidates, vote totals and margins are invented.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "config": {
+      "enabled": true,
+      "state": "CA",
+      "only_my_state": true,
+      "override": {
+        "active": true,
+        "state": "CA",
+        "election_date": "2026-06-02",
+        "election_type": "general"
+      },
+      "providers": {
+        "nyt": {
+          "enabled": true,
+          "election_date": "2026-06-02",
+          "election_type": "general"
+        }
+      }
+    },
+    "http_replay": "nyt-results.json",
+    "freeze_time": "2026-06-03T04:00:00+00:00"
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "display_mode": "election_called"
+    },
+    {
+      "name": "called",
+      "display_mode": "election_called",
+      "standalone": false
+    },
+    {
+      "name": "ticker",
+      "display_mode": "election_ticker",
+      "standalone": false,
+      "frames": 140
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "display_mode": "election_called",
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "display_mode": "election_called",
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "display_mode": "election_called",
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "display_mode": "election_called",
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "display-modes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "called",
+          "label": "election_called",
+          "sublabel": "the full-screen card for a newly called race"
+        },
+        {
+          "shot": "ticker",
+          "label": "election_ticker",
+          "sublabel": "every visible race scrolling past"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}
