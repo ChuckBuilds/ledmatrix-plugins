@@ -2647,12 +2647,17 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Parse granular mode name if applicable (e.g., "nfl_recent", "ncaa_fb_upcoming")
         league = None
         if "_" in display_mode and not display_mode.startswith("football_"):
-            # Granular mode: extract league
-            parts = display_mode.split("_", 1)
-            if len(parts) == 2:
-                potential_league, potential_mode_type = parts
-                if potential_league in self._league_registry and potential_mode_type == mode_type:
-                    league = potential_league
+            # Granular mode: extract league. Match against the registry rather
+            # than split("_", 1) -- that splits "ncaa_fb_recent" into
+            # ("ncaa", "fb_recent"), leaving league unset, so the per-league
+            # scroll check below would fall back to the any-enabled-league one
+            # and hand NCAA FB a scroll duration while NFL is the league set to
+            # scroll. Registry matching also survives any future league whose
+            # id contains an underscore.
+            for league_id in self._league_registry:
+                if display_mode == f"{league_id}_{mode_type}":
+                    league = league_id
+                    break
         
         # Check if scroll mode is active for this mode type. For a granular
         # per-league mode, only that league's display_mode setting counts --
