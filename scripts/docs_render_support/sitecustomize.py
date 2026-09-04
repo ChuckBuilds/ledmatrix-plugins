@@ -89,12 +89,41 @@ if _ATTRS:
     _WANTED = _json.loads(_ATTRS)
     _TARGET = "src.plugin_system.plugin_loader"
 
+    def _resolve(instance, path):
+        """Walk a dotted path to the object that owns the final attribute.
+
+        The sports scoreboards keep their per-mode state on sub-managers rather
+        than on the plugin -- self._managers["live"].current_game -- so a shot
+        that can only set top-level attributes cannot reach the game it wants
+        to draw. A segment is tried as a mapping key first, then as an
+        attribute, so both self._managers["live"] and self.live_manager work.
+        """
+        parts = path.split(".")
+        target = instance
+        for part in parts[:-1]:
+            if hasattr(target, "get") and not hasattr(target, part):
+                nxt = target.get(part)
+            else:
+                nxt = getattr(target, part, None)
+                if nxt is None and hasattr(target, "get"):
+                    nxt = target.get(part)
+            if nxt is None:
+                return None, None
+            target = nxt
+        return target, parts[-1]
+
     def _apply(instance):
         for name, value in _WANTED.items():
             if isinstance(value, list) and len(value) == 3 and all(
                     isinstance(v, int) for v in value):
                 value = tuple(value)  # colours are tuples everywhere in the core
-            setattr(instance, name, value)
+            owner, attr = _resolve(instance, name)
+            if owner is None:
+                continue  # the path does not exist on this plugin; leave it alone
+            if hasattr(owner, "__setitem__") and not hasattr(owner, attr):
+                owner[attr] = value
+            else:
+                setattr(owner, attr, value)
         return instance
 
     class _PatchingLoader:
