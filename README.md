@@ -99,7 +99,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN | |
 | [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NHL, NCAA | |
 | [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records | |
-| [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts | |
+| [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts | <a href="./plugins/olympics/"><img src="./docs/assets/olympics/hero.png" width="240" alt="olympics on an LED panel"></a> |
 
 ### Financial (2)
 
