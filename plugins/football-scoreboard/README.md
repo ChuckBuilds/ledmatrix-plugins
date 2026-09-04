@@ -1,4 +1,14 @@
-[![ChuckBuilds](https://img.shields.io/badge/ChuckBuilds-LEDMatrix-blue)](https://github.com/ChuckBuilds/LEDMatrix)
+### Connect with ChuckBuilds
+
+- Show support on YouTube: https://www.youtube.com/@ChuckBuilds
+- Stay in touch on Instagram: https://www.instagram.com/ChuckBuilds/
+- Want to chat or need support? Reach out on the ChuckBuilds Discord: https://discord.com/invite/uW36dVAtcT
+- Feeling generous? Support the project:
+  - GitHub Sponsors: https://github.com/sponsors/ChuckBuilds
+  - Buy Me a Coffee: https://buymeacoffee.com/chuckbuilds
+  - Ko-fi: https://ko-fi.com/chuckbuilds/
+
+---
 
 # Football Scoreboard
 
