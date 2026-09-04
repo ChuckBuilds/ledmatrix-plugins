@@ -192,6 +192,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Track current scroll state
         self._scroll_active: Dict[str, bool] = {}  # {game_type: is_active}
         self._scroll_prepared: Dict[str, bool] = {}  # {game_type: is_prepared}
+        self._scroll_active_league: Dict[str, str] = {}  # {game_type: league currently prepared}
 
         # Enable high-FPS mode for scroll display (allows 100+ FPS scrolling)
         # This signals to the display controller to use high-FPS loop (8ms = 125 FPS)
@@ -306,6 +307,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.enable_scrolling = self._scroll_manager is not None
         self._scroll_active = {}
         self._scroll_prepared = {}
+        self._scroll_active_league = {}
 
         # Rebuild rotation modes and reset cycling state.
         self.modes = self._get_available_modes()
@@ -1485,6 +1487,112 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         
         return False
 
+    def _display_league_scroll_mode(self, league: str, mode_type: str, force_clear: bool) -> bool:
+        """
+        Display scrolling content for a single league/mode combination (e.g. NFL
+        Recent configured for scroll instead of switch).
+
+        The underlying ScrollDisplayManager keeps one active scroll session per
+        game_type (mode_type), shared across leagues, so we track which league's
+        content is currently prepared and force a re-prepare when that changes
+        (e.g. rotation switches from nfl_recent to ncaa_fb_recent and both are
+        set to scroll).
+
+        Args:
+            league: League ID ('nfl' or 'ncaa_fb')
+            mode_type: Mode type ('live', 'recent', or 'upcoming')
+            force_clear: Whether to force clear display
+
+        Returns:
+            True if content was displayed, False otherwise
+        """
+        display_mode = f"{league}_{mode_type}"
+        self._current_display_league = league
+        self._current_display_mode_type = mode_type
+
+        if not self._scroll_manager:
+            self.logger.warning(
+                f"Scroll mode requested for {display_mode} but scroll manager not available; "
+                "falling back to switch mode"
+            )
+            manager = self._get_league_manager_for_mode(league, mode_type)
+            if not manager:
+                return False
+            success, _ = self._try_manager_display(manager, force_clear, display_mode, mode_type, None)
+            return success
+
+        needs_prepare = (
+            not self._scroll_prepared.get(mode_type, False)
+            or self._scroll_active_league.get(mode_type) != league
+        )
+
+        if needs_prepare:
+            manager = self._get_league_manager_for_mode(league, mode_type)
+            if not manager:
+                self.logger.debug(f"No manager available for {league} {mode_type}")
+                return False
+
+            self._ensure_manager_updated(manager)
+
+            live_priority_active = (
+                mode_type == 'live'
+                and (self.nfl_live_priority or self.ncaa_fb_live_priority)
+                and self.has_live_content()
+            )
+
+            games = self._get_games_from_manager(manager, mode_type)
+            for game in games:
+                game['league'] = league
+                if not isinstance(game.get('status'), dict):
+                    game['status'] = {}
+                if 'state' not in game['status']:
+                    state_map = {'live': 'in', 'recent': 'post', 'upcoming': 'pre'}
+                    game['status']['state'] = state_map.get(mode_type, 'pre')
+
+            if live_priority_active:
+                games = [g for g in games if g.get('is_live', False) and not g.get('is_final', False)]
+
+            if not games:
+                self.logger.debug(f"No games to scroll for {display_mode}")
+                self._scroll_prepared[mode_type] = False
+                self._scroll_active[mode_type] = False
+                return False
+
+            rankings = self._get_rankings_cache()
+
+            success = self._scroll_manager.prepare_and_display(games, mode_type, [league], rankings)
+
+            if success:
+                self._scroll_prepared[mode_type] = True
+                self._scroll_active[mode_type] = True
+                self._scroll_active_league[mode_type] = league
+                self.logger.info(
+                    f"[Football Scroll] Started scrolling {len(games)} {mode_type} games from {league}"
+                )
+            else:
+                self._scroll_prepared[mode_type] = False
+                self._scroll_active[mode_type] = False
+                return False
+
+        if self._scroll_active.get(mode_type, False):
+            displayed = self._scroll_manager.display_frame(mode_type)
+
+            if displayed:
+                if self._scroll_manager.is_complete(mode_type):
+                    self.logger.info(f"[Football Scroll] Cycle complete for {display_mode}")
+                    self._scroll_prepared[mode_type] = False
+                    self._scroll_active[mode_type] = False
+                    self._dynamic_cycle_complete = True
+
+                return True
+            else:
+                self._scroll_prepared[mode_type] = False
+                self._scroll_active[mode_type] = False
+                self._scroll_active_league.pop(mode_type, None)
+                return False
+
+        return False
+
     def _display_league_mode(self, league: str, mode_type: str, force_clear: bool) -> bool:
         """
         Display a specific league/mode combination (e.g., NFL Recent, NCAA FB Upcoming).
@@ -1510,15 +1618,28 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             self.logger.debug(f"League {league} is disabled, skipping")
             return False
         
+        # If this league/mode is configured for scroll display, delegate to the
+        # scroll manager instead of the switch/flip behavior below.
+        #
+        # This check used to live only in _display_external_mode(), which nothing
+        # calls: manifest.json registers granular modes only (nfl_recent,
+        # ncaa_fb_live, ...), and display() routes every one of those straight
+        # here. So _display_scroll_mode() was unreachable and setting
+        # *_display_mode: "scroll" silently kept switching cards. The unit tests
+        # missed it because they call _should_use_scroll_mode() directly rather
+        # than going through display().
+        if self._get_display_mode(league, mode_type) == 'scroll':
+            return self._display_league_scroll_mode(league, mode_type, force_clear)
+
         # Get manager for this league/mode combination
         manager = self._get_league_manager_for_mode(league, mode_type)
         if not manager:
             self.logger.debug(f"No manager available for {league} {mode_type}")
             return False
-        
+
         # Create display mode name for tracking
         display_mode = f"{league}_{mode_type}"
-        
+
         # Set display context for dynamic duration tracking
         self._current_display_league = league
         self._current_display_mode_type = mode_type
@@ -2526,15 +2647,28 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Parse granular mode name if applicable (e.g., "nfl_recent", "ncaa_fb_upcoming")
         league = None
         if "_" in display_mode and not display_mode.startswith("football_"):
-            # Granular mode: extract league
-            parts = display_mode.split("_", 1)
-            if len(parts) == 2:
-                potential_league, potential_mode_type = parts
-                if potential_league in self._league_registry and potential_mode_type == mode_type:
-                    league = potential_league
+            # Granular mode: extract league. Match against the registry rather
+            # than split("_", 1) -- that splits "ncaa_fb_recent" into
+            # ("ncaa", "fb_recent"), leaving league unset, so the per-league
+            # scroll check below would fall back to the any-enabled-league one
+            # and hand NCAA FB a scroll duration while NFL is the league set to
+            # scroll. Registry matching also survives any future league whose
+            # id contains an underscore.
+            for league_id in self._league_registry:
+                if display_mode == f"{league_id}_{mode_type}":
+                    league = league_id
+                    break
         
-        # Check if scroll mode is active for this mode type
-        if self._should_use_scroll_mode(mode_type) and self._scroll_manager:
+        # Check if scroll mode is active for this mode type. For a granular
+        # per-league mode, only that league's display_mode setting counts --
+        # otherwise a league set to 'switch' could inherit another league's
+        # scroll duration just because that other league is set to 'scroll'.
+        is_scroll_mode = (
+            self._get_display_mode(league, mode_type) == 'scroll'
+            if league
+            else self._should_use_scroll_mode(mode_type)
+        )
+        if is_scroll_mode and self._scroll_manager:
             # Get dynamic duration from scroll manager
             scroll_duration = self._scroll_manager.get_dynamic_duration(mode_type)
             if scroll_duration > 0:
@@ -2804,7 +2938,26 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Check if scroll mode is active for the current display mode
         if self._current_active_display_mode:
             mode_type = self._extract_mode_type(self._current_active_display_mode)
-            if mode_type and self._should_use_scroll_mode(mode_type) and self._scroll_manager:
+
+            # Parse granular mode name if applicable (e.g. "nfl_recent", "ncaa_fb_upcoming")
+            league = None
+            display_mode = self._current_active_display_mode
+            if "_" in display_mode and not display_mode.startswith("football_"):
+                # Use startswith checks to correctly handle multi-underscore league IDs
+                if display_mode.startswith("ncaa_fb_"):
+                    league = "ncaa_fb"
+                elif display_mode.startswith("nfl_"):
+                    league = "nfl"
+
+            # For a granular per-league mode, only that league's display_mode
+            # setting counts -- otherwise a league set to 'switch' could report
+            # completion based on another league's scroll state.
+            is_scroll_mode = (
+                self._get_display_mode(league, mode_type) == 'scroll'
+                if league
+                else self._should_use_scroll_mode(mode_type)
+            )
+            if mode_type and is_scroll_mode and self._scroll_manager:
                 # For scroll mode, check ScrollHelper's completion status
                 is_complete = self._scroll_manager.is_complete(mode_type)
                 self.logger.info(f"is_cycle_complete() [scroll mode]: display_mode={self._current_active_display_mode}, returning {is_complete}")
