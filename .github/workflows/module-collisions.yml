@@ -30,6 +30,7 @@ on:
       - 'scripts/check_sports_display_contract.py'
       - 'scripts/test_check_sports_display_contract.py'
       - 'scripts/test_pixel_perfect_text.py'
+      - 'scripts/test_scroll_mode_is_reachable.py'
       # Without this, a PR that only edits this workflow matches no path and
       # the workflow never runs against its own change.
       - '.github/workflows/module-collisions.yml'
@@ -66,6 +67,13 @@ jobs:
       - name: Test the sports display()-contract gate
         if: always()
         run: python scripts/test_check_sports_display_contract.py
+      # A scoreboard offering *_display_mode: "scroll" must actually reach its
+      # scroll renderer. football's dispatch sat in a method nothing called, so
+      # the setting silently kept switching cards -- and both existing tests
+      # exercised the card renderer directly, never the path that reaches it.
+      - name: Check scroll mode is reachable from display()
+        if: always()
+        run: python scripts/test_scroll_mode_is_reachable.py
       # PIL anti-aliases TrueType text by default, which on a panel with no
       # partial brightness only smears glyphs -- 4x6-font.ttf at 6 puts 74% of
       # its lit pixels at partial coverage. Static, because the plugins most at

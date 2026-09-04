@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.4.3",
+  "version": "3.5.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -27,8 +27,14 @@
   "versions": [
     {
       "released": "2026-09-04",
-      "version": "3.4.3",
+      "version": "3.5.1",
       "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "3.3.0"
+    },
+    {
+      "released": "2026-09-03",
+      "version": "3.5.0",
+      "changelog": "Scroll display mode now actually scrolls: the dispatch lived in an uncalled method, so the setting did nothing",
       "ledmatrix_min_version": "3.3.0"
     },
     {
