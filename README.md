@@ -94,10 +94,10 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [NRL Scoreboard](./plugins/nrl-scoreboard/) | National Rugby League live, recent & upcoming games | |
 | [F1 Scoreboard](./plugins/f1-scoreboard/) | Formula 1 race results, schedules, and standings | |
 | [UFC Scoreboard](./plugins/ufc-scoreboard/) | UFC/MMA live fights, fighter headshots, records, odds & results &mdash; *by [LegoGuy1000](https://github.com/legoguy1000)* | |
+| [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NHL, NCAA | <a href="./plugins/odds-ticker/"><img src="./docs/assets/odds-ticker/hero.png" width="240" alt="odds-ticker on an LED panel"></a> |
 | [Masters Tournament](./plugins/masters-tournament/) | Live Masters golf leaderboard, hole tracking, player cards | <a href="./plugins/masters-tournament/"><img src="./docs/assets/masters-tournament/hero.png" width="240" alt="masters-tournament on an LED panel"></a> |
 | [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN | <a href="./plugins/nfl-draft/"><img src="./docs/assets/nfl-draft/hero.png" width="240" alt="nfl-draft on an LED panel"></a> |
 | [March Madness](./plugins/march-madness/) | NCAA tournament bracket tracker with round branding and live scores | <a href="./plugins/march-madness/"><img src="./docs/assets/march-madness/hero.png" width="240" alt="march-madness on an LED panel"></a> |
-| [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NHL, NCAA | |
 | [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records | |
 | [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts | <a href="./plugins/olympics/"><img src="./docs/assets/olympics/hero.png" width="240" alt="olympics on an LED panel"></a> |
 
