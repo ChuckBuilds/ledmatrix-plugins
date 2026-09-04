@@ -1,195 +1,74 @@
-# Lacrosse Scoreboard Plugin
+# Lacrosse Scoreboard
 
-Live, recent, and upcoming NCAA Men's and Women's Lacrosse games on your LEDMatrix display. Real-time scores, schedules, favorite-team filtering, live-game priority, poll-rank badges, and both switch and scroll display modes — modeled on the existing hockey scoreboard plugin.
+Live, recent, and upcoming **NCAA Men's and Women's Lacrosse** games on your
+LEDMatrix display, from ESPN's public API. No API key required.
 
-> **Breaking change in 1.1.0:** display modes gained a `lax_` prefix
-> (e.g. `lax_ncaa_mens_recent`) to avoid colliding with the NCAA
-> hockey modes exposed by `hockey-scoreboard`. If you pinned any of
-> the old `ncaa_mens_*` / `ncaa_womens_*` names in
-> `display_durations`, `rotation_order`, or anywhere else in
-> `config.json`, update them to the new prefixed names. See the
-> plugin [CHANGELOG](CHANGELOG.md) for the full mapping.
+![NCAA men's lacrosse live scorebug](../../docs/assets/lacrosse-scoreboard/hero.png)
 
-## Features
+> **Upgrading from before 1.1.0:** the display modes gained a `lax_` prefix
+> (`lax_ncaa_mens_recent` rather than `ncaa_mens_recent`) so they no longer
+> collide with the NCAA hockey modes that `hockey-scoreboard` exposes. If you
+> pinned any of the old unprefixed names in `display_durations`,
+> `rotation_order`, or anywhere else in `config.json`, update them. The
+> [CHANGELOG](CHANGELOG.md) has the full mapping.
 
-- **NCAA Men's Lacrosse** (Inside Lacrosse D1 Poll — top 20)
-- **NCAA Women's Lacrosse** (Inside Lacrosse / IWLCA Coaches Top 25 Poll)
-- **Live games** with quarter, clock, score, and optional shot totals
-- **Recent (completed) games** with final score and OT indicator
-- **Upcoming games** with start time, matchup, records, and rankings
-- **Favorite team filtering** — pin specific teams, or use the dynamic shortcuts `NCAA_MENS_TOP_20`, `NCAA_MENS_TOP_10`, `NCAA_MENS_TOP_5`, `NCAA_WOMENS_TOP_25`, `NCAA_WOMENS_TOP_10`, `NCAA_WOMENS_TOP_5` to auto-track whichever teams are currently in the poll
-- **Live priority** — force live favorite-team games to preempt the rotation
-- **Per-mode display style** — `switch` (one game card rotating) or `scroll` (horizontal ticker), independently configurable for live, recent, and upcoming
-- **Poll rank badges** — `#1`, `#2` overlays on team names, updated hourly from ESPN's public rankings feed
-- **Element customization** — toggle records, rankings, odds, shot totals; override layout offsets for logos, score, and status text
-- **Configurable durations, update intervals, and game counts** per league
-- **Favorite Team Result Colors**: Optionally show a finished game's score in green when your favorite team won and red when it lost
+## Contents
 
-## Requirements
+- [Quick start](#quick-start)
+- [Team abbreviations](#team-abbreviations)
+- [Display modes](#display-modes)
+- [The two leagues](#the-two-leagues)
+- [How games are chosen](#how-games-are-chosen)
+- [Panel sizes](#panel-sizes)
+- [Settings reference](#settings-reference)
+- [Per-league settings](#per-league-settings)
+- [Matchup separator and the upcoming card middle](#matchup-separator-and-the-upcoming-card-middle)
+- [Text colours](#text-colours)
+- [Favorite team result colours](#favorite-team-result-colours)
+- [Vegas ticker: seeing live games more often](#vegas-ticker-seeing-live-games-more-often)
+- [Data source](#data-source)
+- [Requirements and installation](#requirements-and-installation)
+- [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
 
-- Python 3.9+
-- LEDMatrix core 2.0.0 or newer
-- A minimum display of 64×32 (128×32 recommended for full scroll and scoreboard layouts)
-- Internet access to reach the public ESPN API
+## Quick start
 
-No API key is required.
-
-## Installation
-
-The easiest way is the Plugin Store in the LEDMatrix web UI:
-
-1. Open `http://your-pi-ip:5000`
-2. Open the **Plugin Manager** tab
-3. Find **Lacrosse Scoreboard** in the **Plugin Store** section and click
-   **Install**
-4. Open the plugin's tab in the second nav row to configure favorite
-   teams
-
-On first launch, team logos for any teams in the current scoreboard
-window will be downloaded to `assets/sports/ncaa_logos/` automatically.
-
-Manual install from source:
-
-```bash
-cd /path/to/LEDMatrix
-python -m pip install --user pillow requests pytz   # see requirements.txt
-cp -r /path/to/ledmatrix-plugins/plugins/lacrosse-scoreboard plugin-repos/
-sudo systemctl restart ledmatrix
-```
-
-Then add a `lacrosse-scoreboard` entry to your LEDMatrix `config.json`
-(see **Configuration** below) — or just use the web UI to configure it.
-
-## Dependencies
-
-From `requirements.txt`:
-
-- `Pillow>=9.0.0` — image compositing and logo rendering
-- `requests>=2.28.0` — ESPN API calls
-- `pytz>=2022.1` — timezone conversion for game start times
-- `urllib3>=1.26.0` — HTTP retry logic
-
-All dependencies are standard and already present in a typical LEDMatrix install.
-
-## Configuration
-
-The plugin config is split into per-league blocks. See `config_schema.json` for the authoritative list of fields and their defaults. Minimal working example:
+1. Install **Lacrosse Scoreboard** from the LEDMatrix Plugin Store.
+2. Turn on `enabled`, then turn on the league you want — `ncaa_mens` is on by
+   default, `ncaa_womens` is off.
+3. Add your schools under that league's **Favorite Teams**, using the
+   **full-name abbreviations** described below.
 
 ```json
 {
-  "enabled": true,
-  "defaults": {
-    "display_duration": 15,
-    "show_records": true,
-    "show_ranking": true,
-    "show_odds": false
-  },
-  "ncaa_mens": {
+  "lacrosse-scoreboard": {
     "enabled": true,
-    "display_modes": {
-      "live": true,
-      "live_display_mode": "switch",
-      "recent": true,
-      "recent_display_mode": "scroll",
-      "upcoming": true,
-      "upcoming_display_mode": "scroll"
+    "ncaa_mens": {
+      "enabled": true,
+      "teams": {
+        "favorite_teams": ["NCAA_MENS_TOP_10", "JOHNS HOPKINS"],
+        "favorite_teams_only": false
+      },
+      "filtering": {
+        "recent_games_to_show": 3,
+        "upcoming_games_to_show": 5
+      },
+      "live_priority": true
     },
-    "teams": {
-      "favorite_teams": ["NCAA_MENS_TOP_10", "JOHNS HOPKINS"],
-      "favorite_teams_only": false,
-      "show_all_live": true,
-      "exclude_teams": [],
-      "favorite_live_boost": 2
-    },
-    "filtering": {
-      "recent_games_to_show": 5,
-      "upcoming_games_to_show": 10
-    },
-    "live_priority": true
-  },
-  "ncaa_womens": {
-    "enabled": true,
-    "display_modes": {
-      "live": true,
-      "live_display_mode": "switch",
-      "recent": true,
-      "recent_display_mode": "scroll",
-      "upcoming": true,
-      "upcoming_display_mode": "scroll"
-    },
-    "teams": {
-      "favorite_teams": ["MARYLAND", "NORTH CAROLINA", "SYRACUSE"],
-      "favorite_teams_only": false,
-      "show_all_live": true
+    "ncaa_womens": {
+      "enabled": true,
+      "teams": { "favorite_teams": ["NCAA_WOMENS_TOP_10"] }
     }
   }
 }
 ```
 
-### Display modes per league
+## Team abbreviations
 
-Each of live / recent / upcoming can be independently enabled and given its own display style:
-
-- `switch` — one game card at a time, rotating on a timer
-- `scroll` — all matching games composited into a horizontal ticker that scrolls across the display
-
-### Live priority
-
-When `live_priority: true`, live games for configured favorite teams will interrupt the normal rotation whenever they are in progress.
-
-### Favorite live boost
-
-`teams.favorite_live_boost` (default `2`, range `1`-`5`) tunes how much extra
-attention your favorite team gets *within* the live rotation itself: while a
-favorite's game is live, it's always queued first whenever the rotation
-refreshes, and gets that many turns for every 1 turn other live games get
-(e.g. `favorite_live_boost: 2` with your favorite plus two other live games
-rotates `[favorite, other1, favorite, other2]`). It never interrupts a game
-already on screen — it just gets more/sooner turns. Set it to `1` for a
-perfectly even rotation (the pre-1.3.0 default behavior). This is independent
-of `live_priority`, which controls whether live games preempt the
-recent/upcoming rotation at all.
-
-### Shorter dwell for non-favorite live games
-
-`display_durations.non_favorite_live` (0-120, default `0` = off) gives live
-games that involve **none** of your favorite teams a shorter on-screen turn than
-your favorites. For example `ncaa_mens.display_durations.live: 30` with
-`ncaa_mens.display_durations.non_favorite_live: 5` shows your teams for 30s each
-while everyone else's games flash by in 5s.
-
-This **only takes effect** when favorite teams are configured **and**
-non-favorite live games are being shown — `favorite_teams_only` off, or
-`show_all_live` on (otherwise non-favorite games are never on screen to
-shorten). Leave it at `0` to display every live game for `display_durations.live`.
-
-| Favorite teams set? | Non-favorite games shown? | Live game has a favorite? | Duration used |
-|---|---|---|---|
-| No | — | — | `display_durations.live` (unchanged) |
-| Yes | No (`favorite_teams_only` on, `show_all_live` off) | favorite | `display_durations.live` |
-| Yes | Yes (`favorite_teams_only` off, or `show_all_live` on) | favorite | `display_durations.live` |
-| Yes | Yes (`favorite_teams_only` off, or `show_all_live` on) | none | `display_durations.non_favorite_live` (when > 0) |
-
-### Excluding teams (spoiler protection)
-
-`teams.exclude_teams` (default `[]`) hides specific teams from **both** the
-live rotation and the recent/final-scores display — useful if you plan to
-watch a game delayed and don't want the score spoiled. It uses the same
-full-name abbreviation format as `favorite_teams` (see below), and always
-wins if a team appears in both lists.
-
-### Timezone
-
-- `timezone` (Advanced): IANA name used to display event start times, e.g.
-  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
-  timezone; if that isn't set, the host system's timezone is used, and only if
-  neither is available do times fall back to UTC.
-
-## Team Abbreviations
-
-**Important — NCAA lacrosse uses full-name abbreviations, not the short codes you may be used to from the football, basketball, or hockey plugins.** ESPN's lacrosse feed returns team abbreviations like `NORTH CAROLINA`, `JOHNS HOPKINS`, `SAINT JOSEPH'S`, not `UNC` / `JHU` / `SJU`. Use the full-name form in `favorite_teams` or the matching will fail silently.
-
-A few recurring examples (use exactly as shown, uppercase, with spaces, apostrophes, and periods as they appear):
+**NCAA lacrosse uses full-name abbreviations, not the short codes you know from
+the football, basketball, or hockey plugins.** ESPN's lacrosse feed returns
+`NORTH CAROLINA`, `JOHNS HOPKINS`, `SAINT JOSEPH'S` — not `UNC`, `JHU`, `SJU`.
+Use the full-name form or the match fails silently.
 
 | Team | Abbreviation |
 |---|---|
@@ -209,55 +88,399 @@ A few recurring examples (use exactly as shown, uppercase, with spaces, apostrop
 | Saint Joseph's | `SAINT JOSEPH'S` |
 | Mount St. Mary's | `MOUNT ST. MARY'S` |
 | William & Mary | `WILLIAM & MARY` |
-| Long Island University | `LONG ISLAND UNIVERSI` *(ESPN truncates to 20 chars)* |
+| Long Island University | `LONG ISLAND UNIVERSI` *(ESPN truncates to 20 characters)* |
 
-If you're unsure of a team's exact abbreviation, hit the ESPN scoreboard endpoint directly and look at `events[].competitions[].competitors[].team.abbreviation`:
+Uppercase, with spaces, apostrophes, and periods exactly as they appear. To
+check one:
 
 ```bash
-curl -s 'https://site.api.espn.com/apis/site/v2/sports/lacrosse/mens-college-lacrosse/scoreboard' \
-  | python -m json.tool | grep -A1 abbreviation
+curl -s 'https://site.api.espn.com/apis/site/v2/sports/lacrosse/mens-college-lacrosse/scoreboard' | python -m json.tool | grep -A1 abbreviation
 ```
 
 ### Dynamic team shortcuts
 
-Instead of listing abbreviations manually, use one of these tokens in `favorite_teams` to auto-expand to the current poll:
+Rather than listing abbreviations by hand, put one of these tokens in
+`favorite_teams` and it expands to the current poll:
 
 | Token | League | Expands to |
 |---|---|---|
-| `NCAA_MENS_TOP_5` | Men's | Top 5 of Inside Lacrosse D1 Men's Poll |
-| `NCAA_MENS_TOP_10` | Men's | Top 10 of Inside Lacrosse D1 Men's Poll |
-| `NCAA_MENS_TOP_20` | Men's | Full top 20 (the entire men's poll) |
-| `NCAA_WOMENS_TOP_5` | Women's | Top 5 of IWLCA Coaches Poll |
-| `NCAA_WOMENS_TOP_10` | Women's | Top 10 of IWLCA Coaches Poll |
-| `NCAA_WOMENS_TOP_25` | Women's | Full top 25 |
+| `NCAA_MENS_TOP_5` | Men's | Top 5 of the Inside Lacrosse D1 Men's Poll |
+| `NCAA_MENS_TOP_10` | Men's | Top 10 of the same poll |
+| `NCAA_MENS_TOP_20` | Men's | The full top 20 |
+| `NCAA_WOMENS_TOP_5` | Women's | Top 5 of the IWLCA Coaches Poll |
+| `NCAA_WOMENS_TOP_10` | Women's | Top 10 of the same poll |
+| `NCAA_WOMENS_TOP_25` | Women's | The full top 25 |
 
-Tokens can be mixed with literal abbreviations: `["NCAA_MENS_TOP_10", "JOHNS HOPKINS", "PRINCETON"]` tracks the current top 10 *plus* any of those two teams that aren't already in it.
+Tokens mix with literal abbreviations:
+`["NCAA_MENS_TOP_10", "JOHNS HOPKINS", "PRINCETON"]` tracks the current top ten
+*plus* either of those two schools that is not already in it.
 
-## Display Modes (plugin-level)
+## Display modes
 
-The plugin exposes six granular display modes the LEDMatrix host rotation can cycle through:
+Six modes — three per league — that the LEDMatrix host rotation cycles through
+independently.
 
-- `lax_ncaa_mens_live`, `lax_ncaa_mens_recent`, `lax_ncaa_mens_upcoming`
-- `lax_ncaa_womens_live`, `lax_ncaa_womens_recent`, `lax_ncaa_womens_upcoming`
+![The three men's display modes](../../docs/assets/lacrosse-scoreboard/display-modes.png)
 
-## Data Source
+| Mode | Shows | Top line |
+|---|---|---|
+| `lax_ncaa_mens_live` | Men's games in progress | Quarter and clock — `Q3 8:12`, or `OT1` past the fourth |
+| `lax_ncaa_mens_recent` | Finished men's games | `Final`, or `Final/OT` |
+| `lax_ncaa_mens_upcoming` | Scheduled men's games | `Next Game`, then the date and start time |
+| `lax_ncaa_womens_live` | Women's games in progress | As above |
+| `lax_ncaa_womens_recent` | Finished women's games | As above |
+| `lax_ncaa_womens_upcoming` | Scheduled women's games | As above |
 
-Scores and schedules come from ESPN's public site API:
+Each mode renders as **switch** (one game at a time, timed) or **scroll** (all
+games scroll horizontally at high FPS), set per league and per mode with
+`<league>.display_modes.<mode>_display_mode`.
 
-- Men's scoreboard: `https://site.api.espn.com/apis/site/v2/sports/lacrosse/mens-college-lacrosse/scoreboard`
-- Men's rankings: `https://site.api.espn.com/apis/site/v2/sports/lacrosse/mens-college-lacrosse/rankings`
-- Women's scoreboard: `https://site.api.espn.com/apis/site/v2/sports/lacrosse/womens-college-lacrosse/scoreboard`
-- Women's rankings: `https://site.api.espn.com/apis/site/v2/sports/lacrosse/womens-college-lacrosse/rankings`
+## The two leagues
 
-Team logos are fetched from `https://a.espncdn.com/i/teamlogos/ncaa/500/{team_id}.png` and cached locally under `assets/sports/ncaa_logos/`.
+The two leagues are configured separately and have their own managers, their own
+favorites, and their own poll.
 
-## Favorite Team Result Colors
+![Men's and women's live cards](../../docs/assets/lacrosse-scoreboard/leagues.png)
+
+Their config blocks are **identical in every setting except one**: `ncaa_mens`
+defaults to `enabled: true` and `ncaa_womens` to `enabled: false`. Every table
+under [Per-league settings](#per-league-settings) applies verbatim to both, with
+the prefix `ncaa_mens.` or `ncaa_womens.`.
+
+Both are spring sports: men's runs roughly January to late May, women's February
+to late May. Outside that window ESPN returns an empty schedule and there is
+nothing to draw.
+
+## How games are chosen
+
+**`upcoming_games_to_show` is not "how many cards you see".** It is the size of
+a *pool*. The panel cycles through that pool one card at a time and keeps its
+place between visits, so a pool of 3 means the board rotates through the same 3
+games until the schedule moves on. A bigger number gives you a *longer lap*, so
+any one game comes round **less** often.
+
+Which regime you are in depends on that league's `teams.favorite_teams` and
+`teams.favorite_teams_only`:
+
+| `favorite_teams` | `favorite_teams_only` | What you get |
+|---|---|---|
+| empty | either | The next N games league-wide, chronologically. Every game is a non-favorite game, so the `other_*` filters apply to all of them. |
+| set | **on** | Only your schools. The limit is a budget **per team**. |
+| set | **off** (default) | **Your schools first, then other games to fill.** Both limits are **totals**. |
+
+Note the key is `favorite_teams_only`, not `show_favorite_teams_only` as in the
+single-league scoreboards, and it defaults to **off** here.
+
+Within the other-games pool the better matchup leads and each team appears once.
+The pool is each team's *next* game ordered by the best poll position of either
+side, with ties falling back to start time. Your favorite schools are ordered by
+when they play, not by rank: for your own team the next game is the point.
+
+### Variety comes from turnover
+
+Rather than widening the pool, the non-favorite slice **moves**: the window
+advances by its own width every `filtering.other_rotation_interval_seconds`, so
+consecutive windows do not overlap and the board works through the schedule
+instead of resampling the front of it. Your favorites are not rotated.
+
+Both filters **fail open**: if the data behind them cannot be fetched, the game
+is allowed through. They fail open a second time as a set — if the filters
+between them leave nothing at all, the unfiltered list is used instead. Setting
+`other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one
+way to ask for an empty slate, and that is honoured.
+
+> **`other_games_divisions` does nothing here.** It needs ESPN's FBS/FCS group
+> rosters, which are a college *football* taxonomy; no lookup is even attempted
+> for lacrosse, so every game passes. `other_games_min_quality` **does** work in
+> this plugin, because NCAA lacrosse has a national poll to rank against — its
+> `ranked` default restricts non-favorite games to those involving a poll team.
+> (The schema's help text for it mentions a `broadcast` option the enum does not
+> offer.)
+
+### Live rotation
+
+When several games are live at once the rotation is weighted: a game involving
+one of your schools gets `teams.favorite_live_boost` turns for every one turn
+other live games get, and is queued first whenever the rotation refreshes. Set
+it to `1` for even rotation. A live game the API stops reporting for
+`update_intervals.stale_game_timeout` seconds is dropped, so an abandoned game
+does not sit on the board forever.
+
+## Panel sizes
+
+The scorebug is laid out from the panel dimensions rather than a fixed grid.
+
+![Live card at four panel sizes](../../docs/assets/lacrosse-scoreboard/panel-sizes.png)
+
+At 64x32 the two crests and the centre column share very little room; 128x32 or
+wider is a much better fit for this card.
+
+## Settings reference
+
+Settings marked **Advanced** sit behind the *Advanced* toggle in the web UI.
+Defaults are the schema defaults, which is what the web UI writes.
+
+### Plugin level
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `enabled` | boolean | `false` | Master on/off switch for the whole plugin. |
+| `timezone` | string | `""` | **Advanced.** IANA zone for start times, e.g. `America/New_York`. Blank follows the LEDMatrix global timezone, then the host system's, then UTC. |
+| `schedule_lookback_days` | 1–60 | `14` | **Advanced.** How far back to fetch for the Recent screens. |
+| `schedule_lookahead_days` | 1–60 | `7` | **Advanced.** How far ahead to fetch for Upcoming. A game beyond this horizon is never fetched, so it cannot reach the board even though the date is known. |
+| `no_data_interval_seconds` | 5–86400 | `300` | **Advanced.** Wait between live checks when nothing is live. Backs off further the longer nothing is found. |
+| `live_idle_max_interval_seconds` | 5–86400 | `900` | **Advanced.** Ceiling for that back-off. Useful out of season. |
+
+### Defaults
+
+Fallbacks used when the corresponding per-league setting is absent.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `defaults.display_duration` | 5–60 s | `15` | Per-game on-screen time. |
+| `defaults.show_records` | boolean | `false` | Draw win-loss records. |
+| `defaults.show_ranking` | boolean | `false` | Draw poll rank badges. |
+| `defaults.show_odds` | boolean | `false` | **Advanced.** Draw betting odds. |
+| `defaults.show_shots` | boolean | `false` | **Advanced.** Draw shot totals. See the troubleshooting note — ESPN does not currently publish them. |
+| `defaults.update_interval_seconds` | 30–86400 s | `3600` | **Advanced.** Base data refresh cadence. |
+| `defaults.season_cache_duration_seconds` | 3600–604800 s | `86400` | **Advanced.** How long season data is cached. |
+
+> **The per-league copy wins, and its default is different.** Each league's
+> `display_options.show_records` and `show_ranking` default to **`true`** while
+> `defaults.show_records` and `defaults.show_ranking` default to **`false`**.
+> Because the web UI writes schema defaults on save, a saved config already
+> carries the per-league `true`, and changing the `defaults` value then appears
+> to do nothing. Change the per-league setting.
+
+![show_records on and off](../../docs/assets/lacrosse-scoreboard/show-records.png)
+
+## Per-league settings
+
+Every table below exists twice, once under `ncaa_mens` and once under
+`ncaa_womens`, with identical types and defaults. `<league>` stands for either.
+
+### Enable and priority
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.enabled` | boolean | `true` for `ncaa_mens`, `false` for `ncaa_womens` | Build this league's managers at all. The only setting that differs between the two. |
+| `<league>.live_priority` | boolean | `false` | Let this league's live games interrupt the rotation and display immediately. |
+
+### Display modes
+
+| Key | Type | Default |
+|---|---|---|
+| `<league>.display_modes.live` | boolean | `true` |
+| `<league>.display_modes.recent` | boolean | `true` |
+| `<league>.display_modes.upcoming` | boolean | `true` |
+| `<league>.display_modes.live_display_mode` | `switch` \| `scroll` | `switch` |
+| `<league>.display_modes.recent_display_mode` | `switch` \| `scroll` | `switch` |
+| `<league>.display_modes.upcoming_display_mode` | `switch` \| `scroll` | `switch` |
+
+### Teams
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.teams.favorite_teams` | array | `[]` | Schools to prioritise. Full-name abbreviations, or a dynamic token. |
+| `<league>.teams.favorite_teams_only` | boolean | `false` | Show only your schools' games. |
+| `<league>.teams.show_all_live` | boolean | `false` | Show every live game regardless of favorites. |
+| `<league>.teams.exclude_teams` | array | `[]` | **Advanced.** Schools to always hide, from the live rotation and from finals alike (spoiler protection). Takes precedence over `favorite_teams` and `show_all_live`. |
+| `<league>.teams.favorite_live_boost` | 1–5 | `2` | **Advanced.** Turns a favorite's live game gets per one turn for other live games. `1` is even rotation. |
+
+### Filtering
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.filtering.recent_games_to_show` | 1–20 | `5` | Pool size for finished games. With favorites, per team; without, in total. |
+| `<league>.filtering.upcoming_games_to_show` | 1–50 | `10` | The same for scheduled games. |
+| `<league>.filtering.other_upcoming_games_to_show` | 0–20 | `10` | **Advanced.** How many non-favorite upcoming games to add. `0` gives favorites only. |
+| `<league>.filtering.other_recent_games_to_show` | 0–20 | `5` | **Advanced.** The same for finished games. |
+| `<league>.filtering.other_rotation_interval_seconds` | 0–86400 s | `1800` | **Advanced.** How often the non-favorite window advances. `0` pins it. |
+| `<league>.filtering.other_games_min_quality` | `any` \| `ranked` | `ranked` | **Advanced.** Restrict non-favorite games to those involving a poll team. Works in this plugin — lacrosse has a national poll. |
+| `<league>.filtering.other_games_divisions` | array | `["fbs"]` | **Advanced.** Inert here; a college football taxonomy. |
+
+### Update intervals
+
+All **Advanced**.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.update_intervals.base` | 60–900 s | `300` | Base data refresh. |
+| `<league>.update_intervals.live` | 10–300 s | `60` | Refresh while a game is live. |
+| `<league>.update_intervals.recent` | 60–86400 s | `3600` | Refresh for finished games. |
+| `<league>.update_intervals.upcoming` | 60–86400 s | `3600` | Refresh for the schedule. |
+| `<league>.update_intervals.odds` | 60–86400 s | `3600` | Refresh for betting odds. |
+| `<league>.update_intervals.stale_game_timeout` | 60–3600 s | `300` | Drop a live game the API has stopped updating. |
+
+### Display durations
+
+All **Advanced**.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.display_durations.base` | 5–60 s | `15` | Fallback per-game time. |
+| `<league>.display_durations.live` | 5–120 s | `15` | Per-game time for live games. Applies to games with a favorite when a non-favorite duration is set. |
+| `<league>.display_durations.non_favorite_live` | 0–120 s | `0` | Shorter turn for live games with no favorite. Only applies when favorites are set **and** non-favorite live games are shown. `0` means use the live duration for everything. |
+| `<league>.display_durations.recent` | 5–60 s | `15` | Per-game time on the Recent screen. |
+| `<league>.display_durations.upcoming` | 5–60 s | `15` | Per-game time on the Upcoming screen. |
+
+### Display options
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.display_options.show_records` | boolean | `true` | Draw win-loss records. Overrides `defaults.show_records`. |
+| `<league>.display_options.show_ranking` | boolean | `true` | Draw poll rank badges (`#1`, `#2`). Unranked teams show no badge, by design. |
+| `<league>.display_options.show_odds` | boolean | `false` | **Advanced.** Draw betting odds. |
+| `<league>.display_options.show_shots` | boolean | `false` | **Advanced.** Draw shot totals when ESPN publishes them. |
+
+### Mode durations
+
+How long the *whole mode* holds the board before the core rotates on. `null`
+means use the dynamic calculation. All **Advanced**, and read by the LEDMatrix
+core rather than by this plugin, which is why they do not appear in the plugin's
+own source.
+
+| Key | Type | Default |
+|---|---|---|
+| `<league>.mode_durations.live_mode_duration` | 10–600 s or `null` | `null` |
+| `<league>.mode_durations.recent_mode_duration` | 10–600 s or `null` | `null` |
+| `<league>.mode_durations.upcoming_mode_duration` | 10–600 s or `null` | `null` |
+
+When a mode cycles back it continues from the last game shown rather than
+restarting, so nothing repeats within a lap.
+
+### Dynamic duration
+
+Sizes each mode's total time from how much there is to show. All **Advanced**.
+
+| Key | Type | Default |
+|---|---|---|
+| `<league>.dynamic_duration.enabled` | boolean | `false` |
+| `<league>.dynamic_duration.max_duration_seconds` | 60–600 s | — |
+| `<league>.dynamic_duration.modes.live.enabled` | boolean | `false` |
+| `<league>.dynamic_duration.modes.live.max_duration_seconds` | 60–600 s | — |
+| `<league>.dynamic_duration.modes.recent.enabled` | boolean | `false` |
+| `<league>.dynamic_duration.modes.recent.max_duration_seconds` | 60–600 s | — |
+| `<league>.dynamic_duration.modes.upcoming.enabled` | boolean | `false` |
+| `<league>.dynamic_duration.modes.upcoming.max_duration_seconds` | 60–600 s | — |
+
+### Scroll settings
+
+All **Advanced**, and per league.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.scroll_settings.scroll_speed` | 1.0–200.0 px/s | `50.0` | Higher scrolls faster. |
+| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Frame delay; `0.01` is 100 FPS. Lower is smoother. |
+| `<league>.scroll_settings.gap_between_games` | 8–128 px | `48` | Gap between game cards. |
+| `<league>.scroll_settings.show_league_separators` | boolean | `true` | Draw NCAA league icons between leagues. |
+| `<league>.scroll_settings.dynamic_duration` | boolean | `true` | Size the scroll duration from the content width. |
+| `<league>.scroll_settings.game_card_width` | 32–512 px | `128` | Card width. Lower it on a multi-panel chain to fit more games on screen at once. |
+
+## Fonts, colours and layout
+
+Seven text elements, each with `font`, `font_size`, and `text_color`, under
+`customization.<element>`. All **Advanced**. Available faces:
+`PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`.
+
+| Element | Default font | Default size | Draws |
+|---|---|---|---|
+| `score_text` | `PressStart2P-Regular.ttf` | `10` | The score, and the matchup separator on an upcoming card |
+| `period_text` | `PressStart2P-Regular.ttf` | `8` | The quarter and clock, and the date/time on an upcoming scoreboard |
+| `team_name` | `PressStart2P-Regular.ttf` | `8` | Team names and abbreviations |
+| `status_text` | `4x6-font.ttf` | `6` | Status lines such as "Next Game" |
+| `detail_text` | `4x6-font.ttf` | `6` | Small detail lines |
+| `rank_text` | `PressStart2P-Regular.ttf` | `10` | Poll rank badges |
+| `odds_text` | `4x6-font.ttf` | `6` | Betting odds (defaults to green, `[0, 255, 0]`) |
+
+Odds font sizes snap to the face's pixel grid to stay crisp: `4x6-font.ttf`
+snaps to 7, 14, 21; press_start to 8, 16. Every `customization.<element>` object
+sets `additionalProperties: false`.
+
+### Layout offsets
+
+Nudge any element in pixels. All default to `0`, all are **Advanced**, all live
+under `customization.layout.<element>`, and all set
+`additionalProperties: false`.
+
+| Element | Keys | Measured from |
+|---|---|---|
+| `home_logo`, `away_logo` | `x_offset`, `y_offset` | Default logo position |
+| `score` | `x_offset`, `y_offset` | Panel centre |
+| `status_text` | `x_offset`, `y_offset` | Centre horizontally, top vertically |
+| `date` | `x_offset`, `y_offset` | Centre horizontally, default position vertically |
+| `time` | `x_offset`, `y_offset` | Centre horizontally, the date's position vertically |
+| `records` | `away_x_offset`, `home_x_offset`, `y_offset` | Away from the left, home from the right, both from the bottom |
+
+## Matchup separator and the upcoming card middle
+
+The **Matchup Card Layout** section (`scroll_card`) controls what sits between
+the two crests before a game starts, and how the date and time are written.
+These settings are plugin-wide, not per league, and apply to every display mode.
+
+| Setting | Key | Default | What it does |
+|---|---|---|---|
+| Matchup Separator | `scroll_card.vs_text` | `VS` | Text between the teams: `VS`, `@`, `at`, `v`. The away side is always on the left, so `@` and `at` read as "away at home". Blank draws nothing. |
+| Middle of an Upcoming Card | `scroll_card.upcoming_center` | `vs` | Scroll and Vegas cards: `vs`, `date_time`, or `none`. |
+| Middle of a Full-Screen Upcoming Scoreboard | `scroll_card.switch_upcoming_center` | `date_time` | The same choice for the full-screen scoreboard, plus `inherit` to follow the row above. |
+| Date Format | `scroll_card.date_format` | `abbrev` | Scroll and Vegas cards: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
+| Full-Screen Date Format | `scroll_card.switch_date_format` | `numeric` | **Advanced.** The same for the full-screen scoreboard, plus `inherit`. It has its own default because the two displays disagree about what is normal. |
+| Time Format | `scroll_card.time_format` | `12h` | 12- or 24-hour clock. |
+| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line. |
+| Swap Date and Time | `scroll_card.swap_date_time` | `false` | Flip the two lines. Each display starts from its own order, so this flips rather than forces. |
+
+The centre-gap settings size the scroll and Vegas card's middle strip only — the
+full-screen scoreboard pins its crests to the panel edges and is unaffected.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `scroll_card.center_gap` | 0–64 px | unset | Pixels kept clear down the middle. Unset scales with card width; `0` restores edge-to-edge logos. |
+| `scroll_card.center_gap_ratio` | 0.0–0.6 | `0.28` | **Advanced.** Fraction of card width used when the gap is not pinned. |
+| `scroll_card.center_gap_min` | 0–64 px | `22` | **Advanced.** Floor for the scaled gap. |
+| `scroll_card.center_gap_max` | 0–96 px | `40` | **Advanced.** Ceiling for the scaled gap. |
+
+```json
+{
+  "scroll_card": {
+    "vs_text": "@",
+    "switch_upcoming_center": "vs",
+    "date_format": "weekday"
+  }
+}
+```
+
+## Text colours
+
+Each `customization.<element>.text_color` colours the text drawn in that
+element's face, on the full-screen scoreboard and on the scroll and Vegas cards
+alike. Colours are `[r, g, b]` or `"#RRGGBB"`. Every default is white except
+`odds_text`, which is green.
+
+```json
+{
+  "customization": {
+    "score_text": { "text_color": [255, 200, 0] },
+    "status_text": { "text_color": "#00A0FF" }
+  }
+}
+```
+
+The betting-odds figures keep their own colours — they are tinted by which side
+is favoured — and so does a finished game's score when **Favorite Team Result
+Colors** is on.
+
+## Favorite team result colours
 
 A run of games against the same opponent is hard to read at a glance: in scroll
-and Vegas mode the same two logos go past several times and only the digits
-change. Turn on **Customization -> Favorite Team Result Colors** to color a
-finished game's score by how your favorite team did - green for a win, red for
-a loss.
+and Vegas mode the same two crests go past several times and only the digits
+change. Turn this on to colour a finished game's score by how your school did.
+
+| Key | Type | Default |
+|---|---|---|
+| `customization.favorite_result_colors.enabled` | boolean | `false` |
+| `customization.favorite_result_colors.win_color` | `[r, g, b]` | `[0, 255, 0]` |
+| `customization.favorite_result_colors.loss_color` | `[r, g, b]` | `[255, 0, 0]` |
+| `customization.favorite_result_colors.tie_color` | `[r, g, b]` | `[255, 200, 0]` |
 
 ```json
 {
@@ -272,96 +495,20 @@ a loss.
 }
 ```
 
-- Off by default. Until you enable it the score keeps exactly the color it has
-  today.
-- Only finished games are colored. Live and upcoming cards are untouched.
-- A game needs exactly one favorite team. If neither side is a favorite, or both
-  are, the score keeps its normal color.
-- Applies to both the one-game-at-a-time switch view and the scroll/Vegas
-  ticker.
-- The three colors are Advanced settings; leave them alone for the defaults
-  above.
+- Only finished games are coloured; live and upcoming cards are untouched.
+- A game needs **exactly one** favorite school. Neither side or both, and the
+  score keeps its normal colour.
+- The three colours are Advanced settings.
 
-## Troubleshooting
-
-
-
-- **Start times look like UTC** (a 6:45pm Central start showing as 11:45PM):
-  the plugin couldn't read your global timezone. Set `timezone` under the
-  plugin's Advanced Settings to your IANA zone, e.g. `America/Chicago`.
-**My favorite team doesn't show up.** You're almost certainly using a short abbreviation like `UNC` or `JHU`. Lacrosse abbreviations are the full school name in uppercase — see **Team Abbreviations** above.
-
-**No games appear at all.** NCAA lacrosse is a spring sport. Men's runs roughly January through late May; women's runs February through late May. Outside that window, the ESPN scoreboard endpoint returns an empty `events[]` array and the plugin has nothing to display.
-
-**Rank badges (`#1`, `#2`) aren't appearing.** Ensure `display_options.show_ranking: true` (the default). Rankings are cached for 1 hour and are only populated for teams that appear in the current poll. Unranked teams show no badge, which is intentional.
-
-**Shot totals are always 0.** ESPN's lacrosse feed does not currently expose per-team shot counts in the `competitors[].statistics` array the way hockey does for saves. The `show_shots` toggle is wired but will remain empty until ESPN publishes the stat. Leave it off for now.
-
-**Tournament games show `TBD` placeholders.** ESPN uses team IDs `-1` and `-2` for bracket slots where the opponent hasn't been determined yet. The plugin renders these as text placeholders — they'll resolve to real logos once the bracket is set.
-
-**A team's logo is missing or looks wrong.** Delete the cached logo at `assets/sports/ncaa_logos/{ABBR}.png` (use the exact file name, spaces and all) and the plugin will re-download it from ESPN on the next update.
-
-## Testing
-
-A standalone smoke test is included at `test_lacrosse_plugin.py`:
-
-```bash
-cd plugins/lacrosse-scoreboard
-python test_lacrosse_plugin.py
-```
-
-It stubs the LEDMatrix host modules, imports every plugin module, exercises the dynamic team resolver against live ESPN rankings, and runs a 50-event window of both men's and women's scoreboard data through `Lacrosse._extract_game_details`, asserting that required fields are populated. No external test framework is required.
-
-## 🎯 Which Games Get Shown
-
-**`upcoming_games_to_show` is not "how many cards you see".** It is the size of a *pool*. The panel cycles through that pool one card at a time and keeps its place between visits, so a pool of 3 means the board rotates through the same 3 games until the schedule moves on. Making the number bigger gives you a *longer lap*, so any one game comes round **less** often.
-
-Which mode you are in depends on whether `favorite_teams` is set and whether `show_favorite_teams_only` is on:
-
-| `favorite_teams` | `show_favorite_teams_only` | What you get |
-|---|---|---|
-| empty | either | The next N games league-wide, chronologically. Every game shown is a non-favorite game, so the two filters below apply to all of them. |
-| set | **on** | Only your teams. The limit is a budget **per team**. |
-| set | **off** | **Your teams first, then other games to fill.** Both limits are **totals**. |
-
-The third row is what most people want, and it did not exist before: with the flag off, favorites used to be ignored *entirely*.
-
-### The settings
-
-| Option | Default | Description |
-|---|---|---|
-| `upcoming_games_to_show` | varies | How many **favorite** upcoming games to show. |
-| `recent_games_to_show` | varies | The same, for finished games. |
-| `other_upcoming_games_to_show` | matches `upcoming_games_to_show` | How many **non-favorite** upcoming games to add. `0` gives you favorites only. |
-| `other_recent_games_to_show` | matches `recent_games_to_show` | The same, for finished games. |
-| `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
-| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked`, `broadcast`, or `any`. |
-| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. College football only — see the note below. |
-
-**Your favorite teams are never filtered by the last two** — follow a smaller-division team and its games always appear. Those settings only decide what fills the *remaining* slots.
-
-Within the other-games pool, **the better matchup leads**, and each team appears once. The pool is each team's *next* game ordered by the best poll position of either side, so a top-five matchup sits in the first window rather than whichever kicks off soonest — and the #1 team's whole season does not sort above everyone else's opener. Ties fall back to kickoff order, and a league with no poll keeps chronological order. Your favorite teams are ordered by when they play, not by rank -- for your own team the next game is the point.
-
-### Variety comes from turnover
-
-Rather than widening the pool, the non-favorite slice **moves**: the window advances by its own width every `other_rotation_interval_seconds`, so consecutive windows do not overlap and the board works through the schedule instead of resampling the front of it. Your favorites are not rotated — for upcoming games the soonest ones are the point.
-
-Both filters **fail open**: if the data behind them cannot be fetched, the game is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
-
-They fail open a second time, as a set: if the filters between them leave **nothing at all** — your teams idle and every other game rejected — the unfiltered list is used instead. Setting `other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one way to ask for an empty slate, and that is honoured.
-
-> `other_games_min_quality` needs a national poll, which only the college leagues publish — set to `ranked` in a professional league it lets every game through, and no poll is requested. `other_games_divisions` needs ESPN's FBS/FCS group rosters, which exist for **college football and nothing else**: asked for any other college league they come back empty or 500, so the setting is inert here and no lookup is made.
-
-
-## License
-
-See `LICENSE` in this directory.
+This tint is applied by the LEDMatrix core rather than by the plugin, which is
+why the keys do not appear in this plugin's source.
 
 ## Vegas ticker: seeing live games more often
 
 By default a live game **takes over** the display: the Vegas ticker stops and
-this scoreboard shows full screen until the game ends. If you would rather keep
-the marquee scrolling and still see scores, set this in the core config:
+this scoreboard shows full screen until the game ends. To keep the marquee
+scrolling and still see scores, set this in the **core** config — not in this
+plugin's settings:
 
 ```json
 {
@@ -376,94 +523,111 @@ the marquee scrolling and still see scores, set this in the core config:
 ```
 
 The ticker is otherwise a strict round robin — every plugin appears once per
-cycle — so with a dozen plugins enabled a score comes round once a lap. These
-weights let this plugin claim several slots per cycle, spaced evenly through
-it rather than bunched together.
-
-`live_weight` applies whenever this scoreboard has a live game.
-`favorite_live_weight` applies when one of your `favorite_teams` is playing, so
-your team's game comes round more often than other live games. That distinction
-has to be made here rather than in the core, which can tell *that* a game is
-live but not *whose*.
-
-Two things to keep in mind:
+cycle. These weights let this plugin claim several slots per cycle, spaced
+evenly through it rather than bunched together. `live_weight` applies whenever
+this scoreboard has a live game; `favorite_live_weight` applies when one of your
+schools is playing. That distinction has to be made here rather than in the
+core, which can tell *that* a game is live but not *whose*.
 
 - The weight is per **plugin**, not per game. With four games live this
   scoreboard still occupies one slot at a time and picks between its own games
-  using `favorite_live_boost`; these weights control how often the scoreboard
-  itself comes round.
-- More slots make the cycle **longer**, not faster — everything else appears
-  proportionally less often. And appearing more often only helps if the data is
-  fresh, which is governed by this plugin's own live update interval.
+  using `favorite_live_boost`.
+- More slots make the cycle **longer**, not faster.
 
-## Matchup separator and the upcoming card middle
+## Data source
 
-The **Matchup Card Layout** section (advanced) controls what sits between the
-two team logos before a game starts, and how the date and time are written.
-These settings now apply to every display mode -- the scroll ticker, the Vegas
-ticker, and the full-screen scoreboard -- rather than only the tickers.
+ESPN's public site API, no key required:
 
-| Setting | Key | Default | What it does |
-|---|---|---|---|
-| Matchup Separator | `vs_text` | `VS` | Text drawn between the teams: `VS`, `@`, `at`, `v`. The away team is always on the left, so `@` and `at` read as "away at home". Blank draws nothing. |
-| Middle of an Upcoming Card | `upcoming_center` | `vs` | Scroll and Vegas cards: the separator, the date and time stacked, or nothing. |
-| Middle of a Full-Screen Upcoming Scoreboard | `switch_upcoming_center` | `date_time` | The same choice for the full-screen scoreboard, plus `inherit` to follow the setting above. It defaults to the stacked date and time, which is what this display has always shown, so nothing changes until you pick something else. |
-| Date Format | `date_format` | `abbrev` | How the scroll and Vegas cards write the date: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
-| Full-Screen Date Format | `switch_date_format` | `numeric` | The same choice for the full-screen scoreboard, plus `inherit` to follow the row above. It has its own default because the two displays disagree about what is normal: the cards have always written `Sep 19` and the full-screen scoreboard `9/19`, so a single shared default would restyle one of them. |
-| Time Format | `time_format` | `12h` | 12- or 24-hour clock. |
-| Show Date / Show Time | `show_date`, `show_time` | `true` | Drop either line. |
-| Swap Date and Time | `swap_date_time` | `false` | Swap the two lines over. Each display starts from its own order, so this flips them rather than forcing one: the scroll and Vegas cards put the time on top, the full-screen date/time stack puts the date on top. |
+- Men's scoreboard: `https://site.api.espn.com/apis/site/v2/sports/lacrosse/mens-college-lacrosse/scoreboard`
+- Men's rankings: `https://site.api.espn.com/apis/site/v2/sports/lacrosse/mens-college-lacrosse/rankings`
+- Women's scoreboard: `https://site.api.espn.com/apis/site/v2/sports/lacrosse/womens-college-lacrosse/scoreboard`
+- Women's rankings: `https://site.api.espn.com/apis/site/v2/sports/lacrosse/womens-college-lacrosse/rankings`
 
-Choosing the separator for the full-screen scoreboard moves the date and time
-out of the middle and onto the top and bottom rows, the same way the scroll
-card lays them out; the "Next Game" header gives up the top row to them.
+Crests are fetched from `https://a.espncdn.com/i/teamlogos/ncaa/500/{team_id}.png`
+and cached under `assets/sports/ncaa_logos/`. Rankings are cached for an hour.
 
-The center-gap settings in the same section size the scroll and Vegas card's
-middle strip only -- the full-screen scoreboard pins its logos to the panel
-edges and is unaffected.
+## Requirements and installation
 
-Example:
+- Python 3.9+
+- LEDMatrix core 2.0.0 or newer
+- A 64x32 panel minimum; 128x32 or wider recommended
+- Internet access to reach ESPN
 
-```json
-{
-  "scroll_card": {
-    "vs_text": "@",
-    "switch_upcoming_center": "vs",
-    "date_format": "weekday"
-  }
-}
+Install from the Plugin Store in the LEDMatrix web UI: open
+`http://your-pi-ip:5000`, go to **Plugin Manager**, find **Lacrosse Scoreboard**
+under **Plugin Store**, and click **Install**. Crests download on first sight.
+
+Manual install from source:
+
+```bash
+cd /path/to/LEDMatrix
+python -m pip install --user pillow requests pytz
+cp -r /path/to/ledmatrix-plugins/plugins/lacrosse-scoreboard plugin-repos/
+sudo systemctl restart ledmatrix
 ```
 
-### Text Colours
+Dependencies, from `requirements.txt`: `Pillow>=9.0.0` (image compositing),
+`requests>=2.28.0` (ESPN calls), `pytz>=2022.1` (timezone conversion), and
+`urllib3>=1.26.0` (HTTP retry logic). All are present in a typical LEDMatrix
+install.
 
-Each text element in the **Customization** section carries a colour, and it now
-applies to the text drawn in that element's face — on the full-screen scoreboard
-and on the scroll and Vegas cards alike. Until this version the picker changed
-only which font was loaded; every string was drawn white.
+## Testing
 
-| Element | Key | Colours |
-|---|---|---|
-| Score | `score_text` | The score, and the matchup separator on an upcoming card |
-| Period / clock | `period_text` | The clock, period, and the date and time on an upcoming scoreboard |
-| Team name | `team_name` | Team names and abbreviations |
-| Status | `status_text` | Status lines such as "Next Game" |
-| Detail | `detail_text` | Small detail lines |
-| Ranking | `rank_text` | Team rankings drawn in the ranking face |
+A standalone smoke test is included:
 
-Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white, so a display
-nobody has recoloured looks exactly as it did.
-
-```json
-{
-  "customization": {
-    "score_text": { "text_color": [255, 200, 0] },
-    "status_text": { "text_color": "#00A0FF" }
-  }
-}
+```bash
+cd plugins/lacrosse-scoreboard && python test_lacrosse_plugin.py
 ```
 
-Two things keep their own colours on purpose: the betting-odds figures, which
-are coloured by which side is favoured, and a finished game's score when
-**Favorite Team Result Colors** is on — that tint wins, and your score colour
-shows on every other game. Records and rankings drawn in the small fixed face
-stay white; no element in the schema owns that face.
+It stubs the LEDMatrix host modules, imports every plugin module, exercises the
+dynamic team resolver against live ESPN rankings, and runs a 50-event window of
+both men's and women's scoreboard data through `Lacrosse._extract_game_details`,
+asserting the required fields are populated. No test framework required.
+
+The documentation images come from `docs/assets/lacrosse-scoreboard/shots.json`
+and re-render with `python scripts/render_docs_assets.py --plugin
+lacrosse-scoreboard --check`.
+
+## Troubleshooting
+
+**My favorite team doesn't show up.** You are almost certainly using a short
+abbreviation like `UNC` or `JHU`. Lacrosse abbreviations are the full school
+name in uppercase — see [Team abbreviations](#team-abbreviations).
+
+**No games appear at all.** Both are spring sports. Men's runs roughly January
+through late May, women's February through late May. Outside that window ESPN
+returns an empty schedule and there is nothing to draw. Check too that both
+`enabled` and the league's own `enabled` are on — `ncaa_womens` is off by
+default.
+
+**Records or rank badges are on when I turned them off.** You changed the
+`defaults` copy. The per-league `display_options` copy wins and defaults to
+`true`; change that one.
+
+**Start times look like UTC.** The plugin could not read your global timezone.
+Set `timezone` under Advanced Settings to your IANA zone, e.g.
+`America/New_York`.
+
+**Rank badges aren't appearing.** Confirm `<league>.display_options.show_ranking`
+is `true`. Rankings cache for an hour and only populate for teams in the current
+poll; unranked teams show no badge by design.
+
+**Shot totals are always 0.** ESPN's lacrosse feed does not expose per-team shot
+counts the way its hockey feed exposes saves. `show_shots` is wired but stays
+empty until ESPN publishes the stat. Leave it off.
+
+**Tournament games show `TBD` placeholders.** ESPN uses team IDs `-1` and `-2`
+for bracket slots with no opponent yet. These resolve to real crests once the
+bracket is set.
+
+**A crest is missing or wrong.** Delete the cached file at
+`assets/sports/ncaa_logos/{ABBR}.png` — the exact file name, spaces and all —
+and it re-downloads on the next update.
+
+**A game I know about never appears.** It may be beyond
+`schedule_lookahead_days` (default 7). A game outside that horizon is never
+fetched.
+
+## License
+
+See `LICENSE`.
