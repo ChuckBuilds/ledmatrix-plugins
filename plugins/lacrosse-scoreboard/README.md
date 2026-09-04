@@ -5,6 +5,13 @@ LEDMatrix display, from ESPN's public API. No API key required.
 
 ![NCAA men's lacrosse live scorebug](../../docs/assets/lacrosse-scoreboard/hero.png)
 
+> **Upgrading from before 1.1.0:** the display modes gained a `lax_` prefix
+> (`lax_ncaa_mens_recent` rather than `ncaa_mens_recent`) so they no longer
+> collide with the NCAA hockey modes that `hockey-scoreboard` exposes. If you
+> pinned any of the old unprefixed names in `display_durations`,
+> `rotation_order`, or anywhere else in `config.json`, update them. The
+> [CHANGELOG](CHANGELOG.md) has the full mapping.
+
 ## Contents
 
 - [Quick start](#quick-start)
