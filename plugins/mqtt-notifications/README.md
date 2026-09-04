@@ -72,6 +72,65 @@ Add the following to your `config/config.json`:
 }
 ```
 
+## What it looks like
+
+![A notification on a 128x32 panel](../../docs/assets/mqtt-notifications/hero.png)
+
+A message is drawn as a single line of text. Long messages scroll by default;
+short ones fit as they are.
+
+![Scrolling on and off](../../docs/assets/mqtt-notifications/scroll.png)
+
+`text.scroll` is on by default. With it off the message is drawn once and
+centred, which suits short alerts and costs no CPU between redraws.
+
+### Appearance
+
+![Default, recoloured, and a smaller face](../../docs/assets/mqtt-notifications/appearance.png)
+
+| Key | Default | What it does |
+|---|---|---|
+| `text.font_path` | `assets/fonts/PressStart2P-Regular.ttf` | Font file, TTF or BDF. Relative to the project root, or absolute. |
+| `text.font_size` | `8` | Size in pixels. |
+| `text.text_color` | `[255, 255, 255]` | RGB triple. |
+| `text.background_color` | `[0, 0, 0]` | RGB triple. |
+| `text.scroll` | `true` | Scroll the message rather than drawing it once. |
+| `text.scroll_speed` | `30` | Pixels per second. Higher is faster. |
+| `text.scroll_gap_width` | `32` | Pixels of gap between scroll loops. |
+| `customization.message_text.font` | `PressStart2P-Regular.ttf` | Picked from a list in the web UI: `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`, `5x7.bdf`, `4x6.bdf`. Overrides `text.font_path` when set. |
+| `customization.message_text.font_size` | `8` | Size for that face. |
+
+The two font routes exist because `text.font_path` takes any path while
+`customization.message_text.font` offers a dropdown of the bundled faces. The
+`customization` block wins when it loads successfully; colours come from `text`
+either way, since `customization` carries no colour keys.
+
+### Panel sizes
+
+![The card at four panel sizes](../../docs/assets/mqtt-notifications/panel-sizes.png)
+
+The plugin passes the render-safety harness on every supported size.
+
+### Connection and timing settings
+
+| Key | Default | What it does |
+|---|---|---|
+| `enabled` | `false` | Master on/off switch. Off by default. |
+| `mqtt.host` | `localhost` | Broker hostname or IP. |
+| `mqtt.port` | `1883` | Broker port. |
+| `mqtt.username` | `""` | Optional. |
+| `mqtt.password` | `""` | Optional. |
+| `mqtt.client_id` | `ledmatrix-mqtt-notifications` | Client id the plugin connects with. Change it if you run two boards against one broker, since a broker will disconnect a duplicate id. |
+| `mqtt.keepalive` | `60` | Keepalive interval in seconds. |
+| `mqtt.topics` | `["homeassistant/ledmatrix/+"]` | Topics to subscribe to. `+` matches one level, `#` matches the rest. |
+| `display.default_duration` | `10` | How long a message holds the screen when its payload does not set `duration`. |
+| `display_duration` | `10` | **Inert in this plugin.** The core reads this as a plugin's screen time, but this plugin overrides that accessor and returns `display.default_duration` instead, so setting the root key alone changes nothing. Set `display.default_duration`. |
+| `update_interval` | `60` | How often the core calls the plugin's `update()`, which checks connection health. The MQTT client itself runs on its own thread, so this does not affect how quickly a message appears. |
+
+`mqtt`, `display`, `text`, `customization` and `customization.message_text` all
+set `additionalProperties: false`, so a misspelled key is rejected rather than
+quietly ignored.
+
 ## Message Format
 
 Send JSON messages to the configured MQTT topics. The message format is:
