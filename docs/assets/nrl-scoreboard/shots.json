@@ -1,0 +1,832 @@
+{
+  "plugin": "nrl-scoreboard",
+  "_comment": "Games are seeded onto the per-mode sub-managers, not the plugin: the scoreboards keep their state on self._managers, and every mode's display() returns early unless games_list is populated. display_mode picks which screen is drawn -- without it the plugin's no-argument path selects nothing and renders blank. The card reads home_logo_path/away_logo_path off the game dict as Path objects; the docs shim coerces the *_path strings. Logos come from the core's assets/sports/nrl_logos, which is why the renderer runs with the LEDMatrix root as its working directory. Teams, scores and records are invented. The bundled PEN/MEL logo files are grey placeholders -- real crests are fetched at runtime by the core's logo downloader -- so they render as grey blocks here.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-13T09:50:00+00:00",
+    "skip_update": true,
+    "config": {
+      "enabled": true
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "display_mode": "nrl_live",
+      "attrs": {
+        "_managers.live.games_list": [
+          {
+            "id": "401",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "24",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "2H 12:34",
+            "status_text": "LIVE",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.live.current_game": {
+          "id": "401",
+          "away_abbr": "PEN",
+          "home_abbr": "MEL",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "18",
+          "home_score": "24",
+          "away_record": "18-6",
+          "home_record": "20-4",
+          "period_text": "2H 12:34",
+          "status_text": "LIVE",
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_within_window": true,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "9/13",
+          "game_time": "7:50pm",
+          "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+          "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+        },
+        "_managers.live.current_game_index": 0,
+        "_managers.live.last_game_switch": 9000000000.0,
+        "_managers.live.last_update": 9000000000.0,
+        "_managers.live.live_games": [
+          {
+            "id": "401",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "24",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "2H 12:34",
+            "status_text": "LIVE",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.live.active_celebration": null
+      }
+    },
+    {
+      "name": "m-live",
+      "display_mode": "nrl_live",
+      "standalone": false,
+      "attrs": {
+        "_managers.live.games_list": [
+          {
+            "id": "401",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "24",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "2H 12:34",
+            "status_text": "LIVE",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.live.current_game": {
+          "id": "401",
+          "away_abbr": "PEN",
+          "home_abbr": "MEL",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "18",
+          "home_score": "24",
+          "away_record": "18-6",
+          "home_record": "20-4",
+          "period_text": "2H 12:34",
+          "status_text": "LIVE",
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_within_window": true,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "9/13",
+          "game_time": "7:50pm",
+          "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+          "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+        },
+        "_managers.live.current_game_index": 0,
+        "_managers.live.last_game_switch": 9000000000.0,
+        "_managers.live.last_update": 9000000000.0,
+        "_managers.live.live_games": [
+          {
+            "id": "401",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "24",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "2H 12:34",
+            "status_text": "LIVE",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.live.active_celebration": null
+      }
+    },
+    {
+      "name": "m-recent",
+      "display_mode": "nrl_recent",
+      "standalone": false,
+      "attrs": {
+        "_managers.recent.games_list": [
+          {
+            "id": "402",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "30",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "",
+            "clock": "",
+            "status_text": "Final",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": false,
+            "is_final": true,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.recent.current_game": {
+          "id": "402",
+          "away_abbr": "PEN",
+          "home_abbr": "MEL",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "18",
+          "home_score": "30",
+          "away_record": "18-6",
+          "home_record": "20-4",
+          "period_text": "",
+          "clock": "",
+          "status_text": "Final",
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_within_window": true,
+          "is_live": false,
+          "is_final": true,
+          "is_upcoming": false,
+          "game_date": "9/13",
+          "game_time": "7:50pm",
+          "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+          "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+        },
+        "_managers.recent.current_game_index": 0,
+        "_managers.recent.last_game_switch": 9000000000.0,
+        "_managers.recent.last_update": 9000000000.0
+      }
+    },
+    {
+      "name": "m-upcoming",
+      "display_mode": "nrl_upcoming",
+      "standalone": false,
+      "attrs": {
+        "_managers.upcoming.games_list": [
+          {
+            "id": "403",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "",
+            "clock": "",
+            "status_text": "",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.upcoming.current_game": {
+          "id": "403",
+          "away_abbr": "PEN",
+          "home_abbr": "MEL",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "18-6",
+          "home_record": "20-4",
+          "period_text": "",
+          "clock": "",
+          "status_text": "",
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_within_window": true,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "9/13",
+          "game_time": "7:50pm",
+          "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+          "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+        },
+        "_managers.upcoming.current_game_index": 0,
+        "_managers.upcoming.last_game_switch": 9000000000.0,
+        "_managers.upcoming.last_update": 9000000000.0
+      }
+    },
+    {
+      "name": "rec-on",
+      "display_mode": "nrl_upcoming",
+      "standalone": false,
+      "attrs": {
+        "_managers.upcoming.games_list": [
+          {
+            "id": "403",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "",
+            "clock": "",
+            "status_text": "",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.upcoming.current_game": {
+          "id": "403",
+          "away_abbr": "PEN",
+          "home_abbr": "MEL",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "18-6",
+          "home_record": "20-4",
+          "period_text": "",
+          "clock": "",
+          "status_text": "",
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_within_window": true,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "9/13",
+          "game_time": "7:50pm",
+          "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+          "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+        },
+        "_managers.upcoming.current_game_index": 0,
+        "_managers.upcoming.last_game_switch": 9000000000.0,
+        "_managers.upcoming.last_update": 9000000000.0
+      },
+      "config": {
+        "show_records": true
+      }
+    },
+    {
+      "name": "rec-off",
+      "display_mode": "nrl_upcoming",
+      "standalone": false,
+      "attrs": {
+        "_managers.upcoming.games_list": [
+          {
+            "id": "403",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "",
+            "clock": "",
+            "status_text": "",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.upcoming.current_game": {
+          "id": "403",
+          "away_abbr": "PEN",
+          "home_abbr": "MEL",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "18-6",
+          "home_record": "20-4",
+          "period_text": "",
+          "clock": "",
+          "status_text": "",
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_within_window": true,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "9/13",
+          "game_time": "7:50pm",
+          "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+          "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+        },
+        "_managers.upcoming.current_game_index": 0,
+        "_managers.upcoming.last_game_switch": 9000000000.0,
+        "_managers.upcoming.last_update": 9000000000.0
+      },
+      "config": {
+        "show_records": false
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "display_mode": "nrl_live",
+      "standalone": false,
+      "attrs": {
+        "_managers.live.games_list": [
+          {
+            "id": "401",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "24",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "2H 12:34",
+            "status_text": "LIVE",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.live.current_game": {
+          "id": "401",
+          "away_abbr": "PEN",
+          "home_abbr": "MEL",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "18",
+          "home_score": "24",
+          "away_record": "18-6",
+          "home_record": "20-4",
+          "period_text": "2H 12:34",
+          "status_text": "LIVE",
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_within_window": true,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "9/13",
+          "game_time": "7:50pm",
+          "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+          "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+        },
+        "_managers.live.current_game_index": 0,
+        "_managers.live.last_game_switch": 9000000000.0,
+        "_managers.live.last_update": 9000000000.0,
+        "_managers.live.live_games": [
+          {
+            "id": "401",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "24",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "2H 12:34",
+            "status_text": "LIVE",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.live.active_celebration": null
+      }
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "display_mode": "nrl_live",
+      "standalone": false,
+      "attrs": {
+        "_managers.live.games_list": [
+          {
+            "id": "401",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "24",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "2H 12:34",
+            "status_text": "LIVE",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.live.current_game": {
+          "id": "401",
+          "away_abbr": "PEN",
+          "home_abbr": "MEL",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "18",
+          "home_score": "24",
+          "away_record": "18-6",
+          "home_record": "20-4",
+          "period_text": "2H 12:34",
+          "status_text": "LIVE",
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_within_window": true,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "9/13",
+          "game_time": "7:50pm",
+          "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+          "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+        },
+        "_managers.live.current_game_index": 0,
+        "_managers.live.last_game_switch": 9000000000.0,
+        "_managers.live.last_update": 9000000000.0,
+        "_managers.live.live_games": [
+          {
+            "id": "401",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "24",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "2H 12:34",
+            "status_text": "LIVE",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.live.active_celebration": null
+      }
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "display_mode": "nrl_live",
+      "standalone": false,
+      "attrs": {
+        "_managers.live.games_list": [
+          {
+            "id": "401",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "24",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "2H 12:34",
+            "status_text": "LIVE",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.live.current_game": {
+          "id": "401",
+          "away_abbr": "PEN",
+          "home_abbr": "MEL",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "18",
+          "home_score": "24",
+          "away_record": "18-6",
+          "home_record": "20-4",
+          "period_text": "2H 12:34",
+          "status_text": "LIVE",
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_within_window": true,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "9/13",
+          "game_time": "7:50pm",
+          "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+          "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+        },
+        "_managers.live.current_game_index": 0,
+        "_managers.live.last_game_switch": 9000000000.0,
+        "_managers.live.last_update": 9000000000.0,
+        "_managers.live.live_games": [
+          {
+            "id": "401",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "24",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "2H 12:34",
+            "status_text": "LIVE",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.live.active_celebration": null
+      }
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "display_mode": "nrl_live",
+      "standalone": false,
+      "attrs": {
+        "_managers.live.games_list": [
+          {
+            "id": "401",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "24",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "2H 12:34",
+            "status_text": "LIVE",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.live.current_game": {
+          "id": "401",
+          "away_abbr": "PEN",
+          "home_abbr": "MEL",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "18",
+          "home_score": "24",
+          "away_record": "18-6",
+          "home_record": "20-4",
+          "period_text": "2H 12:34",
+          "status_text": "LIVE",
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_within_window": true,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "9/13",
+          "game_time": "7:50pm",
+          "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+          "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+        },
+        "_managers.live.current_game_index": 0,
+        "_managers.live.last_game_switch": 9000000000.0,
+        "_managers.live.last_update": 9000000000.0,
+        "_managers.live.live_games": [
+          {
+            "id": "401",
+            "away_abbr": "PEN",
+            "home_abbr": "MEL",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "18",
+            "home_score": "24",
+            "away_record": "18-6",
+            "home_record": "20-4",
+            "period_text": "2H 12:34",
+            "status_text": "LIVE",
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_within_window": true,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "9/13",
+            "game_time": "7:50pm",
+            "away_logo_path": "assets/sports/nrl_logos/PEN.png",
+            "home_logo_path": "assets/sports/nrl_logos/MEL.png"
+          }
+        ],
+        "_managers.live.active_celebration": null
+      }
+    }
+  ],
+  "composites": [
+    {
+      "name": "display-modes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "m-live",
+          "label": "nrl_live",
+          "sublabel": "period, clock and the running score"
+        },
+        {
+          "shot": "m-recent",
+          "label": "nrl_recent",
+          "sublabel": "the finished game"
+        },
+        {
+          "shot": "m-upcoming",
+          "label": "nrl_upcoming",
+          "sublabel": "kick-off date and time"
+        }
+      ]
+    },
+    {
+      "name": "show-records",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "rec-on",
+          "label": "show_records: true"
+        },
+        {
+          "shot": "rec-off",
+          "label": "show_records: false"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}
