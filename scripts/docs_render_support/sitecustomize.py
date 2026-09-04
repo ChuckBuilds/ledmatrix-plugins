@@ -112,11 +112,29 @@ if _ATTRS:
             target = nxt
         return target, parts[-1]
 
+    def _coerce(name, value):
+        """Turn JSON into the shapes the plugins actually hold.
+
+        A shots file can only carry JSON, but plugin state is not all strings
+        and lists: colours are tuples throughout the core, and a logo field is
+        a pathlib.Path -- the sports renderers call logo_path.parent, so a
+        string there raises AttributeError and the card silently fails to draw.
+        """
+        if isinstance(value, list) and len(value) == 3 and all(
+                isinstance(v, int) for v in value):
+            return tuple(value)  # colours are tuples everywhere in the core
+        if isinstance(value, str) and name.endswith("_path") and value:
+            import pathlib as _pathlib
+            return _pathlib.Path(value)
+        if isinstance(value, dict):
+            return {k: _coerce(k, v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [_coerce(name, v) for v in value]
+        return value
+
     def _apply(instance):
         for name, value in _WANTED.items():
-            if isinstance(value, list) and len(value) == 3 and all(
-                    isinstance(v, int) for v in value):
-                value = tuple(value)  # colours are tuples everywhere in the core
+            value = _coerce(name.rsplit(".", 1)[-1], value)
             owner, attr = _resolve(instance, name)
             if owner is None:
                 continue  # the path does not exist on this plugin; leave it alone
