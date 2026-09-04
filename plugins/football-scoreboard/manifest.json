@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.4.1",
+  "version": "3.5.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "released": "2026-09-03",
+      "version": "3.5.0",
+      "changelog": "Scroll display mode now actually scrolls: the dispatch lived in an uncalled method, so the setting did nothing",
+      "ledmatrix_min_version": "3.3.0"
+    },
     {
       "version": "3.4.1",
       "released": "2026-09-02",
