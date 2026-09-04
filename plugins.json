@@ -215,7 +215,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.8.7"
+      "latest_version": "1.8.8"
     },
     {
       "id": "football-scoreboard",
@@ -412,7 +412,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.3"
+      "latest_version": "1.3.4"
     },
     {
       "id": "ledmatrix-flights",
@@ -463,7 +463,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.0"
+      "latest_version": "1.1.1"
     },
     {
       "id": "masters-tournament",
@@ -557,7 +557,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.0"
+      "latest_version": "1.4.1"
     },
     {
       "id": "on-air",
@@ -605,7 +605,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.3",
+      "latest_version": "1.4.4",
       "icon": "fas fa-football-ball"
     },
     {
@@ -633,7 +633,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.0"
+      "latest_version": "1.4.1"
     },
     {
       "id": "of-the-day",
@@ -809,7 +809,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.6.1"
+      "latest_version": "2.6.2"
     },
     {
       "id": "stocks",
@@ -832,7 +832,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.9.0",
+      "latest_version": "2.9.1",
       "icon": "fas fa-chart-line"
     },
     {
@@ -856,7 +856,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.6"
+      "latest_version": "1.1.7"
     },
     {
       "id": "tide-display",
@@ -905,7 +905,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.8.2",
+      "latest_version": "1.8.3",
       "icon": "fas fa-fist-raised"
     },
     {
@@ -1001,7 +1001,7 @@
       "last_updated": "2026-07-31",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.2.2"
+      "latest_version": "1.2.3"
     },
     {
       "id": "ledmatrix-dresden-departures",

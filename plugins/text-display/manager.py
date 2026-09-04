@@ -22,6 +22,14 @@ from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 
 from src.plugin_system.base_plugin import BasePlugin
+try:
+    # Shared scroll pacing: resolves speed from any supported config shape,
+    # snaps it to a speed the panel can show in whole pixels, and reports the
+    # frame hold that keeps slow speeds crisp. Core docs: SCROLL_PERFORMANCE.md
+    from src.common import scroll_config as _scroll_config
+except ImportError:  # core predates the shared helper
+    _scroll_config = None
+
 from src.common.scroll_helper import ScrollHelper
 
 try:
@@ -177,6 +185,24 @@ class TextDisplayPlugin(BasePlugin):
         # Calculate pixels per second for logging (even though we use frame-based mode)
         pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
         self.logger.info(f"Scroll settings: {self.scroll_speed} px/frame, {self.scroll_delay}s delay = {pixels_per_second:.1f} px/s, target FPS: {self.target_fps}")
+
+        # The shared resolver takes precedence over the block above, which is
+        # kept as the fallback for cores that predate it. Running both costs a
+        # few microseconds once at construction and avoids re-indenting logic
+        # that other config shapes still depend on.
+        if _scroll_config is not None:
+            self._scroll_settings = _scroll_config.configure(
+                self.scroll_helper,
+                plugin_config=self.config,
+                global_config=self.global_config,
+                display_manager=self.display_manager,
+                plugin_logger=self.logger,
+            )
+            self.logger.info(
+                "Scroll pacing came from the shared resolver; any scroll speed "
+                "logged above this line by the legacy path was superseded")
+        else:
+            self._scroll_settings = None
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=True,
             # Honor the documented display_duration setting as the on-screen floor.
@@ -418,6 +444,15 @@ class TextDisplayPlugin(BasePlugin):
             self.logger.error(f"Failed to create text cache: {e}", exc_info=True)
             self.text_image_cache = None
     
+    def _scroll_frame_hold(self) -> int:
+        """Refreshes to hold each frame for, from the resolved scroll settings.
+
+        1 without the shared helper, which is the old behaviour: a new frame
+        every panel refresh.
+        """
+        settings = getattr(self, "_scroll_settings", None)
+        return getattr(settings, "frame_hold", 1) if settings else 1
+
     def update(self) -> None:
         """Update scroll position if scrolling is enabled using ScrollHelper."""
         if not self.scroll_enabled or self.text_width <= self.display_manager.matrix.width:
@@ -504,7 +539,8 @@ class TextDisplayPlugin(BasePlugin):
                     if hasattr(self.display_manager, 'set_scrolling_state'):
                         # Only signal scrolling if not complete (or if looping and will reset)
                         if not self.scroll_helper.is_scroll_complete() or (self.scroll_loop and self.scroll_helper.is_scroll_complete()):
-                            self.display_manager.set_scrolling_state(True)
+                            self.display_manager.set_scrolling_state(
+            True, frame_hold=self._scroll_frame_hold())
                         else:
                             # One-shot mode and complete - stop scrolling
                             self.display_manager.set_scrolling_state(False)

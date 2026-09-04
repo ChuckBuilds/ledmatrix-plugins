@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",

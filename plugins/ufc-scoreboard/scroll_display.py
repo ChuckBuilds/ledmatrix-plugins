@@ -22,6 +22,14 @@ try:
 except ImportError:
     ScrollHelper = None
 
+try:
+    # Shared scroll pacing: one resolver for every plugin, so identical config
+    # means the same speed everywhere, and slow speeds get the frame hold that
+    # keeps them crisp.
+    from src.common import scroll_config as _scroll_config
+except ImportError:  # core predates the shared helper
+    _scroll_config = None
+
 from fight_renderer import FightRenderer
 
 logger = logging.getLogger(__name__)
@@ -41,6 +49,11 @@ class ScrollDisplayManager:
 
     # Path to UFC separator icon
     UFC_SEPARATOR_ICON = "assets/sports/ufc_logos/UFC.png"
+
+    def _scroll_frame_hold(self) -> int:
+        """Refreshes to hold each frame for, from the resolved scroll settings."""
+        settings = getattr(self, "_scroll_settings", None)
+        return getattr(settings, "frame_hold", 1) if settings else 1
 
     def __init__(
         self,
@@ -143,6 +156,19 @@ class ScrollDisplayManager:
 
         pixels_per_frame = max(0.1, min(5.0, pixels_per_frame))
         self.scroll_helper.set_scroll_speed(pixels_per_frame)
+
+        # Shared resolver wins over the setup above, which stays as the
+        # fallback for cores that predate it.
+        if _scroll_config is not None:
+            self._scroll_settings = _scroll_config.configure(
+                self.scroll_helper,
+                plugin_config=self.config,
+                global_config=self.global_config,
+                display_manager=self.display_manager,
+                plugin_logger=self.logger,
+            )
+        else:
+            self._scroll_settings = None
 
         effective_pps = pixels_per_frame / scroll_delay if scroll_delay > 0 else pixels_per_frame * 100
 

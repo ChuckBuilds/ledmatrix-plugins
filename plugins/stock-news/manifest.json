@@ -1,7 +1,7 @@
 {
   "id": "stock-news",
   "name": "Stock News Ticker",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "author": "ChuckBuilds",
   "description": "Live stock headlines via Yahoo Finance search API with RSS fallback, company logos, configurable display styles (logo+ticker, ticker only, logo only), Vegas scroll integration, and per-day/hour request budgeting",
   "entry_point": "manager.py",
