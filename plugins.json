@@ -101,7 +101,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.29.1"
+      "latest_version": "1.29.2"
     },
     {
       "id": "calendar",
@@ -240,7 +240,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.4.1"
+      "latest_version": "3.4.2"
     },
     {
       "id": "geochron",
@@ -335,7 +335,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.25.1",
+      "latest_version": "1.25.2",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -359,7 +359,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.24.1",
+      "latest_version": "1.24.2",
       "icon": "fas fa-baseball-ball"
     },
     {
@@ -760,7 +760,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.24.1"
+      "latest_version": "2.24.2"
     },
     {
       "id": "static-image",
@@ -1048,7 +1048,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.22.1",
+      "latest_version": "1.22.2",
       "last_updated": "2026-09-02"
     },
     {
@@ -1095,7 +1095,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.21.1"
+      "latest_version": "1.21.2"
     },
     {
       "id": "jellyfin-now-playing",
