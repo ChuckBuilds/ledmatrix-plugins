@@ -98,7 +98,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [March Madness](./plugins/march-madness/) | NCAA tournament bracket tracker with round branding and live scores | |
 | [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN | |
 | [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NHL, NCAA | |
-| [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records | |
+| [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records | <a href="./plugins/ledmatrix-leaderboard/"><img src="./docs/assets/ledmatrix-leaderboard/hero.png" width="240" alt="ledmatrix-leaderboard on an LED panel"></a> |
 | [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts | |
 
 ### Financial (2)
