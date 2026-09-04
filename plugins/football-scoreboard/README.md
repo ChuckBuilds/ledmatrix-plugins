@@ -1,117 +1,279 @@
------------------------------------------------------------------------------------
-### Connect with ChuckBuilds
+[![ChuckBuilds](https://img.shields.io/badge/ChuckBuilds-LEDMatrix-blue)](https://github.com/ChuckBuilds/LEDMatrix)
 
-- Show support on Youtube: https://www.youtube.com/@ChuckBuilds
-- Stay in touch on Instagram: https://www.instagram.com/ChuckBuilds/
-- Want to chat or need support? Reach out on the ChuckBuilds Discord: https://discord.com/invite/uW36dVAtcT
-- Feeling Generous? Support the project:
-  - Github Sponsorship: https://github.com/sponsors/ChuckBuilds
-  - Buy Me a Coffee: https://buymeacoffee.com/chuckbuilds
-  - Ko-fi: https://ko-fi.com/chuckbuilds/ 
+# Football Scoreboard
 
------------------------------------------------------------------------------------
+Live, recent, and upcoming **NFL** and **NCAA Football** games on your LEDMatrix
+display, from ESPN's public API. No API key required.
 
-# Football Scoreboard Plugin
+![NFL live scorebug](../../docs/assets/football-scoreboard/hero.png)
 
-A production-ready plugin for LEDMatrix that displays live, recent, and upcoming football games across NFL and NCAA Football leagues. This plugin reuses the proven, battle-tested code from the main LEDMatrix project for maximum reliability and feature completeness.
+## Contents
 
-## 🏈 Features
+- [Quick start](#quick-start)
+- [Display modes](#display-modes)
+- [The live card](#the-live-card)
+- [How games are chosen](#how-games-are-chosen)
+- [Dynamic team resolution](#dynamic-team-resolution)
+- [Rotation, resume, and durations](#rotation-resume-and-durations)
+- [Score and win celebrations](#score-and-win-celebrations)
+- [Adaptive layout](#adaptive-layout)
+- [Panel sizes](#panel-sizes)
+- [Settings reference](#settings-reference)
+- [Per-league settings](#per-league-settings)
+- [Matchup separator and the upcoming card middle](#matchup-separator-and-the-upcoming-card-middle)
+- [Text colours and layout offsets](#text-colours-and-layout-offsets)
+- [Favorite team result colours](#favorite-team-result-colours)
+- [Vegas ticker: seeing live games more often](#vegas-ticker-seeing-live-games-more-often)
+- [Team abbreviations](#team-abbreviations)
+- [Data sources and architecture](#data-sources-and-architecture)
+- [Installation](#installation)
+- [Troubleshooting](#troubleshooting)
 
-Upcoming Game (NCAA FB):
+## Quick start
 
-<img width="768" height="192" alt="led_matrix_1764889978847" src="https://github.com/user-attachments/assets/3561386b-1327-415d-92bc-f17f7e446984" />
+1. Install **Football Scoreboard** from the LEDMatrix Plugin Store.
+2. Turn on `enabled`, then the league you want — `nfl` is on by default,
+   `ncaa_fb` is off.
+3. Add your teams under that league's **Favorite Teams**.
 
-Recent Game (NCAA FB):
+```json
+{
+  "football-scoreboard": {
+    "enabled": true,
+    "nfl": {
+      "enabled": true,
+      "favorite_teams": ["KC", "BUF"],
+      "filtering": { "show_favorite_teams_only": false },
+      "game_limits": {
+        "upcoming_games_to_show": 3,
+        "other_upcoming_games_to_show": 3
+      }
+    },
+    "ncaa_fb": {
+      "enabled": true,
+      "favorite_teams": ["UGA", "AUB"]
+    }
+  }
+}
+```
 
-<img width="768" height="192" alt="led_matrix_1764889931266" src="https://github.com/user-attachments/assets/a5361ddf-5472-4724-9665-1783db4eb3d1" />
+## Display modes
 
+Six modes — three per league — that the LEDMatrix host rotation cycles through
+independently.
 
+![The three NFL display modes](../../docs/assets/football-scoreboard/display-modes.png)
 
-### Core Functionality
-- **Multiple League Support**: NFL and NCAA Football with independent configuration
-- **Live Game Tracking**: Real-time scores, quarters, time remaining, down & distance
-- **Recent Games**: Recently completed games with final scores and records
-- **Upcoming Games**: Scheduled games with start times and odds
-- **Dynamic Team Resolution**: Support for `AP_TOP_25`, `AP_TOP_10`, `AP_TOP_5` automatic team selection
-- **Production-Ready**: Real ESPN API integration with caching and error handling
-- **Favorite Team Result Colors**: Optionally show a finished game's score in green when your favorite team won and red when it lost
+| Mode | Shows | Top line |
+|---|---|---|
+| `nfl_live` | NFL games in progress | `Q1`–`Q4`, `OT1` past the fourth, or `HALF` |
+| `nfl_recent` | Finished NFL games | `Final`, or `Final/OT` |
+| `nfl_upcoming` | Scheduled NFL games | `Next Game`, then the date and kickoff time |
+| `ncaa_fb_live` | NCAA games in progress | As above |
+| `ncaa_fb_recent` | Finished NCAA games | As above |
+| `ncaa_fb_upcoming` | Scheduled NCAA games | As above |
 
-### Professional Display
-- **Team Logos**: Professional team logos with automatic download fallback
-- **Scorebug Layout**: Broadcast-quality scoreboard display
-- **Football-Specific Details**: Down & distance, possession indicators, timeout tracking
-- **Color-Coded States**: Live (green), final (gray), upcoming (yellow), redzone (red)
-- **Odds Integration**: Real-time betting odds display with spread and over/under
-- **Rankings Display**: AP Top 25 rankings for NCAA Football teams
+The three period states:
 
-### Advanced Features
-- **Score/Win Celebrations**: Full-screen takeover when a favorite team scores or wins a live game (see below)
-- **Background Data Service**: Non-blocking API calls with intelligent caching
-- **Smart Filtering**: Show favorite teams only or all games
-- **Granular Mode Control**: Enable/disable specific league/mode combinations independently
-- **Dual Display Styles**: Switch mode (one game at a time) or scroll mode (all games scrolling)
-- **High-FPS Scrolling**: Smooth 100+ FPS horizontal scrolling for scroll mode
-- **Font Customization**: Customize fonts, sizes, and styles for all text elements
-- **Layout Customization**: Adjust X/Y positioning offsets for all display elements
-- **Error Recovery**: Graceful handling of API failures and missing data
-- **Memory Optimized**: Efficient resource usage for Raspberry Pi deployment
+![Q3, HALF and Final](../../docs/assets/football-scoreboard/period-states.png)
 
-## 🎯 Dynamic Team Resolution
+Each mode renders as **switch** (one game at a time, timed) or **scroll** (all
+games scroll horizontally at high FPS), set per league and per mode with
+`<league>.display_modes.<mode>_display_mode`.
 
-The plugin supports automatic team selection using dynamic patterns:
+> **The mode toggles are named `show_live`, `show_recent`, `show_upcoming`** in
+> this plugin, not `live` / `recent` / `upcoming` as in the other scoreboards.
+> Copying a `display_modes` block over from another scoreboard's config will
+> silently leave every mode at its default.
 
-- **`AP_TOP_25`**: Automatically includes all 25 AP Top 25 ranked teams
-- **`AP_TOP_10`**: Automatically includes top 10 ranked teams  
-- **`AP_TOP_5`**: Automatically includes top 5 ranked teams
+## The live card
 
-These patterns update automatically as rankings change throughout the season. You can mix them with specific teams:
+A live football card carries more than the score. Down and distance sit under
+the score in yellow, turning **red inside the red zone**; a small football icon
+marks the team with possession; and three timeout pips per team run along the
+bottom edge — white for remaining, grey for used.
+
+![Down, distance, possession and timeouts](../../docs/assets/football-scoreboard/live-detail.png)
+
+All four come straight from ESPN's `situation` block and need no configuration.
+Their positions are nudgeable through `customization.layout.down_distance`,
+`customization.layout.possession`, and `customization.layout.timeouts`.
+
+## How games are chosen
+
+**`upcoming_games_to_show` is not "how many cards you see".** It is the size of
+a *pool*. The panel cycles through that pool one card at a time
+(`upcoming_game_duration`, 15s by default) and keeps its place between visits,
+so a pool of 3 means the board rotates through the same 3 games until the
+schedule moves on. A bigger number gives you a *longer lap*, so any one game
+comes round **less** often.
+
+### The three regimes
+
+Which one you are in depends on `favorite_teams` and
+`filtering.show_favorite_teams_only`:
+
+| `favorite_teams` | `show_favorite_teams_only` | What you get |
+|---|---|---|
+| empty | either | The next N games league-wide, chronologically. Every game is a non-favorite game, so both filters below apply to all of them. |
+| set | **on** (default) | Only your teams. The limit is a budget **per team**. |
+| set | **off** | **Your teams first, then other games to fill.** Both limits are **totals**. |
+
+The third row is what most people want. Before v2.26.0 it did not exist — with
+the flag off, favorites were ignored *entirely* and you got the next N games
+league-wide. On a college slate that is roughly 950 upcoming games, so your team
+appeared about as often as chance allowed.
+
+### The settings
+
+Per league, under `game_limits`:
+
+| Option | Default (NFL / NCAA) | Description |
+|---|---|---|
+| `upcoming_games_to_show` | `1` / `5` | How many **favorite** upcoming games to pool. |
+| `recent_games_to_show` | `5` / `5` | The same, for finished games. |
+| `other_upcoming_games_to_show` | `1` / `5` | How many **non-favorite** upcoming games to add. `0` gives favorites only. |
+| `other_recent_games_to_show` | `5` / `5` | The same, for finished games. |
+| `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
+| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked` or `any`. |
+| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from: `fbs`, `fcs`, `other`. |
+
+**Your favorite teams are never filtered by the last two.** Follow a Division II
+school and its games always appear, whatever the quality bar or division boxes
+say. Those settings only decide what fills the *remaining* slots.
+
+Within the other-games pool, **the better matchup leads**, and each team appears
+once. The pool is each team's *next* game ordered by the best poll position of
+either side, so a top-five matchup sits in the first window rather than whichever
+kicks off soonest — and the #1 team's whole season does not sort above everyone
+else's opener. Ties fall back to kickoff order, and a league with no poll keeps
+chronological order. Your favorite teams are ordered by when they play, not by
+rank: for your own team the next game is the point.
+
+### Variety comes from turnover, not from a bigger pool
+
+Rather than widening the pool, the non-favorite slice **moves**. The window
+advances by its own width every `other_rotation_interval_seconds`, so
+consecutive windows do not overlap and the board works through the schedule
+instead of resampling the front of it.
+
+Measured on a real board — favorites `UGA` + `AUB`, 3 others, rotating every 30
+minutes:
+
+```text
+  +  0 min: UNC@TCU,   SJSU@USC, NCSU@UVA
+  + 30 min: JVST@NDSU, SAC@EMU,  HAW@STAN
+  + 60 min: NMSU@FSU,  MEM@UNLV, MASS@RUTG
+  + 90 min: BCU@UCF,   AKR@WAKE, MRMK@DEL
+```
+
+18 different matchups over three hours, while the pool stays at 6 cards and a
+full lap still takes about 90 seconds of airtime.
+
+Your favorites are **not** rotated. For upcoming games the soonest ones are the
+point — rotating them would show a week-8 fixture instead of Saturday's.
+
+### Keeping the filler out
+
+Selection is otherwise purely chronological, and on a college slate most of what
+that returns is filler. Of roughly 950 upcoming games, about 250 involve a
+nationally ranked team; the rest are matchups most viewers have never heard of.
+Rotating harder just serves more of them, which is why `other_games_min_quality`
+defaults to `ranked`.
+
+`ranked` means ranked in the **top division's** poll — the AP Top 25 for college
+football. South Dakota State is a perennial FCS number one, but South Dakota
+State at Northwestern is not a ranked matchup and does not qualify: the ranked
+side is FCS and the FBS side is unranked. The poll is matched on team id rather
+than abbreviation, so two schools sharing an abbreviation across divisions
+cannot promote each other.
+
+> **Retired:** `broadcast` no longer exists. ESPN lists a broadcaster for almost
+> every game now — ESPN+ included — so on a real Week 1/Week 2 slate it passed
+> **174 of 175** games: a quality bar in the dropdown that behaved as `any`.
+> Boards still holding it are read as `ranked` and say so once in the log.
+
+`other_games_divisions` needs **one** team in a checked division, not both. With
+only `fbs` checked you still get #12 Texas Tech hosting Abilene Christian — a
+game involving a team you asked for — while Abilene Christian vs Furman stays
+out. Check `fcs` or `other` to bring the smaller-division matchups in as well.
+
+Both filters **fail open**: if rankings cannot be fetched, or the division
+rosters do not resolve, the game is allowed through. A board showing filler is a
+poor board; a board showing nothing is a broken one.
+
+They fail open a second time, as a set: if the filters between them leave
+**nothing at all**, the unfiltered list is used instead. Setting
+`other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one
+way to ask for an empty slate, and that is honoured.
+
+> **Both settings only mean something for `ncaa_fb`.** The NFL has no poll and
+> no divisions, so both are inert there and cost nothing — no poll is requested
+> and no division lookup is made.
+
+### A worked example
+
+Follow Georgia and Auburn, and want their next games plus some variety:
+
+```json
+{
+  "ncaa_fb": {
+    "favorite_teams": ["UGA", "AUB"],
+    "filtering": { "show_favorite_teams_only": false },
+    "game_limits": {
+      "upcoming_games_to_show": 3,
+      "other_upcoming_games_to_show": 3
+    }
+  }
+}
+```
+
+That gives 6 cards: the 3 soonest UGA/AUB games, plus 3 ranked FBS matchups that
+turn over every half hour.
+
+### Live rotation
+
+When several games are live at once the rotation is weighted: a game involving
+one of your teams gets `filtering.favorite_live_boost` turns for every one turn
+other live games get, and is queued first whenever the rotation refreshes. Set
+it to `1` for even rotation. It never interrupts a game already on screen — it
+just gets more and sooner turns, and it is independent of `live_priority`, which
+controls whether live games preempt the recent/upcoming rotation at all.
+
+A live game the API stops reporting for `stale_game_timeout` seconds is dropped,
+so an abandoned game does not sit on the board forever.
+
+## Dynamic team resolution
+
+Instead of listing schools by hand, put one of these tokens in `favorite_teams`
+and it expands to the current AP poll, updating as the rankings move:
+
+| Token | Expands to |
+|---|---|
+| `AP_TOP_5` | The AP Top 5 |
+| `AP_TOP_10` | The AP Top 10 |
+| `AP_TOP_25` | The full AP Top 25 |
+
+Tokens mix with literal abbreviations, and duplicates are removed:
 
 ```json
 "favorite_teams": ["AP_TOP_25", "UGA", "ALA"]
 ```
 
-This will show games for all AP Top 25 teams plus Georgia and Alabama (duplicates are automatically removed).
+> **These expand into real teams, and that has consequences.** Adding
+> `AP_TOP_10` alongside two teams of your own makes yours 2 of up to 12
+> favorites, all competing for the same slots, and your own teams then queue
+> behind every top-10 game that kicks off earlier. On one real schedule UGA's
+> next game was favorite-game #5 and Auburn's was #8, so with
+> `upcoming_games_to_show: 3` neither appeared. If you want your teams
+> guaranteed, keep the favorites list to your teams and let
+> `other_upcoming_games_to_show` supply the variety.
 
-> **These expand into real teams, and that has consequences.** Adding `AP_TOP_10` alongside two teams of your own makes yours 2 of up to 12 favorites (fewer when your teams are already ranked — duplicates are removed), all competing for the same slots — so your teams can stop appearing. See [Which Games Get Shown](#-which-games-get-shown) before mixing them.
+## Rotation, resume, and durations
 
-## 📺 Display Modes
+The plugin registers its six granular modes in `manifest.json`, and the display
+controller rotates through them in the order they appear:
 
-### Granular Mode Control
-
-The plugin supports **granular display modes** that give you precise control over what's shown:
-
-- **NFL Modes**: `nfl_live`, `nfl_recent`, `nfl_upcoming`
-- **NCAA FB Modes**: `ncaa_fb_live`, `ncaa_fb_recent`, `ncaa_fb_upcoming`
-
-Each league and game type can be independently enabled or disabled. This allows you to:
-- Show only NFL live games
-- Show only NCAA FB recent games
-- Mix and match any combination of modes
-- Control exactly which content appears on your display
-
-### Display Style Options
-
-The plugin supports two display styles for each game type:
-
-1. **Switch Mode** (Default): Display one game at a time with timed transitions
-   - Shows each game for a configurable duration
-   - Smooth transitions between games
-   - Best for focused viewing of individual games
-
-2. **Scroll Mode**: High-FPS horizontal scrolling of all games
-   - All games scroll horizontally in a continuous stream
-   - League separator icons between different leagues
-   - Dynamic duration based on total content width
-   - Supports 100+ FPS smooth scrolling
-   - Best for seeing all games at once
-
-You can configure the display mode separately for live, recent, and upcoming games in each league.
-
-### How Rotation Works
-
-The plugin registers granular display modes directly in `manifest.json`. The display controller rotates through these modes automatically in the order they appear. Each mode can have its own `display_duration` configured in the plugin config.
-
-**Default Rotation Order:**
 1. `nfl_recent`
 2. `nfl_upcoming`
 3. `nfl_live`
@@ -119,296 +281,350 @@ The plugin registers granular display modes directly in `manifest.json`. The dis
 5. `ncaa_fb_upcoming`
 6. `ncaa_fb_live`
 
-**Customizing Rotation Order:**
-You can reorder modes in `manifest.json` to change the rotation sequence. For example, to show all Recent games before Upcoming:
+Reorder them in `manifest.json` to change the sequence — for instance to show
+both leagues' Recent screens before either Upcoming.
 
-```json
-"display_modes": [
-  "nfl_recent",
-  "ncaa_fb_recent",
-  "nfl_upcoming",
-  "ncaa_fb_upcoming",
-  "nfl_live",
-  "ncaa_fb_live"
-]
+A league or mode disabled in the config makes the plugin return `False` for that
+mode, and the controller skips it. So you can disable a whole league, or a
+single mode within one, and the rotation closes up around it.
+
+### Resume
+
+When a mode's time runs out before it has shown every game in its pool, it
+**resumes where it left off** on the next visit rather than restarting:
+
+```text
+Cycle 1: Recent mode (60s, 10 games in the pool)
+  games 1-4 shown, time expires, rotate
+
+Cycle 2: Recent mode resumes
+  games 5-8 shown, time expires, rotate
+
+Cycle 3: Recent mode resumes
+  games 9-10 shown, full lap complete, progress resets
 ```
 
-**Disabled Leagues/Modes:**
-If a league or mode is disabled in the config, the plugin returns `False` for that mode, and the display controller automatically skips it. This allows you to:
-- Disable entire leagues (e.g., disable NCAA FB to show only NFL)
-- Disable specific modes per league (e.g., disable `nfl_upcoming` but keep `nfl_recent` and `nfl_live`)
-- Mix and match enabled/disabled modes as needed
+### Dynamic duration
 
-### Mode Durations
+With no per-mode duration configured, the mode's total is calculated as
+`number_of_games x per_game_duration` — 24 games at 15s each is a 360-second
+mode. That shows everything but can make a mode very long on a full slate, which
+is what `dynamic_duration.max_duration_seconds` is for.
 
-Each granular mode respects its own mode duration settings:
-- `nfl_recent` uses `nfl.mode_durations.recent_mode_duration` or top-level `recent_mode_duration`
-- `ncaa_fb_upcoming` uses `ncaa_fb.mode_durations.upcoming_mode_duration` or top-level `upcoming_mode_duration`
-- Each mode can have independent duration configuration
+## Score and win celebrations
 
-### Live Priority
-
-When live games are available, the display controller prioritizes live modes (`nfl_live`, `ncaa_fb_live`) based on the `has_live_content()` and `get_live_modes()` methods. The plugin returns only the granular live modes that actually have live content.
-
-## ⏱️ Duration Configuration
-
-The plugin offers flexible duration control at multiple levels to fine-tune your display experience:
-
-### Per-Game Duration
-
-Controls how long each individual game displays before rotating to the next game **within the same mode**.
-
-**Configuration:**
-- `live_game_duration`: Seconds per live game (default: 30s)
-- `non_favorite_live_game_duration`: Seconds per live game with **no** favorite team (default: 0 = off)
-- `recent_game_duration`: Seconds per recent game (default: 15s)
-- `upcoming_game_duration`: Seconds per upcoming game (default: 15s)
-
-**Example:** With `recent_game_duration: 15`, each recent game shows for 15 seconds before moving to the next.
-
-#### Shorter dwell for non-favorite live games
-
-Set `non_favorite_live_game_duration` to give live games that don't involve one of your favorite teams a shorter turn than your favorites. For example, `live_game_duration: 30` and `non_favorite_live_game_duration: 5` shows your teams for 30s each while everyone else's games flash by in 5s.
-
-This **only takes effect when both** of the following are true:
-
-- one or more `favorite_teams` are configured for the league, **and**
-- non-favorite live games are actually shown — `filtering.show_favorite_teams_only` is **off**, or `filtering.show_all_live` is **on** (otherwise non-favorite games never appear in the first place).
-
-| Favorite teams set? | Non-favorite games shown? | Live game has a favorite? | Duration used |
-|---|---|---|---|
-| No | — | — | `live_game_duration` (unchanged) |
-| Yes | No (`show_favorite_teams_only` on, `show_all_live` off) | favorite | `live_game_duration` |
-| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | favorite | `live_game_duration` |
-| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | none | `non_favorite_live_game_duration` (when > 0) |
-
-Leave it at `0` to display every live game for `live_game_duration` (the previous behavior).
-
-### Per-Mode Duration
-
-Controls the **total time** a mode displays before rotating to the next mode, regardless of how many games are available.
-
-**Configuration:**
-- `recent_mode_duration`: Total seconds for Recent mode (default: dynamic)
-- `upcoming_mode_duration`: Total seconds for Upcoming mode (default: dynamic)
-- `live_mode_duration`: Total seconds for Live mode (default: dynamic)
-
-**Example:** With `recent_mode_duration: 60` and `recent_game_duration: 15`, Recent mode shows 4 games (60s ÷ 15s = 4) before rotating to Upcoming mode.
-
-### How They Work Together
-
-**Per-game duration** + **Per-mode duration**:
-```
-Recent Mode (60s total):
-  ├─ Game 1: 15s
-  ├─ Game 2: 15s
-  ├─ Game 3: 15s
-  └─ Game 4: 15s
-  → Rotate to Upcoming Mode
-
-Upcoming Mode (60s total):
-  ├─ Game 1: 15s
-  └─ ... (continues)
-```
-
-### Resume Functionality
-
-When a mode times out before showing all games, it **resumes from where it left off** on the next cycle:
-
-```
-Cycle 1: Recent Mode (60s, 10 games available)
-  ├─ Game 1-4 shown ✓
-  └─ Time expires → Rotate
-
-Cycle 2: Recent Mode resumes
-  ├─ Game 5-8 shown ✓ (continues from Game 4, no repetition)
-  └─ Time expires → Rotate
-
-Cycle 3: Recent Mode resumes
-  ├─ Game 9-10 shown ✓
-  └─ All games shown → Full cycle complete → Reset progress
-```
-
-### Dynamic Duration (Fallback)
-
-If per-mode durations are **not** configured, the plugin uses **dynamic calculation**:
-- **Formula**: `total_duration = number_of_games × per_game_duration`
-- **Example**: 24 games @ 15s each = 360 seconds for the mode
-
-This ensures all games are shown but may result in very long mode durations if you have many games.
-
-### Per-League Overrides
-
-You can set different durations per league using the `mode_durations` section:
-
-```json
-{
-  "nfl": {
-    "mode_durations": {
-      "recent_mode_duration": 45,
-      "upcoming_mode_duration": 30
-    }
-  },
-  "ncaa_fb": {
-    "mode_durations": {
-      "recent_mode_duration": 60
-    }
-  }
-}
-```
-
-When multiple leagues are enabled with different durations, the system uses the **maximum** to ensure all leagues get their time.
-
-### Integration with Dynamic Duration Caps
-
-If you have dynamic duration caps configured (e.g., `max_duration_seconds: 120`), the system uses the **minimum** of:
-- Per-mode duration (e.g., 180s)
-- Dynamic duration cap (e.g., 120s)
-- **Result**: 120s (ensures cap is respected)
-
-## 🎨 Visual Features
-
-### Professional Scorebug Display
-- **Team Logos**: High-quality team logos positioned on left and right sides
-- **Scores**: Centered score display with outlined text for visibility
-- **Game Status**: Quarter/time display at top center
-- **Date Display**: Recent games show date underneath score
-- **Down & Distance**: Live game situation information (NFL only)
-- **Possession Indicator**: Visual indicators for ball possession
-- **Odds Display**: Spread and over/under betting lines
-- **Rankings**: AP Top 25 rankings for NCAA Football
-- **Customizable Layout**: Adjust positioning of all elements via X/Y offsets
-- **Customizable Fonts**: Configure font family and size for each text element
-
-### Adaptive Layout (beta)
-
-Set `"layout_mode": "adaptive"` to scale fonts, logos, and element regions
-to your panel size — the score renders at up to 32px on a 256x128 instead of
-the fixed 10px, and layouts degrade gracefully on small panels.
-
-```json
-{
-  "layout_mode": "adaptive"
-}
-```
-
-- The default is `"classic"`: rendering is completely unchanged unless you
-  opt in. **To revert at any time, set it back to `"classic"`** — no
-  reinstall needed.
-- Your font and X/Y offset customizations still apply in adaptive mode:
-  an explicitly configured font wins over the adaptive sizing, and offsets
-  shift elements from their computed positions.
-- Requires a LEDMatrix core with the adaptive layout system
-  (`docs/ADAPTIVE_LAYOUT.md`); older cores silently keep the classic layout.
-
-### Layout Customization
-
-The plugin supports fine-tuning element positioning for custom display sizes. All offsets are relative to the default calculated positions, allowing you to adjust elements without breaking the layout.
-
-#### Accessing Layout Settings
-
-Layout customization is available in the web UI under the plugin configuration section:
-1. Open the **Football Scoreboard** tab (second nav row)
-2. Expand the **Customization** section
-3. Find the **Layout Positioning** subsection
-
-#### Offset Values
-
-- **Positive values**: Move element right (x_offset) or down (y_offset)
-- **Negative values**: Move element left (x_offset) or up (y_offset)
-- **Default (0)**: No change from calculated position
-
-#### Available Elements
-
-- **home_logo**: Home team logo position (x_offset, y_offset)
-- **away_logo**: Away team logo position (x_offset, y_offset)
-- **score**: Game score position (x_offset, y_offset)
-- **status_text**: Status/period text position (x_offset, y_offset)
-- **date**: Game date position (x_offset, y_offset)
-- **time**: Game time position (x_offset, y_offset)
-- **records**: Team records/rankings position (away_x_offset, home_x_offset, y_offset)
-
-#### Example Adjustments
-
-**Move logos inward for smaller displays:**
-```json
-{
-  "customization": {
-    "layout": {
-      "home_logo": { "x_offset": -5 },
-      "away_logo": { "x_offset": 5 }
-    }
-  }
-}
-```
-
-**Adjust score position:**
-```json
-{
-  "customization": {
-    "layout": {
-      "score": { "x_offset": 0, "y_offset": -2 }
-    }
-  }
-}
-```
-
-**Shift records upward:**
-```json
-{
-  "customization": {
-    "layout": {
-      "records": { "y_offset": -3 }
-    }
-  }
-}
-```
-
-#### Display Size Compatibility
-
-Layout offsets work across different display sizes. The plugin calculates default positions based on your display dimensions, and offsets are applied relative to those defaults. This ensures compatibility with various LED matrix configurations.
-
-### Color Coding
-- **Live Games**: Green text for active status
-- **Redzone**: Red highlighting when teams are in scoring position
-- **Final Games**: Gray text for completed games
-- **Upcoming Games**: Yellow text for scheduled games
-- **Odds**: Green text for betting information
-
-### Score & Win Celebrations
 When a favorite team scores or wins a **live** game, the scorebug briefly gives
-way to a full-screen celebration: the involved team logos at the edges, the new
-score centered with the scoring side's digit pulsing, and a banner at the top.
+way to a full-screen celebration: the two logos at the edges, the new score
+centered with the scoring side's digits pulsing, and a banner at the top.
 
-The banner is chosen from the **points scored between two updates** (not from any
-feed text), so it works for every league the same way:
+The banner is chosen from the **points scored between two updates**, not from
+any feed text, so it works the same way in both leagues:
 
 | Points gained | Banner |
 |---|---|
 | 6 or more | `TOUCHDOWN!` / `<TEAM> TD!` |
 | 3 | `<TEAM> FIELD GOAL!` |
 | 2 | `<TEAM> SAFETY!` |
-| other (e.g. lone extra point) | `<TEAM> SCORES!` |
-| game goes final, favorite ahead | `<TEAM> WINS!` |
+| Anything else, e.g. a lone extra point | `<TEAM> SCORES!` |
+| Game goes final with the favorite ahead | `<TEAM> WINS!` |
 
-A touchdown that arrives as `+6` then a `+1` extra point a few seconds later
-shows a **single** celebration — the extra point is folded in while the first is
-still on screen. Note that a 2-point conversion and a safety are both `+2`; the
-banner reads `SAFETY!` for either.
+A touchdown arriving as `+6` and then `+1` a few seconds later shows a
+**single** celebration — the extra point folds into the one already on screen. A
+two-point conversion and a safety are both `+2`, so the banner reads `SAFETY!`
+for either.
 
-Configure per league (under the `nfl` / `ncaa_fb` config sections):
-- `celebration_enabled` (boolean, default `true`)
-- `celebration_duration` (seconds on screen, default `8`)
-- `celebrate_opponent_scores` (also celebrate the opponent, default `false`; when
-  no favorite teams are configured, any team's score celebrates)
+Configured per league: `celebration_enabled` (default `true`),
+`celebration_duration` (default `8` seconds), and `celebrate_opponent_scores`
+(default `false`; with no favorites configured, any team's score celebrates).
 
-## Favorite Team Result Colors
+## Adaptive layout
+
+`layout_mode` chooses the layout engine. `classic` is the original fixed layout.
+`adaptive` (beta) scales fonts, logos, and element regions to the panel, so
+content grows on a large panel instead of sitting in a 128x32-shaped island.
+
+![classic against adaptive on a 128x64 panel](../../docs/assets/football-scoreboard/layout-mode.png)
+
+The difference is clearest on a tall panel: adaptive sizes the crests to the
+space and keeps the score clear of them, where classic draws both at their fixed
+size and lets the score overlap.
+
+```json
+{ "layout_mode": "adaptive" }
+```
+
+It is plugin-wide, not per league, and defaults to `classic` so nothing changes
+until you ask for it.
+
+## Panel sizes
+
+![Live card at four panel sizes](../../docs/assets/football-scoreboard/panel-sizes.png)
+
+The plugin passes the render-safety harness on all eight supported sizes. At
+64x32 the two crests and the centre column share very little room; 128x32 or
+wider is a much better fit, and `layout_mode: adaptive` is worth trying on
+anything larger than 128x32.
+
+## Settings reference
+
+Settings marked **Advanced** sit behind the *Advanced* toggle in the web UI.
+Defaults are the schema defaults, which is what the web UI writes.
+
+### Plugin level
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `enabled` | boolean | `true` | Master on/off switch for the whole plugin. |
+| `display_duration` | 5–300 s | `30` | How long the display controller shows this plugin's mode before rotating to the next plugin. |
+| `game_display_duration` | 3–60 s | `15` | **Advanced.** Per-game time within a mode, where the league does not override it. |
+| `update_interval` | 30–86400 s | `3600` | **Advanced.** Base data refresh cadence. |
+| `layout_mode` | `classic` \| `adaptive` | `classic` | **Advanced.** Layout engine — see [Adaptive layout](#adaptive-layout). |
+| `timezone` | string | `""` | **Advanced.** IANA zone for kickoff times, e.g. `America/Chicago`. Blank follows the LEDMatrix global timezone, then the host system's, then UTC. |
+| `schedule_lookback_days` | 1–60 | `14` | **Advanced.** How far back to fetch for the Recent screens. |
+| `schedule_lookahead_days` | 1–60 | `7` | **Advanced.** How far ahead to fetch for Upcoming. A game beyond this horizon is never fetched, so it cannot reach the board even though the date is known. |
+| `no_data_interval_seconds` | 5–86400 s | `300` | **Advanced.** Wait between live checks when nothing is live. Backs off further the longer nothing is found. |
+| `live_idle_max_interval_seconds` | 5–86400 s | `900` | **Advanced.** Ceiling for that back-off. Useful out of season. |
+
+## Per-league settings
+
+Every table below exists twice, once under `nfl` and once under `ncaa_fb`, with
+the same keys. `<league>` stands for either. **Five defaults differ between the
+two leagues** — everything else is identical:
+
+| Key | NFL | NCAA FB |
+|---|---|---|
+| `<league>.enabled` | `true` | `false` |
+| `<league>.live_game_duration` | `30` | `20` |
+| `<league>.game_limits.upcoming_games_to_show` | `1` | `5` |
+| `<league>.game_limits.other_upcoming_games_to_show` | `1` | `5` |
+| `<league>.display_options.show_ranking` | `false` | `true` |
+
+The NCAA defaults are larger because a college Saturday has far more games than
+an NFL Sunday, and `show_ranking` is on there because college football has a
+poll to rank against.
+
+### Teams and priority
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.enabled` | boolean | see above | Build this league's managers at all. |
+| `<league>.favorite_teams` | array | `[]` | Teams to prioritise. Abbreviations, or an `AP_TOP_*` token. |
+| `<league>.exclude_teams` | array | `[]` | **Advanced.** Teams to always hide, from the live rotation and from finals alike (spoiler protection). Takes precedence over `favorite_teams` and `show_all_live`. |
+| `<league>.live_priority` | boolean | `true` | **Advanced.** Let this league's live games interrupt the rotation and display immediately. |
+
+### Display modes
+
+| Key | Type | Default |
+|---|---|---|
+| `<league>.display_modes.show_live` | boolean | `true` |
+| `<league>.display_modes.show_recent` | boolean | `true` |
+| `<league>.display_modes.show_upcoming` | boolean | `true` |
+| `<league>.display_modes.live_display_mode` | `switch` \| `scroll` | `switch` (**Advanced**) |
+| `<league>.display_modes.recent_display_mode` | `switch` \| `scroll` | `switch` (**Advanced**) |
+| `<league>.display_modes.upcoming_display_mode` | `switch` \| `scroll` | `switch` (**Advanced**) |
+
+### Filtering
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.filtering.show_favorite_teams_only` | boolean | `true` | Show only your teams' games. |
+| `<league>.filtering.show_all_live` | boolean | `false` | **Advanced.** Show every live game regardless of favorites. `exclude_teams` still applies. |
+| `<league>.filtering.favorite_live_boost` | 1–5 | `2` | **Advanced.** Turns a favorite's live game gets per one turn for other live games. `1` is even rotation. |
+
+### Game limits
+
+All **Advanced**. Defaults given as NFL / NCAA where they differ; see
+[The settings](#the-settings) for what each one means.
+
+| Key | Type | Default |
+|---|---|---|
+| `<league>.game_limits.recent_games_to_show` | 1–20 | `5` |
+| `<league>.game_limits.upcoming_games_to_show` | 1–20 | `1` / `5` |
+| `<league>.game_limits.other_recent_games_to_show` | 0–20 | `5` |
+| `<league>.game_limits.other_upcoming_games_to_show` | 0–20 | `1` / `5` |
+| `<league>.game_limits.other_rotation_interval_seconds` | 0–86400 s | `1800` |
+| `<league>.game_limits.other_games_min_quality` | `any` \| `ranked` | `ranked` |
+| `<league>.game_limits.other_games_divisions` | array | `["fbs"]` |
+
+### Durations
+
+All **Advanced**.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.live_game_duration` | 10–120 s | `30` / `20` | Per-game time for live games. Applies to games with a favorite when a non-favorite duration is set. |
+| `<league>.non_favorite_live_game_duration` | 0–120 s | `0` | Shorter turn for live games with no favorite. `0` means use `live_game_duration` for everything. |
+| `<league>.recent_game_duration` | number | `15` | Per-game time on the Recent screen. Falls back to the top-level `game_display_duration` when unset. |
+| `<league>.upcoming_game_duration` | number | `15` | The same for Upcoming. |
+
+`non_favorite_live_game_duration` **only takes effect** when favorite teams are
+configured **and** non-favorite live games are being shown —
+`show_favorite_teams_only` off, or `show_all_live` on. Otherwise non-favorite
+games are never on screen to shorten:
+
+| Favorites set? | Non-favorite games shown? | Game has a favorite? | Duration used |
+|---|---|---|---|
+| No | — | — | `live_game_duration` |
+| Yes | No | favorite | `live_game_duration` |
+| Yes | Yes | favorite | `live_game_duration` |
+| Yes | Yes | none | `non_favorite_live_game_duration`, when above `0` |
+
+### Update intervals
+
+All **Advanced**.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.live_update_interval` | 5–300 s | `30` | How often live game data refreshes. |
+| `<league>.recent_update_interval` | 60–86400 s | `3600` | How often the finished-games list is rebuilt. This also sets how soon a game that has just ended can appear — lower it if you want results sooner. |
+| `<league>.upcoming_update_interval` | 60–86400 s | `3600` | How often the upcoming-games list is rebuilt. Selection and the non-favorite rotation both run on the display side, so this governs only the fetch. |
+| `<league>.stale_game_timeout` | 60–3600 s | `300` | Drop a live game the API has stopped updating. |
+
+### Display options
+
+All **Advanced**.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.display_options.show_records` | boolean | `false` | Draw win-loss records in the bottom corners. |
+| `<league>.display_options.show_ranking` | boolean | `false` / `true` | Draw poll rank badges. Unranked teams show no badge, by design. |
+| `<league>.display_options.show_odds` | boolean | `true` | Draw betting odds. |
+
+![show_records on and off](../../docs/assets/football-scoreboard/show-records.png)
+
+### Celebrations
+
+| Key | Type | Default |
+|---|---|---|
+| `<league>.celebration_enabled` | boolean | `true` |
+| `<league>.celebration_duration` | 3–30 s | `8` (**Advanced**) |
+| `<league>.celebrate_opponent_scores` | boolean | `false` (**Advanced**) |
+
+### Dynamic duration
+
+Sizes each mode's total time from how much there is to show. All **Advanced**.
+
+| Key | Type | Default |
+|---|---|---|
+| `<league>.dynamic_duration.enabled` | boolean | `false` |
+| `<league>.dynamic_duration.min_duration_seconds` | 10–300 s | `30` |
+| `<league>.dynamic_duration.max_duration_seconds` | 60–600 s | — |
+| `<league>.dynamic_duration.modes.live.enabled` | boolean | `false` |
+| `<league>.dynamic_duration.modes.live.min_duration_seconds` | 10–300 s | — |
+| `<league>.dynamic_duration.modes.live.max_duration_seconds` | 60–600 s | — |
+| `<league>.dynamic_duration.modes.recent.enabled` | boolean | `false` |
+| `<league>.dynamic_duration.modes.recent.min_duration_seconds` | 10–300 s | — |
+| `<league>.dynamic_duration.modes.recent.max_duration_seconds` | 60–600 s | — |
+| `<league>.dynamic_duration.modes.upcoming.enabled` | boolean | `false` |
+| `<league>.dynamic_duration.modes.upcoming.min_duration_seconds` | 10–300 s | — |
+| `<league>.dynamic_duration.modes.upcoming.max_duration_seconds` | 60–600 s | — |
+
+### Scroll settings
+
+All **Advanced**, and per league.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.scroll_settings.scroll_speed` | 1.0–200.0 px/s | `50.0` | Higher scrolls faster. |
+| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Frame delay; `0.01` is 100 FPS. Lower is smoother. |
+| `<league>.scroll_settings.gap_between_games` | 8–128 px | `48` | Gap between game cards. |
+| `<league>.scroll_settings.show_league_separators` | boolean | `true` | Draw league icons between leagues. |
+| `<league>.scroll_settings.dynamic_duration` | boolean | `true` | Size the scroll duration from the content width. |
+| `<league>.scroll_settings.game_card_width` | 32–512 px | `128` | Card width. Lower it on a multi-panel chain to fit more games on screen at once. |
+
+## Matchup separator and the upcoming card middle
+
+The **Matchup Card Layout** section (`scroll_card`) controls what sits between
+the two crests before a game starts, and how the date and time are written.
+Plugin-wide, not per league.
+
+| Setting | Key | Default | What it does |
+|---|---|---|---|
+| Matchup Separator | `scroll_card.vs_text` | `VS` | Text between the teams: `VS`, `@`, `at`, `v`. The away side is always on the left, so `@` and `at` read as "away at home". Blank draws nothing. |
+| Middle of an Upcoming Card | `scroll_card.upcoming_center` | `vs` | Scroll and Vegas cards: `vs`, `date_time`, or `none`. |
+| Middle of a Full-Screen Upcoming Scoreboard | `scroll_card.switch_upcoming_center` | `date_time` | The same choice for the full-screen scoreboard, plus `inherit` to follow the row above. |
+| Date Format | `scroll_card.date_format` | `abbrev` | Scroll and Vegas cards: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
+| Full-Screen Date Format | `scroll_card.switch_date_format` | `numeric` | **Advanced.** The same for the full-screen scoreboard, plus `inherit`. It has its own default because the two displays disagree about what is normal. |
+| Time Format | `scroll_card.time_format` | `12h` | 12- or 24-hour clock. |
+| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line from the scroll and Vegas cards. |
+| Full-Screen Show Date / Show Time | `scroll_card.switch_show_date`, `scroll_card.switch_show_time` | `true` | The same for the full-screen scoreboard. Separate switches because the originals predate this display reading the block, and sharing them would have changed what existing boards draw. |
+| Swap Date and Time | `scroll_card.swap_date_time` | `false` | Flip the two lines. Each display starts from its own order, so this flips rather than forces. |
+
+The centre-gap settings size the scroll and Vegas card's middle strip only — the
+full-screen scoreboard pins its crests to the panel edges and is unaffected.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `scroll_card.center_gap` | 0–64 px | unset | Pixels kept clear down the middle. Unset scales with card width; `0` restores edge-to-edge logos. |
+| `scroll_card.center_gap_ratio` | 0.0–0.6 | `0.28` | **Advanced.** Fraction of card width used when the gap is not pinned. |
+| `scroll_card.center_gap_min` | 0–64 px | `22` | **Advanced.** Floor for the scaled gap. |
+| `scroll_card.center_gap_max` | 0–96 px | `40` | **Advanced.** Ceiling for the scaled gap. |
+
+## Text colours and layout offsets
+
+Seven text elements, each with `font`, `font_size`, and `text_color`, under
+`customization.<element>`. All **Advanced**. Faces:
+`PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`, `5x7.bdf`,
+`4x6.bdf`, `cozette.bdf`.
+
+| Element | Default font | Default size | Draws |
+|---|---|---|---|
+| `score_text` | `PressStart2P-Regular.ttf` | `10` | The score, and the matchup separator on an upcoming card |
+| `period_text` | `PressStart2P-Regular.ttf` | `8` | The quarter and clock, and the date/time on an upcoming scoreboard |
+| `team_name` | `PressStart2P-Regular.ttf` | `8` | Team names and abbreviations |
+| `status_text` | `4x6-font.ttf` | `6` | Status lines such as "Next Game" |
+| `detail_text` | `4x6-font.ttf` | `6` | Small detail lines, including down and distance |
+| `rank_text` | `PressStart2P-Regular.ttf` | `10` | Poll rank badges |
+| `odds_text` | `4x6-font.ttf` | `6` | Betting odds (defaults to green, `[0, 255, 0]`) |
+
+The `.bdf` faces are bitmap fonts that exist at exactly one pixel size; sizes
+snap to that grid rather than being scaled. Odds sizes snap too: `4x6-font.ttf`
+to 7, 14, 21; press_start to 8, 16. Every `customization.<element>` object sets
+`additionalProperties: false`.
+
+```json
+{
+  "customization": {
+    "score_text": { "text_color": [255, 200, 0] },
+    "status_text": { "text_color": "#00A0FF" }
+  }
+}
+```
+
+Two things keep their own colours on purpose: the odds figures, tinted by which
+side is favoured, and down-and-distance, which is yellow normally and red in the
+red zone.
+
+### Layout offsets
+
+Nudge any element in pixels. All default to `0`, all **Advanced**, all under
+`customization.layout.<element>`, and all set `additionalProperties: false`.
+
+| Element | Keys | Measured from |
+|---|---|---|
+| `home_logo`, `away_logo` | `x_offset`, `y_offset` | Default logo position |
+| `score` | `x_offset`, `y_offset` | Panel centre |
+| `status_text` | `x_offset`, `y_offset` | Centre horizontally, top vertically |
+| `date` | `x_offset`, `y_offset` | Centre horizontally, default position vertically |
+| `time` | `x_offset`, `y_offset` | Centre horizontally, the date's position vertically |
+| `down_distance` | `x_offset`, `y_offset` | Default down-and-distance position |
+| `possession` | `x_offset`, `y_offset` | Default possession-icon position |
+| `timeouts` | `x_offset`, `y_offset` | Default timeout-pip position |
+| `records` | `away_x_offset`, `home_x_offset`, `y_offset` | Away from the left, home from the right, both from the bottom |
+| `odds` | `x_offset`, `y_offset` | Default odds position |
+
+## Favorite team result colours
 
 A run of games against the same opponent is hard to read at a glance: in scroll
-and Vegas mode the same two logos go past several times and only the digits
-change. Turn on **Customization -> Favorite Team Result Colors** to color a
-finished game's score by how your favorite team did - green for a win, red for
-a loss.
+and Vegas mode the same two crests go past several times and only the digits
+change. Turn this on to colour a finished game's score by how your team did.
+
+| Key | Type | Default |
+|---|---|---|
+| `customization.favorite_result_colors.enabled` | boolean | `false` |
+| `customization.favorite_result_colors.win_color` | `[r, g, b]` | `[0, 255, 0]` |
+| `customization.favorite_result_colors.loss_color` | `[r, g, b]` | `[255, 0, 0]` |
+| `customization.favorite_result_colors.tie_color` | `[r, g, b]` | `[255, 200, 0]` |
 
 ```json
 {
@@ -423,258 +639,20 @@ a loss.
 }
 ```
 
-- Off by default. Until you enable it the score keeps exactly the color it has
-  today.
-- Only finished games are colored. Live and upcoming cards are untouched.
-- A game needs exactly one favorite team. If neither side is a favorite, or both
-  are, the score keeps its normal color.
-- Applies to both the one-game-at-a-time switch view and the scroll/Vegas
-  ticker.
-- The three colors are Advanced settings; leave them alone for the defaults
-  above.
-
-## 🏷️ Team Abbreviations
-
-### NFL Teams
-Common abbreviations: TB, DAL, GB, KC, BUF, SF, PHI, NE, MIA, NYJ, LAC, DEN, LV, CIN, BAL, CLE, PIT, IND, HOU, TEN, JAX, ARI, LAR, SEA, WAS, NYG, MIN, DET, CHI, ATL, CAR, NO
-
-### NCAA Football Teams
-Common abbreviations: UGA (Georgia), AUB (Auburn), BAMA (Alabama), CLEM (Clemson), OSU (Ohio State), MICH (Michigan), FSU (Florida State), LSU (LSU), OU (Oklahoma), TEX (Texas), ORE (Oregon), MISS (Mississippi), GT (Georgia Tech), VAN (Vanderbilt), BYU (BYU)
-
-## 🔧 Technical Details
-
-### Architecture
-This plugin reuses the proven code from the main LEDMatrix project:
-- **SportsCore**: Base class for all sports functionality
-- **Football**: Football-specific game detail extraction
-- **NFL Managers**: Live, Recent, and Upcoming managers for NFL
-- **NCAA FB Managers**: Live, Recent, and Upcoming managers for NCAA Football
-- **BaseOddsManager**: Production-ready odds fetching from ESPN API
-- **DynamicTeamResolver**: Automatic team resolution for rankings
-
-### Data Sources
-- **ESPN API**: Primary data source for games, scores, and rankings
-- **Real-time Updates**: Live game data updates every 30 seconds
-- **Intelligent Caching**: 1-hour cache for rankings, 30-minute cache for odds
-- **Error Recovery**: Graceful handling of API failures
-
-### Performance
-- **Background Processing**: Non-blocking data fetching
-- **Memory Optimized**: Efficient resource usage for Raspberry Pi
-- **Smart Caching**: Reduces API calls while maintaining data freshness
-- **Configurable Intervals**: Adjustable update frequencies per league
-
-## 📦 Installation
-
-### From the Plugin Store (recommended)
-1. Open the LEDMatrix web interface (`http://your-pi-ip:5000`)
-2. Open the **Plugin Manager** tab
-3. Find **Football Scoreboard** in the **Plugin Store** section and click
-   **Install**
-4. Open the **Football Scoreboard** tab in the second nav row to configure
-   your favorite teams and per-league preferences
-
-
-## ⚙️ Configuration
-
-### Display Mode Settings
-
-Each league (NFL, NCAA FB) can be configured with:
-- **Enable/Disable**: Turn entire leagues on or off
-- **Mode Toggles**: Enable/disable live, recent, or upcoming games independently
-- **Display Style**: Choose "switch" (one game at a time) or "scroll" (all games scrolling) for each game type
-- **Scroll Settings**: Configure scroll speed, frame delay, gap between games, and league separators
-
-### Filtering & Favorites
-
-Per league (`nfl`, `ncaa_fb`), under `filtering`:
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `favorite_teams` | `[]` | Teams to follow — see [Dynamic Team Resolution](#-dynamic-team-resolution) |
-| `exclude_teams` | `[]` | Teams to always hide from live rotation **and** recent/final scores (e.g. to avoid spoilers if you're watching delayed). Wins over every other setting below — an excluded team never shows up even if `show_all_live` is on. |
-| `filtering.show_favorite_teams_only` | `true` | Only show games from favorite teams |
-| `filtering.show_all_live` | `false` | Show all live games, not just favorites |
-| `filtering.favorite_live_boost` | `2` | How many turns your favorite's live game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to `1` for perfectly even rotation. Only has a visible effect when more than one game is live at once and `favorite_teams` is configured. |
-
-With both `show_favorite_teams_only` and `show_all_live` off, all live games rotate evenly — `favorite_live_boost` is what gives your favorite's game precedence in that mode without hiding everyone else's scores.
-
-## 🎯 Which Games Get Shown
-
-This trips people up, so it is worth being precise: **`upcoming_games_to_show` is not "how many cards you see".** It is the size of a *pool*. The panel cycles through that pool one card at a time (`upcoming_game_duration`, 15s by default), and it keeps its place between visits. So a pool of 3 means the board rotates through the same 3 games until the schedule moves on.
-
-That is why making the number bigger does not help you see a particular team more often — a bigger pool means a *longer lap*, so any one game comes round **less** often.
-
-### The three modes
-
-Which mode you are in depends on two things: whether `favorite_teams` is set, and whether `filtering.show_favorite_teams_only` is on.
-
-| `favorite_teams` | `show_favorite_teams_only` | What you get |
-|---|---|---|
-| empty | either | The next N games league-wide, chronologically. Every game shown is a non-favorite game, so the two filters below apply to all of them. |
-| set | **on** | Only your teams. `upcoming_games_to_show` is a budget **per team**. |
-| set | **off** | **Your teams first, then other games to fill.** Both limits are **totals**. |
-
-The third row is the one most people actually want, and before v2.26.0 it did not exist — with the flag off, favorites were ignored *entirely* and you got the next N games league-wide. On a college slate that is ~950 upcoming games, so your team showed up about as often as chance allowed.
-
-### The settings
-
-Per league, under `game_limits`:
-
-| Option | Default | Description |
-|---|---|---|
-| `upcoming_games_to_show` | `5` (ncaa_fb) | How many **favorite** upcoming games to show (a total, not per team, when `show_favorite_teams_only` is off). |
-| `recent_games_to_show` | varies | The same, for finished games. |
-| `other_upcoming_games_to_show` | matches `upcoming_games_to_show` | How many **non-favorite** upcoming games to add. `0` gives you favorites only. |
-| `other_recent_games_to_show` | matches `recent_games_to_show` | The same, for finished games. |
-| `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
-| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked` or `any`. |
-| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from: `fbs`, `fcs`, `other`. |
-
-**Your favorite teams are never filtered by the last two.** Follow a Division II school and its games always appear, whatever the quality bar or division boxes say. Those settings only decide what fills the *remaining* slots.
-
-Within the other-games pool, **the better matchup leads**, and each team appears once. The pool is each team's *next* game ordered by the best poll position of either side, so a top-five matchup sits in the first window rather than whichever kicks off soonest — and the #1 team's whole season does not sort above everyone else's opener. Ties fall back to kickoff order, and a league with no poll keeps chronological order. Your favorite teams are ordered by when they play, not by rank -- for your own team the next game is the point.
-
-### Variety comes from turnover, not from a bigger pool
-
-Rather than widening the pool, the non-favorite slice **moves**. The window advances by its own width every `other_rotation_interval_seconds`, so consecutive windows do not overlap and the board works through the schedule instead of resampling the front of it.
-
-Measured on a real board — favorites `UGA` + `AUB`, 3 others, rotating every 30 minutes:
-
-```text
-  +  0 min: UNC@TCU, SJSU@USC, NCSU@UVA
-  + 30 min: JVST@NDSU, SAC@EMU, HAW@STAN
-  + 60 min: NMSU@FSU, MEM@UNLV, MASS@RUTG
-  + 90 min: BCU@UCF,  AKR@WAKE, MRMK@DEL
-```
-
-18 different matchups over three hours, while the pool stays at 6 cards and a full lap still takes about 90 seconds of airtime.
-
-Your favorites are **not** rotated. For upcoming games the soonest ones are the point — rotating them would show you a week-8 fixture instead of Saturday's.
-
-### Keeping the filler out
-
-Selection is otherwise purely chronological, and on a college slate most of what that returns is filler. Of ~950 upcoming games, roughly 250 involve a nationally ranked team; the rest are matchups most viewers have never heard of. Rotating harder just serves more of them, which is why `other_games_min_quality` defaults to `ranked`.
-
-`ranked` means ranked in the **top division's** poll — the AP Top 25 for college football. South Dakota State is a perennial FCS number one, but South Dakota State at Northwestern is not a ranked matchup and does not qualify: the ranked side is FCS and the FBS side is unranked. The poll is matched on team id rather than abbreviation, so two schools sharing an abbreviation across divisions cannot promote each other.
-
-> **Retired:** `broadcast` no longer exists. ESPN lists a broadcaster for almost every game now — ESPN+ included — so on a real Week 1/Week 2 slate it passed **174 of 175** games: a quality bar in the dropdown that behaved as `any`. Boards still holding it are read as `ranked` and say so once in the log; change the setting to clear the schema warning.
-
-`other_games_divisions` needs **one** team in a checked division, not both. With only `fbs` checked you still get #12 Texas Tech hosting Abilene Christian — a game involving a team you asked for — while Abilene Christian vs Furman stays out. Check `fcs` or `other` to bring the smaller-division matchups in as well.
-
-Both filters **fail open**: if rankings cannot be fetched, or the division rosters do not resolve, the game is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
-
-They fail open a second time, as a set: if the filters between them leave **nothing at all** — your teams idle and every other game rejected — the unfiltered list is used instead. Setting `other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one way to ask for an empty slate, and that is honoured.
-
-> These two settings only mean something for `ncaa_fb`. The NFL has no poll and no divisions, so both are inert there and cost nothing — no poll is requested and no division lookup is made. College football is also the only league ESPN publishes FBS/FCS group rosters for at all, so `other_games_divisions` does nothing in the other sports plugins either.
-
-### A worked example
-
-Say you follow Georgia and Auburn and want to see their next games plus some variety:
-
-```json
-"ncaa_fb": {
-  "favorite_teams": ["UGA", "AUB"],
-  "filtering": { "show_favorite_teams_only": false },
-  "game_limits": {
-    "upcoming_games_to_show": 3,
-    "other_upcoming_games_to_show": 3
-  }
-}
-```
-
-That gives 6 cards: the 3 soonest UGA/AUB games, plus 3 ranked FBS matchups that turn over every half hour.
-
-> **Careful with `AP_TOP_25` / `AP_TOP_10` in `favorite_teams`.** They expand into real teams, so adding `AP_TOP_10` makes UGA and AUB 2 of 11 favorites — and your own teams then queue behind every top-10 game that kicks off earlier. On one real schedule, UGA's next game was favorite-game #5 and Auburn's was #8, so with `upcoming_games_to_show: 3` neither appeared. If you want your teams guaranteed, keep the favorites list to your teams and let `other_upcoming_games_to_show` supply the variety.
-
-
-### Customization Options
-
-- **Font Customization**: Adjust font family and size for:
-  - Score text
-  - Period/time text
-  - Team names
-  - Status text
-  - Detail text (down/distance, etc.)
-  - Ranking text
-
-- **Layout Customization**: Fine-tune positioning with X/Y offsets for:
-  - Team logos (home/away)
-  - Score display
-  - Status/period text
-  - Date and time
-  - Down & distance
-  - Timeouts
-  - Possession indicator
-  - Records/rankings
-  - Betting odds
-
-### Timezone
-
-- `timezone` (Advanced): IANA name used to display event start times, e.g.
-  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
-  timezone; if that isn't set, the host system's timezone is used, and only if
-  neither is available do times fall back to UTC.
-
-  **Leftover `"UTC"` from an older version?** Before the write-back fix this
-  plugin could persist `"timezone": "UTC"` into your saved config, where it
-  then shadowed your real global timezone. That stale value is now detected
-  and ignored automatically whenever your global or system timezone disagrees
-  — no manual edit needed. If you genuinely want UTC here, set `Etc/UTC`,
-  which is always honored.
-
-
-## 🐛 Troubleshooting
-
-### Common Issues
-- **Start times look like UTC** (a 6:45pm Central start showing as 11:45PM):
-  the plugin couldn't read your global timezone. Set `timezone` under the
-  plugin's Advanced Settings to your IANA zone, e.g. `America/Chicago`.
-- **No games showing**: Check if leagues are enabled and favorite teams are configured
-- **Missing team logos**: Logos are automatically downloaded from ESPN API
-- **Slow updates**: Adjust the `live_update_interval` in league configuration
-- **API errors**: Check your internet connection and ESPN API availability
-- **Dynamic teams not working**: Ensure you're using exact patterns like `AP_TOP_25`
-- **Scroll mode not working**: Verify `scroll_display_mode` is set to "scroll" in config
-- **Modes not appearing**: Check that specific modes (e.g., `nfl_live`) are enabled in display_modes settings
-
-
-## 📊 Version History
-
-### v2.0.7 (Current)
-- ✅ **Granular Display Modes**: Independent control of NFL/NCAA FB live/recent/upcoming modes
-- ✅ **Scroll Display Mode**: High-FPS horizontal scrolling of all games with league separators
-- ✅ **Switch Display Mode**: One game at a time with timed transitions (default)
-- ✅ **Font Customization**: Customize fonts and sizes for all text elements
-- ✅ **Layout Customization**: Adjust X/Y positioning offsets for all display elements
-- ✅ **Date Display**: Recent games show date underneath score
-- ✅ Production-ready with real ESPN API integration
-- ✅ Dynamic team resolution (AP_TOP_25, AP_TOP_10, AP_TOP_5)
-- ✅ Real-time odds display with spread and over/under
-- ✅ Nested configuration structure for better organization
-- ✅ Full compatibility with LEDMatrix web UI
-- ✅ Comprehensive error handling and caching
-- ✅ Memory-optimized for Raspberry Pi deployment
-
-### Previous Versions
-- v2.0.6: Bug fixes and improvements
-- v2.0.5: Production-ready release with ESPN API integration
-- v2.0.4: Initial refactoring to reuse LEDMatrix core code
-- v1.x: Original modular implementation
-
-## 🤝 Contributing
-
-This plugin is built on the proven LEDMatrix core codebase. For issues or feature requests, please use the GitHub issue tracker.
-
-## 📄 License
-
-This plugin follows the same license as the main LEDMatrix project.
+- Only finished games are coloured; live and upcoming cards are untouched.
+- A game needs **exactly one** favorite team. Neither side or both, and the score
+  keeps its normal colour.
+- The three colours are Advanced settings.
+
+This tint is applied by the LEDMatrix core rather than by the plugin, which is
+why the keys do not appear in this plugin's source.
 
 ## Vegas ticker: seeing live games more often
 
 By default a live game **takes over** the display: the Vegas ticker stops and
-this scoreboard shows full screen until the game ends. If you would rather keep
-the marquee scrolling and still see scores, set this in the core config:
+this scoreboard shows full screen until the game ends. To keep the marquee
+scrolling and still see scores, set this in the **core** config — not in this
+plugin's settings:
 
 ```json
 {
@@ -689,103 +667,102 @@ the marquee scrolling and still see scores, set this in the core config:
 ```
 
 The ticker is otherwise a strict round robin — every plugin appears once per
-cycle — so with a dozen plugins enabled a score comes round once a lap. These
-weights let this plugin claim several slots per cycle, spaced evenly through
-it rather than bunched together.
-
-`live_weight` applies whenever this scoreboard has a live game.
-`favorite_live_weight` applies when one of your `favorite_teams` is playing, so
-your team's game comes round more often than other live games. That distinction
-has to be made here rather than in the core, which can tell *that* a game is
-live but not *whose*.
-
-Two things to keep in mind:
+cycle. These weights let this plugin claim several slots per cycle, spaced
+evenly through it. `live_weight` applies whenever this scoreboard has a live
+game; `favorite_live_weight` applies when one of your teams is playing. That
+distinction has to be made here rather than in the core, which can tell *that* a
+game is live but not *whose*.
 
 - The weight is per **plugin**, not per game. With four games live this
   scoreboard still occupies one slot at a time and picks between its own games
-  using `favorite_live_boost`; these weights control how often the scoreboard
-  itself comes round.
-- More slots make the cycle **longer**, not faster — everything else appears
-  proportionally less often. And appearing more often only helps if the data is
-  fresh, which is governed by this plugin's own live update interval.
+  using `favorite_live_boost`.
+- More slots make the cycle **longer**, not faster.
 
-## Matchup separator and the upcoming card middle
+## Team abbreviations
 
-The **Matchup Card Layout** section (advanced) controls what sits between the
-two team logos before a game starts, and how the date and time are written.
-These settings now apply to every display mode -- the scroll ticker, the Vegas
-ticker, and the full-screen scoreboard -- rather than only the tickers.
+**NFL:** `TB`, `DAL`, `GB`, `KC`, `BUF`, `SF`, `PHI`, `NE`, `MIA`, `NYJ`, `LAC`,
+`DEN`, `LV`, `CIN`, `BAL`, `CLE`, `PIT`, `IND`, `HOU`, `TEN`, `JAX`, `ARI`,
+`LAR`, `SEA`, `WAS`, `NYG`, `MIN`, `DET`, `CHI`, `ATL`, `CAR`, `NO`.
 
-| Setting | Key | Default | What it does |
-|---|---|---|---|
-| Matchup Separator | `vs_text` | `VS` | Text drawn between the teams: `VS`, `@`, `at`, `v`. The away team is always on the left, so `@` and `at` read as "away at home". Blank draws nothing. |
-| Middle of an Upcoming Card | `upcoming_center` | `vs` | Scroll and Vegas cards: the separator, the date and time stacked, or nothing. |
-| Middle of a Full-Screen Upcoming Scoreboard | `switch_upcoming_center` | `date_time` | The same choice for the full-screen scoreboard, plus `inherit` to follow the setting above. It defaults to the stacked date and time, which is what this display has always shown, so nothing changes until you pick something else. |
-| Date Format | `date_format` | `abbrev` | How the scroll and Vegas cards write the date: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
-| Full-Screen Date Format | `switch_date_format` | `numeric` | The same choice for the full-screen scoreboard, plus `inherit` to follow the row above. It has its own default because the two displays disagree about what is normal: the cards have always written `Sep 19` and the full-screen scoreboard `9/19`, so a single shared default would restyle one of them. |
-| Time Format | `time_format` | `12h` | 12- or 24-hour clock. |
-| Show Date / Show Time | `show_date`, `show_time` | `true` | Drop either line. |
-| Swap Date and Time | `swap_date_time` | `false` | Swap the two lines over. Each display starts from its own order, so this flips them rather than forcing one: the scroll and Vegas cards put the time on top, the full-screen date/time stack puts the date on top. |
+**NCAA Football:** `UGA` (Georgia), `AUB` (Auburn), `BAMA` (Alabama), `CLEM`
+(Clemson), `OSU` (Ohio State), `MICH` (Michigan), `FSU` (Florida State), `LSU`,
+`OU` (Oklahoma), `TEX` (Texas), `ORE` (Oregon), `MISS` (Mississippi), `GT`
+(Georgia Tech), `VAN` (Vanderbilt), `BYU`.
 
-Choosing the separator for the full-screen scoreboard moves the date and time
-out of the middle and onto the top and bottom rows, the same way the scroll
-card lays them out; the "Next Game" header gives up the top row to them.
+To check any team, read `events[].competitions[].competitors[].team.abbreviation`
+from the scoreboard endpoint below.
 
-The center-gap settings in the same section size the scroll and Vegas card's
-middle strip only -- the full-screen scoreboard pins its logos to the panel
-edges and is unaffected.
+## Data sources and architecture
 
-Example:
+ESPN's public site API, no key required:
 
-```json
-{
-  "scroll_card": {
-    "vs_text": "@",
-    "switch_upcoming_center": "vs",
-    "date_format": "weekday"
-  }
-}
+- NFL: `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard`
+- NCAA FB: `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard`
+- AP poll: the same host's `/rankings` path for college football
+
+Crests are downloaded on first sight and cached under `assets/sports/nfl_logos/`
+and `assets/sports/ncaa_logos/`. Rankings are cached for an hour, and the two
+ranking groups share one fetch.
+
+Each league keeps three managers — live, recent, upcoming — built only when that
+league's `enabled` flag is set. The plugin exposes each as its own display mode
+so the host controller can schedule and skip them individually.
+
+## Installation
+
+From the Plugin Store in the LEDMatrix web UI: open `http://your-pi-ip:5000`, go
+to **Plugin Manager**, find **Football Scoreboard** under **Plugin Store**, and
+click **Install**. Then open the plugin's tab to pick your teams.
+
+Manual install from source:
+
+```bash
+cd /path/to/LEDMatrix
+cp -r /path/to/ledmatrix-plugins/plugins/football-scoreboard plugin-repos/
+sudo systemctl restart ledmatrix
 ```
 
-### Text Colours
+The documentation images come from `docs/assets/football-scoreboard/shots.json`
+and re-render with `python scripts/render_docs_assets.py --plugin
+football-scoreboard --check`.
 
-Each text element in the **Customization** section carries a colour, and it now
-applies to the text drawn in that element's face — on the full-screen scoreboard
-and on the scroll and Vegas cards alike. Until this version the picker changed
-only which font was loaded; every string was drawn white.
+## Troubleshooting
 
-| Element | Key | Colours |
-|---|---|---|
-| Score | `score_text` | The score, and the matchup separator on an upcoming card |
-| Period / clock | `period_text` | The clock, period, and the date and time on an upcoming scoreboard |
-| Team name | `team_name` | Team names and abbreviations |
-| Status | `status_text` | Status lines such as "Next Game" |
-| Detail | `detail_text` | Small detail lines |
-| Ranking | `rank_text` | Team rankings drawn in the ranking face |
+**Nothing appears.** Check that `enabled` is on, and that the league's own
+`enabled` is on — `ncaa_fb` is off by default. With
+`filtering.show_favorite_teams_only` at its default of `true` and no
+`favorite_teams` set, there is nothing to select from.
 
-Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white, so a display
-nobody has recoloured looks exactly as it did.
+**I disabled a mode and it still shows.** The keys here are `show_live`,
+`show_recent`, and `show_upcoming` — not `live`, `recent`, `upcoming`. A
+`display_modes` block copied from another scoreboard sets nothing.
 
-The adaptive layout (`layout_mode: "adaptive"`) honours the same colours, by
-the same rule — the colour follows the face the text is set in. The clock,
-a recent card's "Final" and an upcoming card's kickoff time are set in the
-period face and take `period_text`'s colour; the stacked date+time centre
-stands in for the score and takes `score_text`'s; the bottom date line is set
-in the detail face and takes `detail_text`'s. Corner records, timeout bars and
-the semantic fills (scoring events, down & distance, the favourite-result
-tint) keep their own colours, exactly as in classic.
+**My team almost never appears.** You probably have an `AP_TOP_*` token in
+`favorite_teams` alongside it. The token expands into real teams that compete
+for the same slots — see [Dynamic team resolution](#dynamic-team-resolution).
 
-```json
-{
-  "customization": {
-    "score_text": { "text_color": [255, 200, 0] },
-    "status_text": { "text_color": "#00A0FF" }
-  }
-}
-```
+**The same few games keep repeating.** That is the pool cycling. Lower
+`other_rotation_interval_seconds` for faster turnover rather than raising the
+pool size — a larger pool makes the lap longer, so each game appears less often,
+not more.
 
-Two things keep their own colours on purpose: the betting-odds figures, which
-are coloured by which side is favoured, and a finished game's score when
-**Favorite Team Result Colors** is on — that tint wins, and your score colour
-shows on every other game. Records and rankings drawn in the small fixed face
-stay white; no element in the schema owns that face.
+**Non-favorite games are all obscure matchups.** Set
+`game_limits.other_games_min_quality` to `ranked` (its default) for college
+football. In the NFL there is no poll, so the setting is inert and every game
+qualifies.
+
+**A finished game disappeared too soon.** Raise `schedule_lookback_days`
+(default 14), or lower `recent_update_interval` if results are slow to appear.
+
+**Start times look like UTC.** The plugin could not read your global timezone.
+Set `timezone` under Advanced Settings to your IANA zone.
+
+**A game I know about never appears.** It may be beyond
+`schedule_lookahead_days` (default 7). A game outside that horizon is never
+fetched.
+
+## Contributing and license
+
+Issues and pull requests are welcome at
+[ChuckBuilds/ledmatrix-plugins](https://github.com/ChuckBuilds/ledmatrix-plugins).
+See `LICENSE`.
