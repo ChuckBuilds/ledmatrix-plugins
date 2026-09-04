@@ -1,0 +1,162 @@
+{
+  "matches": [
+    {
+      "url_contains": "elections-assets",
+      "body": {
+        "races": [
+          {
+            "office": "U.S. Senate",
+            "seat": "California Senate",
+            "type": "general",
+            "nyt_id": "U.S. Senate-CA",
+            "seat_number": null,
+            "outcome": {
+              "won": [
+                "c1"
+              ]
+            },
+            "candidate_metadata": {
+              "c1": {
+                "nyt_id": "c1",
+                "incumbent": true,
+                "party": {
+                  "nyt_id": "democrat"
+                },
+                "first_name": "Alex",
+                "last_name": "Padilla"
+              },
+              "c2": {
+                "nyt_id": "c2",
+                "incumbent": false,
+                "party": {
+                  "nyt_id": "republican"
+                },
+                "first_name": "Mark",
+                "last_name": "Meuser"
+              }
+            },
+            "top_reporting_unit": {
+              "state_postal": "CA",
+              "total_votes": 1000000,
+              "eevp": 92.4,
+              "candidates": [
+                {
+                  "nyt_id": "c1",
+                  "votes": {
+                    "total": 612500
+                  }
+                },
+                {
+                  "nyt_id": "c2",
+                  "votes": {
+                    "total": 387500
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "office": "Governor",
+            "seat": "California Governor",
+            "type": "general",
+            "nyt_id": "Governor-CA",
+            "seat_number": null,
+            "outcome": {
+              "won": []
+            },
+            "candidate_metadata": {
+              "c3": {
+                "nyt_id": "c3",
+                "incumbent": false,
+                "party": {
+                  "nyt_id": "democrat"
+                },
+                "first_name": "Katie",
+                "last_name": "Porter"
+              },
+              "c4": {
+                "nyt_id": "c4",
+                "incumbent": false,
+                "party": {
+                  "nyt_id": "republican"
+                },
+                "first_name": "Steve",
+                "last_name": "Hilton"
+              }
+            },
+            "top_reporting_unit": {
+              "state_postal": "CA",
+              "total_votes": 980000,
+              "eevp": 92.4,
+              "candidates": [
+                {
+                  "nyt_id": "c3",
+                  "votes": {
+                    "total": 501200
+                  }
+                },
+                {
+                  "nyt_id": "c4",
+                  "votes": {
+                    "total": 478800
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "office": "U.S. House",
+            "seat": "California 12th District",
+            "type": "general",
+            "nyt_id": "U.S. House-CA",
+            "seat_number": "12",
+            "outcome": {
+              "won": [
+                "c5"
+              ]
+            },
+            "candidate_metadata": {
+              "c5": {
+                "nyt_id": "c5",
+                "incumbent": true,
+                "party": {
+                  "nyt_id": "democrat"
+                },
+                "first_name": "Lateefah",
+                "last_name": "Simon"
+              },
+              "c6": {
+                "nyt_id": "c6",
+                "incumbent": false,
+                "party": {
+                  "nyt_id": "republican"
+                },
+                "first_name": "Jennifer",
+                "last_name": "Tran"
+              }
+            },
+            "top_reporting_unit": {
+              "state_postal": "CA",
+              "total_votes": 210000,
+              "eevp": 92.4,
+              "candidates": [
+                {
+                  "nyt_id": "c5",
+                  "votes": {
+                    "total": 142800
+                  }
+                },
+                {
+                  "nyt_id": "c6",
+                  "votes": {
+                    "total": 67200
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

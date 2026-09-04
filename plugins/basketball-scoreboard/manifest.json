@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.29.2",
+  "version": "1.29.3",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -20,11 +20,21 @@
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
     {
-      "version": "1.29.2",
+      "version": "1.29.3",
       "released": "2026-09-02",
       "ledmatrix_min_version": "3.3.0",
       "notes": "Say so when no usable font can be found. The last-ditch fallback silently dropped to PIL's built-in face, which does not match the panel's pixel grid -- so a missing or unreadable font file looked like a rendering bug with nothing in the log to explain it. It now warns, naming the font it failed to load. Nothing renders differently; this only makes an existing failure visible.",
       "changelog": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage."
+    },
+    {
+      "version": "1.29.2",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Fix every grid-snapped font rendering a pixel narrow. The shared code reads this plugin's config_schema.json to tell a default font size from one the user chose; a default gets snapped to the font's pixel grid, a choice is left alone. It located the schema by inspecting loaded modules, which fails under the real plugin loader -- the loader renames a plugin's modules and removes their original names, so nothing was left to inspect. The lookup returned nothing, every size then looked user-chosen, and the snap was skipped: 4x6-font.ttf drew at 6 instead of 7, which is 3-pixel-wide glyphs instead of 4. On a 256x64 panel the betting odds, team records and the date row were hard to read. The plugin now tells the shared code where it lives instead of leaving it to guess.",
+      "changelog": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage.",
+      "changes": [
+        "Rewrote the README as a complete settings reference covering all 274 settings, with rendered examples of every display mode and the March Madness tournament card."
+      ]
     },
     {
       "version": "1.29.1",
@@ -331,7 +341,7 @@
     {
       "released": "2026-07-02",
       "version": "1.6.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u2014 spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
       "ledmatrix_min": "2.0.0"
     },
     {

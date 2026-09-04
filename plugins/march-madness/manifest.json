@@ -1,7 +1,7 @@
 {
   "id": "march-madness",
   "name": "March Madness",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "description": "NCAA March Madness tournament bracket tracker with round branding, seeded matchups, live scores, and upset highlighting",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.1.0",
+      "released": "2026-09-03",
+      "notes": "Final-game layout, and documentation. A finished game drew its date at height - 6 while the 10px score started at height - 13, so the two shared three rows and the date sat inside the score digits -- and because both were offsets from height, they collided at every panel size. The score now lifts clear when a date is coming. Adds real rendered screenshots of the three game states, three of the display toggles and four panel sizes. Marks show_bracket_progress as not implemented: it is read once and never used (#406). Drops three unused imports.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.0.6",
       "released": "2026-08-19",
@@ -63,7 +69,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-08-05",
+  "last_updated": "2026-09-03",
   "verified": true,
   "screenshot": "",
   "display_modes": [

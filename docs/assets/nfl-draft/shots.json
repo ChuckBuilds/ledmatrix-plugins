@@ -1,0 +1,216 @@
+{
+  "plugin": "nfl-draft",
+  "_comment": "Picks are seeded onto the plugin instance rather than fetched from ESPN. The ticker scrolls, so shots step frames. Players and teams are the real 2025 first round, which is public record; nothing is downloaded at render time.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-04-24T20:00:00+00:00",
+    "skip_update": true,
+    "frames": 40,
+    "config": {
+      "enabled": true
+    },
+    "attrs": {
+      "draft_picks": [
+        {
+          "pick_number": 1,
+          "round": 1,
+          "round_pick": 1,
+          "team_abbr": "TEN",
+          "team_name": "Tennessee Titans",
+          "player_name": "Cam Ward",
+          "position": "QB",
+          "college": "Miami",
+          "on_clock": false
+        },
+        {
+          "pick_number": 2,
+          "round": 1,
+          "round_pick": 2,
+          "team_abbr": "CLE",
+          "team_name": "Cleveland Browns",
+          "player_name": "Travis Hunter",
+          "position": "WR",
+          "college": "Colorado",
+          "on_clock": false
+        },
+        {
+          "pick_number": 3,
+          "round": 1,
+          "round_pick": 3,
+          "team_abbr": "NYG",
+          "team_name": "New York Giants",
+          "player_name": "Abdul Carter",
+          "position": "EDGE",
+          "college": "Penn State",
+          "on_clock": false
+        },
+        {
+          "pick_number": 4,
+          "round": 1,
+          "round_pick": 4,
+          "team_abbr": "NE",
+          "team_name": "New England Patriots",
+          "player_name": "Will Campbell",
+          "position": "OT",
+          "college": "LSU",
+          "on_clock": true
+        },
+        {
+          "pick_number": 33,
+          "round": 2,
+          "round_pick": 1,
+          "team_abbr": "BUF",
+          "team_name": "Buffalo Bills",
+          "player_name": "Nick Emmanwori",
+          "position": "S",
+          "college": "South Carolina",
+          "on_clock": false
+        }
+      ],
+      "draft_status": "live",
+      "current_round": 1,
+      "is_draft_live": true
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "frames": 300,
+      "width": 256
+    },
+    {
+      "name": "pos-on",
+      "frames": 300,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "show_position": true,
+        "show_college": true
+      }
+    },
+    {
+      "name": "pos-off",
+      "frames": 300,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "show_position": false,
+        "show_college": true
+      }
+    },
+    {
+      "name": "col-off",
+      "frames": 300,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "show_position": true,
+        "show_college": false
+      }
+    },
+    {
+      "name": "font-press",
+      "frames": 300,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "font": "PressStart2P-Regular.ttf"
+      }
+    },
+    {
+      "name": "font-4x6",
+      "frames": 300,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "font": "4x6-font.ttf"
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "frames": 300,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "frames": 300,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "frames": 300,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "frames": 300,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "detail-line",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "pos-on",
+          "label": "position and college on",
+          "sublabel": "#1  QB  (Miami)"
+        },
+        {
+          "shot": "pos-off",
+          "label": "show_position: false"
+        },
+        {
+          "shot": "col-off",
+          "label": "show_college: false"
+        }
+      ]
+    },
+    {
+      "name": "fonts",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "font-press",
+          "label": "font: PressStart2P-Regular.ttf",
+          "sublabel": "the default"
+        },
+        {
+          "shot": "font-4x6",
+          "label": "font: 4x6-font.ttf",
+          "sublabel": "narrower, so more fits per card"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

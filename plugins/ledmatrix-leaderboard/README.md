@@ -13,6 +13,18 @@
 
 # Leaderboard Plugin
 
+![The NFL standings scrolling across a 256x32 panel: position number, team logo
+and abbreviation for each team in
+order](../../docs/assets/ledmatrix-leaderboard/hero.png)
+
+*Every image in this README is real plugin output, rendered at the true panel
+size from seeded standings so it reproduces exactly. Teams and records are
+invented.*
+
+Each team is drawn as **position number, logo, abbreviation**. Records are not
+shown for the major leagues — the only place a record replaces the number is
+NCAA football with `show_ranking` off, below.
+
 A plugin for LEDMatrix that displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, NHL, and more.
 
 ## Features
@@ -170,6 +182,91 @@ reached. Raise that cap, increase the scroll speed
   }
 }
 ```
+
+### Top level
+
+| Key | Default | Notes |
+|---|---|---|
+| `enabled` | `false` | Enable or disable the leaderboard plugin. |
+| `display_duration` | `30` | How long to display the leaderboard in seconds (10–300). |
+| `update_interval` | `3600` | How often to fetch new leaderboard data in seconds (300–86400). |
+
+### `global`
+
+| Key | Default | Notes |
+|---|---|---|
+| `global.display_duration` | `30` | Duration in seconds to display the leaderboard (10–300). |
+| `global.scroll_speed` | `1` | Scrolling speed multiplier (0.1–10). |
+| `global.target_fps` | `100` | Target frames per second for scrolling (30–200). |
+| `global.scroll_speed_scale` | `8` | Scroll speed scale factor (1–20). **Not implemented**. |
+| `global.request_timeout` | `30` | Request timeout in seconds (5–120). |
+| `global.dynamic_duration.enabled` | `true` | Enable dynamic duration based on content width. |
+| `global.dynamic_duration.min_duration_seconds` | `45` | Minimum display duration when dynamic duration is enabled (10–300). |
+| `global.dynamic_duration.max_duration_seconds` | `600` | Maximum display duration when dynamic duration is enabled (30–1200). |
+| `global.dynamic_duration.buffer_ratio` | `0.1` | Extra buffer applied to the calculated duration (percentage expressed as 0-1). |
+| `global.dynamic_duration.controller_cap_seconds` | `600` | Failsafe cap for the display controller when dynamic duration is enabled (60–1800). |
+| `global.min_duration` | `45` | [Deprecated] Use dynamic_duration.min_duration_seconds instead (10–300). |
+| `global.max_duration` | `600` | [Deprecated] Use dynamic_duration.max_duration_seconds instead (30–1200). |
+| `global.duration_buffer` | `0.1` | [Deprecated] Use dynamic_duration.buffer_ratio instead (0.01–1.0). |
+| `global.max_display_time` | `600` | [Deprecated] Use dynamic_duration.controller_cap_seconds instead (60–1800). |
+| `global.scroll_pixels_per_second` | `15.0` | [Deprecated] Scroll speed in pixels per second. Use display.scroll_speed and display.scroll_delay for finer control (5.0–50.0). |
+| `global.display.scroll_speed` | `1.0` | Scrolling speed in pixels per frame (0.5–5.0). |
+| `global.display.scroll_delay` | `0.01` | Delay between scroll steps in seconds (0.001–0.1). |
+| `global.scroll_target_fps` | `100.0` | Target FPS for scrolling (30.0–200.0). |
+| `global.scroll_mode` | `"one_shot"` | Scrolling mode — one of `one_shot`, `continuous`. |
+| `global.scroll_direction` | `"left"` | Scroll direction — one of `left`, `right`. **Not implemented**. |
+| `global.enable_scroll_metrics` | `false` | Enable scroll performance metrics. **Not implemented**. |
+| `global.scroll_delay` | `0.01` | Delay between scroll steps in seconds (0.001–0.1). |
+| `global.loop` | `false` | Continuously loop the leaderboard. |
+| `global.appearance.pixel_perfect_text` | `true` | Render text with hard pixel edges. Disable only if you prefer the older anti-aliased (softer, blurrier) look. |
+| `global.appearance.crisp_logos` | `true` | Give logos hard edges instead of a ring of half-lit pixels. |
+| `global.appearance.text_outline` | `true` | Draw a black outline around text so it stays readable over logos. |
+| `global.appearance.logo_scale` | `1.0` | Logo height as a fraction of the panel height. 1.0 fits the panel exactly; above 1.0 crops the top and bottom of every logo (0.5–1.5). |
+| `global.appearance.font_size` | `0` | Font size in pixels. 0 picks a size that suits the panel height. Values are snapped to the font's pixel grid (multiples of 8 for Press Start 2P) to keep text sharp (0–32). |
+
+### `enabled_sports`
+
+Each league takes the same four or five keys.
+
+| Key | Default | Notes |
+|---|---|---|
+| `enabled_sports.nfl.enabled` | `true` | Enable NFL standings. |
+| `enabled_sports.nfl.top_teams` | `10` | Number of top NFL teams to display. 0 shows every team the standings return (up to 32). Long lists need a matching display duration - see the README (0–32). |
+| `enabled_sports.nba.enabled` | `true` | Enable NBA standings. |
+| `enabled_sports.nba.top_teams` | `10` | Number of top NBA teams to display. 0 shows every team the standings return (up to 30). Long lists need a matching display duration - see the README (0–30). |
+| `enabled_sports.mlb.enabled` | `true` | Enable MLB standings. |
+| `enabled_sports.mlb.top_teams` | `10` | Number of top MLB teams to display. 0 shows every team the standings return (up to 30). Long lists need a matching display duration - see the README (0–30). |
+| `enabled_sports.ncaa_fb.enabled` | `true` | Enable NCAA Football rankings. |
+| `enabled_sports.ncaa_fb.top_teams` | `25` | Number of top NCAA Football teams to display. 0 shows every team the standings return (up to 130). Long lists need a matching display duration - see the README (0–130). |
+| `enabled_sports.ncaa_fb.show_ranking` | `true` | Show NCAA Football rankings instead of standings. |
+| `enabled_sports.nhl.enabled` | `true` | Enable NHL standings. |
+| `enabled_sports.nhl.top_teams` | `10` | Number of top NHL teams to display. 0 shows every team the standings return (up to 32). Long lists need a matching display duration - see the README (0–32). |
+| `enabled_sports.ncaam_basketball.enabled` | `false` | Enable NCAA Men's Basketball rankings. |
+| `enabled_sports.ncaam_basketball.top_teams` | `25` | Number of top NCAA Men's Basketball teams to display. 0 shows every team the standings return (up to 350). Long lists need a matching display duration - see the README (0–350). |
+| `enabled_sports.ncaam_basketball.show_ranking` | `true` | Show rankings/seeds instead of sequential numbering. During March Madness, automatically shows tournament seeds. |
+| `enabled_sports.ncaam_hockey.enabled` | `false` | Enable NCAA Men's Hockey rankings. |
+| `enabled_sports.ncaam_hockey.top_teams` | `10` | Number of top NCAA Men's Hockey teams to display. 0 shows every team the standings return (up to 60). Long lists need a matching display duration - see the README (0–60). |
+| `enabled_sports.ncaam_hockey.show_ranking` | `true` | Show NCAA Men's Hockey rankings instead of standings. |
+| `enabled_sports.ncaaw_basketball.enabled` | `false` | Enable NCAA Women's Basketball rankings. |
+| `enabled_sports.ncaaw_basketball.top_teams` | `25` | Number of top NCAA Women's Basketball teams to display. 0 shows every team the standings return (up to 350). Long lists need a matching display duration - see the README (0–350). |
+| `enabled_sports.ncaaw_basketball.show_ranking` | `true` | Show rankings/seeds instead of sequential numbering. During March Madness, automatically shows tournament seeds. |
+| `enabled_sports.ncaa_baseball.enabled` | `false` | Enable NCAA Baseball standings. |
+| `enabled_sports.ncaa_baseball.top_teams` | `25` | Number of top NCAA Baseball teams to display. 0 shows every team the standings return (up to 350). Long lists need a matching display duration - see the README (0–350). |
+| `enabled_sports.ncaa_baseball.season` | — | Season identifier (e.g. '2026'). Omit to use the current ESPN season. |
+| `enabled_sports.ncaa_baseball.level` | `1` | Competition level (1 = Division I, 2 = Division II, 3 = Division III) (1–3). |
+| `enabled_sports.ncaa_baseball.sort` | `"winpercent:desc,gamesbehind:asc"` | Sort key and order for standings. |
+
+
+### What the settings look like
+
+![text_outline and logo_scale](../../docs/assets/ledmatrix-leaderboard/appearance.png)
+
+`show_ranking` is the one setting that changes *what information* appears
+rather than how it looks, and only for NCAA football:
+
+![show_ranking on and off](../../docs/assets/ledmatrix-leaderboard/ncaa-ranking.png)
+
+![The same standings on four panel sizes](../../docs/assets/ledmatrix-leaderboard/panel-sizes.png)
 
 ## Display Format
 
