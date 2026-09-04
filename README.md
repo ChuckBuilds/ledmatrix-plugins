@@ -98,7 +98,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [Masters Tournament](./plugins/masters-tournament/) | Live Masters golf leaderboard, hole tracking, player cards | <a href="./plugins/masters-tournament/"><img src="./docs/assets/masters-tournament/hero.png" width="240" alt="masters-tournament on an LED panel"></a> |
 | [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN | <a href="./plugins/nfl-draft/"><img src="./docs/assets/nfl-draft/hero.png" width="240" alt="nfl-draft on an LED panel"></a> |
 | [March Madness](./plugins/march-madness/) | NCAA tournament bracket tracker with round branding and live scores | <a href="./plugins/march-madness/"><img src="./docs/assets/march-madness/hero.png" width="240" alt="march-madness on an LED panel"></a> |
-| [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records | |
+| [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records | <a href="./plugins/ledmatrix-leaderboard/"><img src="./docs/assets/ledmatrix-leaderboard/hero.png" width="240" alt="ledmatrix-leaderboard on an LED panel"></a> |
 | [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts | <a href="./plugins/olympics/"><img src="./docs/assets/olympics/hero.png" width="240" alt="olympics on an LED panel"></a> |
 
 ### Financial (2)
