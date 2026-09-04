@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.24.2",
+  "version": "1.24.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -51,14 +51,19 @@
   ],
   "versions": [
     {
-      "version": "1.24.2",
+      "version": "1.24.3",
       "released": "2026-09-02",
       "ledmatrix_min_version": "3.3.0",
-      "notes": "Fix every grid-snapped font rendering a pixel narrow. The shared code reads this plugin's config_schema.json to tell a default font size from one the user chose; a default gets snapped to the font's pixel grid, a choice is left alone. It located the schema by inspecting loaded modules, which fails under the real plugin loader -- the loader renames a plugin's modules and removes their original names, so nothing was left to inspect. The lookup returned nothing, every size then looked user-chosen, and the snap was skipped: 4x6-font.ttf drew at 6 instead of 7, which is 3-pixel-wide glyphs instead of 4. On a 256x64 panel the betting odds, team records and the date row were hard to read. The plugin now tells the shared code where it lives instead of leaving it to guess.",
+      "notes": "Render the font the settings page advertises. Each text element's schema names a default font, but several elements never passed it to the loader, so the loader used its own fallback instead: the status text -- and on hockey the detail and odds text too -- advertised the 4x6 font while actually drawing in PressStart2P. Choosing the font the picker already showed as active therefore changed the display, which looked like the picker was broken. Each element now renders what its schema declares. This affects panels 128 pixels wide and narrower, on upcoming screens only; wider panels draw that header in the time font and are unchanged. It also fixes a knock-on problem: \"Next Game\" needed 72px in the wrong font and had to shorten to \"Next\" on a 64px panel, where it now fits whole at 41px.",
       "changelog": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage.",
       "changes": [
         "Rewrote the README as a complete settings reference covering all 170 settings, with rendered examples of every display mode and both leagues."
       ]
+    },
+    {
+      "version": "1.24.2",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.3.0",
       "notes": "Render the font the settings page advertises. Each text element's schema names a default font, but several elements never passed it to the loader, so the loader used its own fallback instead: the status text -- and on hockey the detail and odds text too -- advertised the 4x6 font while actually drawing in PressStart2P. Choosing the font the picker already showed as active therefore changed the display, which looked like the picker was broken. Each element now renders what its schema declares. This affects panels 128 pixels wide and narrower, on upcoming screens only; wider panels draw that header in the time font and are unchanged. It also fixes a knock-on problem: \"Next Game\" needed 72px in the wrong font and had to shorten to \"Next\" on a 64px panel, where it now fits whole at 41px.",
       "changelog": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage."
     },
