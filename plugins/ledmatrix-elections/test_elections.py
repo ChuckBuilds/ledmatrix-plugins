@@ -37,7 +37,9 @@ def check(cond, msg):
 
 
 def load(name):
-    with open(os.path.join(FIX, name)) as f:
+    # UTF-8 explicitly: the fixtures carry non-ASCII candidate names, and the
+    # platform default encoding fails on them under Windows.
+    with open(os.path.join(FIX, name), encoding="utf-8") as f:
         return json.load(f)
 
 

@@ -1,0 +1,228 @@
+{
+  "plugin": "youtube-stats",
+  "_comment": "The plugin keeps its numbers in self.channel_stats -- title, subscribers and views -- and display() calls update() unless _has_fetched is already True, so the fixture sets both and no request is made. last_displayed_stats must stay None or display() short-circuits as an unchanged redraw. The channel name and figures are invented; no API key is used.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "skip_update": true,
+    "config": {
+      "enabled": true,
+      "channel_id": "UCexample",
+      "api_key": "not-used-in-render"
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "attrs": {
+        "channel_stats": {
+          "title": "ChuckBuilds",
+          "subscribers": 48213,
+          "views": 3927455
+        },
+        "_has_fetched": true,
+        "last_displayed_stats": null,
+        "_api_key_error": null
+      }
+    },
+    {
+      "name": "default",
+      "standalone": false,
+      "attrs": {
+        "channel_stats": {
+          "title": "ChuckBuilds",
+          "subscribers": 48213,
+          "views": 3927455
+        },
+        "_has_fetched": true,
+        "last_displayed_stats": null,
+        "_api_key_error": null
+      }
+    },
+    {
+      "name": "coloured",
+      "standalone": false,
+      "attrs": {
+        "channel_stats": {
+          "title": "ChuckBuilds",
+          "subscribers": 48213,
+          "views": 3927455
+        },
+        "_has_fetched": true,
+        "last_displayed_stats": null,
+        "_api_key_error": null
+      },
+      "config": {
+        "enabled": true,
+        "channel_id": "UCexample",
+        "api_key": "not-used-in-render",
+        "customization": {
+          "channel_name": {
+            "text_color": [
+              255,
+              80,
+              80
+            ]
+          },
+          "subscriber_count": {
+            "text_color": [
+              255,
+              255,
+              255
+            ]
+          },
+          "view_count": {
+            "text_color": [
+              120,
+              200,
+              255
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "small-font",
+      "standalone": false,
+      "attrs": {
+        "channel_stats": {
+          "title": "ChuckBuilds",
+          "subscribers": 48213,
+          "views": 3927455
+        },
+        "_has_fetched": true,
+        "last_displayed_stats": null,
+        "_api_key_error": null
+      },
+      "config": {
+        "enabled": true,
+        "channel_id": "UCexample",
+        "api_key": "not-used-in-render",
+        "customization": {
+          "channel_name": {
+            "font": "4x6-font.ttf",
+            "font_size": 6
+          },
+          "subscriber_count": {
+            "font": "4x6-font.ttf",
+            "font_size": 6
+          },
+          "view_count": {
+            "font": "4x6-font.ttf",
+            "font_size": 6
+          }
+        }
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "standalone": false,
+      "attrs": {
+        "channel_stats": {
+          "title": "ChuckBuilds",
+          "subscribers": 48213,
+          "views": 3927455
+        },
+        "_has_fetched": true,
+        "last_displayed_stats": null,
+        "_api_key_error": null
+      }
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "standalone": false,
+      "attrs": {
+        "channel_stats": {
+          "title": "ChuckBuilds",
+          "subscribers": 48213,
+          "views": 3927455
+        },
+        "_has_fetched": true,
+        "last_displayed_stats": null,
+        "_api_key_error": null
+      }
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "standalone": false,
+      "attrs": {
+        "channel_stats": {
+          "title": "ChuckBuilds",
+          "subscribers": 48213,
+          "views": 3927455
+        },
+        "_has_fetched": true,
+        "last_displayed_stats": null,
+        "_api_key_error": null
+      }
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "standalone": false,
+      "attrs": {
+        "channel_stats": {
+          "title": "ChuckBuilds",
+          "subscribers": 48213,
+          "views": 3927455
+        },
+        "_has_fetched": true,
+        "last_displayed_stats": null,
+        "_api_key_error": null
+      }
+    }
+  ],
+  "composites": [
+    {
+      "name": "customization",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "default",
+          "label": "defaults",
+          "sublabel": "PressStart2P at 8px, all three lines white"
+        },
+        {
+          "shot": "coloured",
+          "label": "per-line colours",
+          "sublabel": "channel_name and view_count recoloured"
+        },
+        {
+          "shot": "small-font",
+          "label": "4x6-font.ttf at 6px",
+          "sublabel": "a smaller face fits more of a long channel name"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

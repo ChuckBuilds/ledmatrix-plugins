@@ -8,7 +8,9 @@ It **auto-activates** around your state's elections and is **dormant** the rest
 of the year (no network, no screen time), so you can leave it enabled and it only
 shows up when there's news.
 
-![called card](#) <!-- add a screenshot when available -->
+![A called race card: a green RACE CALLED banner, the office and state, the
+winner's surname in party colour, and the vote share with percent
+reporting](../../docs/assets/ledmatrix-elections/hero.png)
 
 ## What it shows
 
@@ -19,6 +21,27 @@ shows up when there's news.
   core's live-priority preemption to take over the screen with a "RACE CALLED"
   card (office, winner, party, vote % and % reporting), the same path live sports
   use. Each call shows once.
+
+## The two display modes
+
+![The called card and the ticker](../../docs/assets/ledmatrix-elections/display-modes.png)
+
+The plugin registers both in `manifest.json`, so the display controller can
+schedule them separately:
+
+| Mode | Shows |
+|---|---|
+| `election_ticker` | Every visible race, scrolling past one card at a time |
+| `election_called` | The full-screen card for a newly called race |
+
+Party colour carries through both — blue for `D`, red for `R` — and an advancing
+or winning candidate is marked with `*`.
+
+## Panel sizes
+
+![The called card at four panel sizes](../../docs/assets/ledmatrix-elections/panel-sizes.png)
+
+The plugin passes the render-safety harness on every supported size.
 
 ## Scope when filtered to your state
 
@@ -100,6 +123,31 @@ testing or to point at one specific feed:
 | `local_races` | `true` | Use your state's authoritative local results source where one exists (auto-engages by state; currently CA). |
 | `test_mode` | `false` | Render bundled fixtures offline (demo / no election night). |
 
+### Districts, ticker speed and provider endpoints
+
+These are real settings the table above left out.
+
+| Key | Default | Notes |
+|---|---|---|
+| `lower_chamber_district` | `""` | Your state legislature lower-chamber district number — whatever your state calls it (Assembly, House of Delegates). Set it to have that local race appear in the ticker; leave blank to omit it. |
+| `upper_chamber_district` | `""` | Your state senate district number. Same idea. |
+| `scroll_speed` | `1.0` | Ticker speed in pixels per frame. |
+| `scroll_delay` | `0.03` | Delay between scroll steps; lower is faster. Around `0.03` reads comfortably, `0.01` is brisk. |
+| `providers.nyt.enabled` | `true` | Use the NYT static feed as the national baseline. |
+| `providers.nyt.base_url` | `https://static01.nyt.com/elections-assets/pages/data` | Where the NYT feeds are fetched from. Change it only to point at a mirror or a local capture. |
+| `providers.nyt.election_date` | `2026-06-02` | Drives the feed URL. Normally set for you by the calendar or `override` — see the note below. |
+| `providers.nyt.election_type` | `primary` | `primary` feeds are per-state; `general` feeds are national. Also normally set for you. |
+| `providers.ca_sos.base_url` | `https://api.sos.ca.gov/returns` | California Secretary of State returns API. |
+| `providers.ca_sos.offices` | `[]` | Statewide office slugs to fetch from the SoS (e.g. `governor`, `attorney-general`). Empty uses the built-in set. |
+| `providers.ca_sos.include_house` | `false` | Also pull CA U.S. House results from the SoS. Off by default — the national feed already covers them. |
+| `providers.ca_sos.called_threshold` | `99.0` | Reporting percentage at which an SoS office counts as called, since the SoS feed carries no winner flag. |
+
+> **Two settings the code reads are not in the schema**, so they never appear in
+> the web UI and can only be set by hand-editing `config.json`:
+> `test_mode` (default `false`, used above to render bundled fixtures offline)
+> and `providers.ca_sos.override_nyt_votes` (default `true`, described under
+> California local results). Both work; they are simply not offered by the form.
+
 > The active election's date and type are chosen by the calendar/override and
 > pushed to the NYT provider automatically; you don't set `providers.nyt.election_date`
 > by hand anymore.
@@ -171,4 +219,12 @@ python scripts/check_plugin.py --plugin ledmatrix-elections \
 ```
 
 Fixtures under `test/fixtures/` are real captures from the June 2, 2026 California
-primary.
+primary. They are UTF-8 and contain non-ASCII candidate names, so the loaders
+open them with an explicit encoding — without that, the platform default on
+Windows raises part-way through and every panel renders blank.
+
+The documentation images come from `docs/assets/ledmatrix-elections/shots.json`
+and re-render with `python scripts/render_docs_assets.py --plugin
+ledmatrix-elections --check`. They replay a small NYT-shaped feed rather than
+seeding plugin state, because the plugin parses that JSON into `Race` and
+`Candidate` dataclasses — so the images exercise the real provider parse.
