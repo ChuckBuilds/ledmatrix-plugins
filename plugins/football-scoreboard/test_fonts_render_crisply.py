@@ -123,13 +123,22 @@ def main():
     # Loading "without raising" proves nothing on its own: _load_fonts wraps
     # the whole block in try/except and drops to hardcoded emergency defaults,
     # which are crisp as well -- so a broken call in the config path is
-    # invisible unless the two paths can be told apart. They can: the config
-    # path gives status PressStart2P (the loader's own default face), while
-    # the emergency fallback hardcodes 4x6-font for it.
-    status_face = os.path.basename(str(getattr(local.get("status"), "path", "")))
+    # invisible unless the two paths can be told apart.
+    #
+    # The status FACE used to be that discriminator: the config path gave
+    # PressStart2P (the loader's own fallback face) while the emergency block
+    # hardcodes 4x6-font. That stopped discriminating when the config path was
+    # corrected to pass the font its schema declares, which is 4x6-font -- both
+    # paths now agree on status, so the old check could not tell them apart.
+    #
+    # The odds slot replaces it: only the config path builds one. The emergency
+    # block predates the setting and never gained it, which is safe at runtime
+    # (_draw_dynamic_odds falls back to fonts["detail"]) and is exactly the
+    # asymmetry this check needs. If the emergency block ever gains an odds
+    # entry, pick another: rank is 10px on the config path and 8px here.
     check("the no-resolver path used the config loader, not the emergency "
-          "fallback (status face %s)" % (status_face or "none"),
-          status_face == "PressStart2P-Regular.ttf")
+          "fallback (odds slot %s)" % ("present" if "odds" in local else "absent"),
+          "odds" in local)
     for key, font in sorted(local.items()):
         size = getattr(font, "size", None)
         if size:
