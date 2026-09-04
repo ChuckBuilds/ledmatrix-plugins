@@ -7,11 +7,10 @@ round, with seeds, round logos, live scores, and upset highlighting.
 import re
 import threading
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import numpy as np
 import pytz
 import requests
 from PIL import Image, ImageDraw, ImageFont
@@ -649,7 +648,11 @@ class MarchMadnessPlugin(BasePlugin):
         # Score (bottom center of center block, for live/final)
         if score_text:
             score_x = center_mid - score_w // 2
-            score_y = height - 13
+            # A final game also draws its date at height - 6. The score font is
+            # 10px tall starting at height - 13, so the two used to share three
+            # rows -- and because both are offsets from height, they collided at
+            # every panel size. Lift the score clear when a date is coming.
+            score_y = height - (19 if (game["is_final"] and game.get("game_date")) else 13)
             # Upset highlighting
             if game["is_final"] and game["is_upset"] and self.highlight_upsets:
                 score_color = COLOR_GOLD

@@ -1,63 +1,60 @@
------------------------------------------------------------------------------------
 ### Connect with ChuckBuilds
 
-- Show support on Youtube: https://www.youtube.com/@ChuckBuilds
+- Show support on YouTube: https://www.youtube.com/@ChuckBuilds
 - Stay in touch on Instagram: https://www.instagram.com/ChuckBuilds/
 - Want to chat or need support? Reach out on the ChuckBuilds Discord: https://discord.com/invite/uW36dVAtcT
-- Feeling Generous? Support the project:
-  - Github Sponsorship: https://github.com/sponsors/ChuckBuilds
+- Feeling generous? Support the project:
+  - GitHub Sponsors: https://github.com/sponsors/ChuckBuilds
   - Buy Me a Coffee: https://buymeacoffee.com/chuckbuilds
-  - Ko-fi: https://ko-fi.com/chuckbuilds/ 
+  - Ko-fi: https://ko-fi.com/chuckbuilds/
 
------------------------------------------------------------------------------------
+---
 
-# YouTube Stats Plugin
+# YouTube Stats
 
-Display YouTube channel statistics on your LED matrix, including channel name, subscriber count, and total views. Perfect for showcasing your YouTube channel metrics or tracking channel growth.
+Your YouTube channel's name, subscriber count and total views on your LEDMatrix
+display, beside the YouTube logo.
 
-## Features
+![Channel stats on a 128x32 panel](../../docs/assets/youtube-stats/hero.png)
 
-- **Channel Statistics**: Display subscriber count, total views, and channel name
-- **YouTube Logo**: Shows the official YouTube logo alongside statistics
-- **Auto-refresh**: Automatically updates channel statistics at configurable intervals
-- **Caching**: Efficient API usage with built-in caching
-- **Clean Layout**: Organized display with logo on left and stats on right
+## Contents
 
-## Configuration
+- [Quick start](#quick-start)
+- [What's on screen](#whats-on-screen)
+- [Fonts and colours](#fonts-and-colours)
+- [Panel sizes](#panel-sizes)
+- [Settings reference](#settings-reference)
+- [API quota](#api-quota)
+- [Troubleshooting](#troubleshooting)
 
-### Setup
+## Quick start
 
-1. **Get YouTube API Key**:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select an existing one
-   - Enable the YouTube Data API v3
-   - Create credentials (API Key)
-   - Copy your API key
+**1. Get a YouTube Data API v3 key.** In the
+[Google Cloud Console](https://console.cloud.google.com/), create or pick a
+project, enable **YouTube Data API v3**, then create an **API key** credential.
 
-2. **Find Your Channel ID**:
-   - Go to [YouTube Account Advanced Settings](https://www.youtube.com/account_advanced)
-   - Your Channel ID is displayed (format: UCxxxxx...)
-   - Or use [this tool](https://commentpicker.com/youtube-channel-id.php)
+**2. Find your channel ID.** It is shown at
+[YouTube Advanced Settings](https://www.youtube.com/account_advanced) and starts
+with `UC`.
 
-3. **Configure Plugin**:
-   - Add configuration to `config/config.json`
-   - Add API key to `config/config_secrets.json`
+**3. Configure the plugin.** The channel ID goes in the main config; the API key
+goes in the secrets file so it never lands in git.
 
-### Example Configuration
+`config/config.json`:
 
-**Main Configuration** (`config/config.json`):
 ```json
 {
   "youtube-stats": {
     "enabled": true,
-    "channel_id": "UCxxxxx...",
+    "channel_id": "UCxxxxxxxxxxxxxxxxxxxxxx",
     "update_interval": 300,
     "display_duration": 15
   }
 }
 ```
 
-**Secrets Configuration** (`config/config_secrets.json`):
+`config/config_secrets.json`:
+
 ```json
 {
   "youtube-stats": {
@@ -66,134 +63,123 @@ Display YouTube channel statistics on your LED matrix, including channel name, s
 }
 ```
 
-### Configuration Options
+The plugin is **disabled by default** — `enabled` must be set to `true`.
 
-- `enabled` (boolean): Enable/disable the plugin (default: false)
-- `channel_id` (string, required): YouTube channel ID (e.g., UCxxxxx...)
-- `update_interval` (integer): Update interval in seconds (60-3600, default: 300)
-- `display_duration` (number): Display duration in seconds (5-60, default: 15)
-- `api_key` (string, required, in secrets): YouTube Data API v3 key
+## What's on screen
 
-## Usage
+The YouTube logo sits on the left at 60% of the panel height. Three lines of
+text run down the right:
 
-### Basic Setup
+| Line | Content |
+|---|---|
+| Top | Channel name |
+| Middle | Subscriber count, comma-formatted, followed by `subs` |
+| Bottom | Total view count, comma-formatted, followed by `views` |
 
-Minimum configuration to get started:
-```json
-{
-  "enabled": true,
-  "channel_id": "UCxxxxx..."
-}
-```
+A channel name longer than the space available is truncated.
 
-With API key in `config/config_secrets.json`:
+## Fonts and colours
+
+Each of the three lines has its own font, size and colour under
+`customization.<element>`.
+
+![Default, recoloured, and a smaller face](../../docs/assets/youtube-stats/customization.png)
+
+| Element | Line it styles |
+|---|---|
+| `customization.channel_name` | The channel name |
+| `customization.subscriber_count` | The subscriber line |
+| `customization.view_count` | The views line |
+
+Each takes the same three keys:
+
+| Key | Type | Default | Notes |
+|---|---|---|---|
+| `font` | enum | `PressStart2P-Regular.ttf` | One of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`, `5x7.bdf`, `4x6.bdf`. |
+| `font_size` | integer | `8` | Pixels. The `.bdf` faces are bitmap fonts that exist at one size and do not scale. |
+| `text_color` | `[r, g, b]` | `[255, 255, 255]` | |
+
+`customization` and each element under it set `additionalProperties: false`, so
+a misspelled key is rejected rather than silently ignored.
+
 ```json
 {
   "youtube-stats": {
-    "api_key": "YOUR_API_KEY"
+    "customization": {
+      "channel_name": { "text_color": [255, 80, 80] },
+      "view_count": { "text_color": [120, 200, 255] }
+    }
   }
 }
 ```
 
-### Custom Update Frequency
+> **On a 128-wide panel the default 8px face runs out of room** once the view
+> count reaches seven digits — the middle image above shows `3,927,455 view`
+> with the final `s` past the edge. Dropping all three lines to
+> `4x6-font.ttf` at `6` fits comfortably, as the third image shows, and a
+> 256-wide panel has room for the default.
 
-Update channel stats every 5 minutes (300 seconds):
-```json
-{
-  "enabled": true,
-  "channel_id": "UCxxxxx...",
-  "update_interval": 300
-}
-```
+## Panel sizes
 
-Update every hour (3600 seconds):
-```json
-{
-  "enabled": true,
-  "channel_id": "UCxxxxx...",
-  "update_interval": 3600
-}
-```
+![The card at four panel sizes](../../docs/assets/youtube-stats/panel-sizes.png)
 
-### Display Duration
+The plugin passes the render-safety harness on every supported size. 128x32 is
+the natural fit; on 64x32 the logo leaves very little room for three lines of
+text, so a smaller face is worth setting there.
 
-Show stats for 20 seconds:
-```json
-{
-  "enabled": true,
-  "channel_id": "UCxxxxx...",
-  "display_duration": 20
-}
-```
+## Settings reference
 
-## Display Format
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `enabled` | boolean | `false` | Master on/off switch. Off by default. |
+| `channel_id` | string | — | **Required.** YouTube channel ID, starting `UC`. |
+| `api_key` | string | — | **Required.** YouTube Data API v3 key. Put this in `config/config_secrets.json`, not the main config. |
+| `update_interval` | 60–3600 s | `300` | How often to fetch fresh statistics from the API. |
+| `display_duration` | 5–60 s | `15` | How long the card stays on screen per turn in the rotation. |
 
-The plugin displays:
-- **Left side**: YouTube logo (scaled to 60% of display height)
-- **Right side**: Three lines of text:
-  - Channel name (top)
-  - Subscriber count (middle, formatted with commas)
-  - Total views (bottom, formatted with commas)
+Plus the nine `customization` keys in [Fonts and colours](#fonts-and-colours) —
+three elements with `font`, `font_size` and `text_color` each.
 
-Example display:
-```
-[YouTube Logo]  ChuckBuilds
-                 1,234 subs
-                 567,890 views
-```
+## API quota
 
-## API Quota
+The YouTube Data API v3 allows 10,000 units per day by default, and each
+statistics request costs 1 unit. At the default 300-second interval that is
+about 288 requests a day — comfortably inside the free quota.
 
-The YouTube Data API v3 has a default quota of 10,000 units per day. Each channel statistics request uses 1 unit. With the default update interval of 300 seconds (5 minutes), you'll make approximately 288 requests per day, well within the free quota.
-
-**Quota Management Tips**:
-- Use longer update intervals (600+ seconds) to reduce API calls
-- The plugin uses caching to avoid redundant API calls
-- Monitor your API usage in the Google Cloud Console
+To use less, raise `update_interval`. Results are cached for the interval, so
+the display redraws from cache between fetches rather than re-requesting.
 
 ## Troubleshooting
 
-**Plugin not displaying:**
-- Verify `enabled` is set to `true` in config
-- Check that `channel_id` is correct
-- Ensure API key is configured in `config/config_secrets.json`
-- Check logs for error messages
+**Nothing appears.** `enabled` defaults to `false`; set it to `true`. Then check
+that `channel_id` is right and that the API key is present in
+`config/config_secrets.json`.
 
-**API key errors:**
-- Verify API key is correct and not expired
-- Ensure YouTube Data API v3 is enabled in Google Cloud Console
-- Check API key restrictions in Google Cloud Console
-- Verify API key has proper permissions
+**The panel shows `YT: Update API Key`.** The plugin could not authenticate.
+Confirm the key is correct and unexpired, that **YouTube Data API v3** is
+enabled for the project, and that any key restrictions in the Google Cloud
+Console allow it.
 
-**Channel ID not found:**
-- Double-check channel ID format (should start with UC)
-- Verify channel ID at https://www.youtube.com/account_advanced
-- Ensure channel is public (private channels may not be accessible)
+**Channel ID not found.** It must start with `UC` — the handle (`@ChuckBuilds`)
+is not a channel ID. Read it from
+[YouTube Advanced Settings](https://www.youtube.com/account_advanced), and note
+that a private channel may not be reachable.
 
-**Logo not displaying:**
-- Verify `assets/youtube_logo.png` exists in project root
-- Check file permissions on logo file
-- Logo should be in PNG format
+**The logo is missing.** The plugin looks for `assets/youtube_logo.png`, first
+relative to the process working directory and then relative to the LEDMatrix
+install root. Check the file is present and readable.
 
-**Statistics not updating:**
-- Check `update_interval` setting (minimum 60 seconds)
-- Verify API quota hasn't been exceeded
-- Check network connectivity
-- Review logs for API errors
+**The views line is cut off.** That is the font, not a fault — see the note
+under [Fonts and colours](#fonts-and-colours).
 
-**Display formatting issues:**
-- Channel names longer than available space are automatically truncated
-- Subscriber and view counts are formatted with commas for readability
-- Display adapts to different matrix sizes
+**Statistics never change.** `update_interval` has a 60-second floor. Check the
+API quota has not been exhausted and that the Pi has network access; the logs
+record API errors.
 
-## Performance Notes
-
-- Statistics are cached to reduce API calls
-- Cache duration matches `update_interval` setting
-- Font and logo are loaded once at initialization
-- API requests have a 10-second timeout
-- Plugin uses efficient image rendering for smooth display
+The documentation images come from `docs/assets/youtube-stats/shots.json` and
+re-render with `python scripts/render_docs_assets.py --plugin youtube-stats
+--check`.
 
 ## License
 
-GPL-3.0 License - see main LEDMatrix repository for details.
+GPL-3.0 — see the main LEDMatrix repository for details.

@@ -1,0 +1,95 @@
+{
+  "plugin": "olympics",
+  "_comment": "The countdown needs no fetched data, so these render offline. The medal, schedule and results sections need live Games data (an OlympicsData object built by the fetcher), which no config or cache seed can stand in for, so they are described rather than pictured.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-03T12:00:00+00:00",
+    "skip_update": true,
+    "config": {
+      "enabled": true
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "freeze_time": "2026-01-05T12:00:00+00:00"
+    },
+    {
+      "name": "before-games",
+      "freeze_time": "2026-01-05T12:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "after-games",
+      "freeze_time": "2026-09-03T12:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "freeze_time": "2026-01-05T12:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "freeze_time": "2026-01-05T12:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "freeze_time": "2026-01-05T12:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "freeze_time": "2026-01-05T12:00:00+00:00",
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "countdown-state",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "before-games",
+          "label": "Before the Games",
+          "sublabel": "32 days out from Milano Cortina"
+        },
+        {
+          "shot": "after-games",
+          "label": "After the Games",
+          "sublabel": "the count goes negative and stays there"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}
