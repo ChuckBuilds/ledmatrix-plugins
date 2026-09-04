@@ -92,7 +92,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [Cricket Scoreboard](./plugins/cricket-scoreboard/) | Live, recent & upcoming international (Test/ODI/T20I) and major domestic cricket | |
 | [AFL Scoreboard](./plugins/afl-scoreboard/) | Australian Football League live, recent & upcoming games | <a href="./plugins/afl-scoreboard/"><img src="./docs/assets/afl-scoreboard/hero.png" width="240" alt="afl-scoreboard on an LED panel"></a> |
 | [NRL Scoreboard](./plugins/nrl-scoreboard/) | National Rugby League live, recent & upcoming games | |
-| [F1 Scoreboard](./plugins/f1-scoreboard/) | Formula 1 race results, schedules, and standings | |
+| [F1 Scoreboard](./plugins/f1-scoreboard/) | Formula 1 race results, schedules, and standings | <a href="./plugins/f1-scoreboard/"><img src="./docs/assets/f1-scoreboard/hero.png" width="240" alt="f1-scoreboard on an LED panel"></a> |
 | [UFC Scoreboard](./plugins/ufc-scoreboard/) | UFC/MMA live fights, fighter headshots, records, odds & results &mdash; *by [LegoGuy1000](https://github.com/legoguy1000)* | |
 | [Masters Tournament](./plugins/masters-tournament/) | Live Masters golf leaderboard, hole tracking, player cards | |
 | [March Madness](./plugins/march-madness/) | NCAA tournament bracket tracker with round branding and live scores | |
