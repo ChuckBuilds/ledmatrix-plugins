@@ -546,6 +546,7 @@ class TextDisplayPlugin(BasePlugin):
                     # Fallback: static text if cache creation failed
                     img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                     draw = ImageDraw.Draw(img)
+                    draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
                     bbox = draw.textbbox((0, 0), self.render_text, font=self.font)
                     text_width = bbox[2] - bbox[0]
                     text_height = bbox[3] - bbox[1]
@@ -558,6 +559,7 @@ class TextDisplayPlugin(BasePlugin):
                 # Static text (centered)
                 img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                 draw = ImageDraw.Draw(img)
+                draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
                 bbox = draw.textbbox((0, 0), self.render_text, font=self.font)
                 text_width = bbox[2] - bbox[0]
                 text_height = bbox[3] - bbox[1]

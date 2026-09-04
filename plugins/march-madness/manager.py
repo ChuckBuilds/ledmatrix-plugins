@@ -544,6 +544,7 @@ class MarchMadnessPlugin(BasePlugin):
 
         img = Image.new("RGB", (total_w, height), COLOR_DARK_BG)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Draw logos
         x = padding
@@ -619,6 +620,7 @@ class MarchMadnessPlugin(BasePlugin):
 
         img = Image.new("RGB", (tile_w, height), COLOR_BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Paste away logo
         x = h_pad

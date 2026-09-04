@@ -3163,6 +3163,7 @@ class FlightTrackerPlugin(BasePlugin):
             img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
 
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Draw center position marker (white dot at our lat/lon)
         center_pixel = self._latlon_to_pixel(self.center_lat, self.center_lon)

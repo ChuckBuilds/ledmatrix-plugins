@@ -469,6 +469,7 @@ class MastersRenderer:
 
         img = self._draw_gradient_bg(COLORS["bg"], COLORS["bg_dark_green"])
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         self._draw_header_bar(img, draw, "LEADERBOARD")
 

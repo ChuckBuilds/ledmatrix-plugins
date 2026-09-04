@@ -780,6 +780,7 @@ class GameRenderer(SportsGameRendererMixin):
         main_img = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 255))
         overlay = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 0))
         draw_overlay = ImageDraw.Draw(overlay)
+        draw_overlay.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         
         # Load logos
         home_logo = self._load_and_resize_logo(
@@ -798,6 +799,7 @@ class GameRenderer(SportsGameRendererMixin):
         if not home_logo or not away_logo:
             # Draw placeholder text if logos fail
             draw = ImageDraw.Draw(main_img)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
             self._draw_text_with_outline(
                 draw, 
                 f"{game.get('away_abbr', '?')}@{game.get('home_abbr', '?')}", 
@@ -1212,6 +1214,7 @@ class GameRenderer(SportsGameRendererMixin):
         main_img = Image.new('RGBA', (width, height), (0, 0, 0, 255))
         overlay = Image.new('RGBA', (width, height), (0, 0, 0, 0))
         draw_overlay = ImageDraw.Draw(overlay)
+        draw_overlay.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         regs = self._widen_logo_slots(
             scoreboard_regions(Region(0, 0, width, height), ctx=self._ctx))
@@ -1221,6 +1224,7 @@ class GameRenderer(SportsGameRendererMixin):
         home_raw = self._load_raw_logo(game.get("home_abbr", ""), game.get("home_logo_path"))
         if not away_raw or not home_raw:
             draw = ImageDraw.Draw(main_img)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
             self._draw_text_with_outline(
                 draw,
                 f"{game.get('away_abbr', '?')}@{game.get('home_abbr', '?')}",

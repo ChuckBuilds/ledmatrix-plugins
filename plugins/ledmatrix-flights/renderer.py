@@ -353,6 +353,7 @@ class FlightRenderer:
             return False
         img = Image.new("RGB", (self.width, self.height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         self._draw_centered(draw, text, (self.height - self._fh(self.font_large)) // 2,
                             self.font_large, self.header_color)
         self.dm.image = img.copy()
@@ -388,6 +389,7 @@ class FlightRenderer:
         w, h = self.width, self.height
         img = Image.new("RGB", (w, h), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         if tf is None:
             self._draw_centered(draw, "No Flight Data", h // 2 - 4, self.font_medium, self.error_color)
@@ -520,6 +522,7 @@ class FlightRenderer:
         w, h = self.width, self.height
         img = Image.new("RGB", (w, h), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         if tf is None:
             self._draw_centered(draw, "No Flight Data", h // 2 - 4, self.font_medium, self.error_color)
@@ -596,6 +599,7 @@ class FlightRenderer:
         h = self.height
         img = Image.new("RGB", (w, h), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         if not aircraft:
             self._draw_centered(draw, "No Aircraft", h // 2 - 4, self.font_medium, self.dim_color)
@@ -766,6 +770,7 @@ class FlightRenderer:
         w, h = self.width, self.height
         img = Image.new("RGB", (w, h), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         if not aircraft:
             self._draw_centered(draw, "No Aircraft", (h - self._fh(self.font_medium)) // 2,
@@ -971,6 +976,7 @@ class FlightRenderer:
         w, h = self.width, self.height
         img = Image.new("RGB", (w, h), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         callsign = aircraft.get("callsign", "---") if aircraft else "---"
         alt = self._fmt_alt(aircraft.get("altitude")) if aircraft else ""
