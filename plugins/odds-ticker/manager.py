@@ -1973,7 +1973,9 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             if local_time:
                 # Capitalize full day name, e.g., 'Tuesday'
                 day_text = local_time.strftime("%A")
-                date_text = local_time.strftime("%-m/%d")
+                # %-m is a glibc extension: it raises ValueError on Windows
+                # and musl. Build the same "9/13" text portably instead.
+                date_text = f"{local_time.month}/{local_time.strftime('%d')}"
                 time_text = local_time.strftime("%I:%M%p").lstrip('0')
             else:
                 # Fallback if time parsing failed

@@ -1,0 +1,333 @@
+{
+  "plugin": "mqtt-notifications",
+  "_comment": "display() reads self.current_message, a dict the MQTT handler builds with type, content, duration, priority, timestamp and topic; content carries text and/or image. The fixture seeds that dict directly so no broker is needed, and clears text_image_cache and image_cache because the handler clears them whenever a new message arrives. text.scroll is on by default, so the scrolling shots use frames -- frame 0 of a scroller is blank. Messages are invented.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "skip_update": true,
+    "freeze_time": "2026-09-04T12:00:00+00:00",
+    "config": {
+      "enabled": true,
+      "mqtt": {
+        "host": "localhost",
+        "port": 1883
+      }
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "attrs": {
+        "current_message": {
+          "type": "notification",
+          "content": {
+            "text": "Laundry finished in the garage"
+          },
+          "duration": 10,
+          "priority": "normal",
+          "timestamp": 9000000000.0,
+          "topic": "homeassistant/ledmatrix/notify"
+        },
+        "text_image_cache": null,
+        "image_cache": null
+      },
+      "frames": 60
+    },
+    {
+      "name": "scroll-on",
+      "standalone": false,
+      "attrs": {
+        "current_message": {
+          "type": "notification",
+          "content": {
+            "text": "Laundry finished in the garage"
+          },
+          "duration": 10,
+          "priority": "normal",
+          "timestamp": 9000000000.0,
+          "topic": "homeassistant/ledmatrix/notify"
+        },
+        "text_image_cache": null,
+        "image_cache": null
+      },
+      "frames": 60
+    },
+    {
+      "name": "scroll-off",
+      "standalone": false,
+      "attrs": {
+        "current_message": {
+          "type": "notification",
+          "content": {
+            "text": "Doorbell"
+          },
+          "duration": 10,
+          "priority": "normal",
+          "timestamp": 9000000000.0,
+          "topic": "homeassistant/ledmatrix/notify"
+        },
+        "text_image_cache": null,
+        "image_cache": null
+      },
+      "config": {
+        "enabled": true,
+        "mqtt": {
+          "host": "localhost",
+          "port": 1883
+        },
+        "text": {
+          "scroll": false
+        }
+      }
+    },
+    {
+      "name": "colour",
+      "standalone": false,
+      "attrs": {
+        "current_message": {
+          "type": "notification",
+          "content": {
+            "text": "Doorbell"
+          },
+          "duration": 10,
+          "priority": "normal",
+          "timestamp": 9000000000.0,
+          "topic": "homeassistant/ledmatrix/notify"
+        },
+        "text_image_cache": null,
+        "image_cache": null
+      },
+      "config": {
+        "enabled": true,
+        "mqtt": {
+          "host": "localhost",
+          "port": 1883
+        },
+        "text": {
+          "scroll": false,
+          "text_color": [
+            0,
+            220,
+            255
+          ]
+        }
+      }
+    },
+    {
+      "name": "small-font",
+      "standalone": false,
+      "attrs": {
+        "current_message": {
+          "type": "notification",
+          "content": {
+            "text": "Laundry finished in the garage"
+          },
+          "duration": 10,
+          "priority": "normal",
+          "timestamp": 9000000000.0,
+          "topic": "homeassistant/ledmatrix/notify"
+        },
+        "text_image_cache": null,
+        "image_cache": null
+      },
+      "config": {
+        "enabled": true,
+        "mqtt": {
+          "host": "localhost",
+          "port": 1883
+        },
+        "text": {
+          "scroll": false
+        },
+        "customization": {
+          "message_text": {
+            "font": "4x6-font.ttf",
+            "font_size": 6
+          }
+        }
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "standalone": false,
+      "attrs": {
+        "current_message": {
+          "type": "notification",
+          "content": {
+            "text": "Doorbell"
+          },
+          "duration": 10,
+          "priority": "normal",
+          "timestamp": 9000000000.0,
+          "topic": "homeassistant/ledmatrix/notify"
+        },
+        "text_image_cache": null,
+        "image_cache": null
+      },
+      "config": {
+        "enabled": true,
+        "mqtt": {
+          "host": "localhost",
+          "port": 1883
+        },
+        "text": {
+          "scroll": false
+        }
+      }
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "standalone": false,
+      "attrs": {
+        "current_message": {
+          "type": "notification",
+          "content": {
+            "text": "Doorbell"
+          },
+          "duration": 10,
+          "priority": "normal",
+          "timestamp": 9000000000.0,
+          "topic": "homeassistant/ledmatrix/notify"
+        },
+        "text_image_cache": null,
+        "image_cache": null
+      },
+      "config": {
+        "enabled": true,
+        "mqtt": {
+          "host": "localhost",
+          "port": 1883
+        },
+        "text": {
+          "scroll": false
+        }
+      }
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "standalone": false,
+      "attrs": {
+        "current_message": {
+          "type": "notification",
+          "content": {
+            "text": "Doorbell"
+          },
+          "duration": 10,
+          "priority": "normal",
+          "timestamp": 9000000000.0,
+          "topic": "homeassistant/ledmatrix/notify"
+        },
+        "text_image_cache": null,
+        "image_cache": null
+      },
+      "config": {
+        "enabled": true,
+        "mqtt": {
+          "host": "localhost",
+          "port": 1883
+        },
+        "text": {
+          "scroll": false
+        }
+      }
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "standalone": false,
+      "attrs": {
+        "current_message": {
+          "type": "notification",
+          "content": {
+            "text": "Doorbell"
+          },
+          "duration": 10,
+          "priority": "normal",
+          "timestamp": 9000000000.0,
+          "topic": "homeassistant/ledmatrix/notify"
+        },
+        "text_image_cache": null,
+        "image_cache": null
+      },
+      "config": {
+        "enabled": true,
+        "mqtt": {
+          "host": "localhost",
+          "port": 1883
+        },
+        "text": {
+          "scroll": false
+        }
+      }
+    }
+  ],
+  "composites": [
+    {
+      "name": "scroll",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "scroll-on",
+          "label": "text.scroll: true",
+          "sublabel": "the default; a long message scrolls past"
+        },
+        {
+          "shot": "scroll-off",
+          "label": "text.scroll: false",
+          "sublabel": "the message is drawn once, centred"
+        }
+      ]
+    },
+    {
+      "name": "appearance",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "scroll-off",
+          "label": "defaults",
+          "sublabel": "PressStart2P at 8px, white on black"
+        },
+        {
+          "shot": "colour",
+          "label": "text.text_color",
+          "sublabel": "any RGB triple"
+        },
+        {
+          "shot": "small-font",
+          "label": "customization.message_text",
+          "sublabel": "4x6-font.ttf at 6px fits a longer message without scrolling"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

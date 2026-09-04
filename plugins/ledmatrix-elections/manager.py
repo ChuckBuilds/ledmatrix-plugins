@@ -333,7 +333,13 @@ class ElectionPlugin(BasePlugin):
         """Parse bundled fixtures offline for test_mode (no network)."""
         results = []
         try:
-            with open(os.path.join(_FIXTURE_DIR, "nyt_ca_results.json")) as f:
+            # The fixture is UTF-8 and carries candidate names with non-ASCII
+            # characters. Without an explicit encoding, open() takes the
+            # platform default -- cp1252 on Windows -- and raises part-way
+            # through, so test_mode found no races and every harness size
+            # rendered blank.
+            with open(os.path.join(_FIXTURE_DIR, "nyt_ca_results.json"),
+                      encoding="utf-8") as f:
                 nyt_data = json.load(f)
             nyt = NytStaticProvider({"election_date": "2026-06-02", "election_type": "primary"})
             results.append((nyt, nyt.parse(nyt_data)))

@@ -25,6 +25,16 @@
       "ledmatrix_min_version": "3.3.0"
     },
     {
+      "version": "1.22.2",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Fix every grid-snapped font rendering a pixel narrow. The shared code reads this plugin's config_schema.json to tell a default font size from one the user chose; a default gets snapped to the font's pixel grid, a choice is left alone. It located the schema by inspecting loaded modules, which fails under the real plugin loader -- the loader renames a plugin's modules and removes their original names, so nothing was left to inspect. The lookup returned nothing, every size then looked user-chosen, and the snap was skipped: 4x6-font.ttf drew at 6 instead of 7, which is 3-pixel-wide glyphs instead of 4. On a 256x64 panel the betting odds, team records and the date row were hard to read. The plugin now tells the shared code where it lives instead of leaving it to guess.",
+      "changelog": "Documentation only, no behaviour change. Rewrites the README around real rendered screenshots of the 2026 finals series and documents every configuration option. Writes down the game-selection logic in full: the three selection paths, and that upcoming_games_to_show/recent_games_to_show mean a per-team budget under show_favorite_teams_only but a total otherwise. Records four verified dead ends so they stop costing people time: show_odds is a no-op for AFL because ESPN publishes no odds block for the league (though it still issues one odds request per selected game), show_ranking has no poll to draw, dynamic_duration.min_duration_seconds is never read, and background_service.max_workers is ignored in favour of a single worker. Also corrects README defaults that had drifted from the schema (show_favorite_teams_only, display_duration, show_odds).",
+      "changes": [
+        "Documented stale_game_timeout, the last setting missing from the README."
+      ]
+    },
+    {
       "version": "1.22.1",
       "released": "2026-09-02",
       "ledmatrix_min_version": "3.3.0",

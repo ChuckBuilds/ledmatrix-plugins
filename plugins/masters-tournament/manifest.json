@@ -1,7 +1,7 @@
 {
   "id": "masters-tournament",
   "name": "Masters Tournament",
-  "version": "2.5.6",
+  "version": "2.5.7",
   "description": "Broadcast-quality Masters Tournament display with real ESPN player headshots, accurate Augusta National hole layouts, fun facts, past champions, live leaderboards, and pixel-perfect LED matrix rendering",
   "author": "ChuckBuilds",
   "class_name": "MastersTournamentPlugin",
@@ -45,8 +45,14 @@
   "versions": [
     {
       "released": "2026-09-03",
-      "version": "2.5.6",
+      "version": "2.5.7",
       "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "version": "2.5.6",
+      "released": "2026-09-03",
+      "notes": "Documentation. None of the 51 settings had a named key in the README; they were described in prose and JSON examples. All 51 are now documented at the paths the schema expects. Seventeen of them do nothing: the notifications block (8) and the branding block (4) are never read by the plugin or the core, and five leaves inside display_modes are read nowhere either, yet the README had sections presenting notifications and branding as features (#418). Adds real rendered screenshots of all fourteen display modes, produced with the plugin's own mock_data mode, split by tournament phase because eight render only during Masters week and six only outside it.",
       "ledmatrix_min_version": "2.0.0"
     },
     {
@@ -64,7 +70,7 @@
     {
       "released": "2026-07-17",
       "version": "2.5.3",
-      "ledmatrix_min_version": "2.0.0",
+      "ledmatrix_min": "2.0.0",
       "notes": "Config schema reorganized for a clearer setup experience: fine-tuning fields moved behind the web UI's collapsed Advanced Settings section (x-advanced). UX-only; no fields, defaults, or behavior changed."
     },
     {
@@ -178,7 +184,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-05",
+  "last_updated": "2026-09-03",
   "compatible_versions": [
     ">=2.0.0"
   ]

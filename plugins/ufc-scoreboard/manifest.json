@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -34,9 +34,20 @@
   "versions": [
     {
       "released": "2026-09-04",
-      "version": "1.8.2",
+      "version": "1.8.3",
       "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
       "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "version": "1.8.2",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage.",
+      "changelog": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage.",
+      "changes": [
+        "Fixed the upcoming fight card rendering blank: it drew fighter names with a font key that only exists in the scroll renderer's dict.",
+        "Rewrote the README as a complete settings reference covering all 87 settings, with rendered examples of every display mode."
+      ]
     },
     {
       "version": "1.8.1",

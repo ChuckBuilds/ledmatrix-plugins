@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.40.2",
+  "version": "1.40.3",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -33,9 +33,19 @@
   "versions": [
     {
       "released": "2026-09-04",
-      "version": "1.40.2",
+      "version": "1.40.3",
       "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
       "ledmatrix_min_version": "3.3.0"
+    },
+    {
+      "version": "1.40.2",
+      "released": "2026-09-02",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Fix every grid-snapped font rendering a pixel narrow. The shared code reads this plugin's config_schema.json to tell a default font size from one the user chose; a default gets snapped to the font's pixel grid, a choice is left alone. It located the schema by inspecting loaded modules, which fails under the real plugin loader -- the loader renames a plugin's modules and removes their original names, so nothing was left to inspect. The lookup returned nothing, every size then looked user-chosen, and the snap was skipped: 4x6-font.ttf drew at 6 instead of 7, which is 3-pixel-wide glyphs instead of 4. On a 256x64 panel the betting odds, team records and the date row were hard to read. The plugin now tells the shared code where it lives instead of leaving it to guess.",
+      "changelog": "Retry a team logo whose previous download failed, instead of showing a grey box forever. A failed download is cached by the core as a placeholder wearing the real logo's filename; the logo loader scans filename variations, found that stub, and so never called the downloader again. The loader now skips a placeholder that is stale enough to be worth retrying and lets the download run, which also picks up stubs already on disk. The retry is rate-limited by the core (6h), so this does not trade a permanent grey box for a request every frame. Needs a core carrying src.logo_downloader.is_placeholder_logo; against an older core the check is skipped and behaviour is unchanged. Ported byte-identically across every sports lineage.",
+      "changes": [
+        "Documented the last 61 settings, including the bases and outs indicators, which now have a rendered example."
+      ]
     },
     {
       "version": "1.40.1",
@@ -402,7 +412,7 @@
     {
       "released": "2026-07-08",
       "version": "1.14.2",
-      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team ▲/▼ indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
+      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team \u25b2/\u25bc indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -420,7 +430,7 @@
     {
       "released": "2026-07-07",
       "version": "1.13.1",
-      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team ▲/▼ arrow, which wasn't factored into the width check at all.",
+      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team \u25b2/\u25bc arrow, which wasn't factored into the width check at all.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -462,7 +472,7 @@
     {
       "released": "2026-07-02",
       "version": "1.7.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u2014 spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
       "ledmatrix_min": "2.0.0"
     },
     {

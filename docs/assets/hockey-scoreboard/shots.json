@@ -1,0 +1,1334 @@
+{
+  "plugin": "hockey-scoreboard",
+  "_comment": "Hockey keeps one manager per league and mode as a plain attribute -- nhl_live, ncaa_mens_recent and so on -- and only builds them when that league's enabled flag is set, so the config below turns the NHL on. Every mode's display() returns early unless games_list is populated, and the live path also reads live_games and active_celebration. display_mode picks which of the nine screens is drawn. The card reads home_logo_path/away_logo_path off the game dict as Path objects, and period_text is what hockey.py's extractor builds for that state (P1-P3, OT1, Final, Final/OT). Live games also carry away_shots/home_shots and power_play, hockey's own fields. Teams, scores and records are invented. There is deliberately no power-play image: show_powerplay is resolved into the manager config and power_play is extracted onto the game dict, but nothing in the plugin or the core ever draws either, so no config produces a different render.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-03-14T23:00:00+00:00",
+    "skip_update": true,
+    "config": {
+      "enabled": true,
+      "nhl": {
+        "enabled": true
+      },
+      "ncaa_mens": {
+        "enabled": false
+      },
+      "ncaa_womens": {
+        "enabled": false
+      }
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "display_mode": "nhl_live",
+      "attrs": {
+        "nhl_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "TOR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "3",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "P2",
+          "status_text": "LIVE",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+          "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+        },
+        "nhl_live.current_game_index": 0,
+        "nhl_live.last_game_switch": 9000000000.0,
+        "nhl_live.last_update": 9000000000.0,
+        "nhl_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.active_celebration": null
+      },
+      "config": {
+        "enabled": true,
+        "nhl": {
+          "enabled": true,
+          "display_options": {
+            "show_shots_on_goal": true
+          }
+        },
+        "ncaa_mens": {
+          "enabled": false
+        },
+        "ncaa_womens": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "m-live",
+      "display_mode": "nhl_live",
+      "standalone": false,
+      "attrs": {
+        "nhl_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "TOR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "3",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "P2",
+          "status_text": "LIVE",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+          "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+        },
+        "nhl_live.current_game_index": 0,
+        "nhl_live.last_game_switch": 9000000000.0,
+        "nhl_live.last_update": 9000000000.0,
+        "nhl_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.active_celebration": null
+      }
+    },
+    {
+      "name": "m-recent",
+      "display_mode": "nhl_recent",
+      "standalone": false,
+      "attrs": {
+        "nhl_recent.games_list": [
+          {
+            "id": "2",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "4",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "Final",
+            "status_text": "Final",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": false,
+            "is_final": true,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_recent.current_game": {
+          "id": "2",
+          "away_abbr": "BOS",
+          "home_abbr": "TOR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "4",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "Final",
+          "status_text": "Final",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": false,
+          "is_final": true,
+          "is_upcoming": false,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+          "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+        },
+        "nhl_recent.current_game_index": 0,
+        "nhl_recent.last_game_switch": 9000000000.0,
+        "nhl_recent.last_update": 9000000000.0
+      }
+    },
+    {
+      "name": "m-upcoming",
+      "display_mode": "nhl_upcoming",
+      "standalone": false,
+      "attrs": {
+        "nhl_upcoming.games_list": [
+          {
+            "id": "3",
+            "away_abbr": "NYR",
+            "home_abbr": "CAR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "",
+            "status_text": "",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/NYR.png",
+            "home_logo_path": "assets/sports/nhl_logos/CAR.png"
+          }
+        ],
+        "nhl_upcoming.current_game": {
+          "id": "3",
+          "away_abbr": "NYR",
+          "home_abbr": "CAR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "",
+          "status_text": "",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/NYR.png",
+          "home_logo_path": "assets/sports/nhl_logos/CAR.png"
+        },
+        "nhl_upcoming.current_game_index": 0,
+        "nhl_upcoming.last_game_switch": 9000000000.0,
+        "nhl_upcoming.last_update": 9000000000.0
+      }
+    },
+    {
+      "name": "m-ot",
+      "display_mode": "nhl_recent",
+      "standalone": false,
+      "attrs": {
+        "nhl_recent.games_list": [
+          {
+            "id": "6",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "3",
+            "home_score": "4",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "Final/OT",
+            "status_text": "Final/OT",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": false,
+            "is_final": true,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_recent.current_game": {
+          "id": "6",
+          "away_abbr": "BOS",
+          "home_abbr": "TOR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "3",
+          "home_score": "4",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "Final/OT",
+          "status_text": "Final/OT",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": false,
+          "is_final": true,
+          "is_upcoming": false,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+          "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+        },
+        "nhl_recent.current_game_index": 0,
+        "nhl_recent.last_game_switch": 9000000000.0,
+        "nhl_recent.last_update": 9000000000.0
+      }
+    },
+    {
+      "name": "sog-on",
+      "display_mode": "nhl_live",
+      "standalone": false,
+      "attrs": {
+        "nhl_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "TOR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "3",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "P2",
+          "status_text": "LIVE",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+          "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+        },
+        "nhl_live.current_game_index": 0,
+        "nhl_live.last_game_switch": 9000000000.0,
+        "nhl_live.last_update": 9000000000.0,
+        "nhl_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.active_celebration": null
+      },
+      "config": {
+        "enabled": true,
+        "nhl": {
+          "enabled": true,
+          "display_options": {
+            "show_shots_on_goal": true
+          }
+        },
+        "ncaa_mens": {
+          "enabled": false
+        },
+        "ncaa_womens": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "sog-off",
+      "display_mode": "nhl_live",
+      "standalone": false,
+      "attrs": {
+        "nhl_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "TOR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "3",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "P2",
+          "status_text": "LIVE",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+          "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+        },
+        "nhl_live.current_game_index": 0,
+        "nhl_live.last_game_switch": 9000000000.0,
+        "nhl_live.last_update": 9000000000.0,
+        "nhl_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.active_celebration": null
+      },
+      "config": {
+        "enabled": true,
+        "nhl": {
+          "enabled": true,
+          "display_options": {
+            "show_shots_on_goal": false
+          }
+        },
+        "ncaa_mens": {
+          "enabled": false
+        },
+        "ncaa_womens": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "rec-on",
+      "display_mode": "nhl_upcoming",
+      "standalone": false,
+      "attrs": {
+        "nhl_upcoming.games_list": [
+          {
+            "id": "3",
+            "away_abbr": "NYR",
+            "home_abbr": "CAR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "",
+            "status_text": "",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/NYR.png",
+            "home_logo_path": "assets/sports/nhl_logos/CAR.png"
+          }
+        ],
+        "nhl_upcoming.current_game": {
+          "id": "3",
+          "away_abbr": "NYR",
+          "home_abbr": "CAR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "",
+          "status_text": "",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/NYR.png",
+          "home_logo_path": "assets/sports/nhl_logos/CAR.png"
+        },
+        "nhl_upcoming.current_game_index": 0,
+        "nhl_upcoming.last_game_switch": 9000000000.0,
+        "nhl_upcoming.last_update": 9000000000.0
+      },
+      "config": {
+        "enabled": true,
+        "nhl": {
+          "enabled": true,
+          "display_options": {
+            "show_records": true
+          }
+        },
+        "ncaa_mens": {
+          "enabled": false
+        },
+        "ncaa_womens": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "rec-off",
+      "display_mode": "nhl_upcoming",
+      "standalone": false,
+      "attrs": {
+        "nhl_upcoming.games_list": [
+          {
+            "id": "3",
+            "away_abbr": "NYR",
+            "home_abbr": "CAR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "",
+            "status_text": "",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/NYR.png",
+            "home_logo_path": "assets/sports/nhl_logos/CAR.png"
+          }
+        ],
+        "nhl_upcoming.current_game": {
+          "id": "3",
+          "away_abbr": "NYR",
+          "home_abbr": "CAR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "",
+          "status_text": "",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/NYR.png",
+          "home_logo_path": "assets/sports/nhl_logos/CAR.png"
+        },
+        "nhl_upcoming.current_game_index": 0,
+        "nhl_upcoming.last_game_switch": 9000000000.0,
+        "nhl_upcoming.last_update": 9000000000.0
+      },
+      "config": {
+        "enabled": true,
+        "nhl": {
+          "enabled": true,
+          "display_options": {
+            "show_records": false
+          }
+        },
+        "ncaa_mens": {
+          "enabled": false
+        },
+        "ncaa_womens": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "display_mode": "nhl_live",
+      "standalone": false,
+      "attrs": {
+        "nhl_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "TOR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "3",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "P2",
+          "status_text": "LIVE",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+          "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+        },
+        "nhl_live.current_game_index": 0,
+        "nhl_live.last_game_switch": 9000000000.0,
+        "nhl_live.last_update": 9000000000.0,
+        "nhl_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.active_celebration": null
+      }
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "display_mode": "nhl_live",
+      "standalone": false,
+      "attrs": {
+        "nhl_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "TOR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "3",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "P2",
+          "status_text": "LIVE",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+          "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+        },
+        "nhl_live.current_game_index": 0,
+        "nhl_live.last_game_switch": 9000000000.0,
+        "nhl_live.last_update": 9000000000.0,
+        "nhl_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.active_celebration": null
+      }
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "display_mode": "nhl_live",
+      "standalone": false,
+      "attrs": {
+        "nhl_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "TOR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "3",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "P2",
+          "status_text": "LIVE",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+          "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+        },
+        "nhl_live.current_game_index": 0,
+        "nhl_live.last_game_switch": 9000000000.0,
+        "nhl_live.last_update": 9000000000.0,
+        "nhl_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.active_celebration": null
+      }
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "display_mode": "nhl_live",
+      "standalone": false,
+      "attrs": {
+        "nhl_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "TOR",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "3",
+          "away_record": "31-12-4",
+          "home_record": "35-9-3",
+          "period_text": "P2",
+          "status_text": "LIVE",
+          "odds": null,
+          "league": "nhl",
+          "away_shots": "24",
+          "home_shots": "31",
+          "power_play": null,
+          "penalties": [],
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/14",
+          "game_time": "7:00pm",
+          "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+          "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+        },
+        "nhl_live.current_game_index": 0,
+        "nhl_live.last_game_switch": 9000000000.0,
+        "nhl_live.last_update": 9000000000.0,
+        "nhl_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "TOR",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "31-12-4",
+            "home_record": "35-9-3",
+            "period_text": "P2",
+            "status_text": "LIVE",
+            "odds": null,
+            "league": "nhl",
+            "away_shots": "24",
+            "home_shots": "31",
+            "power_play": null,
+            "penalties": [],
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/14",
+            "game_time": "7:00pm",
+            "away_logo_path": "assets/sports/nhl_logos/BOS.png",
+            "home_logo_path": "assets/sports/nhl_logos/TOR.png"
+          }
+        ],
+        "nhl_live.active_celebration": null
+      }
+    }
+  ],
+  "composites": [
+    {
+      "name": "display-modes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "m-live",
+          "label": "nhl_live",
+          "sublabel": "period and the running score"
+        },
+        {
+          "shot": "m-recent",
+          "label": "nhl_recent",
+          "sublabel": "the finished game"
+        },
+        {
+          "shot": "m-upcoming",
+          "label": "nhl_upcoming",
+          "sublabel": "puck-drop date and time"
+        }
+      ]
+    },
+    {
+      "name": "period-states",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "m-live",
+          "label": "P2",
+          "sublabel": "a period in progress; OT1 past the third"
+        },
+        {
+          "shot": "m-recent",
+          "label": "Final",
+          "sublabel": "regulation"
+        },
+        {
+          "shot": "m-ot",
+          "label": "Final/OT",
+          "sublabel": "decided past regulation"
+        }
+      ]
+    },
+    {
+      "name": "shots-on-goal",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "sog-on",
+          "label": "show_shots_on_goal: true",
+          "sublabel": "shot totals along the bottom"
+        },
+        {
+          "shot": "sog-off",
+          "label": "show_shots_on_goal: false"
+        }
+      ]
+    },
+    {
+      "name": "show-records",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "rec-on",
+          "label": "show_records: true"
+        },
+        {
+          "shot": "rec-off",
+          "label": "show_records: false"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

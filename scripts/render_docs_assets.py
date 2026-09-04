@@ -268,6 +268,9 @@ def render_shot(
     mock_path = resolve_mock_data(mock_spec, shot_list_dir, tmpdir, name)
     if mock_path:
         cmd += ["--mock-data", str(mock_path)]
+    display_mode = shot.get("display_mode", defaults.get("display_mode"))
+    if display_mode:
+        cmd += ["--display-mode", str(display_mode)]
     if shot.get("skip_update", defaults.get("skip_update", False)):
         cmd.append("--skip-update")
 

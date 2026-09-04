@@ -1,0 +1,1360 @@
+{
+  "plugin": "basketball-scoreboard",
+  "_comment": "Basketball keeps one manager per league and mode as a plain attribute -- nba_live, ncaam_recent and so on -- and only builds them when that league's enabled flag is set. Every mode's display() returns early unless games_list is populated, and the live path also reads live_games and active_celebration. display_mode picks which of the twelve screens is drawn. The card reads home_logo_path/away_logo_path off the game dict as Path objects, and period_text is what basketball.py's extractor builds (Q1-Q4, OT1, HALF, Final, Final/OT). Tournament shots additionally set is_tournament, away_seed/home_seed, tournament_round and tournament_region, and force march_madness.tournament_mode because the plugin otherwise decides from the calendar. Teams, scores and records are invented. The tournament round and region replace the 'Next Game' header, so they draw on the UPCOMING card only; seeds draw wherever records would.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-03-21T23:30:00+00:00",
+    "skip_update": true,
+    "config": {
+      "enabled": true,
+      "nba": {
+        "enabled": true
+      },
+      "wnba": {
+        "enabled": false
+      },
+      "ncaam": {
+        "enabled": false
+      },
+      "ncaaw": {
+        "enabled": false
+      }
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "display_mode": "nba_live",
+      "attrs": {
+        "nba_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Q3",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "DEN",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "88",
+          "home_score": "94",
+          "away_record": "41-22",
+          "home_record": "48-15",
+          "period_text": "Q3",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/nba_logos/BOS.png",
+          "home_logo_path": "assets/sports/nba_logos/DEN.png"
+        },
+        "nba_live.current_game_index": 0,
+        "nba_live.last_game_switch": 9000000000.0,
+        "nba_live.last_update": 9000000000.0,
+        "nba_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Q3",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.active_celebration": null
+      }
+    },
+    {
+      "name": "m-live",
+      "display_mode": "nba_live",
+      "standalone": false,
+      "attrs": {
+        "nba_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Q3",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "DEN",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "88",
+          "home_score": "94",
+          "away_record": "41-22",
+          "home_record": "48-15",
+          "period_text": "Q3",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/nba_logos/BOS.png",
+          "home_logo_path": "assets/sports/nba_logos/DEN.png"
+        },
+        "nba_live.current_game_index": 0,
+        "nba_live.last_game_switch": 9000000000.0,
+        "nba_live.last_update": 9000000000.0,
+        "nba_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Q3",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.active_celebration": null
+      }
+    },
+    {
+      "name": "m-recent",
+      "display_mode": "nba_recent",
+      "standalone": false,
+      "attrs": {
+        "nba_recent.games_list": [
+          {
+            "id": "2",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Final",
+            "status_text": "Final",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": false,
+            "is_final": true,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_recent.current_game": {
+          "id": "2",
+          "away_abbr": "BOS",
+          "home_abbr": "DEN",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "88",
+          "home_score": "94",
+          "away_record": "41-22",
+          "home_record": "48-15",
+          "period_text": "Final",
+          "status_text": "Final",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": false,
+          "is_live": false,
+          "is_final": true,
+          "is_upcoming": false,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/nba_logos/BOS.png",
+          "home_logo_path": "assets/sports/nba_logos/DEN.png"
+        },
+        "nba_recent.current_game_index": 0,
+        "nba_recent.last_game_switch": 9000000000.0,
+        "nba_recent.last_update": 9000000000.0
+      }
+    },
+    {
+      "name": "m-upcoming",
+      "display_mode": "nba_upcoming",
+      "standalone": false,
+      "attrs": {
+        "nba_upcoming.games_list": [
+          {
+            "id": "3",
+            "away_abbr": "LAL",
+            "home_abbr": "GSW",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "",
+            "status_text": "",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/LAL.png",
+            "home_logo_path": "assets/sports/nba_logos/GSW.png"
+          }
+        ],
+        "nba_upcoming.current_game": {
+          "id": "3",
+          "away_abbr": "LAL",
+          "home_abbr": "GSW",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "41-22",
+          "home_record": "48-15",
+          "period_text": "",
+          "status_text": "",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": false,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/nba_logos/LAL.png",
+          "home_logo_path": "assets/sports/nba_logos/GSW.png"
+        },
+        "nba_upcoming.current_game_index": 0,
+        "nba_upcoming.last_game_switch": 9000000000.0,
+        "nba_upcoming.last_update": 9000000000.0
+      }
+    },
+    {
+      "name": "m-half",
+      "display_mode": "nba_live",
+      "standalone": false,
+      "attrs": {
+        "nba_live.games_list": [
+          {
+            "id": "4",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "52",
+            "home_score": "49",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "HALF",
+            "status_text": "HALF",
+            "odds": null,
+            "is_halftime": true,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.current_game": {
+          "id": "4",
+          "away_abbr": "BOS",
+          "home_abbr": "DEN",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "52",
+          "home_score": "49",
+          "away_record": "41-22",
+          "home_record": "48-15",
+          "period_text": "HALF",
+          "status_text": "HALF",
+          "odds": null,
+          "is_halftime": true,
+          "is_period_break": false,
+          "is_tournament": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/nba_logos/BOS.png",
+          "home_logo_path": "assets/sports/nba_logos/DEN.png"
+        },
+        "nba_live.current_game_index": 0,
+        "nba_live.last_game_switch": 9000000000.0,
+        "nba_live.last_update": 9000000000.0,
+        "nba_live.live_games": [
+          {
+            "id": "4",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "52",
+            "home_score": "49",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "HALF",
+            "status_text": "HALF",
+            "odds": null,
+            "is_halftime": true,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.active_celebration": null
+      }
+    },
+    {
+      "name": "m-ot",
+      "display_mode": "nba_recent",
+      "standalone": false,
+      "attrs": {
+        "nba_recent.games_list": [
+          {
+            "id": "5",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "101",
+            "home_score": "104",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Final/OT",
+            "status_text": "Final/OT",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": false,
+            "is_final": true,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_recent.current_game": {
+          "id": "5",
+          "away_abbr": "BOS",
+          "home_abbr": "DEN",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "101",
+          "home_score": "104",
+          "away_record": "41-22",
+          "home_record": "48-15",
+          "period_text": "Final/OT",
+          "status_text": "Final/OT",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": false,
+          "is_live": false,
+          "is_final": true,
+          "is_upcoming": false,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/nba_logos/BOS.png",
+          "home_logo_path": "assets/sports/nba_logos/DEN.png"
+        },
+        "nba_recent.current_game_index": 0,
+        "nba_recent.last_game_switch": 9000000000.0,
+        "nba_recent.last_update": 9000000000.0
+      }
+    },
+    {
+      "name": "mm-seeds",
+      "display_mode": "ncaam_upcoming",
+      "standalone": false,
+      "attrs": {
+        "ncaam_upcoming.games_list": [
+          {
+            "id": "6",
+            "away_abbr": "DUKE",
+            "home_abbr": "UNC",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "27-8",
+            "home_record": "31-3",
+            "period_text": "",
+            "status_text": "",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": true,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/ncaa_logos/DUKE.png",
+            "home_logo_path": "assets/sports/ncaa_logos/UNC.png",
+            "away_seed": 4,
+            "home_seed": 1,
+            "tournament_round": "E8",
+            "tournament_region": "S"
+          }
+        ],
+        "ncaam_upcoming.current_game": {
+          "id": "6",
+          "away_abbr": "DUKE",
+          "home_abbr": "UNC",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "27-8",
+          "home_record": "31-3",
+          "period_text": "",
+          "status_text": "",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": true,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/ncaa_logos/DUKE.png",
+          "home_logo_path": "assets/sports/ncaa_logos/UNC.png",
+          "away_seed": 4,
+          "home_seed": 1,
+          "tournament_round": "E8",
+          "tournament_region": "S"
+        },
+        "ncaam_upcoming.current_game_index": 0,
+        "ncaam_upcoming.last_game_switch": 9000000000.0,
+        "ncaam_upcoming.last_update": 9000000000.0
+      },
+      "config": {
+        "enabled": true,
+        "nba": {
+          "enabled": false
+        },
+        "wnba": {
+          "enabled": false
+        },
+        "ncaam": {
+          "enabled": true,
+          "march_madness": {
+            "tournament_mode": true,
+            "show_seeds": true,
+            "show_round": true,
+            "show_region": false
+          },
+          "display_options": {
+            "show_ranking": false,
+            "show_records": false
+          }
+        },
+        "ncaaw": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "mm-region",
+      "display_mode": "ncaam_upcoming",
+      "standalone": false,
+      "attrs": {
+        "ncaam_upcoming.games_list": [
+          {
+            "id": "6",
+            "away_abbr": "DUKE",
+            "home_abbr": "UNC",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "27-8",
+            "home_record": "31-3",
+            "period_text": "",
+            "status_text": "",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": true,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/ncaa_logos/DUKE.png",
+            "home_logo_path": "assets/sports/ncaa_logos/UNC.png",
+            "away_seed": 4,
+            "home_seed": 1,
+            "tournament_round": "E8",
+            "tournament_region": "S"
+          }
+        ],
+        "ncaam_upcoming.current_game": {
+          "id": "6",
+          "away_abbr": "DUKE",
+          "home_abbr": "UNC",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "27-8",
+          "home_record": "31-3",
+          "period_text": "",
+          "status_text": "",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": true,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/ncaa_logos/DUKE.png",
+          "home_logo_path": "assets/sports/ncaa_logos/UNC.png",
+          "away_seed": 4,
+          "home_seed": 1,
+          "tournament_round": "E8",
+          "tournament_region": "S"
+        },
+        "ncaam_upcoming.current_game_index": 0,
+        "ncaam_upcoming.last_game_switch": 9000000000.0,
+        "ncaam_upcoming.last_update": 9000000000.0
+      },
+      "config": {
+        "enabled": true,
+        "nba": {
+          "enabled": false
+        },
+        "wnba": {
+          "enabled": false
+        },
+        "ncaam": {
+          "enabled": true,
+          "march_madness": {
+            "tournament_mode": true,
+            "show_seeds": true,
+            "show_round": true,
+            "show_region": true
+          },
+          "display_options": {
+            "show_ranking": false,
+            "show_records": false
+          }
+        },
+        "ncaaw": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "mm-off",
+      "display_mode": "ncaam_upcoming",
+      "standalone": false,
+      "attrs": {
+        "ncaam_upcoming.games_list": [
+          {
+            "id": "6",
+            "away_abbr": "DUKE",
+            "home_abbr": "UNC",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "27-8",
+            "home_record": "31-3",
+            "period_text": "",
+            "status_text": "",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": true,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/ncaa_logos/DUKE.png",
+            "home_logo_path": "assets/sports/ncaa_logos/UNC.png",
+            "away_seed": 4,
+            "home_seed": 1,
+            "tournament_round": "E8",
+            "tournament_region": "S"
+          }
+        ],
+        "ncaam_upcoming.current_game": {
+          "id": "6",
+          "away_abbr": "DUKE",
+          "home_abbr": "UNC",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "27-8",
+          "home_record": "31-3",
+          "period_text": "",
+          "status_text": "",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": true,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/ncaa_logos/DUKE.png",
+          "home_logo_path": "assets/sports/ncaa_logos/UNC.png",
+          "away_seed": 4,
+          "home_seed": 1,
+          "tournament_round": "E8",
+          "tournament_region": "S"
+        },
+        "ncaam_upcoming.current_game_index": 0,
+        "ncaam_upcoming.last_game_switch": 9000000000.0,
+        "ncaam_upcoming.last_update": 9000000000.0
+      },
+      "config": {
+        "enabled": true,
+        "nba": {
+          "enabled": false
+        },
+        "wnba": {
+          "enabled": false
+        },
+        "ncaam": {
+          "enabled": true,
+          "march_madness": {
+            "tournament_mode": true,
+            "show_seeds": false,
+            "show_round": false,
+            "show_region": false
+          },
+          "display_options": {
+            "show_ranking": false,
+            "show_records": false
+          }
+        },
+        "ncaaw": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "rec-on",
+      "display_mode": "nba_upcoming",
+      "standalone": false,
+      "attrs": {
+        "nba_upcoming.games_list": [
+          {
+            "id": "3",
+            "away_abbr": "LAL",
+            "home_abbr": "GSW",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "",
+            "status_text": "",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/LAL.png",
+            "home_logo_path": "assets/sports/nba_logos/GSW.png"
+          }
+        ],
+        "nba_upcoming.current_game": {
+          "id": "3",
+          "away_abbr": "LAL",
+          "home_abbr": "GSW",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "41-22",
+          "home_record": "48-15",
+          "period_text": "",
+          "status_text": "",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": false,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/nba_logos/LAL.png",
+          "home_logo_path": "assets/sports/nba_logos/GSW.png"
+        },
+        "nba_upcoming.current_game_index": 0,
+        "nba_upcoming.last_game_switch": 9000000000.0,
+        "nba_upcoming.last_update": 9000000000.0
+      },
+      "config": {
+        "enabled": true,
+        "nba": {
+          "enabled": true,
+          "display_options": {
+            "show_records": true
+          }
+        },
+        "wnba": {
+          "enabled": false
+        },
+        "ncaam": {
+          "enabled": false
+        },
+        "ncaaw": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "rec-off",
+      "display_mode": "nba_upcoming",
+      "standalone": false,
+      "attrs": {
+        "nba_upcoming.games_list": [
+          {
+            "id": "3",
+            "away_abbr": "LAL",
+            "home_abbr": "GSW",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "",
+            "status_text": "",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/LAL.png",
+            "home_logo_path": "assets/sports/nba_logos/GSW.png"
+          }
+        ],
+        "nba_upcoming.current_game": {
+          "id": "3",
+          "away_abbr": "LAL",
+          "home_abbr": "GSW",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "41-22",
+          "home_record": "48-15",
+          "period_text": "",
+          "status_text": "",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": false,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/nba_logos/LAL.png",
+          "home_logo_path": "assets/sports/nba_logos/GSW.png"
+        },
+        "nba_upcoming.current_game_index": 0,
+        "nba_upcoming.last_game_switch": 9000000000.0,
+        "nba_upcoming.last_update": 9000000000.0
+      },
+      "config": {
+        "enabled": true,
+        "nba": {
+          "enabled": true,
+          "display_options": {
+            "show_records": false
+          }
+        },
+        "wnba": {
+          "enabled": false
+        },
+        "ncaam": {
+          "enabled": false
+        },
+        "ncaaw": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "display_mode": "nba_live",
+      "standalone": false,
+      "attrs": {
+        "nba_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Q3",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "DEN",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "88",
+          "home_score": "94",
+          "away_record": "41-22",
+          "home_record": "48-15",
+          "period_text": "Q3",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/nba_logos/BOS.png",
+          "home_logo_path": "assets/sports/nba_logos/DEN.png"
+        },
+        "nba_live.current_game_index": 0,
+        "nba_live.last_game_switch": 9000000000.0,
+        "nba_live.last_update": 9000000000.0,
+        "nba_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Q3",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.active_celebration": null
+      }
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "display_mode": "nba_live",
+      "standalone": false,
+      "attrs": {
+        "nba_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Q3",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "DEN",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "88",
+          "home_score": "94",
+          "away_record": "41-22",
+          "home_record": "48-15",
+          "period_text": "Q3",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/nba_logos/BOS.png",
+          "home_logo_path": "assets/sports/nba_logos/DEN.png"
+        },
+        "nba_live.current_game_index": 0,
+        "nba_live.last_game_switch": 9000000000.0,
+        "nba_live.last_update": 9000000000.0,
+        "nba_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Q3",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.active_celebration": null
+      }
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "display_mode": "nba_live",
+      "standalone": false,
+      "attrs": {
+        "nba_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Q3",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "DEN",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "88",
+          "home_score": "94",
+          "away_record": "41-22",
+          "home_record": "48-15",
+          "period_text": "Q3",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/nba_logos/BOS.png",
+          "home_logo_path": "assets/sports/nba_logos/DEN.png"
+        },
+        "nba_live.current_game_index": 0,
+        "nba_live.last_game_switch": 9000000000.0,
+        "nba_live.last_update": 9000000000.0,
+        "nba_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Q3",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.active_celebration": null
+      }
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "display_mode": "nba_live",
+      "standalone": false,
+      "attrs": {
+        "nba_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Q3",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.current_game": {
+          "id": "1",
+          "away_abbr": "BOS",
+          "home_abbr": "DEN",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "88",
+          "home_score": "94",
+          "away_record": "41-22",
+          "home_record": "48-15",
+          "period_text": "Q3",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_tournament": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "3/21",
+          "game_time": "7:30pm",
+          "away_logo_path": "assets/sports/nba_logos/BOS.png",
+          "home_logo_path": "assets/sports/nba_logos/DEN.png"
+        },
+        "nba_live.current_game_index": 0,
+        "nba_live.last_game_switch": 9000000000.0,
+        "nba_live.last_update": 9000000000.0,
+        "nba_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "BOS",
+            "home_abbr": "DEN",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "88",
+            "home_score": "94",
+            "away_record": "41-22",
+            "home_record": "48-15",
+            "period_text": "Q3",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_tournament": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "3/21",
+            "game_time": "7:30pm",
+            "away_logo_path": "assets/sports/nba_logos/BOS.png",
+            "home_logo_path": "assets/sports/nba_logos/DEN.png"
+          }
+        ],
+        "nba_live.active_celebration": null
+      }
+    }
+  ],
+  "composites": [
+    {
+      "name": "display-modes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "m-live",
+          "label": "nba_live",
+          "sublabel": "quarter and the running score"
+        },
+        {
+          "shot": "m-recent",
+          "label": "nba_recent",
+          "sublabel": "the finished game"
+        },
+        {
+          "shot": "m-upcoming",
+          "label": "nba_upcoming",
+          "sublabel": "tip-off date and time"
+        }
+      ]
+    },
+    {
+      "name": "period-states",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "m-live",
+          "label": "Q3",
+          "sublabel": "a quarter in progress; OT1 past the fourth"
+        },
+        {
+          "shot": "m-half",
+          "label": "HALF",
+          "sublabel": "half-time"
+        },
+        {
+          "shot": "m-ot",
+          "label": "Final/OT",
+          "sublabel": "decided in overtime"
+        }
+      ]
+    },
+    {
+      "name": "march-madness",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "mm-seeds",
+          "label": "seeds and round",
+          "sublabel": "show_seeds and show_round, both on by default"
+        },
+        {
+          "shot": "mm-region",
+          "label": "plus the region",
+          "sublabel": "show_region appends the region, off by default"
+        },
+        {
+          "shot": "mm-off",
+          "label": "all three off",
+          "sublabel": "all three off: the ordinary Next Game header"
+        }
+      ]
+    },
+    {
+      "name": "show-records",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "rec-on",
+          "label": "show_records: true"
+        },
+        {
+          "shot": "rec-off",
+          "label": "show_records: false"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1311 @@
+{
+  "plugin": "soccer-scoreboard",
+  "_comment": "Soccer keeps one manager per league and mode as a plain attribute named from the league slug -- eng.1 becomes eng1_live, eng1_recent, eng1_upcoming -- and only builds them for leagues whose enabled flag is set, so the config below turns the Premier League on and everything else off. Unlike the other scoreboards there are only three display modes in total (soccer_live/recent/upcoming), shared across every league, rather than three per league. Every mode's display() returns early unless games_list is populated, and the live path also reads live_games and active_celebration. The card reads home_logo_path/away_logo_path off the game dict as Path objects, and period_text is what soccer_managers.py builds for that state: 1H, 2H, HALF, ET1, ET2, ETH, PEN while live, and Final, F/ET or F/Pen once over. Teams, scores and records are invented.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-04-12T14:00:00+00:00",
+    "skip_update": true,
+    "config": {
+      "enabled": true,
+      "leagues": {
+        "eng.1": {
+          "enabled": true
+        },
+        "esp.1": {
+          "enabled": false
+        },
+        "ger.1": {
+          "enabled": false
+        },
+        "ita.1": {
+          "enabled": false
+        },
+        "fra.1": {
+          "enabled": false
+        },
+        "usa.1": {
+          "enabled": false
+        },
+        "por.1": {
+          "enabled": false
+        }
+      }
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "display_mode": "soccer_live",
+      "attrs": {
+        "eng1_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "2H",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.current_game": {
+          "id": "1",
+          "away_abbr": "ARS",
+          "home_abbr": "LIV",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "1",
+          "home_score": "2",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "2H",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+          "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+        },
+        "eng1_live.current_game_index": 0,
+        "eng1_live.last_game_switch": 9000000000.0,
+        "eng1_live.last_update": 9000000000.0,
+        "eng1_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "2H",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.active_celebration": null
+      }
+    },
+    {
+      "name": "m-live",
+      "display_mode": "soccer_live",
+      "standalone": false,
+      "attrs": {
+        "eng1_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "2H",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.current_game": {
+          "id": "1",
+          "away_abbr": "ARS",
+          "home_abbr": "LIV",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "1",
+          "home_score": "2",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "2H",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+          "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+        },
+        "eng1_live.current_game_index": 0,
+        "eng1_live.last_game_switch": 9000000000.0,
+        "eng1_live.last_update": 9000000000.0,
+        "eng1_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "2H",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.active_celebration": null
+      }
+    },
+    {
+      "name": "m-recent",
+      "display_mode": "soccer_recent",
+      "standalone": false,
+      "attrs": {
+        "eng1_recent.games_list": [
+          {
+            "id": "2",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "Final",
+            "status_text": "Final",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": false,
+            "is_final": true,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_recent.current_game": {
+          "id": "2",
+          "away_abbr": "ARS",
+          "home_abbr": "LIV",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "1",
+          "home_score": "2",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "Final",
+          "status_text": "Final",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": false,
+          "is_final": true,
+          "is_upcoming": false,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+          "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+        },
+        "eng1_recent.current_game_index": 0,
+        "eng1_recent.last_game_switch": 9000000000.0,
+        "eng1_recent.last_update": 9000000000.0
+      }
+    },
+    {
+      "name": "m-upcoming",
+      "display_mode": "soccer_upcoming",
+      "standalone": false,
+      "attrs": {
+        "eng1_upcoming.games_list": [
+          {
+            "id": "3",
+            "away_abbr": "MCI",
+            "home_abbr": "CHE",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "",
+            "status_text": "",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/MCI.png",
+            "home_logo_path": "assets/sports/soccer_logos/CHE.png"
+          }
+        ],
+        "eng1_upcoming.current_game": {
+          "id": "3",
+          "away_abbr": "MCI",
+          "home_abbr": "CHE",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "",
+          "status_text": "",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/MCI.png",
+          "home_logo_path": "assets/sports/soccer_logos/CHE.png"
+        },
+        "eng1_upcoming.current_game_index": 0,
+        "eng1_upcoming.last_game_switch": 9000000000.0,
+        "eng1_upcoming.last_update": 9000000000.0
+      }
+    },
+    {
+      "name": "p-half",
+      "display_mode": "soccer_live",
+      "standalone": false,
+      "attrs": {
+        "eng1_live.games_list": [
+          {
+            "id": "7",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "1",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "HALF",
+            "status_text": "HALF",
+            "odds": null,
+            "is_halftime": true,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.current_game": {
+          "id": "7",
+          "away_abbr": "ARS",
+          "home_abbr": "LIV",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "1",
+          "home_score": "1",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "HALF",
+          "status_text": "HALF",
+          "odds": null,
+          "is_halftime": true,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+          "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+        },
+        "eng1_live.current_game_index": 0,
+        "eng1_live.last_game_switch": 9000000000.0,
+        "eng1_live.last_update": 9000000000.0,
+        "eng1_live.live_games": [
+          {
+            "id": "7",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "1",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "HALF",
+            "status_text": "HALF",
+            "odds": null,
+            "is_halftime": true,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.active_celebration": null
+      }
+    },
+    {
+      "name": "p-et",
+      "display_mode": "soccer_live",
+      "standalone": false,
+      "attrs": {
+        "eng1_live.games_list": [
+          {
+            "id": "8",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "ET2",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.current_game": {
+          "id": "8",
+          "away_abbr": "ARS",
+          "home_abbr": "LIV",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "2",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "ET2",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+          "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+        },
+        "eng1_live.current_game_index": 0,
+        "eng1_live.last_game_switch": 9000000000.0,
+        "eng1_live.last_update": 9000000000.0,
+        "eng1_live.live_games": [
+          {
+            "id": "8",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "ET2",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.active_celebration": null
+      }
+    },
+    {
+      "name": "p-pen",
+      "display_mode": "soccer_live",
+      "standalone": false,
+      "attrs": {
+        "eng1_live.games_list": [
+          {
+            "id": "9",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "PEN",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.current_game": {
+          "id": "9",
+          "away_abbr": "ARS",
+          "home_abbr": "LIV",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "2",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "PEN",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+          "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+        },
+        "eng1_live.current_game_index": 0,
+        "eng1_live.last_game_switch": 9000000000.0,
+        "eng1_live.last_update": 9000000000.0,
+        "eng1_live.live_games": [
+          {
+            "id": "9",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "PEN",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.active_celebration": null
+      }
+    },
+    {
+      "name": "f-et",
+      "display_mode": "soccer_recent",
+      "standalone": false,
+      "attrs": {
+        "eng1_recent.games_list": [
+          {
+            "id": "5",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "3",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "F/ET",
+            "status_text": "F/ET",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": false,
+            "is_final": true,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_recent.current_game": {
+          "id": "5",
+          "away_abbr": "ARS",
+          "home_abbr": "LIV",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "3",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "F/ET",
+          "status_text": "F/ET",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": false,
+          "is_final": true,
+          "is_upcoming": false,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+          "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+        },
+        "eng1_recent.current_game_index": 0,
+        "eng1_recent.last_game_switch": 9000000000.0,
+        "eng1_recent.last_update": 9000000000.0
+      }
+    },
+    {
+      "name": "f-pen",
+      "display_mode": "soccer_recent",
+      "standalone": false,
+      "attrs": {
+        "eng1_recent.games_list": [
+          {
+            "id": "6",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "2",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "F/Pen",
+            "status_text": "F/Pen",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": false,
+            "is_final": true,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_recent.current_game": {
+          "id": "6",
+          "away_abbr": "ARS",
+          "home_abbr": "LIV",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "2",
+          "home_score": "2",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "F/Pen",
+          "status_text": "F/Pen",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": false,
+          "is_final": true,
+          "is_upcoming": false,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+          "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+        },
+        "eng1_recent.current_game_index": 0,
+        "eng1_recent.last_game_switch": 9000000000.0,
+        "eng1_recent.last_update": 9000000000.0
+      }
+    },
+    {
+      "name": "rec-on",
+      "display_mode": "soccer_upcoming",
+      "standalone": false,
+      "attrs": {
+        "eng1_upcoming.games_list": [
+          {
+            "id": "3",
+            "away_abbr": "MCI",
+            "home_abbr": "CHE",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "",
+            "status_text": "",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/MCI.png",
+            "home_logo_path": "assets/sports/soccer_logos/CHE.png"
+          }
+        ],
+        "eng1_upcoming.current_game": {
+          "id": "3",
+          "away_abbr": "MCI",
+          "home_abbr": "CHE",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "",
+          "status_text": "",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/MCI.png",
+          "home_logo_path": "assets/sports/soccer_logos/CHE.png"
+        },
+        "eng1_upcoming.current_game_index": 0,
+        "eng1_upcoming.last_game_switch": 9000000000.0,
+        "eng1_upcoming.last_update": 9000000000.0
+      },
+      "config": {
+        "enabled": true,
+        "leagues": {
+          "eng.1": {
+            "enabled": true
+          },
+          "esp.1": {
+            "enabled": false
+          },
+          "ger.1": {
+            "enabled": false
+          },
+          "ita.1": {
+            "enabled": false
+          },
+          "fra.1": {
+            "enabled": false
+          },
+          "usa.1": {
+            "enabled": false
+          },
+          "por.1": {
+            "enabled": false
+          }
+        },
+        "show_records": true
+      }
+    },
+    {
+      "name": "rec-off",
+      "display_mode": "soccer_upcoming",
+      "standalone": false,
+      "attrs": {
+        "eng1_upcoming.games_list": [
+          {
+            "id": "3",
+            "away_abbr": "MCI",
+            "home_abbr": "CHE",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "",
+            "home_score": "",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "",
+            "status_text": "",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": false,
+            "is_final": false,
+            "is_upcoming": true,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/MCI.png",
+            "home_logo_path": "assets/sports/soccer_logos/CHE.png"
+          }
+        ],
+        "eng1_upcoming.current_game": {
+          "id": "3",
+          "away_abbr": "MCI",
+          "home_abbr": "CHE",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "",
+          "home_score": "",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "",
+          "status_text": "",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": false,
+          "is_final": false,
+          "is_upcoming": true,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/MCI.png",
+          "home_logo_path": "assets/sports/soccer_logos/CHE.png"
+        },
+        "eng1_upcoming.current_game_index": 0,
+        "eng1_upcoming.last_game_switch": 9000000000.0,
+        "eng1_upcoming.last_update": 9000000000.0
+      },
+      "config": {
+        "enabled": true,
+        "leagues": {
+          "eng.1": {
+            "enabled": true
+          },
+          "esp.1": {
+            "enabled": false
+          },
+          "ger.1": {
+            "enabled": false
+          },
+          "ita.1": {
+            "enabled": false
+          },
+          "fra.1": {
+            "enabled": false
+          },
+          "usa.1": {
+            "enabled": false
+          },
+          "por.1": {
+            "enabled": false
+          }
+        },
+        "show_records": false
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "display_mode": "soccer_live",
+      "standalone": false,
+      "attrs": {
+        "eng1_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "2H",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.current_game": {
+          "id": "1",
+          "away_abbr": "ARS",
+          "home_abbr": "LIV",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "1",
+          "home_score": "2",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "2H",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+          "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+        },
+        "eng1_live.current_game_index": 0,
+        "eng1_live.last_game_switch": 9000000000.0,
+        "eng1_live.last_update": 9000000000.0,
+        "eng1_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "2H",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.active_celebration": null
+      }
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "display_mode": "soccer_live",
+      "standalone": false,
+      "attrs": {
+        "eng1_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "2H",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.current_game": {
+          "id": "1",
+          "away_abbr": "ARS",
+          "home_abbr": "LIV",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "1",
+          "home_score": "2",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "2H",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+          "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+        },
+        "eng1_live.current_game_index": 0,
+        "eng1_live.last_game_switch": 9000000000.0,
+        "eng1_live.last_update": 9000000000.0,
+        "eng1_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "2H",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.active_celebration": null
+      }
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "display_mode": "soccer_live",
+      "standalone": false,
+      "attrs": {
+        "eng1_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "2H",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.current_game": {
+          "id": "1",
+          "away_abbr": "ARS",
+          "home_abbr": "LIV",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "1",
+          "home_score": "2",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "2H",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+          "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+        },
+        "eng1_live.current_game_index": 0,
+        "eng1_live.last_game_switch": 9000000000.0,
+        "eng1_live.last_update": 9000000000.0,
+        "eng1_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "2H",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.active_celebration": null
+      }
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "display_mode": "soccer_live",
+      "standalone": false,
+      "attrs": {
+        "eng1_live.games_list": [
+          {
+            "id": "1",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "2H",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.current_game": {
+          "id": "1",
+          "away_abbr": "ARS",
+          "home_abbr": "LIV",
+          "away_id": "1",
+          "home_id": "2",
+          "away_score": "1",
+          "home_score": "2",
+          "away_record": "18-6-4",
+          "home_record": "21-4-3",
+          "period_text": "2H",
+          "status_text": "LIVE",
+          "odds": null,
+          "is_halftime": false,
+          "is_period_break": false,
+          "is_live": true,
+          "is_final": false,
+          "is_upcoming": false,
+          "game_date": "4/12",
+          "game_time": "3:00pm",
+          "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+          "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+        },
+        "eng1_live.current_game_index": 0,
+        "eng1_live.last_game_switch": 9000000000.0,
+        "eng1_live.last_update": 9000000000.0,
+        "eng1_live.live_games": [
+          {
+            "id": "1",
+            "away_abbr": "ARS",
+            "home_abbr": "LIV",
+            "away_id": "1",
+            "home_id": "2",
+            "away_score": "1",
+            "home_score": "2",
+            "away_record": "18-6-4",
+            "home_record": "21-4-3",
+            "period_text": "2H",
+            "status_text": "LIVE",
+            "odds": null,
+            "is_halftime": false,
+            "is_period_break": false,
+            "is_live": true,
+            "is_final": false,
+            "is_upcoming": false,
+            "game_date": "4/12",
+            "game_time": "3:00pm",
+            "away_logo_path": "assets/sports/soccer_logos/ARS.png",
+            "home_logo_path": "assets/sports/soccer_logos/LIV.png"
+          }
+        ],
+        "eng1_live.active_celebration": null
+      }
+    }
+  ],
+  "composites": [
+    {
+      "name": "display-modes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "m-live",
+          "label": "soccer_live",
+          "sublabel": "half and the running score"
+        },
+        {
+          "shot": "m-recent",
+          "label": "soccer_recent",
+          "sublabel": "the finished match"
+        },
+        {
+          "shot": "m-upcoming",
+          "label": "soccer_upcoming",
+          "sublabel": "kick-off date and time"
+        }
+      ]
+    },
+    {
+      "name": "period-states",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "m-live",
+          "label": "2H",
+          "sublabel": "second half; 1H before the break"
+        },
+        {
+          "shot": "p-half",
+          "label": "HALF",
+          "sublabel": "half-time; ETH at the extra-time break"
+        },
+        {
+          "shot": "p-et",
+          "label": "ET2",
+          "sublabel": "extra time, second half"
+        },
+        {
+          "shot": "p-pen",
+          "label": "PEN",
+          "sublabel": "penalty shootout in progress"
+        }
+      ]
+    },
+    {
+      "name": "final-states",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "m-recent",
+          "label": "Final",
+          "sublabel": "decided in 90 minutes"
+        },
+        {
+          "shot": "f-et",
+          "label": "F/ET",
+          "sublabel": "decided in extra time"
+        },
+        {
+          "shot": "f-pen",
+          "label": "F/Pen",
+          "sublabel": "decided on penalties"
+        }
+      ]
+    },
+    {
+      "name": "show-records",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "rec-on",
+          "label": "show_records: true",
+          "sublabel": "the plugin-level key, which is the one that is read"
+        },
+        {
+          "shot": "rec-off",
+          "label": "show_records: false"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

@@ -31,6 +31,12 @@
       "ledmatrix_min_version": "2.0.0"
     },
     {
+      "version": "1.4.3",
+      "released": "2026-09-03",
+      "notes": "Documentation. The configuration table covered 21 of the 33 settings; the twelve it missed include the three that decide what the panel shows once the draft is over (post_draft_show, post_draft_days, display_rounds), the dynamic-duration block and vegas_mode. All 33 are now documented, with transition.type, .speed and .enabled marked as read by nothing (#381). Adds real rendered screenshots of a pick card, the show_position and show_college toggles, two of the offered fonts, and four panel sizes.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "version": "1.4.2",
       "released": "2026-08-19",
       "ledmatrix_min_version": "2.0.0",
@@ -45,7 +51,7 @@
     {
       "version": "1.4.0",
       "released": "2026-07-31",
-      "ledmatrix_min_version": "2.0.0"
+      "ledmatrix_min": "2.0.0"
     },
     {
       "released": "2026-07-17",
@@ -130,5 +136,5 @@
     "nfl_logos": "assets/sports/nfl_logos/"
   },
   "license": "GPL-3.0",
-  "last_updated": "2026-08-05"
+  "last_updated": "2026-09-03"
 }

@@ -1,0 +1,468 @@
+{
+  "plugin": "f1-scoreboard",
+  "_comment": "Standings are seeded onto the plugin instance rather than fetched, and _last_update is seeded so update() does not re-fetch and clear them. The cards scroll, so shots step frames. Drivers, teams and points are invented.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-09-03T18:00:00+00:00",
+    "skip_update": true,
+    "frames": 60,
+    "config": {
+      "enabled": true
+    },
+    "attrs": {
+      "_driver_standings": [
+        {
+          "position": 1,
+          "code": "VER",
+          "name": "M. Verstappen",
+          "constructor_id": "red_bull",
+          "points": 374,
+          "wins": 9,
+          "is_favorite": true,
+          "gap_to_leader": 0,
+          "poles": 0,
+          "last_race_pts": 0
+        },
+        {
+          "position": 2,
+          "code": "NOR",
+          "name": "L. Norris",
+          "constructor_id": "mclaren",
+          "points": 331,
+          "wins": 4,
+          "is_favorite": false,
+          "gap_to_leader": 43,
+          "poles": 0,
+          "last_race_pts": 0
+        },
+        {
+          "position": 3,
+          "code": "PIA",
+          "name": "O. Piastri",
+          "constructor_id": "mclaren",
+          "points": 307,
+          "wins": 3,
+          "is_favorite": false,
+          "gap_to_leader": 67,
+          "poles": 0,
+          "last_race_pts": 0
+        },
+        {
+          "position": 4,
+          "code": "LEC",
+          "name": "C. Leclerc",
+          "constructor_id": "ferrari",
+          "points": 245,
+          "wins": 1,
+          "is_favorite": false,
+          "gap_to_leader": 129,
+          "poles": 0,
+          "last_race_pts": 0
+        },
+        {
+          "position": 5,
+          "code": "RUS",
+          "name": "G. Russell",
+          "constructor_id": "mercedes",
+          "points": 211,
+          "wins": 2,
+          "is_favorite": false,
+          "gap_to_leader": 163,
+          "poles": 0,
+          "last_race_pts": 0
+        }
+      ],
+      "_constructor_standings": [
+        {
+          "position": 1,
+          "constructor_id": "mclaren",
+          "name": "McLaren",
+          "points": 638,
+          "wins": 7,
+          "code": "MCL"
+        },
+        {
+          "position": 2,
+          "constructor_id": "red_bull",
+          "name": "Red Bull",
+          "points": 521,
+          "wins": 9,
+          "code": "RED"
+        },
+        {
+          "position": 3,
+          "constructor_id": "ferrari",
+          "name": "Ferrari",
+          "points": 456,
+          "wins": 1,
+          "code": "FER"
+        },
+        {
+          "position": 4,
+          "constructor_id": "mercedes",
+          "name": "Mercedes",
+          "points": 398,
+          "wins": 2,
+          "code": "MER"
+        }
+      ],
+      "_last_update": 1788458400.0
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "frames": 280,
+      "width": 256,
+      "config": {
+        "enabled": true,
+        "driver_standings": {
+          "enabled": true
+        },
+        "constructor_standings": {
+          "enabled": false
+        },
+        "recent_races": {
+          "enabled": false
+        },
+        "upcoming": {
+          "enabled": false
+        },
+        "qualifying": {
+          "enabled": false
+        },
+        "practice": {
+          "enabled": false
+        },
+        "sprint": {
+          "enabled": false
+        },
+        "calendar": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "m-drivers",
+      "frames": 280,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "driver_standings": {
+          "enabled": true
+        },
+        "constructor_standings": {
+          "enabled": false
+        },
+        "recent_races": {
+          "enabled": false
+        },
+        "upcoming": {
+          "enabled": false
+        },
+        "qualifying": {
+          "enabled": false
+        },
+        "practice": {
+          "enabled": false
+        },
+        "sprint": {
+          "enabled": false
+        },
+        "calendar": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "m-constructors",
+      "frames": 280,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "driver_standings": {
+          "enabled": false
+        },
+        "constructor_standings": {
+          "enabled": true
+        },
+        "recent_races": {
+          "enabled": false
+        },
+        "upcoming": {
+          "enabled": false
+        },
+        "qualifying": {
+          "enabled": false
+        },
+        "practice": {
+          "enabled": false
+        },
+        "sprint": {
+          "enabled": false
+        },
+        "calendar": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "split-on",
+      "frames": 340,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "driver_standings": {
+          "enabled": false
+        },
+        "constructor_standings": {
+          "enabled": true,
+          "show_driver_split": true
+        },
+        "recent_races": {
+          "enabled": false
+        },
+        "upcoming": {
+          "enabled": false
+        },
+        "qualifying": {
+          "enabled": false
+        },
+        "practice": {
+          "enabled": false
+        },
+        "sprint": {
+          "enabled": false
+        },
+        "calendar": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "split-off",
+      "frames": 340,
+      "width": 256,
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "driver_standings": {
+          "enabled": false
+        },
+        "constructor_standings": {
+          "enabled": true,
+          "show_driver_split": false
+        },
+        "recent_races": {
+          "enabled": false
+        },
+        "upcoming": {
+          "enabled": false
+        },
+        "qualifying": {
+          "enabled": false
+        },
+        "practice": {
+          "enabled": false
+        },
+        "sprint": {
+          "enabled": false
+        },
+        "calendar": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "frames": 280,
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "driver_standings": {
+          "enabled": true
+        },
+        "constructor_standings": {
+          "enabled": false
+        },
+        "recent_races": {
+          "enabled": false
+        },
+        "upcoming": {
+          "enabled": false
+        },
+        "qualifying": {
+          "enabled": false
+        },
+        "practice": {
+          "enabled": false
+        },
+        "sprint": {
+          "enabled": false
+        },
+        "calendar": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "frames": 280,
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "driver_standings": {
+          "enabled": true
+        },
+        "constructor_standings": {
+          "enabled": false
+        },
+        "recent_races": {
+          "enabled": false
+        },
+        "upcoming": {
+          "enabled": false
+        },
+        "qualifying": {
+          "enabled": false
+        },
+        "practice": {
+          "enabled": false
+        },
+        "sprint": {
+          "enabled": false
+        },
+        "calendar": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "frames": 280,
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "driver_standings": {
+          "enabled": true
+        },
+        "constructor_standings": {
+          "enabled": false
+        },
+        "recent_races": {
+          "enabled": false
+        },
+        "upcoming": {
+          "enabled": false
+        },
+        "qualifying": {
+          "enabled": false
+        },
+        "practice": {
+          "enabled": false
+        },
+        "sprint": {
+          "enabled": false
+        },
+        "calendar": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "frames": 280,
+      "standalone": false,
+      "config": {
+        "enabled": true,
+        "driver_standings": {
+          "enabled": true
+        },
+        "constructor_standings": {
+          "enabled": false
+        },
+        "recent_races": {
+          "enabled": false
+        },
+        "upcoming": {
+          "enabled": false
+        },
+        "qualifying": {
+          "enabled": false
+        },
+        "practice": {
+          "enabled": false
+        },
+        "sprint": {
+          "enabled": false
+        },
+        "calendar": {
+          "enabled": false
+        }
+      }
+    }
+  ],
+  "composites": [
+    {
+      "name": "standings-modes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "m-drivers",
+          "label": "f1_driver_standings",
+          "sublabel": "position, code, team and points"
+        },
+        {
+          "shot": "m-constructors",
+          "label": "f1_constructor_standings"
+        }
+      ]
+    },
+    {
+      "name": "driver-split",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "split-on",
+          "label": "constructor_standings.show_driver_split: true"
+        },
+        {
+          "shot": "split-off",
+          "label": "constructor_standings.show_driver_split: false"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

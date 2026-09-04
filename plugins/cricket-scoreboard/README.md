@@ -1,5 +1,13 @@
 # Cricket Scoreboard
 
+![A live ODI on a 128x32 panel: both flags, the batting side's score in green
+above the other side's, and overs, run rate and target
+below](../../docs/assets/cricket-scoreboard/hero.png)
+
+*Every image in this README is real plugin output, rendered at the true panel
+size from seeded matches so it reproduces exactly. Teams, scores and venues are
+invented.*
+
 Live, recent, and upcoming cricket for the LEDMatrix display — covering both
 **international** matches (Test / ODI / T20I) and the **major domestic T20
 leagues** (IPL, Big Bash, The Hundred, PSL, CPL, SA20, ILT20, MLC, and more).
@@ -73,6 +81,79 @@ Configured under the `cricket-scoreboard` key in `config/config.json`. See
 | `celebration_enabled`, `celebration_duration` | true / 8 | Win-celebration takeover |
 | `background_service` | enabled | Worker/timeout/retry tuning |
 | `customization` | — | Fonts + colors for score / overs / team / status / detail text |
+
+### Every setting
+
+The table above groups the ones you are most likely to touch. This is the
+complete list, at the exact paths the schema expects — the schema sets
+`additionalProperties: false`, so a key at the wrong depth is rejected.
+
+| Key | Default | Notes |
+|---|---|---|
+| `enabled` | `false` | Enable or disable the cricket scoreboard plugin. |
+| `favorite_teams` | *(empty)* | Favorite national teams. Any international series (tour, World Cup, bilateral) featuring one of these teams is discovered and shown. Matches on team name appearing in the series/match name. |
+| `favorite_competitions` | `["international", "ipl", "bbl"]` | Domestic competitions (keys from competitions.json) to follow. Include 'international' to follow Test/ODI/T20I tours for your favorite_teams. |
+| `exclude_teams` | *(empty)* | Teams to always hide from live rotation and recent/final scores (spoiler protection). Takes precedence over favorite_teams. |
+| `show_favorite_teams_only` | `false` | Only show matches involving a favorite national team. Domestic-league matches are always governed by favorite_competitions. |
+| `display_duration` | `15` | Duration in seconds to display each match (5–60). |
+| `live_game_duration` | `20` | Duration in seconds to display each live match before rotating to the next (10–120). |
+| `non_favorite_live_game_duration` | `0` | Duration in seconds for live matches that do NOT involve a favorite team. 0 (default) = use live_game_duration for every live match (0–120). |
+| `recent_game_duration` | `15` | Duration in seconds to display each recent match (5–60). |
+| `upcoming_game_duration` | `15` | Duration in seconds to display each upcoming match (5–60). |
+| `update_interval_seconds` | `3600` | How often to fetch new match data (seconds) (30–86400). |
+| `live_update_interval` | `30` | Update interval for live matches (seconds) (10–300). |
+| `recent_update_interval` | `3600` | Update interval for recent matches (seconds) (60–86400). |
+| `upcoming_update_interval` | `3600` | Update interval for upcoming matches (seconds) (60–86400). |
+| `series_discovery_interval` | `86400` | How often to re-resolve numeric ESPN series IDs from the header endpoint (seconds). Series IDs change per tour/season, so they are re-discovered periodically rather than hardcoded. Default 24h (3600–604800). |
+| `recent_games_to_show` | `5` | Maximum number of recent (completed) matches to show (1–20). |
+| `upcoming_games_to_show` | `5` | Maximum number of upcoming (scheduled) matches to show (1–20). |
+| `live_priority` | `true` | Give live matches priority over other modes. Live matches interrupt normal rotation and are displayed immediately when available. |
+| `show_records` | `false` | Show team records (played-won) when available. |
+| `show_venue` | `true` | Show the venue/ground on upcoming match cards. |
+| `celebration_enabled` | `true` | Show a celebratory takeover screen when a favorite team wins a live match. |
+| `celebration_duration` | `8` | How long the win celebration stays on screen (seconds) (3–30). |
+| `dynamic_duration.enabled` | `false` | Enable dynamic duration (total_matches x per_match_duration). |
+| `dynamic_duration.min_duration_seconds` | `30` | Minimum total duration in seconds for a mode, even if few matches are available (10–300). |
+| `dynamic_duration.max_duration_seconds` | `300` | Maximum total duration in seconds for a mode (60–600). |
+| `mode_durations.live_mode_duration` | — | Total duration in seconds for Live mode before rotating to next mode. Default: null (dynamic) (10–600). |
+| `mode_durations.recent_mode_duration` | — | Total duration in seconds for Recent mode before rotating to next mode. Default: null (dynamic) (10–600). |
+| `mode_durations.upcoming_mode_duration` | — | Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (dynamic) (10–600). |
+| `display_modes.live` | `true` | Show live matches. |
+| `display_modes.recent` | `true` | Show recently completed matches. |
+| `display_modes.upcoming` | `true` | Show upcoming matches. |
+| `background_service.enabled` | `true` | Enable background service for data fetching. |
+| `background_service.max_workers` | `3` | Maximum number of worker threads (1–10). |
+| `background_service.request_timeout` | `30` | Request timeout in seconds (5–120). |
+| `background_service.max_retries` | `3` | Maximum number of retries for failed requests (1–10). |
+| `background_service.priority` | `2` | Background service priority (1–5). |
+| `customization.score_text.font` | `"PressStart2P-Regular.ttf"` | one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`. |
+| `customization.score_text.font_size` | `10` | (4–16). |
+| `customization.period_text.font` | `"PressStart2P-Regular.ttf"` | one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`. |
+| `customization.period_text.font_size` | `8` | (4–16). |
+| `customization.team_name.font` | `"PressStart2P-Regular.ttf"` | one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`. |
+| `customization.team_name.font_size` | `8` | (4–16). |
+| `customization.status_text.font` | `"4x6-font.ttf"` | one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`. |
+| `customization.status_text.font_size` | `6` | (4–16). |
+| `customization.detail_text.font` | `"4x6-font.ttf"` | one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`. |
+| `customization.detail_text.font_size` | `6` | (4–16). |
+| `customization.colors.score_color` | `"#FFFFFF"` | Color for the runs/wickets score. |
+| `customization.colors.batting_color` | `"#00FF66"` | Highlight color for the team currently batting. |
+| `customization.colors.detail_color` | `"#FFD200"` | Color for run rate / target detail text. |
+| `customization.colors.status_color` | `"#AAAAAA"` | Color for status / result text. |
+
+`mode_durations.*` is read through a key built at runtime —
+`f"{mode}_mode_duration"` — so it does not show up in a plain search for the
+key name, but it is live: set one to cap that mode's total time on screen,
+or leave it `null` to use the per-match durations instead.
+
+
+### What each mode looks like
+
+![The three display modes](../../docs/assets/cricket-scoreboard/display-modes.png)
+
+![show_venue on and off](../../docs/assets/cricket-scoreboard/show-venue.png)
+
+![The same match on four panel sizes](../../docs/assets/cricket-scoreboard/panel-sizes.png)
 
 ## Logos and flags
 

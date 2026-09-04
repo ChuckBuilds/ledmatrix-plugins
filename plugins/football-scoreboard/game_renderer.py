@@ -474,7 +474,7 @@ class GameRenderer(SportsGameRendererMixin):
             fonts["team"] = self._load_custom_font(
                 team_config, default_size=team_size, element_key='team_name')
             fonts["status"] = self._load_custom_font(
-                status_config, default_size=status_size, element_key='status_text')
+                status_config, default_size=status_size, element_key='status_text', default_font='4x6-font.ttf')
             fonts["detail"] = self._load_custom_font(
                 detail_config,
                 default_size=self._detail_font_size(), element_key='detail_text',
@@ -902,7 +902,7 @@ class GameRenderer(SportsGameRendererMixin):
         'score': ('PressStart2P-Regular.ttf', 10),
         'time': ('PressStart2P-Regular.ttf', 8),
         'team': ('PressStart2P-Regular.ttf', 8),
-        'status': ('PressStart2P-Regular.ttf', 6),
+        'status': ('4x6-font.ttf', 6),
         'detail': ('4x6-font.ttf', 6),
         # Same default as detail: odds rendered with the detail font until
         # this setting existed, and the default must not change that.
