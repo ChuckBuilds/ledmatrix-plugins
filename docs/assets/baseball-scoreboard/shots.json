@@ -231,6 +231,92 @@
       "height": 64,
       "scale": 6,
       "standalone": false
+    },
+    {
+      "name": "bases-default",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": true,
+            "show_recent": false,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          }
+        },
+        "customization": {}
+      },
+      "standalone": false
+    },
+    {
+      "name": "bases-colour",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": true,
+            "show_recent": false,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          }
+        },
+        "customization": {
+          "bases": {
+            "occupied_color": [
+              255,
+              200,
+              0
+            ],
+            "empty_color": [
+              90,
+              90,
+              90
+            ]
+          },
+          "outs": {
+            "counted_color": [
+              255,
+              60,
+              60
+            ],
+            "empty_color": [
+              70,
+              70,
+              70
+            ]
+          }
+        }
+      },
+      "standalone": false
+    },
+    {
+      "name": "bases-bigger",
+      "config": {
+        "mlb": {
+          "display_modes": {
+            "show_live": true,
+            "show_recent": false,
+            "show_upcoming": false,
+            "live_display_mode": "switch",
+            "recent_display_mode": "switch",
+            "upcoming_display_mode": "switch"
+          }
+        },
+        "customization": {
+          "bases": {
+            "diamond_size": 9,
+            "x_offset": -2
+          },
+          "outs": {
+            "circle_diameter": 4,
+            "spacing": 3,
+            "distance_from_bases": 5
+          }
+        }
+      },
+      "standalone": false
     }
   ],
   "composites": [
@@ -296,6 +382,28 @@
           "sublabel": "each team's win-loss record in the bottom corners"
         }
       ]
+    },
+    {
+      "name": "bases-and-outs",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "bases-default",
+          "label": "defaults",
+          "sublabel": "7px diamonds, 3px out circles; two outs counted, bases empty"
+        },
+        {
+          "shot": "bases-colour",
+          "label": "recoloured",
+          "sublabel": "bases.empty_color grey, outs.counted_color red. occupied_color only shows with a runner on"
+        },
+        {
+          "shot": "bases-bigger",
+          "label": "enlarged",
+          "sublabel": "diamond_size 9 and circle_diameter 4 crowd a 32px panel -- the count below is clipped"
+        }
+      ]
     }
-  ]
+  ],
+  "_comment": "The bases-and-outs shots reuse the live http_replay fixture, which has two outs and nobody on base, so bases.occupied_color cannot be shown from it."
 }

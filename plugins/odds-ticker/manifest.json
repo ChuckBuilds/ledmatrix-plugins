@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.4.0",
+      "released": "2026-09-03",
+      "notes": "Portability fix and documentation. Two strftime calls used %-m, a glibc extension that raises ValueError on Windows and musl; the exception escaped _create_game_display and the whole ticker fell back to 'No odds data'. They now build the same text portably (#414 tracks the same pattern in ten other plugins). Bitmap fonts now load at their declared PIXEL_SIZE instead of silently swapping in another face, and cozette.bdf is dropped from the three font menus because the core ships no such file (#387). The README documented 8 settings at top level when the schema nests every one of them under display_options, data_settings or filtering -- and because additionalProperties is false, a config using those paths is rejected rather than ignored. Two of the eight also gave the wrong default. All 47 settings are now documented at their real paths, with real rendered screenshots.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.3.3",
       "released": "2026-08-31",
@@ -70,7 +76,7 @@
     {
       "released": "2026-07-18",
       "version": "1.1.7",
-      "notes": "Fix config save failing with a 400 validation error. The per-league favorite-team pickers hardcoded several wrong team abbreviations that didn't match ESPN's (Rams LA→LAR, White Sox CWS→CHW, A's OAK→ATH, Warriors GSW→GS, Pelicans NOP→NO, Knicks NYK→NY, Spurs SAS→SA, Jazz UTA→UTAH, Wizards WAS→WSH, NHL Kings LAK→LA, Capitals WAS→WSH), so valid favorites were rejected on save and never matched games. Also removed the overly strict regex on the NCAA/MiLB free-text team fields so documented values like AP_TOP_25 are accepted.",
+      "notes": "Fix config save failing with a 400 validation error. The per-league favorite-team pickers hardcoded several wrong team abbreviations that didn't match ESPN's (Rams LA\u2192LAR, White Sox CWS\u2192CHW, A's OAK\u2192ATH, Warriors GSW\u2192GS, Pelicans NOP\u2192NO, Knicks NYK\u2192NY, Spurs SAS\u2192SA, Jazz UTA\u2192UTAH, Wizards WAS\u2192WSH, NHL Kings LAK\u2192LA, Capitals WAS\u2192WSH), so valid favorites were rejected on save and never matched games. Also removed the overly strict regex on the NCAA/MiLB free-text team fields so documented values like AP_TOP_25 are accepted.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -123,7 +129,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-08-05",
+  "last_updated": "2026-09-03",
   "verified": true,
   "screenshot": "",
   "display_modes": [

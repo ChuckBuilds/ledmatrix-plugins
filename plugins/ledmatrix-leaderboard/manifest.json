@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -31,6 +31,12 @@
   "requirements_file": "requirements.txt",
   "min_ledmatrix_version": "2.0.0",
   "versions": [
+    {
+      "version": "1.3.3",
+      "released": "2026-09-03",
+      "notes": "Documentation. 31 of the 56 settings had no named key, including the whole appearance block and every per-league entry. All 56 are now documented at the paths the schema expects, with global.scroll_speed_scale, global.scroll_direction and global.enable_scroll_metrics marked as not implemented -- they appear nowhere in the plugin and nowhere in the core's scroll helper. Corrects the opening description: each team is drawn as position number, logo and abbreviation, and a record replaces the number only for NCAA football with show_ranking off, so 'rankings, records, and statistics' overstated what reaches the panel. Adds real rendered screenshots.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-08-12",
       "version": "1.3.2",
@@ -91,7 +97,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-08-05",
+  "last_updated": "2026-09-03",
   "compatible_versions": [
     ">=2.0.0"
   ]

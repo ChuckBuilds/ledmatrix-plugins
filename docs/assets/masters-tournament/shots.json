@@ -1,0 +1,1122 @@
+{
+  "plugin": "masters-tournament",
+  "_comment": "The plugin ships a mock_data mode, so these render offline with no seeding. Which modes are available depends on the tournament phase: the eight in tournament-modes render during Masters week and are blank outside it, and the six in offseason-modes are the other way round. The shots pin the clock to each phase accordingly.",
+  "defaults": {
+    "width": 128,
+    "height": 32,
+    "scale": 6,
+    "freeze_time": "2026-04-09T18:00:00+00:00",
+    "config": {
+      "enabled": true,
+      "mock_data": true
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": true
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00"
+    },
+    {
+      "name": "t-leaderboard",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": true
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "t-player_cards",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": true
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "t-live_action",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": true
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "t-amen_corner",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": true
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "t-featured_holes",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": true
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "t-schedule",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": true
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "t-tournament_stats",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": true
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "t-field_overview",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": true
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "o-countdown",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": true
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-01-15T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "o-past_champions",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": true
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-01-15T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "o-course_overview",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": true
+          }
+        }
+      },
+      "freeze_time": "2026-01-15T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "o-hole_by_hole",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": true
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-01-15T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "o-course_tour",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": true
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-01-15T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "o-fun_facts",
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": false
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": true
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-01-15T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "height": 32,
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": true
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "height": 32,
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": true
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": true
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00",
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "height": 32,
+      "config": {
+        "enabled": true,
+        "mock_data": true,
+        "display_modes": {
+          "leaderboard": {
+            "enabled": true
+          },
+          "player_cards": {
+            "enabled": false
+          },
+          "hole_by_hole": {
+            "enabled": false
+          },
+          "live_action": {
+            "enabled": false
+          },
+          "course_tour": {
+            "enabled": false
+          },
+          "amen_corner": {
+            "enabled": false
+          },
+          "featured_holes": {
+            "enabled": false
+          },
+          "schedule": {
+            "enabled": false
+          },
+          "past_champions": {
+            "enabled": false
+          },
+          "tournament_stats": {
+            "enabled": false
+          },
+          "fun_facts": {
+            "enabled": false
+          },
+          "countdown": {
+            "enabled": false
+          },
+          "field_overview": {
+            "enabled": false
+          },
+          "course_overview": {
+            "enabled": false
+          }
+        }
+      },
+      "freeze_time": "2026-04-09T18:00:00+00:00",
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "tournament-modes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "t-leaderboard",
+          "label": "leaderboard"
+        },
+        {
+          "shot": "t-player_cards",
+          "label": "player_cards"
+        },
+        {
+          "shot": "t-live_action",
+          "label": "live_action"
+        },
+        {
+          "shot": "t-amen_corner",
+          "label": "amen_corner"
+        },
+        {
+          "shot": "t-featured_holes",
+          "label": "featured_holes"
+        },
+        {
+          "shot": "t-schedule",
+          "label": "schedule"
+        },
+        {
+          "shot": "t-tournament_stats",
+          "label": "tournament_stats"
+        },
+        {
+          "shot": "t-field_overview",
+          "label": "field_overview"
+        }
+      ]
+    },
+    {
+      "name": "offseason-modes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "o-countdown",
+          "label": "countdown"
+        },
+        {
+          "shot": "o-past_champions",
+          "label": "past_champions"
+        },
+        {
+          "shot": "o-course_overview",
+          "label": "course_overview"
+        },
+        {
+          "shot": "o-hole_by_hole",
+          "label": "hole_by_hole"
+        },
+        {
+          "shot": "o-course_tour",
+          "label": "course_tour"
+        },
+        {
+          "shot": "o-fun_facts",
+          "label": "fun_facts"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32"
+        }
+      ]
+    }
+  ]
+}

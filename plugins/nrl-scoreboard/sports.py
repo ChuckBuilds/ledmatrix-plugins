@@ -887,7 +887,7 @@ class SportsCore(SportsCoreSharedMixin, ABC):
             fonts["score"] = self._load_custom_font_from_element_config(score_config, default_size=10, element_key='score_text')
             fonts["time"] = self._load_custom_font_from_element_config(period_config, default_size=8, element_key='period_text')
             fonts["team"] = self._load_custom_font_from_element_config(team_config, default_size=8, element_key='team_name')
-            fonts["status"] = self._load_custom_font_from_element_config(status_config, default_size=6, element_key='status_text')
+            fonts["status"] = self._load_custom_font_from_element_config(status_config, default_size=6, element_key='status_text', default_font='4x6-font.ttf')
             fonts["detail"] = self._load_custom_font_from_element_config(detail_config, default_size=6, element_key='detail_text', default_font='4x6-font.ttf')
             fonts["odds"] = self._load_custom_font_from_element_config(odds_config, default_size=6, element_key='odds_text', default_font='4x6-font.ttf')
             fonts["rank"] = self._load_custom_font_from_element_config(rank_config, default_size=10, element_key='rank_text')

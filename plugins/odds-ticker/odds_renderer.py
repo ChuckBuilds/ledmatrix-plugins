@@ -20,6 +20,20 @@ from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 
 
+def _bdf_pixel_size(path):
+    """The pixel size a .bdf font declares, or None if it does not."""
+    try:
+        with open(path, "r", encoding="latin-1") as handle:
+            for line in handle:
+                if line.startswith("PIXEL_SIZE"):
+                    return int(line.split()[1])
+                if line.startswith("CHARS"):
+                    break  # past the header; no point reading the glyphs
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
+
+
 def _pixel_draw(image):
     """ImageDraw that renders text crisply on the LED grid.
 
@@ -158,7 +172,21 @@ class OddsRenderer:
                         font = ImageFont.truetype(font_path, font_size)
                         logger.debug(f"Loaded BDF font: {font_name} at size {font_size}")
                         return font
-                    except Exception:
+                    except OSError:
+                        # A .bdf is a bitmap face that exists at exactly one
+                        # pixel size; FreeType refuses every other. Retry at the
+                        # size the file declares rather than silently swapping
+                        # in a different font.
+                        native = _bdf_pixel_size(font_path)
+                        if native is not None and native != font_size:
+                            try:
+                                font = ImageFont.truetype(font_path, native)
+                                logger.debug(
+                                    "Loaded bitmap font %s at its native size %d "
+                                    "(requested %d)", font_name, native, font_size)
+                                return font
+                            except OSError:
+                                pass
                         logger.warning(f"Could not load BDF font {font_name} with PIL, using default")
                 else:
                     logger.warning(f"Unknown font file type: {font_name}, using default")
@@ -324,7 +352,6 @@ class OddsRenderer:
         if isinstance(game_time, str):
             try:
                 from datetime import datetime
-                import pytz
                 game_time = datetime.fromisoformat(game_time.replace('Z', '+00:00'))
             except Exception:
                 game_time = None
@@ -338,7 +365,8 @@ class OddsRenderer:
                     game_time = game_time.replace(tzinfo=pytz.UTC)
                 local_time = game_time.astimezone(tz)
                 day_text = local_time.strftime("%a")  # Day of week
-                date_text = local_time.strftime("%-m/%d")  # Month/Day
+                # %-m is a glibc extension; see manager.py for the same fix.
+                date_text = f"{local_time.month}/{local_time.strftime('%d')}"  # Month/Day
                 time_text = local_time.strftime("%I:%M%p").lstrip('0')  # Time
             except Exception:
                 day_text = "TBD"
