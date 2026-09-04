@@ -455,6 +455,7 @@ class LeaderboardPlugin(BasePlugin):
             image = Image.new('RGB', (width, height), (0, 0, 0))
             from PIL import ImageDraw
             draw = ImageDraw.Draw(image)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
             
             text = "No Leaderboard Data"
             # Use default font if available

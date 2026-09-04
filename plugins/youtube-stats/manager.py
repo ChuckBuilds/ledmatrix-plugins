@@ -286,6 +286,7 @@ class YouTubeStatsPlugin(BasePlugin):
             matrix_height = self.display_manager.matrix.height
             image = Image.new('RGB', (matrix_width, matrix_height))
             draw = ImageDraw.Draw(image)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
             
             # Calculate logo dimensions - 60% of display height to ensure text fits
             logo_height = int(matrix_height * 0.6)
@@ -433,6 +434,7 @@ class YouTubeStatsPlugin(BasePlugin):
             matrix_height = self.display_manager.matrix.height
             image = Image.new('RGB', (matrix_width, matrix_height))
             draw = ImageDraw.Draw(image)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
             font = self.font or ImageFont.load_default()
             bbox = draw.textbbox((0, 0), message, font=font)
             text_w = bbox[2] - bbox[0]

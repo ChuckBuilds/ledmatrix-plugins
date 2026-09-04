@@ -617,6 +617,7 @@ class MastersRenderer:
         img = self._draw_gradient_bg(COLORS["masters_dark"], COLORS["masters_green"],
                                      width=w, height=h)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Gold border
         draw.rectangle([(0, 0), (w - 1, h - 1)],
@@ -939,6 +940,7 @@ class MastersRenderer:
         img = self._draw_gradient_bg((15, 80, 30), COLORS["augusta_green"],
                                      width=cw, height=ch)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Header
         header_h = self.header_height
@@ -991,6 +993,7 @@ class MastersRenderer:
     def render_amen_corner(self, scoring_data: Optional[Dict] = None) -> Optional[Image.Image]:
         img = self._draw_gradient_bg((5, 50, 25), COLORS["augusta_green"])
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Header
         h = self.header_height + 2
@@ -1046,6 +1049,7 @@ class MastersRenderer:
     def render_past_champions(self, page: int = 0) -> Optional[Image.Image]:
         img = self._draw_gradient_bg(COLORS["masters_dark"], COLORS["masters_green"])
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         self._draw_header_bar(img, draw, "CHAMPIONS", show_logo=False)
 
@@ -1168,6 +1172,7 @@ class MastersRenderer:
         img = self._draw_gradient_bg(COLORS["bg"], COLORS["bg_dark_green"],
                                      width=cw, height=ch)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Header
         header_h = self.header_height
@@ -1237,6 +1242,7 @@ class MastersRenderer:
         img = self._draw_gradient_bg(COLORS["bg"], COLORS["bg_dark_green"],
                                      width=cw, height=ch)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Header
         header_h = self.header_height
@@ -1258,6 +1264,7 @@ class MastersRenderer:
     def render_tournament_stats(self, page: int = 0) -> Optional[Image.Image]:
         img = self._draw_gradient_bg(COLORS["bg"], COLORS["bg_dark_green"])
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         self._draw_header_bar(img, draw, "RECORDS", show_logo=False)
 
@@ -1302,6 +1309,7 @@ class MastersRenderer:
     def render_schedule(self, schedule_data: List[Dict], page: int = 0) -> Optional[Image.Image]:
         img = self._draw_gradient_bg(COLORS["bg"], COLORS["bg_dark_green"])
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         self._draw_header_bar(img, draw, "TEE TIMES")
 
@@ -1447,6 +1455,7 @@ class MastersRenderer:
         img = self._draw_gradient_bg(COLORS["masters_dark"], COLORS["masters_green"],
                                      width=w, height=h)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Countdown text — show days + hours for context, hours:minutes when
         # under 1 day, minutes-only in the final hour, then "NOW".
@@ -1548,6 +1557,7 @@ class MastersRenderer:
     def render_field_overview(self, leaderboard_data: List[Dict]) -> Optional[Image.Image]:
         img = self._draw_gradient_bg(COLORS["bg"], COLORS["bg_dark_green"])
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         self._draw_header_bar(img, draw, "THE FIELD")
 

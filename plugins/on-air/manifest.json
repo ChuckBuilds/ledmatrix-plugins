@@ -1,7 +1,7 @@
 {
   "id": "on-air",
   "name": "On Air Light",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "author": "ChuckBuilds",
   "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u2014 stays on until you turn it off.",
   "entry_point": "manager.py",
@@ -23,6 +23,12 @@
   ],
   "versions": [
     {
+      "released": "2026-09-03",
+      "version": "1.2.7",
+      "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "version": "1.2.6",
       "released": "2026-09-02",
       "notes": "Font resolution and documentation. The sign looked for the LEDMatrix assets folder two levels above the plugin, which is only correct when the plugins directory sits inside the core tree; anywhere else it found nothing and silently fell back to a built-in font a fraction of the intended size. It now asks the imported core where it lives, keeping the old guess and the working directory as fallbacks. The README gains real rendered screenshots and the config.json key for every setting, corrects two claims about the label that the code does not implement, and fixes five automation examples that set 'color' where they meant 'bg'.",
@@ -37,7 +43,7 @@
     {
       "version": "1.2.4",
       "released": "2026-07-31",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-07-17",

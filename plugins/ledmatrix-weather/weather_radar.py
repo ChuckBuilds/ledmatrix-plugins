@@ -593,6 +593,7 @@ class RadarFetcher:
                      frames: List[RadarFrame], width: int, height: int,
                      viewport: MercatorViewport) -> Image.Image:
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Crosshair at the configured location's true projected position
         cx, cy = viewport.latlon_to_panel(self.lat, self.lon, width, height)

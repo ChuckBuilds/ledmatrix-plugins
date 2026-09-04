@@ -835,6 +835,7 @@ class MarchMadnessPlugin(BasePlugin):
         h = self.display_manager.matrix.height
         img = Image.new("RGB", (w, h), COLOR_BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         if self._is_tournament_window():
             text = "No games"

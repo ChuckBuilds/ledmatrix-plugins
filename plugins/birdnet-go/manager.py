@@ -708,6 +708,7 @@ class BirdNetGoPlugin(BasePlugin):
         text_w, text_h, y_off = self._measure(text, font)
         cache = Image.new('RGB', (text_w + self.scroll_gap_width, height), self.bg_color)
         draw = ImageDraw.Draw(cache)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         draw.text((0, (height - text_h) // 2 - y_off), text, font=font, fill=color)
         return cache
 
@@ -719,6 +720,7 @@ class BirdNetGoPlugin(BasePlugin):
         color = color or self.text_color
         frame = Image.new('RGB', (box_w, box_h), self.bg_color)
         draw = ImageDraw.Draw(frame)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         text_w, text_h, y_off = self._measure(text, font)
 
         if text_w <= box_w or not allow_scroll:
@@ -810,6 +812,7 @@ class BirdNetGoPlugin(BasePlugin):
     def _render_centered(self, text: str, w: int, h: int) -> Image.Image:
         img = Image.new('RGB', (w, h), self.bg_color)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         font = self._font_for(min(self.font_size, max(5, h // 3)))
         text = self._truncate(text, font, w - 2)
         tw, th, y_off = self._measure(text, font)
@@ -911,6 +914,7 @@ class BirdNetGoPlugin(BasePlugin):
     def _render_stats(self, stats: Dict[str, Any], w: int, h: int) -> Image.Image:
         frame = Image.new('RGB', (w, h), self.bg_color)
         draw = ImageDraw.Draw(frame)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         rows, line_h, font = self._stats_layout(h)
         pad = 1 if w < 96 else 2
 

@@ -1025,6 +1025,7 @@ class WeatherPlugin(BasePlugin):
         """Display a diagnostic message when no weather data is available."""
         img = Image.new('RGB', (self.display_manager.matrix.width, self.display_manager.matrix.height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         from PIL import ImageFont
         try:
@@ -1057,6 +1058,7 @@ class WeatherPlugin(BasePlugin):
             height = self.display_manager.matrix.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
             # Get weather info
             temp = int(self.weather_data['main']['temp'])
@@ -1267,6 +1269,7 @@ class WeatherPlugin(BasePlugin):
             height = self.display_manager.matrix.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
             layout = self._get_layout()
             hours_to_show = min(4, len(self.hourly_forecast))
@@ -1344,6 +1347,7 @@ class WeatherPlugin(BasePlugin):
             height = self.display_manager.matrix.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
             layout = self._get_layout()
             days_to_show = min(3, len(self.daily_forecast))
@@ -1621,6 +1625,7 @@ class WeatherPlugin(BasePlugin):
             height = self.display_manager.matrix.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
             font_sm = self.display_manager.extra_small_font  # 6px - secondary rows
             tz_offset = self.weather_data.get('timezone_offset', 0) if self.weather_data else 0
@@ -1783,6 +1788,7 @@ class WeatherPlugin(BasePlugin):
             height = self.display_manager.matrix.height
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
             font = self.display_manager.extra_small_font
             font_h = 7

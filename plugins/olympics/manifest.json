@@ -1,7 +1,7 @@
 {
   "id": "olympics",
   "name": "Olympics",
-  "version": "2.0.1",
+  "version": "2.0.3",
   "author": "ChuckBuilds",
   "description": "Enhanced Olympics plugin with live medal counts, upcoming events, results, and countdown. Supports Vegas scroll mode and regular display mode.",
   "category": "sports",
@@ -37,6 +37,12 @@
     "country_tracking": true
   },
   "versions": [
+    {
+      "released": "2026-09-03",
+      "version": "2.0.3",
+      "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-05-15",
       "version": "2.0.1",

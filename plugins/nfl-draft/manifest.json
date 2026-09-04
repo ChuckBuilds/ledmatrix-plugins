@@ -1,7 +1,7 @@
 {
   "id": "nfl-draft",
   "name": "NFL Draft",
-  "version": "1.4.2",
+  "version": "1.4.4",
   "author": "ChuckBuilds",
   "description": "Displays projected NFL draft picks from ESPN with live draft tracking support during the annual NFL Draft event. Includes simulate_live mode to replay a completed draft using real ESPN core API data. Shows team logos, player names, positions, and pick numbers in a scrolling display.",
   "entry_point": "manager.py",
@@ -25,6 +25,12 @@
   "icon": "fas fa-football-ball",
   "versions": [
     {
+      "released": "2026-09-03",
+      "version": "1.4.4",
+      "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "version": "1.4.2",
       "released": "2026-08-19",
       "ledmatrix_min_version": "2.0.0",
@@ -39,7 +45,7 @@
     {
       "version": "1.4.0",
       "released": "2026-07-31",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-07-17",

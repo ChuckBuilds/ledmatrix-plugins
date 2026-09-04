@@ -561,6 +561,7 @@ class MQTTNotificationsPlugin(BasePlugin):
             # Create cache image
             cache_img = Image.new('RGB', (cache_width, cache_height), self.bg_color)
             draw = ImageDraw.Draw(cache_img)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
             
             # Calculate vertical centering
             y_pos = (cache_height - text_height) // 2 - (bbox[1] if isinstance(self.font, ImageFont.FreeTypeFont) else 0)
@@ -685,6 +686,7 @@ class MQTTNotificationsPlugin(BasePlugin):
                             # Fallback: static text
                             img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                             draw = ImageDraw.Draw(img)
+                            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
                             bbox = draw.textbbox((0, 0), text, font=self.font)
                             text_width = bbox[2] - bbox[0]
                             text_height = bbox[3] - bbox[1]
@@ -696,6 +698,7 @@ class MQTTNotificationsPlugin(BasePlugin):
                         # Fallback: static text
                         img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                         draw = ImageDraw.Draw(img)
+                        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
                         bbox = draw.textbbox((0, 0), text, font=self.font)
                         text_width = bbox[2] - bbox[0]
                         text_height = bbox[3] - bbox[1]
@@ -707,6 +710,7 @@ class MQTTNotificationsPlugin(BasePlugin):
                     # Static text (centered)
                     img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                     draw = ImageDraw.Draw(img)
+                    draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
                     bbox = draw.textbbox((0, 0), text, font=self.font)
                     text_width = bbox[2] - bbox[0]
                     text_height = bbox[3] - bbox[1]

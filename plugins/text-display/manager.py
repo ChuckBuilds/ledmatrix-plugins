@@ -384,6 +384,7 @@ class TextDisplayPlugin(BasePlugin):
             # Create cache image
             self.text_image_cache = Image.new('RGB', (cache_width, matrix_height), self.bg_color)
             draw = ImageDraw.Draw(self.text_image_cache)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
             
             # Calculate vertical centering
             temp_img = Image.new('RGB', (1, 1))
@@ -531,6 +532,7 @@ class TextDisplayPlugin(BasePlugin):
                         # Fallback: direct draw
                         img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                         draw = ImageDraw.Draw(img)
+                        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
                         bbox = draw.textbbox((0, 0), self.render_text, font=self.font)
                         text_height = bbox[3] - bbox[1]
                         y_pos = (matrix_height - text_height) // 2 - bbox[1]

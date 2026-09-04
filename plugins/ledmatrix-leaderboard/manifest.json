@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -32,6 +32,12 @@
   "min_ledmatrix_version": "2.0.0",
   "versions": [
     {
+      "released": "2026-09-03",
+      "version": "1.3.3",
+      "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "released": "2026-08-12",
       "version": "1.3.2",
       "ledmatrix_min_version": "2.0.0",
@@ -52,7 +58,7 @@
     {
       "version": "1.2.3",
       "released": "2026-07-31",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-07-17",

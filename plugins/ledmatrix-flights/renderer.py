@@ -1059,6 +1059,7 @@ class FlightRenderer:
     def render_error(self, message="NO DATA"):
         img = Image.new("RGB", (self.width, self.height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         self._draw_centered(draw, message, (self.height - self._fh(self.font_large)) // 2,
                             self.font_large, self.error_color)
         self.dm.image = img.copy()

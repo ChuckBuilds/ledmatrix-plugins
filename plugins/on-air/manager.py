@@ -209,6 +209,7 @@ class OnAirPlugin(BasePlugin):
         fill = bg_color if active else (0, 0, 0)
         canvas = Image.new('RGB', (dw, dh), fill)
         draw   = ImageDraw.Draw(canvas)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         if active:
             self._draw_centered_text(draw, dw, dh, label, text_color)

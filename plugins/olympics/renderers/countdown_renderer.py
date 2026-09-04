@@ -177,6 +177,7 @@ class CountdownRenderer:
 
         img = Image.new('RGB', (w, h), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         days = self._calculate_days_until(target_date)
         margin = 2
