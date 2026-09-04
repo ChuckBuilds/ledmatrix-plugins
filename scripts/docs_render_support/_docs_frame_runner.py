@@ -39,6 +39,10 @@ def main() -> int:
                              "needed when the shot supplies its state directly")
     parser.add_argument("--frame-seconds", type=float, default=0.05,
                         help="Frozen-clock seconds to advance between frames")
+    parser.add_argument("--display-mode", default=None,
+                        help="Display mode to render, for plugins that declare more "
+                             "than one. Matches render_plugin.py, so a scrolling shot "
+                             "can name its mode the same way a still one does.")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
@@ -92,7 +96,16 @@ def main() -> int:
     # force_clear only on the first frame, so a plugin that treats it as "start
     # over" does not restart its scroll on every step.
     for frame in range(max(1, args.frames)):
-        instance.display(force_clear=(frame == 0))
+        if args.display_mode:
+            try:
+                instance.display(force_clear=(frame == 0),
+                                 display_mode=args.display_mode)
+            except TypeError:
+                # Same fallback render_plugin.py uses: a plugin whose display()
+                # takes no mode renders its default screen rather than failing.
+                instance.display(force_clear=(frame == 0))
+        else:
+            instance.display(force_clear=(frame == 0))
         if advance is not None:
             advance(args.frame_seconds)
 

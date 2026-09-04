@@ -356,6 +356,7 @@ also driving a panel, and raising the polling rate rarely helps.
 | `live_update_interval` | `30` | Fetch interval while a game is live |
 | `recent_update_interval` | `3600` | Fetch interval for the recent screen |
 | `upcoming_update_interval` | `3600` | Fetch interval for the upcoming screen |
+| `stale_game_timeout` | `300` | How long a live game may go without an update before it is dropped from the rotation. Guards against a game the API stops reporting sitting on the board forever |
 | `no_data_interval_seconds` | `300` | How long to wait between live checks when nothing is on. Backs off further the longer nothing is found |
 | `live_idle_max_interval_seconds` | `900` | Ceiling for that back-off. Raise it out of season; lower it to notice the first game of the night sooner |
 | `schedule_lookback_days` | `14` | How far back the recent screen can see |

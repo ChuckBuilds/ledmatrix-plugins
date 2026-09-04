@@ -666,7 +666,7 @@ class MMAUpcoming(MMA, SportsUpcoming):
             f2_name_x = 1 + self._get_layout_offset("fighter_names", "x_offset")
             f2_name_y = 9 + self._get_layout_offset("fighter_names", "y_offset")
             self._draw_text_with_outline(
-                draw_overlay, fighter2_name_text, (f2_name_x, f2_name_y), self.fonts["odds"]
+                draw_overlay, fighter2_name_text, (f2_name_x, f2_name_y), self.fonts["detail"]
             )
 
             # Fighter 2 (left side) headshot position
@@ -677,12 +677,12 @@ class MMAUpcoming(MMA, SportsUpcoming):
             # Fighter 1 short name (second row right, below fight class)
             fighter1_name_text = game.get("fighter1_name_short", "")
             fighter1_name_width = draw_overlay.textlength(
-                fighter1_name_text, font=self.fonts["odds"]
+                fighter1_name_text, font=self.fonts["detail"]
             )
             fighter1_name_x = self.display_width - fighter1_name_width - 1
             fighter1_name_y = 9 + self._get_layout_offset("fighter_names", "y_offset")
             self._draw_text_with_outline(
-                draw_overlay, fighter1_name_text, (fighter1_name_x, fighter1_name_y), self.fonts["odds"]
+                draw_overlay, fighter1_name_text, (fighter1_name_x, fighter1_name_y), self.fonts["detail"]
             )
 
             # Date and time display (centered bottom)

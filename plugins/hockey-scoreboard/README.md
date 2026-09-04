@@ -1,383 +1,523 @@
------------------------------------------------------------------------------------
 ### Connect with ChuckBuilds
 
-- Show support on Youtube: https://www.youtube.com/@ChuckBuilds
+- Show support on YouTube: https://www.youtube.com/@ChuckBuilds
 - Stay in touch on Instagram: https://www.instagram.com/ChuckBuilds/
 - Want to chat or need support? Reach out on the ChuckBuilds Discord: https://discord.com/invite/uW36dVAtcT
-- Feeling Generous? Support the project:
-  - Github Sponsorship: https://github.com/sponsors/ChuckBuilds
+- Feeling generous? Support the project:
+  - GitHub Sponsors: https://github.com/sponsors/ChuckBuilds
   - Buy Me a Coffee: https://buymeacoffee.com/chuckbuilds
-  - Ko-fi: https://ko-fi.com/chuckbuilds/ 
-
------------------------------------------------------------------------------------
-
-# Hockey Scoreboard Plugin
-
-Display live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey on your LED matrix.
-
-
-Recent Game:
-
-<img width="768" height="192" alt="led_matrix_1764889670771" src="https://github.com/user-attachments/assets/1d32b4d9-7d01-4cb2-896b-bc9c889bf188" />
-
-Upcoming Game:
-
-<img width="768" height="192" alt="led_matrix_1764889695301" src="https://github.com/user-attachments/assets/5e6dd53c-0486-4d42-bdaa-6d486729bcc4" />
-
-
-
-
-## Features
-
-- **Multi-League Support**: NHL, NCAA Men's Hockey, NCAA Women's Hockey
-- **Live Game Tracking**: Real-time scores, periods, time remaining
-- **Recent Games**: View recently completed game results
-- **Upcoming Games**: See scheduled games with start times
-- **Favorite Teams**: Prioritize your favorite teams across all leagues
-- **Power Play Indicators**: Highlight power play situations
-- **Shots on Goal**: Optional SOG statistics display
-- **Team Logos**: Display team logos when available
-- **Background Data Fetching**: Efficient API calls with caching
-- **Font Customization**: Override fonts via Web UI
-- **Favorite Team Result Colors**: Optionally show a finished game's score in green when your favorite team won and red when it lost
-
-## Requirements
-
-- LEDMatrix 2.0.0+
-- Display: Minimum 64x32 pixels (recommended)
-- No API key required (uses ESPN public API)
-- Internet connection for live data
-
-
-#### League Selection
-
-- **`leagues.nhl`**: Enable NHL games (default: true)
-- **`leagues.ncaa_mens`**: Enable NCAA Men's Hockey (default: false)
-- **`leagues.ncaa_womens`**: Enable NCAA Women's Hockey (default: false)
-
-  (note: College Club Hockey is not tracked - team like UGA does not have D1 hockey and cannot be shown)
-
-Enable multiple leagues to see games from all selected leagues in rotation.
-
-## 📺 Display Modes
-
-The plugin registers granular display modes directly in `manifest.json`. The display controller rotates through these modes automatically:
-
-**NHL Modes:**
-- `nhl_recent`: Recently completed NHL games with final scores
-- `nhl_upcoming`: Scheduled NHL games with start times
-- `nhl_live`: Currently active NHL games with real-time updates
-
-**NCAA Men's Hockey Modes:**
-- `ncaa_mens_recent`: Recently completed NCAA Men's Hockey games with final scores
-- `ncaa_mens_upcoming`: Scheduled NCAA Men's Hockey games with start times
-- `ncaa_mens_live`: Currently active NCAA Men's Hockey games with real-time updates
-
-**NCAA Women's Hockey Modes:**
-- `ncaa_womens_recent`: Recently completed NCAA Women's Hockey games with final scores
-- `ncaa_womens_upcoming`: Scheduled NCAA Women's Hockey games with start times
-- `ncaa_womens_live`: Currently active NCAA Women's Hockey games with real-time updates
-
-### How Rotation Works
-
-The display controller rotates through all registered modes in the order they appear in `manifest.json`. Each mode's duration is configured under `<league>.display_durations.{base,live,recent,upcoming}` (or the cross-league fallback `defaults.display_duration`).
-
-**Default Rotation Order:**
-1. `nhl_recent`
-2. `nhl_upcoming`
-3. `nhl_live`
-4. `ncaa_mens_recent`
-5. `ncaa_mens_upcoming`
-6. `ncaa_mens_live`
-7. `ncaa_womens_recent`
-8. `ncaa_womens_upcoming`
-9. `ncaa_womens_live`
-
-**Customizing Rotation Order:**
-You can reorder modes in `manifest.json` to change the rotation sequence. For example, to show all Recent games before Upcoming:
-
-```json
-"display_modes": [
-  "nhl_recent",
-  "ncaa_mens_recent",
-  "ncaa_womens_recent",
-  "nhl_upcoming",
-  "ncaa_mens_upcoming",
-  "ncaa_womens_upcoming",
-  "nhl_live",
-  "ncaa_mens_live",
-  "ncaa_womens_live"
-]
-```
-
-### Disabled Leagues/Modes
-
-If a league or mode is disabled in the config, the plugin returns `False` for that mode, and the display controller automatically skips it. This allows you to:
-
-- Disable entire leagues (e.g., disable NCAA Men's to show only NHL)
-- Disable specific modes per league (e.g., disable `nhl_upcoming` but keep `nhl_recent` and `nhl_live`)
-- Mix and match enabled/disabled modes as needed
-
-### Mode Durations
-
-Each granular mode respects its own mode duration settings:
-- `nhl_recent` uses `nhl.mode_durations.recent_mode_duration` or falls back to dynamic calculation
-- `ncaa_mens_upcoming` uses `ncaa_mens.mode_durations.upcoming_mode_duration` or falls back to dynamic calculation
-- Each mode can have independent duration configuration
-
-### Live Priority
-
-When live games are available, the display controller prioritizes live modes (`nhl_live`, `ncaa_mens_live`, `ncaa_womens_live`) based on the `has_live_content()` and `get_live_modes()` methods. The plugin returns only the granular live modes that actually have live content.
-
-## ⏱️ Duration Configuration
-
-The plugin offers flexible duration control at multiple levels to fine-tune your display experience:
-
-### Per-Game Duration
-
-Controls how long each individual game displays before rotating to the next game **within the same mode**.
-
-**Configuration:**
-- Per-league `display_durations.live`: Seconds per live game (default: 20s for NHL)
-- Per-league `display_durations.non_favorite_live`: Seconds per live game with **no** favorite team (default: 0 = off)
-- Per-league `display_durations.recent`: Seconds per recent game (default: 15s)
-- Per-league `display_durations.upcoming`: Seconds per upcoming game (default: 15s)
-
-**Example:** With `nhl.display_durations.recent: 15`, each NHL recent game shows for 15 seconds before moving to the next.
-
-#### Shorter dwell for non-favorite live games
-
-Set `display_durations.non_favorite_live` to give live games that don't involve one of your favorite teams a shorter turn than your favorites. For example `nhl.display_durations.live: 30` with `nhl.display_durations.non_favorite_live: 5` shows your teams for 30s each while everyone else's games flash by in 5s.
-
-This **only takes effect when both** of the following are true:
-
-- one or more `favorite_teams` are configured for the league, **and**
-- non-favorite live games are actually shown — `filtering.show_favorite_teams_only` is **off**, or `filtering.show_all_live` is **on** (otherwise non-favorite games never appear in the first place).
-
-| Favorite teams set? | Non-favorite games shown? | Live game has a favorite? | Duration used |
-|---|---|---|---|
-| No | — | — | `display_durations.live` (unchanged) |
-| Yes | No (`show_favorite_teams_only` on, `show_all_live` off) | favorite | `display_durations.live` |
-| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | favorite | `display_durations.live` |
-| Yes | Yes (`show_favorite_teams_only` off, or `show_all_live` on) | none | `display_durations.non_favorite_live` (when > 0) |
-
-Leave it at `0` to display every live game for `display_durations.live` (the previous behavior).
-
-### Per-Mode Duration
-
-Controls the **total time** a mode displays before rotating to the next mode, regardless of how many games are available.
-
-**Configuration:**
-- `nhl.mode_durations.recent_mode_duration`: Total seconds for NHL Recent mode (default: dynamic)
-- `nhl.mode_durations.upcoming_mode_duration`: Total seconds for NHL Upcoming mode (default: dynamic)
-- `nhl.mode_durations.live_mode_duration`: Total seconds for NHL Live mode (default: dynamic)
-- Same structure for `ncaa_mens` and `ncaa_womens`
-
-**Example:** With `nhl.mode_durations.recent_mode_duration: 60` and `nhl.display_durations.recent: 15`, NHL Recent mode shows 4 games (60s ÷ 15s = 4) before rotating to the next mode.
-
-### How They Work Together
-
-**Per-game duration** + **Per-mode duration**:
-```text
-NHL Recent Mode (60s total):
-  ├─ Game 1: 15s
-  ├─ Game 2: 15s
-  ├─ Game 3: 15s
-  └─ Game 4: 15s
-  → Rotate to NHL Upcoming Mode
-
-NHL Upcoming Mode (60s total):
-  ├─ Game 1: 15s
-  └─ ... (continues)
-```
-
-### Resume Functionality
-
-When a mode times out before showing all games, it **resumes from where it left off** on the next cycle:
-
-```text
-Cycle 1: NHL Recent Mode (60s, 10 games available)
-  ├─ Game 1-4 shown ✓
-  └─ Time expires → Rotate
-
-Cycle 2: NHL Recent Mode resumes
-  ├─ Game 5-8 shown ✓ (continues from Game 4, no repetition)
-  └─ Time expires → Rotate
-
-Cycle 3: NHL Recent Mode resumes
-  ├─ Game 9-10 shown ✓
-  └─ All games shown → Full cycle complete → Reset progress
-```
-
-### Dynamic Duration (Fallback)
-
-If per-mode durations are **not** configured, the plugin uses **dynamic calculation**:
-- **Formula**: `total_duration = number_of_games × per_game_duration`
-- **Example**: 24 games @ 15s each = 360 seconds for the mode
-
-This ensures all games are shown but may result in very long mode durations if you have many games.
-
-### Per-League Overrides
-
-You can set different durations per league using the `mode_durations` section:
+  - Ko-fi: https://ko-fi.com/chuckbuilds/
+
+---
+
+# Hockey Scoreboard
+
+Live, recent, and upcoming games across **NHL**, **NCAA Men's**, and **NCAA
+Women's** hockey on your LEDMatrix display, from ESPN's public API. No API key
+required.
+
+![NHL live scorebug with shots on goal](../../docs/assets/hockey-scoreboard/hero.png)
+
+## Contents
+
+- [Quick start](#quick-start)
+- [Display modes](#display-modes)
+- [The three leagues](#the-three-leagues)
+- [Shots on goal](#shots-on-goal)
+- [How games are chosen](#how-games-are-chosen)
+- [Rotation, resume, and durations](#rotation-resume-and-durations)
+- [Panel sizes](#panel-sizes)
+- [Settings reference](#settings-reference)
+- [Per-league settings](#per-league-settings)
+- [Matchup separator and the upcoming card middle](#matchup-separator-and-the-upcoming-card-middle)
+- [Fonts, colours and layout](#fonts-colours-and-layout)
+- [Favorite team result colours](#favorite-team-result-colours)
+- [Vegas ticker: seeing live games more often](#vegas-ticker-seeing-live-games-more-often)
+- [Data source](#data-source)
+- [Example configurations](#example-configurations)
+- [Troubleshooting](#troubleshooting)
+
+## Quick start
+
+1. Install **Hockey Scoreboard** from the LEDMatrix Plugin Store.
+2. Turn on `enabled`, then the leagues you want — `nhl` is on by default, both
+   NCAA leagues are off.
+3. Add your teams under each league's **Favorite Teams**.
 
 ```json
 {
-  "nhl": {
-    "mode_durations": {
-      "recent_mode_duration": 45,
-      "upcoming_mode_duration": 30
-    }
-  },
-  "ncaa_mens": {
-    "mode_durations": {
-      "recent_mode_duration": 60
+  "hockey-scoreboard": {
+    "enabled": true,
+    "nhl": {
+      "enabled": true,
+      "teams": {
+        "favorite_teams": ["BOS", "TOR"],
+        "favorite_teams_only": false
+      },
+      "filtering": {
+        "recent_games_to_show": 3,
+        "upcoming_games_to_show": 5
+      },
+      "live_priority": true
+    },
+    "ncaa_mens": {
+      "enabled": true,
+      "teams": { "favorite_teams": ["BU", "DEN"] }
     }
   }
 }
 ```
 
-When multiple leagues are enabled with different durations, the system uses the **maximum** to ensure all leagues get their time.
+## Display modes
 
-### Integration with Dynamic Duration Caps
+Nine modes — three per league — that the LEDMatrix host rotation cycles through
+independently.
 
-If you have dynamic duration caps configured (e.g., `max_duration_seconds: 120`), the system uses the **minimum** of:
-- Per-mode duration (e.g., 180s)
-- Dynamic duration cap (e.g., 120s)
-- **Result**: 120s (ensures cap is respected)
+![The three NHL display modes](../../docs/assets/hockey-scoreboard/display-modes.png)
 
-#### Favorite Teams
+| Mode | Shows | Top line |
+|---|---|---|
+| `nhl_live` | NHL games in progress | `P1`–`P3`, or `OT1` past the third |
+| `nhl_recent` | Finished NHL games | `Final`, or `Final/OT` |
+| `nhl_upcoming` | Scheduled NHL games | `Next Game`, then the date and puck drop |
+| `ncaa_mens_live` / `_recent` / `_upcoming` | NCAA men's | As above |
+| `ncaa_womens_live` / `_recent` / `_upcoming` | NCAA women's | As above |
 
-Specify team abbreviations for each league:
+The three period states:
+
+![P2, Final and Final/OT](../../docs/assets/hockey-scoreboard/period-states.png)
+
+Each mode renders as **switch** (one game at a time, timed) or **scroll** (all
+games scroll horizontally at high FPS), set per league and per mode with
+`<league>.display_modes.<mode>_display_mode`.
+
+## The three leagues
+
+Each league has its own managers, its own favorites, and its own config block.
+The two NCAA blocks are **identical to each other**; the NHL block differs in
+nine defaults, because an NHL night is a smaller, faster-moving slate than a
+college one:
+
+| Key | NHL | Both NCAA blocks |
+|---|---|---|
+| `<league>.enabled` | `true` | `false` |
+| `<league>.live_priority` | `true` | `false` |
+| `<league>.display_durations.live` | `20` | `15` |
+| `<league>.update_intervals.base` | `60` | `300` |
+| `<league>.update_intervals.live` | `30` | `60` |
+| `<league>.display_options.show_records` | `false` | `true` |
+| `<league>.display_options.show_ranking` | `false` | `true` |
+| `<league>.display_options.show_shots_on_goal` | `true` | `false` |
+| `<league>.display_options.show_powerplay` | `true` | `false` |
+
+Everything else under [Per-league settings](#per-league-settings) is the same in
+all three, with the prefix `nhl.`, `ncaa_mens.`, or `ncaa_womens.`.
+
+## Shots on goal
+
+`show_shots_on_goal` adds a shot line along the bottom of a live card. It is on
+by default for the NHL, off for both NCAA leagues.
+
+![shots on goal on and off](../../docs/assets/hockey-scoreboard/shots-on-goal.png)
+
+> **`show_powerplay` currently does nothing.** ESPN's power-play flag is read and
+> stored on the game (`power_play`), and the setting is resolved into the
+> manager's config, but nothing in this plugin or in the LEDMatrix core ever
+> draws it. No value of the setting changes what appears. It is left in place
+> rather than removed so a future release can wire it up without a breaking
+> config change. Tracked as
+> [issue #431](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/431).
+
+> **Shots do not appear on scroll or Vegas cards.** Those cards gate the shot
+> line on a flat `show_shots` key at the league root, which the schema does not
+> declare and the web UI therefore never writes — so it reads as `false` no
+> matter what you set `show_shots_on_goal` to. Switch mode is unaffected.
+> Tracked as
+> [issue #432](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/432).
+
+## How games are chosen
+
+**`upcoming_games_to_show` is not "how many cards you see".** It is the size of
+a *pool*. The panel cycles through that pool one card at a time and keeps its
+place between visits, so a pool of 3 means the board rotates through the same 3
+games until the schedule moves on. A bigger number gives you a *longer lap*, so
+any one game comes round **less** often.
+
+Which regime you are in depends on that league's `teams.favorite_teams` and
+`teams.favorite_teams_only`:
+
+| `favorite_teams` | `favorite_teams_only` | What you get |
+|---|---|---|
+| empty | either | The next N games league-wide, chronologically. Every game is a non-favorite game, so the `other_*` filters apply to all of them. |
+| set | **on** | Only your teams. The limit is a budget **per team**. |
+| set | **off** (default) | **Your teams first, then other games to fill.** Both limits are **totals**. |
+
+Note the key is `teams.favorite_teams_only`, not `show_favorite_teams_only` as
+in the single-league scoreboards, and it defaults to **off** here.
+
+### The selection settings
+
+Per league, under `filtering`, all **Advanced**:
+
+| Option | Default | Description |
+|---|---|---|
+| `recent_games_to_show` | `5` | Pool size for finished games. |
+| `upcoming_games_to_show` | `10` | The same for scheduled games. |
+| `other_recent_games_to_show` | `5` | How many **non-favorite** finished games to add. `0` gives favorites only. |
+| `other_upcoming_games_to_show` | `10` | The same for scheduled games. |
+| `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
+| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `any` or `ranked`. |
+| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. |
+
+**Your favorite teams are never filtered by the last two.** Those settings only
+decide what fills the *remaining* slots.
+
+> **Both are effectively inert in hockey.** `ranked` needs a national poll and
+> the division filter needs ESPN's FBS/FCS group rosters, which are a college
+> *football* taxonomy — no lookup is even attempted here, so every game passes
+> both and neither costs a request. The schema's help text for
+> `other_games_min_quality` also mentions a `broadcast` option that the enum
+> does not offer; it was retired.
+
+### Variety comes from turnover
+
+Rather than widening the pool, the non-favorite slice **moves**: the window
+advances by its own width every `other_rotation_interval_seconds`, so
+consecutive windows do not overlap and the board works through the schedule
+instead of resampling the front of it. Your favorites are not rotated — for
+upcoming games the soonest ones are the point.
+
+Both filters **fail open**: if the data behind them cannot be fetched, the game
+is allowed through. They fail open a second time as a set — if the filters
+between them leave nothing at all, the unfiltered list is used instead. Setting
+`other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one
+way to ask for an empty slate, and that is honoured.
+
+### Live rotation
+
+When several games are live at once the rotation is weighted: a game involving
+one of your teams gets `teams.favorite_live_boost` turns for every one turn
+other live games get, and is queued first whenever the rotation refreshes. It
+never interrupts a game already on screen — it just gets more and sooner turns.
+Set it to `1` for even rotation. It is independent of `live_priority`, which
+controls whether live games preempt the recent/upcoming rotation at all.
+
+A live game the API stops reporting for `update_intervals.stale_game_timeout`
+seconds is dropped, so an abandoned game does not sit on the board forever.
+
+### Shorter dwell for non-favorite live games
+
+`display_durations.non_favorite_live` (0–120, default `0` = off) gives live
+games involving **none** of your teams a shorter turn. It only takes effect when
+favorite teams are configured **and** non-favorite live games are being shown —
+`favorite_teams_only` off, or `show_all_live` on:
+
+| Favorites set? | Non-favorite games shown? | Game has a favorite? | Duration used |
+|---|---|---|---|
+| No | — | — | `display_durations.live` |
+| Yes | No | favorite | `display_durations.live` |
+| Yes | Yes | favorite | `display_durations.live` |
+| Yes | Yes | none | `display_durations.non_favorite_live`, when above `0` |
+
+### Excluding teams
+
+`teams.exclude_teams` hides teams from **both** the live rotation and the
+recent/final scores — useful when you plan to watch a game delayed. It uses the
+same abbreviations as `favorite_teams` and always wins when a team appears in
+both lists.
+
+## Rotation, resume, and durations
+
+The plugin registers its nine modes in `manifest.json`, and the display
+controller rotates through them in the order they appear:
+`nhl_recent`, `nhl_upcoming`, `nhl_live`, then the same three for
+`ncaa_mens`, then for `ncaa_womens`. Reorder them in `manifest.json` to change
+the sequence.
+
+A league or mode disabled in the config makes the plugin return `False` for that
+mode and the controller skips it, so you can disable a whole league or a single
+mode within one and the rotation closes up around it.
+
+### Resume
+
+When a mode's time runs out before it has shown every game in its pool, it
+**resumes where it left off** on the next visit rather than restarting:
+
+```text
+Cycle 1: Recent mode (60s, 10 games in the pool)
+  games 1-4 shown, time expires, rotate
+
+Cycle 2: Recent mode resumes
+  games 5-8 shown, time expires, rotate
+
+Cycle 3: Recent mode resumes
+  games 9-10 shown, full lap complete, progress resets
+```
+
+### Dynamic duration
+
+With no per-mode duration configured, the mode's total is calculated as
+`number_of_games x per_game_duration` — 24 games at 15s each is a 360-second
+mode. That shows everything but can make a mode very long on a full slate, which
+is what `dynamic_duration.max_duration_seconds` is for.
+
+## Panel sizes
+
+![Live card at four panel sizes](../../docs/assets/hockey-scoreboard/panel-sizes.png)
+
+The plugin passes the render-safety harness with no failures. At 64x32 the two
+crests and the centre column share very little room; 128x32 or wider is a much
+better fit, especially with the shot line enabled.
+
+## Settings reference
+
+Settings marked **Advanced** sit behind the *Advanced* toggle in the web UI.
+Defaults are the schema defaults, which is what the web UI writes.
+
+### Plugin level
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `enabled` | boolean | `false` | Master on/off switch for the whole plugin. |
+| `timezone` | string | `""` | **Advanced.** IANA zone for start times, e.g. `America/Chicago`. Blank follows the LEDMatrix global timezone, then the host system's, then UTC. |
+| `schedule_lookback_days` | 1–60 | `14` | **Advanced.** How far back to fetch for the Recent screens. |
+| `schedule_lookahead_days` | 1–60 | `7` | **Advanced.** How far ahead to fetch for Upcoming. A game beyond this horizon is never fetched. |
+| `no_data_interval_seconds` | 5–86400 s | `300` | **Advanced.** Wait between live checks when nothing is live. Backs off further the longer nothing is found. |
+| `live_idle_max_interval_seconds` | 5–86400 s | `900` | **Advanced.** Ceiling for that back-off. Useful out of season. |
+
+### Defaults
+
+Fallbacks used when the corresponding per-league setting is absent.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `defaults.display_duration` | 5–60 s | `15` | Per-game on-screen time. |
+| `defaults.show_records` | boolean | `false` | Draw win-loss records. |
+| `defaults.show_ranking` | boolean | `false` | **Advanced.** Draw poll rank badges. |
+| `defaults.show_odds` | boolean | `false` | **Advanced.** Draw betting odds. |
+| `defaults.show_shots_on_goal` | boolean | `false` | Draw the shot line on live cards. |
+| `defaults.show_powerplay` | boolean | `true` | Highlight power plays. Nothing draws this — see [Shots on goal](#shots-on-goal). |
+| `defaults.update_interval_seconds` | 30–86400 s | `3600` | **Advanced.** Base data refresh cadence. |
+| `defaults.season_cache_duration_seconds` | 3600–604800 s | `86400` | **Advanced.** How long season data is cached. |
+
+> **The per-league copy wins, and several of its defaults are different.** Each
+> league's `display_options.*` overrides the matching `defaults.*`. Because the
+> web UI writes schema defaults on save, a saved config already carries the
+> per-league value, and changing the `defaults` copy then appears to do nothing.
+> Change the per-league setting. The clearest case is
+> `show_shots_on_goal`: `false` under `defaults`, `true` under `nhl`.
+
+## Per-league settings
+
+Every table below exists three times — under `nhl`, `ncaa_mens`, and
+`ncaa_womens` — with the same keys. `<league>` stands for any of them; where the
+NHL default differs, both are given as *NHL / NCAA*.
+
+### Enable and priority
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.enabled` | boolean | `true` / `false` | Build this league's managers at all. |
+| `<league>.live_priority` | boolean | `true` / `false` | Let this league's live games interrupt the rotation and display immediately. |
+
+### Display modes
+
+| Key | Type | Default |
+|---|---|---|
+| `<league>.display_modes.live` | boolean | `true` |
+| `<league>.display_modes.recent` | boolean | `true` |
+| `<league>.display_modes.upcoming` | boolean | `true` |
+| `<league>.display_modes.live_display_mode` | `switch` \| `scroll` | `switch` (**Advanced**) |
+| `<league>.display_modes.recent_display_mode` | `switch` \| `scroll` | `switch` (**Advanced**) |
+| `<league>.display_modes.upcoming_display_mode` | `switch` \| `scroll` | `switch` (**Advanced**) |
+
+### Teams
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.teams.favorite_teams` | array | `[]` | Teams to prioritise, by abbreviation. |
+| `<league>.teams.favorite_teams_only` | boolean | `false` | Show only your teams' games. |
+| `<league>.teams.show_all_live` | boolean | `false` | Show every live game regardless of favorites. |
+| `<league>.teams.exclude_teams` | array | `[]` | **Advanced.** Teams to always hide, from the live rotation and from finals alike. Takes precedence over `favorite_teams` and `show_all_live`. |
+| `<league>.teams.favorite_live_boost` | 1–5 | `2` | **Advanced.** Turns a favorite's live game gets per one turn for other live games. `1` is even rotation. |
+
+### Filtering
+
+See [The selection settings](#the-selection-settings). All **Advanced**.
+
+| Key | Type | Default |
+|---|---|---|
+| `<league>.filtering.recent_games_to_show` | 1–20 | `5` |
+| `<league>.filtering.upcoming_games_to_show` | 1–50 | `10` |
+| `<league>.filtering.other_recent_games_to_show` | 0–20 | `5` |
+| `<league>.filtering.other_upcoming_games_to_show` | 0–20 | `10` |
+| `<league>.filtering.other_rotation_interval_seconds` | 0–86400 s | `1800` |
+| `<league>.filtering.other_games_min_quality` | `any` \| `ranked` | `ranked` |
+| `<league>.filtering.other_games_divisions` | array | `["fbs"]` |
+
+### Update intervals
+
+All **Advanced**.
+
+| Key | Type | Default (NHL / NCAA) | What it does |
+|---|---|---|---|
+| `<league>.update_intervals.base` | 15–300 s | `60` / `300` | Base data refresh. |
+| `<league>.update_intervals.live` | 10–300 s | `30` / `60` | Refresh while a game is live. |
+| `<league>.update_intervals.recent` | 60–86400 s | `3600` | Refresh for finished games. |
+| `<league>.update_intervals.upcoming` | 60–86400 s | `3600` | Refresh for the schedule. |
+| `<league>.update_intervals.odds` | 60–86400 s | `3600` | Refresh for betting odds. |
+| `<league>.update_intervals.stale_game_timeout` | 60–3600 s | `300` | Drop a live game the API has stopped updating. |
+
+### Display durations
+
+All **Advanced**.
+
+| Key | Type | Default (NHL / NCAA) | What it does |
+|---|---|---|---|
+| `<league>.display_durations.base` | 5–60 s | `15` | Fallback per-game time. |
+| `<league>.display_durations.live` | 5–120 s | `20` / `15` | Per-game time for live games. |
+| `<league>.display_durations.non_favorite_live` | 0–120 s | `0` | Shorter turn for live games with no favorite. `0` means use the live duration for everything. |
+| `<league>.display_durations.recent` | 5–60 s | `15` | Per-game time on the Recent screen. |
+| `<league>.display_durations.upcoming` | 5–60 s | `15` | Per-game time on the Upcoming screen. |
+
+### Display options
+
+All **Advanced**.
+
+| Key | Type | Default (NHL / NCAA) | What it does |
+|---|---|---|---|
+| `<league>.display_options.show_records` | boolean | `false` / `true` | Draw win-loss records in the bottom corners. |
+| `<league>.display_options.show_ranking` | boolean | `false` / `true` | Draw poll rank badges where available. |
+| `<league>.display_options.show_odds` | boolean | `false` | Draw betting odds. |
+| `<league>.display_options.show_shots_on_goal` | boolean | `true` / `false` | Draw the shot line on live cards. |
+| `<league>.display_options.show_powerplay` | boolean | `true` / `false` | Highlight power plays. Nothing draws this yet. |
+
+![show_records on and off](../../docs/assets/hockey-scoreboard/show-records.png)
+
+### Mode durations
+
+How long the *whole mode* holds the board before the core rotates on. `null`
+uses the dynamic calculation. All **Advanced**, and read by the LEDMatrix core
+rather than by this plugin, which is why they do not appear in the plugin's own
+source.
+
+| Key | Type | Default |
+|---|---|---|
+| `<league>.mode_durations.live_mode_duration` | 10–600 s or `null` | `null` |
+| `<league>.mode_durations.recent_mode_duration` | 10–600 s or `null` | `null` |
+| `<league>.mode_durations.upcoming_mode_duration` | 10–600 s or `null` | `null` |
+
+### Dynamic duration
+
+All **Advanced**.
+
+| Key | Type | Default |
+|---|---|---|
+| `<league>.dynamic_duration.enabled` | boolean | `false` |
+| `<league>.dynamic_duration.max_duration_seconds` | 60–600 s | — |
+| `<league>.dynamic_duration.modes.live.enabled` | boolean | `false` |
+| `<league>.dynamic_duration.modes.live.max_duration_seconds` | 60–600 s | — |
+| `<league>.dynamic_duration.modes.recent.enabled` | boolean | `false` |
+| `<league>.dynamic_duration.modes.recent.max_duration_seconds` | 60–600 s | — |
+| `<league>.dynamic_duration.modes.upcoming.enabled` | boolean | `false` |
+| `<league>.dynamic_duration.modes.upcoming.max_duration_seconds` | 60–600 s | — |
+
+### Scroll settings
+
+All **Advanced**, and per league.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.scroll_settings.scroll_speed` | 1.0–200.0 px/s | `50.0` | Higher scrolls faster. |
+| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Frame delay; `0.01` is 100 FPS. Lower is smoother. |
+| `<league>.scroll_settings.gap_between_games` | 8–128 px | `48` | Gap between game cards. |
+| `<league>.scroll_settings.show_league_separators` | boolean | `true` | Draw the NHL shield or NCAA logos between leagues. |
+| `<league>.scroll_settings.dynamic_duration` | boolean | `true` | Size the scroll duration from the content width. |
+| `<league>.scroll_settings.game_card_width` | 32–512 px | `128` | Card width. Lower it on a multi-panel chain to fit more games on screen at once. |
+
+## Matchup separator and the upcoming card middle
+
+The **Matchup Card Layout** section (`scroll_card`) controls what sits between
+the two crests before a game starts, and how the date and time are written.
+Plugin-wide, not per league.
+
+| Setting | Key | Default | What it does |
+|---|---|---|---|
+| Matchup Separator | `scroll_card.vs_text` | `VS` | Text between the teams: `VS`, `@`, `at`, `v`. The away side is always on the left, so `@` and `at` read as "away at home". Blank draws nothing. |
+| Middle of an Upcoming Card | `scroll_card.upcoming_center` | `vs` | Scroll and Vegas cards: `vs`, `date_time`, or `none`. |
+| Middle of a Full-Screen Upcoming Scoreboard | `scroll_card.switch_upcoming_center` | `date_time` | The same choice for the full-screen scoreboard, plus `inherit` to follow the row above. |
+| Date Format | `scroll_card.date_format` | `abbrev` | Scroll and Vegas cards: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
+| Full-Screen Date Format | `scroll_card.switch_date_format` | `numeric` | **Advanced.** The same for the full-screen scoreboard, plus `inherit`. It has its own default because the two displays disagree about what is normal. |
+| Time Format | `scroll_card.time_format` | `12h` | 12- or 24-hour clock. |
+| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line. |
+| Swap Date and Time | `scroll_card.swap_date_time` | `false` | Flip the two lines. Each display starts from its own order, so this flips rather than forces. |
+
+The centre-gap settings size the scroll and Vegas card's middle strip only — the
+full-screen scoreboard pins its crests to the panel edges and is unaffected.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `scroll_card.center_gap` | 0–64 px | unset | Pixels kept clear down the middle. Unset scales with card width; `0` restores edge-to-edge logos. |
+| `scroll_card.center_gap_ratio` | 0.0–0.6 | `0.28` | **Advanced.** Fraction of card width used when the gap is not pinned. |
+| `scroll_card.center_gap_min` | 0–64 px | `22` | **Advanced.** Floor for the scaled gap. |
+| `scroll_card.center_gap_max` | 0–96 px | `40` | **Advanced.** Ceiling for the scaled gap. |
+
+## Fonts, colours and layout
+
+Seven text elements, each with `font`, `font_size`, and `text_color`, under
+`customization.<element>`. All **Advanced**.
+
+| Element | Default font | Default size | Draws |
+|---|---|---|---|
+| `score_text` | `PressStart2P-Regular.ttf` | `10` | The score, and the matchup separator on an upcoming card |
+| `period_text` | `PressStart2P-Regular.ttf` | `8` | The period, and the date/time on an upcoming scoreboard |
+| `team_name` | `PressStart2P-Regular.ttf` | `8` | Team names and abbreviations |
+| `status_text` | `4x6-font.ttf` | `6` | Status lines such as "Next Game" |
+| `detail_text` | `4x6-font.ttf` | `6` | Small detail lines, including the shot line |
+| `rank_text` | `PressStart2P-Regular.ttf` | `10` | Rank badges |
+| `odds_text` | `4x6-font.ttf` | `6` | Betting odds (defaults to green, `[0, 255, 0]`) |
+
+Colours are `[r, g, b]` or `"#RRGGBB"`. Every default is white except
+`odds_text`. Odds sizes snap to the face's pixel grid to stay crisp:
+`4x6-font.ttf` to 7, 14, 21; press_start to 8, 16. Every
+`customization.<element>` object sets `additionalProperties: false`.
 
 ```json
-"favorite_teams": {
-  "nhl": ["TB", "TOR", "BOS", "DET"],
-  "ncaa_mens": ["BU", "BC", "MICH"],
-  "ncaa_womens": ["WISC", "MINN"]
+{
+  "customization": {
+    "score_text": { "text_color": [255, 200, 0] },
+    "status_text": { "text_color": "#00A0FF" }
+  }
 }
 ```
 
-#### Favorite Live Boost
+### Layout offsets
 
-Each league's `teams` block also has a `favorite_live_boost` (default `2`,
-range 1-5): whenever one of your favorite teams is playing live, their game
-is always queued first in the live rotation, and gets `favorite_live_boost`
-turns for every 1 turn other live games get (evenly spaced, not clumped
-together). Set it to `1` for perfectly even rotation among all live games —
-this exactly matches the plugin's previous behavior. It has no effect unless
-`favorite_teams` is configured, so it's safe to leave at its default.
+Nudge any element in pixels. All default to `0`, all **Advanced**, all under
+`customization.layout.<element>`, and all set `additionalProperties: false`.
 
-#### Exclude Teams
+| Element | Keys | Measured from |
+|---|---|---|
+| `home_logo`, `away_logo` | `x_offset`, `y_offset` | Default logo position |
+| `score` | `x_offset`, `y_offset` | Panel centre |
+| `status_text` | `x_offset`, `y_offset` | Centre horizontally, top vertically |
+| `date` | `x_offset`, `y_offset` | Centre horizontally, default position vertically |
+| `time` | `x_offset`, `y_offset` | Centre horizontally, the date's position vertically |
+| `records` | `away_x_offset`, `home_x_offset`, `y_offset` | Away from the left, home from the right, both from the bottom |
+| `odds` | `x_offset`, `y_offset` | Default odds position |
 
-Each league's `teams` block also has an `exclude_teams` list (same format as
-`favorite_teams`) for teams you never want to see — useful if you're
-planning to watch a game delayed and don't want the score spoiled. An
-excluded team's games are hidden from **both** the live rotation and the
-Recent/Final-scores mode, regardless of `favorite_teams`, `favorite_teams_only`,
-or `show_all_live`. If a team is in both `favorite_teams` and `exclude_teams`,
-exclusion wins.
-
-#### Display Settings
-
-The full set of options lives in
-[`config_schema.json`](config_schema.json) — the schema is the source of
-truth and is what generates the web UI. The most commonly tweaked keys:
-
-- **`enabled`** (boolean, default `false`) — master switch for the plugin
-- **`defaults.display_duration`** (5–60s, default `15`) — fallback per-game
-  duration when a league doesn't override it
-- **`defaults.show_records`** (boolean, default `false`) — show team
-  records (W-L)
-- **`defaults.show_shots_on_goal`** (boolean, default `false`) — show SOG
-  during live games
-- **`defaults.show_powerplay`** (boolean, default `true`) — highlight power
-  play situations
-- **`defaults.update_interval_seconds`** (30–86400s, default `3600`) —
-  default base poll interval. Per-league `update_intervals.*` overrides
-  this.
-
-Each league (`nhl`, `ncaa_mens`, `ncaa_womens`) then has its own block with
-finer-grained controls:
-
-- `<league>.update_intervals.{base,live,recent,upcoming,odds}` — how often
-  to poll ESPN for each kind of data. Live games default to 30s; recent
-  and upcoming default to 3600s.
-- `<league>.display_durations.{base,live,recent,upcoming}` — per-mode
-  display duration overrides for that league.
-- `<league>.display_options.{show_records,show_ranking,show_odds,...}` —
-  per-league overrides of the cross-league defaults.
-- `<league>.live_priority` (boolean) — let this league's live games take
-  over the rotation when one is in progress.
-
-## Display Mode Details
-
-### Live Games (e.g., `nhl_live`, `ncaa_mens_live`)
-
-Shows games currently in progress with:
-- Current score
-- Period (P1, P2, P3, OT, OT2, etc.)
-- Time remaining in period
-- Power play indicator (if enabled)
-- Shots on goal (if enabled)
-
-### Recent Games (e.g., `nhl_recent`, `ncaa_mens_recent`)
-
-Shows completed games from the last X hours with:
-- Final score
-- Game status ("Final", "Final/OT", "Final/SO")
-- Team logos
-
-### Upcoming Games (e.g., `nhl_upcoming`, `ncaa_mens_upcoming`)
-
-Shows scheduled games for the next X hours with:
-- Game start time
-- Venue information
-- Team matchup
-
-## Setup Instructions
-
-### 1. Install Plugin
-
-Install from the Plugin Store in the LEDMatrix web UI:
-
-1. Open `http://your-pi-ip:5000`
-2. Open the **Plugin Manager** tab
-3. Find **Hockey Scoreboard** in the **Plugin Store** section and click
-   **Install**
-4. The plugin appears in **Installed Plugins** above and gets its own tab
-   in the second nav row — open that tab to configure it
-
-### 2. Configure Leagues
-
-Enable the leagues you want to track:
-
-- **NHL Only**: Set `leagues.nhl: true`, others false
-- **All Leagues**: Set all to true
-- **NCAA Only**: Enable `ncaa_mens` and/or `ncaa_womens`
-
-### 3. Add Favorite Teams
-
-Add your favorite team abbreviations to the `favorite_teams` object for each league. Games involving these teams will be shown first when `<league>.live_priority` is enabled.
-
-### 4. Adjust Display Settings
-
-- Set `<league>.display_durations.{base,live,recent,upcoming}` (or the fallback `defaults.display_duration`) based on how many games you expect (shorter = more games shown)
-- Adjust `<league>.update_intervals.{base,live,recent,upcoming,odds}` (or the fallback `defaults.update_interval_seconds`) based on desired freshness (30s live poll recommended)
-- Enable/disable display modes based on preference
-
-### 5. Enable Plugin
-
-Make sure `enabled: true` in the configuration and the plugin is activated in the rotation.
-
-
-## Favorite Team Result Colors
+## Favorite team result colours
 
 A run of games against the same opponent is hard to read at a glance: in scroll
-and Vegas mode the same two logos go past several times and only the digits
-change. Turn on **Customization -> Favorite Team Result Colors** to color a
-finished game's score by how your favorite team did - green for a win, red for
-a loss.
+and Vegas mode the same two crests go past several times and only the digits
+change. Turn this on to colour a finished game's score by how your team did.
+
+| Key | Type | Default |
+|---|---|---|
+| `customization.favorite_result_colors.enabled` | boolean | `false` |
+| `customization.favorite_result_colors.win_color` | `[r, g, b]` | `[0, 255, 0]` |
+| `customization.favorite_result_colors.loss_color` | `[r, g, b]` | `[255, 0, 0]` |
+| `customization.favorite_result_colors.tie_color` | `[r, g, b]` | `[255, 200, 0]` |
 
 ```json
 {
@@ -392,401 +532,19 @@ a loss.
 }
 ```
 
-- Off by default. Until you enable it the score keeps exactly the color it has
-  today.
-- Only finished games are colored. Live and upcoming cards are untouched.
-- A game needs exactly one favorite team. If neither side is a favorite, or both
-  are, the score keeps its normal color.
-- Applies to both the one-game-at-a-time switch view and the scroll/Vegas
-  ticker.
-- The three colors are Advanced settings; leave them alone for the defaults
-  above.
-
-## Troubleshooting
-
-**No games showing:**
-- **Start times look like UTC** (a 6:45pm Central start showing as 11:45PM):
-  the plugin couldn't read your global timezone. Set `timezone` under the
-  plugin's Advanced Settings to your IANA zone, e.g. `America/Chicago`.
-- Check that at least one league is enabled in config
-- Verify the season is active for enabled leagues
-- Check `recent_games_hours` and `upcoming_games_hours` settings
-- Ensure internet connection is working
-
-**Games not updating:**
-- Check `<league>.update_intervals.*` (or `defaults.update_interval_seconds`) settings
-- Verify API is responding (check logs)
-- Try clearing cache: restart plugin or clear cache manually
-- Check background service is enabled
-
-**Favorite teams not showing:**
-- Verify team abbreviations are correct (case-sensitive)
-- Ensure `<league>.live_priority` is true
-- Check that favorite teams have games in current time window
-
-**Logos not displaying:**
-- Verify logo assets are available in LEDMatrix installation
-- Check `assets/sports/nhl_logos` and `assets/sports/ncaa_logos` directories
-- Some NCAA teams may not have logos available
-
-**Power play not showing:**
-- Enable `show_powerplay` in config
-- Verify ESPN API includes situation data (may not be available for all leagues)
-
-**SOG not accurate:**
-- Enable `defaults.show_shots_on_goal` (or the per-league override `<league>.display_options.show_shots_on_goal`) in config
-- ESPN API may have delayed SOG updates
-- Some leagues may not provide SOG data
-
-## Advanced Configuration
-
-### Custom Fonts
-
-Override default fonts via config or Web UI:
-
-```json
-"fonts": {
-  "team_name": {
-    "family": "press_start",
-    "size": 10,
-    "color": "#FFFFFF"
-  },
-  "score": {
-    "family": "press_start",
-    "size": 12,
-    "color": "#FFC800"
-  },
-  "status": {
-    "family": "four_by_six",
-    "size": 6,
-    "color": "#00FF00"
-  }
-}
-```
-
-### Layout Customization
-
-The plugin supports fine-tuning element positioning for custom display sizes. All offsets are relative to the default calculated positions, allowing you to adjust elements without breaking the layout.
-
-#### Accessing Layout Settings
-
-Layout customization is available in the plugin's tab in the web UI:
-1. Open the **Hockey Scoreboard** tab (second nav row)
-2. Expand the **Customization** section
-3. Find the **Layout Positioning** subsection
-
-#### Offset Values
-
-- **Positive values**: Move element right (x_offset) or down (y_offset)
-- **Negative values**: Move element left (x_offset) or up (y_offset)
-- **Default (0)**: No change from calculated position
-
-#### Available Elements
-
-- **home_logo**: Home team logo position (x_offset, y_offset)
-- **away_logo**: Away team logo position (x_offset, y_offset)
-- **score**: Game score position (x_offset, y_offset)
-- **status_text**: Status/period text position (x_offset, y_offset)
-- **date**: Game date position (x_offset, y_offset)
-- **time**: Game time position (x_offset, y_offset)
-- **records**: Team records/rankings position (away_x_offset, home_x_offset, y_offset)
-
-#### Example Adjustments
-
-**Move logos inward for smaller displays:**
-```json
-{
-  "customization": {
-    "layout": {
-      "home_logo": { "x_offset": -5 },
-      "away_logo": { "x_offset": 5 }
-    }
-  }
-}
-```
-
-**Adjust score position:**
-```json
-{
-  "customization": {
-    "layout": {
-      "score": { "x_offset": 0, "y_offset": -2 }
-    }
-  }
-}
-```
-
-**Shift records upward:**
-```json
-{
-  "customization": {
-    "layout": {
-      "records": { "y_offset": -3 }
-    }
-  }
-}
-```
-
-#### Display Size Compatibility
-
-Layout offsets work across different display sizes. The plugin calculates default positions based on your display dimensions, and offsets are applied relative to those defaults. This ensures compatibility with various LED matrix configurations.
-
-### Multi-League Strategy
-
-Enable all three leagues for comprehensive coverage:
-
-```json
-"leagues": {
-  "nhl": true,
-  "ncaa_mens": true,
-  "ncaa_womens": true
-}
-```
-
-Games from all leagues will be mixed and sorted by:
-1. Live games first
-2. Favorite teams (if enabled)
-3. Start time
-
-### Timezone
-
-- `timezone` (Advanced): IANA name used to display event start times, e.g.
-  `America/Chicago`. Leave blank (the default) to follow the LEDMatrix global
-  timezone; if that isn't set, the host system's timezone is used, and only if
-  neither is available do times fall back to UTC.
-
-## Data Source
-
-This plugin uses the **ESPN public API** for all hockey data:
-
-- **NHL**: `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard`
-- **NCAA M**: `https://site.api.espn.com/apis/site/v2/sports/hockey/mens-college-hockey/scoreboard`
-- **NCAA W**: `https://site.api.espn.com/apis/site/v2/sports/hockey/womens-college-hockey/scoreboard`
-
-**Note**: No API key required. Please use responsibly and respect ESPN's rate limits.
-
-## Examples
-
-### NHL Only Configuration
-
-```json
-{
-  "enabled": true,
-  "leagues": {
-    "nhl": true,
-    "ncaa_mens": false,
-    "ncaa_womens": false
-  },
-  "favorite_teams": {
-    "nhl": ["TB", "TOR", "BOS"]
-  },
-  "defaults": {
-    "update_interval_seconds": 60,
-    "display_duration": 15
-  },
-  "nhl": {
-    "enabled": true,
-    "display_modes": {
-      "live": true,
-      "recent": true,
-      "upcoming": false
-    },
-    "update_intervals": {
-      "base": 60,
-      "live": 30
-    },
-    "display_durations": {
-      "base": 15,
-      "live": 20
-    }
-  }
-}
-```
-
-### NCAA Men's Only Configuration
-
-```json
-{
-  "enabled": true,
-  "leagues": {
-    "nhl": false,
-    "ncaa_mens": true,
-    "ncaa_womens": false
-  },
-  "favorite_teams": {
-    "ncaa_mens": ["BU", "BC", "MICH", "WISC"]
-  },
-  "ncaa_mens": {
-    "enabled": true,
-    "display_modes": {
-      "live": true,
-      "recent": true,
-      "upcoming": true
-    },
-    "update_intervals": {
-      "base": 120
-    },
-    "upcoming_games_hours": 168
-  }
-}
-```
-
-### All Leagues Configuration
-
-```json
-{
-  "enabled": true,
-  "leagues": {
-    "nhl": true,
-    "ncaa_mens": true,
-    "ncaa_womens": true
-  },
-  "favorite_teams": {
-    "nhl": ["TB", "DET"],
-    "ncaa_mens": ["MICH"],
-    "ncaa_womens": ["WISC"]
-  },
-  "defaults": {
-    "show_shots_on_goal": true,
-    "show_powerplay": true
-  },
-  "nhl": {
-    "enabled": true,
-    "live_priority": true,
-    "display_modes": {
-      "live": true,
-      "recent": true,
-      "upcoming": true
-    }
-  },
-  "ncaa_mens": {
-    "enabled": true,
-    "display_modes": {
-      "live": true,
-      "recent": true,
-      "upcoming": true
-    }
-  },
-  "ncaa_womens": {
-    "enabled": true,
-    "display_modes": {
-      "live": true,
-      "recent": true,
-      "upcoming": true
-    }
-  }
-}
-```
-
-## Integration Notes
-
-### Base Classes
-
-This plugin uses LEDMatrix base classes:
-- `Hockey` - Base hockey functionality
-- `HockeyLive` - Live game display logic
-- `SportsRecent` - Recent games display
-- `SportsUpcoming` - Upcoming games display
-
-These are imported from the main LEDMatrix installation at `src/base_classes/`.
-
-### Caching
-
-The plugin uses LEDMatrix's `CacheManager` to cache API responses:
-- Cache duration: 5 minutes for live data
-- Cache key format: `hockey_{league}_{date}`
-- Automatic cache invalidation on date change
-
-### Background Service
-
-Uses LEDMatrix's `BackgroundDataService` for:
-- Non-blocking API requests
-- Automatic retries on failure
-- Request prioritization
-- Timeout handling
-
-## Performance
-
-### Resource Usage
-
-- **CPU**: Low (background fetching, cached data)
-- **Memory**: ~5–10 MB for game data
-- **Network**: ~1–5 KB per API call per league
-- **API calls**: depends on how many leagues are enabled and which
-  `update_intervals` you set. With defaults (NHL only, base 60s, live 30s,
-  recent/upcoming 3600s) and no live games, expect about one ESPN call per
-  minute per enabled league.
-
-### Optimization Tips
-
-1. **Disable Unused Leagues**: Only enable leagues you follow
-2. **Increase Update Interval**: Use 120-300s during off-season
-3. **Reduce Time Windows**: Lower `recent_games_hours` and `upcoming_games_hours`
-4. **Enable Caching**: Keep `background_service.enabled: true`
-
-## 🎯 Which Games Get Shown
-
-**`upcoming_games_to_show` is not "how many cards you see".** It is the size of a *pool*. The panel cycles through that pool one card at a time and keeps its place between visits, so a pool of 3 means the board rotates through the same 3 games until the schedule moves on. Making the number bigger gives you a *longer lap*, so any one game comes round **less** often.
-
-Which mode you are in depends on whether `favorite_teams` is set and whether `show_favorite_teams_only` is on:
-
-| `favorite_teams` | `show_favorite_teams_only` | What you get |
-|---|---|---|
-| empty | either | The next N games league-wide, chronologically. Every game shown is a non-favorite game, so the two filters below apply to all of them. |
-| set | **on** | Only your teams. The limit is a budget **per team**. |
-| set | **off** | **Your teams first, then other games to fill.** Both limits are **totals**. |
-
-The third row is what most people want, and it did not exist before: with the flag off, favorites used to be ignored *entirely*.
-
-### The settings
-
-| Option | Default | Description |
-|---|---|---|
-| `upcoming_games_to_show` | varies | How many **favorite** upcoming games to show. |
-| `recent_games_to_show` | varies | The same, for finished games. |
-| `other_upcoming_games_to_show` | matches `upcoming_games_to_show` | How many **non-favorite** upcoming games to add. `0` gives you favorites only. |
-| `other_recent_games_to_show` | matches `recent_games_to_show` | The same, for finished games. |
-| `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
-| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked`, `broadcast`, or `any`. |
-| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. College football only — see the note below. |
-
-**Your favorite teams are never filtered by the last two** — follow a smaller-division team and its games always appear. Those settings only decide what fills the *remaining* slots.
-
-Within the other-games pool, **the better matchup leads**, and each team appears once. The pool is each team's *next* game ordered by the best poll position of either side, so a top-five matchup sits in the first window rather than whichever kicks off soonest — and the #1 team's whole season does not sort above everyone else's opener. Ties fall back to kickoff order, and a league with no poll keeps chronological order. Your favorite teams are ordered by when they play, not by rank -- for your own team the next game is the point.
-
-### Variety comes from turnover
-
-Rather than widening the pool, the non-favorite slice **moves**: the window advances by its own width every `other_rotation_interval_seconds`, so consecutive windows do not overlap and the board works through the schedule instead of resampling the front of it. Your favorites are not rotated — for upcoming games the soonest ones are the point.
-
-Both filters **fail open**: if the data behind them cannot be fetched, the game is allowed through. A board showing filler is a poor board; a board showing nothing is a broken one.
-
-They fail open a second time, as a set: if the filters between them leave **nothing at all** — your teams idle and every other game rejected — the unfiltered list is used instead. Setting `other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one way to ask for an empty slate, and that is honoured.
-
-> `other_games_min_quality` needs a national poll, which only the college leagues publish — set to `ranked` in a professional league it lets every game through, and no poll is requested. `other_games_divisions` needs ESPN's FBS/FCS group rosters, which exist for **college football and nothing else**: asked for any other college league they come back empty or 500, so the setting is inert here and no lookup is made.
-
-
-## License
-
-GPL-3.0 License - see main LEDMatrix repository for details.
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/ChuckBuilds/ledmatrix-plugins/issues)
-- **Documentation**: see the LEDMatrix
-  [`docs/`](https://github.com/ChuckBuilds/LEDMatrix/tree/main/docs) directory
-- **Community**: [Discussions](https://github.com/ChuckBuilds/LEDMatrix/discussions)
-
----
-
-For the current version, author, category and tags see
-[`manifest.json`](manifest.json) — that's the source of truth and is
-what the Plugin Store reads.
+- Only finished games are coloured; live and upcoming cards are untouched.
+- A game needs **exactly one** favorite team. Neither side or both, and the score
+  keeps its normal colour.
+- The three colours are Advanced settings.
+
+This tint is applied by the LEDMatrix core rather than by the plugin, which is
+why the keys do not appear in this plugin's source.
 
 ## Vegas ticker: seeing live games more often
 
-By default a live game **takes over** the display: the Vegas ticker stops and
-this scoreboard shows full screen until the game ends. If you would rather keep
-the marquee scrolling and still see scores, set this in the core config:
+By default a live game **takes over** the display. To keep the marquee scrolling
+and still see scores, set this in the **core** config — not in this plugin's
+settings:
 
 ```json
 {
@@ -801,94 +559,124 @@ the marquee scrolling and still see scores, set this in the core config:
 ```
 
 The ticker is otherwise a strict round robin — every plugin appears once per
-cycle — so with a dozen plugins enabled a score comes round once a lap. These
-weights let this plugin claim several slots per cycle, spaced evenly through
-it rather than bunched together.
-
-`live_weight` applies whenever this scoreboard has a live game.
-`favorite_live_weight` applies when one of your `favorite_teams` is playing, so
-your team's game comes round more often than other live games. That distinction
+cycle. These weights let this plugin claim several slots per cycle, spaced
+evenly through it. `live_weight` applies whenever this scoreboard has a live
+game; `favorite_live_weight` when one of your teams is playing. That distinction
 has to be made here rather than in the core, which can tell *that* a game is
 live but not *whose*.
 
-Two things to keep in mind:
-
 - The weight is per **plugin**, not per game. With four games live this
   scoreboard still occupies one slot at a time and picks between its own games
-  using `favorite_live_boost`; these weights control how often the scoreboard
-  itself comes round.
-- More slots make the cycle **longer**, not faster — everything else appears
-  proportionally less often. And appearing more often only helps if the data is
-  fresh, which is governed by this plugin's own live update interval.
+  using `favorite_live_boost`.
+- More slots make the cycle **longer**, not faster.
 
-## Matchup separator and the upcoming card middle
+## Data source
 
-The **Matchup Card Layout** section (advanced) controls what sits between the
-two team logos before a game starts, and how the date and time are written.
-These settings now apply to every display mode -- the scroll ticker, the Vegas
-ticker, and the full-screen scoreboard -- rather than only the tickers.
+ESPN's public site API, no key required:
 
-| Setting | Key | Default | What it does |
-|---|---|---|---|
-| Matchup Separator | `vs_text` | `VS` | Text drawn between the teams: `VS`, `@`, `at`, `v`. The away team is always on the left, so `@` and `at` read as "away at home". Blank draws nothing. |
-| Middle of an Upcoming Card | `upcoming_center` | `vs` | Scroll and Vegas cards: the separator, the date and time stacked, or nothing. |
-| Middle of a Full-Screen Upcoming Scoreboard | `switch_upcoming_center` | `date_time` | The same choice for the full-screen scoreboard, plus `inherit` to follow the setting above. It defaults to the stacked date and time, which is what this display has always shown, so nothing changes until you pick something else. |
-| Date Format | `date_format` | `abbrev` | How the scroll and Vegas cards write the date: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
-| Full-Screen Date Format | `switch_date_format` | `numeric` | The same choice for the full-screen scoreboard, plus `inherit` to follow the row above. It has its own default because the two displays disagree about what is normal: the cards have always written `Sep 19` and the full-screen scoreboard `9/19`, so a single shared default would restyle one of them. |
-| Time Format | `time_format` | `12h` | 12- or 24-hour clock. |
-| Show Date / Show Time | `show_date`, `show_time` | `true` | Drop either line. |
-| Swap Date and Time | `swap_date_time` | `false` | Swap the two lines over. Each display starts from its own order, so this flips them rather than forcing one: the scroll and Vegas cards put the time on top, the full-screen date/time stack puts the date on top. |
+- NHL: `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard`
+- NCAA men's: `.../hockey/mens-college-hockey/scoreboard`
+- NCAA women's: `.../hockey/womens-college-hockey/scoreboard`
 
-Choosing the separator for the full-screen scoreboard moves the date and time
-out of the middle and onto the top and bottom rows, the same way the scroll
-card lays them out; the "Next Game" header gives up the top row to them.
+Crests are downloaded on first sight and cached under
+`assets/sports/nhl_logos/`, `assets/sports/ncaa_mens_logos/`, and
+`assets/sports/ncaa_womens_logos/`. If a download fails, a placeholder is
+generated from the team abbreviation.
 
-The center-gap settings in the same section size the scroll and Vegas card's
-middle strip only -- the full-screen scoreboard pins its logos to the panel
-edges and is unaffected.
+## Example configurations
 
-Example:
+### NHL only
 
 ```json
 {
-  "scroll_card": {
-    "vs_text": "@",
-    "switch_upcoming_center": "vs",
-    "date_format": "weekday"
+  "hockey-scoreboard": {
+    "enabled": true,
+    "nhl": {
+      "enabled": true,
+      "teams": { "favorite_teams": ["BOS", "TOR", "NYR"] },
+      "display_options": { "show_shots_on_goal": true, "show_records": true }
+    }
   }
 }
 ```
 
-### Text Colours
-
-Each text element in the **Customization** section carries a colour, and it now
-applies to the text drawn in that element's face — on the full-screen scoreboard
-and on the scroll and Vegas cards alike. Until this version the picker changed
-only which font was loaded; every string was drawn white.
-
-| Element | Key | Colours |
-|---|---|---|
-| Score | `score_text` | The score, and the matchup separator on an upcoming card |
-| Period / clock | `period_text` | The clock, period, and the date and time on an upcoming scoreboard |
-| Team name | `team_name` | Team names and abbreviations |
-| Status | `status_text` | Status lines such as "Next Game" |
-| Detail | `detail_text` | Small detail lines |
-| Ranking | `rank_text` | Team rankings drawn in the ranking face |
-
-Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white, so a display
-nobody has recoloured looks exactly as it did.
+### NCAA men's only
 
 ```json
 {
-  "customization": {
-    "score_text": { "text_color": [255, 200, 0] },
-    "status_text": { "text_color": "#00A0FF" }
+  "hockey-scoreboard": {
+    "enabled": true,
+    "nhl": { "enabled": false },
+    "ncaa_mens": {
+      "enabled": true,
+      "teams": { "favorite_teams": ["BU", "DEN", "MIN"] },
+      "live_priority": true
+    }
   }
 }
 ```
 
-Two things keep their own colours on purpose: the betting-odds figures, which
-are coloured by which side is favoured, and a finished game's score when
-**Favorite Team Result Colors** is on — that tint wins, and your score colour
-shows on every other game. Records and rankings drawn in the small fixed face
-stay white; no element in the schema owns that face.
+### All three leagues
+
+```json
+{
+  "hockey-scoreboard": {
+    "enabled": true,
+    "defaults": { "display_duration": 15 },
+    "nhl": {
+      "enabled": true,
+      "teams": { "favorite_teams": ["BOS"] }
+    },
+    "ncaa_mens": {
+      "enabled": true,
+      "teams": { "favorite_teams": ["BU"] }
+    },
+    "ncaa_womens": {
+      "enabled": true,
+      "teams": { "favorite_teams": ["WIS"] }
+    }
+  }
+}
+```
+
+With three leagues enabled, nine modes enter the rotation and any one league's
+games come round roughly a third as often. Disabling the modes you do not watch
+— say, every league's Upcoming screen — is usually better than shortening
+durations.
+
+## Troubleshooting
+
+**Nothing appears.** Check that `enabled` is on, and that the league's own
+`enabled` is on — both NCAA leagues are off by default.
+
+**Shots on goal never show.** In scroll or Vegas mode they cannot — see
+[issue #432](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/432). In
+switch mode, confirm `<league>.display_options.show_shots_on_goal` is `true`;
+the NCAA leagues default it to `false`, and the `defaults` copy does not
+override the per-league one.
+
+**Power-play highlighting never shows.** Nothing draws it yet — see
+[issue #431](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/431).
+
+**Records or rank badges are on when I turned them off.** You changed the
+`defaults` copy. The per-league `display_options` copy wins, and both NCAA
+leagues default those to `true`.
+
+**Start times look like UTC.** The plugin could not read your global timezone.
+Set `timezone` under Advanced Settings to your IANA zone.
+
+**The same few games keep repeating.** That is the pool cycling. Lower
+`other_rotation_interval_seconds` for faster turnover rather than raising the
+pool size — a larger pool makes the lap longer, so each game appears less often,
+not more.
+
+**A finished game disappeared too soon.** Raise `schedule_lookback_days`
+(default 14).
+
+**A game I know about never appears.** It may be beyond
+`schedule_lookahead_days` (default 7). A game outside that horizon is never
+fetched.
+
+## License
+
+See `LICENSE`.
