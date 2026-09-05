@@ -485,6 +485,7 @@ class JellyfinNowPlayingPlugin(BasePlugin):
 
         image = Image.new('RGB', (width, height))
         draw = ImageDraw.Draw(image)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         font = self.subtitle_font
         text = self._truncate_text_with_ellipsis(message, font, width - 2)
         text_w = self._text_width(text, font)
@@ -499,6 +500,7 @@ class JellyfinNowPlayingPlugin(BasePlugin):
         width, height = self._dims()
         image = Image.new('RGB', (width, height))
         draw = ImageDraw.Draw(image)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         info = self.now_playing
 
         # Poster on the left (or a placeholder when the fetch failed)

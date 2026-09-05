@@ -1,7 +1,7 @@
 {
   "id": "march-madness",
   "name": "March Madness",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "NCAA March Madness tournament bracket tracker with round branding, seeded matchups, live scores, and upset highlighting",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "released": "2026-09-03",
+      "version": "1.1.1",
+      "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.1.0",
       "released": "2026-09-03",

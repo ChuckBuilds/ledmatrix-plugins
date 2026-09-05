@@ -348,6 +348,7 @@ class EventCardRenderer:
 
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Recalculate event lines with actual draw context
         event_lines = self._split_text_lines(event_text, max_event_line_width, draw,
@@ -421,6 +422,7 @@ class EventCardRenderer:
 
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Calculate line height based on display size
         line_height = 8 if height <= 32 else 10
@@ -537,6 +539,7 @@ class EventCardRenderer:
 
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Recalculate event lines with actual draw context
         event_lines = self._split_text_lines(event_text, max_event_line_width, draw,
@@ -605,6 +608,7 @@ class EventCardRenderer:
         """
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         if not events:
             draw.text((4, height // 2 - 4), "No events", font=self.font_small, fill=GRAY)
@@ -652,6 +656,7 @@ class EventCardRenderer:
         """
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         if not results:
             draw.text((4, height // 2 - 4), "No results", font=self.font_small, fill=GRAY)

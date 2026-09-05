@@ -348,6 +348,7 @@ class SportsCore(ABC):
         try:
             img = Image.new("RGB", (self.display_width, self.display_height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
             status = game.get("status_text", "N/A")
             self._draw_text_with_outline(draw, status, (2, 2), self.fonts["status"])
             self.display_manager.image.paste(img, (0, 0))
@@ -2098,6 +2099,7 @@ class SportsUpcoming(SportsCore):
                 "RGBA", (display_width, display_height), (0, 0, 0, 0)
             )
             draw_overlay = ImageDraw.Draw(overlay)
+            draw_overlay.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
             home_logo = self._load_and_resize_logo(
                 game["home_id"],
@@ -2117,6 +2119,7 @@ class SportsUpcoming(SportsCore):
                     f"Failed to load logos for game: {game.get('id')}"
                 )  # Changed log prefix
                 draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                draw_final.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )
@@ -2695,6 +2698,7 @@ class SportsRecent(SportsCore):
                 "RGBA", (display_width, display_height), (0, 0, 0, 0)
             )
             draw_overlay = ImageDraw.Draw(overlay)
+            draw_overlay.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
             home_logo = self._load_and_resize_logo(
                 game["home_id"],
@@ -2715,6 +2719,7 @@ class SportsRecent(SportsCore):
                 )  # Changed log prefix
                 # Draw placeholder text if logos fail (similar to live)
                 draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                draw_final.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )

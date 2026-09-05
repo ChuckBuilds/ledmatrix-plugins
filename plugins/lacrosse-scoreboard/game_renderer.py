@@ -526,6 +526,7 @@ class GameRenderer(SportsGameRendererMixin):
         main_img = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 255))
         overlay = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 0))
         draw_overlay = ImageDraw.Draw(overlay)
+        draw_overlay.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Get league for logo directory
         league = game.get('league', 'ncaa_mens')
@@ -609,6 +610,7 @@ class GameRenderer(SportsGameRendererMixin):
         """Render an error message card."""
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         self._draw_text_with_outline(draw, message, (5, 5), self.fonts['status'])
         return img
 

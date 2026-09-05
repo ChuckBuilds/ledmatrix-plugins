@@ -953,6 +953,7 @@ class StaticImagePlugin(BasePlugin):
                 # Fallback to direct PIL if font manager fails
                 from PIL import ImageDraw, ImageFont
                 draw = ImageDraw.Draw(img)
+                draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
                 try:
                     font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)

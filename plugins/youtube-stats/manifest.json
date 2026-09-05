@@ -1,7 +1,7 @@
 {
   "id": "youtube-stats",
   "name": "YouTube Stats",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": "ChuckBuilds",
   "description": "Display YouTube channel statistics including subscriber count, total views, and channel name on your LED matrix",
   "category": "social",
@@ -33,6 +33,12 @@
     }
   ],
   "versions": [
+    {
+      "released": "2026-09-03",
+      "version": "1.2.2",
+      "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.2.1",
       "released": "2026-09-02",

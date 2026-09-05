@@ -77,6 +77,7 @@ class AlertsRenderer:
         height = self.display_height
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Flashing effect - alternate background
         flash_color = GOLD if record_type == "WR" else RED
@@ -119,6 +120,7 @@ class AlertsRenderer:
         height = self.display_height
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         medal_colors = {
             "gold": GOLD,
@@ -176,6 +178,7 @@ class AlertsRenderer:
         height = self.display_height
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Pulsing "LIVE" indicator
         live_x = 2
@@ -221,6 +224,7 @@ class AlertsRenderer:
         height = self.display_height
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # "NEXT" label
         draw.text((2, 1), "NEXT", font=self.font_small, fill=ORANGE)
@@ -259,6 +263,7 @@ class AlertsRenderer:
         height = self.display_height
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Country + Rank
         header_y = 2

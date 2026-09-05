@@ -570,6 +570,7 @@ class OfTheDayPlugin(BasePlugin):
             (self.display_manager.width, self.display_manager.height),
             (0, 0, 0))
         self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
+        self.display_manager.draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
     def _display_title(self, category_config: Dict, item_data: Dict):
         """Display the title/word with subtitle, matching old manager layout."""
@@ -799,6 +800,7 @@ class OfTheDayPlugin(BasePlugin):
                                self.display_manager.height),
                        self.background_color)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         
         try:
             font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)
@@ -816,6 +818,7 @@ class OfTheDayPlugin(BasePlugin):
                                self.display_manager.height),
                        self.background_color)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         
         try:
             font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)

@@ -183,6 +183,7 @@ class MedalCardRenderer:
 
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Get actual text height for proper centering
         try:
@@ -255,6 +256,7 @@ class MedalCardRenderer:
 
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         margin = 2
 
@@ -324,6 +326,7 @@ class MedalCardRenderer:
         """
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         if not medals:
             draw.text((4, height // 2 - 4), "No medal data", font=self.font_small, fill=GRAY)
@@ -390,6 +393,7 @@ class MedalCardRenderer:
         """
         img = Image.new('RGB', (width, height), BLACK)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         margin = 2
 

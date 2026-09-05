@@ -15,6 +15,10 @@ name: Plugin Structure
 #    scroll_display_legacy.py. Three plugins shipped as those two files
 #    concatenated, carrying ~2,000 lines nothing referenced, and that dead copy
 #    is what hid the missing separator-icon constants that broke scroll mode.
+#
+# 3. Pixel-perfect text -- fails when a Draw() that renders text leaves PIL's
+#    fontmode at the anti-aliasing default. An LED panel has no partial
+#    brightness, so the grey fringe just smears the glyph.
 
 on:
   pull_request:
@@ -25,6 +29,7 @@ on:
       - 'scripts/test_check_scroll_adoption.py'
       - 'scripts/check_sports_display_contract.py'
       - 'scripts/test_check_sports_display_contract.py'
+      - 'scripts/test_pixel_perfect_text.py'
       - 'scripts/test_scroll_mode_is_reachable.py'
       # Without this, a PR that only edits this workflow matches no path and
       # the workflow never runs against its own change.
@@ -69,3 +74,11 @@ jobs:
       - name: Check scroll mode is reachable from display()
         if: always()
         run: python scripts/test_scroll_mode_is_reachable.py
+      # PIL anti-aliases TrueType text by default, which on a panel with no
+      # partial brightness only smears glyphs -- 4x6-font.ttf at 6 puts 74% of
+      # its lit pixels at partial coverage. Static, because the plugins most at
+      # risk render only with live data the harness has none of, so a
+      # render-based check would skip exactly those.
+      - name: Check text draws are 1-bit (no anti-aliasing)
+        if: always()
+        run: python scripts/test_pixel_perfect_text.py
