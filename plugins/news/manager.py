@@ -30,6 +30,14 @@ from urllib.parse import urlparse
 from PIL import Image, ImageDraw, ImageFont
 
 from src.plugin_system.base_plugin import BasePlugin
+try:
+    # Shared scroll pacing: resolves speed from any supported config shape,
+    # snaps it to a speed the panel can show in whole pixels, and reports the
+    # frame hold that keeps slow speeds crisp. Core docs: SCROLL_PERFORMANCE.md
+    from src.common import scroll_config as _scroll_config
+except ImportError:  # core predates the shared helper
+    _scroll_config = None
+
 from src.common.scroll_helper import ScrollHelper
 from src.common.logo_helper import LogoHelper
 
@@ -580,6 +588,15 @@ class NewsTickerPlugin(BasePlugin):
         # would produce pages that can't hold a single headline.
         return max(float(self.display_width * 2), pixels_per_second * usable_seconds)
 
+    def _scroll_frame_hold(self) -> int:
+        """Refreshes to hold each frame for, from the resolved scroll settings.
+
+        1 without the shared helper, which is the old behaviour: a new frame
+        every panel refresh.
+        """
+        settings = getattr(self, "_scroll_settings", None)
+        return getattr(settings, "frame_hold", 1) if settings else 1
+
     def _configure_scroll_settings(self) -> None:
         """
         Configure scroll helper with current settings.
@@ -593,6 +610,20 @@ class NewsTickerPlugin(BasePlugin):
         
         # Determine if we should use frame-based scrolling
         # Check if scroll_pixels_per_second is None (frame-based) or set (time-based)
+        if _scroll_config is not None:
+            self._scroll_settings = _scroll_config.configure(
+                self.scroll_helper,
+                plugin_config=self.config,
+                global_config=self.global_config,
+                display_manager=self.display_manager,
+                plugin_logger=self.logger,
+            )
+            return
+
+        # Legacy path for cores without src.common.scroll_config. Plugins
+        # update independently of the core, so this must keep working.
+        self._scroll_settings = None
+
         display_config = self.global_config.get('display', {})
         use_frame_based = (self.scroll_pixels_per_second is None and 
                           display_config and 
@@ -1070,7 +1101,8 @@ class NewsTickerPlugin(BasePlugin):
             self._cycle_complete = False
 
         # Signal scrolling state
-        self.display_manager.set_scrolling_state(True)
+        self.display_manager.set_scrolling_state(
+            True, frame_hold=self._scroll_frame_hold())
         self.display_manager.process_deferred_updates()
 
         # Update scroll position using the scroll helper

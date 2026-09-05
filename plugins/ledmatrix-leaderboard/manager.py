@@ -22,6 +22,14 @@ from typing import Dict, Any, Optional
 from PIL import Image
 
 from src.plugin_system.base_plugin import BasePlugin
+try:
+    # Shared scroll pacing: resolves speed from any supported config shape,
+    # snaps it to a speed the panel can show in whole pixels, and reports the
+    # frame hold that keeps slow speeds crisp. Core docs: SCROLL_PERFORMANCE.md
+    from src.common import scroll_config as _scroll_config
+except ImportError:  # core predates the shared helper
+    _scroll_config = None
+
 from src.common.scroll_helper import ScrollHelper
 
 from league_config import LeagueConfig
@@ -140,6 +148,24 @@ class LeaderboardPlugin(BasePlugin):
             self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
             self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
             self.logger.debug(f"Target FPS set to: {self.scroll_helper.target_fps} FPS (using fallback method)")
+
+        # The shared resolver takes precedence over the block above, which is
+        # kept as the fallback for cores that predate it. Running both costs a
+        # few microseconds once at construction and avoids re-indenting logic
+        # that other config shapes still depend on.
+        if _scroll_config is not None:
+            self._scroll_settings = _scroll_config.configure(
+                self.scroll_helper,
+                plugin_config=self.config,
+                global_config=self.global_config,
+                display_manager=self.display_manager,
+                plugin_logger=self.logger,
+            )
+            self.logger.info(
+                "Scroll pacing came from the shared resolver; any scroll speed "
+                "logged above this line by the legacy path was superseded")
+        else:
+            self._scroll_settings = None
         
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=self.dynamic_duration_enabled,
@@ -192,6 +218,15 @@ class LeaderboardPlugin(BasePlugin):
         else:
             self.logger.warning("No leagues are enabled - leaderboard will not display any data")
     
+    def _scroll_frame_hold(self) -> int:
+        """Refreshes to hold each frame for, from the resolved scroll settings.
+
+        1 without the shared helper, which is the old behaviour: a new frame
+        every panel refresh.
+        """
+        settings = getattr(self, "_scroll_settings", None)
+        return getattr(settings, "frame_hold", 1) if settings else 1
+
     def update(self, force: bool = False) -> None:
         """
         Update standings data for all enabled leagues.
@@ -307,7 +342,8 @@ class LeaderboardPlugin(BasePlugin):
             return
 
         # Signal scrolling state
-        self.display_manager.set_scrolling_state(True)
+        self.display_manager.set_scrolling_state(
+            True, frame_hold=self._scroll_frame_hold())
         self.display_manager.process_deferred_updates()
 
         # Update scroll position using the scroll helper

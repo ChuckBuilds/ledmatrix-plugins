@@ -215,7 +215,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.8.7"
+      "latest_version": "1.8.8"
     },
     {
       "id": "football-scoreboard",
@@ -557,7 +557,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.0"
+      "latest_version": "1.4.1"
     },
     {
       "id": "on-air",
@@ -633,7 +633,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.0"
+      "latest_version": "1.4.2"
     },
     {
       "id": "of-the-day",
@@ -809,7 +809,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.6.1"
+      "latest_version": "2.6.2"
     },
     {
       "id": "stocks",
@@ -832,7 +832,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.9.0",
+      "latest_version": "2.9.1",
       "icon": "fas fa-chart-line"
     },
     {

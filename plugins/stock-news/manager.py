@@ -30,6 +30,14 @@ import html
 import re
 from datetime import datetime
 from pathlib import Path
+try:
+    # Shared scroll pacing: resolves speed from any supported config shape,
+    # snaps it to a speed the panel can show in whole pixels, and reports the
+    # frame hold that keeps slow speeds crisp. Core docs: SCROLL_PERFORMANCE.md
+    from src.common import scroll_config as _scroll_config
+except ImportError:  # core predates the shared helper
+    _scroll_config = None
+
 from typing import Dict, Any, List, Optional, Tuple
 from PIL import Image, ImageDraw, ImageFont
 from requests.adapters import HTTPAdapter
@@ -310,8 +318,36 @@ class StockNewsTickerPlugin(BasePlugin):
         return {'headline': main_font, 'symbol': main_font,
                 'publisher': publisher_font, 'age': age_font}
 
+    def _scroll_frame_hold(self) -> int:
+        """Refreshes to hold each frame for, from the resolved scroll settings.
+
+        1 without the shared helper, which is the old behaviour: a new frame
+        every panel refresh.
+        """
+        settings = getattr(self, "_scroll_settings", None)
+        return getattr(settings, "frame_hold", 1) if settings else 1
+
     def _configure_scroll_settings(self) -> None:
-        """Apply scroll speed / FPS to ScrollHelper using frame-based scrolling."""
+        """Apply scroll speed / FPS to the ScrollHelper.
+
+        Prefers the shared resolver so this plugin agrees with every other one
+        about what a given config means, and so slow speeds get the frame hold
+        that keeps them crisp.
+        """
+        if _scroll_config is not None:
+            self._scroll_settings = _scroll_config.configure(
+                self.scroll_helper,
+                plugin_config=self.config,
+                global_config=self.global_config,
+                display_manager=self.display_manager,
+                plugin_logger=self.logger,
+            )
+            return
+
+        # Legacy path for cores without src.common.scroll_config. Plugins
+        # update independently of the core, so this must keep working.
+        self._scroll_settings = None
+
         if 'scroll_pixels_per_second' in self.global_config:
             pps = float(self.global_config['scroll_pixels_per_second'])
         elif self.scroll_delay and self.scroll_delay > 0:
@@ -816,7 +852,8 @@ class StockNewsTickerPlugin(BasePlugin):
             self.scroll_helper.reset_scroll()
             self._cycle_complete = False
 
-        self.display_manager.set_scrolling_state(True)
+        self.display_manager.set_scrolling_state(
+            True, frame_hold=self._scroll_frame_hold())
         self.display_manager.process_deferred_updates()
 
         self.scroll_helper.update_scroll_position()

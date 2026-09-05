@@ -11,6 +11,14 @@ from typing import Dict, Any, Optional
 
 from src.plugin_system.base_plugin import BasePlugin
 
+try:
+    # Shared scroll pacing: resolves speed from config, snaps it to a speed the
+    # panel can show in whole pixels, and sets the frame hold that makes slow
+    # speeds crisp. See docs/SCROLL_PERFORMANCE.md in the core repo.
+    from src.common import scroll_config as _scroll_config
+except ImportError:  # core predates the shared helper
+    _scroll_config = None
+
 # Import our modular components
 from data_fetcher import StockDataFetcher
 from display_renderer import StockDisplayRenderer
@@ -71,12 +79,6 @@ class StockTickerPlugin(BasePlugin):
         
         # Initialize scroll helper
         self.scroll_helper = self.display_renderer.get_scroll_helper()
-        # Convert pixels per frame to pixels per second for ScrollHelper
-        # scroll_speed is pixels per frame, scroll_delay is seconds per frame
-        # pixels per second = pixels per frame / seconds per frame
-        pixels_per_second = self.config_manager.scroll_speed / self.config_manager.scroll_delay if self.config_manager.scroll_delay > 0 else self.config_manager.scroll_speed * 100
-        self.scroll_helper.set_scroll_speed(pixels_per_second)
-        self.scroll_helper.set_scroll_delay(self.config_manager.scroll_delay)
         
         # Configure dynamic duration settings
         self.scroll_helper.set_dynamic_duration_settings(
@@ -86,21 +88,59 @@ class StockTickerPlugin(BasePlugin):
             buffer=self.config_manager.duration_buffer
         )
 
-        # Honor the global smooth-scrolling FPS target (older cores lack the setter).
-        # The convention (news, leaderboard) is a `global` section in the plugin config.
         self.global_config = config.get('global', {}) or {}
-        global_config = self.global_config
-        target_fps = global_config.get('target_fps') or global_config.get('scroll_target_fps', 100)
-        if hasattr(self.scroll_helper, 'set_target_fps'):
-            self.scroll_helper.set_target_fps(target_fps)
-            self.logger.info(f"Target FPS set to: {target_fps}")
-        else:
-            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
-            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
+        self._configure_scroll(config)
         
         self.logger.info("Stock ticker plugin initialized - %dx%d", 
                         self.display_width, self.display_height)
     
+    def _scroll_frame_hold(self) -> int:
+        """Refreshes to hold each frame for, from the resolved scroll settings.
+
+        1 on cores without the shared helper, which is the old behaviour: a new
+        frame every refresh.
+        """
+        settings = getattr(self, "_scroll_settings", None)
+        return getattr(settings, "frame_hold", 1) if settings else 1
+
+    def _configure_scroll(self, config):
+        """Apply scroll pacing via the shared helper, or the legacy path.
+
+        The helper resolves every config shape in one place, snaps the speed to
+        one the panel can render in whole pixels, and sets the frame hold that
+        lets speeds below one pixel per refresh stay crisp. Passing
+        display_manager matters: without it the hold cannot be applied and slow
+        speeds fall back to fractional pixels.
+        """
+        if _scroll_config is not None:
+            self._scroll_settings = _scroll_config.configure(
+                self.scroll_helper,
+                plugin_config=config,
+                global_config=self.global_config,
+                display_manager=self.display_manager,
+                plugin_logger=self.logger,
+            )
+            return
+
+        # Legacy path for cores without src.common.scroll_config. Kept because
+        # plugins update independently of the core and must not break on one
+        # that has not been upgraded yet.
+        self._scroll_settings = None
+        cfg = self.config_manager
+        pixels_per_second = (cfg.scroll_speed / cfg.scroll_delay
+                             if cfg.scroll_delay > 0 else cfg.scroll_speed * 100)
+        self.scroll_helper.set_scroll_speed(pixels_per_second)
+        self.scroll_helper.set_scroll_delay(cfg.scroll_delay)
+        target_fps = (self.global_config.get('target_fps')
+                      or self.global_config.get('scroll_target_fps', 100))
+        if hasattr(self.scroll_helper, 'set_target_fps'):
+            self.scroll_helper.set_target_fps(target_fps)
+        else:
+            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
+            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
+        self.logger.info(
+            "Scroll configured (legacy path): %.1f px/s", pixels_per_second)
+
     def update(self) -> None:
         """Update stock and crypto data."""
         current_time = time.time()
@@ -147,7 +187,11 @@ class StockTickerPlugin(BasePlugin):
             self.scroll_complete = False
         
         # Signal scrolling state
-        self.display_manager.set_scrolling_state(True)
+        # Pass the frame hold every time scrolling starts, not once at
+        # construction: plugins share one display manager, so a hold set at
+        # init is wiped as soon as any other plugin finishes its scroll.
+        self.display_manager.set_scrolling_state(
+            True, frame_hold=self._scroll_frame_hold())
         # Guard for display managers that don't implement deferred updates
         # (e.g. the plugin-safety harness's bounds-checking display manager).
         if hasattr(self.display_manager, "process_deferred_updates"):

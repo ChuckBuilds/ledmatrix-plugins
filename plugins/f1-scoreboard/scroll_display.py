@@ -18,6 +18,14 @@ except ImportError as _scroll_import_err:
         "ScrollHelper not available, scrolling disabled: %s",
         _scroll_import_err)
 
+try:
+    # Shared scroll pacing: one resolver for every plugin, so identical config
+    # means the same speed everywhere, and slow speeds get the frame hold that
+    # keeps them crisp.
+    from src.common import scroll_config as _scroll_config
+except ImportError:  # core predates the shared helper
+    _scroll_config = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,6 +36,11 @@ class ScrollDisplay:
     Pre-renders content cards, composes them into a scrolling image,
     and manages scroll state.
     """
+
+    def _scroll_frame_hold(self) -> int:
+        """Refreshes to hold each frame for, from the resolved scroll settings."""
+        settings = getattr(self, "_scroll_settings", None)
+        return getattr(settings, "frame_hold", 1) if settings else 1
 
     def __init__(self, display_manager, config: Optional[Dict[str, Any]] = None,
                  custom_logger: Optional[logging.Logger] = None,
@@ -68,6 +81,19 @@ class ScrollDisplay:
                 max_duration=scroll_cfg.get("max_duration", 120),
                 buffer=self.display_width
             )
+
+            # Shared resolver wins over the setup above, which stays as the
+            # fallback for cores that predate it.
+            if _scroll_config is not None:
+                self._scroll_settings = _scroll_config.configure(
+                    self.scroll_helper,
+                    plugin_config=self.config,
+                    global_config=self.global_config,
+                    display_manager=self.display_manager,
+                    plugin_logger=self.logger,
+                )
+            else:
+                self._scroll_settings = None
 
             # Honor the global smooth-scrolling FPS target (older cores lack the setter)
             target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps')
@@ -187,6 +213,11 @@ class ScrollDisplayManager:
     """
     Manages multiple ScrollDisplay instances, one per display mode.
     """
+
+    def _scroll_frame_hold(self) -> int:
+        """Refreshes to hold each frame for, from the resolved scroll settings."""
+        settings = getattr(self, "_scroll_settings", None)
+        return getattr(settings, "frame_hold", 1) if settings else 1
 
     def __init__(self, display_manager, config: Optional[Dict[str, Any]] = None,
                  custom_logger: Optional[logging.Logger] = None,

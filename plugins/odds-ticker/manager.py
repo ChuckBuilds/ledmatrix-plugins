@@ -66,6 +66,14 @@ except ImportError:
             self.cache_manager = cache_manager
             self.plugin_manager = plugin_manager
 
+try:
+    # Shared scroll pacing: resolves speed from any supported config
+    # shape, snaps it to a speed the panel can show in whole pixels, and
+    # reports the frame hold that keeps slow speeds crisp.
+    from src.common import scroll_config as _scroll_config
+except ImportError:  # core predates the shared helper
+    _scroll_config = None
+
 # Import BaseOddsManager from LEDMatrix core
 try:
     from src.base_odds_manager import BaseOddsManager
@@ -247,7 +255,14 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             # Priority 1: Current format - use display_options object
             self.scroll_speed = display_options.get('scroll_speed', 1.0)
             self.scroll_delay = display_options.get('scroll_delay', 0.02)
-            self.scroll_pixels_per_second = display_options.get('scroll_pixels_per_second')
+            # Must be None here, exactly as the display_config branch below
+            # does it. config_schema.json gives this deprecated key a default
+            # of 50.0, and schema defaults are merged into plugin config, so
+            # reading it on this path left it permanently non-None and
+            # use_frame_based below could never be True -- the documented
+            # scroll_speed/scroll_delay settings were unreachable for every
+            # user. See issue #408.
+            self.scroll_pixels_per_second = None
             self.logger.info(f"Using display_options.scroll_speed={self.scroll_speed} px/frame, display_options.scroll_delay={self.scroll_delay}s (frame-based mode)")
         elif display_config and ('scroll_speed' in display_config or 'scroll_delay' in display_config):
             # Old nested format: use display object for granular control
@@ -328,9 +343,19 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         
         # Configure ScrollHelper with plugin settings
         # Check if we should use frame-based scrolling (new format) or time-based (old format)
-        use_frame_based = (self.scroll_pixels_per_second is None and 
-                          display_config and 
-                          ('scroll_speed' in display_config or 'scroll_delay' in display_config))
+        # Accept either config shape. This previously consulted only
+        # display_config (the deprecated "display" block), so even with the
+        # fix above the recommended display_options format could never select
+        # frame-based mode. Both halves of #408 are needed.
+        use_frame_based = (
+            self.scroll_pixels_per_second is None
+            and (
+                (display_options and ('scroll_speed' in display_options
+                                      or 'scroll_delay' in display_options))
+                or (display_config and ('scroll_speed' in display_config
+                                        or 'scroll_delay' in display_config))
+            )
+        )
         
         if use_frame_based:
             # New format: use frame-based scrolling for finer control
@@ -366,6 +391,24 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             self.scroll_helper.target_fps = max(30.0, min(200.0, self.target_fps))
             self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
             self.logger.debug(f"Target FPS set to: {self.scroll_helper.target_fps} FPS (using fallback method)")
+
+        # The shared resolver takes precedence over the block above, which is
+        # kept as the fallback for cores that predate it. Running both costs a
+        # few microseconds once at construction and avoids re-indenting logic
+        # that other config shapes still depend on.
+        if _scroll_config is not None:
+            self._scroll_settings = _scroll_config.configure(
+                self.scroll_helper,
+                plugin_config=self.config,
+                global_config=self.global_config,
+                display_manager=self.display_manager,
+                plugin_logger=self.logger,
+            )
+            self.logger.info(
+                "Scroll pacing came from the shared resolver; any scroll speed "
+                "logged above this line by the legacy path was superseded")
+        else:
+            self._scroll_settings = None
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=self.dynamic_duration_enabled,
             min_duration=self.min_duration,
@@ -2602,6 +2645,15 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             self.show_channel_logos = new_show_logos
             self.logger.info(f"Show channel logos updated to: {self.show_channel_logos}")
 
+    def _scroll_frame_hold(self) -> int:
+        """Refreshes to hold each frame for, from the resolved scroll settings.
+
+        1 without the shared helper, which is the old behaviour: a new frame
+        every panel refresh.
+        """
+        settings = getattr(self, "_scroll_settings", None)
+        return getattr(settings, "frame_hold", 1) if settings else 1
+
     def update(self):
         """Update odds ticker data."""
         logger.debug("Entering update method")
@@ -2695,7 +2747,25 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                     return True
         return False
 
+    #: How long a computed update interval is reused for. display() asks every
+    #: frame, and the slow path below reads the scoreboard cache from disk and
+    #: parses JSON per enabled league -- on the render thread. That produced a
+    #: single ~15ms frame every few minutes, visible as a hitch mid-scroll.
+    #: 15s keeps live detection responsive; the scoreboard re-check underneath
+    #: is rate limited to _live_check_interval (300s) regardless.
+    _INTERVAL_CACHE_SECONDS = 15.0
+
     def _get_current_update_interval(self) -> int:
+        """The current update interval, memoised off the render path."""
+        now = time.time()
+        cached = getattr(self, "_interval_cache", None)
+        if cached is not None and (now - cached[0]) < self._INTERVAL_CACHE_SECONDS:
+            return cached[1]
+        value = self._compute_update_interval()
+        self._interval_cache = (now, value)
+        return value
+
+    def _compute_update_interval(self) -> int:
         """Get the current update interval based on game status.
 
         - Live games: use live_game_update_interval (default 60s)
@@ -2720,7 +2790,14 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         # Dynamically determine update interval based on live games
         current_interval = self._get_current_update_interval()
         if current_time - self.last_update < current_interval:
-            logger.debug(f"Odds ticker update interval not reached. Next update in {current_interval - (current_time - self.last_update)} seconds (interval: {current_interval}s, live games: {self._has_live_games()})")
+            # %s args, not an f-string: the f-string called _has_live_games()
+            # on every skipped update even with debug logging off, which is a
+            # scoreboard cache read for the sake of a message nobody sees.
+            logger.debug(
+                "Odds ticker update interval not reached. Next update in %.0f "
+                "seconds (interval: %ss)",
+                current_interval - (current_time - self.last_update),
+                current_interval)
             return
 
         # Use lock to prevent concurrent modifications during live updates
@@ -2947,7 +3024,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             # Signal scrolling state
             if hasattr(self.display_manager, 'set_scrolling_state'):
                 if self.loop or not self.scroll_helper.is_scroll_complete():
-                    self.display_manager.set_scrolling_state(True)
+                    self.display_manager.set_scrolling_state(
+            True, frame_hold=self._scroll_frame_hold())
                 else:
                     self.display_manager.set_scrolling_state(False)
             
