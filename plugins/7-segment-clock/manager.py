@@ -290,11 +290,21 @@ class SevenSegmentClockPlugin(BasePlugin):
         """
         # Calculate base width needed for the time string
         base_width = 0
+        element_count = 0
         for item in digits:
             if item == ":":
                 base_width += self.separator_width
+                element_count += 1
             elif item is not None:
                 base_width += self.digit_width
+                element_count += 1
+
+        # The gaps scale with the digits, so they belong in the width the scale
+        # is solved against. Sizing the digits to the panel and then adding the
+        # spacing on top is what pushed the clock off the right edge for any
+        # digit_spacing >= 3, a range the schema advertises up to 10.
+        if element_count > 1:
+            base_width += (element_count - 1) * self.digit_spacing
 
         base_height = self.digit_height
 
