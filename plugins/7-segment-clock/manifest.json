@@ -1,7 +1,7 @@
 {
   "id": "7-segment-clock",
   "name": "7-Segment Clock",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Display a retro-style 7-segment clock with customizable colors",
   "author": "LEDMatrix",
   "entry_point": "manager.py",
