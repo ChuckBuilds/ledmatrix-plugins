@@ -19,6 +19,12 @@
   ],
   "versions": [
     {
+      "version": "1.21.4",
+      "released": "2026-09-05",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Validation-sweep fixes; see the PR for the specific defect."
+    },
+    {
       "released": "2026-09-04",
       "version": "1.21.3",
       "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",

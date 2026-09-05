@@ -67,6 +67,12 @@
   ],
   "versions": [
     {
+      "version": "1.4.1",
+      "released": "2026-09-05",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Validation-sweep fixes; see the PR for the specific defect."
+    },
+    {
       "version": "1.4.0",
       "released": "2026-09-03",
       "notes": "Row stacking, and documentation. The artist and album lines were drawn on top of each other whenever a track had an album name: both rows default to the 5x7 BDF face, display_manager.get_font_height() returns 0 for it, and the layout stacks rows by adding the measured height, so the album row landed one line_gap below the artist row instead of a full row. Rows now fall back to the configured font_size when the measurement is zero (#397). The README documents all 34 settings -- 22 were never named, including layout_mode, progress_bar_match_text, live_priority and every text_scrolling and customization key -- and gains real rendered screenshots.",
