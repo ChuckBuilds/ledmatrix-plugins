@@ -242,6 +242,13 @@ def _make_render_live(width, height):
     live.config = {}
     live.show_pitcher_batter = True
     live.show_last_play = True
+    # SportsCore.__init__ creates these; object.__new__ skips it, and the
+    # at-bat card's font ladder reads _font_cache on its first draw. Without
+    # them every render here raised AttributeError, was swallowed by the
+    # plugin's except, and drew nothing -- so four checks below failed on an
+    # empty canvas rather than on anything the renderer did wrong.
+    live._font_cache = {}
+    live._bdf_native_size_cache = {}
     import logging
     live.logger = logging.getLogger("test_at_bat_info_render")
     return live

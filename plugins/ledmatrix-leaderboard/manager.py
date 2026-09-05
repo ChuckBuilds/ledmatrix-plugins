@@ -431,7 +431,16 @@ class LeaderboardPlugin(BasePlugin):
             if required <= budget:
                 return
 
+            # Measure the shortfall over the same distance `required` used --
+            # content plus the lead-in -- not over image_width alone. Mixing the
+            # two under-reported how much is lost, and when only the safety
+            # buffer pushed `required` over the budget the subtraction went
+            # negative and the clamp printed the self-contradictory "roughly the
+            # last 0% of the list will not be reached".
+            total_travel = image_width + self.display_width
             shown_px = budget * pixels_per_second
+            if shown_px >= total_travel:
+                return  # fits without the buffer; not worth a warning
             limiter = ("the core's display.dynamic_duration.max_duration_seconds"
                        if core_cap <= min(self.max_duration, self.dynamic_duration_cap)
                        else "this plugin's global.dynamic_duration settings")
@@ -441,7 +450,7 @@ class LeaderboardPlugin(BasePlugin):
                 "of the list will not be reached before the display moves on. Raise that "
                 "cap, increase the scroll speed, or lower top_teams.",
                 image_width, required, pixels_per_second, budget, limiter,
-                max(0.0, 100.0 * (1.0 - shown_px / max(image_width, 1))),
+                100.0 * (total_travel - shown_px) / max(image_width, 1),
             )
         except Exception as e:  # pragma: no cover - diagnostics only
             self.logger.debug("Could not evaluate content duration budget: %s", e)

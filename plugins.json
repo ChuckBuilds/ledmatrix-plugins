@@ -388,7 +388,7 @@
       "latest_version": "1.2.3"
     },
     {
-      "id": "leaderboard",
+      "id": "ledmatrix-leaderboard",
       "name": "Sports Leaderboard",
       "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
       "author": "ChuckBuilds",
@@ -513,7 +513,7 @@
       "latest_version": "1.2.2"
     },
     {
-      "id": "music",
+      "id": "ledmatrix-music",
       "name": "Music Player - Now Playing",
       "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
       "author": "ChuckBuilds",
@@ -812,7 +812,7 @@
       "latest_version": "2.6.1"
     },
     {
-      "id": "stocks",
+      "id": "ledmatrix-stocks",
       "name": "Stock & Crypto Ticker",
       "description": "Displays stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies. Supports scroll and switch display modes.",
       "author": "LEDMatrix Team",
@@ -909,7 +909,7 @@
       "icon": "fas fa-fist-raised"
     },
     {
-      "id": "weather",
+      "id": "ledmatrix-weather",
       "name": "Weather Display",
       "description": "Comprehensive weather display with current conditions, hourly forecast, daily forecast, almanac (sunrise/sunset, moon phase), animated precipitation radar on a real OpenStreetMap basemap (with nowcast forecast frames), weather alerts, UV index, wind direction, and weather icons. Powered by Open-Meteo (free, no API key) + RainViewer.",
       "author": "ChuckBuilds",
