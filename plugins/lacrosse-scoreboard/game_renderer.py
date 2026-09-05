@@ -220,15 +220,24 @@ class GameRenderer(SportsGameRendererMixin):
                 if font_path.lower().endswith(('.ttf', '.otf')):
                     return ImageFont.truetype(font_path, font_size)
                 elif font_path.lower().endswith('.bdf'):
-                    # ImageFont.truetype does not support bitmap (BDF) fonts.
-                    # Use ImageFont.load for BDFs; note that BDFs are bitmap
-                    # fonts and ignore font_size — the glyph size is baked in.
+                    # FreeType reads BDF directly. The pre-conversion dance
+                    # below assumed otherwise; no .pil ships anywhere, so every
+                    # .bdf in the picker fell back to the default font.
                     try:
-                        return ImageFont.load(font_path)
-                    except Exception as e:
+                        return ImageFont.truetype(font_path, font_size)
+                    except OSError:
+                        # A bitmap face exists at exactly the size it was drawn
+                        # at; FreeType rejects any other with "invalid pixel
+                        # size". Retry at the size the file declares.
+                        native = _bdf_pixel_size(font_path)
+                        if native is not None and native != font_size:
+                            try:
+                                return ImageFont.truetype(font_path, native)
+                            except OSError:
+                                pass
                         self.logger.warning(
-                            f"Could not load BDF font {font_name}: {e}; using default"
-                        )
+                            f"Could not load BDF font {font_name} at {font_size} "
+                            f"or its native size")
         except Exception as e:
             self.logger.error(f"Error loading font {font_name}: {e}")
 
