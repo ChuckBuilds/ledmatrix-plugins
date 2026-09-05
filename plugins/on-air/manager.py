@@ -49,6 +49,11 @@ def _rgb(value, default) -> Tuple[int, int, int]:
 class OnAirPlugin(BasePlugin):
     """ON AIR sign driven by MQTT with HA auto-discovery."""
 
+    # Seconds to hold the blank frame when the light is off. Short enough
+    # that the rotation steps past it, non-zero so the controller still
+    # gets a frame.
+    IDLE_DURATION = 1.0
+
     def __init__(self, plugin_id: str, config: Dict[str, Any],
                  display_manager, cache_manager, plugin_manager):
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
@@ -204,8 +209,10 @@ class OnAirPlugin(BasePlugin):
         # When off, render a plain black frame rather than returning False.
         # Returning False while still in on-demand mode causes the display
         # controller to fall to its "Initializing" state before the stop
-        # request is processed. The 1s get_display_duration() cycles past
-        # this black frame nearly instantly in normal rotation.
+        # request is processed. get_display_duration() reports IDLE_DURATION
+        # while the light is off so the rotation cycles past this black frame
+        # quickly -- the configured display_duration (5s by default, up to 60)
+        # applies only when there is a tally to show.
         fill = bg_color if active else (0, 0, 0)
         canvas = Image.new('RGB', (dw, dh), fill)
         draw   = ImageDraw.Draw(canvas)
@@ -263,6 +270,16 @@ class OnAirPlugin(BasePlugin):
                 centered=True)
 
     def get_display_duration(self) -> float:
+        # A dark tally light has nothing to show, so hold it only long enough
+        # for the rotation to step past. display() deliberately returns True
+        # while off (see the note there), which means the controller does not
+        # skip the mode -- without this the panel sat black for the configured
+        # display_duration, 5s by default and up to 60s, on every rotation of
+        # an enabled-but-not-broadcasting plugin.
+        with self.state_lock:
+            active = self.on_air
+        if not active:
+            return self.IDLE_DURATION
         return float(self.config.get('display_duration', 5))
 
     def on_enable(self) -> None:
