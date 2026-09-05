@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -51,6 +52,61 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 PLUGINS = REPO_ROOT / "plugins"
 
 PASS, FAIL, SKIP = 0, 1, 2
+
+
+def is_pytest_module(script: Path) -> bool:
+    """True when a file is a pytest module rather than a standalone script.
+
+    These declare `def test_*` / `class Test*` and have no `__main__` guard, so
+    running them the way run_one() does merely imports them: the test functions
+    are defined, none are called, and the process exits 0. That is reported as a
+    pass, which is how four real failures in ledmatrix-flights and one in news
+    sat green in CI. Hand such files to pytest instead.
+    """
+    try:
+        src = script.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    has_items = re.search(r"^\s*(def test_|class Test|async def test_)", src, re.M)
+    has_main_guard = "__main__" in src and "__name__" in src
+    return bool(has_items and not has_main_guard)
+
+
+def run_pytest_module(script: Path, core: Path | None, timeout: int) -> tuple[int, str]:
+    """Run one pytest module and map its outcome onto the pass/skip/fail codes."""
+    env = dict(os.environ)
+    if core:
+        core = core.resolve()
+        env["PYTHONPATH"] = f"{core}{os.pathsep}{env.get('PYTHONPATH', '')}"
+        env["LEDMATRIX_CORE"] = str(core)
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "pytest", script.name, "-q", "--no-header",
+             "--tb=line", "-p", "no:cacheprovider"],
+            cwd=script.parent, env=env, capture_output=True,
+            text=True, timeout=timeout, stdin=subprocess.DEVNULL,
+        )
+    except subprocess.TimeoutExpired:
+        return FAIL, f"timed out after {timeout}s"
+
+    out = (proc.stdout or "") + (proc.stderr or "")
+    summary = ""
+    for line in reversed(out.splitlines()):
+        if "passed" in line or "failed" in line or "error" in line:
+            summary = line.strip("= ").strip()
+            break
+    if proc.returncode == 0:
+        return PASS, ""
+    # pytest exit 5 is "no tests collected" -- for a file we classified as a
+    # pytest module that means the classification was wrong, not that the file
+    # is fine. Surface it rather than swallowing it as a pass.
+    if proc.returncode == 5:
+        return FAIL, "pytest collected no tests from a file that looks like a pytest module"
+    failed = [ln.strip() for ln in out.splitlines() if ln.startswith("FAILED") or ln.startswith("ERROR")]
+    reason = "; ".join(f[:100] for f in failed[:3]) or summary or f"exit {proc.returncode}"
+    if len(failed) > 3:
+        reason += f" (+{len(failed) - 3} more)"
+    return FAIL, reason
 
 
 def run_one(script: Path, core: Path | None, timeout: int) -> tuple[int, str]:
@@ -146,7 +202,10 @@ def main() -> int:
             continue
         print(f"\n{pid}")
         for script in scripts:
-            status, detail = run_one(script, args.core, args.timeout)
+            if is_pytest_module(script):
+                status, detail = run_pytest_module(script, args.core, args.timeout)
+            else:
+                status, detail = run_one(script, args.core, args.timeout)
             totals[status] += 1
             label = {PASS: "pass", SKIP: "SKIP", FAIL: "FAIL"}[status]
             print(f"  [{label}] {script.name}" + (f" -- {detail}" if detail else ""))
