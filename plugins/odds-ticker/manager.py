@@ -255,7 +255,14 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             # Priority 1: Current format - use display_options object
             self.scroll_speed = display_options.get('scroll_speed', 1.0)
             self.scroll_delay = display_options.get('scroll_delay', 0.02)
-            self.scroll_pixels_per_second = display_options.get('scroll_pixels_per_second')
+            # Must be None here, exactly as the display_config branch below
+            # does it. config_schema.json gives this deprecated key a default
+            # of 50.0, and schema defaults are merged into plugin config, so
+            # reading it on this path left it permanently non-None and
+            # use_frame_based below could never be True -- the documented
+            # scroll_speed/scroll_delay settings were unreachable for every
+            # user. See issue #408.
+            self.scroll_pixels_per_second = None
             self.logger.info(f"Using display_options.scroll_speed={self.scroll_speed} px/frame, display_options.scroll_delay={self.scroll_delay}s (frame-based mode)")
         elif display_config and ('scroll_speed' in display_config or 'scroll_delay' in display_config):
             # Old nested format: use display object for granular control
@@ -336,9 +343,19 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         
         # Configure ScrollHelper with plugin settings
         # Check if we should use frame-based scrolling (new format) or time-based (old format)
-        use_frame_based = (self.scroll_pixels_per_second is None and 
-                          display_config and 
-                          ('scroll_speed' in display_config or 'scroll_delay' in display_config))
+        # Accept either config shape. This previously consulted only
+        # display_config (the deprecated "display" block), so even with the
+        # fix above the recommended display_options format could never select
+        # frame-based mode. Both halves of #408 are needed.
+        use_frame_based = (
+            self.scroll_pixels_per_second is None
+            and (
+                (display_options and ('scroll_speed' in display_options
+                                      or 'scroll_delay' in display_options))
+                or (display_config and ('scroll_speed' in display_config
+                                        or 'scroll_delay' in display_config))
+            )
+        )
         
         if use_frame_based:
             # New format: use frame-based scrolling for finer control
@@ -2730,7 +2747,25 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                     return True
         return False
 
+    #: How long a computed update interval is reused for. display() asks every
+    #: frame, and the slow path below reads the scoreboard cache from disk and
+    #: parses JSON per enabled league -- on the render thread. That produced a
+    #: single ~15ms frame every few minutes, visible as a hitch mid-scroll.
+    #: 15s keeps live detection responsive; the scoreboard re-check underneath
+    #: is rate limited to _live_check_interval (300s) regardless.
+    _INTERVAL_CACHE_SECONDS = 15.0
+
     def _get_current_update_interval(self) -> int:
+        """The current update interval, memoised off the render path."""
+        now = time.time()
+        cached = getattr(self, "_interval_cache", None)
+        if cached is not None and (now - cached[0]) < self._INTERVAL_CACHE_SECONDS:
+            return cached[1]
+        value = self._compute_update_interval()
+        self._interval_cache = (now, value)
+        return value
+
+    def _compute_update_interval(self) -> int:
         """Get the current update interval based on game status.
 
         - Live games: use live_game_update_interval (default 60s)
@@ -2755,7 +2790,14 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         # Dynamically determine update interval based on live games
         current_interval = self._get_current_update_interval()
         if current_time - self.last_update < current_interval:
-            logger.debug(f"Odds ticker update interval not reached. Next update in {current_interval - (current_time - self.last_update)} seconds (interval: {current_interval}s, live games: {self._has_live_games()})")
+            # %s args, not an f-string: the f-string called _has_live_games()
+            # on every skipped update even with debug logging off, which is a
+            # scoreboard cache read for the sake of a message nobody sees.
+            logger.debug(
+                "Odds ticker update interval not reached. Next update in %.0f "
+                "seconds (interval: %ss)",
+                current_interval - (current_time - self.last_update),
+                current_interval)
             return
 
         # Use lock to prevent concurrent modifications during live updates
