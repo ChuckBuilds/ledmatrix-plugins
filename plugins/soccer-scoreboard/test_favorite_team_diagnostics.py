@@ -74,6 +74,28 @@ if "src.logo_downloader" not in sys.modules:
         "src.plugin_system.base_plugin": bp_mod,
     })
 
+    # The stubs above are plain ModuleTypes, so `from src.common.X import Y`
+    # fails with "'src.common' is not a package" even when a real core is on
+    # the path. Giving them a __path__ lets genuine submodules -- sports_shared,
+    # sports_card -- resolve from the core while the stubbed ones stay stubbed.
+    # Stubbing those too would make this test pass against dummies instead of
+    # the code under test.
+    #
+    # This file was the one of eight that never got this block, so it broke the
+    # day sports.py started importing src.common.sports_shared. It looked fine
+    # because the CI runner was reporting pytest files as passing without
+    # running them; fixing that runner is what made these 22 failures visible.
+    _core = os.environ.get("LEDMATRIX_CORE") or next(
+        (p for p in sys.path
+         if p and os.path.isdir(os.path.join(p, "src", "common"))), None)
+    if _core:
+        if "src" in sys.modules and not sys.modules["src"].__path__:
+            sys.modules["src"].__path__ = [os.path.join(_core, "src")]
+        if ("src.common" in sys.modules
+                and not sys.modules["src.common"].__path__):
+            sys.modules["src.common"].__path__ = [
+                os.path.join(_core, "src", "common")]
+
 # ESPN's real Premier League codes, as returned by its teams endpoint.
 PREMIER_LEAGUE = {
     'ARS': 'Arsenal', 'AVL': 'Aston Villa', 'BOU': 'AFC Bournemouth',

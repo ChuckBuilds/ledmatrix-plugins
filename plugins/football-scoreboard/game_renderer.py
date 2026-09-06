@@ -223,6 +223,20 @@ def possession_ball_box(text_x, text_width, text_height, text_y,
     return (x, y, x + icon_w - 1, y + icon_h - 1)
 
 
+def _bdf_pixel_size(path):
+    """The pixel size a .bdf font declares, or None if it does not."""
+    try:
+        with open(path, "r", encoding="latin-1") as handle:
+            for line in handle:
+                if line.startswith("PIXEL_SIZE"):
+                    return int(line.split()[1])
+                if line.startswith("CHARS"):
+                    break  # past the header; no point reading the glyphs
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
+
+
 class GameRenderer(SportsGameRendererMixin):
     """
     Renders individual game cards as PIL Images for display.

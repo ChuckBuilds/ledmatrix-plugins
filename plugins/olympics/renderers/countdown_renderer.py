@@ -178,8 +178,12 @@ class CountdownRenderer:
                 return int(dm.get_text_width(text))
             if hasattr(dm, "draw") and hasattr(dm.draw, "textlength"):
                 return int(dm.draw.textlength(text, font=getattr(dm, "regular_font", None)))
-        except Exception:
-            pass
+        except (AttributeError, TypeError, ValueError, OSError) as err:
+            # An unmeasurable font is not an error here -- 0 means "no idea",
+            # and _fit_lines only shortens text when it knows it must. Narrowed
+            # from a bare `except Exception: pass` so a real fault in the
+            # display manager surfaces instead of silently disabling fitting.
+            logger.debug("Could not measure %r: %s", text, err)
         return 0
 
     def _fit_lines(self, lines, available: int):

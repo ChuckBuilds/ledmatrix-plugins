@@ -122,6 +122,20 @@ def _clamp_seconds(value: Any, fallback: int, low: int = 5,
     return max(low, min(high, seconds))
 
 
+def _bdf_pixel_size(path):
+    """The pixel size a .bdf font declares, or None if it does not."""
+    try:
+        with open(path, "r", encoding="latin-1") as handle:
+            for line in handle:
+                if line.startswith("PIXEL_SIZE"):
+                    return int(line.split()[1])
+                if line.startswith("CHARS"):
+                    break  # past the header; no point reading the glyphs
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
+
+
 def _logo_needs_refresh(logo_file) -> bool:
     """True if this file is a placeholder stale enough to retry the real logo.
 
