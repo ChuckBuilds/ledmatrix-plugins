@@ -223,6 +223,20 @@ def possession_ball_box(text_x, text_width, text_height, text_y,
     return (x, y, x + icon_w - 1, y + icon_h - 1)
 
 
+def _bdf_pixel_size(path):
+    """The pixel size a .bdf font declares, or None if it does not."""
+    try:
+        with open(path, "r", encoding="latin-1") as handle:
+            for line in handle:
+                if line.startswith("PIXEL_SIZE"):
+                    return int(line.split()[1])
+                if line.startswith("CHARS"):
+                    break  # past the header; no point reading the glyphs
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
+
+
 class GameRenderer(SportsGameRendererMixin):
     """
     Renders individual game cards as PIL Images for display.
@@ -529,22 +543,24 @@ class GameRenderer(SportsGameRendererMixin):
                     # TTF/OTF fonts - use ImageFont.truetype()
                     return ImageFont.truetype(font_path, font_size)
                 elif font_path.lower().endswith('.bdf'):
-                    # BDF fonts - ImageFont.truetype() does NOT support BDF files
-                    # Option (b): Try to load pre-converted .pil/.pbm file (recommended approach)
-                    # Use pilfont.py to convert: pilfont.py font.bdf (creates font.pil and font.pbm)
-                    pil_font_path = font_path.rsplit('.', 1)[0] + '.pil'
-                    if os.path.exists(pil_font_path):
-                        try:
-                            font = ImageFont.load(pil_font_path)
-                            self.logger.debug(f"Loaded BDF font from pre-converted PIL file: {pil_font_path}")
-                            return font
-                        except Exception:
-                            # Pre-converted file exists but failed to load - will fall through to fallback
-                            pass
-                    
-                    # If no pre-converted file or loading failed, BDF cannot be loaded directly
-                    # Note: PIL.BdfFontFile doesn't exist in standard Pillow, so pre-conversion is required
-                    # The warning will be logged only if fallback also fails (see below)
+                    # FreeType reads BDF directly. The pre-conversion dance
+                    # below assumed otherwise; no .pil ships anywhere, so every
+                    # .bdf in the picker fell back to the default font.
+                    try:
+                        return ImageFont.truetype(font_path, font_size)
+                    except OSError:
+                        # A bitmap face exists at exactly the size it was drawn
+                        # at; FreeType rejects any other with "invalid pixel
+                        # size". Retry at the size the file declares.
+                        native = _bdf_pixel_size(font_path)
+                        if native is not None and native != font_size:
+                            try:
+                                return ImageFont.truetype(font_path, native)
+                            except OSError:
+                                pass
+                        self.logger.warning(
+                            f"Could not load BDF font {font_name} at {font_size} "
+                            f"or its native size")
                 else:
                     self.logger.warning(f"Unknown font file type: {font_name}, trying fallback")
             else:

@@ -1,7 +1,7 @@
 {
   "id": "christmas-countdown",
   "name": "Christmas Countdown",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "author": "ChuckBuilds",
   "description": "Display a countdown to Christmas with a stylized Christmas tree logo and festive text",
   "category": "holiday",
@@ -17,6 +17,12 @@
     "christmas-countdown"
   ],
   "versions": [
+    {
+      "version": "1.0.4",
+      "released": "2026-09-05",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Validation-sweep fixes; see the PR for the specific defect."
+    },
     {
       "released": "2026-09-02",
       "version": "1.0.3",

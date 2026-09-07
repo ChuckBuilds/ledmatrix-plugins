@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.5.2",
+      "released": "2026-09-05",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Validation-sweep fixes; see the PR for the specific defect."
+    },
     {
       "released": "2026-09-04",
       "version": "3.5.1",
@@ -446,7 +452,7 @@
       "released": "2026-07-10",
       "version": "2.8.0",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" \u2014 rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
+      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" — rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
     },
     {
       "released": "2026-07-08",

@@ -1,7 +1,7 @@
 {
   "id": "7-segment-clock",
   "name": "7-Segment Clock",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Display a retro-style 7-segment clock with customizable colors",
   "author": "LEDMatrix",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.0.6",
+      "released": "2026-09-05",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Validation-sweep fixes; see the PR for the specific defect."
+    },
     {
       "released": "2026-09-02",
       "version": "1.0.5",

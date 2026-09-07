@@ -1,7 +1,7 @@
 {
   "id": "static-image",
   "name": "Static Image Display",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "author": "ChuckBuilds",
   "description": "Display static images on your LED matrix with automatic scaling, aspect ratio preservation, and transparency support. Perfect for logos, artwork, or custom graphics.",
   "entry_point": "manager.py",
@@ -18,6 +18,12 @@
     "static_image"
   ],
   "versions": [
+    {
+      "version": "1.0.8",
+      "released": "2026-09-05",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Validation-sweep fixes; see the PR for the specific defect."
+    },
     {
       "released": "2026-09-03",
       "version": "1.0.7",

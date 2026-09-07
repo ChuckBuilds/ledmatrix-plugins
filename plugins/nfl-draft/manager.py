@@ -1195,11 +1195,18 @@ class NFLDraftPlugin(BasePlugin):
         except Exception as e:
             self.logger.error(f"Error updating draft data: {e}", exc_info=True)
 
-    def display(self, force_clear: bool = False) -> None:
+    def display(self, force_clear: bool = False) -> bool:
         """
         Render the draft picks to the LED matrix.
 
         Uses ScrollHelper to create smooth horizontal scrolling.
+
+        Returns False when there is nothing to show, so the display controller
+        rotates on instead of holding the frame. The controller only skips on a
+        boolean False (display_controller.py checks isinstance(result, bool)),
+        so returning None left the panel black for the whole display_duration --
+        60s by default, every rotation, for the ~11 months a year that are not
+        draft season.
 
         Args:
             force_clear: If True, clear display before rendering
@@ -1211,17 +1218,17 @@ class NFLDraftPlugin(BasePlugin):
             picks_loaded = bool(self.draft_picks)
             status = self.draft_status
 
-        # Off-season / expired post-draft window: render nothing
+        # Off-season / expired post-draft window: render nothing. No need to
+        # paint the blank frame first -- returning False means the controller
+        # never shows it.
         if status == "complete" and not self._is_post_draft_window():
-            self._display_blank()
-            return
+            return False
         if status not in ("live", "complete", "simulate") and self._is_off_season():
-            self._display_blank()
-            return
+            return False
 
         if not picks_loaded:
             self._display_no_data()
-            return
+            return True
 
         try:
             # Vegas clears scroll_helper.cached_image whenever this plugin reports
@@ -1243,10 +1250,13 @@ class NFLDraftPlugin(BasePlugin):
                 # Set image to display manager
                 self.display_manager.image = visible_image
                 self.display_manager.update_display()
+                return True
+            return False
 
         except Exception as e:
             self.logger.error(f"Error displaying draft: {e}")
             self._display_error()
+            return True
 
     def _display_blank(self) -> None:
         """Render a solid black frame (off-season silence — no text, no errors)."""
