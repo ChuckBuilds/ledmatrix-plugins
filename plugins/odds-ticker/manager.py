@@ -2390,7 +2390,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         
         # Use ScrollHelper to create the scrolling image
         # ScrollHelper automatically adds display_width padding at the start
-        self.ticker_image = self.scroll_helper.create_scrolling_image(
+        strip = self.scroll_helper.create_scrolling_image(
             content_items=game_images,
             item_gap=gap_width,
             element_gap=0  # No gap within items
@@ -2407,14 +2407,14 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             if idx < len(game_images) - 1:
                 bar_x = current_x + gap_width // 2
                 # Use ImageDraw for more efficient drawing
-                draw = _pixel_draw(self.ticker_image)
+                draw = _pixel_draw(strip)
                 draw.line([(bar_x, 0), (bar_x, height - 1)], fill=(255, 255, 255), width=1)
             current_x += gap_width
         
         # Update ScrollHelper's cached image and array to include the white bars
         # This ensures the bars are visible when scrolling
-        self.scroll_helper.cached_image = self.ticker_image
-        self.scroll_helper.cached_array = np.array(self.ticker_image)
+        self.scroll_helper.cached_image = strip
+        self.scroll_helper.cached_array = np.array(strip)
         
         # Store reference for compatibility
         self.total_scroll_width = self.scroll_helper.total_scroll_width
@@ -2422,10 +2422,17 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         # Get dynamic duration from ScrollHelper
         self.dynamic_duration = self.scroll_helper.get_dynamic_duration()
         
+        # Publish last. The rebuild runs on a worker thread now (see
+        # _pump_background) and display() gates on ticker_image being set,
+        # so binding it only once the bars are drawn and cached_array is
+        # rebuilt is what stops the render thread ever scrolling a strip
+        # that is still missing its separators.
+        self.ticker_image = strip
+
         logger.debug(f"Odds ticker image creation:")
         logger.debug(f"  Display width: {display_width}px")
         logger.debug(f"  Content width: {self.total_scroll_width}px")
-        logger.debug(f"  Total image width: {self.ticker_image.width}px")
+        logger.debug(f"  Total image width: {strip.width}px")
         logger.debug(f"  Number of games: {len(game_images)}")
         logger.debug(f"  Gap width: {gap_width}px")
         logger.debug(f"  Dynamic duration: {self.dynamic_duration}s")
@@ -2885,14 +2892,19 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             # the refresh simply moved to the one thread it must not block.
             # Same guard, same deferral; preserve_scroll is kept so the ticker
             # does not jump back when the deferred update lands.
-            if (hasattr(self.display_manager, 'is_currently_scrolling')
-                    and self.display_manager.is_currently_scrolling()
-                    and hasattr(self.display_manager, 'defer_update')):
-                logger.debug("Scrolling -- deferring the odds refresh off the render thread")
+            # Defer whenever the core can: display() *is* the render thread, so
+            # the round trip stalls the panel whether or not the marquee happens
+            # to be flagged as scrolling at this instant. The old condition also
+            # required is_currently_scrolling(), which is False on the first
+            # frame of a display cycle -- exactly when the interval is most
+            # likely to have elapsed. preserve_scroll keeps the ticker from
+            # jumping back when the deferred update lands.
+            if hasattr(self.display_manager, 'defer_update'):
+                logger.debug("Deferring the odds refresh off the render thread")
                 self.display_manager.defer_update(
                     lambda: self._perform_update(preserve_scroll=True), priority=1)
             else:
-                # Preserve scroll position during live updates so ticker doesn't jump back
+                # Core predates defer_update; nothing better available here.
                 self._perform_update(preserve_scroll=True)
 
         # Reset display start time when force_clear is True or when starting fresh
@@ -2920,37 +2932,12 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         
         logger.debug(f"Number of games in data at start of display method: {len(self.games_data)}")
         if not self.games_data:
-            logger.warning("Odds ticker has no games data. Attempting to update...")
-            try:
-                import threading
-                import queue
-                
-                update_queue = queue.Queue()
-                
-                def perform_update():
-                    try:
-                        self.update()
-                        update_queue.put(('success', None))
-                    except Exception as e:
-                        update_queue.put(('error', e))
-                
-                # Start update in a separate thread with 10-second timeout
-                update_thread = threading.Thread(target=perform_update)
-                update_thread.daemon = True
-                update_thread.start()
-                
-                try:
-                    result_type, result_data = update_queue.get(timeout=10)
-                    if result_type == 'error':
-                        logger.error(f"Update failed: {result_data}")
-                except queue.Empty:
-                    logger.warning("Update timed out after 10 seconds, using fallback")
-                
-            except Exception as e:
-                logger.error(f"Error during update: {e}")
-            
+            self._pump_background("data-update", self.update,
+                                  min_interval=30.0)
+
             if not self.games_data:
-                logger.warning("Still no games data after update. Displaying fallback message.")
+                # Fetch still in flight. Show the placeholder for these frames
+                # rather than waiting on the network from the render thread.
                 self._display_fallback_message()
                 return
         
@@ -2964,37 +2951,12 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         # drew "No odds data" over perfectly good games -- once a minute on a
         # live rig, until the next hourly rebuild happened to land.
         if self.ticker_image is None or self.scroll_helper.cached_image is None:
-            logger.warning("Ticker image or scroll cache is not available. Attempting to create it.")
-            try:
-                import threading
-                import queue
-                
-                image_queue = queue.Queue()
-                
-                def create_image():
-                    try:
-                        self._create_ticker_image()
-                        image_queue.put(('success', None))
-                    except Exception as e:
-                        image_queue.put(('error', e))
-                
-                # Start image creation in a separate thread with 5-second timeout
-                image_thread = threading.Thread(target=create_image)
-                image_thread.daemon = True
-                image_thread.start()
-                
-                try:
-                    result_type, result_data = image_queue.get(timeout=5)
-                    if result_type == 'error':
-                        logger.error(f"Image creation failed: {result_data}")
-                except queue.Empty:
-                    logger.warning("Image creation timed out after 5 seconds")
-                
-            except Exception as e:
-                logger.error(f"Error during image creation: {e}")
-            
+            self._pump_background("image-rebuild", self._create_ticker_image,
+                                  min_interval=2.0)
+
             if self.ticker_image is None or self.scroll_helper.cached_image is None:
-                logger.error("Failed to create ticker image.")
+                # Rebuild still in flight. A placeholder for a few frames beats
+                # a frozen panel for seconds.
                 self._display_fallback_message()
                 return
 
@@ -3061,13 +3023,71 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             logger.error(f"Error displaying odds ticker: {e}", exc_info=True)
             self._display_fallback_message()
 
+    def _pump_background(self, key, work, min_interval=2.0):
+        """Run `work` on a worker thread, one at a time, never blocking.
+
+        display() runs on the shared display loop, so anything it waits on
+        freezes the whole rotation -- every plugin, not just this one. Both the
+        data refresh and the strip rebuild used to be written like this:
+
+            t = threading.Thread(target=work); t.start()
+            q.get(timeout=5)                    # <-- on the render thread
+
+        which is a blocking call wearing a thread as a disguise: the thread
+        bought nothing because the caller immediately waited on it, and it could
+        not have helped anyway (the work is requests and PIL, so it holds the
+        GIL for its Python parts). Measured on hardware that cost single frames
+        of 1.0s, 2.2s and 4.8s against a 10.00ms median -- the visible stutter
+        in the odds marquee -- with the queue timeouts (5s and 10s) as ceilings.
+
+        Now the work is started once and its result collected on a later frame.
+        Callers check whether what they needed appeared and draw the placeholder
+        if not. `min_interval` throttles restarts, so work that keeps failing is
+        retried on a timer instead of respawned every frame.
+        """
+        jobs = self.__dict__.setdefault("_background_jobs", {})
+        thread, result_queue, started = jobs.get(key, (None, None, 0.0))
+
+        if result_queue is not None:
+            try:
+                status, payload = result_queue.get_nowait()
+            except queue.Empty:
+                pass
+            else:
+                if status == "error":
+                    logger.error("Odds ticker %s failed: %s", key, payload)
+                jobs[key] = (None, None, started)
+                thread = None
+
+        if thread is not None and thread.is_alive():
+            return  # already in flight; do not pile up duplicates
+
+        now = time.time()
+        if now - started < min_interval:
+            return  # backing off after a recent attempt
+
+        result_queue = queue.Queue(maxsize=1)
+
+        def run():
+            try:
+                work()
+                result_queue.put(("success", None))
+            except Exception as exc:  # noqa: BLE001 - handed to the collector
+                result_queue.put(("error", exc))
+
+        thread = threading.Thread(target=run, name="odds-ticker-" + key,
+                                  daemon=True)
+        jobs[key] = (thread, result_queue, now)
+        logger.info("Odds ticker: running %s off the render thread", key)
+        thread.start()
+
     def _display_fallback_message(self):
         """Display a fallback message when no games data is available."""
         try:
             width = self.display_manager.matrix.width
             height = self.display_manager.matrix.height
             
-            logger.info(f"Displaying fallback message on {width}x{height} display")
+            logger.debug(f"Displaying fallback message on {width}x{height} display")
             
             # Create a simple fallback image with a brighter background
             image = Image.new('RGB', (width, height), color=(50, 50, 50))  # Dark gray instead of black
@@ -3080,7 +3100,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             text_x = (width - text_width) // 2
             text_y = (height - font.size) // 2
             
-            logger.info(f"Drawing fallback message: '{message}' at position ({text_x}, {text_y})")
+            logger.debug(f"Drawing fallback message: '{message}' at position ({text_x}, {text_y})")
             
             # Draw with bright white text and black outline
             self._draw_text_with_outline(draw, message, (text_x, text_y), font, fill=(255, 255, 255), outline_color=(0, 0, 0))
@@ -3090,7 +3110,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             self.display_manager.draw = _pixel_draw(self.display_manager.image)
             self.display_manager.update_display()
             
-            logger.info("Fallback message display completed")
+            logger.debug("Fallback message display completed")
             
         except Exception as e:
             logger.error(f"Error displaying fallback message: {e}", exc_info=True)
