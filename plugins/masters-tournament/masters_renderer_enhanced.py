@@ -114,6 +114,7 @@ class MastersRendererEnhanced(MastersRenderer):
 
         img = self._draw_gradient_bg(COLORS["masters_dark"], COLORS["masters_green"])
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Gold border
         draw.rectangle(
@@ -254,6 +255,7 @@ class MastersRendererEnhanced(MastersRenderer):
         img = self._draw_gradient_bg((10, 70, 25), COLORS["augusta_green"],
                                      width=cw, height=ch)
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         if ch >= self._HOLE_COMPACT_HEIGHT:
             return self._render_hole_card_with_image(
@@ -484,6 +486,7 @@ class MastersRendererEnhanced(MastersRenderer):
         """
         img = self._draw_gradient_bg(COLORS["bg"], COLORS["bg_dark_green"])
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         is_great = score_desc.lower() in ("eagle", "albatross", "hole in one")
         header_color = COLORS["gold"] if is_great else COLORS["masters_green"]
@@ -558,6 +561,7 @@ class MastersRendererEnhanced(MastersRenderer):
         """Render Augusta National overview - paginated across all 18 holes."""
         img = self._draw_gradient_bg(COLORS["masters_dark"], COLORS["masters_green"])
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         font = self.font_detail
 

@@ -1,7 +1,7 @@
 {
   "id": "web-ui-info",
   "name": "Web UI Info",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "LEDMatrix",
   "description": "Displays the web UI URL for easy access. Shows 'visit web ui at http://[deviceID]:5000'",
   "entry_point": "manager.py",
@@ -19,6 +19,12 @@
   "update_interval": 300,
   "default_duration": 10,
   "versions": [
+    {
+      "released": "2026-09-03",
+      "version": "1.1.1",
+      "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.1.0",
       "released": "2026-09-02",

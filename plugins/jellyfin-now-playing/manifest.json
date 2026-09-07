@@ -1,7 +1,7 @@
 {
   "id": "jellyfin-now-playing",
   "name": "Jellyfin Now Playing",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "ChuckBuilds",
   "description": "Shows what's playing on your Jellyfin server: poster art, title, and playback progress",
   "category": "media",
@@ -26,6 +26,12 @@
     "pillow"
   ],
   "versions": [
+    {
+      "released": "2026-09-03",
+      "version": "1.2.1",
+      "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-02",
       "version": "1.2.0",

@@ -1,7 +1,7 @@
 {
   "id": "calendar",
   "name": "Google Calendar",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "author": "ChuckBuilds",
   "description": "Display upcoming events from Google Calendar with date, time, and event details. Shows next 1-3 events with automatic rotation and timezone support.",
   "category": "productivity",
@@ -35,6 +35,12 @@
     }
   ],
   "versions": [
+    {
+      "released": "2026-09-03",
+      "version": "1.2.5",
+      "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "3.3.0"
+    },
     {
       "version": "1.2.4",
       "released": "2026-09-02",
@@ -71,7 +77,7 @@
       "released": "2026-07-28",
       "version": "1.1.6",
       "notes": "Fix Google Calendar auth failing with 'invalid_grant: Missing code verifier'. The web-UI flow runs as two separate processes, but the PKCE code_verifier generated while building the auth URL was never carried into the token-exchange step. It is now persisted between the two steps (and cleaned up afterward).",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-07-17",

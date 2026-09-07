@@ -260,6 +260,7 @@ class WebUIInfoPlugin(BasePlugin):
             # Create a new image for the display
             img = Image.new('RGB', (width, height), (0, 0, 0))
             draw = ImageDraw.Draw(img)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
             
             # Try to load a small font (resolved once, reused across display calls)
             font_small = getattr(self, '_font_small', None)

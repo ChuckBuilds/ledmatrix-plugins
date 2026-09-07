@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.6.6",
+  "version": "2.6.7",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -26,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-09-03",
+      "version": "2.6.7",
+      "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "2.6.6",
       "released": "2026-09-03",
@@ -54,7 +60,7 @@
       "released": "2026-07-21",
       "version": "2.6.2",
       "notes": "Radar default range widened slightly, from 50 to 75 miles (center to panel edge), for a more regional default view. Existing configs are unaffected: an explicit radar_range_miles is used as-is, and the deprecated radar_zoom still maps to its previous range.",
-      "ledmatrix_min": "2.0.0"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-07-21",

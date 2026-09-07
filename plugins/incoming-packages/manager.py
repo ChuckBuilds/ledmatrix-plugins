@@ -492,6 +492,7 @@ class IncomingPackagesPlugin(BasePlugin):
         _, small = self._tier_fonts()
         image = Image.new("RGB", (width, height))
         draw = ImageDraw.Draw(image)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         # Wrap to two lines, then hard-truncate each so an over-wide unbroken
         # word (a long token, URL, …) can never spill past the panel edge.
         lines = [self._truncate(ln, small, width - 2)
@@ -530,6 +531,7 @@ class IncomingPackagesPlugin(BasePlugin):
         big, small = self._tier_fonts()
         image = Image.new("RGB", (width, height))
         draw = ImageDraw.Draw(image)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         tall = height >= 46
 
         if card["type"] in ("usps_image", "carrier_image"):
@@ -693,6 +695,7 @@ class IncomingPackagesPlugin(BasePlugin):
         bg, fg, abbrev = CARRIER_STYLE.get(slug, CARRIER_STYLE["other"])
         img = Image.new("RGB", (size, size), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         radius = max(2, size // 6)
         draw.rounded_rectangle([0, 0, size - 1, size - 1], radius=radius, fill=bg)
         # Largest font whose abbrev fits; always fall back to the smallest so a

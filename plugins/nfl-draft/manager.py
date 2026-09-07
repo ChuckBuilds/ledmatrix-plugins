@@ -867,6 +867,7 @@ class NFLDraftPlugin(BasePlugin):
             w = bbox[2] - bbox[0]
         img = Image.new('RGB', (max(w, 1), self.display_height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         y = (self.display_height - self.player_name_font_size) // 2
         draw.text((0, y), text, font=self.player_name_font, fill=(255, 200, 0))
         return img
@@ -1026,6 +1027,7 @@ class NFLDraftPlugin(BasePlugin):
         # Create item image
         item_img = Image.new('RGB', (total_width, item_height), (0, 0, 0))
         draw = ImageDraw.Draw(item_img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         current_x = 0
 
@@ -1286,6 +1288,7 @@ class NFLDraftPlugin(BasePlugin):
         """Display a no data message."""
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         message = "No Draft Data"
         try:
@@ -1306,6 +1309,7 @@ class NFLDraftPlugin(BasePlugin):
         """Display an error message."""
         img = Image.new('RGB', (self.display_width, self.display_height), (50, 0, 0))
         draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         message = "Error"
         try:

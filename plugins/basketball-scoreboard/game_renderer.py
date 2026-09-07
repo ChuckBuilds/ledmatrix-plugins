@@ -483,6 +483,7 @@ class GameRenderer(SportsGameRendererMixin):
         main_img = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 255))
         overlay = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 0))
         draw_overlay = ImageDraw.Draw(overlay)
+        draw_overlay.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         
         # Get league for logo directory
         league = game.get('league', 'nba')
@@ -511,6 +512,7 @@ class GameRenderer(SportsGameRendererMixin):
         if not home_logo or not away_logo:
             # Draw placeholder text if logos fail
             draw = ImageDraw.Draw(main_img)
+            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
             self._draw_text_with_outline(
                 draw, 
                 f"{away_abbr or '?'}@{home_abbr or '?'}", 

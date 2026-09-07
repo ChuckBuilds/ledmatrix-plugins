@@ -186,6 +186,7 @@ def render_ticker_column(races: list, height: int) -> Image.Image:
 
     img = Image.new("RGB", (width, height), (0, 0, 0))
     draw = ImageDraw.Draw(img)
+    draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
     y = _TICKER_PAD
     for header, status, status_color, rows in prepared:
         draw.text((_TICKER_PAD, y), header, font=fnt, fill=_HEADER_YELLOW)
@@ -244,6 +245,7 @@ def render_called_card(race: Race, width: int, height: int) -> Image.Image:
     """
     img = Image.new("RGB", (width, height), (0, 0, 0))
     draw = ImageDraw.Draw(img)
+    draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
     small = font(6)
     use_big = height >= 48

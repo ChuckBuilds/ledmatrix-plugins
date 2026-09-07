@@ -533,6 +533,7 @@ class CalendarPlugin(BasePlugin):
         width, height = self._get_display_dimensions()
         self.display_manager.image = Image.new('RGB', (width, height), (0, 0, 0))
         self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
+        self.display_manager.draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         return width, height
 
     def _display_event(self, event: Dict):
@@ -578,6 +579,7 @@ class CalendarPlugin(BasePlugin):
             self._load_fonts()
 
         draw = ImageDraw.Draw(image)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Calculate dynamic layout based on height
         datetime_font_height = self._get_font_height(self.datetime_font)

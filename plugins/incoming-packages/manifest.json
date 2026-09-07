@@ -1,7 +1,7 @@
 {
   "id": "incoming-packages",
   "name": "Incoming Packages",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "ChuckBuilds",
   "description": "Rotating cards for packages headed your way - per carrier, with the count arriving today highlighted. Reads a normalized snapshot from a pluggable provider: the Home Assistant Mail and Packages integration (default), AfterShip, or a built-in demo. Email scanning stays inside Home Assistant; the plugin only stores an API URL + token.",
   "category": "productivity",
@@ -27,6 +27,12 @@
     "pillow"
   ],
   "versions": [
+    {
+      "released": "2026-09-03",
+      "version": "1.0.2",
+      "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-03",
       "version": "1.0.1",

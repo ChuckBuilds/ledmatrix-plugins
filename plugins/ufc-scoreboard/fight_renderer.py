@@ -280,6 +280,7 @@ class FightRenderer:
         main_img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         overlay = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Load headshots
         fighter1_img = self._load_headshot(
@@ -348,6 +349,7 @@ class FightRenderer:
         main_img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         overlay = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Load headshots
         fighter1_img = self._load_headshot(
@@ -411,6 +413,7 @@ class FightRenderer:
         main_img = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 255))
         overlay = Image.new("RGBA", (self.display_width, self.display_height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         # Load headshots
         fighter1_img = self._load_headshot(
