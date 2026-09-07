@@ -309,6 +309,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         self.current_game_index = 0
         self.ticker_image = None # This will hold the single, wide image
         self._ticker_array = None # numpy view of it, kept for cheap re-seeding
+        self._refresh_pending = False # a deferred refresh is already queued
+        self._refresh_requested_at = 0.0 # when, so a dropped one cannot wedge it
         self.last_display_time = 0
         self._end_reached_logged = False  # Track if we've already logged reaching the end
         self._insufficient_time_warning_logged = False  # Track if we've already logged insufficient time warning
@@ -2886,18 +2888,24 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         # This ensures live game scores/times are refreshed during scrolling
         current_time = time.time()
         current_interval = self._get_current_update_interval()
-        if current_time - self.last_update >= current_interval:
-            # Stamp the attempt now, not when the refresh lands. _perform_update
-            # reaches ESPN -- _fetch_league_games and _fetch_team_rankings both
-            # make blocking HTTP calls -- so display() hands it to defer_update
-            # rather than running it on the render thread. But last_update is
-            # only written *inside* _perform_update, so until the deferred call
-            # ran, the interval stayed elapsed and this branch queued another
-            # refresh on every single frame: at 100fps that is a flood of ESPN
-            # round trips, observed firing every 8ms. Stamping here makes the
-            # check mean "a refresh was requested at T", which is what the
-            # interval is actually for.
-            self.last_update = current_time
+        # Track the *request* separately from the fetch. last_update is written
+        # inside _perform_update, i.e. when the data actually lands, so testing
+        # it alone re-queued a refresh on every frame while the deferred call
+        # waited its turn -- 6,661 requests in 80 minutes, one per frame.
+        #
+        # Stamping last_update here instead would be worse than the flood: it
+        # is the same field _perform_update tests on entry, so the refresh this
+        # branch just scheduled would arrive and no-op. The request needs its
+        # own marker.
+        refresh_due = current_time - self.last_update >= current_interval
+        request_stale = (current_time - self._refresh_requested_at
+                         > max(current_interval, 300.0))
+        if refresh_due and (not self._refresh_pending or request_stale):
+            # request_stale is the escape hatch: core drops deferred work after
+            # a 300s TTL and evicts it when the queue is full, and a request
+            # that never ran must not wedge this branch shut for good.
+            self._refresh_pending = True
+            self._refresh_requested_at = current_time
             logger.info(f"Live game update interval reached ({current_interval}s), refreshing data...")
 
             # Defer whenever the core can: display() *is* the render thread, so
@@ -2905,14 +2913,13 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             # to be flagged as scrolling at this instant. Gating on
             # is_currently_scrolling() missed the first frame of a display
             # cycle -- exactly when the interval is most likely to have
-            # elapsed. preserve_scroll keeps the ticker from jumping back when
-            # the deferred update lands.
+            # elapsed.
             if hasattr(self.display_manager, 'defer_update'):
-                self.display_manager.defer_update(
-                    lambda: self._perform_update(preserve_scroll=True), priority=1)
+                self.display_manager.defer_update(self._deferred_refresh,
+                                                  priority=1)
             else:
                 # Core predates defer_update; nothing better available here.
-                self._perform_update(preserve_scroll=True)
+                self._deferred_refresh()
 
         # Reset display start time when force_clear is True or when starting fresh
         if force_clear or self._display_start_time is None:
@@ -3060,6 +3067,19 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         except Exception as e:
             logger.error(f"Error displaying odds ticker: {e}", exc_info=True)
             self._display_fallback_message()
+
+    def _deferred_refresh(self):
+        """The live-data refresh, as handed to display_manager.defer_update.
+
+        preserve_scroll keeps the ticker from jumping back when the update
+        lands mid-marquee. Clearing the pending flag in a finally is what lets
+        the next interval request one: without it a single failing refresh
+        would stop display() ever asking again.
+        """
+        try:
+            self._perform_update(preserve_scroll=True)
+        finally:
+            self._refresh_pending = False
 
     def _pump_background(self, key, work, min_interval=2.0):
         """Run `work` on a worker thread, one at a time, never blocking.

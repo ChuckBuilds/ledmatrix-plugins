@@ -104,7 +104,10 @@ def test_display_defers_through_the_display_manager():
     assert "defer_update" in body, (
         "display() no longer defers the refresh; update() does, and display() runs "
         "on the render thread, so it needs the deferral more, not less")
-    assert "preserve_scroll=True" in body, (
+    assert "_deferred_refresh" in body, (
+        "display() must schedule the refresh through _deferred_refresh, which "
+        "clears the pending flag once the work is done")
+    assert "preserve_scroll=True" in ast.unparse(FUNCS["_deferred_refresh"]), (
         "the deferred call must keep preserve_scroll, or the ticker jumps back "
         "when the update lands")
 
@@ -146,32 +149,47 @@ def test_the_background_pump_does_not_block():
         "respawned once per frame")
 
 
-def test_display_stamps_the_interval_before_deferring():
-    """The refresh request marks the clock, so it is not re-queued every frame."""
-    display = FUNCS["display"]
-    target = None
-    for node in ast.walk(display):
-        if (isinstance(node, ast.If)
-                and "self.last_update" in ast.unparse(node.test)
-                and "defer_update" in ast.unparse(node)):
-            target = node
-            break
-    assert target is not None, "the update-interval check was not found in display()"
+def test_display_does_not_requeue_the_refresh_every_frame():
+    """The request is throttled; last_update keeps meaning "the data landed".
 
-    stamps = [n.lineno for n in ast.walk(target)
+    display() tests self.last_update to decide a refresh is due, but that
+    field is written inside _perform_update -- when the fetch completes. The
+    work is deferred, so between requesting it and it landing the interval
+    stayed elapsed and display() queued another refresh every frame: 6,661 in
+    80 minutes on hardware.
+
+    Stamping last_update in display() would cure the flood and break the
+    refresh, because it is the same field _perform_update tests on entry --
+    the call display() just scheduled would arrive and no-op. Hence a
+    separate marker for the request.
+    """
+    display = FUNCS["display"]
+
+    stamps = [n.lineno for n in ast.walk(display)
               if isinstance(n, ast.Assign)
               and any(ast.unparse(t) == "self.last_update" for t in n.targets)]
-    defers = [n.lineno for n in ast.walk(target)
-              if isinstance(n, ast.Call) and "defer_update" in ast.unparse(n.func)]
+    assert not stamps, (
+        f"display() assigns self.last_update at line(s) {stamps} -- that is the "
+        "field _perform_update tests on entry, so the refresh display() just "
+        "scheduled would arrive and do nothing")
 
-    assert stamps, (
-        "display() requests a refresh without stamping self.last_update. The "
-        "work is deferred, and last_update is written only inside "
-        "_perform_update, so the interval stays elapsed until the deferred call "
-        "lands and display() queues another ESPN refresh on every frame.")
-    assert min(stamps) < min(defers), (
-        "self.last_update must be stamped before the refresh is deferred")
+    guards = [n for n in ast.walk(display)
+              if isinstance(n, ast.If) and "_deferred_refresh" in ast.unparse(n)]
+    assert guards, "display() no longer schedules the refresh at all"
+    assert any("_refresh_pending" in ast.unparse(n.test) for n in guards), (
+        "the refresh request is not throttled -- display() will queue another "
+        "one on every frame until the deferred call lands")
 
+
+def test_a_dropped_refresh_cannot_wedge_the_branch_shut():
+    """core drops deferred work on a TTL and evicts it when the queue is full."""
+    display = ast.unparse(FUNCS["display"])
+    assert "_refresh_requested_at" in display, (
+        "nothing ages out a pending request; if core drops the deferred call, "
+        "display() would never ask for another refresh")
+    assert "finally" in ast.unparse(FUNCS["_deferred_refresh"]), (
+        "the pending flag must clear even when the refresh raises, or one "
+        "failure stops display() asking again")
 
 def test_ticker_strip_is_published_only_once_it_is_finished():
     """The rebuild runs on a worker thread, so a half-built strip is visible.
