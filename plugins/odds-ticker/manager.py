@@ -3215,6 +3215,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         """Cleanup resources."""
         self.games_data = []
         self.ticker_image = None
+        self._ticker_array = None
         self.scroll_helper.clear_cache()
         self._end_reached_logged = False
         self._insufficient_time_warning_logged = False
