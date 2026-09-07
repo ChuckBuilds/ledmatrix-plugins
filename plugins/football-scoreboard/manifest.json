@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.5.2",
+  "version": "3.5.3",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.5.3",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Build the card date without %-m/%-d, glibc extensions that make strftime raise ValueError on Windows and musl (#414). Output is byte-identical on glibc."
+    },
     {
       "version": "3.5.2",
       "released": "2026-09-05",
@@ -699,7 +705,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

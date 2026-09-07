@@ -1,7 +1,7 @@
 {
   "id": "static-image",
   "name": "Static Image Display",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "author": "ChuckBuilds",
   "description": "Display static images on your LED matrix with automatic scaling, aspect ratio preservation, and transparency support. Perfect for logos, artwork, or custom graphics.",
   "entry_point": "manager.py",
@@ -18,6 +18,12 @@
     "static_image"
   ],
   "versions": [
+    {
+      "version": "1.1.0",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "rotation_mode 'date_based' is implemented. It was a stub returning the first image every time, with no log line, so it looked like broken rotation rather than an unimplemented feature (#372). It now picks by day-of-year -- a set of seven repeats weekly, a set of 365 walks the year, and a given date always shows the same image."
+    },
     {
       "version": "1.0.8",
       "released": "2026-09-05",
@@ -64,7 +70,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

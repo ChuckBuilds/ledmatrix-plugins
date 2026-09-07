@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.29.5",
+  "version": "1.29.6",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.29.6",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Bitmap fonts load at the size their PIXEL_SIZE header declares instead of failing and silently falling back to another face -- twelve of the thirteen offered sizes were affected (#387). Also drops the glibc-only %-m/%-d from the card date (#414) and the 'broadcast' value from the other_games_min_quality help text (#426)."
+    },
     {
       "version": "1.29.5",
       "released": "2026-09-05",
@@ -419,7 +425,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-07",
   "verified": true,
   "screenshot": "",
   "display_modes": [

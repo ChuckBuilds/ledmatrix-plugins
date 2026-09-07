@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.8.4",
+  "version": "1.9.0",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.9.0",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "dynamic_duration.min_duration_seconds is applied at last: get_dynamic_duration_floor() existed but nothing called it, so a short card list could hold the board for less than the configured minimum (#373). Bitmap fonts load at their own PIXEL_SIZE instead of silently falling back to another face (#387), the card date drops the glibc-only %-m/%-d that raises on Windows and musl (#414), and the other_games_min_quality help text no longer describes a 'broadcast' value the enum does not offer (#426)."
+    },
     {
       "released": "2026-09-07",
       "version": "1.8.4",
@@ -229,7 +235,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

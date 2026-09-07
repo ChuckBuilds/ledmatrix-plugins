@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.25.4",
+  "version": "1.25.5",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.25.5",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "The scroll and Vegas cards gated the shots line on a flat show_shots key at the league root, which config_schema.json declares at no path -- the web UI never wrote it and the line never drew there however show_shots_on_goal was set (#432). Both paths now walk the same ladder. Also drops the glibc-only %-m/%-d from the card date (#414) and the 'broadcast' value from the other_games_min_quality help text, which was retired (#426)."
+    },
     {
       "version": "1.25.4",
       "released": "2026-09-05",
@@ -459,7 +465,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

@@ -1,7 +1,7 @@
 {
   "id": "march-madness",
   "name": "March Madness",
-  "version": "1.1.2",
+  "version": "2.0.0",
   "description": "NCAA March Madness tournament bracket tracker with round branding, seeded matchups, live scores, and upset highlighting",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "2.0.0",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Remove display_options.show_bracket_progress, which was read into an attribute in __init__ and never referenced again -- nothing about bracket progress was ever drawn (#406). Also build the game card's date and time without %-m/%-d/%-I, glibc extensions that raise ValueError on Windows and musl (#414)."
+    },
     {
       "released": "2026-09-07",
       "version": "1.1.2",
@@ -81,7 +87,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-03",
+  "last_updated": "2026-09-07",
   "verified": true,
   "screenshot": "",
   "display_modes": [

@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.24.5",
+  "version": "2.25.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.25.0",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "leagues.<slug>.display_options is read at last: thirty settings across the ten league blocks rendered in the web UI, saved, and did nothing, while the plugin-level key alone reached the card -- the opposite precedence to every sibling scoreboard (#435). The league block now wins with the plugin-level key as its fallback; note the web UI writes a value into every league block, so after a save the per-league copy is the one in play. dynamic_duration.min_duration_seconds is applied as a floor (#373), background_service.max_workers reaches the service, bitmap fonts load at their own PIXEL_SIZE (#387), the card date drops the glibc-only %-m/%-d (#414), and the help text no longer describes a 'broadcast' value the enum does not offer (#426)."
+    },
     {
       "version": "2.24.5",
       "released": "2026-09-05",
@@ -489,7 +495,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

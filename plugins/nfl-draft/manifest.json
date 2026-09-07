@@ -1,7 +1,7 @@
 {
   "id": "nfl-draft",
   "name": "NFL Draft",
-  "version": "1.4.7",
+  "version": "2.0.0",
   "author": "ChuckBuilds",
   "description": "Displays projected NFL draft picks from ESPN with live draft tracking support during the annual NFL Draft event. Includes simulate_live mode to replay a completed draft using real ESPN core API data. Shows team logos, player names, positions, and pick numbers in a scrolling display.",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
   ],
   "icon": "fas fa-football-ball",
   "versions": [
+    {
+      "version": "2.0.0",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Remove the transition.* block: three settings in the schema and the web UI that neither this plugin nor the core reads, and the core implements no display transitions (#381). A config.json still carrying them fails validation until it is saved again, hence the major."
+    },
     {
       "version": "1.4.7",
       "released": "2026-09-07",
@@ -148,5 +154,5 @@
     "nfl_logos": "assets/sports/nfl_logos/"
   },
   "license": "GPL-3.0",
-  "last_updated": "2026-09-03"
+  "last_updated": "2026-09-07"
 }

@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.22.4",
+  "version": "1.23.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.23.0",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Four settings that were declared and unreachable now work. The scroll_settings block was dead: the scroll class read scroll_mode, and additionalProperties:false meant that name could not be written either, so all six settings were unreachable from both (#422) -- scroll_speed's default moves 1.0 -> 50.0 to match the core default the block had been shadowing, so an existing panel scrolls exactly as before. dynamic_duration.min_duration_seconds is applied as a floor rather than ignored (#373), and background_service.max_workers reaches the service instead of a hardcoded 1, with its default corrected to 1 so nothing changes by default. Bitmap fonts load at their own PIXEL_SIZE instead of silently falling back to another face (#387), and the card date is built without the glibc-only %-m/%-d (#414)."
+    },
     {
       "version": "1.22.4",
       "released": "2026-09-05",
@@ -351,7 +357,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,
