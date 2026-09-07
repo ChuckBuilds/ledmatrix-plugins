@@ -165,35 +165,6 @@
       "minimum": 16,
       "maximum": 64
     },
-    "transition": {
-      "type": "object",
-      "description": "Transition settings",
-      "properties": {
-        "type": {
-          "x-advanced": true,
-          "type": "string",
-          "enum": [
-            "redraw",
-            "fade",
-            "slide",
-            "wipe"
-          ],
-          "default": "redraw"
-        },
-        "speed": {
-          "x-advanced": true,
-          "type": "integer",
-          "description": "Transition speed (1-10)",
-          "default": 2,
-          "minimum": 1,
-          "maximum": 10
-        },
-        "enabled": {
-          "type": "boolean",
-          "default": true
-        }
-      }
-    },
     "dynamic_duration": {
       "type": "object",
       "description": "Dynamic duration settings for scroll completion",

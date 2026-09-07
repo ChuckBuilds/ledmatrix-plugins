@@ -102,7 +102,6 @@ truth. The keys below are the ones you'll typically set.
 | `show_seeds` | `true` | — | Show tournament seeds (1–16) next to team names. |
 | `show_round_logos` | `true` | — | Show round-logo separators between game groups. |
 | `highlight_upsets` | `true` | — | Draw an upset winner's name and score in gold. An upset is a bigger seed number beating a smaller one — an 11 seed past a 1 seed. |
-| `show_bracket_progress` | `true` | — | **Not implemented.** The value is read into the plugin and never used again; nothing on the panel changes. See [issue #406](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/406). |
 | `scroll_speed` | `1.0` | 0.5–5.0 | Scroll speed in pixels per frame. |
 | `scroll_delay` | `0.02` | 0.001–0.1 | Delay between scroll frames, in seconds (smaller = smoother, more CPU). |
 | `target_fps` | `120` | 30–200 | Target frames per second for the scroll. |

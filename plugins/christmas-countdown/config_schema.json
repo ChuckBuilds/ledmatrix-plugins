@@ -16,12 +16,6 @@
       "maximum": 300,
       "description": "How long to display the countdown in seconds"
     },
-    "high_performance_transitions": {
-      "type": "boolean",
-      "default": false,
-      "description": "Use high-performance transitions (120 FPS) instead of standard (30 FPS)",
-      "x-advanced": true
-    },
     "update_interval": {
       "type": "integer",
       "default": 3600,
@@ -29,41 +23,6 @@
       "maximum": 86400,
       "description": "How often to update the countdown in seconds (default: 1 hour, since countdown changes daily)",
       "x-advanced": true
-    },
-    "transition": {
-      "type": "object",
-      "description": "Transition configuration for this plugin",
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
-            "redraw",
-            "fade",
-            "slide",
-            "wipe",
-            "dissolve",
-            "pixelate"
-          ],
-          "default": "redraw",
-          "description": "Type of transition to use",
-          "x-advanced": true
-        },
-        "speed": {
-          "type": "integer",
-          "default": 2,
-          "minimum": 1,
-          "maximum": 10,
-          "description": "Transition speed (1=slow, 10=fast)",
-          "x-advanced": true
-        },
-        "enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable or disable transitions",
-          "x-advanced": true
-        }
-      },
-      "additionalProperties": false
     },
     "text_color": {
       "type": "array",

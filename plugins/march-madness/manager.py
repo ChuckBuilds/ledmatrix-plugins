@@ -102,7 +102,6 @@ class MarchMadnessPlugin(BasePlugin):
         self.show_seeds: bool = display_options.get("show_seeds", True)
         self.show_round_logos: bool = display_options.get("show_round_logos", True)
         self.highlight_upsets: bool = display_options.get("highlight_upsets", True)
-        self.show_bracket_progress: bool = display_options.get("show_bracket_progress", True)
         self.scroll_speed: float = display_options.get("scroll_speed", 1.0)
         self.scroll_delay: float = display_options.get("scroll_delay", 0.02)
         # Plugin-level target_fps wins; otherwise honor the global FPS target.

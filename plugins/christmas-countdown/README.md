@@ -84,24 +84,20 @@ further across a room.
 
 ### Settings that have no effect
 
-The remaining five appear in the web UI with descriptions, and **do nothing**.
-This is documented rather than quietly omitted, because a setting that silently
-ignores you is worse than one that is absent — and each of these is checked
-against the source, not guessed:
+One setting still appears in the web UI with a description, and **does nothing**.
+It is documented rather than quietly omitted, because a setting that silently
+ignores you is worse than one that is absent — and this is checked against the
+source, not guessed:
 
 | Option | Schema promises | Reality |
 |--------|-----------------|---------|
-| `transition.type` | One of `redraw`, `fade`, `slide`, `wipe`, `dissolve`, `pixelate` | The string `transition` does not appear anywhere in `manager.py`, and the core implements no display transitions |
-| `transition.speed` | "1=slow, 10=fast" | As above |
-| `transition.enabled` | "Enable or disable transitions" | As above |
-| `high_performance_transitions` | "120 FPS instead of 30 FPS" | `high_performance` does not appear in `manager.py` |
 | `tree_size` | "Size of the Christmas tree logo in pixels" | Read and *validated* — a value ≤ 0 is rejected with a warning — but never applied. The tree is always fitted to the left half minus a 2px margin |
 
-`tree_size` is the most misleading of the five, because rejecting a bad value
+`tree_size` is particularly misleading, because rejecting a bad value
 is fair evidence to anyone testing that the setting is live.
 
 Tracked in [#377](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/377).
-Leave all five alone; changing them costs nothing but will do nothing.
+Leave it alone; changing it costs nothing but will do nothing.
 
 ---
 
@@ -168,9 +164,6 @@ bundled image in place the tree comes from the PNG.
 **I changed the tree size and nothing happened.**
 `tree_size` is not applied — see
 [Settings that have no effect](#settings-that-have-no-effect).
-
-**I changed the transition and nothing happened.**
-None of the transition settings are implemented. Same section.
 
 ---
 

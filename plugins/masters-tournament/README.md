@@ -102,52 +102,12 @@ Enable/disable specific modes and configure their settings:
       "duration": 25
     },
     "player_cards": {
-      "enabled": true,
-      "show_headshots": true,
-      "duration_per_player": 15
+      "enabled": true
     },
     "course_tour": {
       "enabled": true,
-      "show_animations": true,
-      "duration_per_hole": 15,
-      "featured_holes": [12, 13, 16]
+      "show_divider": true
     }
-  }
-}
-```
-
-### Notifications
-
-Configure alerts and interruptions:
-
-```json
-{
-  "notifications": {
-    "practice_round_alerts": {
-      "enabled": true,
-      "interrupt_display": true,
-      "duration": 15
-    },
-    "favorite_player_alerts": {
-      "enabled": true,
-      "interrupt_display": true,
-      "duration": 10
-    }
-  }
-}
-```
-
-### Branding Options
-
-Customize Masters visual elements:
-
-```json
-{
-  "branding": {
-    "show_masters_logo": true,
-    "show_green_jacket": true,
-    "show_azaleas": true,
-    "color_scheme": "classic"
   }
 }
 ```
@@ -178,13 +138,8 @@ Each of the fourteen modes takes `enabled`; a few carry extra keys.
 | `display_modes.leaderboard.show_favorites_always` | `true` | Always include favorite players even if outside top N. |
 | `display_modes.leaderboard.duration` | `25` | Display duration for leaderboard (seconds) (5–120). |
 | `display_modes.player_cards.enabled` | `true` | Show individual player spotlight cards. |
-| `display_modes.player_cards.show_headshots` | `true` | Display player headshot photos. **Not implemented**. |
-| `display_modes.player_cards.duration_per_player` | `15` | Time to show each player card (seconds) (5–60). **Not implemented**. |
 | `display_modes.course_tour.enabled` | `true` | Show rotating hole maps with course imagery. |
-| `display_modes.course_tour.show_animations` | `true` | Enable transitions and animations. **Not implemented**. |
-| `display_modes.course_tour.duration_per_hole` | `15` | Time to show each hole (seconds) (5–60). **Not implemented**. |
 | `display_modes.course_tour.show_divider` | `true` | Show the vertical divider line between the hole info and map columns. Set to false for a cleaner single-cell look. |
-| `display_modes.course_tour.featured_holes` | `[12, 13, 16]` | Featured holes to highlight (Amen Corner, par 3s). **Not implemented**. |
 | `display_modes.hole_by_hole.enabled` | `true` | Show hole-by-hole scores for favorite players. |
 | `display_modes.hole_by_hole.duration` | `20` | Display duration (seconds) (5–120). |
 | `display_modes.live_action.enabled` | `true` | Show real-time birdie/eagle notifications. |
@@ -202,30 +157,6 @@ Each of the fourteen modes takes `enabled`; a few carry extra keys.
 | `display_modes.countdown.enabled` | `true` | Show countdown to next Masters Tournament. |
 | `display_modes.field_overview.enabled` | `true` | Show field breakdown (under/over/even par counts). |
 | `display_modes.course_overview.enabled` | `true` | Show Augusta National front nine / back nine overview. |
-
-### Settings that do nothing
-
-Neither of these blocks is read anywhere in the plugin or the core — no
-`config.get("notifications")`, no `config.get("branding")`. They are in the
-schema and the web UI, and changing them has no effect. Tracked in
-[issue #418](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/418),
-along with the five `display_modes` leaves marked above.
-
-| Key | Default |
-|---|---|
-| `notifications.practice_round_alerts.enabled` | `true` |
-| `notifications.practice_round_alerts.interrupt_display` | `true` |
-| `notifications.practice_round_alerts.duration` | `15` |
-| `notifications.favorite_player_alerts.enabled` | `true` |
-| `notifications.favorite_player_alerts.interrupt_display` | `true` |
-| `notifications.favorite_player_alerts.duration` | `10` |
-| `notifications.tournament_start_alert.enabled` | `true` |
-| `notifications.tournament_start_alert.interrupt_display` | `false` |
-| `branding.show_masters_logo` | `true` |
-| `branding.show_green_jacket` | `true` |
-| `branding.show_azaleas` | `true` |
-| `branding.color_scheme` | `"classic"` |
-
 
 ### What the modes look like
 
@@ -289,16 +220,10 @@ Monitor your favorite players during Masters week:
   "favorite_players": ["Scottie Scheffler", "Jon Rahm"],
   "display_modes": {
     "leaderboard": {"enabled": true, "duration": 30},
-    "player_cards": {"enabled": true, "duration_per_player": 20},
+    "player_cards": {"enabled": true},
     "live_action": {"enabled": true}
   },
-  "update_interval": 30,
-  "notifications": {
-    "favorite_player_alerts": {
-      "enabled": true,
-      "interrupt_display": true
-    }
-  }
+  "update_interval": 30
 }
 ```
 
@@ -311,7 +236,7 @@ Celebrate Masters history year-round:
   "enabled": true,
   "display_modes": {
     "past_champions": {"enabled": true, "duration": 25},
-    "course_tour": {"enabled": true, "duration_per_hole": 20},
+    "course_tour": {"enabled": true, "show_divider": true},
     "tournament_stats": {"enabled": true}
   },
   "update_interval": 3600
@@ -328,8 +253,7 @@ Focus on Augusta National's beauty:
   "display_modes": {
     "course_tour": {
       "enabled": true,
-      "featured_holes": [11, 12, 13, 16],
-      "duration_per_hole": 25
+      "show_divider": true
     },
     "amen_corner": {"enabled": true}
   }
@@ -498,5 +422,3 @@ This plugin is for personal, non-commercial use only. Masters Tournament, August
 - Mock data support
 - Vegas scroll mode
 - Year-round operation
-- Configurable notifications
-- Masters branding
