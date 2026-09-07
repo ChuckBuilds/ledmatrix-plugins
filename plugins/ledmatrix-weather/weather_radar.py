@@ -32,6 +32,16 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
 from weather_map_tiles import BasemapTileFetcher, MercatorViewport, TILE_SIZE
 
+# PIL picks its text layout engine at load time -- Raqm where the host
+# Pillow was built with libraqm, Basic otherwise -- and the two round
+# fractional glyph advances differently. 4x6-font.ttf at 6px has fractional
+# advances, so the same string landed on different pixels on different
+# machines and the committed goldens only ever matched their author's box.
+# Pin the engine so a render depends on the font file and size and nothing
+# else. See ChuckBuilds/ledmatrix-plugins#371, #375, #378, #391.
+_LAYOUT = ImageFont.Layout.BASIC
+
+
 logger = logging.getLogger(__name__)
 
 _MAPS_URL = "https://api.rainviewer.com/public/weather-maps.json"
@@ -581,7 +591,7 @@ class RadarFetcher:
         if self._font is None:
             for candidate in _font_candidates():
                 try:
-                    self._font = ImageFont.truetype(str(candidate), 6)
+                    self._font = ImageFont.truetype(str(candidate), 6, layout_engine=_LAYOUT)
                     break
                 except (OSError, ValueError):
                     continue

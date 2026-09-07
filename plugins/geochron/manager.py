@@ -18,6 +18,16 @@ import geochron_renderer as gr
 import solar
 import worldmap
 
+# PIL picks its text layout engine at load time -- Raqm where the host
+# Pillow was built with libraqm, Basic otherwise -- and the two round
+# fractional glyph advances differently. 4x6-font.ttf at 6px has fractional
+# advances, so the same string landed on different pixels on different
+# machines and the committed goldens only ever matched their author's box.
+# Pin the engine so a render depends on the font file and size and nothing
+# else. See ChuckBuilds/ledmatrix-plugins#371, #375, #378, #391.
+_LAYOUT = ImageFont.Layout.BASIC
+
+
 FONT_PATH = os.path.join(os.path.dirname(__file__), "assets", "fonts", "4x6-font.ttf")
 FONT_SIZE = 6
 
@@ -38,7 +48,7 @@ BASE_MAP_COLORS = ("ocean_color", "land_color", "coastline_color")
 
 def _load_font():
     try:
-        return ImageFont.truetype(FONT_PATH, FONT_SIZE)
+        return ImageFont.truetype(FONT_PATH, FONT_SIZE, layout_engine=_LAYOUT)
     except OSError:
         return ImageFont.load_default()
 
