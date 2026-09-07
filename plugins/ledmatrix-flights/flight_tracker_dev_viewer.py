@@ -53,7 +53,7 @@ class FlightTrackerDevViewer:
         self.display_height = 600
         
         # ADS-B data
-        self.skyaware_url = self.config.get('skyaware_url', 'http://192.168.86.30/skyaware/data/aircraft.json')
+        self.skyaware_url = self.config.get('skyaware_url', '')
         self.aircraft_data = {}
         self.last_update = 0
         self.update_interval = 30  # Update every 30 seconds instead of 5
@@ -120,7 +120,7 @@ class FlightTrackerDevViewer:
                 'center_longitude': -82.4572,
                 'map_radius_miles': 10,
                 'zoom_factor': 1.0,
-                'skyaware_url': 'http://192.168.86.30/skyaware/data/aircraft.json',
+                'skyaware_url': '',
                 'map_background': {
                     'tile_provider': 'osm',
                     'tile_size': 256,

@@ -152,7 +152,7 @@
           "type": "string",
           "enum": ["sequential", "random", "time_based", "date_based"],
           "default": "sequential",
-          "description": "How to rotate through images: sequential (in order), random, time_based (changes at intervals), or date_based (future)"
+          "description": "How to rotate through images: sequential (in order), random, time_based (changes at intervals), or date_based (one per day, chosen by day-of-year, so the same date always shows the same image)"
         }
       }
     },

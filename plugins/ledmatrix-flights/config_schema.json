@@ -69,8 +69,8 @@
     "skyaware_url": {
       "type": "string",
       "title": "SkyAware / dump1090 URL",
-      "description": "URL to your local ADS-B receiver's aircraft.json endpoint. Only used when data_source is 'skyaware'. Change this to match your receiver's IP address.",
-      "default": "http://192.168.86.30/skyaware/data/aircraft.json",
+      "description": "URL to your local ADS-B receiver's aircraft.json endpoint. Only used when data_source is 'skyaware'. There is no universal address, so this starts empty and the plugin says so until you set it. Typical values: http://localhost:8080/data/aircraft.json (dump1090-fa on this Pi), http://localhost/skyaware/data/aircraft.json (PiAware on this Pi), or http://<receiver-ip>/skyaware/data/aircraft.json.",
+      "default": "",
       "pattern": "^(https?://.*)?$"
     },
     "flight_records": {
