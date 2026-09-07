@@ -1,0 +1,31 @@
+{
+  "_comment": "Deterministic harness settings. The plugin shipped none, so self.stock_data stayed empty and every panel rendered blank: the crash and overflow checks ran against an empty frame and nothing about the ticker layout -- fonts, colours, the inline chart, symbol widths -- was ever exercised (#395). The cached quotes below cover a gain (AAPL, MSFT), a loss (NVDA) and a crypto entry (BTC), and the symbol lists are pinned to exactly those so no live fetch is attempted. display_mode is 'switch' because frame 0 of a scroll is legitimately blank -- the ticker starts off-panel -- so a single display() call in scroll mode draws nothing. The scroll variant is kept alongside it so the scroll path still has to survive the harness.",
+  "config": {
+    "enabled": true,
+    "stocks": {
+      "enabled": true,
+      "symbols": ["AAPL", "MSFT", "NVDA"]
+    },
+    "crypto": {
+      "enabled": true,
+      "symbols": ["BTC-USD"]
+    },
+    "display": {
+      "display_mode": "switch",
+      "toggle_chart": true
+    }
+  },
+  "mock_data": "test/fixtures/mock.json",
+  "freeze_time": "2026-09-02 16:00:00",
+  "variants": [
+    {
+      "name": "scroll",
+      "config": {
+        "display": {
+          "display_mode": "scroll",
+          "toggle_chart": true
+        }
+      }
+    }
+  ]
+}

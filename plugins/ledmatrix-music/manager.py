@@ -14,7 +14,7 @@ import json
 import os
 from io import BytesIO
 import requests
-from typing import Union, Dict, Any
+from typing import Union, Dict, Any, Optional
 from PIL import Image, ImageEnhance, ImageFont
 import queue
 
@@ -218,6 +218,30 @@ class MusicPlugin(BasePlugin):
             self.logger.error(f"Error loading music config: {e}. Music plugin disabled.")
             self.enabled = False
     
+    @staticmethod
+    def _read_bdf_native_size(bdf_path: str) -> Optional[int]:
+        """Read a BDF file's own header to find its one true pixel size.
+
+        Prefers PIXEL_SIZE, which states the real pixel height directly; falls
+        back to the SIZE line's point-size only if PIXEL_SIZE is absent, since
+        the two only agree at exactly 100dpi.
+        """
+        size_line_value = None
+        try:
+            with open(bdf_path, "r", encoding="ascii", errors="ignore") as f:
+                for line in f:
+                    if line.startswith("PIXEL_SIZE"):
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            return int(float(parts[1]))
+                    elif line.startswith("SIZE") and size_line_value is None:
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            size_line_value = int(float(parts[1]))
+        except (OSError, ValueError):
+            pass
+        return size_line_value
+
     def _load_custom_font_from_element_config(self, element_config: Dict[str, Any], default_size: int = 8) -> ImageFont.FreeTypeFont:
         """
         Load a custom font from an element configuration dictionary.
@@ -245,12 +269,33 @@ class MusicPlugin(BasePlugin):
                     self.logger.debug(f"Loaded font: {font_name} at size {font_size}")
                     return font
                 elif font_path.lower().endswith('.bdf'):
-                    # PIL's ImageFont.truetype() can sometimes handle BDF files
-                    # If it fails, we'll fall through to the default font
+                    # BDF fonts are fixed-size bitmaps, not scalable outlines --
+                    # FreeType only accepts the exact pixel size baked into the
+                    # file and raises "invalid pixel size" for anything else.
+                    # Try the requested size, then the file's own native size,
+                    # so picking a bitmap face in the UI gives you that face
+                    # rather than silently falling back to a different one.
                     try:
                         font = ImageFont.truetype(font_path, font_size)
                         self.logger.debug(f"Loaded BDF font: {font_name} at size {font_size}")
                         return font
+                    except OSError:
+                        native_size = self._read_bdf_native_size(font_path)
+                        if native_size and native_size != font_size:
+                            try:
+                                font = ImageFont.truetype(font_path, native_size)
+                                self.logger.debug(
+                                    f"Loaded BDF font: {font_name} at its native size {native_size} "
+                                    f"(requested {font_size} isn't a valid strike for this file)"
+                                )
+                                return font
+                            except Exception as retry_exc:
+                                self.logger.debug(
+                                    f"BDF font {font_name} also failed to load at native "
+                                    f"size {native_size}: {retry_exc}"
+                                )
+                        self.logger.warning(f"Could not load BDF font {font_name} with PIL, using default")
+                        # Fall through to default
                     except Exception:
                         self.logger.warning(f"Could not load BDF font {font_name} with PIL, using default")
                         # Fall through to default

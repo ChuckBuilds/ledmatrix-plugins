@@ -586,12 +586,35 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                     self.logger.debug(f"Loaded font: {font_name} at size {font_size}")
                     return font
                 elif font_path.lower().endswith('.bdf'):
-                    # PIL's ImageFont.truetype() can sometimes handle BDF files
-                    # If it fails, we'll fall through to the default font
+                    # BDF fonts are fixed-size bitmaps, not scalable outlines --
+                    # FreeType only accepts the exact pixel size baked into the
+                    # file (its "strike") and raises "invalid pixel size" for
+                    # anything else. Try the requested size first, then the
+                    # file's own native size, so picking a bitmap face in the
+                    # UI gives you that face rather than silently falling back
+                    # to a different one. Twelve of the thirteen offered sizes
+                    # used to fail this way. Same fix as baseball-scoreboard.
                     try:
                         font = ImageFont.truetype(font_path, font_size)
                         self.logger.debug(f"Loaded BDF font: {font_name} at size {font_size}")
                         return font
+                    except OSError:
+                        native_size = self._read_bdf_native_size(font_path)
+                        if native_size and native_size != font_size:
+                            try:
+                                font = ImageFont.truetype(font_path, native_size)
+                                self.logger.debug(
+                                    f"Loaded BDF font: {font_name} at its native size {native_size} "
+                                    f"(requested {font_size} isn't a valid strike for this file)"
+                                )
+                                return font
+                            except Exception as retry_exc:
+                                self.logger.debug(
+                                    f"BDF font {font_name} also failed to load at native "
+                                    f"size {native_size}: {retry_exc}"
+                                )
+                        self.logger.warning(f"Could not load BDF font {font_name} with PIL, using default")
+                        # Fall through to default
                     except Exception:
                         self.logger.warning(f"Could not load BDF font {font_name} with PIL, using default")
                         # Fall through to default
@@ -844,6 +867,33 @@ class SportsCore(SportsCoreSharedMixin, ABC):
     #: else on the card is sized from display_height -- the logos most of all
     #: -- so on a taller panel they grew and the score did not.
     _FONT_DESIGN_HEIGHT: ClassVar[int] = 32
+
+    @staticmethod
+    def _read_bdf_native_size(bdf_path: str) -> Optional[int]:
+        """Read a BDF file's own header to find its one true pixel size.
+
+        Prefers the PIXEL_SIZE property, which states the real pixel height
+        directly; falls back to the SIZE line's point-size only if PIXEL_SIZE
+        is absent, since point-size only equals pixel height at exactly 100dpi
+        -- several fonts here (e.g. 6x13.bdf, 5x8.bdf) are defined at 75dpi,
+        where the two values genuinely differ.
+        """
+        size_line_value = None
+        try:
+            with open(bdf_path, "r", encoding="ascii", errors="ignore") as f:
+                for line in f:
+                    if line.startswith("PIXEL_SIZE"):
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            return int(float(parts[1]))
+                    elif line.startswith("SIZE") and size_line_value is None:
+                        # Format: "SIZE <point_size> <xres> <yres>"
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            size_line_value = int(float(parts[1]))
+        except (OSError, ValueError):
+            pass
+        return size_line_value
 
     def _load_fonts(self):
         """Load fonts used by the scoreboard from config or use defaults."""
