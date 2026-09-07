@@ -251,6 +251,31 @@ class GeochronPlugin(BasePlugin):
         except Exception as e:
             self.logger.error("Error displaying geochron: %s", e, exc_info=True)
 
+    @staticmethod
+    def _pixel_text(draw):
+        """Draw text 1-bit for the duration of the block.
+
+        The sidebar is drawn straight onto the display manager's canvas with
+        this plugin's own font, so it does not inherit the core's 1-bit text
+        setting. Anti-aliased edges are wrong on an LED grid -- a half-lit
+        pixel is a dim pixel -- and their coverage is the one thing that still
+        differs between FreeType builds once the layout engine is pinned,
+        which is what kept this plugin's goldens machine-specific (#375).
+        """
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _mode():
+            previous = getattr(draw, "fontmode", None)
+            draw.fontmode = "1"
+            try:
+                yield
+            finally:
+                if previous is not None:
+                    draw.fontmode = previous
+
+        return _mode()
+
     def _draw_readout(self, draw, layout):
         now_utc = datetime.now(timezone.utc)
         local_dt = now_utc.astimezone(self.timezone) if self.timezone else None
@@ -280,10 +305,11 @@ class GeochronPlugin(BasePlugin):
 
         if readout["mode"] == "sidebar":
             x, y = readout["anchor"]
-            for text, color_key in readout["rows"]:
-                color = primary if color_key == "primary" else secondary
-                draw.text((x, y), text, fill=color, font=self.font)
-                y += readout["row_h"]
+            with self._pixel_text(draw):
+                for text, color_key in readout["rows"]:
+                    color = primary if color_key == "primary" else secondary
+                    draw.text((x, y), text, fill=color, font=self.font)
+                    y += readout["row_h"]
             return
 
         x, y = readout["anchor"]
@@ -292,10 +318,11 @@ class GeochronPlugin(BasePlugin):
         box_top = y - n * readout["row_h"]
         draw.rectangle([0, box_top, max_w + 2, layout["dh"] - 1], fill=(10, 10, 10))
         ty = box_top + 1
-        for text, color_key in readout["rows"]:
-            color = primary if color_key == "primary" else secondary
-            draw.text((x, ty), text, fill=color, font=self.font)
-            ty += readout["row_h"]
+        with self._pixel_text(draw):
+            for text, color_key in readout["rows"]:
+                color = primary if color_key == "primary" else secondary
+                draw.text((x, ty), text, fill=color, font=self.font)
+                ty += readout["row_h"]
 
     def on_config_change(self, new_config):
         old_colors = getattr(self, "colors", None)
