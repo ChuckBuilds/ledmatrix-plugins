@@ -196,7 +196,7 @@ def format_clock(dt, fmt="24h", show_seconds=True):
 
 
 def build_readout(layout, dt_utc, local_dt, subsolar_lat, subsolar_lon, featured_city,
-                   clock_format="24h", show_seconds=True, row_h=ROW_H):
+                   clock_format="24h", show_seconds=True, row_h=ROW_H, measure=None):
     """Build the text rows for the digital clock / info readout.
 
     Returns a dict:
@@ -207,20 +207,39 @@ def build_readout(layout, dt_utc, local_dt, subsolar_lat, subsolar_lon, featured
 
     featured_city, if given, is a dict with "name" and "local_dt" (already
     converted to that city's timezone by the caller).
+
+    measure, if given, is a callable returning the pixel width of a string in
+    the font the caller will draw with. It is used to decide whether the clock
+    still fits the sidebar; without it a 4px-per-character estimate is used,
+    matching the pixel font this layout is designed around.
     """
     L = layout
+    if measure is None:
+        def measure(text):
+            return len(text) * 4
 
     if L["mode"] == "wide_sidebar":
         # The sidebar is narrow (~32px), so labels like "UTC"/"LCL" and full
         # ISO dates don't fit a 4px-wide pixel font. Row order conveys
         # meaning instead: UTC time, date, local time (if configured),
         # subsolar coordinates, featured city.
+        # 12-hour format appends AM/PM, two characters the 24-hour string does
+        # not carry, and with seconds that pushed the clock past the sidebar and
+        # off the panel. Drop the seconds rather than the meridiem when the full
+        # string will not fit -- the same trade the featured-city row below
+        # already makes for the same reason.
+        clock_seconds = show_seconds
+        if clock_seconds:
+            usable = L["sidebar_w"] - 2
+            if measure(format_clock(dt_utc, clock_format, True)) > usable:
+                clock_seconds = False
+
         rows = [
-            (format_clock(dt_utc, clock_format, show_seconds), "primary"),
+            (format_clock(dt_utc, clock_format, clock_seconds), "primary"),
             (dt_utc.strftime("%m-%d"), "secondary"),
         ]
         if local_dt is not None:
-            rows.append((format_clock(local_dt, clock_format, show_seconds), "primary"))
+            rows.append((format_clock(local_dt, clock_format, clock_seconds), "primary"))
         rows.append((f"{subsolar_lat:+.0f},{subsolar_lon:+.0f}", "secondary"))
         if featured_city is not None and L["sidebar_w"] >= 50:
             name = featured_city["name"][:6]

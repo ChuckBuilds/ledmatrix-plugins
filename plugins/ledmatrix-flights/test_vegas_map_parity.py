@@ -46,6 +46,19 @@ class FakeLogger:
     def warning(self, *a, **k):
         pass
 
+    def error(self, *a, **k):
+        pass
+
+    def exception(self, *a, **k):
+        pass
+
+    # The plugin guards expensive debug formatting behind isEnabledFor, which
+    # every real logger has. Reporting False keeps that formatting out of the
+    # test, and stops the guard raising AttributeError on a stand-in that only
+    # implemented the three methods it happened to need at the time.
+    def isEnabledFor(self, level):
+        return False
+
 
 class FakeDisplayManager:
     def __init__(self, width=W, height=H):
@@ -261,8 +274,12 @@ def enable_map_background(plugin, tmp_path):
 
     calls = []
 
-    def fake_fetch(x, y, zoom):
-        calls.append((x, y, zoom))
+    # allow_network mirrors _fetch_tile's real signature -- manager.py calls it
+    # by keyword, and a three-argument stand-in raised TypeError on every path
+    # that reached it. Recorded alongside the coordinates so a test can assert
+    # the cache-only render never asks to open a socket.
+    def fake_fetch(x, y, zoom, allow_network=True):
+        calls.append((x, y, zoom, allow_network))
         # A gradient rather than a flat fill, so a wrongly-scaled crop shows up.
         tile = Image.new('RGB', (plugin.tile_size, plugin.tile_size))
         tile.putdata([

@@ -262,6 +262,7 @@ class GeochronPlugin(BasePlugin):
         readout = gr.build_readout(
             layout, now_utc, local_dt, self._subsolar_lat, self._subsolar_lon,
             featured_city, self.clock_format, self.show_seconds,
+            measure=lambda text: draw.textlength(text, font=self.font),
         )
 
         primary = self.colors["text_primary_color"]

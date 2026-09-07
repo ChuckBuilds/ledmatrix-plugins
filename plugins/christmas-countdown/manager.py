@@ -487,8 +487,12 @@ class ChristmasCountdownPlugin(BasePlugin):
             # Stack text on right side
             # Split message into words/lines for stacking
             if self.is_christmas or self.days_until_christmas == 0:
-                # "MERRY CHRISTMAS" - split into two lines
-                lines = ["MERRY", "CHRISTMAS"]
+                # "MERRY CHRISTMAS" - split into two lines. Honour the same
+                # use_xmas fit-check the countdown lines use: "CHRISTMAS" does
+                # not fit the right half of a 64px panel, and hardcoding it
+                # here ran the word 3px off the edge for the whole of Dec 25 --
+                # the one day this branch is ever reached.
+                lines = ["MERRY", "XMAS" if use_xmas else "CHRISTMAS"]
             else:
                 # Countdown message - split intelligently
                 if use_xmas:

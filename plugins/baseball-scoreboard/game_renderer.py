@@ -96,6 +96,20 @@ except AttributeError:
 _DERIVE_TOP_SPAN = object()
 
 
+
+def _bdf_pixel_size(path):
+    """The pixel size a .bdf font declares, or None if it does not."""
+    try:
+        with open(path, "r", encoding="latin-1") as handle:
+            for line in handle:
+                if line.startswith("PIXEL_SIZE"):
+                    return int(line.split()[1])
+                if line.startswith("CHARS"):
+                    break  # past the header; no point reading the glyphs
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
+
 class GameRenderer(SportsGameRendererMixin):
     """Renders individual baseball game cards as PIL Images."""
 
@@ -226,18 +240,25 @@ class GameRenderer(SportsGameRendererMixin):
                 if font_path.lower().endswith('.ttf') or font_path.lower().endswith('.otf'):
                     return ImageFont.truetype(font_path, font_size)
                 elif font_path.lower().endswith('.bdf'):
-                    # BDF fonts require pre-conversion: pilfont.py font.bdf -> font.pil + font.pbm
-                    pil_font_path = font_path.rsplit('.', 1)[0] + '.pil'
-                    if os.path.exists(pil_font_path):
-                        try:
-                            return ImageFont.load(pil_font_path)
-                        except Exception as e:
-                            self.logger.warning(f"Failed to load pre-converted BDF font {pil_font_path}: {e}")
-                    else:
+                    # FreeType reads BDF directly -- no pre-conversion needed.
+                    # This used to look for a .pil/.pbm pair produced by
+                    # pilfont.py, and no .pil ships anywhere, so every .bdf in
+                    # the picker warned and fell back to the default font.
+                    try:
+                        return ImageFont.truetype(font_path, font_size)
+                    except OSError:
+                        # A bitmap face exists at exactly the size it was drawn
+                        # at; FreeType rejects any other with "invalid pixel
+                        # size". Retry at the size the file declares.
+                        native = _bdf_pixel_size(font_path)
+                        if native is not None and native != font_size:
+                            try:
+                                return ImageFont.truetype(font_path, native)
+                            except OSError:
+                                pass
                         self.logger.warning(
-                            f"BDF font {font_name} requires conversion. "
-                            f"Run: pilfont.py {font_path}"
-                        )
+                            f"Could not load BDF font {font_name} at {font_size} "
+                            f"or its native size")
                 else:
                     self.logger.warning(f"Unknown font file type: {font_name}")
             else:

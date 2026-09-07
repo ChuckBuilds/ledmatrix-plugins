@@ -372,7 +372,16 @@ class StaticImagePlugin(BasePlugin):
         project_path = project_root / image_path
         if project_path.exists():
             return str(project_path)
-        
+
+        # Try relative to this plugin's own directory, so a bundled asset
+        # resolves whatever the plugins directory is called. Installs are not
+        # all under "plugins/" -- check_plugin.py takes --plugin-dir and a rig
+        # may use "plugin-repos/", in which case the project-root attempt above
+        # silently misses and the image reads as absent.
+        plugin_path = Path(__file__).resolve().parent / image_path
+        if plugin_path.exists():
+            return str(plugin_path)
+
         # Try as-is in case it's already resolved
         return image_path
     

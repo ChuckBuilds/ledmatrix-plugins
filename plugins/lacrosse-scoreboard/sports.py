@@ -122,6 +122,20 @@ def _clamp_seconds(value: Any, fallback: int, low: int = 5,
     return max(low, min(high, seconds))
 
 
+def _bdf_pixel_size(path):
+    """The pixel size a .bdf font declares, or None if it does not."""
+    try:
+        with open(path, "r", encoding="latin-1") as handle:
+            for line in handle:
+                if line.startswith("PIXEL_SIZE"):
+                    return int(line.split()[1])
+                if line.startswith("CHARS"):
+                    break  # past the header; no point reading the glyphs
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
+
+
 def _logo_needs_refresh(logo_file) -> bool:
     """True if this file is a placeholder stale enough to retry the real logo.
 
@@ -456,15 +470,32 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                     self.logger.debug(f"Loaded font: {font_name} at size {font_size}")
                     return font
                 elif font_path.lower().endswith('.bdf'):
-                    # BDF fonts are not supported by ImageFont.truetype()
-                    # To use BDF fonts, convert to PILfont format using pilfont.py:
-                    #   python -m PIL.pilfont font.bdf
-                    # This creates .pil and .pbm files that can be loaded with ImageFont.load()
-                    self.logger.warning(
-                        f"BDF font '{font_name}' not supported; convert to PILfont format "
-                        f"using 'python -m PIL.pilfont {font_path}' then use the .pil file. "
-                        "Falling back to default font."
-                    )
+                    # FreeType reads BDF, so truetype() handles a .bdf directly
+                    # -- the core's FontManager and several plugins already do
+                    # this. The old note here claimed otherwise and pointed at
+                    # pilfont.py, so every .bdf face in the picker warned and
+                    # fell back to the default font.
+                    try:
+                        font = ImageFont.truetype(font_path, font_size)
+                        self.logger.debug(f"Loaded BDF font: {font_name} at size {font_size}")
+                        return font
+                    except OSError:
+                        # A bitmap face exists at exactly the size it was drawn
+                        # at; FreeType rejects any other with "invalid pixel
+                        # size". Retry at the size the file declares.
+                        native = _bdf_pixel_size(font_path)
+                        if native is not None and native != font_size:
+                            try:
+                                font = ImageFont.truetype(font_path, native)
+                                self.logger.debug(
+                                    f"Loaded BDF font {font_name} at its native size {native} "
+                                    f"(requested {font_size})")
+                                return font
+                            except OSError:
+                                pass
+                        self.logger.warning(
+                            f"Could not load BDF font '{font_name}' at {font_size} "
+                            "or its native size; falling back to default font.")
                     # Fall through to default
                 else:
                     self.logger.warning(f"Unknown font file type: {font_name}, using default")

@@ -146,13 +146,66 @@ class CountdownRenderer:
             return self._draw_olympics_rings(width, height)
 
     def _calculate_days_until(self, target_date: datetime) -> int:
-        """Calculate days until target date."""
+        """Whole days from today to target_date, never negative.
+
+        A past target means the caller is working from a stale Games table.
+        Clamping here keeps "-210 DAYS UNTIL WINTER OLYMPICS" off the panel
+        whatever the data says; data/olympics_api.current_games() is what
+        actually picks the right Games.
+        """
         today = date.today()
         if isinstance(target_date, datetime):
             target = target_date.date()
         else:
             target = target_date
-        return (target - today).days
+        return max(0, (target - today).days)
+
+    # Progressively shorter stand-ins, tried in order when a line will not fit.
+    _SHORTER = {
+        "DAYS UNTIL": ["DAYS TO", "DAYS"],
+        "OLYMPICS": ["OLYMPIC", "GAMES"],
+        "CLOSING": ["CLOSE"],
+        "OPENING": ["OPEN"],
+        "WINTER": ["WNTR"],
+        "SUMMER": ["SMMR"],
+    }
+
+    def _measure(self, text: str) -> int:
+        """Width of text in the font draw_text will use, 0 if unmeasurable."""
+        try:
+            dm = self.display_manager
+            if hasattr(dm, "get_text_width"):
+                return int(dm.get_text_width(text))
+            if hasattr(dm, "draw") and hasattr(dm.draw, "textlength"):
+                return int(dm.draw.textlength(text, font=getattr(dm, "regular_font", None)))
+        except (AttributeError, TypeError, ValueError, OSError) as err:
+            # An unmeasurable font is not an error here -- 0 means "no idea",
+            # and _fit_lines only shortens text when it knows it must. Narrowed
+            # from a bare `except Exception: pass` so a real fault in the
+            # display manager surfaces instead of silently disabling fitting.
+            logger.debug("Could not measure %r: %s", text, err)
+        return 0
+
+    def _fit_lines(self, lines, available: int):
+        """Swap in shorter wording for any line too wide for `available`.
+
+        Unmeasurable fonts return 0 from _measure and leave the text alone, so
+        this can only shorten when it knows it has to.
+        """
+        if available <= 0:
+            return lines
+        out = []
+        for line in lines:
+            if self._measure(line) <= available:
+                out.append(line)
+                continue
+            replaced = line
+            for candidate in self._SHORTER.get(line, []):
+                replaced = candidate
+                if self._measure(candidate) <= available:
+                    break
+            out.append(replaced)
+        return out
 
     def render_countdown_card(self, target_date: datetime, _games_name: str,
                               games_type: str, is_closing: bool = False,
@@ -257,16 +310,34 @@ class CountdownRenderer:
         left_half_width = width // 2
         right_half_width = width - left_half_width
 
-        # Draw logo on left
-        logo_margin = 2
-        logo_width = left_half_width - (2 * logo_margin)
-        logo_height = height - (2 * logo_margin)
-        logo = self._get_logo_image(logo_width, logo_height)
+        # The wording is sized for a 256px panel; on anything narrower
+        # "DAYS UNTIL" and "OLYMPICS" ran off the right edge, clipped mid-word.
+        # Step down to shorter equivalents until every line fits the half we
+        # actually have. Measured in the font that will draw them, so this
+        # follows a font change rather than assuming a character width.
+        lines = self._fit_lines(lines, right_half_width - 4)
 
-        if logo.mode == 'RGBA':
-            self.display_manager.image.paste(logo, (logo_margin, logo_margin), logo)
-        else:
-            self.display_manager.image.paste(logo, (logo_margin, logo_margin))
+        # On a narrow panel the logo leaves too little for any wording -- at
+        # 64px wide the right half is 32px, roughly three characters. Give the
+        # text the whole panel instead of clipping it; a countdown nobody can
+        # read is worth less than the rings.
+        show_logo = all(
+            self._measure(line) <= right_half_width - 4 for line in lines
+        )
+        if not show_logo:
+            lines = self._fit_lines(lines, width - 4)
+
+        # Draw logo on left (skipped when the text needs the full width)
+        if show_logo:
+            logo_margin = 2
+            logo_width = left_half_width - (2 * logo_margin)
+            logo_height = height - (2 * logo_margin)
+            logo = self._get_logo_image(logo_width, logo_height)
+
+            if logo.mode == 'RGBA':
+                self.display_manager.image.paste(logo, (logo_margin, logo_margin), logo)
+            else:
+                self.display_manager.image.paste(logo, (logo_margin, logo_margin))
 
         # Draw text on right, centered
         line_height = height // len(lines)
@@ -274,7 +345,7 @@ class CountdownRenderer:
 
         for i, line in enumerate(lines):
             y = start_y + (i * line_height)
-            center_x = left_half_width + (right_half_width // 2)
+            center_x = (left_half_width + (right_half_width // 2)) if show_logo else (width // 2)
 
             # Use display_manager's draw_text for proper font handling
             self.display_manager.draw_text(

@@ -34,14 +34,47 @@ from .data_models import MedalCount, OlympicEvent, EventResult, OlympicsData
 
 logger = logging.getLogger(__name__)
 
-# Current Olympics configuration
-CURRENT_OLYMPICS = {
-    'name': 'Milano Cortina 2026',
-    'type': 'winter',
-    'opening': datetime(2026, 2, 6),
-    'closing': datetime(2026, 2, 22),
-    'base_url': 'https://www.olympics.com/en/milano-cortina-2026',
-}
+# Known Games, oldest first. current_games() walks this and returns the one in
+# progress, or the next one still to come.
+#
+# This used to be a single CURRENT_OLYMPICS dict pinned to Milano Cortina 2026.
+# Once those Games closed the countdown simply went negative -- the plugin
+# rendered "-210 DAYS UNTIL WINTER OLYMPICS" and would have kept counting
+# downwards for ever.
+#
+# Add each Games here as its dates are confirmed. When the table runs out the
+# plugin reports no Games rather than inventing a date, so the failure mode is a
+# skipped screen and a log line, not a wrong one.
+OLYMPIC_GAMES = [
+    {
+        'name': 'Milano Cortina 2026',
+        'type': 'winter',
+        'opening': datetime(2026, 2, 6),
+        'closing': datetime(2026, 2, 22),
+        'base_url': 'https://www.olympics.com/en/milano-cortina-2026',
+    },
+    {
+        'name': 'Los Angeles 2028',
+        'type': 'summer',
+        'opening': datetime(2028, 7, 14),
+        'closing': datetime(2028, 7, 30),
+        'base_url': 'https://www.olympics.com/en/los-angeles-2028',
+    },
+]
+
+
+def current_games(now: Optional[datetime] = None) -> Optional[Dict[str, Any]]:
+    """The Games in progress or the next still to come; None if none are known.
+
+    Returning None is deliberate: it lets the caller show nothing, which is
+    honest, instead of counting down to a date that has passed.
+    """
+    if now is None:
+        now = _utcnow()
+    for games in OLYMPIC_GAMES:
+        if now <= games['closing']:
+            return games
+    return None
 
 # Cache configuration (in seconds)
 CACHE_DURATION = {
@@ -286,7 +319,11 @@ class OlympicsDataFetcher:
         the key 'result_medals_data'. This is much more reliable than
         trying to parse the client-side rendered HTML.
         """
-        url = f"{CURRENT_OLYMPICS['base_url']}/medals"
+        games = current_games()
+        if games is None:
+            logger.info("No upcoming Olympics in OLYMPIC_GAMES; nothing to fetch")
+            return []
+        url = f"{games['base_url']}/medals"
         page_content = self._fetch_page(url)
 
         if not page_content:
@@ -594,7 +631,11 @@ class OlympicsDataFetcher:
         the key 'result_schedule_data'. Each day has its own key like
         'initialSchedule_2026-02-08'.
         """
-        url = f"{CURRENT_OLYMPICS['base_url']}/schedule"
+        games = current_games()
+        if games is None:
+            logger.info("No upcoming Olympics in OLYMPIC_GAMES; nothing to fetch")
+            return []
+        url = f"{games['base_url']}/schedule"
         page_content = self._fetch_page(url)
 
         if not page_content:
@@ -878,7 +919,11 @@ class OlympicsDataFetcher:
         The medals page contains individual medal winners which we can
         group by event to create result entries.
         """
-        url = f"{CURRENT_OLYMPICS['base_url']}/medals"
+        games = current_games()
+        if games is None:
+            logger.info("No upcoming Olympics in OLYMPIC_GAMES; nothing to fetch")
+            return []
+        url = f"{games['base_url']}/medals"
         page_content = self._fetch_page(url)
 
         if not page_content:
@@ -999,8 +1044,21 @@ class OlympicsDataFetcher:
             OlympicsData with all available information
         """
         now = _utcnow()
-        opening = CURRENT_OLYMPICS['opening']
-        closing = CURRENT_OLYMPICS['closing']
+        games = current_games(now)
+        if games is None:
+            # Past every Games we know about. Report an empty, inactive package
+            # so the plugin renders nothing rather than a negative countdown.
+            logger.warning(
+                "No Olympics on or after %s in OLYMPIC_GAMES -- add the next "
+                "Games to data/olympics_api.py", now.date())
+            return OlympicsData(
+                is_active=False, games_name="", games_type="",
+                opening_date=None, closing_date=None, medal_counts=[],
+                upcoming_events=[], live_events=[], recent_results=[],
+                last_updated=now,
+            )
+        opening = games['opening']
+        closing = games['closing']
 
         is_active = opening <= now <= closing
 
@@ -1015,8 +1073,8 @@ class OlympicsDataFetcher:
 
         return OlympicsData(
             is_active=is_active,
-            games_name=CURRENT_OLYMPICS['name'],
-            games_type=CURRENT_OLYMPICS['type'],
+            games_name=games['name'],
+            games_type=games['type'],
             opening_date=opening,
             closing_date=closing,
             medal_counts=medals,

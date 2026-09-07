@@ -231,29 +231,47 @@ class CalendarPlugin(BasePlugin):
             self.logger.info(f"Using default font for {font_name}")
             return ImageFont.load_default()
 
-        # Get file extension to determine loader type
-        _, ext = os.path.splitext(font_path.lower())
-
-        # Try BDF bitmap font loader
-        if ext == '.bdf':
-            try:
-                font = ImageFont.load(font_path)
-                self.logger.debug(f"Loaded BDF font for {font_name}: {font_path}")
-                return font
-            except Exception as e:
-                self.logger.warning(f"Failed to load BDF font for {font_name}: {e}")
-                self.logger.info(f"Using default font for {font_name}")
-                return ImageFont.load_default()
-
-        # Try TrueType font loader (for .ttf, .otf, and other formats)
+        # FreeType handles .ttf and (at its native size) .bdf faces, so one
+        # loader covers both. ImageFont.load() was used for .bdf, but that is
+        # Pillow's legacy PIL-bitmap reader: it wants a .pil metrics file plus a
+        # .pbm/.gif/.png glyph image and has never read BDF, so it failed with
+        # "cannot find glyph data file" and every .bdf in the picker silently
+        # fell back to the default font.
         try:
             font = ImageFont.truetype(font_path, font_size)
-            self.logger.debug(f"Loaded TrueType font for {font_name}: {font_path}")
+            self.logger.debug(f"Loaded font for {font_name}: {font_path}")
             return font
-        except Exception as e:
-            self.logger.warning(f"Failed to load TrueType font for {font_name}: {e}")
+        except OSError as e:
+            # A .bdf is a bitmap face and exists at exactly the one pixel size
+            # it was drawn at; FreeType rejects any other with "invalid pixel
+            # size". Retry at the size the file declares.
+            native = self._bdf_pixel_size(font_path)
+            if native is not None and native != font_size:
+                try:
+                    font = ImageFont.truetype(font_path, native)
+                    self.logger.debug(
+                        "Loaded bitmap font for %s at its native size %d (requested %d)",
+                        font_name, native, font_size)
+                    return font
+                except OSError:
+                    pass
+            self.logger.warning(f"Failed to load font for {font_name}: {e}")
             self.logger.info(f"Using default font for {font_name}")
             return ImageFont.load_default()
+
+    @staticmethod
+    def _bdf_pixel_size(path: str):
+        """The pixel size a .bdf font declares, or None if it does not."""
+        try:
+            with open(path, "r", encoding="latin-1") as handle:
+                for line in handle:
+                    if line.startswith("PIXEL_SIZE"):
+                        return int(line.split()[1])
+                    if line.startswith("CHARS"):
+                        break  # past the header; no point reading the glyphs
+        except (OSError, ValueError, IndexError):
+            return None
+        return None
 
     def _get_display_dimensions(self, width: Optional[int] = None, height: Optional[int] = None) -> tuple:
         """

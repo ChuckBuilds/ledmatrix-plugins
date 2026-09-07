@@ -23,7 +23,14 @@ class HelloWorldPlugin(BasePlugin):
     Displays a customizable greeting message with the current time.
     Demonstrates basic plugin functionality.
     """
-    
+
+    # (family, size_px) for each registered element. Kept in one place so the
+    # register_manager_font() call and the resolve_font() lookup cannot drift:
+    # resolve_font takes the family and size the element was registered with,
+    # and a mismatch there is silent.
+    MESSAGE_FONT = ("press_start", 10)
+    TIME_FONT = ("press_start", 8)
+
     def __init__(self, plugin_id, config, display_manager, cache_manager, plugin_manager):
         """Initialize the Hello World plugin."""
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
@@ -58,8 +65,8 @@ class HelloWorldPlugin(BasePlugin):
             font_manager.register_manager_font(
                 manager_id=self.plugin_id,
                 element_key=f"{self.plugin_id}.message",
-                family="press_start",
-                size_px=10,
+                family=self.MESSAGE_FONT[0],
+                size_px=self.MESSAGE_FONT[1],
                 color=self.color
             )
 
@@ -67,14 +74,37 @@ class HelloWorldPlugin(BasePlugin):
             font_manager.register_manager_font(
                 manager_id=self.plugin_id,
                 element_key=f"{self.plugin_id}.time",
-                family="press_start",
-                size_px=8,
+                family=self.TIME_FONT[0],
+                size_px=self.TIME_FONT[1],
                 color=self.time_color
             )
 
             self.logger.info("Hello World fonts registered")
         except Exception as e:
             self.logger.warning(f"Error registering fonts: {e}")
+
+    def _fitted_font(self, font_manager, element_key, spec, text, width):
+        """The registered face, stepped down until `text` fits `width`.
+
+        The registered sizes suit a 128px-wide panel. Asking for them
+        unconditionally overflowed 64x32, 64x64 and 96x48 -- which only became
+        visible once the font-manager branch started working at all, since the
+        bundled BDF it used to fall back to is smaller. Measure and shrink
+        rather than assume a panel size.
+        """
+        family, size = spec
+        usable = max(1, width - 2)
+        for size_px in range(size, 3, -1):
+            font = font_manager.resolve_font(element_key, family, size_px,
+                                             plugin_id=self.plugin_id)
+            if font is None:
+                return None
+            try:
+                if self.display_manager.get_text_width(text, font) <= usable:
+                    return font
+            except Exception:  # noqa: BLE001 - unmeasurable font, take it as-is
+                return font
+        return font
 
     def _load_font(self):
         """Load the 6x9 BDF font for text rendering."""
@@ -145,8 +175,19 @@ class HelloWorldPlugin(BasePlugin):
             try:
                 if hasattr(self.plugin_manager, 'font_manager'):
                     font_manager = self.plugin_manager.font_manager
-                    message_font = font_manager.get_font(f"{self.plugin_id}.message")
-                    time_font = font_manager.get_font(f"{self.plugin_id}.time")
+                    # resolve_font() is the accessor for a registered element --
+                    # it honours user overrides and takes the same (family,
+                    # size_px) the element was registered with. get_font() is
+                    # the lower-level family lookup and needs a family name plus
+                    # a size; calling it with an element key and no size raised
+                    # TypeError on every frame, so this whole branch was dead
+                    # and the bundled BDF was always used instead.
+                    message_font = self._fitted_font(
+                        font_manager, f"{self.plugin_id}.message",
+                        self.MESSAGE_FONT, self.message, width)
+                    time_font = self._fitted_font(
+                        font_manager, f"{self.plugin_id}.time",
+                        self.TIME_FONT, self.current_time_str or "00:00", width)
             except Exception as e:
                 self.logger.warning(f"Error getting fonts from font manager: {e}")
 
