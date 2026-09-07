@@ -284,10 +284,10 @@
         },
         "max_workers": {
           "type": "integer",
-          "default": 3,
+          "default": 1,
           "minimum": 1,
           "maximum": 10,
-          "description": "Maximum number of worker threads",
+          "description": "Worker threads for background fetching. The service is shared process-wide, so the first plugin to start decides for everyone; raise it only if fetches are queueing.",
           "x-advanced": true
         },
         "request_timeout": {

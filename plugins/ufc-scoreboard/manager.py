@@ -1020,7 +1020,14 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
             total_games = self._get_total_games_for_manager(manager)
             if total_games > 0:
                 game_duration = self._get_game_duration("ufc", mode_type, manager)
-                return total_games * game_duration
+                duration = total_games * game_duration
+                # get_dynamic_duration_floor() existed but nothing ever called
+                # it, so a short card list could hold the board for less than
+                # the minimum the user configured.
+                floor = self.get_dynamic_duration_floor()
+                if floor is not None:
+                    duration = max(duration, floor)
+                return duration
 
         return None
 

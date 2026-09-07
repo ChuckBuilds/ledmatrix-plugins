@@ -668,8 +668,7 @@ class GameRenderer(SportsGameRendererMixin):
 
         # Draw shots on goal (optional)
         league = game.get('league', 'ncaa_mens')
-        show_shots = self.config.get(league, {}).get('show_shots', False)
-        if show_shots:
+        if self._show_shots(league):
             shots_font = self.fonts['detail']
             home_shots = str(game.get("home_shots", "0"))
             away_shots = str(game.get("away_shots", "0"))
@@ -680,6 +679,23 @@ class GameRenderer(SportsGameRendererMixin):
             shots_width = draw.textlength(shots_text, font=shots_font)
             shots_x = (self.display_width - shots_width) // 2
             self._draw_text_with_outline(draw, shots_text, (shots_x, shots_y), shots_font)
+
+    def _show_shots(self, league: str) -> bool:
+        """Is the shots line wanted for this league?
+
+        Same split hockey-scoreboard carried: this read a flat ``show_shots``
+        at the league root, which the schema declares nowhere, so the web UI
+        never wrote it and the line never appeared on a scroll or Vegas card.
+        Walk the ladder manager.py resolves for the switch card instead.
+        """
+        league_config = self.config.get(league) or {}
+        display_options = league_config.get("display_options") or {}
+        if "show_shots" in display_options:
+            return bool(display_options["show_shots"])
+        if "show_shots" in league_config:
+            return bool(league_config["show_shots"])
+        defaults = self.config.get("defaults") or {}
+        return bool(defaults.get("show_shots", False))
 
     def _draw_recent_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw status elements for a recently completed game."""

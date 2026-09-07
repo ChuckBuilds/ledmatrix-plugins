@@ -338,6 +338,7 @@ the handful of `switch_*` keys called out below.
 | `mode_durations.upcoming_mode_duration` | `null` | **Advanced.** As above, for upcoming |
 | `dynamic_duration.enabled` | `false` | **Advanced.** Size a mode's duration from how many games it actually has |
 | `dynamic_duration.max_duration_seconds` | `null` | **Advanced.** Cap for the above |
+| `dynamic_duration.min_duration_seconds` | `30` | **Advanced.** Floor for the above. Wins over a smaller cap |
 | `dynamic_duration.modes.<mode>.enabled` | `false` | **Advanced.** Per-mode override of `dynamic_duration.enabled` |
 
 `non_favorite_live_game_duration` is the setting to reach for when four games
@@ -362,6 +363,7 @@ also driving a panel, and raising the polling rate rarely helps.
 | `schedule_lookback_days` | `14` | How far back the recent screen can see |
 | `schedule_lookahead_days` | `7` | How far ahead the upcoming screen can see |
 | `background_service.enabled` | `true` | Fetch in a background thread so the panel never stalls on the network |
+| `background_service.max_workers` | `1` | Worker threads for background fetching. The service is shared process-wide, so the first plugin to start decides for everyone |
 | `background_service.request_timeout` | `30` | Seconds before a fetch gives up |
 | `background_service.max_retries` | `3` | Retries per failed fetch |
 | `background_service.priority` | `2` | Queue priority against other plugins' fetches |
@@ -558,14 +560,6 @@ game on every update. **Set `show_odds: false`** to save those calls.
 **`show_ranking` does nothing for AFL.** The AFL publishes no poll, so the rank
 badge has nothing to draw. The setting exists because this plugin shares its
 rendering code with the college-sport scoreboards, where it does work.
-
-**`dynamic_duration.min_duration_seconds` is not applied.** The schema exposes it
-with a default of `30`, but only `max_duration_seconds` is read. Setting a
-minimum has no effect.
-
-**`background_service.max_workers` is not applied.** The schema exposes it with a
-default of `3`, but the plugin creates its background service with a single
-worker regardless.
 
 ---
 

@@ -119,7 +119,17 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.background_service = None
         if get_background_service:
             try:
-                self.background_service = get_background_service(cache_manager, max_workers=1)
+                # background_service.max_workers is a real setting; it used to
+                # be pinned at 1 here, so raising it in the web UI did nothing.
+                # The service is a process-wide singleton, so the first plugin
+                # to construct it decides for everyone -- which is why the
+                # schema default stays at 1 rather than the factory's 3.
+                self.background_service = get_background_service(
+                    cache_manager,
+                    max_workers=int(
+                        (self.config.get("background_service") or {}).get("max_workers", 1)
+                    ),
+                )
             except Exception as e:
                 self.logger.warning("Cricket background service init failed: %s", e)
 

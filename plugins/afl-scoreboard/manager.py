@@ -151,8 +151,16 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.background_service = None
         if get_background_service:
             try:
+                # background_service.max_workers is a real setting; it used to
+                # be pinned at 1 here, so raising it in the web UI did nothing.
+                # The service is a process-wide singleton, so the first plugin
+                # to construct it decides for everyone -- which is why the
+                # schema default stays at 1 rather than the factory's 3.
                 self.background_service = get_background_service(
-                    self.cache_manager, max_workers=1
+                    self.cache_manager,
+                    max_workers=int(
+                        (self.config.get("background_service") or {}).get("max_workers", 1)
+                    ),
                 )
                 self.logger.info("Background service initialized")
             except Exception as e:
@@ -1021,6 +1029,32 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
                     pass
         return None
 
+    def get_dynamic_duration_floor(self, mode_type: Optional[str] = None) -> Optional[float]:
+        """Dynamic duration floor for the given (or current) display context.
+
+        The schema has always declared ``dynamic_duration.min_duration_seconds``
+        beside its max, and only the max was ever read -- a mode could run
+        shorter than the minimum the user asked for, with nothing to show why.
+        Resolved on the same ladder as the cap.
+        """
+        if not self.is_enabled:
+            return None
+        if mode_type is None:
+            mode_type = self._current_display_mode_type
+        if not mode_type:
+            return None
+        dynamic = self.config.get("dynamic_duration", {})
+        mode_config = dynamic.get("modes", {}).get(mode_type, {})
+        for source in (mode_config, dynamic):
+            if "min_duration_seconds" in source:
+                try:
+                    floor = float(source.get("min_duration_seconds"))
+                    if floor > 0:
+                        return floor
+                except (TypeError, ValueError):
+                    pass
+        return None
+
     def _get_mode_duration(self, mode_type: str) -> Optional[float]:
         """Fixed total duration for a mode from config.mode_durations, if set."""
         mode_durations = self.config.get("mode_durations", {})
@@ -1053,6 +1087,11 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
                 cap = self.get_dynamic_duration_cap(mode_type)
                 if cap is not None:
                     effective_duration = min(effective_duration, cap)
+                # Floor last, so an explicit minimum wins over a smaller cap --
+                # the same precedence ledmatrix-leaderboard settles on.
+                floor = self.get_dynamic_duration_floor(mode_type)
+                if floor is not None:
+                    effective_duration = max(effective_duration, floor)
             return effective_duration
 
         manager = self._get_manager(mode_type)
@@ -1065,6 +1104,9 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
             cap = self.get_dynamic_duration_cap(mode_type)
             if cap is not None:
                 total_duration = min(total_duration, cap)
+            floor = self.get_dynamic_duration_floor(mode_type)
+            if floor is not None:
+                total_duration = max(total_duration, floor)
         return total_duration
 
     def _record_dynamic_progress(self, current_manager) -> None:

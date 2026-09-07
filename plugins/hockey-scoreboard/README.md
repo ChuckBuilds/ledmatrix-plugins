@@ -175,9 +175,7 @@ decide what fills the *remaining* slots.
 > **Both are effectively inert in hockey.** `ranked` needs a national poll and
 > the division filter needs ESPN's FBS/FCS group rosters, which are a college
 > *football* taxonomy — no lookup is even attempted here, so every game passes
-> both and neither costs a request. The schema's help text for
-> `other_games_min_quality` also mentions a `broadcast` option that the enum
-> does not offer; it was retired.
+> both and neither costs a request.
 
 ### Variety comes from turnover
 

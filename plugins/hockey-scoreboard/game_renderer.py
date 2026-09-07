@@ -650,8 +650,7 @@ class GameRenderer(SportsGameRendererMixin):
 
         # Draw shots on goal (optional)
         league = game.get('league', 'nhl')
-        show_shots = self.config.get(league, {}).get('show_shots', False)
-        if show_shots:
+        if self._show_shots_on_goal(league):
             shots_font = self.fonts['detail']
             home_shots = str(game.get("home_shots", "0"))
             away_shots = str(game.get("away_shots", "0"))
@@ -662,6 +661,25 @@ class GameRenderer(SportsGameRendererMixin):
             shots_width = draw.textlength(shots_text, font=shots_font)
             shots_x = (self.display_width - shots_width) // 2
             self._draw_text_with_outline(draw, shots_text, (shots_x, shots_y), shots_font)
+
+    def _show_shots_on_goal(self, league: str) -> bool:
+        """Is the shots line wanted for this league?
+
+        This used to read a flat ``show_shots`` key at the league root. No such
+        key is declared at any path in config_schema.json, so the web UI never
+        wrote it and the lookup always fell back to False -- the shots line
+        never appeared on a scroll or Vegas card however ``show_shots_on_goal``
+        was set. Walk the same ladder manager.py resolves for the switch card
+        instead, so both paths answer the same question the same way.
+        """
+        league_config = self.config.get(league) or {}
+        display_options = league_config.get("display_options") or {}
+        if "show_shots_on_goal" in display_options:
+            return bool(display_options["show_shots_on_goal"])
+        if "show_shots_on_goal" in league_config:
+            return bool(league_config["show_shots_on_goal"])
+        defaults = self.config.get("defaults") or {}
+        return bool(defaults.get("show_shots_on_goal", False))
 
     def _draw_recent_game_status(self, draw: ImageDraw.Draw, _game: Dict) -> None:
         """Draw status elements for a recently completed hockey game.

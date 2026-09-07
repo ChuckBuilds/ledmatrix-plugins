@@ -293,7 +293,7 @@ All **Advanced**; the defaults suit a Pi and rarely want changing.
 | Key | Type | Default |
 |---|---|---|
 | `background_service.enabled` | boolean | `true` |
-| `background_service.max_workers` | 1–10 | `3` |
+| `background_service.max_workers` | 1–10 | `1` |
 | `background_service.request_timeout` | 5–120 s | `30` |
 | `background_service.max_retries` | 1–10 | `3` |
 | `background_service.priority` | 1–5 | `2` |

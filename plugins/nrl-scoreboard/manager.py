@@ -134,8 +134,16 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.background_service = None
         if get_background_service:
             try:
+                # background_service.max_workers is a real setting; it used to
+                # be pinned at 1 here, so raising it in the web UI did nothing.
+                # The service is a process-wide singleton, so the first plugin
+                # to construct it decides for everyone -- which is why the
+                # schema default stays at 1 rather than the factory's 3.
                 self.background_service = get_background_service(
-                    self.cache_manager, max_workers=1
+                    self.cache_manager,
+                    max_workers=int(
+                        (self.config.get("background_service") or {}).get("max_workers", 1)
+                    ),
                 )
                 self.logger.info("Background service initialized")
             except Exception as e:
@@ -261,18 +269,18 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "favorite_teams": cfg.get("favorite_teams", []),
                 "exclude_teams": cfg.get("exclude_teams", []),
                 "display_modes": manager_display_modes,
-                "recent_games_to_show": limit("recent_games_to_show", 5),
+                "recent_games_to_show": limit("recent_games_to_show", 1),
                 # These ride the same source as the limits above, which is where the
                 # schema declares them. Managers read a translated config, not the
                 # plugin config, so a key missing here is a setting the user can
                 # change in the web UI that silently never reaches the code.
                 "other_upcoming_games_to_show": limit(
                     "other_upcoming_games_to_show",
-                    limit("upcoming_games_to_show", 10),
+                    limit("upcoming_games_to_show", 1),
                 ),
                 "other_recent_games_to_show": limit(
                     "other_recent_games_to_show",
-                    limit("recent_games_to_show", 5),
+                    limit("recent_games_to_show", 1),
                 ),
                 "other_rotation_interval_seconds": limit(
                     "other_rotation_interval_seconds", 1800
@@ -283,17 +291,21 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_games_divisions": list(
                     limit("other_games_divisions", ["fbs"])
                 ),
-                "upcoming_games_to_show": limit("upcoming_games_to_show", 10),
+                "upcoming_games_to_show": limit("upcoming_games_to_show", 1),
                 "show_records": display_options.get(
                     "show_records", cfg.get("show_records", False)
                 ),
                 "show_ranking": display_options.get(
                     "show_ranking", cfg.get("show_ranking", False)
                 ),
+                # Fallbacks mirror config_schema.json, which is the documented
+                # contract. They only fire for a hand-written or partial config
+                # -- and a fresh install before the UI has saved once -- which is
+                # exactly when disagreeing with the schema is least visible.
                 "show_odds": display_options.get(
-                    "show_odds", cfg.get("show_odds", False)
+                    "show_odds", cfg.get("show_odds", True)
                 ),
-                "update_interval_seconds": cfg.get("update_interval_seconds", 300),
+                "update_interval_seconds": cfg.get("update_interval_seconds", 3600),
                 "live_update_interval": cfg.get("live_update_interval", 30),
                 "recent_update_interval": cfg.get("recent_update_interval", 3600),
                 "upcoming_update_interval": cfg.get("upcoming_update_interval", 3600),
@@ -993,7 +1005,9 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "game_display_duration": self.game_display_duration,
                 "show_records": self.config.get("show_records", False),
                 "show_ranking": self.config.get("show_ranking", False),
-                "show_odds": self.config.get("show_odds", False),
+                # Schema default is true; reporting false here made get_info()
+                # disagree with what the manager was actually given.
+                "show_odds": self.config.get("show_odds", True),
             }
 
             if current_manager and hasattr(current_manager, "get_info"):
@@ -1076,6 +1090,31 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 pass
         return None
 
+    def get_dynamic_duration_floor(self) -> Optional[float]:
+        """The dynamic duration floor for the current context.
+
+        ``dynamic_duration.min_duration_seconds`` has always been in the schema
+        beside its max, and only the max was read -- a mode could run shorter
+        than the minimum asked for. Same ladder as the cap.
+        """
+        if not self.is_enabled:
+            return None
+        mode_type = self._current_display_mode_type
+        if not mode_type:
+            return None
+
+        dynamic = self.config.get("dynamic_duration", {})
+        mode_config = dynamic.get("modes", {}).get(mode_type, {})
+        for source in (mode_config, dynamic):
+            if "min_duration_seconds" in source:
+                try:
+                    floor = float(source.get("min_duration_seconds"))
+                    if floor > 0:
+                        return floor
+                except (TypeError, ValueError):
+                    pass
+        return None
+
     def _get_game_duration(self, mode_type: str, manager=None) -> float:
         if manager:
             manager_duration = getattr(manager, "game_display_duration", None)
@@ -1109,6 +1148,10 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 cap = self.get_dynamic_duration_cap()
                 if cap is not None:
                     effective_duration = min(effective_duration, cap)
+                # Floor last, so an explicit minimum wins over a smaller cap.
+                floor = self.get_dynamic_duration_floor()
+                if floor is not None:
+                    effective_duration = max(effective_duration, floor)
             return effective_duration
 
         manager = self._get_manager(mode_type)
@@ -1125,6 +1168,9 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
             cap = self.get_dynamic_duration_cap()
             if cap is not None:
                 total_duration = min(total_duration, cap)
+            floor = self.get_dynamic_duration_floor()
+            if floor is not None:
+                total_duration = max(total_duration, floor)
         return total_duration
 
     def _record_dynamic_progress(self, current_manager) -> None:
