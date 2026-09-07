@@ -390,8 +390,11 @@ class MarchMadnessPlugin(BasePlugin):
             else:
                 start_time_utc = dt.astimezone(pytz.UTC)
             local = start_time_utc.astimezone(pytz.timezone("US/Eastern"))
-            game_date = local.strftime("%-m/%-d")
-            game_time = local.strftime("%-I:%M%p").replace("AM", "am").replace("PM", "pm")
+            # %-m/%-d/%-I are glibc extensions: strftime raises ValueError on
+            # Windows and musl. Build the same text portably instead.
+            game_date = f"{local.month}/{local.day}"
+            game_time = (local.strftime("%I:%M%p").lstrip("0")
+                         .replace("AM", "am").replace("PM", "pm"))
         except (ValueError, AttributeError):
             pass
 

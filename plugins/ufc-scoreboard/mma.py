@@ -232,7 +232,9 @@ class MMA(SportsCore):
                     "use_short_date_format", False
                 )
                 if use_short_date_format:
-                    game_date = local_time.strftime("%-m/%-d")
+                    # %-m/%-d are glibc extensions: strftime raises ValueError on
+                    # Windows and musl. Build the same text portably instead.
+                    game_date = f"{local_time.month}/{local_time.day}"
                 else:
                     game_date = self.display_manager.format_date_with_ordinal(
                         local_time
