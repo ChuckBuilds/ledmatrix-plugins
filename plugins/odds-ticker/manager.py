@@ -3025,7 +3025,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             if hasattr(self.display_manager, 'set_scrolling_state'):
                 if self.loop or not self.scroll_helper.is_scroll_complete():
                     self.display_manager.set_scrolling_state(
-            True, frame_hold=self._scroll_frame_hold())
+                        True, frame_hold=self._scroll_frame_hold())
                 else:
                     self.display_manager.set_scrolling_state(False)
             

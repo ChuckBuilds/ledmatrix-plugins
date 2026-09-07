@@ -69,8 +69,12 @@ class _DisplayManager:
     def update_display(self):
         self.updated += 1
 
-    def set_scrolling_state(self, state):
-        pass
+    def set_scrolling_state(self, is_scrolling, frame_hold=1):
+        # frame_hold mirrors DisplayManager; display() passes it now, and a
+        # double that cannot take it raises TypeError mid-render, so no
+        # frame reaches the display and this file's real assertions fail
+        # for a reason that has nothing to do with cache invalidation.
+        self.frame_hold = frame_hold
 
 
 class _Ticker:
@@ -79,6 +83,10 @@ class _Ticker:
     # The methods under test, unmodified.
     display = OddsTickerPlugin.display
     _create_ticker_image = OddsTickerPlugin._create_ticker_image
+    # display() reads the resolved scroll pacing through this. Borrowed rather
+    # than stubbed so it stays honest: it returns 1 when _scroll_settings is
+    # absent, which is what this double wants anyway.
+    _scroll_frame_hold = OddsTickerPlugin._scroll_frame_hold
 
     def __init__(self):
         self.is_enabled = True
