@@ -2975,6 +2975,17 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             self.scroll_helper.cached_array = self._ticker_array
             self.scroll_helper.cached_image = self.ticker_image
 
+            # Throttled, because this is a per-frame code path: on a live rig
+            # core invalidates about once a minute, and an operator wanting to
+            # know that wants a heartbeat, not 100 lines a second.
+            self._reseeds = getattr(self, "_reseeds", 0) + 1
+            _now = time.time()
+            if _now - getattr(self, "_last_reseed_log", 0.0) > 60.0:
+                self._last_reseed_log = _now
+                logger.info("Scroll cache re-seeded from the strip already "
+                            "built (%d since start, no recomposite)",
+                            self._reseeds)
+
         if self.ticker_image is None or self.scroll_helper.cached_image is None:
             self._pump_background("image-rebuild", self._create_ticker_image,
                                   min_interval=2.0)
