@@ -308,6 +308,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         self.games_data = []
         self.current_game_index = 0
         self.ticker_image = None # This will hold the single, wide image
+        self._ticker_array = None # numpy view of it, kept for cheap re-seeding
         self.last_display_time = 0
         self._end_reached_logged = False  # Track if we've already logged reaching the end
         self._insufficient_time_warning_logged = False  # Track if we've already logged insufficient time warning
@@ -2372,6 +2373,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         if not self.games_data:
             logger.warning("No games data available, cannot create ticker image.")
             self.ticker_image = None
+            self._ticker_array = None
             self.scroll_helper.clear_cache()
             return
 
@@ -2382,6 +2384,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         if not game_images:
             logger.warning("Failed to create any game images.")
             self.ticker_image = None
+            self._ticker_array = None
             self.scroll_helper.clear_cache()
             return
 
@@ -2413,8 +2416,12 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         
         # Update ScrollHelper's cached image and array to include the white bars
         # This ensures the bars are visible when scrolling
+        strip_array = np.array(strip)
         self.scroll_helper.cached_image = strip
-        self.scroll_helper.cached_array = np.array(strip)
+        self.scroll_helper.cached_array = strip_array
+        # Kept so display() can re-seed the helper after core invalidates it
+        # without recompositing the strip. See the re-seed in display().
+        self._ticker_array = strip_array
         
         # Store reference for compatibility
         self.total_scroll_width = self.scroll_helper.total_scroll_width
@@ -2880,27 +2887,27 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         current_time = time.time()
         current_interval = self._get_current_update_interval()
         if current_time - self.last_update >= current_interval:
+            # Stamp the attempt now, not when the refresh lands. _perform_update
+            # reaches ESPN -- _fetch_league_games and _fetch_team_rankings both
+            # make blocking HTTP calls -- so display() hands it to defer_update
+            # rather than running it on the render thread. But last_update is
+            # only written *inside* _perform_update, so until the deferred call
+            # ran, the interval stayed elapsed and this branch queued another
+            # refresh on every single frame: at 100fps that is a flood of ESPN
+            # round trips, observed firing every 8ms. Stamping here makes the
+            # check mean "a refresh was requested at T", which is what the
+            # interval is actually for.
+            self.last_update = current_time
             logger.info(f"Live game update interval reached ({current_interval}s), refreshing data...")
-            # _perform_update reaches ESPN -- _fetch_league_games and, below it,
-            # _fetch_team_rankings both make blocking HTTP calls. display() runs
-            # on the render thread, so doing that inline stalls the marquee for
-            # the length of the round trip.
-            #
-            # update() already guards against exactly this: it checks
-            # is_currently_scrolling() and hands the work to defer_update()
-            # instead. Calling _perform_update() directly here defeated that --
-            # the refresh simply moved to the one thread it must not block.
-            # Same guard, same deferral; preserve_scroll is kept so the ticker
-            # does not jump back when the deferred update lands.
+
             # Defer whenever the core can: display() *is* the render thread, so
             # the round trip stalls the panel whether or not the marquee happens
-            # to be flagged as scrolling at this instant. The old condition also
-            # required is_currently_scrolling(), which is False on the first
-            # frame of a display cycle -- exactly when the interval is most
-            # likely to have elapsed. preserve_scroll keeps the ticker from
-            # jumping back when the deferred update lands.
+            # to be flagged as scrolling at this instant. Gating on
+            # is_currently_scrolling() missed the first frame of a display
+            # cycle -- exactly when the interval is most likely to have
+            # elapsed. preserve_scroll keeps the ticker from jumping back when
+            # the deferred update lands.
             if hasattr(self.display_manager, 'defer_update'):
-                logger.debug("Deferring the odds refresh off the render thread")
                 self.display_manager.defer_update(
                     lambda: self._perform_update(preserve_scroll=True), priority=1)
             else:
@@ -2950,13 +2957,33 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         # helper then returned None for the visible portion and the fallback
         # drew "No odds data" over perfectly good games -- once a minute on a
         # live rig, until the next hourly rebuild happened to land.
+        if self.scroll_helper.cached_image is None and self._ticker_array is not None:
+            # Core clears the helper's cache whenever this plugin reports an
+            # update (PluginAdapter.invalidate_plugin_scroll_cache), which is
+            # what stops last night's live game being redrawn. It cannot clear
+            # ticker_image -- that attribute is private to this plugin -- and
+            # _perform_update rebuilds ticker_image from the new data before the
+            # invalidation lands, so the strip in hand is already current.
+            # Re-seed the helper from it rather than recompositing: the array
+            # was kept when the strip was built, so this is two attribute writes
+            # instead of a full rebuild, and the marquee never stops.
+            #
+            # Array first, then image. get_visible_portion reads
+            # cached_image.width and cached_array separately, so a new image
+            # against an old array is short by the difference -- which reaches
+            # Image.frombytes as "not enough image data".
+            self.scroll_helper.cached_array = self._ticker_array
+            self.scroll_helper.cached_image = self.ticker_image
+
         if self.ticker_image is None or self.scroll_helper.cached_image is None:
             self._pump_background("image-rebuild", self._create_ticker_image,
                                   min_interval=2.0)
 
             if self.ticker_image is None or self.scroll_helper.cached_image is None:
-                # Rebuild still in flight. A placeholder for a few frames beats
-                # a frozen panel for seconds.
+                # No strip at all: cold start, or the last rebuild found no
+                # games. display() returns here every frame until the rebuild
+                # lands, which is also what keeps the render thread from reading
+                # the helper while the worker is publishing into it.
                 self._display_fallback_message()
                 return
 

@@ -87,6 +87,10 @@ class _Ticker:
     # than stubbed so it stays honest: it returns 1 when _scroll_settings is
     # absent, which is what this double wants anyway.
     _scroll_frame_hold = OddsTickerPlugin._scroll_frame_hold
+    # display() hands its slow work to this instead of waiting on a thread.
+    # Borrowed, not stubbed: the point of the empty-games case below is that
+    # the real pump starts the refresh and lets the frame finish.
+    _pump_background = OddsTickerPlugin._pump_background
 
     def __init__(self):
         self.is_enabled = True
@@ -102,6 +106,7 @@ class _Ticker:
         self._end_reached_logged = False
         self._insufficient_time_warning_logged = False
         self.fallbacks = 0
+        self.updates_requested = 0
         # No update is due: this is the window between the plugin's own
         # rebuilds, which is exactly when the bug bites.
         self.last_update = time.time()
@@ -118,6 +123,9 @@ class _Ticker:
 
     def _display_fallback_message(self):
         self.fallbacks += 1
+
+    def update(self):
+        self.updates_requested += 1
 
 
 def _invalidate_like_vegas(ticker):
@@ -165,6 +173,19 @@ def main():
         ticker.display()
     check("three more invalidate/display cycles drew no fallback",
           ticker.fallbacks == 0)
+
+    print()
+    print("the re-seed reuses the strip in hand, it does not recomposite")
+    reseed = _Ticker()
+    reseed._create_ticker_image()
+    built = reseed.ticker_image
+    rebuilds = []
+    reseed._create_ticker_image = lambda *a, **k: rebuilds.append(1)
+    _invalidate_like_vegas(reseed)
+    reseed.display()
+    check("no recomposite was triggered (%d were)" % len(rebuilds), not rebuilds)
+    check("the helper points at the very strip that was already built",
+          reseed.scroll_helper.cached_image is built)
 
     print("\nan empty games list still reports honestly")
     empty = _Ticker()
