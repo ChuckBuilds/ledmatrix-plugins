@@ -44,7 +44,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import subprocess  # nosec B404 - runs repo-local test files, never a shell
+import subprocess
 import sys
 from pathlib import Path
 
@@ -80,11 +80,12 @@ def run_pytest_module(script: Path, core: Path | None, timeout: int) -> tuple[in
         env["PYTHONPATH"] = f"{core}{os.pathsep}{env.get('PYTHONPATH', '')}"
         env["LEDMATRIX_CORE"] = str(core)
     try:
-        # nosec B603 - fixed interpreter (sys.executable) running pytest on a
-        # test file this script discovered in the repo; argument list, no
-        # shell, so nothing is word-split or expanded.
-        proc = subprocess.run(  # nosec B603
-            [sys.executable, "-m", "pytest", script.name, "-q", "--no-header",
+        # Fixed interpreter (sys.executable) running pytest on a test file this
+        # script discovered in the repo; argument list, no shell, so nothing is
+        # word-split or expanded. Same suppression pair the rest of the repo
+        # uses for this shape (see scripts/render_docs_assets.py).
+        proc = subprocess.run(  # nosec B603 - no shell invoked (list-form argv)  # nosemgrep
+            [sys.executable, "-m", "pytest", script.name, "-q", "--no-header",  # nosemgrep
              "--tb=line", "-p", "no:cacheprovider"],
             cwd=script.parent, env=env, capture_output=True,
             text=True, timeout=timeout, stdin=subprocess.DEVNULL,
@@ -124,10 +125,10 @@ def run_one(script: Path, core: Path | None, timeout: int) -> tuple[int, str]:
         # LEDMATRIX_CORE is that contract, and it is absolute.
         env["LEDMATRIX_CORE"] = str(core)
     try:
-        # nosec B603 - same contract as run_pytest_module above: fixed
-        # interpreter, argument list, no shell.
-        proc = subprocess.run(  # nosec B603
-            [sys.executable, script.name],
+        # Same contract as run_pytest_module above: fixed interpreter,
+        # argument list, no shell.
+        proc = subprocess.run(  # nosec B603 - no shell invoked (list-form argv)  # nosemgrep
+            [sys.executable, script.name],  # nosemgrep
             cwd=script.parent, env=env, capture_output=True,
             text=True, timeout=timeout, stdin=subprocess.DEVNULL,
         )
