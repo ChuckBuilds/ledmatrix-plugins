@@ -91,6 +91,7 @@ class _Ticker:
     # Borrowed, not stubbed: the point of the empty-games case below is that
     # the real pump starts the refresh and lets the frame finish.
     _pump_background = OddsTickerPlugin._pump_background
+    _deferred_refresh = OddsTickerPlugin._deferred_refresh
 
     def __init__(self):
         self.is_enabled = True
@@ -99,6 +100,12 @@ class _Ticker:
         self.scroll_helper = ScrollHelper(WIDTH, HEIGHT)
         self.games_data = [{"id": "g1"}, {"id": "g2"}]
         self.ticker_image = None
+        # display() reads these every frame: the numpy view kept for re-seeding
+        # the helper, and the markers that stop a deferred refresh being
+        # re-requested once per frame.
+        self._ticker_array = None
+        self._refresh_pending = False
+        self._refresh_requested_at = 0.0
         self.dynamic_duration = 30
         self.current_game_index = 0
         self.total_scroll_width = 0
