@@ -1,7 +1,7 @@
 {
   "id": "march-madness",
   "name": "March Madness",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "NCAA March Madness tournament bracket tracker with round branding, seeded matchups, live scores, and upset highlighting",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "released": "2026-09-07",
+      "version": "1.1.2",
+      "changelog": "Resolve scroll speed through the shared resolver and apply the frame hold it reports, so slow speeds move whole pixels",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-03",
       "version": "1.1.1",

@@ -30,7 +30,7 @@ class FakeDisplayManager:
         self.height = height
         self.image = Image.new("RGB", (width, height))
 
-    def set_scrolling_state(self, _state):
+    def set_scrolling_state(self, _state, frame_hold=1):
         pass
 
     def process_deferred_updates(self):

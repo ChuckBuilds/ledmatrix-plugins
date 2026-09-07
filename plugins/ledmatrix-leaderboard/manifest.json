@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.3.5",
+  "version": "1.3.7",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -32,10 +32,16 @@
   "min_ledmatrix_version": "2.0.0",
   "versions": [
     {
-      "version": "1.3.5",
-      "released": "2026-09-05",
+      "version": "1.3.7",
+      "released": "2026-09-07",
       "ledmatrix_min_version": "2.0.0",
       "notes": "Validation-sweep fixes; see the PR for the specific defect."
+    },
+    {
+      "released": "2026-09-07",
+      "version": "1.3.6",
+      "changelog": "Resolve scroll speed through the shared resolver and apply the frame hold it reports, so slow speeds move whole pixels",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "released": "2026-09-03",

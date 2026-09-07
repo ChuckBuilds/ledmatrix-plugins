@@ -245,7 +245,7 @@ class FakeDisplay:
     def update_display(self):
         pass
 
-    def set_scrolling_state(self, *_a):
+    def set_scrolling_state(self, *_a, **_kw):
         pass
 
 
