@@ -1,7 +1,7 @@
 {
   "id": "of-the-day",
   "name": "Of The Day Display",
-  "version": "1.4.4",
+  "version": "1.4.3",
   "author": "ChuckBuilds",
   "description": "Display daily featured content like Word of the Day, Bible verses, or custom daily items. Supports multiple categories with rotating display and configurable data sources.",
   "category": "information",
@@ -21,12 +21,6 @@
     "of_the_day"
   ],
   "versions": [
-    {
-      "version": "1.4.4",
-      "released": "2026-09-07",
-      "ledmatrix_min_version": "2.0.0",
-      "notes": "Pin PIL's text layout engine so the body line renders the same on every machine. The engine is chosen at load time from whether the host Pillow has libraqm, and the two round fractional glyph advances differently -- which is why the PressStart2P title was pixel-identical while the 4x6 body was not (#371). Goldens regenerated against a core doing the same."
-    },
     {
       "released": "2026-09-03",
       "version": "1.4.3",
@@ -85,7 +79,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-07",
+  "last_updated": "2026-09-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

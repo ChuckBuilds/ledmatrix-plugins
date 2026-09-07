@@ -1028,15 +1028,9 @@ class WeatherPlugin(BasePlugin):
         draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
         from PIL import ImageFont
-
-        # PIL picks its text layout engine at load time -- Raqm where the host
-        # Pillow was built with libraqm, Basic otherwise -- and the two round
-        # fractional glyph advances differently. Pin it so the almanac renders
-        # the same on every machine. See ChuckBuilds/ledmatrix-plugins#391.
         try:
             font_path = self.project_root / 'assets' / 'fonts' / '4x6-font.ttf'
-            font = ImageFont.truetype(str(font_path), 8,
-                                      layout_engine=ImageFont.Layout.BASIC)
+            font = ImageFont.truetype(str(font_path), 8)
         except Exception:
             font = ImageFont.load_default()
 

@@ -24,16 +24,6 @@ from PIL import Image, ImageDraw, ImageFont
 
 from src.plugin_system.base_plugin import BasePlugin
 
-# PIL picks its text layout engine at load time -- Raqm where the host
-# Pillow was built with libraqm, Basic otherwise -- and the two round
-# fractional glyph advances differently. 4x6-font.ttf at 6px has fractional
-# advances, so the same string landed on different pixels on different
-# machines and the committed goldens only ever matched their author's box.
-# Pin the engine so a render depends on the font file and size and nothing
-# else. See ChuckBuilds/ledmatrix-plugins#371, #375, #378, #391.
-_LAYOUT = ImageFont.Layout.BASIC
-
-
 # Shared element-style resolver (newer cores): user-customizable per-element
 # fonts/sizes/colors/offsets, declared once in config_schema.json via
 # x-style-elements. Older cores don't expand the declaration (no
@@ -177,12 +167,12 @@ class OfTheDayPlugin(BasePlugin):
         fonts = getattr(self, '_classic_fonts', None)
         if fonts is None:
             try:
-                title_font = ImageFont.truetype('assets/fonts/PressStart2P-Regular.ttf', 8, layout_engine=_LAYOUT)
+                title_font = ImageFont.truetype('assets/fonts/PressStart2P-Regular.ttf', 8)
             except Exception as e:
                 self.logger.warning(f"Failed to load PressStart2P font: {e}, using fallback")
                 title_font = self.display_manager.small_font if hasattr(self.display_manager, 'small_font') else ImageFont.load_default()
             try:
-                body_font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 6, layout_engine=_LAYOUT)
+                body_font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 6)
             except Exception as e:
                 self.logger.warning(f"Failed to load 4x6 font: {e}, using fallback")
                 body_font = self.display_manager.extra_small_font if hasattr(self.display_manager, 'extra_small_font') else ImageFont.load_default()
@@ -446,7 +436,7 @@ class OfTheDayPlugin(BasePlugin):
         key = (path, size)
         if key not in cache:
             try:
-                cache[key] = ImageFont.truetype(path, size, layout_engine=_LAYOUT)
+                cache[key] = ImageFont.truetype(path, size)
             except Exception as e:
                 self.logger.warning(f"Could not load font {path} at {size}px: {e}")
                 cache[key] = None
@@ -813,7 +803,7 @@ class OfTheDayPlugin(BasePlugin):
         draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         
         try:
-            font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8, layout_engine=_LAYOUT)
+            font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)
         except Exception:
             font = ImageFont.load_default()
         
@@ -831,7 +821,7 @@ class OfTheDayPlugin(BasePlugin):
         draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         
         try:
-            font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8, layout_engine=_LAYOUT)
+            font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)
         except Exception:
             font = ImageFont.load_default()
         
