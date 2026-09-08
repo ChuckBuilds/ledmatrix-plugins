@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.13.0",
+  "version": "1.13.1",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -37,6 +37,12 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "version": "1.13.1",
+      "released": "2026-09-08",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the web UI's own control reporting the plugin as degraded. rotation_views, the list of views to rotate through, renders as a checkbox group, and that widget is saved with a hidden companion field, so using the control writes rotation_views_data beside rotation_views. The plugin never reads the key, but the root object that declares the setting set additionalProperties: false, so the core's schema check flagged it and the web UI showed \"Degraded: Config schema: Field root: Additional properties are not allowed ('rotation_views_data' was unexpected)\" on a config the UI itself had just written. The key is now permitted -- unconstrained, since the widget has submitted it both as an array and as a JSON string -- while unknown keys are still rejected, so a typo in a hand-edited config is still caught. Same fix as odds-ticker 1.4.5. Affects only the schema; nothing about what the plugin fetches or draws changes."
+    },
     {
       "version": "1.13.0",
       "released": "2026-09-07",

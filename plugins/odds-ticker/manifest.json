@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,13 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.4.5",
+      "released": "2026-09-08",
+      "notes": "Stop the web UI's own team picker reporting the ticker as degraded. The four leagues that render as checkbox groups -- NFL, NBA, MLB, NHL -- are saved with a hidden companion field, so picking teams in the UI writes favorite_teams_data beside favorite_teams. The plugin never reads it, but every league object here set additionalProperties: false, so the core's schema check flagged all four and the web UI showed \"Degraded: Config schema: Field 'leagues.nfl': Additional properties are not allowed ('favorite_teams_data' was unexpected)\" and three more like it, on a config the UI itself had just written. The key is now permitted on every league -- unconstrained, since the widget has submitted it both as an array and as a JSON string -- while unknown keys are still rejected, so a typo in a hand-edited config is still caught. Affects only the schema; nothing about what the ticker fetches or draws changes.",
+      "ledmatrix_min_version": "2.0.0",
+      "changelog": "Permit the favorite_teams_data key the web UI writes beside favorite_teams, so picking teams no longer marks the plugin degraded"
+    },
     {
       "version": "1.4.4",
       "released": "2026-09-07",

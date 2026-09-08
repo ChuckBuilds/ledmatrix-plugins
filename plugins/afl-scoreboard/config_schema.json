@@ -3,6 +3,7 @@
   "title": "AFL Scoreboard Plugin Configuration",
   "description": "Configuration schema for the AFL (Australian Football League) Scoreboard plugin",
   "type": "object",
+  "$comment": "This object permits an other_games_divisions_data key that is not a setting and that the plugin never reads. The web UI renders other_games_divisions as a checkbox group, and that widget carries a hidden input named <field>_data, so every save of this page posts other_games_divisions_data beside other_games_divisions and the core writes it to config.json. With additionalProperties: false and no allowance, the core marks the plugin degraded over a key its own UI had just written. Left unconstrained because the widget has submitted it both as an array and as a JSON string; unknown keys are still rejected.",
   "properties": {
     "scroll_card": {
       "type": "object",
@@ -1490,6 +1491,11 @@
       "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
       "x-widget": "checkbox-group",
       "x-advanced": true
+    }
+  },
+  "patternProperties": {
+    "^other_games_divisions_data$": {
+      "$comment": "Written by the web UI, not a setting -- see the $comment on this schema's root object."
     }
   },
   "additionalProperties": false,

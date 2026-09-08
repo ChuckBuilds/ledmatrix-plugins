@@ -1,7 +1,7 @@
 {
   "id": "jellyfin-now-playing",
   "name": "Jellyfin Now Playing",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": "ChuckBuilds",
   "description": "Shows what's playing on your Jellyfin server: poster art, title, and playback progress",
   "category": "media",
@@ -26,6 +26,12 @@
     "pillow"
   ],
   "versions": [
+    {
+      "released": "2026-09-08",
+      "version": "1.2.2",
+      "changelog": "Stop the web UI's own control reporting the plugin as degraded. content_types, the filter for which kinds of media are shown, renders as a checkbox group, and that widget is saved with a hidden companion field, so using the control writes content_types_data beside content_types. The plugin never reads the key, but the root object that declares the setting set additionalProperties: false, so the core's schema check flagged it and the web UI showed \"Degraded: Config schema: Field root: Additional properties are not allowed ('content_types_data' was unexpected)\" on a config the UI itself had just written. The key is now permitted -- unconstrained, since the widget has submitted it both as an array and as a JSON string -- while unknown keys are still rejected, so a typo in a hand-edited config is still caught. Same fix as odds-ticker 1.4.5. Affects only the schema; nothing about what the plugin fetches or draws changes.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-03",
       "version": "1.2.1",

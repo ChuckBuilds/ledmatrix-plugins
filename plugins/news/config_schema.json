@@ -225,6 +225,7 @@
     },
     "feeds": {
       "type": "object",
+      "$comment": "This object permits an enabled_feeds_data key that is not a setting and that the plugin never reads. The web UI renders enabled_feeds as a checkbox group, and that widget carries a hidden input named <field>_data, so every save of this page posts enabled_feeds_data beside enabled_feeds and the core writes it to config.json. With additionalProperties: false and no allowance, the core marks the plugin degraded over a key its own UI had just written. Left unconstrained because the widget has submitted it both as an array and as a JSON string; unknown keys are still rejected.",
       "properties": {
         "enabled_feeds": {
           "type": "array",
@@ -381,6 +382,11 @@
           "maximum": 64,
           "description": "Logo size in pixels (height). Defaults to display height minus 4 pixels for margin.",
           "x-advanced": true
+        }
+      },
+      "patternProperties": {
+        "^enabled_feeds_data$": {
+          "$comment": "Written by the web UI, not a setting -- see the $comment on feeds."
         }
       },
       "additionalProperties": false

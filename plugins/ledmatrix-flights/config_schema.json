@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "$comment": "This object permits a rotation_views_data key that is not a setting and that the plugin never reads. The web UI renders rotation_views as a checkbox group, and that widget carries a hidden input named <field>_data, so every save of this page posts rotation_views_data beside rotation_views and the core writes it to config.json. With additionalProperties: false and no allowance, the core marks the plugin degraded over a key its own UI had just written. Left unconstrained because the widget has submitted it both as an array and as a JSON string; unknown keys are still rejected.",
   "title": "Flight Tracker Plugin Configuration",
   "description": "Configuration schema for the flight tracker plugin with ADS-B data, map backgrounds, and flight plans",
   "properties": {
@@ -929,6 +930,11 @@
   "required": [
     "enabled"
   ],
+  "patternProperties": {
+    "^rotation_views_data$": {
+      "$comment": "Written by the web UI, not a setting -- see the $comment on this schema's root object."
+    }
+  },
   "additionalProperties": false,
   "x-propertyOrder": [
     "enabled",
