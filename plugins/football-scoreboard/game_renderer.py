@@ -598,6 +598,31 @@ class GameRenderer(SportsGameRendererMixin):
         
         return ImageFont.load_default()
     
+    def _logo_scope(self, logo_path) -> str:
+        """The directory a logo came from -- what makes an abbreviation unique.
+
+        This plugin serves two leagues whose logos live in different
+        directories, and ten abbreviations exist in both: CAR CIN DAL DEN HOU
+        LAC MIA NE TB TBD. Miami is the visible one -- ncaa_logos/MIA.png is
+        the Hurricanes, nfl_logos/MIA.png is the Dolphins.
+
+        _logo_cache_key scopes by logo slot size only, and one _logo_cache is
+        shared by every renderer this plugin builds (manager.py creates a
+        single ScrollDisplayManager, and prepare_scroll_content takes leagues
+        plural), so both leagues resolved "MIA" to the same key and whichever
+        rendered first won the slot.
+
+        Scoping on the directory rather than the league string is deliberate:
+        it is exactly what decides which file gets opened, it is already in
+        hand wherever a logo is loaded, and two teams sharing an abbreviation
+        *within* one directory really are the same team. basketball- and
+        lacrosse-scoreboard prefix the name for the same reason.
+        """
+        try:
+            return Path(logo_path).parent.name
+        except (TypeError, ValueError):
+            return ""
+
     def preload_logos(self, games: list, logo_dir: Path) -> None:
         """
         Pre-load team logos for all games to improve scroll performance.
@@ -609,8 +634,9 @@ class GameRenderer(SportsGameRendererMixin):
         for game in games:
             for team_key in ['home_abbr', 'away_abbr']:
                 abbr = game.get(team_key, '')
-                if abbr and self._logo_cache_key(abbr) not in self._logo_cache:
-                    logo_path = game.get(f'{team_key.replace("abbr", "logo_path")}')
+                logo_path = game.get(f'{team_key.replace("abbr", "logo_path")}')
+                scoped = f"{self._logo_scope(logo_path)}:{abbr}"
+                if abbr and self._logo_cache_key(scoped) not in self._logo_cache:
                     if logo_path:
                         logo = self._load_and_resize_logo(
                             game.get(team_key.replace('abbr', 'id'), ''),
@@ -619,7 +645,7 @@ class GameRenderer(SportsGameRendererMixin):
                             game.get(f'{team_key.replace("abbr", "logo_url")}')
                         )
                         if logo:
-                            self._logo_cache[self._logo_cache_key(abbr)] = logo
+                            self._logo_cache[self._logo_cache_key(scoped)] = logo
         
         self.logger.debug(f"Preloaded {len(self._logo_cache)} team logos")
     
@@ -636,7 +662,8 @@ class GameRenderer(SportsGameRendererMixin):
         # "<abbr>@<slot>x<height>", so the lookup never matched and each card
         # re-opened and re-resized both PNGs -- on the scroll path, once per
         # game per rebuild.
-        cache_key = self._logo_cache_key(team_abbrev)
+        cache_key = self._logo_cache_key(
+            f"{self._logo_scope(logo_path)}:{team_abbrev}")
         if cache_key in self._logo_cache:
             return self._logo_cache[cache_key]
         
@@ -655,7 +682,7 @@ class GameRenderer(SportsGameRendererMixin):
                     logo = logo.crop(bbox)
                 logo.thumbnail((self._logo_slot_width(), self.display_height), Image.Resampling.LANCZOS)
 
-                self._logo_cache[self._logo_cache_key(team_abbrev)] = logo
+                self._logo_cache[cache_key] = logo
                 return logo
             else:
                 self.logger.debug(f"Logo not found at {logo_path}")
