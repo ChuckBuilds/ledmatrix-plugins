@@ -279,10 +279,10 @@
         },
         "gap_between_games": {
           "type": "integer",
-          "default": 48,
+          "default": 24,
           "minimum": 8,
           "maximum": 128,
-          "description": "Gap in pixels between game cards when scrolling",
+          "description": "Gap in pixels between game cards when scrolling (default: 24).",
           "x-advanced": true
         },
         "show_league_separators": {

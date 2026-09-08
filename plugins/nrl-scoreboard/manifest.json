@@ -22,7 +22,7 @@
       "version": "1.22.0",
       "released": "2026-09-07",
       "ledmatrix_min_version": "3.3.0",
-      "notes": "Settings that were declared and unreachable now work, and four fallbacks that disagreed with the schema are corrected. The scroll_settings block was dead -- the scroll class read scroll_mode, which additionalProperties:false forbids writing (#422); scroll_speed's default moves 1.0 -> 50.0 to match the core default it had been shadowing, so nothing changes for an existing panel. recent_games_to_show, upcoming_games_to_show, show_odds and update_interval_seconds now fall back to what config_schema.json declares (#427). dynamic_duration.min_duration_seconds is applied as a floor (#373), background_service.max_workers reaches the service, bitmap fonts load at their own PIXEL_SIZE (#387), and the card date drops the glibc-only %-m/%-d (#414)."
+      "notes": "Settings that were declared and unreachable now work, and four fallbacks that disagreed with the schema are corrected. The scroll_settings block was dead -- the scroll class read scroll_mode, which additionalProperties:false forbids writing (#422); scroll_speed's default moves 1.0 -> 50.0 and gap_between_games' 48 -> 24, both to match the values the code already resolved while the block was unreachable, so an existing panel scrolls exactly as before. recent_games_to_show, upcoming_games_to_show, show_odds and update_interval_seconds now fall back to what config_schema.json declares (#427). dynamic_duration.min_duration_seconds is applied as a floor (#373), background_service.max_workers reaches the service, bitmap fonts load at their own PIXEL_SIZE (#387), and the card date drops the glibc-only %-m/%-d (#414)."
     },
     {
       "version": "1.21.4",
