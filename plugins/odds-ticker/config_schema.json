@@ -207,6 +207,7 @@
     },
     "leagues": {
       "type": "object",
+      "$comment": "Each league permits a favorite_teams_data key that is not a setting and that the plugin never reads. The web UI renders favorite_teams as a checkbox group, and that widget carries a hidden input named <field>_data, so every save of this page posts favorite_teams_data beside favorite_teams and the core writes it to config.json. With additionalProperties: false and no allowance, the core marked the plugin degraded over a key its own UI had just written. Left unconstrained because the widget has submitted it both as an array and as a JSON string; unknown keys are still rejected.",
       "title": "Sports Leagues",
       "description": "Enable and configure individual sports leagues",
       "properties": {
@@ -274,6 +275,11 @@
               }
             }
           },
+          "patternProperties": {
+            "^favorite_teams_data$": {
+              "$comment": "Written by the web UI, not a setting -- see the $comment on leagues."
+            }
+          },
           "additionalProperties": false
         },
         "nba": {
@@ -338,6 +344,11 @@
               }
             }
           },
+          "patternProperties": {
+            "^favorite_teams_data$": {
+              "$comment": "Written by the web UI, not a setting -- see the $comment on leagues."
+            }
+          },
           "additionalProperties": false
         },
         "mlb": {
@@ -400,6 +411,11 @@
                   "WSH": "Washington Nationals"
                 }
               }
+            }
+          },
+          "patternProperties": {
+            "^favorite_teams_data$": {
+              "$comment": "Written by the web UI, not a setting -- see the $comment on leagues."
             }
           },
           "additionalProperties": false
@@ -468,6 +484,11 @@
               }
             }
           },
+          "patternProperties": {
+            "^favorite_teams_data$": {
+              "$comment": "Written by the web UI, not a setting -- see the $comment on leagues."
+            }
+          },
           "additionalProperties": false
         },
         "milb": {
@@ -492,6 +513,11 @@
               "maxItems": 120
             }
           },
+          "patternProperties": {
+            "^favorite_teams_data$": {
+              "$comment": "Written by the web UI, not a setting -- see the $comment on leagues."
+            }
+          },
           "additionalProperties": false
         },
         "ncaa_fb": {
@@ -514,6 +540,11 @@
               },
               "uniqueItems": true,
               "maxItems": 130
+            }
+          },
+          "patternProperties": {
+            "^favorite_teams_data$": {
+              "$comment": "Written by the web UI, not a setting -- see the $comment on leagues."
             }
           },
           "additionalProperties": false
@@ -546,6 +577,11 @@
               "description": "Show tournament seeds next to team names during March Madness (e.g., (5) DUKE)"
             }
           },
+          "patternProperties": {
+            "^favorite_teams_data$": {
+              "$comment": "Written by the web UI, not a setting -- see the $comment on leagues."
+            }
+          },
           "additionalProperties": false
         },
         "ncaa_baseball": {
@@ -568,6 +604,11 @@
               },
               "uniqueItems": true,
               "maxItems": 300
+            }
+          },
+          "patternProperties": {
+            "^favorite_teams_data$": {
+              "$comment": "Written by the web UI, not a setting -- see the $comment on leagues."
             }
           },
           "additionalProperties": false
