@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.12.20",
+  "version": "1.13.0",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -37,6 +37,12 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "version": "1.13.0",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "skyaware_url no longer defaults to 192.168.86.30, one particular receiver on one home network. Every install that did not set it polled that address on its own LAN and reported 'no data received' rather than 'not configured', and check_plugin.py spent ~40s per run waiting out connect timeouts (#400). The default is empty and the fetcher names the missing setting instead of guessing; the schema description lists the addresses worth trying."
+    },
     {
       "released": "2026-09-03",
       "version": "1.12.20",
@@ -258,5 +264,5 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-03"
+  "last_updated": "2026-09-07"
 }

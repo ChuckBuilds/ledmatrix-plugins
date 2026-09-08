@@ -216,8 +216,16 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.background_service = None
         if get_background_service:
             try:
+                # background_service.max_workers is a real setting; it used to
+                # be pinned at 1 here, so raising it in the web UI did nothing.
+                # The service is a process-wide singleton, so the first plugin
+                # to construct it decides for everyone -- which is why the
+                # schema default stays at 1 rather than the factory's 3.
                 self.background_service = get_background_service(
-                    self.cache_manager, max_workers=1
+                    self.cache_manager,
+                    max_workers=int(
+                        (self.config.get("background_service") or {}).get("max_workers", 1)
+                    ),
                 )
                 self.logger.info("Background service initialized")
             except Exception as e:
@@ -413,6 +421,13 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Extract game limits from nested config if available
         game_limits = league_config.get("game_limits", {})
         filtering = league_config.get("filtering", {})
+        # Every league block declares display_options, and until now nothing
+        # read it: all thirty settings rendered in the web UI, saved, and did
+        # nothing, while the plugin-level key alone reached the card. That is
+        # also the opposite precedence to every sibling scoreboard, where the
+        # per-league copy wins. The league block wins here now, with the
+        # plugin-level key as the fallback.
+        display_options = league_config.get("display_options", {})
 
         # Create manager config with expected structure
         manager_config = {
@@ -444,9 +459,13 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                     game_limits.get("other_games_divisions", ["fbs"])
                 ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", league_config.get("upcoming_games_to_show", 10)),
-                "show_records": self.config.get("show_records", False),
-                "show_ranking": self.config.get("show_ranking", False),
-                "show_odds": self.config.get("show_odds", False),
+                "show_records": display_options.get(
+                    "show_records", self.config.get("show_records", False)),
+                "show_ranking": display_options.get(
+                    "show_ranking", self.config.get("show_ranking", False)),
+                # Schema default is true; the fallback said false.
+                "show_odds": display_options.get(
+                    "show_odds", self.config.get("show_odds", True)),
                 "update_interval_seconds": league_config.get(
                     "update_interval_seconds", 3600
                 ),
@@ -771,9 +790,11 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                     game_limits.get("other_games_divisions", ["fbs"])
                 ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", 10),
+                # custom_leagues declares no display_options block, so these
+                # stay plugin-level. Schema default for show_odds is true.
                 "show_records": self.config.get("show_records", False),
                 "show_ranking": self.config.get("show_ranking", False),
-                "show_odds": self.config.get("show_odds", False),
+                "show_odds": self.config.get("show_odds", True),
                 # 3600 to match the built-in leagues and the schema. This
                 # was 300, and custom_leagues declared no such key, so a
                 # custom league fetched twelve times as often as every
@@ -2407,7 +2428,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "game_display_duration": self.game_display_duration,
                 "show_records": self.config.get("show_records", False),
                 "show_ranking": self.config.get("show_ranking", False),
-                "show_odds": self.config.get("show_odds", False),
+                # Schema default is true; reporting false made get_info()
+                # disagree with what the managers were actually given.
+                "show_odds": self.config.get("show_odds", True),
             }
 
             # Add manager-specific info if available
@@ -2524,6 +2547,32 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 pass
         
         # No global fallback - return None
+        return None
+
+    def get_dynamic_duration_floor(self) -> Optional[float]:
+        """Dynamic duration floor for the current display context.
+
+        Every league block declares ``dynamic_duration.min_duration_seconds``
+        beside its max, and only the max was ever read -- a mode could run
+        shorter than the minimum asked for. Same ladder as the cap.
+        """
+        if not self.is_enabled:
+            return None
+        if not self._current_display_league or not self._current_display_mode_type:
+            return None
+
+        league_config = self._get_league_config(self._current_display_league)
+        league_dynamic = league_config.get("dynamic_duration", {})
+        mode_config = league_dynamic.get("modes", {}).get(
+            self._current_display_mode_type, {})
+        for source in (mode_config, league_dynamic):
+            if "min_duration_seconds" in source:
+                try:
+                    floor = float(source.get("min_duration_seconds"))
+                    if floor > 0:
+                        return floor
+                except (TypeError, ValueError):
+                    pass
         return None
 
     def _extract_mode_type(self, display_mode: str) -> Optional[str]:
@@ -2651,6 +2700,10 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 cap = self.get_dynamic_duration_cap()
                 if cap is not None:
                     effective_duration = min(effective_duration, cap)
+                # Floor last, so an explicit minimum wins over a smaller cap.
+                floor = self.get_dynamic_duration_floor()
+                if floor is not None:
+                    effective_duration = max(effective_duration, floor)
             return effective_duration
 
         # No mode-level duration - use dynamic calculation
@@ -2675,6 +2728,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             cap = self.get_dynamic_duration_cap()
             if cap is not None:
                 total_duration = min(total_duration, cap)
+            floor = self.get_dynamic_duration_floor()
+            if floor is not None:
+                total_duration = max(total_duration, floor)
 
         return total_duration
 

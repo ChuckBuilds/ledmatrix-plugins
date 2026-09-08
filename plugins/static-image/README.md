@@ -174,7 +174,7 @@ panel — noticeably brighter in a dark room and a real increase in power draw.
 | `sequential` | In `display_order`, wrapping at the end when `sequential_loop` is on |
 | `random` | A random pick each time. Set `random_seed` for a repeatable order |
 | `time_based` | Advances on its own timer — **also needs `rotation_settings.time_intervals.enabled: true`** |
-| `date_based` | **Not implemented.** The code is a stub that always returns the first image |
+| `date_based` | One image per day, picked by day-of-year, so the same date always shows the same image |
 
 Two of those deserve emphasis:
 
@@ -182,10 +182,10 @@ Two of those deserve emphasis:
   alone does nothing; `rotation_settings.time_intervals.enabled` must also be
   `true`, and `interval_seconds` (default `3600`) sets the pace. With the switch
   off, the image never advances.
-- **`date_based` does nothing at all.** It is a placeholder in the source —
-  selecting it pins the display to the first available image. It is listed here
-  because the setting is offered in the UI and silently doing nothing is worse
-  than being told.
+- **`date_based` advances once a day, on its own.** The image is chosen by
+  day-of-year, so a set of seven images repeats weekly, a set of 365 walks the
+  year, and the same date always shows the same image. It needs no second
+  switch and ignores `interval_seconds`.
 
 With `sequential_loop: false` the rotation stops on the last image rather than
 wrapping, which is what you want for a sequence with an ending.
@@ -271,7 +271,7 @@ the panel. Turn it on, or resize the source.
 Check `image_config.mode` is `multiple` — `single` never advances. If
 `rotation_mode` is `time_based`, also check
 `rotation_settings.time_intervals.enabled` is `true`. If it is `date_based`,
-that mode is a stub and will not rotate at all.
+it advances once per day, not within a session.
 
 **A scheduled image shows all the time.**
 `schedule.enabled` defaults to `false`; the window is ignored until you set it.

@@ -18,6 +18,7 @@ Run: <core-venv>/bin/python plugins/ledmatrix-stocks/test_symbol_formats.py
 
 import json
 import re
+import os
 import sys
 from pathlib import Path
 
@@ -88,8 +89,12 @@ def main():
 
     print("\na quote currency is not appended twice")
     core = None
-    for candidate in (Path("/home/rackpi/projects/LEDMatrix"),
-                      PLUGIN_DIR.parents[2] / "LEDMatrix"):
+    # LEDMATRIX_CORE is what the runner sets from --core; honour it before
+    # guessing at a sibling checkout that may be a different core entirely.
+    env_core = os.environ.get("LEDMATRIX_CORE")
+    candidates = [Path(env_core)] if env_core else []
+    candidates.append(PLUGIN_DIR.parents[2] / "LEDMatrix")
+    for candidate in candidates:
         if (candidate / "src" / "common" / "__init__.py").exists():
             core = candidate
             break

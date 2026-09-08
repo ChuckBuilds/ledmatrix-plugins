@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Masters Tournament Plugin Configuration",
-  "description": "Configuration schema for the Masters Tournament plugin - displays live tournament data, course imagery, and Masters branding year-round",
+  "description": "Configuration schema for the Masters Tournament plugin - displays live tournament data and course imagery year-round",
   "type": "object",
   "properties": {
     "enabled": {
@@ -124,21 +124,8 @@
               "type": "boolean",
               "default": true,
               "description": "Show individual player spotlight cards"
-            },
-            "show_headshots": {
-              "x-advanced": true,
-              "type": "boolean",
-              "default": true,
-              "description": "Display player headshot photos"
-            },
-            "duration_per_player": {
-              "x-advanced": true,
-              "type": "number",
-              "default": 15,
-              "minimum": 5,
-              "maximum": 60,
-              "description": "Time to show each player card (seconds)"
             }
+
           }
         },
         "course_tour": {
@@ -150,41 +137,13 @@
               "default": true,
               "description": "Show rotating hole maps with course imagery"
             },
-            "show_animations": {
-              "x-advanced": true,
-              "type": "boolean",
-              "default": true,
-              "description": "Enable transitions and animations"
-            },
-            "duration_per_hole": {
-              "x-advanced": true,
-              "type": "number",
-              "default": 15,
-              "minimum": 5,
-              "maximum": 60,
-              "description": "Time to show each hole (seconds)"
-            },
             "show_divider": {
               "x-advanced": true,
               "type": "boolean",
               "default": true,
               "description": "Show the vertical divider line between the hole info and map columns. Set to false for a cleaner single-cell look."
-            },
-            "featured_holes": {
-              "x-advanced": true,
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 18
-              },
-              "default": [
-                12,
-                13,
-                16
-              ],
-              "description": "Featured holes to highlight (Amen Corner, par 3s)"
             }
+
           }
         },
         "hole_by_hole": {
@@ -357,114 +316,8 @@
           }
         }
       }
-    },
-    "notifications": {
-      "type": "object",
-      "title": "Notification Settings",
-      "description": "Configure when to interrupt normal display rotation",
-      "properties": {
-        "practice_round_alerts": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": true,
-              "description": "Alert when practice rounds start"
-            },
-            "interrupt_display": {
-              "x-advanced": true,
-              "type": "boolean",
-              "default": true,
-              "description": "Interrupt current mode to show alert"
-            },
-            "duration": {
-              "x-advanced": true,
-              "type": "number",
-              "default": 15,
-              "minimum": 3,
-              "maximum": 60,
-              "description": "Alert display duration (seconds)"
-            }
-          }
-        },
-        "favorite_player_alerts": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": true,
-              "description": "Alert on favorite player eagles/birdies"
-            },
-            "interrupt_display": {
-              "x-advanced": true,
-              "type": "boolean",
-              "default": true,
-              "description": "Interrupt current mode to show alert"
-            },
-            "duration": {
-              "x-advanced": true,
-              "type": "number",
-              "default": 10,
-              "minimum": 3,
-              "maximum": 60,
-              "description": "Alert display duration (seconds)"
-            }
-          }
-        },
-        "tournament_start_alert": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": true,
-              "description": "Alert when tournament begins"
-            },
-            "interrupt_display": {
-              "x-advanced": true,
-              "type": "boolean",
-              "default": false,
-              "description": "Interrupt current mode to show alert"
-            }
-          }
-        }
-      }
-    },
-    "branding": {
-      "type": "object",
-      "title": "Masters Branding Settings",
-      "description": "Control Masters visual branding elements",
-      "properties": {
-        "show_masters_logo": {
-          "x-advanced": true,
-          "type": "boolean",
-          "default": true,
-          "description": "Display Masters logo on screens"
-        },
-        "show_green_jacket": {
-          "x-advanced": true,
-          "type": "boolean",
-          "default": true,
-          "description": "Show green jacket icon for leaders"
-        },
-        "show_azaleas": {
-          "x-advanced": true,
-          "type": "boolean",
-          "default": true,
-          "description": "Display azalea flower accents"
-        },
-        "color_scheme": {
-          "x-advanced": true,
-          "type": "string",
-          "enum": [
-            "classic",
-            "bright",
-            "subdued"
-          ],
-          "default": "classic",
-          "description": "Masters color palette variant"
-        }
-      }
     }
+
   },
   "additionalProperties": false,
   "required": [
@@ -478,8 +331,6 @@
     "mock_data",
     "favorite_players",
     "display_modes",
-    "notifications",
-    "branding",
     "player_card_duration",
     "hole_display_duration",
     "page_display_duration",

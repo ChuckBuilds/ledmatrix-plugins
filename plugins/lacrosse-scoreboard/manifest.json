@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.24.5",
+  "version": "1.25.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.25.0",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "game_display_duration is declared in the schema so the web UI can offer it -- it was read and documented nowhere (#429) -- and defaults.display_duration's fallback moves 30 -> 15 to match what the schema promises. The scroll and Vegas cards gated the shots line on a flat show_shots key at the league root that the schema declares nowhere, so it never drew there whatever display_options.show_shots was set to; both paths now resolve the same value (#432). Also drops the glibc-only %-m/%-d from the card date (#414) and the 'broadcast' value from the other_games_min_quality help text (#426)."
+    },
     {
       "version": "1.24.5",
       "released": "2026-09-05",
@@ -400,7 +406,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

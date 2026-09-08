@@ -194,6 +194,14 @@
           "maximum": 60,
           "description": "Default duration in seconds to display each game"
         },
+        "game_display_duration": {
+          "type": "number",
+          "default": 15,
+          "minimum": 3,
+          "maximum": 60,
+          "description": "Duration in seconds to show each individual game before rotating to the next game within the same mode",
+          "x-advanced": true
+        },
         "show_records": {
           "type": "boolean",
           "default": false,
@@ -437,7 +445,7 @@
                 "any",
                 "ranked"
               ],
-              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots.",
               "default": "ranked",
               "x-advanced": true
             },
@@ -919,7 +927,7 @@
                 "any",
                 "ranked"
               ],
-              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'broadcast' also allows games with a national TV listing; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots, and the same goes for 'broadcast' in a league ESPN publishes no TV listings for.",
+              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots.",
               "default": "ranked",
               "x-advanced": true
             },

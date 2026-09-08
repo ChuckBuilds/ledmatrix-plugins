@@ -293,7 +293,7 @@ All **Advanced**; the defaults suit a Pi and rarely want changing.
 | Key | Type | Default |
 |---|---|---|
 | `background_service.enabled` | boolean | `true` |
-| `background_service.max_workers` | 1–10 | `3` |
+| `background_service.max_workers` | 1–10 | `1` |
 | `background_service.request_timeout` | 5–120 s | `30` |
 | `background_service.max_retries` | 1–10 | `3` |
 | `background_service.priority` | 1–5 | `2` |
@@ -341,7 +341,7 @@ Nudge any element in pixels. All default to `0`, all live under
 |---|---|---|
 | `scroll_settings.scroll_speed` | 0.01–200 px/s | `1.0` |
 | `scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` |
-| `scroll_settings.gap_between_games` | 8–128 px | `48` |
+| `scroll_settings.gap_between_games` | 8–128 px | `24` |
 | `scroll_settings.show_league_separators` | boolean | `true` |
 | `scroll_settings.dynamic_duration` | boolean | `true` |
 | `scroll_settings.game_card_width` | 32–512 px | `128` |

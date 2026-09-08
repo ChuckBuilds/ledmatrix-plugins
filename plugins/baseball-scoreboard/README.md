@@ -191,7 +191,7 @@ Two settings decide what qualifies, and both have important limits in baseball:
 
 | Option | Values | Reality in this plugin |
 |--------|--------|------------------------|
-| `other_games_min_quality` | `ranked`, `broadcast`, `any` | `ranked` needs a national poll. MLB and MiLB publish none, so it lets every game through and no poll is requested. It only bites for NCAA Baseball |
+| `other_games_min_quality` | `ranked`, `any` | `ranked` needs a national poll. MLB and MiLB publish none, so it lets every game through and no poll is requested. It only bites for NCAA Baseball |
 | `other_games_divisions` | e.g. `["fbs"]` | Needs ESPN's FBS/FCS group rosters, which exist for **college football and nothing else**. Inert here — no lookup is made |
 
 **Your favourite teams are never filtered by either.** Follow a lower-division

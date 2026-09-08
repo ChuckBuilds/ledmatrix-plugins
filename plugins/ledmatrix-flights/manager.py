@@ -86,7 +86,7 @@ class FlightTrackerPlugin(BasePlugin):
         # Flight tracker configuration
         self.enabled = self.config.get('enabled', False)
         self.update_interval = self.config.get('update_interval', 5)
-        self.skyaware_url = self.config.get('skyaware_url', 'http://192.168.86.30/skyaware/data/aircraft.json')
+        self.skyaware_url = self.config.get('skyaware_url', '')
 
         # FlightAware config (nested under 'flightaware' with flat fallback for backward compat)
         self.flight_plan_enabled = self._fa_config('enabled', False)
@@ -403,7 +403,7 @@ class FlightTrackerPlugin(BasePlugin):
 
         self.enabled = self.config.get('enabled', getattr(self, 'enabled', False))
         self.update_interval = self.config.get('update_interval', 5)
-        self.skyaware_url = self.config.get('skyaware_url', 'http://192.168.86.30/skyaware/data/aircraft.json')
+        self.skyaware_url = self.config.get('skyaware_url', '')
 
         # FlightAware
         self.flight_plan_enabled = self._fa_config('enabled', False)

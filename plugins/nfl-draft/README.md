@@ -73,20 +73,6 @@ Plugin path: plugins/nfl-draft
 | `dynamic_duration.max_duration` | `300` | Maximum display duration in seconds. |
 | `vegas_mode` | `"scroll"` | Override how this plugin appears in Vegas scroll mode. 'scroll' = individual picks scroll through the stream (default), 'fixed' = entire display scrolls by as one block, 'static' = scroll pauses while plugin displays for its duration — one of `scroll`, `fixed`, `static`. |
 
-### Settings that do nothing
-
-`transition.type` and `transition.speed` are in the schema and the web UI form,
-and nothing reads them — not this plugin and not the LEDMatrix core, which
-implements no display transitions. Four other plugins carry the same dead
-block, tracked in
-[issue #381](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/381).
-
-| Key | Default | Notes |
-|---|---|---|
-| `transition.type` | `"redraw"` | one of `redraw`, `fade`, `slide`, `wipe`. Not implemented. |
-| `transition.speed` | `2` | Transition speed (1-10). Not implemented. |
-| `transition.enabled` | `true` | Enable transitions. Not implemented. |
-
 
 ## Display Layout
 

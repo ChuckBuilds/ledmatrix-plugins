@@ -1,7 +1,7 @@
 {
   "id": "christmas-countdown",
   "name": "Christmas Countdown",
-  "version": "1.0.4",
+  "version": "2.0.0",
   "author": "ChuckBuilds",
   "description": "Display a countdown to Christmas with a stylized Christmas tree logo and festive text",
   "category": "holiday",
@@ -17,6 +17,12 @@
     "christmas-countdown"
   ],
   "versions": [
+    {
+      "version": "2.0.0",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Remove the four settings that never did anything: transition.type, transition.speed, transition.enabled and high_performance_transitions. Nothing in the plugin read them and the core implements no display transitions -- a six-value dropdown and two switches, all inert (#377, #381). Removing them from the schema is why this is a major: a config.json still carrying them fails validation until it is saved again. tree_size is unchanged and still documented as read-but-not-applied."
+    },
     {
       "version": "1.0.4",
       "released": "2026-09-05",
@@ -46,7 +52,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

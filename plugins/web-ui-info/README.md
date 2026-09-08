@@ -62,9 +62,6 @@ Settings live in the plugin's tab in the web UI, and are stored in
 |---|---|---|---|
 | `enabled` | boolean | `true` | Master switch. When off, the plugin is skipped in the rotation. |
 | `display_duration` | number | `10` | Seconds the panel holds the screen before the display rotates on (1–300). |
-| `transition.enabled` | boolean | `true` | **Not implemented** — see below. |
-| `transition.type` | string | `"redraw"` | **Not implemented** — see below. |
-| `transition.speed` | integer | `2` | **Not implemented** — see below. |
 
 That is the whole surface: this plugin has no colours, fonts, or layout
 options. The text is always white, always centred.
@@ -100,17 +97,6 @@ are looking at it.
 
 The default is fine for most setups. Raise it to `20` if you want both
 addresses in a single turn rather than across two.
-
-### The `transition` settings do nothing
-
-`transition.enabled`, `transition.type`, and `transition.speed` appear in the
-configuration form, but `manager.py` never reads them and the LEDMatrix core
-implements no display transitions. Changing them has no effect. They are
-tracked for removal in
-[issue #381](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/381) —
-four other plugins declare the same dead block.
-
----
 
 ## How the address is found
 
@@ -207,9 +193,6 @@ stuck.
 That is the AP-mode address, and it is reported whenever `hostapd` is running.
 If the Pi is meant to be on your normal network, `hostapd` is still active:
 `sudo systemctl stop hostapd`.
-
-**Changing `transition.*` does nothing**
-Correct — see [above](#the-transition-settings-do-nothing).
 
 ---
 

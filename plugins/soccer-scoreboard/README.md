@@ -237,9 +237,7 @@ decide what fills the *remaining* slots.
 
 > **Both are inert in soccer.** `ranked` needs a national poll and the division
 > filter needs ESPN's FBS/FCS group rosters — a college *football* taxonomy — so
-> every match passes both and neither costs a request. The schema's help text
-> for `other_games_min_quality` also mentions a `broadcast` option the enum does
-> not offer; it was retired.
+> every match passes both and neither costs a request.
 
 ### Variety comes from turnover
 
@@ -335,14 +333,13 @@ Defaults are the schema defaults, which is what the web UI writes.
 
 ![show_records on and off](../../docs/assets/soccer-scoreboard/show-records.png)
 
-> **`show_records`, `show_ranking` and `show_odds` are read from the plugin
-> level only.** Each of the ten league blocks also declares a `display_options`
-> object with the same three keys, but nothing reads it — verified by render in
-> both directions, and by grepping both this plugin and the LEDMatrix core.
-> Setting the per-league copy has no effect; set the plugin-level key above.
-> This is the **opposite** of every other scoreboard in this repo, where the
-> per-league copy wins, so do not carry that pattern across. Tracked as
-> [issue #435](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/435).
+> **`show_records`, `show_ranking` and `show_odds` are per-league settings with
+> a plugin-level fallback.** Each league block declares a `display_options`
+> object with the same three keys; that copy wins, and these plugin-level keys
+> apply to any league that has not set its own. Same precedence as every other
+> scoreboard in this repo. Note that the web UI writes the schema default into
+> every league block, so once settings have been saved the per-league copy is
+> the one in play.
 
 ### Background service
 
@@ -351,7 +348,7 @@ All **Advanced**; the defaults suit a Pi and rarely want changing.
 | Key | Type | Default |
 |---|---|---|
 | `background_service.enabled` | boolean | `true` |
-| `background_service.max_workers` | 1–10 | `3` |
+| `background_service.max_workers` | 1–10 | `1` |
 | `background_service.request_timeout` | 5–120 s | `30` |
 | `background_service.max_retries` | 1–10 | `3` |
 | `background_service.priority` | 1–5 | `2` |
@@ -439,11 +436,9 @@ See [The selection settings](#the-selection-settings).
 | `<league>.display_options.show_ranking` | boolean | `false` |
 | `<league>.display_options.show_odds` | boolean | `true` |
 
-> **These three do nothing.** Nothing in the plugin or the core reads
-> `leagues.<slug>.display_options`; the plugin-level `show_records`,
-> `show_ranking` and `show_odds` are what reach the card. See the note under
-> [Plugin level](#plugin-level) and
-> [issue #435](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/435).
+> **These win over the plugin-level keys of the same name**, which apply only
+> to a league that has not set its own. See the note under
+> [Plugin level](#plugin-level).
 
 ### Mode durations
 
@@ -644,10 +639,10 @@ soccer-scoreboard --check`.
 `enabled` is on. With `filtering.show_favorite_teams_only` at its default of
 `true` and no `favorite_teams` set, there is nothing to select from.
 
-**Records, rankings or odds will not turn on.** You are probably setting the
-per-league `display_options` copy, which nothing reads. Set the plugin-level
-`show_records` / `show_ranking` / `show_odds` instead —
-[issue #435](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/435).
+**Records, rankings or odds will not turn on.** The per-league
+`leagues.<slug>.display_options` copy wins over the plugin-level key, and the
+web UI writes a value into every league block, so set them on the league you
+are watching rather than at the plugin level.
 
 **A club I follow never shows up.** `favorite_teams` needs the ESPN
 abbreviation, not the club name — see [TEAMS.md](TEAMS.md). Enable debug logging

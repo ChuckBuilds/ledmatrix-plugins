@@ -823,8 +823,12 @@ class GameRenderer(SportsGameRendererMixin):
                     dt_local = dt.astimezone(local_tz)
                     # Numeric here; _format_game_date turns it into "Sep 19"
                     # unless the user asked for the numeric form.
-                    game_date = dt_local.strftime('%-m/%-d')
-                    game_time = dt_local.strftime('%-I:%M%p')
+                    # %-m/%-d/%-I are glibc extensions: strftime raises
+                    # ValueError on Windows and musl, and the except below then
+                    # dropped the start time and drew a raw ISO date in its
+                    # place. Build the same text portably instead.
+                    game_date = f"{dt_local.month}/{dt_local.day}"
+                    game_time = dt_local.strftime('%I:%M%p').lstrip('0')
                 except (ValueError, AttributeError):
                     game_time = start_time[:10] if len(start_time) > 10 else start_time
 

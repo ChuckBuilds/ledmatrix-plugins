@@ -1,7 +1,7 @@
 {
   "id": "masters-tournament",
   "name": "Masters Tournament",
-  "version": "2.5.7",
+  "version": "3.0.0",
   "description": "Broadcast-quality Masters Tournament display with real ESPN player headshots, accurate Augusta National hole layouts, fun facts, past champions, live leaderboards, and pixel-perfect LED matrix rendering",
   "author": "ChuckBuilds",
   "class_name": "MastersTournamentPlugin",
@@ -43,6 +43,12 @@
     "height": 64
   },
   "versions": [
+    {
+      "version": "3.0.0",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Remove seventeen settings that nothing reads: the whole notifications and branding blocks, plus five leaves inside display_modes the generic mode handling never reaches -- player_cards.show_headshots and duration_per_player, course_tour.show_animations, duration_per_hole and featured_holes (#418). The README described Notifications and Branding as features; it no longer does. The masters_featured_holes display mode is unaffected -- it is a different thing from the course_tour.featured_holes config key."
+    },
     {
       "released": "2026-09-03",
       "version": "2.5.7",
@@ -184,7 +190,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-03",
+  "last_updated": "2026-09-07",
   "compatible_versions": [
     ">=2.0.0"
   ]

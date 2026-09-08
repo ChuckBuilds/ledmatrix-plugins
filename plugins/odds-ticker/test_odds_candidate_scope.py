@@ -17,14 +17,21 @@ cache -- only that manager.py imports.
 Run: <core-venv>/bin/python plugins/odds-ticker/test_odds_candidate_scope.py
 """
 
+import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
 plugin_dir = Path(__file__).parent
 sys.path.insert(0, str(plugin_dir))
-for candidate in (Path("/home/rackpi/projects/LEDMatrix"),
-                  plugin_dir.parents[2] / "LEDMatrix"):
+# LEDMATRIX_CORE is the runner's contract for "here is the core" and it is
+# absolute, so honour it before guessing. Guessing first (and inserting at
+# sys.path[0]) beat the PYTHONPATH that `--core` sets, and tests silently ran
+# against whichever checkout happened to sit beside this tree.
+_core = os.environ.get("LEDMATRIX_CORE")
+_candidates = [Path(_core)] if _core else []
+_candidates.append(plugin_dir.parents[2] / "LEDMatrix")
+for candidate in _candidates:
     if (candidate / "src" / "plugin_system" / "base_plugin.py").exists():
         sys.path.insert(0, str(candidate))
         break

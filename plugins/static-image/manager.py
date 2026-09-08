@@ -14,6 +14,7 @@ Features:
 API Version: 1.0.0
 """
 
+import datetime
 import logging
 import os
 import time
@@ -761,8 +762,17 @@ class StaticImagePlugin(BasePlugin):
                 return available_images[0]
         
         elif self.rotation_mode == 'date_based':
-            # Future implementation
-            return available_images[0]
+            # One image per day, chosen by day-of-year so the whole set is
+            # walked over a year and the same date always shows the same
+            # image. This was a stub returning available_images[0], so the
+            # option looked like broken rotation rather than an unimplemented
+            # one. Same day-of-year indexing of-the-day uses.
+            day_of_year = datetime.date.today().timetuple().tm_yday
+            image_info = available_images[(day_of_year - 1) % len(available_images)]
+            self.current_image_index = next(
+                (i for i, img in enumerate(self.images_list) if img == image_info), 0
+            )
+            return image_info
         
         # Default: return first available image
         return available_images[0]

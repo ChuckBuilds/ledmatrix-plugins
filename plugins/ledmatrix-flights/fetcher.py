@@ -138,6 +138,17 @@ class SkyAwareFetcher(AircraftFetcher):
 
     def fetch_raw(self) -> Optional[Dict]:
         """Fetch the raw JSON payload from SkyAware."""
+        if not self.url:
+            # No default receiver address is right for everyone, so there is
+            # none. Say which setting is missing rather than timing out
+            # against whatever happens to answer at a guessed address.
+            logger.warning(
+                "[Flight Tracker] skyaware_url is not set -- point it at your "
+                "receiver's aircraft.json (e.g. "
+                "http://localhost:8080/data/aircraft.json), or pick a cloud "
+                "data_source instead"
+            )
+            return None
         try:
             response = requests.get(self.url, timeout=self.timeout)
             response.raise_for_status()
@@ -709,5 +720,5 @@ def create_fetcher(config: Dict[str, Any], cache_manager: Any) -> AircraftFetche
     elif source in ('adsbfi', 'adsblol'):
         return AdsbNetFetcher(provider=source)
     else:
-        url = config.get('skyaware_url', 'http://192.168.86.30/skyaware/data/aircraft.json')
+        url = config.get('skyaware_url', '')
         return SkyAwareFetcher(url, cache_manager)

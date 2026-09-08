@@ -1,7 +1,7 @@
 {
   "id": "cricket-scoreboard",
   "name": "Cricket Scoreboard",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming cricket matches across international tours (Test/ODI/T20I) and major domestic T20 leagues including the IPL, Big Bash League, The Hundred, PSL, CPL, SA20 and more. Shows runs/wickets/overs, run rates, targets, and match results.",
   "category": "sports",
@@ -22,6 +22,12 @@
     "cricket_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.2.0",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "background_service.max_workers reaches the service instead of a hardcoded 1, so raising it in the web UI now does something; its schema default moves 3 -> 1 to match the behaviour every install has had, and the description says the service is a process-wide singleton whose first caller decides (#373)."
+    },
     {
       "version": "1.1.2",
       "released": "2026-09-03",
@@ -71,7 +77,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-03",
+  "last_updated": "2026-09-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

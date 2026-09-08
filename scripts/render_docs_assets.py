@@ -105,22 +105,14 @@ DEFAULT_SCALE = 6
 DEFAULT_WIDTH = 128
 DEFAULT_HEIGHT = 32
 
-FONT_CANDIDATES = {
-    "bold": [
-        "DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "C:/Windows/Fonts/segoeuib.ttf",
-        "C:/Windows/Fonts/arialbd.ttf",
-        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-    ],
-    "regular": [
-        "DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "C:/Windows/Fonts/segoeui.ttf",
-        "C:/Windows/Fonts/arial.ttf",
-        "/System/Library/Fonts/Supplemental/Arial.ttf",
-    ],
-}
+#: The caption face used to come from a list of host font paths -- DejaVu on
+#: Linux, Segoe UI on Windows, Arial on macOS -- so the same script produced
+#: different captions on different machines and `--check` reported drift on
+#: images nobody had touched (#383). Pillow >= 10.1 bundles Aileron and serves
+#: it from `ImageFont.load_default(size=...)`, which needs no font files and
+#: no host lookup. It has no bold cut, so the label/sublabel hierarchy is
+#: carried by size alone -- see LABEL_SIZE and SUBLABEL_SIZE above.
+BOLD_SIZE_BUMP = 1
 
 
 def deep_merge(base: Dict[str, Any], overlay: Dict[str, Any]) -> Dict[str, Any]:
@@ -142,14 +134,16 @@ def deep_merge(base: Dict[str, Any], overlay: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _load_font(weight: str, size: int):
+    """The caption face, identical on every host.
+
+    ``weight`` is kept in the signature because callers read better for it,
+    but Aileron ships one cut: "bold" is rendered a point larger instead.
+    """
     from PIL import ImageFont
 
-    for candidate in FONT_CANDIDATES[weight]:
-        try:
-            return ImageFont.truetype(candidate, size)
-        except OSError:
-            continue
-    return ImageFont.load_default()
+    if weight == "bold":
+        size += BOLD_SIZE_BUMP
+    return ImageFont.load_default(size=size)
 
 
 def find_core_repo(explicit: Optional[str]) -> Path:

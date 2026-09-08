@@ -46,20 +46,23 @@ BASE = {"enabled": True, **load_config_defaults(PDIR)}
 # sheets come out the same every run.
 BASE["pulse_active_pip"] = False
 
-FONT_DIRS = ["/usr/share/fonts/truetype/dejavu", "/Library/Fonts",
-             "/usr/share/fonts/TTF"]
+def _font(size: int):
+    """The caption face, identical on every host.
+
+    This used to search a list of host font directories -- none of them a
+    Windows path -- so a Windows rerun fell through to PIL's tiny default and
+    rewrote every labelled contact sheet with captions in a different
+    typeface, on a plugin nobody had changed (#383). Pillow >= 10.1 bundles
+    Aileron and serves it from load_default(size=...): no font files, no host
+    lookup, same pixels everywhere. It has one cut, so the name/caption
+    hierarchy is size alone. Aileron has no em dash or multiplication sign
+    either, so caption text here stays ASCII -- both rendered as a .notdef box.
+    """
+    return ImageFont.load_default(size=size)
 
 
-def _font(name: str, size: int):
-    for directory in FONT_DIRS:
-        path = Path(directory) / name
-        if path.exists():
-            return ImageFont.truetype(str(path), size)
-    return ImageFont.load_default()
-
-
-F_NAME = _font("DejaVuSans-Bold.ttf", 15)
-F_CAPTION = _font("DejaVuSans.ttf", 13)
+F_NAME = _font(15)
+F_CAPTION = _font(13)
 
 CARD = (18, 18, 22)
 FG = (228, 228, 234)
@@ -173,7 +176,7 @@ def main() -> None:
     save(sheet, OUT / "hero.png")
 
     grid(OUT / "phases.png", [
-        ("Idle", "nothing running — the next work length, in full", None, 0.0, {}),
+        ("Idle", "nothing running - the next work length, in full", None, 0.0, {}),
         ("Work", "a focus session, part-way through", command("START"), 0.4, {}),
         ("Paused", "held where it was; the ring stops draining", paused, 0.4, {}),
         ("Short break", "the breather between sessions",
@@ -183,7 +186,7 @@ def main() -> None:
     ])
 
     grid(OUT / "options.png", [
-        ("Burndown: perimeter", "the default — a ring that drains clockwise",
+        ("Burndown: perimeter", "the default - a ring that drains clockwise",
          WORK, 0.4, {"progress_style": "perimeter"}),
         ("Burndown: bar", "an emptying bar along the bottom edge",
          WORK, 0.4, {"progress_style": "bar"}),
@@ -204,7 +207,7 @@ def main() -> None:
     # One work session on every panel size, all at the same scale, so the sheet
     # shows how much room each shape really has.
     scale = 3
-    tiles = [(f"{w}×{h}", scaled(render(w, h, WORK), scale))
+    tiles = [(f"{w}x{h}", scaled(render(w, h, WORK), scale))
              for w, h in ((64, 32), (128, 32), (128, 64), (256, 32))]
     sheet = Image.new(
         "RGB", (PAD * 2 + max(i.width for _, i in tiles),

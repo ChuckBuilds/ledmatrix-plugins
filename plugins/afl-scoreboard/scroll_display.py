@@ -47,7 +47,10 @@ class ScrollDisplay(_ScrollDisplayBase):
 
     # The ladder the legacy _get_scroll_settings walked, same order.
     SCROLL_LEAGUE_KEYS = ()
-    SCROLL_CONFIG_KEY = "scroll_mode"
+    # The schema declares the block as "scroll_settings" (and sets
+    # additionalProperties: false, so "scroll_mode" cannot even be written).
+    # Reading the other name left all six settings unreachable from either.
+    SCROLL_CONFIG_KEY = "scroll_settings"
 
 
     def _default_game_card_width(self) -> int:

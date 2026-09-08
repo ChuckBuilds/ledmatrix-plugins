@@ -122,7 +122,7 @@ complete list, at the exact paths the schema expects — the schema sets
 | `display_modes.recent` | `true` | Show recently completed matches. |
 | `display_modes.upcoming` | `true` | Show upcoming matches. |
 | `background_service.enabled` | `true` | Enable background service for data fetching. |
-| `background_service.max_workers` | `3` | Maximum number of worker threads (1–10). |
+| `background_service.max_workers` | `1` | Worker threads for background fetching (1–10). The service is shared process-wide, so the first plugin to start decides for everyone. |
 | `background_service.request_timeout` | `30` | Request timeout in seconds (5–120). |
 | `background_service.max_retries` | `3` | Maximum number of retries for failed requests (1–10). |
 | `background_service.priority` | `2` | Background service priority (1–5). |

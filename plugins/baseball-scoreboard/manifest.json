@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.40.4",
+  "version": "1.40.5",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.40.5",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "The upcoming scroll card keeps its start time off glibc. %-m/%-d/%-I are glibc extensions: strftime raises ValueError on Windows and musl, and the enclosing except then dropped the time and drew a raw ISO date in its place -- which is what made three upcoming goldens the only cards failing test_scroll_card_renders.py there (#447, #414). Output is byte-identical on glibc. Also drops the 'broadcast' value from the other_games_min_quality help text (#426)."
+    },
     {
       "version": "1.40.4",
       "released": "2026-09-05",
@@ -596,7 +602,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

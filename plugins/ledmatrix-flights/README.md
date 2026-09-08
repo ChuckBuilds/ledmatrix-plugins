@@ -71,7 +71,7 @@ Add the following to `config/config.json`:
     "enabled": true,
     "display_duration": 30,
     "update_interval": 5,
-    "skyaware_url": "http://192.168.86.30/skyaware/data/aircraft.json",
+    "skyaware_url": "http://localhost:8080/data/aircraft.json",
     "center_latitude": 27.9506,
     "center_longitude": -82.4572,
     "map_radius_miles": 10,
@@ -116,7 +116,7 @@ under `ledmatrix-flights`. The full schema is
 |---|---|---|
 | `enabled` | `false` | Enable or disable the flight tracker plugin. |
 | `data_source` | `"skyaware"` | Where to get live aircraft position data. Choose one setup path: (1) Local receiver — 'skyaware': requires a PiAware/dump1090 ADS-B receiver on your network, most accurate data. (2) Free cloud — 'adsbfi': free global ADS-B feed from adsb.fi, no account or hardware needed. 'adsblol': same idea via adsb.lol. Both free cloud options work worldwide with no sign-up — one of `skyaware`, `adsbfi`, `adsblol`. |
-| `skyaware_url` | `"http://192.168.86.30/skyaware/data/aircraf…` | URL to your local ADS-B receiver's aircraft.json endpoint. Only used when data_source is 'skyaware'. Change this to match your receiver's IP address. |
+| `skyaware_url` | `""` | URL to your local ADS-B receiver's aircraft.json endpoint. Only used when data_source is `skyaware`. Empty by default — there is no address that is right for every install — and the plugin logs which setting is missing until you set it. Typical values: `http://localhost:8080/data/aircraft.json` (dump1090-fa on this Pi), `http://localhost/skyaware/data/aircraft.json` (PiAware on this Pi), `http://<receiver-ip>/skyaware/data/aircraft.json`. |
 | `update_interval` | `5` | Interval in seconds between aircraft data updates (1–300). |
 | `live_update_interval` | `2` | Faster fetch interval (seconds) used while a flight is locked on for the overhead view, so altitude/distance update smoothly. The ADS-B source is ~1Hz, so a low value is safe. Idle fetches use update_interval (1–60). Advanced. |
 | `live_priority` | `false` | When enabled, an aircraft entering the proximity radius immediately preempts the normal rotation to show the overhead view for the proximity alert window (see proximity_alert.duration_seconds). Adds a 'flight_tracker_live' rotation slot that stays blank/skipped until a plane is overhead. Leave off for legacy behavior. Advanced. |
@@ -408,7 +408,7 @@ aircraft display loop.
 ## SkyAware Setup
 
 This plugin requires access to SkyAware ADS-B data. You can use:
-- Local SkyAware instance (default: `http://192.168.86.30/skyaware/data/aircraft.json`)
+- Local SkyAware instance, e.g. `http://localhost/skyaware/data/aircraft.json`
 - Remote SkyAware instance
 - Any compatible ADS-B JSON endpoint
 

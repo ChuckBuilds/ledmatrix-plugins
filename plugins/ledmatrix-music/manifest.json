@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -66,6 +66,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.4.2",
+      "released": "2026-09-07",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Bitmap fonts load at the size their PIXEL_SIZE header declares. A .bdf face exists at exactly one pixel size, so asking FreeType for any other raised and the loader silently substituted a different face -- picking 5x7.bdf in the UI appeared to do nothing (#387)."
+    },
     {
       "version": "1.4.1",
       "released": "2026-09-05",
@@ -158,7 +164,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-03",
+  "last_updated": "2026-09-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

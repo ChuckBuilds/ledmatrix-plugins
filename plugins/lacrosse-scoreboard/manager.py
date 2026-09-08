@@ -143,7 +143,10 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         # Global settings - read from defaults section with fallback
         defaults = config.get("defaults", {})
-        self.display_duration = float(defaults.get("display_duration", config.get("display_duration", 30)))
+        # Fallbacks mirror config_schema.json. They only fire for a hand-written
+        # or partial config -- and a fresh install before the UI has saved once
+        # -- which is exactly when disagreeing with the schema is least visible.
+        self.display_duration = float(defaults.get("display_duration", config.get("display_duration", 15)))
         self.game_display_duration = float(defaults.get("game_display_duration", config.get("game_display_duration", 15)))
 
         # Additional settings - read from defaults section with fallback

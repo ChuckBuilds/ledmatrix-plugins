@@ -102,7 +102,6 @@ class MarchMadnessPlugin(BasePlugin):
         self.show_seeds: bool = display_options.get("show_seeds", True)
         self.show_round_logos: bool = display_options.get("show_round_logos", True)
         self.highlight_upsets: bool = display_options.get("highlight_upsets", True)
-        self.show_bracket_progress: bool = display_options.get("show_bracket_progress", True)
         self.scroll_speed: float = display_options.get("scroll_speed", 1.0)
         self.scroll_delay: float = display_options.get("scroll_delay", 0.02)
         # Plugin-level target_fps wins; otherwise honor the global FPS target.
@@ -390,8 +389,11 @@ class MarchMadnessPlugin(BasePlugin):
             else:
                 start_time_utc = dt.astimezone(pytz.UTC)
             local = start_time_utc.astimezone(pytz.timezone("US/Eastern"))
-            game_date = local.strftime("%-m/%-d")
-            game_time = local.strftime("%-I:%M%p").replace("AM", "am").replace("PM", "pm")
+            # %-m/%-d/%-I are glibc extensions: strftime raises ValueError on
+            # Windows and musl. Build the same text portably instead.
+            game_date = f"{local.month}/{local.day}"
+            game_time = (local.strftime("%I:%M%p").lstrip("0")
+                         .replace("AM", "am").replace("PM", "pm"))
         except (ValueError, AttributeError):
             pass
 

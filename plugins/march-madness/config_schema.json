@@ -57,12 +57,6 @@
           "default": true,
           "description": "Highlight upset winners (higher seed beating lower seed) in gold"
         },
-        "show_bracket_progress": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show which teams are still alive in each region",
-          "x-advanced": true
-        },
         "scroll_speed": {
           "x-advanced": true,
           "type": "number",

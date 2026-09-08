@@ -111,22 +111,6 @@ is not listed below will be **rejected**, not ignored. The full schema is
 | `favorite_countries` | *(empty)* | Countries to receive notifications for (ISO 3166-1 alpha-3, e.g., ['USA', 'CAN']). |
 | `webhooks` | *(empty)* | Webhook endpoints for notifications. |
 
-### Settings that do nothing
-
-These four are in the schema and in the web UI form, but no code in the plugin
-reads them. Changing them has no effect.
-
-| Key | Default | Notes |
-|---|---|---|
-| `transition.type` | `"redraw"` | Not implemented. The schema offers `redraw`, `fade`, `slide`, `wipe`, `dissolve` and `pixelate`; none of them do anything. |
-| `transition.speed` | `2` | Not implemented. |
-| `transition.enabled` | `true` | Not implemented. |
-| `high_performance_transitions` | `false` | Not implemented. |
-
-The LEDMatrix core implements no display transitions, and four other plugins
-declare the same dead block — tracked in
-[issue #381](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/381).
-
 
 ### Example
 
