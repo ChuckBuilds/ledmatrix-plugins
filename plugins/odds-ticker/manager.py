@@ -2419,8 +2419,18 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         # Update ScrollHelper's cached image and array to include the white bars
         # This ensures the bars are visible when scrolling
         strip_array = np.array(strip)
-        self.scroll_helper.cached_image = strip
+        # Array first, then image -- the same order the re-seed in display()
+        # uses, and for the same reason. _get_visible_portion_integer reads
+        # cached_image.width and cached_array as two separate statements, so
+        # between these two assignments a reader sees the new (wider) image
+        # against the old (shorter) array and the slice comes back short.
+        #
+        # This was safe while _create_ticker_image ran with display() blocked
+        # on a queue. It is not now: the rebuild runs on a worker thread, and
+        # the re-seed keeps display() scrolling the previous strip while it
+        # does, so the render thread can read in that window.
         self.scroll_helper.cached_array = strip_array
+        self.scroll_helper.cached_image = strip
         # Kept so display() can re-seed the helper after core invalidates it
         # without recompositing the strip. See the re-seed in display().
         self._ticker_array = strip_array

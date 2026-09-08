@@ -219,6 +219,54 @@ def test_ticker_strip_is_published_only_once_it_is_finished():
         "bars. Build into a local and publish last.")
 
 
+def test_cached_array_is_written_before_cached_image():
+    """The two helper fields must be published array-first, everywhere.
+
+    _get_visible_portion_integer reads cached_image.width and cached_array in
+    two separate statements. Between them, a reader that sees the new (wider)
+    image against the old (shorter) array gets a slice that is short by the
+    difference -- ValueError out of the frame build, or "not enough image data"
+    from Image.frombytes on the other branch.
+
+    display()'s re-seed already got this right and said why in a comment.
+    _create_ticker_image did not, which was harmless only while display()
+    blocked on a queue until the rebuild finished. It no longer does: the
+    rebuild runs on a worker thread, and the re-seed keeps display() scrolling
+    the previous strip while it runs, so the render thread reads in exactly
+    that window.
+
+    The test above pins ticker_image relative to cached_array; it says nothing
+    about the two cache fields relative to each other, which is the ordering
+    that matters here.
+    """
+    import ast as _ast
+    for fname in ("_create_ticker_image", "display"):
+        fn = FUNCS.get(fname)
+        if fn is None:
+            continue
+        pairs = []
+        for node in _ast.walk(fn):
+            if not isinstance(node, _ast.Assign):
+                continue
+            for t in node.targets:
+                tgt = _ast.unparse(t)
+                if tgt in ("self.scroll_helper.cached_image",
+                           "self.scroll_helper.cached_array"):
+                    pairs.append((node.lineno, tgt))
+        # Walk them in source order; every image write must be preceded by an
+        # array write that is not separated from it by another image write.
+        last_array = None
+        for lineno, tgt in sorted(pairs):
+            if tgt.endswith("cached_array"):
+                last_array = lineno
+            else:
+                assert last_array is not None and last_array < lineno, (
+                    f"{fname}: cached_image is assigned at line {lineno} without "
+                    "cached_array being written first. A reader between the two "
+                    "sees a new image against an old array and the slice is "
+                    "short. Write cached_array first.")
+
+
 if __name__ == "__main__":
     import sys
     failed = 0
