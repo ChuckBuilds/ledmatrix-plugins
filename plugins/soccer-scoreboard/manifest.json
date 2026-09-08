@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.25.0",
+  "version": "2.25.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.25.1",
+      "released": "2026-09-08",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Stop the web UI's own control reporting the plugin as degraded. other_games_divisions, the division filter for other games, renders as a checkbox group, and that widget is saved with a hidden companion field, so using the control writes other_games_divisions_data beside other_games_divisions. The plugin never reads the key, but the root object that declares the setting set additionalProperties: false, so the core's schema check flagged it and the web UI showed \"Degraded: Config schema: Field root: Additional properties are not allowed ('other_games_divisions_data' was unexpected)\" on a config the UI itself had just written. The key is now permitted -- unconstrained, since the widget has submitted it both as an array and as a JSON string -- while unknown keys are still rejected, so a typo in a hand-edited config is still caught. Same fix as odds-ticker 1.4.5. Affects only the schema; nothing about what the plugin fetches or draws changes."
+    },
     {
       "version": "2.25.0",
       "released": "2026-09-07",

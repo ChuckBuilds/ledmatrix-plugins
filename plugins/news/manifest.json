@@ -1,7 +1,7 @@
 {
   "id": "news",
   "name": "News Ticker",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
   "author": "ChuckBuilds",
   "category": "content",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/news",
   "versions": [
+    {
+      "version": "1.4.2",
+      "released": "2026-09-08",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop the web UI's own control reporting the plugin as degraded. feeds.enabled_feeds, the feed picker, renders as a checkbox group, and that widget is saved with a hidden companion field, so using the control writes enabled_feeds_data beside enabled_feeds. The plugin never reads the key, but the feeds object that declares the setting set additionalProperties: false, so the core's schema check flagged it and the web UI showed \"Degraded: Config schema: Field 'feeds': Additional properties are not allowed ('enabled_feeds_data' was unexpected)\" on a config the UI itself had just written. The key is now permitted -- unconstrained, since the widget has submitted it both as an array and as a JSON string -- while unknown keys are still rejected, so a typo in a hand-edited config is still caught. Same fix as odds-ticker 1.4.5. Affects only the schema; nothing about what the plugin fetches or draws changes."
+    },
     {
       "version": "1.4.0",
       "released": "2026-09-02",

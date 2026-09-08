@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.8.8",
+  "version": "1.8.9",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,12 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.8.9",
+      "released": "2026-09-08",
+      "notes": "Stop the web UI's own controls reporting the scoreboard as degraded. Two settings render as checkbox groups -- practice.sessions_to_show and vegas.sections -- and that widget is saved with a hidden companion field, so using either control writes sessions_to_show_data or sections_data beside the setting. The plugin never reads those keys, but both the practice and vegas objects set additionalProperties: false, so the core's schema check flagged them and the web UI showed \"Degraded: Config schema: Field 'practice': Additional properties are not allowed ('sessions_to_show_data' was unexpected)\", and the same for 'vegas', on a config the UI itself had just written. Both keys are now permitted -- unconstrained, since the widget has submitted the value both as an array and as a JSON string -- while unknown keys are still rejected, so a typo in a hand-edited config is still caught. Same fix as odds-ticker 1.4.5. Affects only the schema; nothing about what the scoreboard fetches or draws changes.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.8.7",
       "released": "2026-09-03",

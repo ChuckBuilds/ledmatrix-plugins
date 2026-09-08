@@ -215,7 +215,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.8.8"
+      "latest_version": "1.8.9"
     },
     {
       "id": "football-scoreboard",
@@ -439,7 +439,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.13.0"
+      "latest_version": "1.13.1"
     },
     {
       "id": "march-madness",
@@ -557,7 +557,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.1"
+      "latest_version": "1.4.2"
     },
     {
       "id": "on-air",
@@ -760,7 +760,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.25.0"
+      "latest_version": "2.25.1"
     },
     {
       "id": "static-image",
@@ -1048,7 +1048,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.23.0",
+      "latest_version": "1.23.1",
       "last_updated": "2026-09-07"
     },
     {
@@ -1095,7 +1095,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.22.0"
+      "latest_version": "1.22.1"
     },
     {
       "id": "jellyfin-now-playing",
@@ -1119,7 +1119,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.1"
+      "latest_version": "1.2.2"
     },
     {
       "id": "incoming-packages",
