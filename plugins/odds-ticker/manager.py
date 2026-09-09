@@ -1423,7 +1423,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                                     # Remove duplicates and filter out empty strings
                                     broadcast_info = list(set([name for name in broadcast_info if name]))
                                     
-                                    logger.info(f"Found broadcast channels for game {game_id}: {broadcast_info}")
+                                    logger.debug(f"Found broadcast channels for game {game_id}: {broadcast_info}")
                                     logger.debug(f"Raw broadcasts data for game {game_id}: {broadcasts}")
                                     # Log the first broadcast structure for debugging
                                     if broadcasts:
@@ -1870,8 +1870,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         # Enhanced broadcast logo debugging
         if self.show_channel_logos:
             broadcast_names = game.get('broadcast_info', [])  # This is now a list
-            logger.info(f"Game {game.get('id')}: Raw broadcast info from API: {broadcast_names}")
-            logger.info(f"Game {game.get('id')}: show_channel_logos setting: {self.show_channel_logos}")
+            logger.debug(f"Game {game.get('id')}: Raw broadcast info from API: {broadcast_names}")
+            logger.debug(f"Game {game.get('id')}: show_channel_logos setting: {self.show_channel_logos}")
             
             if broadcast_names:
                 logo_name = None
@@ -1884,18 +1884,18 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                     for key in sorted_keys:
                         if key in b_name:
                             logo_name = self.BROADCAST_LOGO_MAP[key]
-                            logger.info(f"Game {game.get('id')}: Matched '{key}' to logo '{logo_name}' for broadcast '{b_name}'")
+                            logger.debug(f"Game {game.get('id')}: Matched '{key}' to logo '{logo_name}' for broadcast '{b_name}'")
                             break  # Found the best match for this b_name
                     if logo_name:
                         break  # Found a logo, stop searching through broadcast list
 
-                logger.info(f"Game {game.get('id')}: Final mapped logo name: '{logo_name}' from broadcast names: {broadcast_names}")
+                logger.debug(f"Game {game.get('id')}: Final mapped logo name: '{logo_name}' from broadcast names: {broadcast_names}")
                 if logo_name:
                     # Resolve path relative to project root
                     logo_path = self.project_root / "assets" / "broadcast_logos" / f"{logo_name}.png"
                     broadcast_logo = self.convert_image(logo_path)
                     if broadcast_logo:
-                        logger.info(f"Game {game.get('id')}: Successfully loaded broadcast logo for '{logo_name}' - Size: {broadcast_logo.size}")
+                        logger.debug(f"Game {game.get('id')}: Successfully loaded broadcast logo for '{logo_name}' - Size: {broadcast_logo.size}")
                     else:
                         logger.warning(f"Game {game.get('id')}: Failed to load broadcast logo for '{logo_name}'")
                         # Check if the file exists
@@ -1903,7 +1903,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                 else:
                     logger.warning(f"Game {game.get('id')}: No mapping found for broadcast names {broadcast_names} in BROADCAST_LOGO_MAP")
             else:
-                logger.info(f"Game {game.get('id')}: No broadcast info available.")
+                logger.debug(f"Game {game.get('id')}: No broadcast info available.")
 
         if home_logo:
             home_logo = home_logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
@@ -1928,7 +1928,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             
             broadcast_logo = broadcast_logo.resize((b_logo_w, b_logo_h), Image.Resampling.LANCZOS)
             broadcast_logo_col_width = b_logo_w
-            logger.info(f"Game {game.get('id')}: Resized broadcast logo to {broadcast_logo.size}, column width: {broadcast_logo_col_width}")
+            logger.debug(f"Game {game.get('id')}: Resized broadcast logo to {broadcast_logo.size}, column width: {broadcast_logo_col_width}")
 
         # Format date and time into 3 parts
         local_time = self._parse_and_convert_time(game.get('start_time'))
@@ -2236,7 +2236,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         if broadcast_logo:
             total_width += broadcast_logo_col_width + h_padding  # Add padding after broadcast logo
         
-        logger.info(f"Game {game.get('id')}: Total width calculation - logo_size: {logo_size}, vs_width: {vs_width}, team_info_width: {team_info_width}, odds_width: {odds_width}, datetime_col_width: {datetime_col_width}, broadcast_logo_col_width: {broadcast_logo_col_width}, total_width: {total_width}")
+        logger.debug(f"Game {game.get('id')}: Total width calculation - logo_size: {logo_size}, vs_width: {vs_width}, team_info_width: {team_info_width}, odds_width: {odds_width}, datetime_col_width: {datetime_col_width}, broadcast_logo_col_width: {broadcast_logo_col_width}, total_width: {total_width}")
 
         # --- Create final image ---
         image = Image.new('RGB', (int(total_width), height), color=(0, 0, 0))
@@ -2358,12 +2358,12 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         if broadcast_logo:
             # Position the broadcast logo in its own column
             logo_y = (height - broadcast_logo.height) // 2
-            logger.info(f"Game {game.get('id')}: Pasting broadcast logo at ({int(current_x)}, {logo_y})")
-            logger.info(f"Game {game.get('id')}: Broadcast logo size: {broadcast_logo.size}, image total width: {image.width}")
+            logger.debug(f"Game {game.get('id')}: Pasting broadcast logo at ({int(current_x)}, {logo_y})")
+            logger.debug(f"Game {game.get('id')}: Broadcast logo size: {broadcast_logo.size}, image total width: {image.width}")
             image.paste(broadcast_logo, (int(current_x), logo_y), broadcast_logo if broadcast_logo.mode == 'RGBA' else None)
-            logger.info(f"Game {game.get('id')}: Successfully pasted broadcast logo")
+            logger.debug(f"Game {game.get('id')}: Successfully pasted broadcast logo")
         else:
-            logger.info(f"Game {game.get('id')}: No broadcast logo to paste")
+            logger.debug(f"Game {game.get('id')}: No broadcast logo to paste")
 
         return image
 
