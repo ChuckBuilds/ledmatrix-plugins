@@ -1,0 +1,61 @@
+name: Sports Lineage Drift
+
+# The scoreboard plugins deliberately ship *copies* of sports.py, manager.py,
+# game_renderer.py and scroll_display.py rather than sharing them (CLAUDE.md
+# non-negotiable #7). What makes that safe is the rule "a fix in one lineage
+# must be ported to its siblings in the same PR" -- and until now nothing
+# enforced it, so it was missed repeatedly.
+#
+# The has_live_content() logging throttle is the worked example: fixed in
+# baseball (1.20.4), then football, then hockey/basketball/lacrosse (#308),
+# while ufc-scoreboard stayed unfixed for months, logging once per display
+# frame whenever a card was live.
+#
+# Two checks, both baselined against the current tree so they start green and
+# fail only on something NEW:
+#
+# 1. Shape drift -- a function whose copies all AGREE today must not start
+#    disagreeing. Bodies are compared as normalised ASTs (docstrings dropped,
+#    sport tokens folded), so mlb_live and nfl_live are the same shape.
+#    Functions that already differ are recorded and ignored: the point is not
+#    uniformity, it is that a shared fix reaches every sibling.
+#
+# 2. Unthrottled display-path logging -- an info/warning call in
+#    has_live_content(), display() or get_vegas_content() with no throttle
+#    guard above it. These run once per *frame* in Vegas mode, so an unguarded
+#    line is hundreds of journal lines a second. Shape comparison cannot catch
+#    this one: has_live_content() legitimately differs between sports (one
+#    league versus three), so it is already divergent everywhere and a
+#    similarity check has nothing to compare against.
+
+on:
+  pull_request:
+    paths:
+      - 'plugins/*-scoreboard/**'
+      - 'scripts/check_sports_drift.py'
+      - 'scripts/test_check_sports_drift.py'
+      - 'scripts/sports_drift_baseline.json'
+      # Without this, a PR that only edits this workflow matches no path and
+      # never runs against its own change.
+      - '.github/workflows/sports-drift.yml'
+  workflow_dispatch:
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check sports lineages have not drifted
+        run: python scripts/check_sports_drift.py --verbose
+      # The gate's own regression suite, and not optional. This check reports
+      # by absence, so "looked and found nothing" and "did not really look"
+      # both print OK -- the first version of it recursed into class bodies
+      # wrongly and inspected 16 functions instead of 386 while reporting a
+      # clean result. These tests assert it still detects, and that it is
+      # still reading a plausible amount of code.
+      - name: Test the drift gate
+        if: always()
+        run: python scripts/test_check_sports_drift.py
