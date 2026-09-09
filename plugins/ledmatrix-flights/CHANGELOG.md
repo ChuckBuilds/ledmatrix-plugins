@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.13.2] - 2026-09-09
+
+### Fixed
+- **An unreachable receiver no longer costs a connect timeout on every poll.** When `adsb-feeder.local` (or whatever `skyaware_url` points at) goes away, `_fetch_aircraft_data()` used to pay the full 5-second timeout on every single poll and log an ERROR each time — on a measured rig that was 22 of the last 24 hours' worth of errors. Failures now back off from 30 seconds, doubling to a five-minute ceiling, and drop to DEBUG once the wait stops growing, so an extended outage costs a handful of lines instead of one per poll forever. Recovery logs once at INFO. This is the same shape `_TILE_FAILURE_COOLDOWN` already uses for map tiles.
+  The cost was never confined to this plugin: the core runs every plugin's `update()` on a single shared worker, so a dead host here delayed every other plugin's refresh behind it.
+
+### Changed
+- **Per-poll tracing moved to DEBUG.** `Fetching aircraft data from …`, `Received data, processing aircraft…` and `Currently tracking N aircraft` fired on every poll — the existing `is_visible` INFO/DEBUG split never narrowed anything, because a plugin in rotation is visible nearly all the time. `display(): mode=…` now logs at INFO only when the mode actually changes (627 lines an hour on the measured rig). Together these were roughly 1,100 journal lines an hour. The `Summary - …` line is untouched: it is already throttled on state change with a five-minute heartbeat.
+
 ## [1.12.7] - 2026-08-03
 
 ### Fixed

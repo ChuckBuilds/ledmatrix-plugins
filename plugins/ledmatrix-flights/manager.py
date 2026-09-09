@@ -30,6 +30,17 @@ _TILE_FAILURE_COOLDOWN = 300.0
 # How long the tile prefetch may spend in one update() call. PluginExecutor
 # allows an update 30s in total and the aircraft/METAR work needs its share.
 _PREFETCH_BUDGET_SECONDS = 10.0
+# Same idea as _TILE_FAILURE_COOLDOWN, for the receiver itself. When the
+# SkyAware host has gone away, every poll paid the full connect timeout --
+# measured on a rig whose adsb-feeder.local had disappeared, that was 22 of the
+# 24 hours' ERRORs, one per poll, each 4-5s. That cost is not confined to this
+# plugin: the core runs every plugin's update() on a single shared worker
+# (src/plugin_system/plugin_manager.py), so a dead host here delays every other
+# plugin's refresh behind it. Back off instead, doubling to a five-minute
+# ceiling, and drop to DEBUG once the wait stops growing so an extended outage
+# costs a handful of lines rather than one per poll forever.
+_FETCH_BACKOFF_BASE_SECONDS = 30.0
+_FETCH_BACKOFF_MAX_SECONDS = 300.0
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 
 # Import base plugin class
@@ -227,6 +238,11 @@ class FlightTrackerPlugin(BasePlugin):
         # default 5s). See _fetch_aircraft_data.
         self._last_raw_payload = None
         self._last_raw_payload_at = 0.0
+
+        # Consecutive SkyAware fetch failures, and the time before which we do
+        # not try again. See _FETCH_BACKOFF_BASE_SECONDS.
+        self._fetch_failures = 0
+        self._fetch_retry_after = 0.0
 
         # Set when a tile fetch fails; until it passes, tiles come from cache
         # only. Tile fetching runs on the render thread -- get_vegas_content()
@@ -938,10 +954,23 @@ class FlightTrackerPlugin(BasePlugin):
         five-minute-old sky and the map would draw aircraft where they
         demonstrably were not; a jet covers some 40 miles in that time.
         """
+        if time.time() < self._fetch_retry_after:
+            # The receiver is unreachable and the backoff has not elapsed.
+            # Skipping the call is the point: it is what keeps a dead host from
+            # costing a connect timeout on the shared update worker every poll.
+            return self._recent_raw_payload()
+
         try:
             response = requests.get(self.skyaware_url, timeout=5)
             response.raise_for_status()
             data = response.json()
+
+            if self._fetch_failures:
+                self.logger.info(
+                    "[Flight Tracker] SkyAware reachable again after %d failed "
+                    "attempt(s)", self._fetch_failures)
+                self._fetch_failures = 0
+                self._fetch_retry_after = 0.0
 
             self._last_raw_payload = data
             self._last_raw_payload_at = time.time()
@@ -949,7 +978,17 @@ class FlightTrackerPlugin(BasePlugin):
             self.logger.debug(f"[Flight Tracker] Fetched data: {len(data.get('aircraft', []))} aircraft")
             return data
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"[Flight Tracker] Failed to fetch aircraft data: {e}")
+            self._fetch_failures += 1
+            backoff = min(
+                _FETCH_BACKOFF_BASE_SECONDS * 2 ** (self._fetch_failures - 1),
+                _FETCH_BACKOFF_MAX_SECONDS)
+            self._fetch_retry_after = time.time() + backoff
+            # Report while the wait is still growing, then go quiet: a receiver
+            # that stays down is not news once per poll.
+            log = (self.logger.error if backoff < _FETCH_BACKOFF_MAX_SECONDS
+                   else self.logger.debug)
+            log("[Flight Tracker] Failed to fetch aircraft data: %s "
+                "(attempt %d, retrying in %ds)", e, self._fetch_failures, backoff)
             return self._recent_raw_payload()
 
     def _recent_raw_payload(self) -> Optional[Dict]:
@@ -2516,25 +2555,15 @@ class FlightTrackerPlugin(BasePlugin):
             self.last_fetch = current_time
 
             if self.data_source == 'flightradar24':
-                if is_visible:
-                    self.logger.info("[Flight Tracker] Fetching aircraft data from FlightRadar24")
-                else:
-                    self.logger.debug("[Flight Tracker] Fetching aircraft data from FlightRadar24 (background)")
+                self.logger.debug("[Flight Tracker] Fetching aircraft data from FlightRadar24%s",
+                                  "" if is_visible else " (background)")
                 self._update_from_fr24()
-                if is_visible:
-                    self.logger.info(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
-                else:
-                    self.logger.debug(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
+                self.logger.debug(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
             elif self.data_source in ('adsbfi', 'adsblol', 'opensky'):
-                if is_visible:
-                    self.logger.info(f"[Flight Tracker] Fetching aircraft data from {self.data_source}")
-                else:
-                    self.logger.debug(f"[Flight Tracker] Fetching aircraft data from {self.data_source} (background)")
+                self.logger.debug("[Flight Tracker] Fetching aircraft data from %s%s",
+                                  self.data_source, "" if is_visible else " (background)")
                 self._update_from_fetcher()
-                if is_visible:
-                    self.logger.info(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
-                else:
-                    self.logger.debug(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
+                self.logger.debug(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
                 if self.fr24_enrichment and is_visible:
                     self._maybe_refresh_fr24_enrichment()
                 if is_visible:
@@ -2544,19 +2573,13 @@ class FlightTrackerPlugin(BasePlugin):
                     self.pending_flight_plans.clear()
                 self._enrich_from_offline_db()
             else:
-                if is_visible:
-                    self.logger.info(f"[Flight Tracker] Fetching aircraft data from {self.skyaware_url}")
-                else:
-                    self.logger.debug(f"[Flight Tracker] Fetching aircraft data from {self.skyaware_url} (background)")
+                self.logger.debug("[Flight Tracker] Fetching aircraft data from %s%s",
+                                  self.skyaware_url, "" if is_visible else " (background)")
                 data = self._fetch_aircraft_data()
                 if data:
-                    if is_visible:
-                        self.logger.info("[Flight Tracker] Received data, processing aircraft...")
+                    self.logger.debug("[Flight Tracker] Received data, processing aircraft...")
                     self._process_aircraft_data(data)
-                    if is_visible:
-                        self.logger.info(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
-                    else:
-                        self.logger.debug(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
+                    self.logger.debug(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
                     # Queue interesting callsigns for background FlightAware fetching
                     if is_visible:
                         self._queue_interesting_callsigns()
@@ -2995,7 +3018,15 @@ class FlightTrackerPlugin(BasePlugin):
             else:
                 self.logger.debug("[Flight Tracker] Manual mode selection: chosen_mode=%s", mode)
 
-        self.logger.info("[Flight Tracker] display(): mode=%s, aircraft=%d", mode, aircraft_count)
+        # Fired on every display() call -- 627 lines an hour on a measured rig.
+        # A mode change is worth knowing; the same mode again is not.
+        if mode != getattr(self, '_last_logged_display_mode', None):
+            self._last_logged_display_mode = mode
+            self.logger.info(
+                "[Flight Tracker] display(): mode=%s, aircraft=%d", mode, aircraft_count)
+        else:
+            self.logger.debug(
+                "[Flight Tracker] display(): mode=%s, aircraft=%d", mode, aircraft_count)
 
         # Route to appropriate display method
         try:
