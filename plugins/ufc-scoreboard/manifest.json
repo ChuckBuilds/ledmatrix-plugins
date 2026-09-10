@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.9.1",
+      "released": "2026-09-09",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "has_live_content() no longer logs on every frame while a card is live. The summary at the end of the function was throttled, but a second INFO line inside the live-fights branch had no guard at all, so a live card logged once per display frame -- roughly 50 lines a second on a rig measured at 50 fps. Both branches now share one state-change + 60s heartbeat throttle, matching baseball-scoreboard. Pinned by test_live_content_log_throttle.py."
+    },
     {
       "version": "1.9.0",
       "released": "2026-09-07",

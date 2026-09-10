@@ -171,9 +171,12 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._current_display_league: Optional[str] = None
         self._current_display_mode_type: Optional[str] = None
 
-        # Throttle logging
-        self._last_live_content_false_log: float = 0.0
-        self._live_content_log_interval: float = 60.0
+        # Throttle logging for has_live_content(). It runs on the display path --
+        # once per frame in Vegas mode -- so it logs when the answer changes and
+        # then at most once per interval while it stays the same.
+        self._last_live_content_log: float = 0.0  # Timestamp of last log
+        self._last_live_content_state: Optional[Tuple] = None  # Last logged outcome
+        self._live_content_log_interval: float = 60.0  # Re-log an unchanged result this often
 
         # Track display mode state
         self._last_display_mode: Optional[str] = None
@@ -838,6 +841,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
             return False
 
         ufc_live = False
+        live_count = 0
         if self.ufc_enabled and self.ufc_live_priority and hasattr(self, "ufc_live"):
             raw_live_games = getattr(self.ufc_live, "live_games", [])
 
@@ -847,6 +851,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                 ]
 
                 if live_games:
+                    live_count = len(live_games)
                     favorite_fighters = getattr(
                         self.ufc_live, "favorite_fighters", []
                     )
@@ -860,19 +865,27 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                     else:
                         ufc_live = True
 
-                    self.logger.info(
-                        f"has_live_content: UFC live_games={len(live_games)}, "
-                        f"ufc_live={ufc_live}"
-                    )
-
+        # Throttle logging. The caller is the display path, which in Vegas mode
+        # runs once per frame, so logging every call buries the journal at
+        # hundreds of lines a second whenever a fight is live. What is worth
+        # knowing is when the answer *changes*; an unchanged answer is re-logged
+        # every _live_content_log_interval so a steady state is still visible.
+        #
+        # The True branch used to log unconditionally from inside the
+        # `if live_games:` block above. That call sat *outside* the guard below,
+        # which is why every earlier throttle fix -- which looked at the guard --
+        # left it in place.
         current_time = time.time()
-        should_log = ufc_live or (
-            current_time - self._last_live_content_false_log
-            >= self._live_content_log_interval
-        )
-        if should_log and not ufc_live:
-            self.logger.info("has_live_content() returning False")
-            self._last_live_content_false_log = current_time
+        state = (ufc_live, live_count)
+        changed = state != self._last_live_content_state
+        due = current_time - self._last_live_content_log >= self._live_content_log_interval
+
+        if changed or due:
+            self._last_live_content_state = state
+            self._last_live_content_log = current_time
+            self.logger.info(
+                f"has_live_content() returning {ufc_live}: live_games={live_count}"
+            )
 
         return ufc_live
 
