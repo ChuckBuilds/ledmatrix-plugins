@@ -42,10 +42,18 @@ def check(label, ok, detail=""):
         FAILURES.append(label)
 
 
-def game(gid="401872656", home="7", away="3", period=4, clock="0:44",
-         halftime=False, final=False):
-    return {"id": gid, "home_score": home, "away_score": away, "period": period,
-            "clock": clock, "is_halftime": halftime, "is_final": final,
+def game(gid="401872656", home="7", away="3", period_text="4th", clock="0:44",
+         halftime=False, final=False, down="1st & 10", possession="home",
+         redzone=False, scoring_event="", timeouts=3, period_break=False):
+    """Mirrors the fields game_renderer's live card actually reads."""
+    return {"id": gid, "home_score": home, "away_score": away,
+            "period_text": period_text, "clock": clock,
+            "status_text": f"{clock} - {period_text}",   # note: embeds the clock
+            "is_halftime": halftime, "is_final": final,
+            "is_period_break": period_break,
+            "down_distance_text": down, "possession_indicator": possession,
+            "is_redzone": redzone, "scoring_event": scoring_event,
+            "home_timeouts": timeouts, "away_timeouts": timeouts,
             "home_abbr": "SEA", "away_abbr": "NE"}
 
 
@@ -73,6 +81,9 @@ class _Helper:
 class _Stub:
     """Only what the fingerprint / preserve helpers touch."""
 
+    LIVE_SCROLL_REBUILD_MIN_SECONDS = FootballScoreboardPlugin.LIVE_SCROLL_REBUILD_MIN_SECONDS
+    _live_scroll_fields = FootballScoreboardPlugin._live_scroll_fields
+    _fingerprint_games = FootballScoreboardPlugin._fingerprint_games
     _live_scroll_fingerprint = FootballScoreboardPlugin._live_scroll_fingerprint
     _live_scroll_needs_rebuild = FootballScoreboardPlugin._live_scroll_needs_rebuild
     _note_live_scroll_built = FootballScoreboardPlugin._note_live_scroll_built
@@ -84,6 +95,7 @@ class _Stub:
         self.nfl_live = _LiveManager(nfl)
         self.ncaa_fb_live = _LiveManager(ncaa)
         self._live_scroll_fingerprints = {}
+        self._live_scroll_rebuilt_at = {}
         self.logger = type("L", (), {"info": lambda *a, **k: None,
                                      "debug": lambda *a, **k: None})()
         self._helper = helper
@@ -100,7 +112,8 @@ KEY = "football_live_live"
 
 print("what counts as a change")
 s = _Stub(nfl=[game()])
-s._note_live_scroll_built(KEY, "live")
+s._note_live_scroll_built(KEY, "live", s.nfl_live.live_games)
+s._live_scroll_rebuilt_at[KEY] = 0.0
 check("nothing changed -> no rebuild", not s._live_scroll_needs_rebuild(KEY, "live"))
 
 s.nfl_live.live_games = [game(clock="0:38")]
@@ -110,21 +123,66 @@ check("the clock ticking is NOT a rebuild", not s._live_scroll_needs_rebuild(KEY
 s.nfl_live.live_games = [game(home="14")]
 check("a touchdown IS a rebuild", s._live_scroll_needs_rebuild(KEY, "live"))
 
-s = _Stub(nfl=[game()]); s._note_live_scroll_built(KEY, "live")
-s.nfl_live.live_games = [game(period=5)]
+s = _Stub(nfl=[game()]); s._note_live_scroll_built(KEY, "live", s.nfl_live.live_games)
+s._live_scroll_rebuilt_at[KEY] = 0.0
+s.nfl_live.live_games = [game(period_text="OT")]
 check("period change is a rebuild", s._live_scroll_needs_rebuild(KEY, "live"))
 
-s = _Stub(nfl=[game()]); s._note_live_scroll_built(KEY, "live")
+s = _Stub(nfl=[game()]); s._note_live_scroll_built(KEY, "live", s.nfl_live.live_games)
+s._live_scroll_rebuilt_at[KEY] = 0.0
 s.nfl_live.live_games = [game(halftime=True)]
 check("halftime is a rebuild", s._live_scroll_needs_rebuild(KEY, "live"))
 
-s = _Stub(nfl=[game()]); s._note_live_scroll_built(KEY, "live")
+s = _Stub(nfl=[game()]); s._note_live_scroll_built(KEY, "live", s.nfl_live.live_games)
+s._live_scroll_rebuilt_at[KEY] = 0.0
 s.nfl_live.live_games = [game(), game(gid="999", home="0", away="0")]
 check("a second game going live is a rebuild", s._live_scroll_needs_rebuild(KEY, "live"))
 
 
+# --- the fields the first version of this fix missed entirely ---
+# It keyed on `period`, which game_renderer never reads (it draws period_text),
+# and ignored everything below. Each of these is drawn on the live card, so a
+# change the strip does not rebuild for is a change the viewer sees go stale.
+for label, kwargs in [
+    ("down and distance", {"down": "3rd & 2"}),
+    ("possession change", {"possession": "away"}),
+    ("entering the red zone", {"redzone": True}),
+    ("a TOUCHDOWN banner", {"scoring_event": "TOUCHDOWN"}),
+    ("a timeout being used", {"timeouts": 2}),
+    ("a period break", {"period_break": True}),
+]:
+    st = _Stub(nfl=[game()])
+    st._note_live_scroll_built(KEY, "live", st.nfl_live.live_games)
+    st._live_scroll_rebuilt_at[KEY] = 0.0          # past the rate limit
+    st.nfl_live.live_games = [game(**kwargs)]
+    check(f"{label} is a rebuild", st._live_scroll_needs_rebuild(KEY, "live"))
+
+# status_text embeds the clock ("0:44 - 4th"), so keying on it would smuggle the
+# clock back in and rebuild every second.
+st = _Stub(nfl=[game(clock="0:44")])
+st._note_live_scroll_built(KEY, "live", st.nfl_live.live_games)
+st._live_scroll_rebuilt_at[KEY] = 0.0
+st.nfl_live.live_games = [game(clock="0:38")]      # status_text changes with it
+check("status_text changing with the clock is NOT a rebuild",
+      not st._live_scroll_needs_rebuild(KEY, "live"),
+      "status_text is '0:44 - 4th'; keying on it undoes the clock exclusion")
+
+
+print("\nrebuilds are rate limited")
+st = _Stub(nfl=[game()])
+st._note_live_scroll_built(KEY, "live", st.nfl_live.live_games)   # stamps the clock
+st.nfl_live.live_games = [game(home="14")]
+check("a change inside the floor is deferred",
+      not st._live_scroll_needs_rebuild(KEY, "live"),
+      "a 6536x64 image x50 NCAA games x a play every 30s would rebuild ~1/sec")
+st._live_scroll_rebuilt_at[KEY] = 0.0
+check("and is not lost -- it fires once the floor passes",
+      st._live_scroll_needs_rebuild(KEY, "live"))
+
+
 print("\nwhat must never trigger a rebuild")
-s = _Stub(nfl=[game()]); s._note_live_scroll_built(KEY, "live")
+s = _Stub(nfl=[game()]); s._note_live_scroll_built(KEY, "live", s.nfl_live.live_games)
+s._live_scroll_rebuilt_at[KEY] = 0.0
 check("recent mode is untouched", not s._live_scroll_needs_rebuild(KEY, "recent"))
 check("upcoming mode is untouched", not s._live_scroll_needs_rebuild(KEY, "upcoming"))
 
@@ -139,7 +197,8 @@ check("first build is not a 'change'", not s._live_scroll_needs_rebuild(KEY, "li
 
 print("\nper-league scroll fingerprints stay separate")
 s = _Stub(nfl=[game()], ncaa=[game(gid="ncaa1")])
-s._note_live_scroll_built("live", "live", "nfl")
+s._note_live_scroll_built("live", "live", s.nfl_live.live_games, "nfl")
+s._live_scroll_rebuilt_at["live"] = 0.0
 s.ncaa_fb_live.live_games = [game(gid="ncaa1", home="21")]
 check("an NCAA score does not rebuild the NFL strip",
       not s._live_scroll_needs_rebuild("live", "live", "nfl"))
@@ -207,6 +266,7 @@ def _wired(score="7"):
     p.nfl_live = _LiveManager([game(home=score)])
     p.ncaa_fb_live = _LiveManager()
     p._live_scroll_fingerprints = {}
+    p._live_scroll_rebuilt_at = {}
     p._scroll_prepared = {}
     p._scroll_active = {}
     p.logger = MagicMock()
@@ -245,6 +305,7 @@ check("no change mid-cycle -> no rebuild",
 # until is_complete() fired, which is mocked False here on purpose.
 helper.scroll_position = 640.0
 helper.total_distance_scrolled = 640.0
+plugin._live_scroll_rebuilt_at["football_live_live"] = 0.0   # past the rate limit
 plugin.nfl_live.live_games = [game(home="14")]
 plugin._collect_games_for_scroll = lambda mt, lp: ([game(home="14")], ["nfl"])
 plugin._display_scroll_mode("football_live", "live", False)
@@ -258,6 +319,7 @@ check("and the marquee did not jump back to the start",
 
 # The clock ticking must not rebuild.
 before = sm.prepare_and_display.call_count
+plugin._live_scroll_rebuilt_at["football_live_live"] = 0.0   # rule out the rate limit
 plugin.nfl_live.live_games = [game(home="14", clock="0:12")]
 plugin._display_scroll_mode("football_live", "live", False)
 check("the clock ticking still does not rebuild",

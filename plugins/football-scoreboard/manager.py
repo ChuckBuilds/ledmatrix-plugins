@@ -197,6 +197,8 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # frame so a score change rebuilds it mid-cycle rather than at the end
         # of it; see _live_scroll_needs_rebuild().
         self._live_scroll_fingerprints: Dict[str, tuple] = {}
+        # When each live strip was last rebuilt, for LIVE_SCROLL_REBUILD_MIN_SECONDS.
+        self._live_scroll_rebuilt_at: Dict[str, float] = {}
         self._scroll_active_league: Dict[str, str] = {}  # {game_type: league currently prepared}
 
         # Enable high-FPS mode for scroll display (allows 100+ FPS scrolling)
@@ -1384,34 +1386,69 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         )
         return False
     
-    def _live_scroll_fingerprint(self, league: Optional[str] = None) -> tuple:
-        """What a viewer would notice changing on a live card.
+    #: Minimum seconds between mid-cycle strip rebuilds.
+    #:
+    #: A rebuild re-renders every card into one wide image -- measured on a rig,
+    #: 6536x64 for six games, and an NCAA Saturday can have fifty. Down-and-
+    #: distance changes on every play, so without a floor here fifty live games
+    #: would rebuild that image once a second. The pending change is not lost
+    #: when a rebuild is deferred: the fingerprint is only recorded after a
+    #: successful rebuild, so the next frame past the floor still sees it.
+    LIVE_SCROLL_REBUILD_MIN_SECONDS = 5.0
 
-        Deliberately excludes the game clock. The clock ticks every second, and
-        rebuilding the strip on it would re-render every card ~60 times a minute
-        to move two glyphs -- on a Pi that is the whole frame budget. Scores,
-        period and the halftime/final flags change a handful of times a game.
+    @staticmethod
+    def _live_scroll_fields(game: Dict[str, Any]) -> tuple:
+        """The parts of a game the live card actually draws, minus the clock.
+
+        Mirrors game_renderer's live layout deliberately -- a field the card
+        renders but this omits is a change the viewer sees and the strip does
+        not rebuild for. That was the first version's bug: it keyed on `period`,
+        which the renderer never reads (it draws `period_text`), and ignored
+        down-and-distance, possession, the red-zone colour, timeouts and the
+        scoring-event banner.
+
+        Two deliberate omissions:
+
+        - `clock` ticks every second, and rebuilding a 6536px image sixty times
+          a minute to move two glyphs is the whole frame budget on a Pi.
+        - `status_text` embeds the clock ("0:44 - 4th"), so including it would
+          smuggle the clock back in and undo the point. The card only draws it
+          during a period break, where the clock is stopped anyway.
         """
-        parts = []
+        return (
+            str(game.get("id")),
+            str(game.get("home_score")),
+            str(game.get("away_score")),
+            str(game.get("period_text")),
+            str(game.get("down_distance_text")),
+            str(game.get("possession_indicator")),
+            str(game.get("scoring_event")),
+            str(game.get("home_timeouts")),
+            str(game.get("away_timeouts")),
+            bool(game.get("is_redzone")),
+            bool(game.get("is_halftime")),
+            bool(game.get("is_period_break")),
+            bool(game.get("is_final")),
+        )
+
+    def _live_scroll_fingerprint(self, league: Optional[str] = None) -> tuple:
+        """Fingerprint of what the live managers hold right now."""
+        games = []
         for league_id, enabled in (("nfl", self.nfl_enabled),
                                    ("ncaa_fb", self.ncaa_fb_enabled)):
             if not enabled or (league is not None and league_id != league):
                 continue
             manager = getattr(self, f"{league_id}_live", None)
-            for game in (getattr(manager, "live_games", None) or []):
-                parts.append((
-                    str(game.get("id")),
-                    str(game.get("home_score")),
-                    str(game.get("away_score")),
-                    str(game.get("period")),
-                    bool(game.get("is_halftime")),
-                    bool(game.get("is_final")),
-                ))
-        return tuple(sorted(parts))
+            games.extend(getattr(manager, "live_games", None) or [])
+        return self._fingerprint_games(games)
+
+    @classmethod
+    def _fingerprint_games(cls, games) -> tuple:
+        return tuple(sorted(cls._live_scroll_fields(g) for g in (games or [])))
 
     def _live_scroll_needs_rebuild(self, scroll_key: str, mode_type: str,
                                    league: Optional[str] = None) -> bool:
-        """True when a live score has changed since the strip was built.
+        """True when the live card would draw differently than the strip does.
 
         _scroll_prepared is only cleared when the cycle *completes*, so a score
         scored mid-cycle stayed frozen in the rendered strip until the marquee
@@ -1421,19 +1458,31 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         if mode_type != "live":
             return False
-        fingerprint = self._live_scroll_fingerprint(league)
-        if not fingerprint:
-            self._live_scroll_fingerprints.pop(scroll_key, None)
-            return False
         known = self._live_scroll_fingerprints.get(scroll_key)
-        return known is not None and fingerprint != known
+        if known is None:
+            return False                      # nothing built yet; normal path
+        if self._live_scroll_fingerprint(league) == known:
+            return False
+        last = self._live_scroll_rebuilt_at.get(scroll_key, 0.0)
+        if time.time() - last < self.LIVE_SCROLL_REBUILD_MIN_SECONDS:
+            return False                      # deferred, not dropped
+        return True
 
     def _note_live_scroll_built(self, scroll_key: str, mode_type: str,
-                                league: Optional[str] = None) -> None:
-        """Record what the strip was just built from."""
-        if mode_type == "live":
-            self._live_scroll_fingerprints[scroll_key] = \
-                self._live_scroll_fingerprint(league)
+                                games=None, league: Optional[str] = None) -> None:
+        """Record what the strip was built from.
+
+        Fingerprints the games actually handed to the renderer rather than
+        re-reading the managers, which a background update can have moved on
+        since. Re-reading would record data the strip does not contain and lose
+        that change until the next one.
+        """
+        if mode_type != "live":
+            return
+        self._live_scroll_fingerprints[scroll_key] = (
+            self._fingerprint_games(games) if games is not None
+            else self._live_scroll_fingerprint(league))
+        self._live_scroll_rebuilt_at[scroll_key] = time.time()
 
     @contextmanager
     def _preserving_scroll_position(self, mode_type: str, active: bool):
@@ -1466,7 +1515,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                     helper.total_distance_scrolled = distance
                 helper.scroll_complete = False
                 self.logger.info(
-                    "[Football Scroll] Live score changed; rebuilt the %s strip "
+                    "[Football Scroll] Live card changed; rebuilt the %s strip "
                     "in place at position %d", mode_type, int(helper.scroll_position))
 
     def _display_scroll_mode(self, display_mode: str, mode_type: str, force_clear: bool) -> bool:
@@ -1529,7 +1578,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 )
 
             if success:
-                self._note_live_scroll_built(scroll_key, mode_type)
+                self._note_live_scroll_built(scroll_key, mode_type, games)
                 self._scroll_prepared[scroll_key] = True
                 self._scroll_active[scroll_key] = True
                 self.logger.info(
@@ -1662,7 +1711,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 success = self._scroll_manager.prepare_and_display(games, mode_type, [league], rankings)
 
             if success:
-                self._note_live_scroll_built(mode_type, mode_type, league)
+                self._note_live_scroll_built(mode_type, mode_type, games, league)
                 self._scroll_prepared[mode_type] = True
                 self._scroll_active[mode_type] = True
                 self._scroll_active_league[mode_type] = league
