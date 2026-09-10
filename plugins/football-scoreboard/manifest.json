@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.5.5",
+  "version": "3.6.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.6.0",
+      "released": "2026-09-10",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Live games refresh at live_update_interval again instead of once a minute. The core scheduler only ever read the manifest's static update_interval (60s), so the plugin's live_update_interval could never fire more often than that -- measured on a live rig during an NFL fourth quarter, ESPN was polled at 23:21:49, 23:22:50, 23:23:50, 23:24:50, exactly 60s apart, while the setting asked for 15. A clock up to a minute stale during a two-minute drill reads as a frozen panel. The new get_update_interval() hook reports the live interval while a game is in progress and nothing when idle, so out-of-season polling is unchanged. Needs the core-side hook; older cores ignore the method and behave exactly as before."
+    },
     {
       "version": "3.5.5",
       "released": "2026-09-11",
@@ -472,7 +478,7 @@
       "released": "2026-07-10",
       "version": "2.8.0",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" \u00e2\u20ac\u201d rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
+      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" — rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
     },
     {
       "released": "2026-07-08",
