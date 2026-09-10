@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.25.5",
+  "version": "1.25.6",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.25.6",
+      "released": "2026-09-09",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Removes game_filter.py (252 lines), which nothing imported. The same dead module exists in baseball-scoreboard and odds-ticker -- it was carried into each lineage by the copy-forward and used in none of them. No behaviour change."
+    },
     {
       "version": "1.25.5",
       "released": "2026-09-07",

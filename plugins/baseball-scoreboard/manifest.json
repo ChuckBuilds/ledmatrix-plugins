@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.40.5",
+  "version": "1.40.6",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.40.6",
+      "released": "2026-09-09",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Removes two modules nothing imported: game_filter.py (561 lines) and rankings_manager.py (138). Neither is referenced anywhere in the plugin, and plugin modules are loaded as bare top-level names scoped to their own plugin, so nothing outside it could reach them either. No behaviour change."
+    },
     {
       "version": "1.40.5",
       "released": "2026-09-07",
