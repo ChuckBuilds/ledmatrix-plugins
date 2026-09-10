@@ -1780,6 +1780,13 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
     LIVE_VOLATILE_FIELDS = frozenset({
         "clock", "status_text", "display_clock",   # move on their own
         "league", "status",                        # added by the display pipeline
+        # This sport builds period_text as "<period> <clock>" (see
+        # soccer_managers.py:297), so it moves every second too. The numeric `period`
+        # is a separate field and is still compared, so a quarter/half change
+        # still rebuilds -- only the clock inside the label goes stale between
+        # rebuilds, which is the same trade as excluding `clock` itself.
+        # football and hockey do not do this: their period_text is "Q4"/"P2".
+        "period_text",
     })
 
     #: Floor between mid-cycle strip rebuilds, and the duty-cycle cap that can
@@ -1898,7 +1905,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._live_scroll_rebuilt_at[scroll_key] = time.time()
 
     @contextmanager
-    def _preserving_scroll_position(self, mode_type, active):
+    def _preserving_scroll_position(self, mode_type, active, scroll_key=None):
         """Keep the marquee where it is across a mid-cycle rebuild.
 
         ScrollHelper.set_scrolling_image() resets two counters and both matter:
@@ -1922,8 +1929,11 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         try:
             yield
         finally:
-            # What this render cost, so the next floor can scale with it.
-            self._live_scroll_rebuild_cost[mode_type] = time.time() - started
+            # What this render cost, so the next floor can scale with it. Keyed by
+            # scroll_key, which is what _live_scroll_needs_rebuild() reads --
+            # they are only the same string in some of these plugins, and keying
+            # by mode_type made the duty cap silently inert in the rest.
+            self._live_scroll_rebuild_cost[scroll_key or mode_type] = time.time() - started
             if helper is not None and position is not None:
                 width = max(getattr(helper, "total_scroll_width", 0) - 1, 0)
                 helper.scroll_position = min(position, width)
@@ -1994,7 +2004,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             # What the managers hold right now -- this is what the render
             # below draws, so it is what the strip must be recorded as showing.
             pending_live_fingerprint = self._live_scroll_fingerprint(None)
-            with self._preserving_scroll_position(mode_type, rebuild_for_live):
+            with self._preserving_scroll_position(mode_type, rebuild_for_live, scroll_key):
                 success = self._scroll_manager.prepare_and_display(
                     games, mode_type, leagues, rankings
                 )
