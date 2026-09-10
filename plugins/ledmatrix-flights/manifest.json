@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.13.1",
+  "version": "1.13.2",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -37,6 +37,12 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "version": "1.13.2",
+      "released": "2026-09-09",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "An unreachable receiver no longer costs a connect timeout on every poll. SkyAware fetch failures now back off 30s doubling to 5 minutes, and drop to DEBUG once the wait stops growing -- previously every poll paid the full 5s timeout and logged an ERROR, which on a measured rig was 22 of 24 hours' worth of errors. That cost is shared: the core runs every plugin's update() on one worker, so a dead host here delayed other plugins' refreshes too. Separately, per-poll fetch tracing moved to DEBUG and display() now logs at INFO only when the mode changes; together those were about 1,100 journal lines an hour."
+    },
     {
       "version": "1.13.1",
       "released": "2026-09-08",
