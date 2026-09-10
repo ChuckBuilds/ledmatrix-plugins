@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.4.5",
+  "version": "1.4.7",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,18 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.4.7",
+      "released": "2026-09-09",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Removes three modules nothing imported: odds_renderer.py (885 lines), data_fetcher.py (380) and game_filter.py (290). Rendering and fetching both live in manager.py; these were never wired up. Plugin modules are loaded as bare top-level names scoped to their own plugin, so nothing outside odds-ticker could reach them either. No behaviour change."
+    },
+    {
+      "version": "1.4.6",
+      "released": "2026-09-09",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Per-game render tracing moved from INFO to DEBUG. _create_game_display() carried 12 INFO calls against 2 DEBUG -- width arithmetic and a four-line narration of every broadcast-logo paste -- and it runs once per game per rebuild. Measured on a 256x64 rig: 1,350 journal lines an hour from two of those calls alone, about 22% of everything the display service logged. One more per-game trace in _fetch_league_games() went with them. No behaviour change; run with DEBUG to get them back."
+    },
     {
       "version": "1.4.5",
       "released": "2026-09-08",
