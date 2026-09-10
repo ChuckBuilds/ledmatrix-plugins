@@ -19,7 +19,7 @@ Three things here are easy to get wrong and are each pinned:
   * The fingerprint is a DENYLIST, not an allowlist. The first version of this
     fix listed fields to watch and omitted several the card draws.
 
-Run: <core-venv>/bin/python plugins/football-scoreboard/test_live_scroll_refresh.py
+Run: <core-venv>/bin/python plugins/baseball-scoreboard/test_live_scroll_refresh.py
 """
 
 import os
@@ -29,7 +29,7 @@ PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
 if PLUGIN_DIR not in sys.path:
     sys.path.insert(0, PLUGIN_DIR)
 
-from manager import FootballScoreboardPlugin as Plugin  # noqa: E402
+from manager import BaseballScoreboardPlugin as Plugin  # noqa: E402
 
 FAILURES = []
 

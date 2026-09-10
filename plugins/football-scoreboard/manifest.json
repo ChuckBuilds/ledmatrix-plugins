@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.7.0",
+  "version": "3.7.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.7.1",
+      "released": "2026-09-10",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Live games now reach the scrolling strip mid-cycle. The strip was rendered once per scroll cycle and _scroll_prepared was cleared only when the cycle completed, so a score changed while the marquee was running stayed frozen in the pixels until it finished -- minutes, for a long game list. Restarting the display forced a rebuild, which is the workaround users were finding. The strip is now rebuilt when anything the card draws changes, keeping scroll_position and total_distance_scrolled so the marquee does not snap back to the start and the cycle still completes on schedule. The game clock deliberately does not trigger a rebuild -- it ticks every second and re-rendering every card that often is the whole frame budget on a Pi -- and rebuilds are floored at 5s so a large slate cannot thrash. Ported across all eight scoreboards in one change, per CLAUDE.md non-negotiable #7. Corrects the first cut of this fix, which keyed on an allowlist that omitted down-and-distance, possession, the red-zone colour, timeouts and the scoring banner, and which counted the 'league'/'status' keys the display pipeline adds in place -- making every update look like a change."
+    },
     {
       "version": "3.7.0",
       "released": "2026-09-10",

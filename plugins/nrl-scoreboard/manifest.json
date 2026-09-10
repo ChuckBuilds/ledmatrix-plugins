@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.22.1",
+  "version": "1.23.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "nrl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.23.0",
+      "released": "2026-09-10",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Live games now reach the scrolling strip mid-cycle. The strip was rendered once per scroll cycle and _scroll_prepared was cleared only when the cycle completed, so a score changed while the marquee was running stayed frozen in the pixels until it finished -- minutes, for a long game list. Restarting the display forced a rebuild, which is the workaround users were finding. The strip is now rebuilt when anything the card draws changes, keeping scroll_position and total_distance_scrolled so the marquee does not snap back to the start and the cycle still completes on schedule. The game clock deliberately does not trigger a rebuild -- it ticks every second and re-rendering every card that often is the whole frame budget on a Pi -- and rebuilds are floored at 5s so a large slate cannot thrash. Ported across all eight scoreboards in one change, per CLAUDE.md non-negotiable #7."
+    },
     {
       "version": "1.22.1",
       "released": "2026-09-08",
