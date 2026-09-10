@@ -175,6 +175,8 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         # rebuilds it mid-cycle instead of at the end of one.
         self._live_scroll_fingerprints = {}
         self._live_scroll_rebuilt_at = {}
+        # Seconds the last strip render took, per mode; feeds the duty-cycle cap.
+        self._live_scroll_rebuild_cost = {}
         
         # Enable high-FPS mode for scroll display (allows 100+ FPS scrolling)
         # This signals to the display controller to use high-FPS loop (8ms = 125 FPS)
@@ -2458,13 +2460,24 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         "league", "status",                        # added by the display pipeline
     })
 
-    #: Minimum seconds between mid-cycle strip rebuilds. A rebuild re-renders
-    #: every card into one wide image -- measured at 6536x64 for six games, and
-    #: a full Saturday slate is far larger. Without a floor, one change somewhere
-    #: in a large slate would rebuild that image continuously. A deferred change
-    #: is not dropped: the fingerprint is recorded only after a *successful*
-    #: rebuild, so the next frame past the floor still sees it.
+    #: Floor between mid-cycle strip rebuilds, and the duty-cycle cap that can
+    #: raise it.
+    #:
+    #: A rebuild re-renders every card into one wide image, on the render
+    #: thread, so the marquee is frozen for however long it takes. Measured on a
+    #: Pi 4: 28ms for one game, 139ms for five, 435ms for fifteen. A fixed 5s
+    #: floor is fine for one game and wrong for a full slate -- with fifteen
+    #: live games a pitch lands somewhere every second or so, the fingerprint
+    #: changes continuously, and 435ms every 5s is nearly a tenth of the time
+    #: spent not scrolling.
+    #:
+    #: So the floor also scales with what the last rebuild actually cost: never
+    #: spend more than 1/LIVE_SCROLL_REBUILD_DUTY_DIVISOR of wall time
+    #: rebuilding. Fifteen games self-limits to a rebuild every ~8.7s; one game
+    #: stays on the 5s floor. No per-sport tuning, and it adapts to slate size
+    #: and panel width on its own.
     LIVE_SCROLL_REBUILD_MIN_SECONDS = 5.0
+    LIVE_SCROLL_REBUILD_DUTY_DIVISOR = 20.0
 
     def _live_scroll_managers(self, league=None):
         """The live managers whose games are on the strip.
@@ -2531,7 +2544,10 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         if self._live_scroll_fingerprint(league) == known:
             return False
         last = self._live_scroll_rebuilt_at.get(scroll_key, 0.0)
-        if time.time() - last < self.LIVE_SCROLL_REBUILD_MIN_SECONDS:
+        cost = self._live_scroll_rebuild_cost.get(scroll_key, 0.0)
+        floor = max(self.LIVE_SCROLL_REBUILD_MIN_SECONDS,
+                    cost * self.LIVE_SCROLL_REBUILD_DUTY_DIVISOR)
+        if time.time() - last < floor:
             return False                      # deferred, not dropped
         return True
 
@@ -2580,9 +2596,12 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 helper = None
         position = getattr(helper, "scroll_position", None) if helper else None
         distance = getattr(helper, "total_distance_scrolled", None) if helper else None
+        started = time.time()
         try:
             yield
         finally:
+            # What this render cost, so the next floor can scale with it.
+            self._live_scroll_rebuild_cost[mode_type] = time.time() - started
             if helper is not None and position is not None:
                 width = max(getattr(helper, "total_scroll_width", 0) - 1, 0)
                 helper.scroll_position = min(position, width)

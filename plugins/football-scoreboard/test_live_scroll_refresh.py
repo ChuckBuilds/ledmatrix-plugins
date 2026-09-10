@@ -77,6 +77,7 @@ class _Stub:
 
     LIVE_VOLATILE_FIELDS = Plugin.LIVE_VOLATILE_FIELDS
     LIVE_SCROLL_REBUILD_MIN_SECONDS = Plugin.LIVE_SCROLL_REBUILD_MIN_SECONDS
+    LIVE_SCROLL_REBUILD_DUTY_DIVISOR = Plugin.LIVE_SCROLL_REBUILD_DUTY_DIVISOR
     _live_scroll_managers = Plugin._live_scroll_managers
     _live_scroll_fields = Plugin._live_scroll_fields
     _fingerprint_games = Plugin._fingerprint_games
@@ -95,6 +96,7 @@ class _Stub:
         }
         self._live_scroll_fingerprints = {}
         self._live_scroll_rebuilt_at = {}
+        self._live_scroll_rebuild_cost = {}
         self.logger = type("L", (), {"info": lambda *a, **k: None,
                                      "debug": lambda *a, **k: None})()
         self._helper = helper
@@ -226,6 +228,29 @@ check("a change inside the floor is deferred",
 s._live_scroll_rebuilt_at[KEY] = 0.0
 check("and is not lost -- it fires once the floor passes",
       s._live_scroll_needs_rebuild(KEY, "live"))
+
+
+print("\nthe floor scales with what a rebuild actually costs")
+# Measured on a Pi 4: 29ms for one game, 463ms for fifteen. A fixed floor is
+# fine for one game and wrong for a full slate -- 463ms every 5s is nearly a
+# tenth of the time with the marquee frozen.
+s = fresh([game()])
+s._live_scroll_rebuild_cost[KEY] = 0.463         # a fifteen-game slate
+s._live_scroll_rebuilt_at[KEY] = __import__("time").time() - 6.0
+s._set([game(home="9")])
+check("an expensive rebuild raises the floor above 5s",
+      not s._live_scroll_needs_rebuild(KEY, "live"),
+      "0.463s x 20 = 9.3s floor; 6s since the last one is not enough")
+s._live_scroll_rebuilt_at[KEY] = __import__("time").time() - 10.0
+check("and it fires once that longer floor passes",
+      s._live_scroll_needs_rebuild(KEY, "live"))
+s = fresh([game()])
+s._live_scroll_rebuild_cost[KEY] = 0.029         # a single game
+s._live_scroll_rebuilt_at[KEY] = __import__("time").time() - 6.0
+s._set([game(home="9")])
+check("a cheap rebuild stays on the 5s floor",
+      s._live_scroll_needs_rebuild(KEY, "live"),
+      "0.029s x 20 = 0.6s, so the 5s minimum governs")
 
 
 print("\nthe marquee keeps its place across a rebuild")
