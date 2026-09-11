@@ -1838,6 +1838,34 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             return [manager] if manager is not None else []
         return []
 
+    def _refresh_live_scroll_managers(self, league=None) -> None:
+        """Let the live managers refresh before their games are fingerprinted.
+
+        Switch mode stays current because _try_manager_display() calls
+        _ensure_manager_updated() on every pass. Scroll mode had no equivalent:
+        its only refresh sat inside the block gated by the rebuild decision, and
+        that decision is computed from the data the refresh would replace. So
+        once the first strip was built nothing could change it, and the score on
+        the marquee stayed frozen until the process restarted.
+
+        _ensure_manager_updated() is itself interval-guarded, so this costs two
+        getattrs and a comparison on the frames where nothing is due.
+
+        Deliberately NOT gated on mode_type == "live". A recent/upcoming strip
+        never rebuilds from the fingerprint (_live_scroll_needs_rebuild returns
+        early for those), so refreshing here looks like wasted work -- but with
+        live_priority the plugin only switches TO live mode once it knows live
+        games exist, and it learns that from these same managers. Refreshing
+        only while live mode is on screen would rebuild the same circularity one
+        level up, and a game that went live would wait for the background
+        plugin update -- an hour, on a rig that sets update_interval: 3600.
+        """
+        for manager in self._live_scroll_managers(league) or []:
+            try:
+                self._ensure_manager_updated(manager)
+            except Exception as exc:  # pragma: no cover - defensive
+                self.logger.debug("Live scroll refresh skipped: %s", exc)
+
     @classmethod
     def _live_scroll_fields(cls, game) -> tuple:
         try:
@@ -1965,6 +1993,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         
         # A live card that changed since the strip was built has to rebuild
         # it now, not when the cycle ends -- see _live_scroll_needs_rebuild().
+        # Refresh before fingerprinting, not after -- the rebuild
+        # decision below is computed from exactly this data.
+        self._refresh_live_scroll_managers()
         rebuild_for_live = self._live_scroll_needs_rebuild(scroll_key, mode_type)
         if rebuild_for_live or not self._scroll_prepared.get(scroll_key, False):
             # Update managers first to get latest game data

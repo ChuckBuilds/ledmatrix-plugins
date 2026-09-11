@@ -290,6 +290,99 @@ except Exception as exc:
     check("no scroll manager is survivable", False, str(exc))
 
 
+print("\nthe live managers are refreshed BEFORE they are fingerprinted")
+
+
+class _RefreshStub(_Stub):
+    """Records which managers got an _ensure_manager_updated() call."""
+
+    _refresh_live_scroll_managers = Plugin._refresh_live_scroll_managers
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.refreshed = []
+
+    def _ensure_manager_updated(self, manager):
+        self.refreshed.append(manager)
+
+
+r = _RefreshStub([game()])
+r._refresh_live_scroll_managers()
+check("refreshes the enabled league's live manager", len(r.refreshed) == 1,
+      f"{len(r.refreshed)} manager(s)")
+
+r = _RefreshStub([game()], second_league_games=[game()])
+r._refresh_live_scroll_managers()
+check("does not refresh a disabled league", len(r.refreshed) == 1,
+      f"{len(r.refreshed)} manager(s)")
+
+
+class _AngryRefresh(_RefreshStub):
+    def _ensure_manager_updated(self, manager):
+        raise RuntimeError("network on fire")
+
+
+try:
+    _AngryRefresh([game()])._refresh_live_scroll_managers()
+    check("a manager that raises does not take down the frame", True)
+except Exception as exc:
+    check("a manager that raises does not take down the frame", False, str(exc))
+
+# The ordering is the whole fix, and it is invisible at runtime: put the refresh
+# after the rebuild decision and every test above still passes while the panel
+# freezes, because the decision is computed from the data the refresh replaces.
+# So pin it structurally.
+import ast  # noqa: E402
+
+_src = open(os.path.join(PLUGIN_DIR, "manager.py")).read()
+_tree = ast.parse(_src)
+
+
+def _is_needs_rebuild(node):
+    return (isinstance(node, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == "rebuild_for_live"
+                    for t in node.targets)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Attribute)
+            and node.value.func.attr == "_live_scroll_needs_rebuild")
+
+
+def _is_refresh(node):
+    return (isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Attribute)
+            and node.value.func.attr == "_refresh_live_scroll_managers")
+
+
+def _argname(call, idx):
+    if len(call.args) <= idx:
+        return None
+    a = call.args[idx]
+    return a.id if isinstance(a, ast.Name) else ast.dump(a)
+
+
+_sites, _bad = 0, []
+for _node in ast.walk(_tree):
+    _body = getattr(_node, "body", None)
+    if not isinstance(_body, list):
+        continue
+    for _i, _stmt in enumerate(_body):
+        if not _is_needs_rebuild(_stmt):
+            continue
+        _sites += 1
+        _prev = _body[_i - 1] if _i else None
+        if _prev is None or not _is_refresh(_prev):
+            _bad.append(f"line {_stmt.lineno}: no refresh immediately before")
+            continue
+        # a per-league rebuild decision must refresh that same league
+        _want = _argname(_stmt.value, 2)
+        _got = _argname(_prev.value, 0)
+        if _want != _got:
+            _bad.append(f"line {_stmt.lineno}: refreshes {_got!r} but decides for {_want!r}")
+
+check("every rebuild decision has a refresh immediately before it",
+      _sites > 0 and not _bad, f"{_sites} site(s)" + (f"; {_bad}" if _bad else ""))
+
+
 print("\n" + "=" * 62)
 if FAILURES:
     print(f"{len(FAILURES)} check(s) failed: {FAILURES}")

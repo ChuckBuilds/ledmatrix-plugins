@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.30.0",
+  "version": "1.30.1",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.30.1",
+      "released": "2026-09-11",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Live score updates now actually reach the scrolling strip. 1.41.0 added the rebuild-on-change machinery but wired it in the wrong order, which left it inert: the rebuild decision is computed by fingerprinting the live managers' cached games, and the only call that refreshed those managers (_ensure_manager_updated) sat INSIDE the block that decision gates. So once the first strip was built nothing refreshed the data, the fingerprint could never change, and the block never ran again -- the same frozen-until-restart symptom the previous release set out to fix. Switch mode was never affected because _try_manager_display() refreshes unconditionally on every pass; scroll mode now gets the same guarantee, refreshing the live managers before it fingerprints them. _ensure_manager_updated() is itself interval-guarded, so on frames where no refresh is due this costs two getattrs and a comparison. Ported across all eight scoreboards in one change, per CLAUDE.md non-negotiable #7, and pinned by a test that asserts the ordering structurally -- reversing the two lines leaves every behavioural test passing while the panel silently freezes."
+    },
     {
       "version": "1.30.0",
       "released": "2026-09-10",
