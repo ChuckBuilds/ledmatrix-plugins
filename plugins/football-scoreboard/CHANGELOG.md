@@ -1,5 +1,80 @@
 # Changelog
 
+## [3.7.2] - 2026-09-11
+
+### Fixed
+- **Live score updates now actually reach the scrolling strip.**
+  1.41.0 added the rebuild-on-change machinery but wired it in the wrong order,
+  which left it inert: the rebuild decision is computed by fingerprinting the
+  live managers' cached games, and the only call that refreshed those managers
+  (_ensure_manager_updated) sat INSIDE the block that decision gates. So once
+  the first strip was built nothing refreshed the data, the fingerprint could
+  never change, and the block never ran again -- the same frozen-until-restart
+  symptom the previous release set out to fix. Switch mode was never affected
+  because _try_manager_display() refreshes unconditionally on every pass; scroll
+  mode now gets the same guarantee, refreshing the live managers before it
+  fingerprints them. _ensure_manager_updated() is itself interval-guarded, so on
+  frames where no refresh is due this costs two getattrs and a comparison.
+  Ported across all eight scoreboards in one change, per CLAUDE.md non-
+  negotiable #7, and pinned by a test that asserts the ordering structurally --
+  reversing the two lines leaves every behavioural test passing while the panel
+  silently freezes.
+
+## [3.7.1] - 2026-09-10
+
+### Fixed
+- **Live games now reach the scrolling strip mid-cycle.**
+  The strip was rendered once per scroll cycle and _scroll_prepared was cleared
+  only when the cycle completed, so a score changed while the marquee was
+  running stayed frozen in the pixels until it finished -- minutes, for a long
+  game list. Restarting the display forced a rebuild, which is the workaround
+  users were finding. The strip is now rebuilt when anything the card draws
+  changes, keeping scroll_position and total_distance_scrolled so the marquee
+  does not snap back to the start and the cycle still completes on schedule. The
+  game clock deliberately does not trigger a rebuild -- it ticks every second
+  and re-rendering every card that often is the whole frame budget on a Pi --
+  and rebuilds are floored at 5s so a large slate cannot thrash. Ported across
+  all eight scoreboards in one change, per CLAUDE.md non-negotiable #7. Corrects
+  the first cut of this fix, which keyed on an allowlist that omitted down-and-
+  distance, possession, the red-zone colour, timeouts and the scoring banner,
+  and which counted the 'league'/'status' keys the display pipeline adds in
+  place -- making every update look like a change. Rebuild frequency is self-
+  limiting: the floor between rebuilds scales with what the last one actually
+  cost, so the marquee never spends more than about 5% of its time frozen re-
+  rendering. Measured on a Pi 4, a strip rebuild takes 29ms for one game and
+  463ms for fifteen; a fixed floor would have been fine for the first and wrong
+  for the second. Also fixes the rebuild-cost bookkeeping being keyed
+  differently from where it is read, which left the duty-cycle cap inert in most
+  plugins.
+
+## [3.7.0] - 2026-09-10
+
+### Fixed
+- **Scroll mode now picks up a live score mid-cycle.**
+  The rendered strip was built once per scroll cycle and _scroll_prepared was
+  cleared only when the cycle completed, so a touchdown scored while the marquee
+  was running stayed frozen in the pixels until it finished -- minutes, for a
+  long game list. Restarting the display forced a rebuild, which is the
+  workaround the reporter found. The strip is now rebuilt when a score, period
+  or halftime/final flag changes, keeping scroll_position and
+  total_distance_scrolled so the marquee does not snap back to the start and the
+  cycle still completes on schedule. The game clock deliberately does not
+  trigger a rebuild: it ticks every second and re-rendering every card 60 times
+  a minute to move two glyphs is the whole frame budget on a Pi.
+
+## [3.6.0] - 2026-09-10
+
+### Fixed
+- **Live games refresh at live_update_interval again instead of once a minute.**
+  The core scheduler only ever read the manifest's static update_interval (60s),
+  so the plugin's live_update_interval could never fire more often than that --
+  measured on a live rig during an NFL fourth quarter, ESPN was polled at
+  23:21:49, 23:22:50, 23:23:50, 23:24:50, exactly 60s apart, while the setting
+  asked for 15. A clock up to a minute stale during a two-minute drill reads as
+  a frozen panel. The new get_update_interval() hook reports the live interval
+  while a game is in progress and nothing when idle, so out-of-season polling is
+  unchanged. Needs the core-side hook; older cores ignore the method and behave
+  exactly as before.
 ## [3.5.5] - 2026-09-11
 
 ### Fixed
