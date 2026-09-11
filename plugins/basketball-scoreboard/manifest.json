@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.29.6",
+  "version": "1.29.7",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.29.7",
+      "released": "2026-09-11",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Draw the placeholder-logo abbreviation at PressStart2P 16 rather than 12. That face is crisp only at multiples of 8, and 16 is the nearest crisp size for a 64px logo tile. Panel text was already on-grid via _FONT_PIXEL_GRID and is unchanged."
+    },
     {
       "version": "1.29.6",
       "released": "2026-09-07",
@@ -359,7 +365,7 @@
     {
       "released": "2026-07-02",
       "version": "1.6.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u00e2\u20ac\u201d spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
       "ledmatrix_min": "2.0.0"
     },
     {

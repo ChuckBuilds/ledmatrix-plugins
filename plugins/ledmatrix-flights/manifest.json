@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.13.2",
+  "version": "1.13.3",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -37,6 +37,12 @@
   "min_ledmatrix_version": "2.0.0",
   "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "version": "1.13.3",
+      "released": "2026-09-11",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Put every rung of the font ladder on its face's pixel grid -- PressStart2P at multiples of 8, 4x6-font at multiples of 7. Of the old 6/8/10 and 8/10/12 ladders only the 8s were ever crisp; the rest were anti-aliased, which on an LED panel is a dim lamp rather than a soft edge, and under 1-bit rendering lost a column from every glyph. Between 5px and 12px the whole palette has only two crisp sizes (4x6 at 7, PressStart2P at 8), so the small and medium rungs now coincide; on 64-tall panels the large rungs move up to 16 and 14. A finer re-tier needs layout work, not just a font size."
+    },
     {
       "version": "1.13.2",
       "released": "2026-09-09",

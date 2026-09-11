@@ -189,7 +189,7 @@ def create_placeholder_logo(team_abbr: str, logo_path: Path) -> bool:
         
         # Try to load a font
         try:
-            font = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 12)
+            font = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 16)
         except Exception:
             font = ImageFont.load_default()
         

@@ -180,9 +180,39 @@ class OnAirPlugin(BasePlugin):
             except Exception as e:
                 self.logger.debug("Auto-font load failed: %s", e)
         if font is None:
-            font = (self.display_manager.small_font if dh > 32
-                    else self.display_manager.extra_small_font)
+            # The core's extra_small_font is 4x6-font at ppem 6, one pixel off
+            # that face's 7px design grid. This plugin draws 1-bit (see
+            # fontmode below), and the mono rasteriser thresholds an off-grid
+            # glyph down from 4px wide to 3px -- W/M and 0/8 stop being
+            # distinguishable. Load the same file on its grid instead, and keep
+            # the core attribute as the fallback so an install that cannot
+            # resolve the file degrades to today's rendering.
+            if dh > 32:
+                font = self.display_manager.small_font   # PressStart2P@8, on-grid
+            else:
+                font = self._grid_snapped_small_font()
         self._auto_font_cache[dh] = font
+        return font
+
+    def _grid_snapped_small_font(self):
+        """4x6-font at 7px -- its pixel grid -- with the core attribute as
+        fallback. Same size football-scoreboard draws its detail text at."""
+        font = getattr(self, "_grid_font_cache", None)
+        if font is None:
+            path = os.path.join("assets", "fonts", "4x6-font.ttf")
+            if not os.path.exists(path):
+                try:
+                    import src.font_manager as _core_fonts
+                    root = os.path.dirname(os.path.dirname(
+                        os.path.abspath(_core_fonts.__file__)))
+                    path = os.path.join(root, path)
+                except (ImportError, AttributeError, OSError):
+                    pass
+            try:
+                font = ImageFont.truetype(path, 7)
+            except (OSError, ValueError):
+                font = self.display_manager.extra_small_font
+            self._grid_font_cache = font
         return font
 
     def _active_font(self, dw: int, dh: int):

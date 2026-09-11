@@ -1,5 +1,63 @@
 # Changelog
 
+## [2.6.9] - 2026-09-11
+
+### Fixed
+- **Small text was crushed, and rendered differently on identical panels.** The
+  4x6 detail face is a pixel font: it rasterises cleanly only at whole multiples
+  of its 7px design grid. The core loads it as `extra_small_font` at ppem 6, one
+  pixel off, which did not matter while text was anti-aliased — but 2.6.7 made
+  rendering 1-bit, and the mono rasteriser thresholds each glyph at 50% coverage.
+  Every glyph came out 3px wide instead of 4, so `W`/`M` and `0`/`8` lost the
+  pixels that distinguish them.
+
+  The same off-grid size made the plugin render *differently on two identical
+  displays*. At ppem 6 `getlength` returns a fractional advance whose value
+  depends on the installed FreeType — 4.28px under Pillow 12.3, 5.0px under
+  11.3 — so two boards on the same config measured the same string 17% apart
+  and centred it in different places. At ppem 7 both builds agree.
+
+  The plugin now loads `4x6-font.ttf` at 7px itself, the size
+  `football-scoreboard` already draws its odds/detail text at, via the same
+  `_FONT_PIXEL_GRID` the scoreboards keep. This covers every piece of small
+  text the plugin draws: the current-weather metrics bar (UV, humidity, wind,
+  feels-like, dew point, visibility, pressure), the daily-forecast high/low
+  temperatures, the almanac's sunrise/sunset and moonrise/moonset rows, day
+  length, the moon phase name on panels too cramped for the 8px title, the
+  weather-alert screen, and the radar's timestamp overlay, which loads the
+  same face separately in `weather_radar.py` and was off the grid too.
+  Installs where the font file cannot be resolved fall back to the core
+  attribute, so they degrade to the previous rendering rather than to PIL's
+  default face.
+
+  Text already drawn in PressStart2P at 8px is unchanged and was never
+  affected — that face's grid is 8, so it was on it: the current conditions and
+  temperature, the hourly forecast, the forecast day names, and the almanac
+  title on panels wide enough for it.
+
+  Ships as 2.6.9 rather than 2.6.8: the registry entry was advanced to 2.6.8 by
+  #470 without a matching manifest bump, so the store already advertises a
+  2.6.8 that was never released. Reusing that number would have left every
+  board thinking it was current.
+
+### Changed
+- **Metrics-bar collision floor widened** from 27px to 34px. The old value was
+  derived at the 4px pitch the off-grid face drew at; on the 7px grid the pitch
+  is 5px, so the same ~6-character budget needs `27 * 5/4`. Left at 27, a
+  128px panel packed `W:12g28NNW` (50px) into a 27px slice. Narrow panels now
+  shed the optional dew point / visibility / pressure items one step sooner.
+- **Daily-forecast temperatures drop the spaces around the slash** (`58/72`,
+  not `58 / 72`). At the 5px pitch the spaced form is 35px against a 32px
+  column on a 4-day 128px panel.
+- **The almanac reserves the illumination percentage it actually draws**
+  rather than the widest one it could ever draw. Reserving `100%` cost 22px of
+  a 64px panel's ~34px text column to render `1%`, leaving two characters of
+  the phase name — a mid-word cut where the abbreviation would have fit.
+- On 128x64 the almanac rise/set grid now uses the compact `6:18a - 8:36p`
+  rather than full `am`/`pm`: the 32px moon icon takes 6px more of the text
+  column than the 26px icon on a 32-tall panel, and the full form misses the
+  fit by one pixel. Other supported sizes keep full `am`/`pm`.
+
 ## [2.6.2] - 2026-07-21
 
 ### Changed

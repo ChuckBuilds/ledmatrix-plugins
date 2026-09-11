@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.8.9",
+  "version": "1.8.10",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,12 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.8.10",
+      "released": "2026-09-11",
+      "notes": "Load the 4x6 face at 7px when drawing placeholder team logos -- 4x6-font is crisp only at multiples of 7.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "1.8.9",
       "released": "2026-09-08",

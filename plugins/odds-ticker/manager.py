@@ -663,7 +663,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         
         # Keep 'large' font in dict for error messages
         try:
-            large_font = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
+            large_font = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 8)
         except Exception as e:
             self.logger.error(f"Error loading large font: {e}")
             large_font = ImageFont.load_default()

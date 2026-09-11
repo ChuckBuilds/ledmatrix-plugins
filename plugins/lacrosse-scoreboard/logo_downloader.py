@@ -159,7 +159,7 @@ def create_placeholder_logo(team_abbr: str, logo_path: Path) -> None:
         # Try to load a font, falling back to PIL's built-in default if the
         # bundled font is missing or cannot be read.
         try:
-            font = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 12)
+            font = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 16)
         except (OSError, IOError) as e:
             logger.debug(f"Placeholder font unavailable ({e}); using PIL default")
             font = ImageFont.load_default()

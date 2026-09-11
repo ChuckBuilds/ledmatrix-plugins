@@ -975,7 +975,7 @@ class StaticImagePlugin(BasePlugin):
                 draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
                 try:
-                    font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)
+                    font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 7)
                 except Exception:
                     font = ImageFont.load_default()
 

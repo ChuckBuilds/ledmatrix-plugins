@@ -30,7 +30,11 @@
       "description": "Optional 7-digit NOAA tide station ID. Leave blank to show a setup prompt. Find yours at tidesandcurrents.noaa.gov/stations.html",
       "pattern": "^([0-9]{7})?$",
       "default": "",
-      "examples": ["9447130", "8724580", "8443970"],
+      "examples": [
+        "9447130",
+        "8724580",
+        "8443970"
+      ],
       "x-placeholder": "e.g. 9447130 (Seattle)"
     },
     "station_name": {
@@ -45,8 +49,14 @@
     "units": {
       "type": "string",
       "title": "Units",
-      "enum": ["imperial", "metric"],
-      "enumNames": ["Imperial (feet)", "Metric (meters)"],
+      "enum": [
+        "imperial",
+        "metric"
+      ],
+      "enumNames": [
+        "Imperial (feet)",
+        "Metric (meters)"
+      ],
       "default": "imperial",
       "description": "Imperial = feet, Metric = meters"
     },
@@ -94,10 +104,18 @@
       "type": "array",
       "title": "Water Color",
       "x-widget": "color-picker",
-      "items": {"type": "integer", "minimum": 0, "maximum": 255},
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
       "minItems": 3,
       "maxItems": 3,
-      "default": [0, 100, 200],
+      "default": [
+        0,
+        100,
+        200
+      ],
       "description": "RGB color for tide water fill [R, G, B]",
       "x-advanced": true
     },
@@ -105,10 +123,18 @@
       "type": "array",
       "title": "Highlight / Wave Color",
       "x-widget": "color-picker",
-      "items": {"type": "integer", "minimum": 0, "maximum": 255},
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
       "minItems": 3,
       "maxItems": 3,
-      "default": [0, 220, 255],
+      "default": [
+        0,
+        220,
+        255
+      ],
       "description": "RGB color for wave crests and chart line [R, G, B]",
       "x-advanced": true
     },
@@ -142,7 +168,7 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 6,
+              "default": 7,
               "x-advanced": true
             },
             "text_color": {
@@ -156,10 +182,18 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [205, 225, 255]
+              "default": [
+                205,
+                225,
+                255
+              ]
             }
           },
-          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "x-propertyOrder": [
+            "font",
+            "font_size",
+            "text_color"
+          ],
           "additionalProperties": false
         },
         "label_text": {
@@ -187,7 +221,7 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 6,
+              "default": 7,
               "x-advanced": true
             },
             "text_color": {
@@ -201,16 +235,29 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [120, 150, 200]
+              "default": [
+                120,
+                150,
+                200
+              ]
             }
           },
-          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "x-propertyOrder": [
+            "font",
+            "font_size",
+            "text_color"
+          ],
           "additionalProperties": false
         }
       },
-      "x-propertyOrder": ["tide_text", "label_text"],
+      "x-propertyOrder": [
+        "tide_text",
+        "label_text"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["enabled"]
+  "required": [
+    "enabled"
+  ]
 }

@@ -655,18 +655,31 @@ class FlightTrackerPlugin(BasePlugin):
                     return font_path
             return None
         
+        # Both faces are pixel fonts and rasterise cleanly only at whole
+        # multiples of their design grid -- PressStart2P at 8, 4x6-font at 7.
+        # Off the grid FreeType fakes the in-between stroke widths, and under
+        # the 1-bit rendering this plugin draws with, the mono rasteriser then
+        # drops a column from every glyph. The sizes below are the crisp rungs
+        # crisp_size() would pick (see football-scoreboard's _FONT_PIXEL_GRID).
+        #
+        # Between 5px and 12px there are only two crisp sizes in the whole
+        # palette -- 4x6 at 7 and PressStart2P at 8 -- so the small/medium
+        # rungs coincide. That is not a lost hierarchy: of the old 6/8/10 and
+        # 8/10/12 ladders only the 8s were ever crisp, so the tiers differed
+        # by blur as much as by size. A real re-tier on tall panels wants
+        # layout work, not just a font size.
         try:
             # Load PressStart2P for titles (larger, more readable for headers)
             press_start_path = find_font_path('PressStart2P-Regular.ttf')
             if press_start_path:
                 if self.display_height >= 64:
                     fonts['title_small'] = ImageFont.truetype(press_start_path, 8)
-                    fonts['title_medium'] = ImageFont.truetype(press_start_path, 10)
-                    fonts['title_large'] = ImageFont.truetype(press_start_path, 12)
-                else:
-                    fonts['title_small'] = ImageFont.truetype(press_start_path, 6)
                     fonts['title_medium'] = ImageFont.truetype(press_start_path, 8)
-                    fonts['title_large'] = ImageFont.truetype(press_start_path, 10)
+                    fonts['title_large'] = ImageFont.truetype(press_start_path, 16)
+                else:
+                    fonts['title_small'] = ImageFont.truetype(press_start_path, 8)
+                    fonts['title_medium'] = ImageFont.truetype(press_start_path, 8)
+                    fonts['title_large'] = ImageFont.truetype(press_start_path, 8)
             else:
                 raise FileNotFoundError("PressStart2P-Regular.ttf not found")
             
@@ -674,13 +687,13 @@ class FlightTrackerPlugin(BasePlugin):
             font_4x6_path = find_font_path('4x6-font.ttf')
             if font_4x6_path:
                 if self.display_height >= 64:
-                    fonts['data_small'] = ImageFont.truetype(font_4x6_path, 8)  # Larger for readability
-                    fonts['data_medium'] = ImageFont.truetype(font_4x6_path, 10)
-                    fonts['data_large'] = ImageFont.truetype(font_4x6_path, 12)
+                    fonts['data_small'] = ImageFont.truetype(font_4x6_path, 7)
+                    fonts['data_medium'] = ImageFont.truetype(font_4x6_path, 7)
+                    fonts['data_large'] = ImageFont.truetype(font_4x6_path, 14)
                 else:
-                    fonts['data_small'] = ImageFont.truetype(font_4x6_path, 6)
-                    fonts['data_medium'] = ImageFont.truetype(font_4x6_path, 8)
-                    fonts['data_large'] = ImageFont.truetype(font_4x6_path, 10)
+                    fonts['data_small'] = ImageFont.truetype(font_4x6_path, 7)
+                    fonts['data_medium'] = ImageFont.truetype(font_4x6_path, 7)
+                    fonts['data_large'] = ImageFont.truetype(font_4x6_path, 7)
             
             # Legacy aliases for backward compatibility
             fonts['small'] = fonts['data_small']
@@ -696,18 +709,18 @@ class FlightTrackerPlugin(BasePlugin):
                 if press_start_path:
                     if self.display_height >= 64:
                         fonts['title_small'] = ImageFont.truetype(press_start_path, 8)
-                        fonts['title_medium'] = ImageFont.truetype(press_start_path, 10)
-                        fonts['title_large'] = ImageFont.truetype(press_start_path, 12)
-                        fonts['data_small'] = ImageFont.truetype(press_start_path, 6)
-                        fonts['data_medium'] = ImageFont.truetype(press_start_path, 8)
-                        fonts['data_large'] = ImageFont.truetype(press_start_path, 10)
-                    else:
-                        fonts['title_small'] = ImageFont.truetype(press_start_path, 6)
                         fonts['title_medium'] = ImageFont.truetype(press_start_path, 8)
-                        fonts['title_large'] = ImageFont.truetype(press_start_path, 10)
-                        fonts['data_small'] = ImageFont.truetype(press_start_path, 5)
-                        fonts['data_medium'] = ImageFont.truetype(press_start_path, 6)
-                        fonts['data_large'] = ImageFont.truetype(press_start_path, 7)
+                        fonts['title_large'] = ImageFont.truetype(press_start_path, 16)
+                        fonts['data_small'] = ImageFont.truetype(press_start_path, 8)
+                        fonts['data_medium'] = ImageFont.truetype(press_start_path, 8)
+                        fonts['data_large'] = ImageFont.truetype(press_start_path, 8)
+                    else:
+                        fonts['title_small'] = ImageFont.truetype(press_start_path, 8)
+                        fonts['title_medium'] = ImageFont.truetype(press_start_path, 8)
+                        fonts['title_large'] = ImageFont.truetype(press_start_path, 8)
+                        fonts['data_small'] = ImageFont.truetype(press_start_path, 8)
+                        fonts['data_medium'] = ImageFont.truetype(press_start_path, 8)
+                        fonts['data_large'] = ImageFont.truetype(press_start_path, 8)
                     
                     # Legacy aliases
                     fonts['small'] = fonts['data_small']
