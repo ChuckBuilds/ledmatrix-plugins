@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.13.3] - 2026-09-11
+
+### Fixed
+- **Small text is drawn on the font's pixel grid again.** `4x6-font` and
+  `PressStart2P` are pixel faces: they rasterise cleanly only at whole multiples
+  of their design grid (7 and 8 respectively). Off the grid FreeType
+  anti-aliases to fake the in-between stroke widths — and on an LED panel that
+  is a dim lamp, not a soft edge. Worse, these plugins draw 1-bit
+  (`fontmode = "1"`), and the mono rasteriser thresholds each glyph at 50%
+  coverage: at ppem 6 every 4x6 glyph came out 3px wide instead of 4, so `W`/`M`
+  and `0`/`8` lost the pixels that distinguish them.
+
+  The off-grid sizes also made rendering host-dependent. At ppem 6 `getlength`
+  returns a fractional advance whose value depends on the installed FreeType
+  (4.28px under Pillow 12.3, 5.0px under 11.3), so two boards on the same
+  config measured the same string up to 17%% apart and centred it differently.
+  On-grid sizes agree across both builds.
+
+  Every rung of the font ladder is now on its face's grid. Between 5px and 12px
+  the whole palette has only two crisp sizes — 4x6 at 7 and PressStart2P at 8 —
+  so the small and medium rungs now coincide. That is not a lost hierarchy: of
+  the old 6/8/10 and 8/10/12 ladders only the 8s were ever crisp, so the tiers
+  differed by blur as much as by size. On 64-tall panels the large rungs move up
+  to PressStart2P 16 and 4x6 14. A finer re-tier needs layout work, not just a
+  font size.
+
 ## [1.13.2] - 2026-09-09
 
 ### Fixed

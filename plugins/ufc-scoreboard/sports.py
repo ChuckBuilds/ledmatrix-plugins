@@ -559,13 +559,13 @@ class SportsCore(ABC):
             self.logger.error(f"Error loading fonts: {e}, using defaults")
             # Fallback to hardcoded defaults
             try:
-                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
                 fonts["time"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
                 fonts["team"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
-                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["rank"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
-                fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["rank"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
+                fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
             except IOError:
                 self.logger.warning("Fonts not found, using default PIL font.")
                 fonts["score"] = ImageFont.load_default()

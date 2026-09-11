@@ -421,7 +421,7 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 24,
-              "default": 12,
+              "default": 16,
               "x-advanced": true
             }
           },
@@ -456,7 +456,7 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 6,
+              "default": 8,
               "x-advanced": true
             },
             "text_color": {

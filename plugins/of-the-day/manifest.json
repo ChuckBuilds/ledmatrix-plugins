@@ -1,7 +1,7 @@
 {
   "id": "of-the-day",
   "name": "Of The Day Display",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "author": "ChuckBuilds",
   "description": "Display daily featured content like Word of the Day, Bible verses, or custom daily items. Supports multiple categories with rotating display and configurable data sources.",
   "category": "information",
@@ -21,6 +21,12 @@
     "of_the_day"
   ],
   "versions": [
+    {
+      "released": "2026-09-11",
+      "version": "1.4.4",
+      "changelog": "Load the 4x6 detail face on its 7px pixel grid. 4x6-font rasterises cleanly only at whole multiples of 7; at ppem 6 the 1-bit (fontmode \"1\") mono rasteriser thresholds every glyph down from 4px wide to 3px, so W/M and 0/8 lose the pixels that tell them apart, and getlength returns a fractional advance whose value depends on the installed FreeType -- two boards on one config measured the same string up to 17% apart. Same grid football-scoreboard keeps in _FONT_PIXEL_GRID. The live ElementStyleResolver path carried classic_size=6 for the body face; that is the size that actually rendered, and it is now 7.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-03",
       "version": "1.4.3",

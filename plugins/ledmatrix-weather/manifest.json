@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.6.7",
+  "version": "2.6.9",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -26,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-09-11",
+      "version": "2.6.9",
+      "notes": "Load the small 4x6 detail face on its 7px pixel grid, the size football-scoreboard already draws its odds/detail text at. The core hands out extra_small_font as the same file at ppem 6, one pixel off the grid: under the 1-bit rendering added in 2.6.7 the mono rasteriser dropped a column from every glyph (4px designs drew 3px wide), so W/M and 0/8 lost the pixels that tell them apart. It also made the plugin render differently on identical panels -- getlength returned a fractional advance whose value depends on the installed FreeType, 4.28px under Pillow 12.3 against 5.0px under 11.3, so two boards on one config measured the same string 17% apart and centred it differently. Covers every piece of small text the plugin draws: the current-weather metrics bar (UV, humidity, wind, feels-like, dew point, visibility, pressure), the daily-forecast high/low temperatures, the almanac's sunrise/sunset and moonrise/moonset rows and day length, the weather-alert screen, and the radar timestamp overlay, which loads the same face separately in weather_radar.py and was off the grid too. Text already drawn in PressStart2P at 8px is unchanged -- that face's grid is 8, so it was already on it. The wider pitch is paid for by widening the metrics-bar collision floor to 34px, dropping the spaces around the forecast slash, and reserving the illumination percentage the almanac actually draws instead of the widest one it could ever draw.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-03",
       "version": "2.6.7",

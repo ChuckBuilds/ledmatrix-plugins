@@ -577,11 +577,18 @@ class RadarFetcher:
                                               Image.Resampling.LANCZOS)
         return self._add_overlay(img, frame, frames, width, height, viewport)
 
+    #: 4x6-font rasterises cleanly only at whole multiples of its 7px design
+    #: grid. At ppem 6 the mono rasteriser (fontmode "1", set in _add_overlay)
+    #: thresholds every glyph down to 3px wide, and the advance it reports
+    #: varies with the installed FreeType. Same grid the manager uses for the
+    #: detail face, and the size football-scoreboard draws its odds text at.
+    _FONT_PX = 7
+
     def _load_font(self):
         if self._font is None:
             for candidate in _font_candidates():
                 try:
-                    self._font = ImageFont.truetype(str(candidate), 6)
+                    self._font = ImageFont.truetype(str(candidate), self._FONT_PX)
                     break
                 except (OSError, ValueError):
                     continue

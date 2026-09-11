@@ -151,7 +151,8 @@ class NewsTickerPlugin(BasePlugin):
         self.rotation_enabled = self.global_config.get('rotation_enabled', True)
         self.rotation_threshold = self.global_config.get('rotation_threshold', 3)
         self.headlines_per_feed = self.global_config.get('headlines_per_feed', 2)
-        self.font_size = self.global_config.get('font_size', 12)
+        self.font_size = self.global_config.get('font_size', 16)  # PressStart2P's
+        # pixel grid is 8; 12 was off it and anti-aliased on the panel.
         self.target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps', 100)
 
         # Headline paging settings
@@ -304,7 +305,7 @@ class NewsTickerPlugin(BasePlugin):
             try:
                 fonts['headline'] = ImageFont.truetype("assets/fonts/4x6-font.ttf", self.font_size)
                 fonts['separator'] = ImageFont.truetype("assets/fonts/4x6-font.ttf", self.font_size)
-                fonts['info'] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+                fonts['info'] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 7)
                 self.logger.info("Successfully loaded 4x6 font")
             except IOError:
                 self.logger.warning("4x6 font not found, using default PIL font")

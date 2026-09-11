@@ -107,34 +107,34 @@ class FightRenderer:
 
         try:
             fonts["fighter_name"] = self._load_font(
-                fighter_name_config, default_path="assets/fonts/4x6-font.ttf", default_size=6
+                fighter_name_config, default_path="assets/fonts/4x6-font.ttf", default_size=7
             )
             fonts["status"] = self._load_font(
                 status_config, default_path="assets/fonts/tom-thumb.bdf", default_size=8
             )
             fonts["result"] = self._load_font(
-                result_config, default_path="assets/fonts/PressStart2P-Regular.ttf", default_size=10
+                result_config, default_path="assets/fonts/PressStart2P-Regular.ttf", default_size=8
             )
             fonts["detail"] = self._load_font(
-                detail_config, default_path="assets/fonts/4x6-font.ttf", default_size=6
+                detail_config, default_path="assets/fonts/4x6-font.ttf", default_size=7
             )
             # Additional fonts
             fonts["time"] = ImageFont.truetype(_resolve_font_path("assets/fonts/tom-thumb.bdf"), 8)
-            fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
-            fonts["odds"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-            fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+            fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
+            fonts["odds"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+            fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
             self.logger.debug("Successfully loaded fight renderer fonts")
         except Exception as e:
             self.logger.error(f"Error loading fonts: {e}, using defaults")
             try:
-                fonts["fighter_name"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["result"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
-                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["time"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
-                fonts["odds"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
-                fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 6)
+                fonts["fighter_name"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["status"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["result"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
+                fonts["detail"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["time"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["score"] = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
+                fonts["odds"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
+                fonts["record"] = ImageFont.truetype(_resolve_font_path("assets/fonts/4x6-font.ttf"), 7)
             except IOError:
                 self.logger.warning("Fonts not found, using default PIL font.")
                 default_font = ImageFont.load_default()

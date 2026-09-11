@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.5.5] - 2026-09-11
+
+### Fixed
+- **Placeholder team logos draw their abbreviation at PressStart2P 16, not 12.**
+  That face is crisp only at multiples of 8; 12 was anti-aliased, and 16 is the
+  nearest crisp size for the 64px logo tile. Panel text was already on-grid via
+  `_FONT_PIXEL_GRID` and is unchanged.
+
 ## [3.0.0] - 2026-08-31
 
 ### Changed
