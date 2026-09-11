@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.7.0] - 2026-09-11
+
+### Added
+- **Customise the current-conditions screen.** Font, size, colour, position
+  and visibility for the condition text, temperature, high/low and the bottom
+  metric bar, plus position, scale and visibility for the weather icon. All of
+  it lives under `customization` in the plugin's settings, edited in the web
+  UI's per-element style editor.
+
+  The shipped styling is unchanged: with nothing configured, every screen
+  renders exactly as before -- verified against the golden images at all eight
+  panel sizes. The other screens (hourly, daily, almanac, radar) are
+  untouched by these settings, since the elements named here exist only on the
+  current-conditions screen.
+
+  A colour chosen for the metric bar replaces the per-metric colours,
+  including the UV severity grading; leaving it alone keeps the grading.
+
+  Requires a LEDMatrix core with the element-style system. On older cores the
+  section is ignored and the shipped styling is used.
+
 ## [2.6.2] - 2026-07-21
 
 ### Changed

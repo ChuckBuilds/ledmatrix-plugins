@@ -43,6 +43,38 @@ except ImportError:
 
 # Import API counter function
 
+class _ClassicStyle:
+    """What an element looked like before it could be customised."""
+
+    __slots__ = ('font', 'color', 'offset', 'visible', 'scale', 'color_chosen')
+
+    def __init__(self, font, color):
+        self.font = font
+        self.color = color
+        self.offset = (0, 0)
+        self.visible = True
+        self.scale = 1.0
+        self.color_chosen = False
+
+
+class _ResolvedStyle:
+    """A resolved ElementStyle, with the font the caller should actually use.
+
+    Carries the resolver's colour/offset/visibility/scale but possibly the
+    display manager's own font object -- see WeatherPlugin._style.
+    """
+
+    __slots__ = ('font', 'color', 'offset', 'visible', 'scale', 'color_chosen')
+
+    def __init__(self, font, style):
+        self.font = font
+        self.color = style.color
+        self.offset = style.offset
+        self.visible = style.visible
+        self.scale = style.scale
+        self.color_chosen = style.user_forced_color
+
+
 class WeatherPlugin(BasePlugin):
     """
     Weather plugin that displays current conditions and forecasts.
@@ -222,6 +254,32 @@ class WeatherPlugin(BasePlugin):
             self.logger.info("Weather plugin fonts registered successfully")
         except Exception as e:
             self.logger.warning(f"Error registering fonts: {e}")
+
+    def _style(self, element: str, classic_font: str, classic_size: int,
+               classic_color: tuple, classic_font_obj=None):
+        """Resolved styling for one element, or the shipped styling.
+
+        ``self.styles`` arrived with the element-style system; on a core
+        without it this returns a stand-in whose values are exactly the
+        classic ones, so nothing here has to branch.
+
+        The font object is only swapped when the user genuinely chose a
+        different font or size. Rebuilding an identical face would render
+        the same, but reusing the display manager's own object keeps an
+        untouched config provably byte-identical rather than merely
+        equivalent.
+        """
+        try:
+            style = self.styles.style(element, classic_font=classic_font,
+                                      classic_size=classic_size,
+                                      classic_color=classic_color)
+        except Exception:
+            self.logger.debug("Style lookup failed for %s", element,
+                              exc_info=True)
+            return _ClassicStyle(classic_font_obj, classic_color)
+        if not style.user_forced and classic_font_obj is not None:
+            return _ResolvedStyle(classic_font_obj, style)
+        return _ResolvedStyle(style.font, style)
 
     def _get_layout(self) -> dict:
         """Return cached layout parameters (computed once on first call).
@@ -1074,39 +1132,65 @@ class WeatherPlugin(BasePlugin):
             layout = self._get_layout()
 
             # --- Top Left: Weather Icon ---
-            icon_size = layout['current_icon_size']
-            icon_x = layout['current_icon_x']
-            icon_y = layout['current_icon_y']
-            WeatherIcons.draw_weather_icon(img, icon_code, icon_x, icon_y, size=icon_size)
+            icon_style = self._style('weather_icon', 'PressStart2P-Regular.ttf',
+                                     8, self.COLORS['text'])
+            if icon_style.visible:
+                icon_size = max(1, int(round(layout['current_icon_size']
+                                             * icon_style.scale)))
+                icon_x = layout['current_icon_x'] + icon_style.offset[0]
+                icon_y = layout['current_icon_y'] + icon_style.offset[1]
+                WeatherIcons.draw_weather_icon(img, icon_code, icon_x, icon_y,
+                                               size=icon_size)
 
             # --- Top Right: Condition Text ---
-            condition_font = self.display_manager.small_font
-            condition_text_width = draw.textlength(condition, font=condition_font)
-            condition_x = width - condition_text_width - layout['right_margin']
-            condition_y = layout['condition_y']
-            draw.text((condition_x, condition_y), condition, font=condition_font, fill=self.COLORS['text'])
+            condition_style = self._style(
+                'condition_text', 'PressStart2P-Regular.ttf', 8,
+                self.COLORS['text'], self.display_manager.small_font)
+            if condition_style.visible:
+                condition_font = condition_style.font
+                condition_text_width = draw.textlength(condition, font=condition_font)
+                condition_x = (width - condition_text_width - layout['right_margin']
+                               + condition_style.offset[0])
+                condition_y = layout['condition_y'] + condition_style.offset[1]
+                draw.text((condition_x, condition_y), condition,
+                          font=condition_font, fill=condition_style.color)
 
             # --- Right Side: Current Temperature ---
             temp_text = f"{temp}°"
-            temp_font = self.display_manager.small_font
-            temp_text_width = draw.textlength(temp_text, font=temp_font)
-            temp_x = width - temp_text_width - layout['right_margin']
-            temp_y = layout['temp_y']
-            draw.text((temp_x, temp_y), temp_text, font=temp_font, fill=self.COLORS['highlight'])
+            temp_style = self._style(
+                'temp_text', 'PressStart2P-Regular.ttf', 8,
+                self.COLORS['highlight'], self.display_manager.small_font)
+            if temp_style.visible:
+                temp_font = temp_style.font
+                temp_text_width = draw.textlength(temp_text, font=temp_font)
+                temp_x = (width - temp_text_width - layout['right_margin']
+                          + temp_style.offset[0])
+                temp_y = layout['temp_y'] + temp_style.offset[1]
+                draw.text((temp_x, temp_y), temp_text, font=temp_font,
+                          fill=temp_style.color)
 
             # --- Right Side: High/Low Temperature ---
             high_low_text = f"{temp_low}°/{temp_high}°"
-            high_low_font = self.display_manager.small_font
-            high_low_width = draw.textlength(high_low_text, font=high_low_font)
-            high_low_x = width - high_low_width - layout['right_margin']
-            high_low_y = layout['high_low_y']
-            draw.text((high_low_x, high_low_y), high_low_text, font=high_low_font, fill=self.COLORS['dim'])
+            high_low_style = self._style(
+                'high_low_text', 'PressStart2P-Regular.ttf', 8,
+                self.COLORS['dim'], self.display_manager.small_font)
+            if high_low_style.visible:
+                high_low_font = high_low_style.font
+                high_low_width = draw.textlength(high_low_text, font=high_low_font)
+                high_low_x = (width - high_low_width - layout['right_margin']
+                              + high_low_style.offset[0])
+                high_low_y = layout['high_low_y'] + high_low_style.offset[1]
+                draw.text((high_low_x, high_low_y), high_low_text,
+                          font=high_low_font, fill=high_low_style.color)
 
             # --- Bottom: Additional Metrics ---
             # Build list of enabled metric items, then distribute evenly across rows.
             # Each item is (text, color). Rows fill from left to right, each item
             # centered in its equal-width section (same pattern as original UV/H/W bar).
-            font = self.display_manager.extra_small_font
+            metric_style = self._style(
+                'metric_text', '4x6-font.ttf', 6, self.COLORS['text'],
+                self.display_manager.extra_small_font)
+            font = metric_style.font
 
             # Gather all enabled bottom-bar items
             feels_like = self.weather_data['main'].get('feels_like')
@@ -1132,12 +1216,17 @@ class WeatherPlugin(BasePlugin):
                 all_items = [item for item in all_items if item[2] != drop_tag]
 
             # Single bottom bar with all (remaining) items
-            if all_items:
+            if all_items and metric_style.visible:
                 sec_w = width // len(all_items)
+                bar_y = layout['bottom_bar_y'] + metric_style.offset[1]
                 for i, (text, color, _drop_tag) in enumerate(all_items):
                     tw = draw.textlength(text, font=font)
-                    x = i * sec_w + (sec_w - tw) // 2
-                    draw.text((max(0, x), layout['bottom_bar_y']), text, font=font, fill=color)
+                    x = i * sec_w + (sec_w - tw) // 2 + metric_style.offset[0]
+                    # Each metric carries its own colour (UV is graded by
+                    # severity), so a chosen colour replaces them all and an
+                    # unchosen one leaves the grading alone.
+                    fill = metric_style.color if metric_style.color_chosen else color
+                    draw.text((max(0, x), bar_y), text, font=font, fill=fill)
 
             return img
         except Exception:

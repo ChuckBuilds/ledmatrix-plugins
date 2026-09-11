@@ -74,7 +74,7 @@
     "display_format": {
       "x-advanced": true,
       "type": "string",
-      "default": "{temp}\u00b0F\n{condition}",
+      "default": "{temp}°F\n{condition}",
       "description": "Display format for current weather. Supports placeholders: {temp}, {condition}, {humidity}, {wind}",
       "title": "Display Format"
     },
@@ -144,7 +144,13 @@
     },
     "radar_map_style": {
       "type": "string",
-      "enum": ["osm", "carto", "carto_dark", "esri", "vector"],
+      "enum": [
+        "osm",
+        "carto",
+        "carto_dark",
+        "esri",
+        "vector"
+      ],
       "default": "osm",
       "description": "Basemap under the radar. Tile styles (osm/carto/carto_dark/esri) show real map detail worldwide and automatically fall back to the classic vector state-outline map when tiles are unavailable. 'vector' is the retro WeatherStar look (US-only).",
       "title": "Radar Map Style"
@@ -193,20 +199,36 @@
     "radar_line_color": {
       "x-advanced": true,
       "type": "array",
-      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
       "minItems": 3,
       "maxItems": 3,
-      "default": [0, 130, 70],
+      "default": [
+        0,
+        130,
+        70
+      ],
       "description": "RGB color for state boundary lines on the vector map style (also used as the automatic fallback when tiles are unavailable). Default is green.",
       "title": "Radar Map Line Color"
     },
     "radar_fill_color": {
       "x-advanced": true,
       "type": "array",
-      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
       "minItems": 3,
       "maxItems": 3,
-      "default": [15, 25, 15],
+      "default": [
+        15,
+        25,
+        15
+      ],
       "description": "RGB color for land fill on the vector map style. Use [0,0,0] for no fill (outlines only).",
       "title": "Radar Map Land Color"
     },
@@ -266,6 +288,103 @@
         }
       },
       "additionalProperties": false
+    },
+    "customization": {
+      "type": "object",
+      "title": "Display Customization",
+      "description": "Fonts, colours and positions for the current-conditions screen. Requires a LEDMatrix core with the element-style system; on older cores this section is ignored and the shipped styling is used.",
+      "x-style-elements": {
+        "condition_text": {
+          "title": "Condition",
+          "font": {
+            "default": "PressStart2P-Regular.ttf"
+          },
+          "size": {
+            "default": 8,
+            "min": 4,
+            "max": 16
+          },
+          "color": {
+            "default": [
+              255,
+              255,
+              255
+            ]
+          },
+          "visible": true,
+          "offsets": true
+        },
+        "temp_text": {
+          "title": "Temperature",
+          "font": {
+            "default": "PressStart2P-Regular.ttf"
+          },
+          "size": {
+            "default": 8,
+            "min": 4,
+            "max": 16
+          },
+          "color": {
+            "default": [
+              255,
+              200,
+              0
+            ]
+          },
+          "visible": true,
+          "offsets": true
+        },
+        "high_low_text": {
+          "title": "High / Low",
+          "font": {
+            "default": "PressStart2P-Regular.ttf"
+          },
+          "size": {
+            "default": 8,
+            "min": 4,
+            "max": 16
+          },
+          "color": {
+            "default": [
+              180,
+              180,
+              180
+            ]
+          },
+          "visible": true,
+          "offsets": true
+        },
+        "metric_text": {
+          "title": "Bottom Metrics",
+          "font": {
+            "default": "4x6-font.ttf"
+          },
+          "size": {
+            "default": 6,
+            "min": 4,
+            "max": 16
+          },
+          "color": {
+            "default": [
+              255,
+              255,
+              255
+            ]
+          },
+          "visible": true,
+          "offsets": true
+        },
+        "weather_icon": {
+          "title": "Weather Icon",
+          "visible": true,
+          "offsets": true,
+          "scale": {
+            "default": 1.0,
+            "min": 0.25,
+            "max": 3.0
+          }
+        }
+      }
     }
   },
   "required": [
