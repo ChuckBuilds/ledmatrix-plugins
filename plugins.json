@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-09-11",
+  "last_updated": "2026-09-12",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -760,7 +760,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.26.1"
+      "latest_version": "2.26.2"
     },
     {
       "id": "static-image",
@@ -1048,7 +1048,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.24.1",
+      "latest_version": "1.24.2",
       "last_updated": "2026-09-07"
     },
     {
@@ -1095,7 +1095,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.23.1"
+      "latest_version": "1.23.2"
     },
     {
       "id": "jellyfin-now-playing",

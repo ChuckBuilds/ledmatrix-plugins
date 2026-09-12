@@ -909,8 +909,80 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         return False
 
+    def _refresh_switch_mode_managers(self, mode_type) -> None:
+        """Refresh the switch-mode managers before drawing them.
+
+        baseball, basketball, football, hockey and lacrosse call
+        _ensure_manager_updated() unconditionally in _try_manager_display(), so
+        their switch mode is as fresh as the manager's own interval. These three
+        had no equivalent: the switch path went straight to manager.display(),
+        so it only ever showed whatever the last background plugin.update() left
+        behind. That is invisible at the 60s default and an hour stale for anyone
+        who raises update_interval -- reachable here because, unlike
+        baseball/football, these manifests declare no update_interval of their
+        own, so the config value is what applies.
+
+        This runs before the candidate managers are *read*, not just before they
+        are drawn: a stale manager reads as having nothing to show, so a league
+        with a live game would be dropped from the rotation entirely.
+
+        Two shapes across the lineage, the same split _live_scroll_managers()
+        handles: a per-league accessor pair, and a single _get_manager. Anything
+        else refreshes nothing, which leaves this inert rather than wrong.
+
+        _ensure_manager_updated() is itself interval-guarded, so on frames where
+        no refresh is due this costs two getattrs and a comparison.
+        """
+        managers = []
+        leagues_for_mode = getattr(self, "_get_enabled_leagues_for_mode", None)
+        manager_for_league = getattr(self, "_get_league_manager_for_mode", None)
+        if callable(leagues_for_mode) and callable(manager_for_league):
+            try:
+                # pylint: disable=not-callable
+                # Lineages without these accessors infer them as None, so a
+                # static checker calls them uncallable. The callable() test
+                # above is the runtime guard; the branch is dead there.
+                league_keys = list(leagues_for_mode(mode_type) or [])
+            except (AttributeError, KeyError, TypeError, ValueError, OSError) as exc:
+                self.logger.debug("Switch-mode refresh skipped: %s", exc)
+                return
+            for league_key in league_keys:
+                try:
+                    # pylint: disable=not-callable
+                    manager = manager_for_league(league_key, mode_type)
+                except (AttributeError, KeyError, TypeError, ValueError, OSError) as exc:
+                    self.logger.debug(
+                        "Switch-mode refresh skipped for %s: %s", league_key, exc)
+                    continue
+                if manager is not None:
+                    managers.append(manager)
+        else:
+            getter = getattr(self, "_get_manager", None)
+            if not callable(getter):
+                return
+            try:
+                # pylint: disable=not-callable
+                manager = getter(mode_type)
+            except (AttributeError, KeyError, TypeError, ValueError, OSError) as exc:
+                self.logger.debug("Switch-mode refresh skipped: %s", exc)
+                return
+            if manager is not None:
+                managers.append(manager)
+
+        for manager in managers:
+            try:
+                self._ensure_manager_updated(manager)
+            except (AttributeError, KeyError, TypeError, ValueError, OSError) as exc:
+                # _ensure_manager_updated() already swallows whatever
+                # manager.update() raises, so anything here is a lookup error.
+                self.logger.debug("Switch-mode refresh skipped: %s", exc)
+
     def _display_switch_mode(self, mode_type: str, force_clear: bool) -> bool:
         """Display a single game for a mode type via the manager (switch mode)."""
+
+        # Refresh before reading the managers -- a stale manager can look
+        # like it has nothing to show and be skipped entirely.
+        self._refresh_switch_mode_managers(mode_type)
         manager = self._get_manager(mode_type)
         if not manager or not self._manager_has_displayable_games(manager, mode_type):
             return False
