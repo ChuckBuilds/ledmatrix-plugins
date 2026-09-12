@@ -1796,7 +1796,10 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         """
         try:
             return max(low, min(high, int(self.mode_config.get(key, default))))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
+            # OverflowError: json parses a bare Infinity, and int(inf) raises
+            # -- from __init__, outside any try/except, so the manager would
+            # fail to construct instead of falling back.
             self.logger.warning(
                 "%s: ignoring unusable %s=%r, using %s",
                 getattr(self, "league", "?"), key,
@@ -2416,11 +2419,15 @@ class SportsUpcoming(SportsCore):
                     f"Home logo URL: {game.get('home_logo_url')}, "
                     f"Away logo URL: {game.get('away_logo_url')}"
                 )
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                # Draw on the converted image that is actually shown: drawing
+                # on one .convert() copy and assigning a second, untouched one
+                # blanked the panel instead of saying "Logo Error".
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image = main_img.convert("RGB")
+                self.display_manager.image = error_img
                 self.display_manager.update_display()
                 return
 
@@ -2940,11 +2947,15 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
                     f"Failed to load logos for game: {game.get('id')}"
                 )  # Changed log prefix
                 # Draw placeholder text if logos fail (similar to live)
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                # Draw on the converted image that is actually shown: drawing
+                # on one .convert() copy and assigning a second, untouched one
+                # blanked the panel instead of saying "Logo Error".
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image = main_img.convert("RGB")
+                self.display_manager.image = error_img
                 self.display_manager.update_display()
                 return
 
@@ -3625,11 +3636,15 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
 
             if not home_logo or not away_logo:
                 self.logger.error(f"Failed to load logos for live game: {game.get('id')}")
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                # Draw on the converted image that is actually shown: drawing
+                # on one .convert() copy and assigning a second, untouched one
+                # blanked the panel instead of saying "Logo Error".
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image = main_img.convert("RGB")
+                self.display_manager.image = error_img
                 self.display_manager.update_display()
                 return
 
