@@ -1486,7 +1486,10 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         for manager in self._live_scroll_managers(league) or []:
             try:
                 self._ensure_manager_updated(manager)
-            except Exception as exc:  # pragma: no cover - defensive
+            except (AttributeError, KeyError, TypeError, ValueError, OSError) as exc:
+                # Narrow on purpose: _ensure_manager_updated() already swallows
+                # whatever manager.update() raises, so anything arriving here is
+                # a lookup or a transport error, not a fetch failure.
                 self.logger.debug("Live scroll refresh skipped: %s", exc)
 
     @classmethod

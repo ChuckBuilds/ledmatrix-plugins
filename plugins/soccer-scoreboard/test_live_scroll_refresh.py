@@ -318,7 +318,7 @@ check("does not refresh a disabled league", len(r.refreshed) == 1,
 
 class _AngryRefresh(_RefreshStub):
     def _ensure_manager_updated(self, manager):
-        raise RuntimeError("network on fire")
+        raise OSError("network on fire")
 
 
 try:
