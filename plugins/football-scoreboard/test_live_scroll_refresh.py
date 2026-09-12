@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """A live score reaches the scrolling strip without waiting for the cycle to end.
 
 In scroll mode the games are rendered into one wide image and scrolled past the
@@ -29,7 +28,7 @@ PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
 if PLUGIN_DIR not in sys.path:
     sys.path.insert(0, PLUGIN_DIR)
 
-from manager import FootballScoreboardPlugin as Plugin  # noqa: E402
+from manager import FootballScoreboardPlugin as Plugin
 
 FAILURES = []
 
@@ -332,9 +331,10 @@ except Exception as exc:
 # after the rebuild decision and every test above still passes while the panel
 # freezes, because the decision is computed from the data the refresh replaces.
 # So pin it structurally.
-import ast  # noqa: E402
+import ast
 
-_src = open(os.path.join(PLUGIN_DIR, "manager.py")).read()
+with open(os.path.join(PLUGIN_DIR, "manager.py")) as _fh:
+    _src = _fh.read()
 _tree = ast.parse(_src)
 
 

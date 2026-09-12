@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """get_update_interval() asks for a faster poll only while a game is live.
 
 Reported by a user: "the football plugin with live games only updates the live
@@ -25,12 +24,13 @@ Run: <core-venv>/bin/python plugins/football-scoreboard/test_live_update_cadence
 
 import os
 import sys
+from typing import ClassVar
 
 PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
 if PLUGIN_DIR not in sys.path:
     sys.path.insert(0, PLUGIN_DIR)
 
-from manager import FootballScoreboardPlugin  # noqa: E402
+from manager import FootballScoreboardPlugin
 
 FAILURES = []
 
@@ -127,7 +127,7 @@ class _Exploding:
     """has_live_content() walks games and applies favourite filtering; calling it
     from here would put that on every scheduling tick."""
 
-    live_games = [GAME]
+    live_games: ClassVar[list] = [GAME]
     update_interval = 15
 
     def has_live_content(self):
