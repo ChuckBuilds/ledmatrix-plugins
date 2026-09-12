@@ -448,6 +448,11 @@
       "type": "object",
       "title": "Display Customization",
       "description": "Customize fonts and element positioning for fight card display",
+      "x-style-modes": [
+        "live",
+        "upcoming",
+        "recent"
+      ],
       "properties": {
         "fighter_name_text": {
           "type": "object",

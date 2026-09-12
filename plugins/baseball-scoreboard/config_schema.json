@@ -1818,6 +1818,11 @@
       "type": "object",
       "title": "Display Customization",
       "description": "Customize fonts, colors, and layout positioning for scoreboard elements",
+      "x-style-modes": [
+        "live",
+        "upcoming",
+        "recent"
+      ],
       "properties": {
         "score_text": {
           "type": "object",
