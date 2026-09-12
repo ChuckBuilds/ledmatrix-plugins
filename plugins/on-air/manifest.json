@@ -1,9 +1,9 @@
 {
   "id": "on-air",
   "name": "On Air Light",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "author": "ChuckBuilds",
-  "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live — stays on until you turn it off.",
+  "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u00e2\u20ac\u201d stays on until you turn it off.",
   "entry_point": "manager.py",
   "class_name": "OnAirPlugin",
   "category": "utility",
@@ -22,6 +22,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.2.9",
+      "released": "2026-09-11",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Load the pixel fallback font on its grid. When no system TTF and no configured font are available, a panel 32px or shorter fell back to the core's extra_small_font -- 4x6-font at ppem 6, one pixel off that face's 7px design grid. This plugin draws 1-bit, and the mono rasteriser thresholds an off-grid glyph down from 4px wide to 3px, so W/M and 0/8 stop being distinguishable. It now loads the same file at 7px, with the core attribute kept as the fallback."
+    },
     {
       "version": "1.2.8",
       "released": "2026-09-05",

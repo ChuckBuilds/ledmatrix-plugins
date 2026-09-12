@@ -277,7 +277,7 @@ class WebUIInfoPlugin(BasePlugin):
                         # Try relative path from current working directory
                         font_path = "assets/fonts/4x6-font.ttf"
                         if os.path.exists(font_path):
-                            font_small = ImageFont.truetype(font_path, 6)
+                            font_small = ImageFont.truetype(font_path, 7)  # 4x6-font is crisp only at multiples of 7
                         else:
                             font_small = ImageFont.load_default()
                 except Exception as e:

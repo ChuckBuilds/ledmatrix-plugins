@@ -39,6 +39,12 @@
       "ledmatrix_min_version": "2.0.0"
     },
     {
+      "version": "1.9.2",
+      "released": "2026-09-11",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Port the crisp-font fix its eight sibling scoreboards already carry. Load the 4x6 detail face on its 7px pixel grid. 4x6-font rasterises cleanly only at whole multiples of 7; at ppem 6 the 1-bit (fontmode \"1\") mono rasteriser thresholds every glyph down from 4px wide to 3px, so W/M and 0/8 lose the pixels that tell them apart, and getlength returns a fractional advance whose value depends on the installed FreeType -- two boards on one config measured the same string up to 17% apart. Same grid football-scoreboard keeps in _FONT_PIXEL_GRID. Fighter names, status, detail, odds and records move from 4x6 at 6 to 7; result and score move from PressStart2P at 10 to 8, that face's nearest crisp size. The tom-thumb BDF is a bitmap face and is unchanged. Its customization font_size defaults are snapped to match (fighter_name/detail 6->7, result 10->8), so a config saved from the web UI cannot reintroduce the off-grid size."
+    },
+    {
       "version": "1.9.1",
       "released": "2026-09-09",
       "ledmatrix_min_version": "2.0.0",

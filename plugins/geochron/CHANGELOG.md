@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.6] - 2026-09-11
+
+### Fixed
+- **Preview renderer loads the 4x6 face at 7px**, its pixel grid, rather than 6.
+  Off the grid FreeType anti-aliases to fake the in-between stroke widths, which
+  on an LED panel is a dim lamp rather than a soft edge.
+
 ## [1.0.0] - 2026-06-10
 
 ### Added

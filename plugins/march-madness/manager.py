@@ -207,7 +207,7 @@ class MarchMadnessPlugin(BasePlugin):
     def _load_fonts(self) -> Dict[str, ImageFont.FreeTypeFont]:
         fonts = {}
         try:
-            fonts["score"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
+            fonts["score"] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 8)
         except IOError:
             fonts["score"] = ImageFont.load_default()
         try:
@@ -215,7 +215,7 @@ class MarchMadnessPlugin(BasePlugin):
         except IOError:
             fonts["time"] = ImageFont.load_default()
         try:
-            fonts["detail"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+            fonts["detail"] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 7)
         except IOError:
             fonts["detail"] = ImageFont.load_default()
         return fonts

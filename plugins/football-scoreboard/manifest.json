@@ -32,6 +32,13 @@
       "ledmatrix_min_version": "3.3.0"
     },
     {
+      "version": "3.5.5",
+      "released": "2026-09-11",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Draw the placeholder-logo abbreviation at PressStart2P 16 rather than 12. That face is crisp only at multiples of 8, and 16 is the nearest crisp size for a 64px logo tile. Panel text was already on-grid via _FONT_PIXEL_GRID and is unchanged.",
+      "changelog": "Draw the placeholder-logo abbreviation at PressStart2P 16 rather than 12. That face is crisp only at multiples of 8, and 16 is the nearest crisp size for a 64px logo tile. Panel text was already on-grid via _FONT_PIXEL_GRID and is unchanged."
+    },
+    {
       "version": "3.5.4",
       "released": "2026-09-08",
       "ledmatrix_min_version": "3.3.0",
@@ -471,7 +478,7 @@
       "released": "2026-07-10",
       "version": "2.8.0",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" — rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
+      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" \u00e2\u20ac\u201d rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
     },
     {
       "released": "2026-07-08",

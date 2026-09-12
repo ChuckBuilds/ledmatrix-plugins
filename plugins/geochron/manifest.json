@@ -1,7 +1,7 @@
 {
   "id": "geochron",
   "name": "Geochron World Clock",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "author": "ChuckBuilds",
   "description": "High-fidelity world map clock showing the real-time day/night terminator with civil/nautical/astronomical twilight bands, the subsolar point, configurable city markers, and a digital UTC/local clock - a classic Geochron, reimagined for LED matrix panels of any size.",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.0.6",
+      "released": "2026-09-11",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Load the 4x6 face at 7px in the preview renderer -- 4x6-font is crisp only at multiples of 7."
+    },
     {
       "version": "1.0.5",
       "released": "2026-09-05",

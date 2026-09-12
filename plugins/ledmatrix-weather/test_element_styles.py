@@ -29,7 +29,7 @@ CLASSIC = {
     "condition_text": ("PressStart2P-Regular.ttf", 8, (255, 255, 255)),
     "temp_text": ("PressStart2P-Regular.ttf", 8, (255, 200, 0)),
     "high_low_text": ("PressStart2P-Regular.ttf", 8, (180, 180, 180)),
-    "metric_text": ("4x6-font.ttf", 6, (255, 255, 255)),
+    "metric_text": ("4x6-font.ttf", 7, (255, 255, 255)),  # _detail_font grid
 }
 
 

@@ -61,6 +61,12 @@
       "ledmatrix_min_version": "3.3.0"
     },
     {
+      "version": "1.25.7",
+      "released": "2026-09-11",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Draw the placeholder-logo abbreviation at PressStart2P 16 rather than 12. That face is crisp only at multiples of 8, and 16 is the nearest crisp size for a 64px logo tile. Panel text was already on-grid via _FONT_PIXEL_GRID and is unchanged."
+    },
+    {
       "version": "1.25.6",
       "released": "2026-09-09",
       "ledmatrix_min_version": "3.3.0",

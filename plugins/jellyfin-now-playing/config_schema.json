@@ -38,10 +38,18 @@
       "type": "array",
       "items": {
         "type": "string",
-        "enum": ["Movie", "Episode", "Audio"]
+        "enum": [
+          "Movie",
+          "Episode",
+          "Audio"
+        ]
       },
       "uniqueItems": true,
-      "default": ["Movie", "Episode", "Audio"],
+      "default": [
+        "Movie",
+        "Episode",
+        "Audio"
+      ],
       "description": "Which media types to show",
       "x-widget": "checkbox-group"
     },
@@ -132,10 +140,18 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [255, 255, 255]
+              "default": [
+                255,
+                255,
+                255
+              ]
             }
           },
-          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "x-propertyOrder": [
+            "font",
+            "font_size",
+            "text_color"
+          ],
           "additionalProperties": false
         },
         "subtitle_text": {
@@ -163,7 +179,7 @@
               "description": "Font size in pixels",
               "minimum": 4,
               "maximum": 16,
-              "default": 6,
+              "default": 7,
               "x-advanced": true
             },
             "text_color": {
@@ -177,10 +193,18 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [170, 170, 170]
+              "default": [
+                170,
+                170,
+                170
+              ]
             }
           },
-          "x-propertyOrder": ["font", "font_size", "text_color"],
+          "x-propertyOrder": [
+            "font",
+            "font_size",
+            "text_color"
+          ],
           "additionalProperties": false
         },
         "progress_bar": {
@@ -199,7 +223,11 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [124, 77, 255]
+              "default": [
+                124,
+                77,
+                255
+              ]
             },
             "background_color": {
               "type": "array",
@@ -212,18 +240,31 @@
               },
               "minItems": 3,
               "maxItems": 3,
-              "default": [40, 40, 40]
+              "default": [
+                40,
+                40,
+                40
+              ]
             }
           },
-          "x-propertyOrder": ["bar_color", "background_color"],
+          "x-propertyOrder": [
+            "bar_color",
+            "background_color"
+          ],
           "additionalProperties": false
         }
       },
-      "x-propertyOrder": ["title_text", "subtitle_text", "progress_bar"],
+      "x-propertyOrder": [
+        "title_text",
+        "subtitle_text",
+        "progress_bar"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["enabled"],
+  "required": [
+    "enabled"
+  ],
   "patternProperties": {
     "^content_types_data$": {
       "$comment": "Written by the web UI, not a setting -- see the $comment on this schema's root object."

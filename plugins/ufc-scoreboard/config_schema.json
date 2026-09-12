@@ -465,7 +465,7 @@
             },
             "font_size": {
               "type": "integer",
-              "default": 6,
+              "default": 7,
               "minimum": 4,
               "maximum": 16,
               "description": "Font size for fighter names"
@@ -503,7 +503,7 @@
             },
             "font_size": {
               "type": "integer",
-              "default": 10,
+              "default": 8,
               "minimum": 6,
               "maximum": 16,
               "description": "Font size for fight result"
@@ -522,7 +522,7 @@
             },
             "font_size": {
               "type": "integer",
-              "default": 6,
+              "default": 7,
               "minimum": 4,
               "maximum": 12,
               "description": "Font size for detail text"

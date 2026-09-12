@@ -14,14 +14,51 @@ Features:
 """
 
 import math
+import os
 import requests
 import time
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 
 from src.plugin_system.base_plugin import BasePlugin
+
+
+def _resolve_font_path(path: str) -> str:
+    """Resolve a bundled font path without depending on the process cwd.
+
+    These fonts ship with the LEDMatrix core and are named relative to the
+    working directory. That holds under the packaged systemd unit, whose
+    WorkingDirectory is the install root, and breaks everywhere else -- the
+    plugin safety harness, a manual run from $HOME, a unit file written
+    without WorkingDirectory. The failure is quiet: the load raises, the
+    caller falls back, and the panel renders in PIL's default face instead
+    of the pixel font it was laid out for.
+
+    Same resolver the scoreboards use (football-scoreboard/game_renderer.py):
+    the path as given first, so behaviour is unchanged wherever it already
+    worked, then the core install root, then the original string so callers
+    still raise and fall back exactly as they do today.
+    """
+    if os.path.exists(path):
+        return path
+    try:
+        import src.font_manager as _core_fonts
+
+        manager = getattr(_core_fonts, "FontManager", None)
+        resolver = getattr(manager, "_resolve_asset_path", None)
+        if resolver is not None:
+            resolved = resolver(path)
+            if resolved and os.path.exists(resolved):
+                return resolved
+        root = os.path.dirname(os.path.dirname(os.path.abspath(_core_fonts.__file__)))
+        candidate = os.path.join(root, path)
+        if os.path.exists(candidate):
+            return candidate
+    except (ImportError, AttributeError, OSError):
+        return path
+    return path
 
 # Import weather icons from local module
 try:
@@ -181,10 +218,14 @@ class WeatherPlugin(BasePlugin):
         # Layout constants
         self.PADDING = 1
         # Narrowest a single bottom-metrics-bar item can get before its text
-        # starts overlapping its neighbors -- derived from the 192px design
-        # reference fitting all 7 possible items (192 // 7 ~= 27px) without
-        # crowding.
-        self.MIN_METRIC_ITEM_WIDTH_PX = 27
+        # starts overlapping its neighbors. Originally derived from the 192px
+        # design reference fitting all 7 possible items (192 // 7 ~= 27px)
+        # without crowding, at the 4px pitch the 6px detail face drew at.
+        # The face is now loaded on its 7px grid (see _detail_font), which
+        # draws a 5px pitch, so the same ~6-character budget needs
+        # 27 * 5/4 ~= 34px. Left at 27 it packed "W:12g28NNW" (50px) into a
+        # 27px slice and the items ran together.
+        self.MIN_METRIC_ITEM_WIDTH_PX = 34
         # Gap the compact Vegas tile keeps between metrics-bar items. This is a
         # readability floor, not a packing minimum: MIN_METRIC_ITEM_WIDTH_PX
         # above is the point where items start to collide, which is a long way
@@ -217,6 +258,54 @@ class WeatherPlugin(BasePlugin):
         self.logger.info(f"Weather plugin initialized for {self.location.get('city', 'Unknown')}")
         self.logger.info(f"Units: {self.units}, Update interval: {self.update_interval}s")
     
+    #: The bundled pixel faces render crisply only at whole multiples of
+    #: their design grid; off the grid FreeType anti-aliases to fake the
+    #: in-between stroke widths, and under fontmode="1" the mono rasterizer
+    #: then drops a column from every glyph. Same table the scoreboards keep
+    #: in football-scoreboard/game_renderer.py:_FONT_PIXEL_GRID.
+    _FONT_PIXEL_GRID = {
+        'PressStart2P-Regular.ttf': 8,   # crisp at 8, 16, 24, 32, 40
+        '4x6-font.ttf': 7,               # crisp at 7, 14, 21, 28, 35
+    }
+
+    _DETAIL_FONT_FILE = '4x6-font.ttf'
+
+    @property
+    def _detail_font(self):
+        """4x6-font on its 7px grid -- the small face for metrics, forecast
+        temps, and the almanac rows.
+
+        The core hands out ``display_manager.extra_small_font`` as the same
+        file at ppem 6, one pixel off the grid. Every glyph came out 3px wide
+        instead of 4 under 1-bit rendering, so W/M and 0/8 lost the pixels
+        that tell them apart, and ``getlength`` returned a fractional advance
+        whose value changed with the installed FreeType (4.28px on Pillow
+        12.3 vs 5.0px on 11.3) -- two boards on the same config measured the
+        same string 17% apart and centred it differently.
+
+        Loading the same file at ppem 7 gives the intended 4x6 glyphs and an
+        advance that agrees across both builds. This is the size
+        football-scoreboard already draws its odds/detail text at.
+
+        Falls back to the core attribute if the file cannot be found, so an
+        unusual install degrades to today's rendering rather than to PIL's
+        default face.
+        """
+        font = getattr(self, '_detail_font_cache', None)
+        if font is None:
+            size = self._FONT_PIXEL_GRID[self._DETAIL_FONT_FILE]
+            path = _resolve_font_path(
+                os.path.join('assets', 'fonts', self._DETAIL_FONT_FILE))
+            try:
+                font = ImageFont.truetype(path, size)
+            except (OSError, ValueError) as e:
+                self.logger.warning(
+                    "Could not load %s at %dpx (%s); falling back to the core's "
+                    "extra_small_font, which renders off-grid", path, size, e)
+                font = self.display_manager.extra_small_font
+            self._detail_font_cache = font
+        return font
+
     def _register_fonts(self):
         """Register fonts with the font manager."""
         try:
@@ -239,7 +328,7 @@ class WeatherPlugin(BasePlugin):
                 manager_id=self.plugin_id,
                 element_key=f"{self.plugin_id}.condition",
                 family="four_by_six",
-                size_px=8,
+                size_px=7,  # four_by_six's pixel grid; 8 renders off-grid
                 color=self.COLORS['highlight']
             )
             
@@ -247,7 +336,7 @@ class WeatherPlugin(BasePlugin):
                 manager_id=self.plugin_id,
                 element_key=f"{self.plugin_id}.forecast_label",
                 family="four_by_six",
-                size_px=6,
+                size_px=7,  # four_by_six's pixel grid; 6 renders off-grid
                 color=self.COLORS['dim']
             )
             
@@ -1187,9 +1276,13 @@ class WeatherPlugin(BasePlugin):
             # Build list of enabled metric items, then distribute evenly across rows.
             # Each item is (text, color). Rows fill from left to right, each item
             # centered in its equal-width section (same pattern as original UV/H/W bar).
+            # The classic face is _detail_font -- 4x6 on its 7px grid, not the
+            # core's off-grid extra_small_font -- so an untouched config keeps
+            # the crisp metrics main moved to, and 7 is the size a user's
+            # choice is judged against.
             metric_style = self._style(
-                'metric_text', '4x6-font.ttf', 6, self.COLORS['text'],
-                self.display_manager.extra_small_font)
+                'metric_text', '4x6-font.ttf', 7, self.COLORS['text'],
+                self._detail_font)
             font = metric_style.font
 
             # Gather all enabled bottom-bar items
@@ -1463,13 +1556,17 @@ class WeatherPlugin(BasePlugin):
                     icon_x = center_x - icon_size // 2
                     WeatherIcons.draw_weather_icon(img, forecast['icon'], icon_x, icon_y, icon_size)
 
-                    # High/low temperatures at bottom
-                    temp_text = f"{forecast['temp_low']} / {forecast['temp_high']}"
-                    temp_width = draw.textlength(temp_text, font=self.display_manager.extra_small_font)
+                    # High/low temperatures at bottom. No spaces around the
+                    # slash: at the detail face's 5px pitch "58 / 72" is 35px
+                    # and a 4-day column on a 128px panel is 32px, so the
+                    # spaced form ran its neighbours together. "58/72" is 25px
+                    # and clears the column at every supported width.
+                    temp_text = f"{forecast['temp_low']}/{forecast['temp_high']}"
+                    temp_width = draw.textlength(temp_text, font=self._detail_font)
                     temp_y = layout['forecast_bottom_y']
                     draw.text((center_x - temp_width // 2, temp_y),
                              temp_text,
-                             font=self.display_manager.extra_small_font,
+                             font=self._detail_font,
                              fill=self.COLORS['text'])
 
             return img
@@ -1612,7 +1709,7 @@ class WeatherPlugin(BasePlugin):
         (e.g. 64-wide, where the moon icon leaves ~30px) — there we fall back to
         stacked sun-only times with up/down markers.
         """
-        font = self.display_manager.extra_small_font
+        font = self._detail_font
 
         def fits(full):
             cols = self._almanac_columns(
@@ -1645,7 +1742,7 @@ class WeatherPlugin(BasePlugin):
             text = text[:-1]
         return text
 
-    def _almanac_layout(self, draw, width, height, text_x, phase_name, show_pct):
+    def _almanac_layout(self, draw, width, height, text_x, phase_name, pct_text):
         """Choose fonts and row positions for the almanac page so nothing
         overflows the panel or collides with the illumination %.
 
@@ -1659,16 +1756,23 @@ class WeatherPlugin(BasePlugin):
         cramped ones degrade to a readable abbreviation rather than a mid-word
         cut.
 
+        `pct_text` is the illumination string that will be drawn (e.g. "1%"),
+        or None when there is no phase to show one for.
+
         Returns a dict with `title_font`, `title_text` (fitted), `pct_font`,
         and `rows` — a list of four y-positions (title, sun, moon, day) where
         an entry is None if that row would spill past the bottom edge.
         """
-        title_font = self.display_manager.small_font        # 8px PressStart2P
-        body_font = self.display_manager.extra_small_font   # 6px 4x6
+        title_font = self.display_manager.small_font  # 8px PressStart2P
+        body_font = self._detail_font              # 7px 4x6
         title_h, body_h = 8, 6
 
         col_w = width - text_x
-        pct_w = (int(draw.textlength("100%", font=body_font)) + 2) if show_pct else 0
+        # Reserve what this percentage actually draws, not the widest one that
+        # could ever appear. Reserving "100%" cost 22px of a 64px panel's ~34px
+        # text column to render "1%", leaving the phase name two characters --
+        # a mid-word cut where the abbreviation would have fit.
+        pct_w = (int(draw.textlength(pct_text, font=body_font)) + 2) if pct_text else 0
         name_budget = col_w - pct_w
 
         # Prefer the bold 8px title, but drop to the 6px font when the name
@@ -1716,7 +1820,7 @@ class WeatherPlugin(BasePlugin):
             draw = ImageDraw.Draw(img)
             draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
-            font_sm = self.display_manager.extra_small_font  # 6px - secondary rows
+            font_sm = self._detail_font  # 7px 4x6 - secondary rows
             tz_offset = self.weather_data.get('timezone_offset', 0) if self.weather_data else 0
             sun = self.weather_data.get('sun', {}) if self.weather_data else {}
             moon = self.weather_data.get('moon', {}) if self.weather_data else {}
@@ -1763,8 +1867,10 @@ class WeatherPlugin(BasePlugin):
 
             # Size fonts and rows to the actual panel so nothing overflows the
             # edge or collides with the illumination %.
+            pct = (f"{int(round(self._moon_illumination(moon_phase) * 100))}%"
+                   if moon_phase is not None else None)
             layout = self._almanac_layout(
-                draw, width, height, text_x, phase_name, moon_phase is not None)
+                draw, width, height, text_x, phase_name, pct)
             rows = layout["rows"]
             pct_font = layout["pct_font"]
 
@@ -1776,8 +1882,7 @@ class WeatherPlugin(BasePlugin):
             if rows[0] is not None:
                 draw.text((text_x, rows[0]), layout["title_text"],
                           font=layout["title_font"], fill=(200, 200, 255))
-                if moon_phase is not None:
-                    pct = f"{int(round(self._moon_illumination(moon_phase) * 100))}%"
+                if pct is not None:
                     pct_w = draw.textlength(pct, font=pct_font)
                     draw.text((width - pct_w - 2, rows[0]), pct,
                               font=pct_font, fill=(140, 140, 180))
@@ -1879,7 +1984,7 @@ class WeatherPlugin(BasePlugin):
             draw = ImageDraw.Draw(img)
             draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
-            font = self.display_manager.extra_small_font
+            font = self._detail_font
             font_h = 7
             alert = alerts[0]  # Show first alert
 
@@ -1983,8 +2088,9 @@ class WeatherPlugin(BasePlugin):
         try:
             layout = self._get_layout()
             small = self.display_manager.small_font
-            tiny = self.display_manager.extra_small_font
+            tiny = self._detail_font
             measure = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+            measure.fontmode = "1"  # match the real draws; mono hints advances differently
 
             main = self.weather_data['main']
             temp = int(main['temp'])

@@ -191,12 +191,12 @@ class F1LogoLoader:
         draw = ImageDraw.Draw(img)
 
         try:
-            font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6)
+            font = ImageFont.truetype("assets/fonts/4x6-font.ttf", 7)
         except Exception:
             try:
                 font = ImageFont.truetype(
                     str(Path(__file__).parent.parent.parent /
-                        "assets" / "fonts" / "4x6-font.ttf"), 6)
+                        "assets" / "fonts" / "4x6-font.ttf"), 7)
             except Exception:
                 font = ImageFont.load_default()
 

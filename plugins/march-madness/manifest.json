@@ -1,7 +1,7 @@
 {
   "id": "march-madness",
   "name": "March Madness",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "NCAA March Madness tournament bracket tracker with round branding, seeded matchups, live scores, and upset highlighting",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "2.0.1",
+      "released": "2026-09-11",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Load the 4x6 detail face on its 7px pixel grid. 4x6-font rasterises cleanly only at whole multiples of 7; at ppem 6 the 1-bit (fontmode \"1\") mono rasteriser thresholds every glyph down from 4px wide to 3px, so W/M and 0/8 lose the pixels that tell them apart, and getlength returns a fractional advance whose value depends on the installed FreeType -- two boards on one config measured the same string up to 17% apart. Same grid football-scoreboard keeps in _FONT_PIXEL_GRID. PressStart2P is snapped to its own 8px grid in the same pass."
+    },
     {
       "version": "2.0.0",
       "released": "2026-09-07",

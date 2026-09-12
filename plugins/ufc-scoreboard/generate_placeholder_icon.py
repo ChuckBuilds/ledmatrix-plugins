@@ -75,7 +75,7 @@ def create_ufc_octagon_icon(output_path: str, size: int = 64):
 
     # Draw "UFC" text
     try:
-        font = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 10)
+        font = ImageFont.truetype(_resolve_font_path("assets/fonts/PressStart2P-Regular.ttf"), 8)
     except Exception:
         try:
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14)

@@ -360,7 +360,7 @@
             "default": "4x6-font.ttf"
           },
           "size": {
-            "default": 6,
+            "default": 7,
             "min": 4,
             "max": 16
           },

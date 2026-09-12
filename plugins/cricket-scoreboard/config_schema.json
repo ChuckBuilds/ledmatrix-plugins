@@ -41,7 +41,11 @@
         ]
       },
       "uniqueItems": true,
-      "default": ["international", "ipl", "bbl"],
+      "default": [
+        "international",
+        "ipl",
+        "bbl"
+      ],
       "description": "Domestic competitions (keys from competitions.json) to follow. Include 'international' to follow Test/ODI/T20I tours for your favorite_teams."
     },
     "exclude_teams": {
@@ -222,7 +226,10 @@
       "description": "Control total duration for each mode type. If null, uses dynamic calculation (total_matches x per_match_duration).",
       "properties": {
         "live_mode_duration": {
-          "type": ["number", "null"],
+          "type": [
+            "number",
+            "null"
+          ],
           "default": null,
           "minimum": 10,
           "maximum": 600,
@@ -230,7 +237,10 @@
           "x-advanced": true
         },
         "recent_mode_duration": {
-          "type": ["number", "null"],
+          "type": [
+            "number",
+            "null"
+          ],
           "default": null,
           "minimum": 10,
           "maximum": 600,
@@ -238,7 +248,10 @@
           "x-advanced": true
         },
         "upcoming_mode_duration": {
-          "type": ["number", "null"],
+          "type": [
+            "number",
+            "null"
+          ],
           "default": null,
           "minimum": 10,
           "maximum": 600,
@@ -343,7 +356,7 @@
               "title": "Font Size",
               "minimum": 4,
               "maximum": 16,
-              "default": 10,
+              "default": 8,
               "x-advanced": true
             }
           },
@@ -424,7 +437,7 @@
               "title": "Font Size",
               "minimum": 4,
               "maximum": 16,
-              "default": 6,
+              "default": 7,
               "x-advanced": true
             }
           },
@@ -451,7 +464,7 @@
               "title": "Font Size",
               "minimum": 4,
               "maximum": 16,
-              "default": 6,
+              "default": 7,
               "x-advanced": true
             }
           },

@@ -33,6 +33,12 @@
       "ledmatrix_min_version": "2.0.0"
     },
     {
+      "released": "2026-09-11",
+      "version": "2.6.9",
+      "notes": "Load the small 4x6 detail face on its 7px pixel grid, the size football-scoreboard already draws its odds/detail text at. The core hands out extra_small_font as the same file at ppem 6, one pixel off the grid: under the 1-bit rendering added in 2.6.7 the mono rasteriser dropped a column from every glyph (4px designs drew 3px wide), so W/M and 0/8 lost the pixels that tell them apart. It also made the plugin render differently on identical panels -- getlength returned a fractional advance whose value depends on the installed FreeType, 4.28px under Pillow 12.3 against 5.0px under 11.3, so two boards on one config measured the same string 17% apart and centred it differently. Covers every piece of small text the plugin draws: the current-weather metrics bar (UV, humidity, wind, feels-like, dew point, visibility, pressure), the daily-forecast high/low temperatures, the almanac's sunrise/sunset and moonrise/moonset rows and day length, the weather-alert screen, and the radar timestamp overlay, which loads the same face separately in weather_radar.py and was off the grid too. Text already drawn in PressStart2P at 8px is unchanged -- that face's grid is 8, so it was already on it. The wider pitch is paid for by widening the metrics-bar collision floor to 34px, dropping the spaces around the forecast slash, and reserving the illumination percentage the almanac actually draws instead of the widest one it could ever draw.",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
       "released": "2026-09-03",
       "version": "2.6.7",
       "changelog": "Render text 1-bit (no anti-aliasing) so glyphs stay crisp on the LED grid",
@@ -77,7 +83,7 @@
     {
       "released": "2026-07-19",
       "version": "2.6.0",
-      "notes": "Radar overhaul. (1) Real map tiles: the radar now draws over an OpenStreetMap basemap (self-hosted tile server supported via radar_tile_server, public mirrors as fallback; carto/carto_dark/esri styles too), with the classic WeatherStar vector map kept as a selectable style and as automatic fallback when tiles are unavailable — radar is no longer blank outside the US. (2) Accuracy fix: basemap and radar are now rendered through one shared Web-Mercator viewport and the radar is a mosaic of every tile in view, so precipitation finally lines up with the map on all panel sizes (previously the radar was composited at a different zoom than the map — up to 4x off on 64x32 — and cut off near tile edges). (3) Fresher data: optional RainViewer nowcast frames (~30 min of predicted radar, labeled FCST +Nm with yellow progress dots), index polled every 3 min by default with tiles only downloaded for new frames, and frames/tiles cached to disk so restarts rebuild the animation without refetching. (4) Easier config: new radar_range_miles (distance to panel edge) replaces the abstract radar_zoom (still honored for existing configs), plus map style/brightness, frame timing, and past-frame-count settings. (5) Smoother playback: time-based frame stepping with a hold on the newest frame, and optional dynamic duration to let the rotation wait for a full loop.",
+      "notes": "Radar overhaul. (1) Real map tiles: the radar now draws over an OpenStreetMap basemap (self-hosted tile server supported via radar_tile_server, public mirrors as fallback; carto/carto_dark/esri styles too), with the classic WeatherStar vector map kept as a selectable style and as automatic fallback when tiles are unavailable \u2014 radar is no longer blank outside the US. (2) Accuracy fix: basemap and radar are now rendered through one shared Web-Mercator viewport and the radar is a mosaic of every tile in view, so precipitation finally lines up with the map on all panel sizes (previously the radar was composited at a different zoom than the map \u2014 up to 4x off on 64x32 \u2014 and cut off near tile edges). (3) Fresher data: optional RainViewer nowcast frames (~30 min of predicted radar, labeled FCST +Nm with yellow progress dots), index polled every 3 min by default with tiles only downloaded for new frames, and frames/tiles cached to disk so restarts rebuild the animation without refetching. (4) Easier config: new radar_range_miles (distance to panel edge) replaces the abstract radar_zoom (still honored for existing configs), plus map style/brightness, frame timing, and past-frame-count settings. (5) Smoother playback: time-based frame stepping with a hold on the newest frame, and optional dynamic duration to let the rotation wait for a full loop.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -101,7 +107,7 @@
     {
       "released": "2026-06-10",
       "version": "2.5.0",
-      "note": "Geocode the configured location once and cache the coordinates permanently across update cycles and restarts, instead of re-resolving every refresh. Cities don't move, so the geocoding API is now only ever called on a cache miss — eliminating the per-refresh geocoding timeouts that previously aborted the whole weather update, blanked the widget, and triggered up-to-an-hour error backoff. Add optional location_latitude/location_longitude config fields to skip geocoding entirely.",
+      "note": "Geocode the configured location once and cache the coordinates permanently across update cycles and restarts, instead of re-resolving every refresh. Cities don't move, so the geocoding API is now only ever called on a cache miss \u2014 eliminating the per-refresh geocoding timeouts that previously aborted the whole weather update, blanked the widget, and triggered up-to-an-hour error backoff. Add optional location_latitude/location_longitude config fields to skip geocoding entirely.",
       "ledmatrix_min": "2.0.0"
     },
     {

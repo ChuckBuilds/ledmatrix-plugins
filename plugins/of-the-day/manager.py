@@ -140,7 +140,7 @@ class OfTheDayPlugin(BasePlugin):
                  body_font, body_color, body_offset).
 
         With an untouched config this resolves to exactly the classic fonts
-        and colors (PressStart2P@8 white / 4x6@6 gray), so rendering is
+        and colors (PressStart2P@8 white / 4x6@7 gray), so rendering is
         unchanged; a genuine user override in customization.title_text /
         body_text wins. On older cores (no src.element_style) the classic
         values are returned directly.
@@ -159,7 +159,7 @@ class OfTheDayPlugin(BasePlugin):
                                    classic_color=self.title_color)
             body = resolver.style('body_text',
                                   classic_font='4x6-font.ttf',
-                                  classic_size=6,
+                                  classic_size=7,  # 4x6-font's pixel grid; 6 renders off-grid
                                   classic_color=self.subtitle_color)
             return (title.font, title.color, title.offset,
                     body.font, body.color, body.offset)
@@ -172,7 +172,7 @@ class OfTheDayPlugin(BasePlugin):
                 self.logger.warning(f"Failed to load PressStart2P font: {e}, using fallback")
                 title_font = self.display_manager.small_font if hasattr(self.display_manager, 'small_font') else ImageFont.load_default()
             try:
-                body_font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 6)
+                body_font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 7)
             except Exception as e:
                 self.logger.warning(f"Failed to load 4x6 font: {e}, using fallback")
                 body_font = self.display_manager.extra_small_font if hasattr(self.display_manager, 'extra_small_font') else ImageFont.load_default()
@@ -803,7 +803,7 @@ class OfTheDayPlugin(BasePlugin):
         draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         
         try:
-            font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)
+            font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 7)
         except Exception:
             font = ImageFont.load_default()
         
@@ -821,7 +821,7 @@ class OfTheDayPlugin(BasePlugin):
         draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
         
         try:
-            font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 8)
+            font = ImageFont.truetype('assets/fonts/4x6-font.ttf', 7)
         except Exception:
             font = ImageFont.load_default()
         

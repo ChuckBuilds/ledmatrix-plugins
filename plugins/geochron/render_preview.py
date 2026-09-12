@@ -61,7 +61,7 @@ TIME_SAMPLES = [
 def _load_font():
     path = os.path.join(os.path.dirname(__file__), "assets", "fonts", "4x6-font.ttf")
     try:
-        return ImageFont.truetype(path, 6)
+        return ImageFont.truetype(path, 7)  # 4x6-font is crisp only at multiples of 7
     except OSError:
         return ImageFont.load_default()
 

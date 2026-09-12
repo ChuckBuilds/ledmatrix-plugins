@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-09-11",
+  "last_updated": "2026-09-12",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -27,7 +27,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.0"
+      "latest_version": "1.2.1"
     },
     {
       "id": "7-segment-clock",
@@ -215,7 +215,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.8.9"
+      "latest_version": "1.8.10"
     },
     {
       "id": "football-scoreboard",
@@ -439,7 +439,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.13.2"
+      "latest_version": "1.13.3"
     },
     {
       "id": "march-madness",
@@ -463,7 +463,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.0.0"
+      "latest_version": "2.0.1"
     },
     {
       "id": "masters-tournament",
@@ -557,12 +557,12 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.2"
+      "latest_version": "1.4.3"
     },
     {
       "id": "on-air",
       "name": "On Air Light",
-      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live — stays on until you turn it off.",
+      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live â€” stays on until you turn it off.",
       "author": "ChuckBuilds",
       "category": "utility",
       "tags": [
@@ -581,7 +581,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.8",
+      "latest_version": "1.2.9",
       "icon": "fa-circle-dot"
     },
     {
@@ -633,7 +633,7 @@
       "last_updated": "2026-09-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.7"
+      "latest_version": "1.4.8"
     },
     {
       "id": "of-the-day",
@@ -783,7 +783,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.0"
+      "latest_version": "1.1.1"
     },
     {
       "id": "stock-news",
@@ -880,7 +880,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.0",
+      "latest_version": "1.3.1",
       "icon": "fa-water"
     },
     {
@@ -955,7 +955,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.0.0"
+      "latest_version": "2.0.1"
     },
     {
       "id": "youtube-stats",
@@ -1119,7 +1119,7 @@
       "last_updated": "2026-09-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.2"
+      "latest_version": "1.2.3"
     },
     {
       "id": "incoming-packages",

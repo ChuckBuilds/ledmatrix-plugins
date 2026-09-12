@@ -88,17 +88,20 @@ def check_layout_helper(w, h):
     from PIL import ImageDraw
     plugin = _new_plugin(w, h)
     draw = ImageDraw.Draw(Image.new("RGB", (w, h)))
+    draw.fontmode = "1"                   # mirrors the renderer; mono hints advances
     icon_size = min(h - 6, 32)            # mirrors _display_almanac icon cap
     gap = 4 if w < 100 else 8
     text_x = icon_size + gap
     col_w = w - text_x
     body_h = 6
-    pct_reserve = int(draw.textlength("100%", font=plugin.display_manager.extra_small_font)) + 2
+    # Worst case on purpose: the layout reserves the percentage it is handed,
+    # so "100%" is the widest reservation the almanac can ever ask for.
+    pct_reserve = int(draw.textlength("100%", font=plugin._detail_font)) + 2
 
     fails = []
     for name in ["New Moon", "Waxing Crescent", "First Quarter", "Waxing Gibbous",
                  "Full Moon", "Waning Gibbous", "Last Quarter", "Waning Crescent"]:
-        lay = plugin._almanac_layout(draw, w, h, text_x, name, True)
+        lay = plugin._almanac_layout(draw, w, h, text_x, name, "100%")
         title_w = draw.textlength(lay["title_text"], font=lay["title_font"])
         # Horizontal: fitted title must not run into the reserved % zone.
         if title_w > col_w - pct_reserve:
@@ -140,9 +143,10 @@ def check_full_names_restored():
     from PIL import ImageDraw
     w, h = 256, 32
     draw = ImageDraw.Draw(Image.new("RGB", (w, h)))
+    draw.fontmode = "1"
     text_x = min(h - 6, 32) + 8
     for name in expected.values():
-        lay = plugin._almanac_layout(draw, w, h, text_x, name, True)
+        lay = plugin._almanac_layout(draw, w, h, text_x, name, "100%")
         if lay["title_text"] != name:
             fails.append(f"256x32: '{name}' rendered as "
                          f"'{lay['title_text']}' (full name not restored)")
@@ -170,13 +174,24 @@ def check_render_edges(w, h):
 
 
 def check_time_mode(w, h):
-    """The rise/set rows must read clearly, not as cryptic 'MR/MS'. Wide short
-    panels (128x32, 256x32) get the labeled 'Sun 6:42am-8:51pm' range with full
-    am/pm; the cramped 64-wide panel falls back to stacked sun-only times rather
-    than truncating a range into garbage."""
+    """The rise/set rows must read clearly, not as cryptic 'MR/MS'.
+
+    Every panel 128px or wider gets the labeled 'Sun 6:42am-8:51pm' range; the
+    cramped 64-wide panel falls back to stacked sun-only times rather than
+    truncating a range into garbage.
+
+    Whether that range carries full am/pm or the compact a/p is a width
+    question, not a "is it 128 wide" question, so it is asserted against the
+    column the grid actually gets. The two differ on 128x64: the moon icon caps
+    at 32px there against 26px on a 32-tall panel, which takes 6px more out of
+    the text column, and the full-am/pm grid misses by a pixel (87px into 86).
+    Compact a/p carries the same information and stays crisp, so the ladder is
+    allowed to take it -- what must not happen is a range that overflows.
+    """
     from PIL import ImageDraw
     plugin = _new_plugin(w, h)
     draw = ImageDraw.Draw(Image.new("RGB", (w, h)))
+    draw.fontmode = "1"                   # mirrors the renderer
     icon_size = min(h - 6, 32)
     gap = 4 if w < 100 else 8
     col_w = w - (icon_size + gap)
@@ -190,8 +205,23 @@ def check_time_mode(w, h):
     if w >= 128:
         if mode != "range":
             fails.append(f"expected labeled range on {w}-wide, got {mode!r}")
+        # Full am/pm exactly when the grid fits it -- no more, no less.
+        full_w = plugin._almanac_columns(
+            draw, plugin._detail_font, True, data["timezone_offset"],
+            s["sunrise"], s["sunset"], m["moonrise"], m["moonset"])["total"]
+        want_full = full_w <= col_w - 2
+        if full != want_full:
+            fails.append(
+                f"{w}x{h}: full am/pm is {full}, but the grid needs "
+                f"{full_w:.0f}px of {col_w - 2}px -- want {want_full}")
         if not full:
-            fails.append(f"expected full am/pm on {w}-wide, got compact")
+            # Compact is only acceptable if it actually buys the fit.
+            short_w = plugin._almanac_columns(
+                draw, plugin._detail_font, False, data["timezone_offset"],
+                s["sunrise"], s["sunset"], m["moonrise"], m["moonset"])["total"]
+            if short_w > col_w - 2:
+                fails.append(f"{w}x{h}: compact range still overflows "
+                             f"({short_w:.0f}px of {col_w - 2}px)")
     if w == 64 and mode != "stacked":
         fails.append(f"expected stacked fallback on 64-wide, got {mode!r}")
     return fails
@@ -204,8 +234,9 @@ def check_columns(w, h):
     Narrow panels use the stacked fallback instead, so there's no grid to check."""
     from PIL import ImageDraw
     plugin = _new_plugin(w, h)
-    font = plugin.display_manager.extra_small_font
+    font = plugin._detail_font
     draw = ImageDraw.Draw(Image.new("RGB", (w, h)))
+    draw.fontmode = "1"                   # mirrors the renderer
     icon_size = min(h - 6, 32)
     gap = 4 if w < 100 else 8
     col_w = w - (icon_size + gap)
