@@ -2372,8 +2372,12 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         getter = getattr(self, "_get_manager", None)
         if callable(getter):
             try:
+                # pylint: disable=not-callable
+                # The lineages that lack _get_manager infer this as None, so a
+                # static checker calls it uncallable. callable() above is the
+                # runtime guard; the branch is simply dead in those plugins.
                 manager = getter("live")
-            except Exception:  # pragma: no cover - defensive
+            except (AttributeError, KeyError, TypeError, ValueError, OSError):
                 return []
             return [manager] if manager is not None else []
         return []
