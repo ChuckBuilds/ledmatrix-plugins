@@ -130,6 +130,18 @@
           "description": "Draw the start time on upcoming cards.",
           "default": true
         },
+        "switch_show_date": {
+          "type": "boolean",
+          "title": "Show Date (Full-Screen)",
+          "description": "Draw the date on the full-screen (switch mode) upcoming scoreboard. Its own switch because Show Date above predates this display reading the block: turning that off for the scroll card never hid the full-screen date, and still doesn't.",
+          "default": true
+        },
+        "switch_show_time": {
+          "type": "boolean",
+          "title": "Show Time (Full-Screen)",
+          "description": "Draw the start time on the full-screen (switch mode) upcoming scoreboard. Its own switch because Show Time above predates this display reading the block: turning that off for the scroll card never hid the full-screen time, and still doesn't.",
+          "default": true
+        },
         "swap_date_time": {
           "type": "boolean",
           "title": "Swap Date and Time",
