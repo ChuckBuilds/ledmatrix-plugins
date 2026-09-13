@@ -11,6 +11,7 @@ UFC/MMA adaptation based on work by Alex Resnick (legoguy1000) - PR #137
 import logging
 import time
 import os
+from collections import OrderedDict
 from typing import Dict, Any, List, Optional
 from PIL import Image
 
@@ -86,7 +87,8 @@ class ScrollDisplayManager:
             self.logger.error("ScrollHelper not available - scroll mode will not work")
 
         # Shared headshot cache for fight renderer
-        self._headshot_cache: Dict[str, Image.Image] = {}
+        # OrderedDict so FightRenderer can evict least-recently-used headshots.
+        self._headshot_cache: Dict[str, Image.Image] = OrderedDict()
 
         # Separator icon cache
         self._separator_icons: Dict[str, Image.Image] = {}

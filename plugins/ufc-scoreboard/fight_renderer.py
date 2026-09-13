@@ -10,9 +10,13 @@ UFC/MMA adaptation based on work by Alex Resnick (legoguy1000) - PR #137
 
 import os
 import logging
+from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, Any, Optional, Union
 from PIL import Image, ImageDraw, ImageFont
+
+#: Most decoded headshots the shared scroll/Vegas cache keeps (core #559 cap).
+HEADSHOT_CACHE_MAX = 64
 
 
 def _resolve_font_path(path: str) -> str:
@@ -204,6 +208,8 @@ class FightRenderer:
     ) -> Optional[Image.Image]:
         """Load and resize a fighter headshot with caching."""
         if fighter_id in self._headshot_cache:
+            if isinstance(self._headshot_cache, OrderedDict):
+                self._headshot_cache.move_to_end(fighter_id)
             return self._headshot_cache[fighter_id]
 
         try:
@@ -224,6 +230,12 @@ class FightRenderer:
                     img.thumbnail((self.display_height, self.display_height), LANCZOS)
                     img.load()  # Ensure pixel data is loaded before closing file
                 self._headshot_cache[fighter_id] = img
+                # Bounded LRU (core #559): the scroll/Vegas cache otherwise
+                # kept every headshot it ever decoded for the process's life.
+                if isinstance(self._headshot_cache, OrderedDict):
+                    self._headshot_cache.move_to_end(fighter_id)
+                    while len(self._headshot_cache) > HEADSHOT_CACHE_MAX:
+                        self._headshot_cache.popitem(last=False)
                 return img
             else:
                 self.logger.error(f"Headshot not found for {fighter_name} at {headshot_path}")
