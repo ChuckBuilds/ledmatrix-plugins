@@ -87,6 +87,9 @@ def _bdf_pixel_size(path):
 
 
 class GameRenderer(SportsGameRendererMixin):
+    #: Decoded logos kept in the (shared) cache; see _load_and_resize_logo.
+    _LOGO_CACHE_MAX = 128
+
     """
     Renders individual game cards as PIL Images for display.
 
@@ -313,6 +316,8 @@ class GameRenderer(SportsGameRendererMixin):
         cache_key = f"{league}_{team_abbrev}"
         scoped = self._logo_cache_key(cache_key)
         if scoped in self._logo_cache:
+            # Re-insert to mark it most recently used (LRU, core #559).
+            self._logo_cache[scoped] = self._logo_cache.pop(scoped)
             return self._logo_cache[scoped]
 
         # Also check without league prefix for backward compatibility
@@ -343,6 +348,11 @@ class GameRenderer(SportsGameRendererMixin):
                 logo.thumbnail((self._logo_slot_width(), self.display_height), RESAMPLE_FILTER)
 
                 self._logo_cache[scoped] = logo
+                # Bounded (core #559). Larger than SportsCore's 64: one scroll
+                # strip holds every listed game, and an eviction mid-strip means
+                # re-decoding a source PNG that can be 4096px square.
+                while len(self._logo_cache) > self._LOGO_CACHE_MAX:
+                    del self._logo_cache[next(iter(self._logo_cache))]
                 return logo
             else:
                 self.logger.debug(f"Logo not found at {logo_path}")
@@ -902,7 +912,8 @@ class GameRenderer(SportsGameRendererMixin):
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:
                 return f"#{rank}"
-            return ''
+            # Both on: an unranked team shows its record rather than nothing.
+            return record if self.show_records else ''
         if self.show_records:
             return record
         return ''

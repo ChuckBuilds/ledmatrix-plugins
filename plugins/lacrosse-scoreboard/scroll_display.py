@@ -343,6 +343,29 @@ class ScrollDisplayManager(_ScrollDisplayManagerBase):
 
     display_class = ScrollDisplay
 
+    def prepare_content(self, games, game_type, leagues, rankings_cache=None) -> bool:
+        """Render one scroll display WITHOUT making it the active one.
+
+        Vegas builds its combined slate while the standalone rotation may be
+        mid-scroll on another game type; prepare_and_display() would repoint
+        _current_game_type and the next frame would show the Vegas slate.
+        """
+        scroll_display = self.get_scroll_display(game_type)
+        return scroll_display.prepare_scroll_content(
+            games, game_type, leagues, rankings_cache
+        )
+
+    def get_vegas_content_items_for(self, game_type: str) -> list:
+        """Vegas items of ONE scroll display (e.g. 'mixed'), or [] if absent.
+
+        get_all_vegas_content_items() unions every display, so Vegas showed
+        whatever standalone mode rendered last and could list a game twice.
+        """
+        scroll_display = self._scroll_displays.get(game_type)
+        if scroll_display is None:
+            return []
+        return list(getattr(scroll_display, '_vegas_content_items', None) or [])
+
     def get_dynamic_duration(self, game_type: Optional[str] = None) -> int:
         """Get the dynamic duration for the current scroll."""
         if game_type is None:
