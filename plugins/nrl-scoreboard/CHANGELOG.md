@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.24.0] - 2026-09-12
+
+### Added
+- `scroll_card.switch_show_date` / `switch_show_time`: the full-screen
+  upcoming scorebug's own date/time toggles (football #342). The scroll card's
+  `show_date` / `show_time` no longer blank it.
+- `odds_update_interval` / `live_odds_update_interval` are declared in the
+  schema and forwarded to the managers (the code already read them).
+
+### Fixed
+- Newcastle/Warriors ("NEW") and Canberra/Canterbury ("CAN") no longer share a
+  logo: files are `<ABBR>_<team id>.png` and caches are keyed by team id. The
+  old `<ABBR>.png` is still used until the per-team file has downloaded.
+- Postponed, cancelled and suspended fixtures no longer show on Recent as
+  "Final 0-0": a game is final only when ESPN marks it completed.
+- Full-screen odds step down a row instead of overprinting the top-row status
+  text when only an O/U is present; a home spread of 0.0 is no longer treated
+  as missing.
+- A failed logo shows "Logo Error" instead of a black panel.
+- Upcoming is trimmed to `schedule_lookahead_days`; a mode retaking the panel
+  gives its current card a full dwell (football #345).
+- Games rotated into the other-games slice get odds (football #343).
+- Vegas rebuilds its own slate when the games change, without calling update().
+- A cached "no odds" marker is a cache hit, not a refetch.
+- Decoded logo caches are bounded (core #559).
+- Scroll card with rankings and records on: an unranked team shows its record.
+- A config `Infinity` no longer crashes manager init; a string or null
+  `other_games_divisions` no longer blanks the plugin; `test_mode` reaches the
+  managers.
+- Minimum core raised to 3.3.1, the first release with
+  `src.common.sports_shared`.
+
 ## [1.23.1] - 2026-09-11
 
 ### Fixed
