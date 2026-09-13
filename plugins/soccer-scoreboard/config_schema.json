@@ -425,54 +425,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -931,54 +887,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -1437,54 +1349,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -1943,54 +1811,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -2449,54 +2273,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -2955,54 +2735,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -3461,54 +3197,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -3967,54 +3659,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -4473,54 +4121,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -4979,54 +4583,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
