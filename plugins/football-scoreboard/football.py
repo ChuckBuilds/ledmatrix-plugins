@@ -229,9 +229,12 @@ class FootballLive(Football, SportsLive):
             if not home_logo or not away_logo:
                 self.logger.error(f"Failed to load logos for live game: {game.get('id')}") # Changed log prefix
                 # Draw placeholder text if logos fail
-                draw_final = ImageDraw.Draw(main_img.convert('RGB'))
+                # Draw on the image that is pasted; drawing on a discarded
+                # convert() copy pasted a black panel instead of "Logo Error".
+                error_img = main_img.convert('RGB')
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(draw_final, "Logo Error", (5,5), self.fonts['status'])
-                self.display_manager.image.paste(main_img.convert('RGB'), (0, 0))
+                self.display_manager.image.paste(error_img, (0, 0))
                 self.display_manager.update_display()
                 return
 
@@ -255,7 +258,9 @@ class FootballLive(Football, SportsLive):
             score_text = f"{away_score}-{home_score}"
             score_width = draw_overlay.textlength(score_text, font=self.fonts['score'])
             score_x = (display_width - score_width) // 2 + self._get_layout_offset('score', 'x_offset')
-            score_y = (display_height // 2) - 3 + self._get_layout_offset('score', 'y_offset') #centered #from 14 # Position score higher
+            # Same centring as the recent scorebug (#338): the score font
+            # scales with the panel, so a fixed -3 sat it low on tall panels.
+            score_y = (display_height // 2) - max(3, self._score_font_size() // 2 - 1) + self._get_layout_offset('score', 'y_offset')
             self._draw_text_with_outline(draw_overlay, score_text, (score_x, score_y), self.fonts['score'])
 
             # Period/Quarter and Clock (Top center)
@@ -352,7 +357,8 @@ class FootballLive(Football, SportsLive):
 
             # Draw odds if available
             if 'odds' in game and game['odds']:
-                self._draw_dynamic_odds(draw_overlay, game['odds'], display_width, display_height)
+                self._draw_dynamic_odds(draw_overlay, game['odds'], display_width, display_height,
+                                        top_span=(status_x, status_x + status_width))
 
             # Draw records or rankings if enabled
             if self.show_records or self.show_ranking:

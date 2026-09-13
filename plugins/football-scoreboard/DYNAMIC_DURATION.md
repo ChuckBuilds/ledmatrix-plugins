@@ -19,10 +19,15 @@ Controls how long each individual game displays **within a mode**.
 ### 2. Per-Mode Duration
 Controls the **total time** a mode displays before rotating, regardless of game count.
 
-**Configuration Keys:**
-- `recent_mode_duration`: Total seconds for Recent mode (default: null = dynamic)
-- `upcoming_mode_duration`: Total seconds for Upcoming mode (default: null = dynamic)
-- `live_mode_duration`: Total seconds for Live mode (default: null = dynamic)
+**Configuration Keys** (per league, under `<league>.mode_durations`):
+- `recent_mode_duration`: Total seconds for Recent mode (default: unset = dynamic)
+- `upcoming_mode_duration`: Total seconds for Upcoming mode (default: unset = dynamic)
+- `live_mode_duration`: Total seconds for Live mode (default: unset = dynamic)
+
+> These keys are not in `config_schema.json`, so the web UI does not show
+> them; add them to the plugin's config JSON by hand. They are read **only**
+> inside a league's `mode_durations` block. A top-level
+> `recent_mode_duration` is ignored.
 
 **Example:** With `recent_mode_duration: 60` and `recent_game_duration: 15`, Recent mode shows 4 games (60s ÷ 15s = 4) before rotating.
 
@@ -42,8 +47,10 @@ The duration is then clamped to configured min/max bounds if set.
 
 ```json
 {
-  "recent_mode_duration": 60,
-  "recent_game_duration": 15
+  "nfl": {
+    "recent_game_duration": 15,
+    "mode_durations": { "recent_mode_duration": 60 }
+  }
 }
 ```
 
@@ -106,13 +113,18 @@ Set the default per-game duration for all modes:
 ```
 
 ### Per-Mode Duration Configuration
-Set explicit time limits for each mode:
+Set explicit time limits for each mode. Mode durations are per league (see
+the next sections); there is no top-level form:
 
 ```json
 {
-  "recent_mode_duration": 60,
-  "upcoming_mode_duration": 60,
-  "live_mode_duration": 90
+  "nfl": {
+    "mode_durations": {
+      "recent_mode_duration": 60,
+      "upcoming_mode_duration": 60,
+      "live_mode_duration": 90
+    }
+  }
 }
 ```
 
@@ -219,9 +231,8 @@ You can set minimum and maximum duration constraints to ensure modes don't cycle
 2. **Fallback**: `config.game_display_duration`
 
 **For Per-Mode Duration:**
-1. **Most Specific**: `config.nfl.mode_durations.recent_mode_duration` (per-league override)
-2. **Top-Level**: `config.recent_mode_duration`
-3. **Fallback**: Dynamic calculation (games × per_game_duration)
+1. **Only source**: `config.nfl.mode_durations.recent_mode_duration` (per league)
+2. **Fallback**: Dynamic calculation (games × per_game_duration)
 
 **For Duration Constraints:**
 1. **Most Specific**: `config.nfl.dynamic_duration.modes.live.min_duration_seconds`
@@ -382,7 +393,9 @@ else:
 
 ### Scenario 8: Mixed Leagues (Weighted Calculation)
 - **Configuration**: NFL @ 15s/game, NCAA FB @ 12s/game
-- **Mode**: `football_recent`
+- **Mode**: a combined Recent cycle over both leagues (the plugin registers
+  only per-league modes such as `nfl_recent`; there is no `football_recent`
+  display mode, and the code only keeps a legacy fallback for that name)
 - **Games**: 2 NFL + 3 NCAA FB = 5 total
 - **Total Duration**: (2 × 15s) + (3 × 12s) = **66 seconds**
 
@@ -418,10 +431,9 @@ def get_cycle_duration(self, display_mode: str = None) -> Optional[float]:
 ### Duration Resolution Logic
 
 **For Mode-Level Duration (Granular Modes):**
-1. Check per-league override: `config.nfl.mode_durations.recent_mode_duration` (for `nfl_recent`)
-2. Check top-level: `config.recent_mode_duration`
-3. If both mode duration and dynamic cap exist: `min(mode_duration, dynamic_cap)`
-4. If neither, use dynamic calculation
+1. Check the league's override: `config.nfl.mode_durations.recent_mode_duration` (for `nfl_recent`)
+2. If both mode duration and dynamic cap exist: `min(mode_duration, dynamic_cap)`
+3. If neither, use dynamic calculation
 
 **For Dynamic Calculation (Granular Modes):**
 1. Count games from the specific league (e.g., only NFL games for `nfl_recent`)
@@ -484,7 +496,7 @@ INFO - get_cycle_duration: clamped 160s down to max_duration=120s
 
 For mixed leagues:
 ```text
-INFO - get_cycle_duration(football_recent): mixed leagues - nfl: 2 × 15s = 30s, ncaa_fb: 3 × 12s = 36s = 66s total
+INFO - get_cycle_duration(<combined recent>): mixed leagues - nfl: 2 × 15s = 30s, ncaa_fb: 3 × 12s = 36s = 66s total
 ```
 
 ## Migration from Fixed Duration
@@ -512,10 +524,14 @@ INFO - get_cycle_duration(football_recent): mixed leagues - nfl: 2 × 15s = 30s,
 ### After (Fixed Mode Duration)
 ```json
 {
-  "recent_mode_duration": 60,      // 60s total for Recent mode
-  "upcoming_mode_duration": 60,    // 60s total for Upcoming mode
-  "live_mode_duration": 90,        // 90s total for Live mode
-  "game_display_duration": 15      // 15s per game within each mode
+  "game_display_duration": 15,     // 15s per game within each mode
+  "nfl": {
+    "mode_durations": {
+      "recent_mode_duration": 60,  // 60s total for nfl_recent
+      "upcoming_mode_duration": 60,
+      "live_mode_duration": 90
+    }
+  }
 }
 ```
 
@@ -532,7 +548,7 @@ The display controller's dynamic duration system will automatically use `get_cyc
 ### Mode Not Rotating
 - **Symptom**: Stuck on one mode for very long time
 - **Cause**: Too many games with dynamic calculation (no mode duration set)
-- **Solution**: Set `recent_mode_duration`, `upcoming_mode_duration`, `live_mode_duration`
+- **Solution**: Set `recent_mode_duration`, `upcoming_mode_duration`, `live_mode_duration` inside the league's `mode_durations` block
 
 ### Games Repeating
 - **Symptom**: Same games show every cycle

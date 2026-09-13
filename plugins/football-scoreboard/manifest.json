@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.7.2",
+  "version": "3.8.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.8.0",
+      "released": "2026-09-12",
+      "ledmatrix_min_version": "3.3.1",
+      "notes": "Fixes from the sports drift audit. The adaptive full-screen scorebug now draws odds, records and rankings (its renderer was handed the manager-shaped config and never found the display options) and reads the full-screen switch_* date, time and centre settings instead of the scroll-card ones. The celebration score no longer runs off the bottom of 48px and 64px panels. ncaa_fb_* modes take NCAA FB's own mode duration. Postponed, cancelled and suspended games no longer show as Final 0-0. Full-screen odds step below the top-row status text instead of printing through it, a 0.0 home spread counts as a pick'em, and a non-numeric spread no longer drops the O/U. A \"Logo Error\" fallback now shows the text instead of a black panel. A cached no-odds marker is a cache hit, not a refetch. One league failing to initialise no longer blanks the other. Vegas content rebuilds when the games change and never calls update() on the render path. Decoded logo caches are bounded (core #559). Logos come from the core logo_downloader so a failed download's placeholder is retried. New advanced settings odds_update_interval and live_odds_update_interval are declared and forwarded. get_info reports the manifest version. Requires core 3.3.1, the first release that ships src.common.sports_shared, which sports.py imports."
+    },
     {
       "version": "3.7.2",
       "released": "2026-09-11",
@@ -751,7 +757,7 @@
   "config_schema": "config_schema.json",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.3.0"
+    ">=3.3.1"
   ],
   "display": {
     "design_size": {

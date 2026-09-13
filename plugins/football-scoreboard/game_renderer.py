@@ -251,22 +251,28 @@ class GameRenderer(SportsGameRendererMixin):
         display_height: int,
         config: Dict[str, Any],
         logo_cache: Optional[Dict[str, Image.Image]] = None,
-        custom_logger: Optional[logging.Logger] = None
+        custom_logger: Optional[logging.Logger] = None,
+        switch_context: bool = False
     ):
         """
         Initialize the GameRenderer.
-        
+
         Args:
             display_width: Width of the display/game card
             display_height: Height of the display/game card
             config: Configuration dictionary
             logo_cache: Optional shared logo cache dictionary
             custom_logger: Optional custom logger instance
+            switch_context: True when this renderer draws the full-screen
+                (switch mode) scorebug rather than a scroll or Vegas card, so
+                the upcoming-card options come from the scroll_card.switch_*
+                keys the classic scorebug reads.
         """
         self.display_width = display_width
         self.display_height = display_height
         self.config = config
         self.logger = custom_logger or logger
+        self.switch_context = bool(switch_context)
 
         # Shared logo cache for performance
         self._logo_cache = logo_cache if logo_cache is not None else {}
@@ -299,13 +305,7 @@ class GameRenderer(SportsGameRendererMixin):
                                       _get_font_manager(),
                                       design_size=(128, 32))
             self._raw_logo_cache: Dict[str, Image.Image] = {}
-        
-        # Display options are read dynamically per league (stored in config under league.display_options)
-        # These defaults are kept for backward compatibility but should not be used
-        self._default_show_odds = config.get("show_odds", False)
-        self._default_show_records = config.get("show_records", False)
-        self._default_show_ranking = config.get("show_ranking", False)
-        
+
         # Rankings cache (populated externally)
         self._team_rankings_cache: Dict[str, int] = {}
         
@@ -623,6 +623,29 @@ class GameRenderer(SportsGameRendererMixin):
         except (TypeError, ValueError):
             return ""
 
+    #: Decoded logos kept per cache. Larger than core's per-manager 64 because
+    #: one cache backs every card of a scroll strip across both leagues; an
+    #: eviction only costs a re-read from disk on the next strip build.
+    _LOGO_CACHE_MAX: ClassVar[int] = 128
+
+    @staticmethod
+    def _lru_get(cache: Dict[str, Image.Image], key: str) -> Optional[Image.Image]:
+        """Cache hit refreshed to most-recent. Works on a plain dict too (the
+        scroll base hands one in) because dicts keep insertion order."""
+        logo = cache.get(key)
+        if logo is not None:
+            cache[key] = cache.pop(key)
+        return logo
+
+    @classmethod
+    def _lru_put(cls, cache: Dict[str, Image.Image], key: str,
+                 logo: Image.Image) -> None:
+        """Store as most-recent and evict the oldest beyond the cap (core #559)."""
+        cache.pop(key, None)
+        cache[key] = logo
+        while len(cache) > cls._LOGO_CACHE_MAX:
+            cache.pop(next(iter(cache)))
+
     def preload_logos(self, games: list, logo_dir: Path) -> None:
         """
         Pre-load team logos for all games to improve scroll performance.
@@ -645,7 +668,8 @@ class GameRenderer(SportsGameRendererMixin):
                             game.get(f'{team_key.replace("abbr", "logo_url")}')
                         )
                         if logo:
-                            self._logo_cache[self._logo_cache_key(scoped)] = logo
+                            self._lru_put(self._logo_cache,
+                                          self._logo_cache_key(scoped), logo)
         
         self.logger.debug(f"Preloaded {len(self._logo_cache)} team logos")
     
@@ -664,8 +688,9 @@ class GameRenderer(SportsGameRendererMixin):
         # game per rebuild.
         cache_key = self._logo_cache_key(
             f"{self._logo_scope(logo_path)}:{team_abbrev}")
-        if cache_key in self._logo_cache:
-            return self._logo_cache[cache_key]
+        cached = self._lru_get(self._logo_cache, cache_key)
+        if cached is not None:
+            return cached
         
         try:
             # Try to load from path
@@ -682,7 +707,7 @@ class GameRenderer(SportsGameRendererMixin):
                     logo = logo.crop(bbox)
                 logo.thumbnail((self._logo_slot_width(), self.display_height), Image.Resampling.LANCZOS)
 
-                self._logo_cache[cache_key] = logo
+                self._lru_put(self._logo_cache, cache_key, logo)
                 return logo
             else:
                 self.logger.debug(f"Logo not found at {logo_path}")
@@ -692,21 +717,6 @@ class GameRenderer(SportsGameRendererMixin):
             self.logger.error(f"Error loading logo for {team_abbrev}: {e}")
             return None
     
-    #: Which customization element owns each loaded face. The font loader
-    #: already picks each face from exactly that element (element_key=), so
-    #: resolving the colour from the face keeps the two in step by
-    #: construction, rather than by every draw site remembering to agree.
-    _ELEMENT_FOR_FONT: ClassVar[Dict[str, str]] = {
-        "odds": "odds_text",
-        "score": "score_text",
-        "time": "period_text",
-        "team": "team_name",
-        "status": "status_text",
-        "detail": "detail_text",
-        "odds": "odds_text",
-        "rank": "rank_text",
-    }
-
     def _unshare_element_fonts(self, fonts):
         """Delegates to src.common.sports_card, shared by every scoreboard."""
         return _card.unshare_element_fonts(self.logger, fonts)
@@ -1079,7 +1089,7 @@ class GameRenderer(SportsGameRendererMixin):
     def _load_raw_logo(self, team_abbrev: str, logo_path) -> Optional[Image.Image]:
         """Load a logo unresized (the adaptive path fits it per region;
         results are cached per size by the LayoutContext)."""
-        cached = self._raw_logo_cache.get(team_abbrev)
+        cached = self._lru_get(self._raw_logo_cache, team_abbrev)
         if cached is not None:
             return cached
         try:
@@ -1087,7 +1097,7 @@ class GameRenderer(SportsGameRendererMixin):
                 logo = Image.open(logo_path)
                 if logo.mode != "RGBA":
                     logo = logo.convert("RGBA")
-                self._raw_logo_cache[team_abbrev] = logo
+                self._lru_put(self._raw_logo_cache, team_abbrev, logo)
                 return logo
         except Exception as e:
             self.logger.error(f"Error loading logo for {team_abbrev}: {e}")
@@ -1337,9 +1347,9 @@ class GameRenderer(SportsGameRendererMixin):
                 regs, 'date')
         elif game_type == "upcoming":
             game_date = (self._format_game_date(game.get("game_date", ""), game)
-                         if self._scroll_card_option("show_date", True) else "")
+                         if self._upcoming_show("date") else "")
             game_time = (self._format_game_time(game.get("game_time", ""))
-                         if self._scroll_card_option("show_time", True) else "")
+                         if self._upcoming_show("time") else "")
             if self._scroll_card_option("swap_date_time", False):
                 game_date, game_time = game_time, game_date
             if self._upcoming_center_mode() == "none":
@@ -1694,16 +1704,47 @@ class GameRenderer(SportsGameRendererMixin):
         return _card.element_color(self.config, element, default)
 
     def _upcoming_center_mode(self) -> str:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.upcoming_center_mode(self.config)
+        """Delegates to src.common.sports_card, shared by every scoreboard.
+
+        In switch context this is switch_upcoming_center, resolved exactly as
+        the classic scorebug resolves it (core sports_shared
+        _switch_upcoming_center): default "date_time", "inherit" follows the
+        shared key.
+        """
+        if not self.switch_context:
+            return _card.upcoming_center_mode(self.config)
+        mode = str(self._scroll_card_option("switch_upcoming_center", "date_time")
+                   or "date_time").lower()
+        if mode == "inherit":
+            return _card.upcoming_center_mode(self.config)
+        return mode if mode in ("vs", "date_time", "none") else "date_time"
+
+    def _upcoming_show(self, what: str) -> bool:
+        """show_date / show_time, or their switch_* twins in switch context."""
+        key = f"switch_show_{what}" if self.switch_context else f"show_{what}"
+        return bool(self._scroll_card_option(key, True))
 
     def _vs_text(self) -> str:
         """Delegates to src.common.sports_card, shared by every scoreboard."""
         return _card.vs_text(self.config)
 
     def _format_game_date(self, date_text: str, game: Optional[Dict] = None) -> str:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.format_game_date(self.config, self.logger, date_text, game)
+        """Delegates to src.common.sports_card, shared by every scoreboard.
+
+        In switch context the style is switch_date_format (default "numeric",
+        "inherit" follows date_format), matching the classic scorebug.
+        """
+        if not self.switch_context:
+            return _card.format_game_date(self.config, self.logger, date_text, game)
+        fmt = str(self._scroll_card_option("switch_date_format", "numeric")
+                  or "numeric").lower()
+        if fmt == "inherit":
+            return _card.format_game_date(self.config, self.logger, date_text, game)
+        config = dict(self.config)
+        block = config.get("scroll_card")
+        config["scroll_card"] = {**(block if isinstance(block, dict) else {}),
+                                 "date_format": fmt}
+        return _card.format_game_date(config, self.logger, date_text, game)
 
     def _weekday_for(self, game: Optional[Dict]) -> str:
         """Delegates to src.common.sports_card, shared by every scoreboard."""
@@ -1893,7 +1934,9 @@ class GameRenderer(SportsGameRendererMixin):
                 0.0, (self.display_width - centre_reserve) / 2 - gutter)
 
             if favored_spread is not None:
-                spread_text = str(favored_spread)
+                # %g, as sports.py's full-screen odds: ESPN sends -7.0 beside
+                # -3.5, and str() drew "-7.0".
+                spread_text = "%g" % favored_spread
                 spread_width = draw.textlength(spread_text, font=font)
 
                 if spread_width <= side_budget:
@@ -1916,8 +1959,8 @@ class GameRenderer(SportsGameRendererMixin):
                 # worst case, so the full label never fit there -- the
                 # over/under was dropped on exactly the cards people watch.
                 # The bare number still reads as the over/under from position.
-                candidates = (f"O/U: {over_under}", f"O/U {over_under}",
-                              f"O/U{over_under}", f"{over_under}")
+                ou = "%g" % over_under
+                candidates = (f"O/U: {ou}", f"O/U {ou}", f"O/U{ou}", ou)
                 for candidate in candidates:
                     ou_text = candidate
                     ou_width = draw.textlength(ou_text, font=font)
@@ -1999,11 +2042,12 @@ class GameRenderer(SportsGameRendererMixin):
     def _get_team_display_text(self, abbr: str, record: str, show_records: bool, show_ranking: bool) -> str:
         """Get the display text for a team (ranking or record)."""
         if show_ranking and show_records:
-            # Rankings replace records when both are enabled
+            # Rankings replace records when both are enabled; an unranked team
+            # still shows its record rather than nothing (basketball fd99364).
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:
                 return f"#{rank}"
-            return ''
+            return record
         elif show_ranking:
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:
