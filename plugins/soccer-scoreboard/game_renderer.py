@@ -257,9 +257,29 @@ class GameRenderer(SportsGameRendererMixin):
                             game.get(f'{team_key.replace("abbr", "logo_url")}')
                         )
                         if logo:
-                            self._logo_cache[self._logo_cache_key(abbr)] = logo
-        
+                            self._remember_logo(self._logo_cache_key(abbr), logo)
+
         self.logger.debug(f"Preloaded {len(self._logo_cache)} team logos")
+
+    #: Upper bound on decoded logos kept in the shared scroll cache. Keys are
+    #: size-scoped, so every card-size or config change added a fresh set and
+    #: the dict only ever grew (core #559). Sized well above one multi-league
+    #: strip (ten leagues of ~20 sides plus the World Cup's 48) so a rebuild
+    #: never evicts a logo it is about to draw again.
+    _LOGO_CACHE_MAX = 384
+
+    def _remember_logo(self, cache_key: str, logo: Image.Image) -> None:
+        """Store a decoded logo, evicting the least recently used past the cap.
+
+        Plain dicts keep insertion order and hits re-insert, so the first key
+        is always the least recently used -- this works on the dict the
+        scroll display shares as well as on an OrderedDict.
+        """
+        cache = self._logo_cache
+        cache.pop(cache_key, None)
+        cache[cache_key] = logo
+        while len(cache) > self._LOGO_CACHE_MAX:
+            cache.pop(next(iter(cache)))
     
     def _load_and_resize_logo(
         self, 
@@ -276,7 +296,11 @@ class GameRenderer(SportsGameRendererMixin):
         # second per logo on a Pi.
         cache_key = self._logo_cache_key(team_abbrev)
         if cache_key in self._logo_cache:
-            return self._logo_cache[cache_key]
+            # Re-insert to mark it most recently used. Works on the plain
+            # dict the scroll display shares as well as on an OrderedDict.
+            logo = self._logo_cache.pop(cache_key)
+            self._logo_cache[cache_key] = logo
+            return logo
         
         try:
             # Try to load from path
@@ -293,7 +317,7 @@ class GameRenderer(SportsGameRendererMixin):
                     logo = logo.crop(bbox)
                 logo.thumbnail((self._logo_slot_width(), self.display_height), Image.Resampling.LANCZOS)
 
-                self._logo_cache[self._logo_cache_key(team_abbrev)] = logo
+                self._remember_logo(self._logo_cache_key(team_abbrev), logo)
                 return logo
             else:
                 self.logger.debug(f"Logo not found at {logo_path}")
@@ -825,11 +849,13 @@ class GameRenderer(SportsGameRendererMixin):
     def _get_team_display_text(self, abbr: str, record: str) -> str:
         """Get the display text for a team (ranking or record)."""
         if self.show_ranking and self.show_records:
-            # Rankings replace records when both are enabled
+            # Rankings replace records when both are enabled. An unranked
+            # team still has a record, and with records switched on it
+            # should show it rather than nothing (ported from basketball).
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:
                 return f"#{rank}"
-            return ''
+            return record
         elif self.show_ranking:
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:

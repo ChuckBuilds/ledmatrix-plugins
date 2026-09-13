@@ -281,7 +281,13 @@ class BaseSoccerManager(SportsCore):
                 else:
                     period_text = f"P{period}"
             elif status_state == "post":
-                if status_name in ("STATUS_FINAL_PEN", "STATUS_AFTER_PENALTIES"):
+                not_played = self._NOT_PLAYED_STATUS_LABELS.get(status_name)
+                if not_played:
+                    # ESPN files postponed/cancelled fixtures under "post" with
+                    # a 0-0 score. "Final" here fed Recent's appears_finished
+                    # check, so they were shown as a 0-0 result.
+                    period_text = not_played
+                elif status_name in ("STATUS_FINAL_PEN", "STATUS_AFTER_PENALTIES"):
                     period_text = "F/Pen"
                 elif status_name in ("STATUS_FINAL_AET", "STATUS_AFTER_EXTRA_TIME") or period > 2:
                     period_text = "F/ET"
