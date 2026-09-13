@@ -133,6 +133,39 @@ class DynamicTeamResolver:
             self.logger.error(f"Error resolving dynamic team {dynamic_team}: {e}")
             return []
     
+    # Polls MENS/WOMENS_TOP_n may resolve from. Taking data['rankings'][0]
+    # trusted ESPN's block order, which nothing in the payload promises; with a
+    # tournament seeding or lower-division poll leading, the "top N" became the
+    # user's FAVOURITE teams -- and favourites bypass every quality filter.
+    # An EXCLUDE list, so a new top-division poll still counts. Kept in step
+    # with SportsCore._choose_poll in sports.py, which cannot be imported here:
+    # sports.py imports this module, and both load as bare top-level names.
+    _NON_TOP_POLL_TYPES = frozenset({'tournament', 'fcs'})
+    _NON_TOP_POLL_NAMES = ('tournament', 'seedings', 'fcs',
+                           'division ii', 'division iii',
+                           'div ii', 'div iii')
+
+    def _choose_poll(self, rankings_data):
+        """The first poll ESPN lists that is not a lower-division one.
+
+        ESPN's own order is otherwise kept, so whichever poll it fronts is
+        still the one the top-N shortcut slices.
+        """
+        for block in rankings_data or []:
+            if not isinstance(block, dict):
+                continue
+            name = str(block.get('name') or '').lower()
+            kind = str(block.get('type') or '').lower()
+            if kind in self._NON_TOP_POLL_TYPES or any(
+                marker in name for marker in self._NON_TOP_POLL_NAMES
+            ):
+                self.logger.debug(
+                    "Skipping %s -- not a top-division poll",
+                    block.get('name') or kind)
+                continue
+            return block
+        return {}
+
     def _fetch_rankings(self, sport: str) -> List[str]:
         """
         Fetch current rankings from ESPN API.
@@ -169,8 +202,8 @@ class DynamicTeamResolver:
             
             # Extract team abbreviations from rankings
             teams = []
-            if 'rankings' in data and data['rankings']:
-                ranking = data['rankings'][0]  # Use first ranking (usually AP)
+            ranking = self._choose_poll(data.get('rankings'))
+            if ranking:
                 if 'ranks' in ranking:
                     for rank_item in ranking['ranks']:
                         team_info = rank_item.get('team', {})

@@ -57,6 +57,9 @@ from ncaaw_lacrosse_managers import (
 from lacrosse_timezone import resolve_timezone_name
 from lacrosse_favorite_check import FavoriteTeamCheck
 
+#: Scroll display the Vegas slate renders into (live + recent + upcoming).
+VEGAS_SCROLL_KEY = 'mixed'
+
 
 _ROOT_CONFIG_KEYS = (
     "schedule_lookback_days",
@@ -248,6 +251,7 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         # Scroll state tracking
         self._scroll_prepared = {}  # Tracks which scroll modes are prepared
+        self._vegas_signature: Optional[tuple] = None  # slate the Vegas cards show
         # What each live strip was built from, and when, so a score change
         # rebuilds it mid-cycle instead of at the end of one.
         self._live_scroll_fingerprints = {}
@@ -3324,31 +3328,100 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         Get content for Vegas-style continuous scroll mode.
 
-        Triggers scroll content generation if cache is empty, then returns
-        the cached scroll image(s) for Vegas to compose into its scroll strip.
+        Returns one card per game across every enabled league and all three
+        game types, read from the dedicated 'mixed' scroll display.
+
+        It used to return get_all_vegas_content_items() -- the union of every
+        scroll display -- and only built the combined slate when that came
+        back empty. Once a standalone mode had rendered, Vegas inherited that
+        mode's games, and since nothing rebuilt a non-empty result the ticker
+        froze on the first slate until restart. Content is now rebuilt when
+        the game signature changes. No update() here: refreshing data is the
+        update cycle's job, and network I/O on this path stalls the marquee.
 
         Returns:
-            List of PIL Images from scroll displays, or None if no content
+            List of PIL Images, one per game, or None if there is nothing to show
         """
-        if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
+        if not getattr(self, '_scroll_manager', None):
             return None
 
-        images = self._scroll_manager.get_all_vegas_content_items()
+        try:
+            games, leagues = self._collect_games_for_scroll()
+        except Exception:
+            self.logger.exception("[Lacrosse Vegas] Failed to collect games")
+            return None
+
+        if not games:
+            self.logger.debug("[Lacrosse Vegas] No games available")
+            return None
+
+        signature = self._vegas_game_signature(games)
+        images = self._scroll_manager.get_vegas_content_items_for(VEGAS_SCROLL_KEY)
+
+        if not images or signature != getattr(self, '_vegas_signature', None):
+            reason = "no cached content" if not images else "game data changed"
+            self.logger.info(
+                "[Lacrosse Vegas] Rebuilding scroll content (%s): %d game(s) from %s",
+                reason, len(games), ', '.join(leagues) or 'no leagues'
+            )
+            if self._build_vegas_scroll_content(games, leagues):
+                self._vegas_signature = signature
+            images = self._scroll_manager.get_vegas_content_items_for(VEGAS_SCROLL_KEY)
 
         if not images:
-            self.logger.info("[Lacrosse Vegas] Triggering scroll content generation")
-            self._ensure_scroll_content_for_vegas()
-            images = self._scroll_manager.get_all_vegas_content_items()
+            return None
 
-        if images:
-            total_width = sum(img.width for img in images)
-            self.logger.info(
-                "[Lacrosse Vegas] Returning %d image(s), %dpx total",
-                len(images), total_width
+        self.logger.debug(
+            "[Lacrosse Vegas] Returning %d image(s), %dpx total",
+            len(images), sum(img.width for img in images)
+        )
+        return images
+
+    @staticmethod
+    def _vegas_game_signature(games: List[Dict]) -> tuple:
+        """A cheap fingerprint of what the Vegas cards would show."""
+        fingerprint = []
+        for game in games:
+            status = game.get('status')
+            state = status.get('state') if isinstance(status, dict) else status
+            fingerprint.append((
+                game.get('id') or game.get('start_time_utc'),
+                game.get('league'), state,
+                game.get('home_abbr'), game.get('away_abbr'),
+                game.get('home_score'), game.get('away_score'),
+                game.get('period'), game.get('period_text'), game.get('clock'),
+                game.get('is_final'), bool(game.get('odds')),
+            ))
+        return tuple(fingerprint)
+
+    def _build_vegas_scroll_content(self, games: List[Dict], leagues: List[str]) -> bool:
+        """Render the combined slate into the 'mixed' display (not made active)."""
+        try:
+            # prepare_content, not prepare_and_display: the latter also makes
+            # this the active scroll display, hijacking the standalone
+            # rotation's in-progress scroll.
+            success = self._scroll_manager.prepare_content(
+                games, VEGAS_SCROLL_KEY, leagues, None
             )
-            return images
-
-        return None
+        except Exception:
+            self.logger.exception("[Lacrosse Vegas] Error rendering scroll content")
+            return False
+        if not success:
+            self.logger.warning("[Lacrosse Vegas] Failed to generate scroll content")
+            return False
+        counts = {'live': 0, 'recent': 0, 'upcoming': 0}
+        for game in games:
+            state = (game.get('status') or {}).get('state', '')
+            kind = {'in': 'live', 'post': 'recent', 'pre': 'upcoming'}.get(state)
+            if kind:
+                counts[kind] += 1
+        self.logger.info(
+            "[Lacrosse Vegas] Generated scroll content: %d games (%s) from %s",
+            len(games),
+            ', '.join(f"{n} {k}" for k, n in counts.items() if n) or 'unclassified',
+            ', '.join(leagues),
+        )
+        return True
 
     def get_vegas_content_type(self) -> str:
         """
@@ -3382,49 +3455,21 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
 
     def _ensure_scroll_content_for_vegas(self) -> None:
         """
-        Ensure scroll content is generated for Vegas mode.
+        Build the combined Vegas slate if it is missing.
 
-        This method is called by get_vegas_content() when the scroll cache is empty.
-        It collects all game types (live, recent, upcoming) organized by league.
+        Retained for backward compatibility; get_vegas_content() rebuilds
+        directly and keys off a data fingerprint.
         """
-        if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
+        if not getattr(self, '_scroll_manager', None):
             self.logger.debug("[Lacrosse Vegas] No scroll manager available")
             return
 
-        # Collect all games (live, recent, upcoming) organized by league
         games, leagues = self._collect_games_for_scroll()
-
         if not games:
             self.logger.debug("[Lacrosse Vegas] No games available")
             return
-
-        # Count games by type for logging
-        game_type_counts = {'live': 0, 'recent': 0, 'upcoming': 0}
-        for game in games:
-            state = game.get('status', {}).get('state', '')
-            if state == 'in':
-                game_type_counts['live'] += 1
-            elif state == 'post':
-                game_type_counts['recent'] += 1
-            elif state == 'pre':
-                game_type_counts['upcoming'] += 1
-
-        # Prepare scroll content with mixed game types
-        # Note: Using 'mixed' as game_type indicator for scroll config
-        success = self._scroll_manager.prepare_and_display(
-            games, 'mixed', leagues, None
-        )
-
-        if success:
-            type_summary = ', '.join(
-                f"{count} {gtype}" for gtype, count in game_type_counts.items() if count > 0
-            )
-            self.logger.info(
-                f"[Lacrosse Vegas] Successfully generated scroll content: "
-                f"{len(games)} games ({type_summary}) from {', '.join(leagues)}"
-            )
-        else:
-            self.logger.warning("[Lacrosse Vegas] Failed to generate scroll content")
+        if self._build_vegas_scroll_content(games, leagues):
+            self._vegas_signature = self._vegas_game_signature(games)
 
     def cleanup(self) -> None:
         """Clean up resources."""
