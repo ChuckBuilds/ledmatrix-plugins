@@ -191,6 +191,22 @@
           "maximum": 300,
           "description": "How often to update live fight data (seconds)"
         },
+        "odds_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How long fetched odds for a fight that has not started are reused before being requested again (seconds).",
+          "x-advanced": true
+        },
+        "live_odds_update_interval": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 15,
+          "maximum": 3600,
+          "description": "How long fetched odds for a fight in progress are reused before being requested again (seconds).",
+          "x-advanced": true
+        },
         "recent_update_interval": {
           "type": "integer",
           "default": 3600,
