@@ -47,9 +47,19 @@
   default.
 - **Import errors inside the core were masked.** `manager.py` only falls back
   when the core module is absent.
-- **MiLB:** warmup no longer draws inning 0, suspended games leave the live
-  rotation, extra innings show on Recent, the shared calendar font is no longer
-  resized, and live scores honour the `score_text` colour.
+- **Postponed and cancelled games showed as "Final 0-0" on Recent.** Final now
+  needs ESPN's completed flag, and MiLB statuses come from `detailedState`.
+- **Suspended games** leave the live rotation, and ESPN "Suspended" is no
+  longer read as end-of-inning (it used to jump the inning, e.g. to 8th).
+- **MiLB Warmup** is treated as pre-game (it used to draw inning 0). A live
+  game with no inning yet shows Top 1st.
+- **MiLB live dropped night games after 8 pm ET.** It now queries the Eastern
+  date plus the previous day.
+- **Live count font:** no longer resizes the display manager's shared 5x7 font.
+- **Live run counts** honour the `score_text` colour.
+
+### Changed
+- Recent shows extra innings ("Final/10") where it fits between the logos.
 
 ### Removed
 - Dead code: `data_manager.py`, `odds_manager.py`, the unused team-logo loaders
