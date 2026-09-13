@@ -93,6 +93,10 @@ _ROOT_CONFIG_KEYS = (
     "scroll_card",
 )
 
+#: Scroll display key Vegas renders its combined live/recent/upcoming slate
+#: into, kept apart from the standalone modes' own displays.
+_VEGAS_SCROLL_KEY = 'mixed'
+
 
 logger = logging.getLogger(__name__)
 
@@ -1478,6 +1482,8 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             # thread never sees it empty.
             self._scroll_prepared.clear()
             self._scroll_active.clear()
+            # Force the next Vegas read to rebuild against the new config.
+            self._vegas_signature = None
             # Re-verify team codes against ESPN, so a corrected code is
             # confirmed in the logs rather than staying silent.
             self._favorites_checked.clear()
@@ -3109,31 +3115,65 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         Get content for Vegas-style continuous scroll mode.
 
-        Triggers scroll content generation if cache is empty, then returns
-        the cached scroll image(s) for Vegas to compose into its scroll strip.
+        Reads the dedicated 'mixed' scroll display rather than the union of
+        every display. The union meant that once a standalone scroll mode had
+        rendered, Vegas inherited that mode's games, and because content was
+        only built when the union was EMPTY, a score change never reached the
+        ticker. Content is rebuilt when the game signature changes, so the
+        common case is a cheap cache read. It never calls update(): refreshing
+        data is the update cycle's job, and network I/O here would stall the
+        Vegas render loop. Ported from baseball-scoreboard.
 
         Returns:
-            List of PIL Images from scroll displays, or None if no content
+            List of PIL Images, one per game, or None if there is nothing to show
         """
-        if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
+        if not getattr(self, '_scroll_manager', None):
             return None
 
-        images = self._scroll_manager.get_all_vegas_content_items()
+        try:
+            games, leagues = self._collect_games_for_scroll(mode_type=None)
+        except Exception:
+            self.logger.exception("[Soccer Vegas] Failed to collect games")
+            return None
+        if not games:
+            self.logger.debug("[Soccer Vegas] No games available")
+            return None
+
+        signature = self._vegas_game_signature(games)
+        images = self._scroll_manager.get_vegas_content_items_for(_VEGAS_SCROLL_KEY)
+        if not images or signature != getattr(self, '_vegas_signature', None):
+            self.logger.info(
+                "[Soccer Vegas] Rebuilding scroll content (%s): %d game(s)",
+                "no cached content" if not images else "game data changed",
+                len(games),
+            )
+            if self._ensure_scroll_content_for_vegas(games, leagues):
+                self._vegas_signature = signature
+            images = self._scroll_manager.get_vegas_content_items_for(_VEGAS_SCROLL_KEY)
 
         if not images:
-            self.logger.info("[Soccer Vegas] Triggering scroll content generation")
-            self._ensure_scroll_content_for_vegas()
-            images = self._scroll_manager.get_all_vegas_content_items()
+            return None
+        self.logger.debug(
+            "[Soccer Vegas] Returning %d image(s), %dpx total",
+            len(images), sum(img.width for img in images)
+        )
+        return images
 
-        if images:
-            total_width = sum(img.width for img in images)
-            self.logger.info(
-                "[Soccer Vegas] Returning %d image(s), %dpx total",
-                len(images), total_width
-            )
-            return images
-
-        return None
+    @staticmethod
+    def _vegas_game_signature(games: List[Dict]) -> tuple:
+        """Cheap fingerprint of what a viewer would notice on the Vegas cards."""
+        fingerprint = []
+        for game in games:
+            status = game.get('status')
+            state = status.get('state') if isinstance(status, dict) else status
+            fingerprint.append((
+                game.get('id'), game.get('league'), state,
+                game.get('home_abbr'), game.get('away_abbr'),
+                game.get('home_score'), game.get('away_score'),
+                game.get('period_text'), game.get('clock'),
+                game.get('is_final'), bool(game.get('odds')),
+            ))
+        return tuple(fingerprint)
 
     def get_vegas_content_type(self) -> str:
         """
@@ -3165,23 +3205,23 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Fallback if VegasDisplayMode not available
         return "scroll"
 
-    def _ensure_scroll_content_for_vegas(self) -> None:
+    def _ensure_scroll_content_for_vegas(self, games=None, leagues=None) -> bool:
         """
-        Ensure scroll content is generated for Vegas mode.
+        Render the combined live/recent/upcoming slate for Vegas mode.
 
-        This method is called by get_vegas_content() when the scroll cache is empty.
-        It collects all game types (live, recent, upcoming) organized by league.
+        Called by get_vegas_content() when its cache is empty or the games
+        changed. Returns True when content was rendered.
         """
         if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
             self.logger.debug("[Soccer Vegas] No scroll manager available")
-            return
+            return False
 
-        # Collect all games (live, recent, upcoming) organized by league
-        games, leagues = self._collect_games_for_scroll(mode_type=None)
+        if games is None:
+            games, leagues = self._collect_games_for_scroll(mode_type=None)
 
         if not games:
             self.logger.debug("[Soccer Vegas] No games available")
-            return
+            return False
 
         # Count games by type for logging
         game_type_counts = {'live': 0, 'recent': 0, 'upcoming': 0}
@@ -3194,11 +3234,16 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             elif state == 'pre':
                 game_type_counts['upcoming'] += 1
 
-        # Prepare scroll content with mixed game types
-        # Note: Using 'mixed' as game_type indicator for scroll config
-        success = self._scroll_manager.prepare_and_display(
-            games, 'mixed', leagues, None
-        )
+        # prepare_content, not prepare_and_display: the latter also makes
+        # 'mixed' the active scroll display, which hijacked the standalone
+        # rotation's in-progress scroll with the Vegas slate.
+        try:
+            success = self._scroll_manager.prepare_content(
+                games, _VEGAS_SCROLL_KEY, leagues, self._get_rankings_cache()
+            )
+        except Exception:
+            self.logger.exception("[Soccer Vegas] Error rendering scroll content")
+            return False
 
         if success:
             type_summary = ', '.join(
@@ -3210,6 +3255,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             )
         else:
             self.logger.warning("[Soccer Vegas] Failed to generate scroll content")
+        return bool(success)
 
     def cleanup(self) -> None:
         """Clean up resources."""
