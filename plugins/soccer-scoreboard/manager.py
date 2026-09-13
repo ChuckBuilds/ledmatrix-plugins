@@ -2332,6 +2332,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 
                 # Get managers for this mode type across all enabled leagues (switch mode)
                 # Use _get_enabled_leagues_for_mode to respect per-mode enablement
+                # Refresh before reading the managers -- a stale manager can
+                # look like it has nothing to show and be skipped entirely.
+                self._refresh_switch_mode_managers(mode_type)
                 managers_to_try = []
                 enabled_league_keys = self._get_enabled_leagues_for_mode(mode_type)
                 for key in enabled_league_keys:

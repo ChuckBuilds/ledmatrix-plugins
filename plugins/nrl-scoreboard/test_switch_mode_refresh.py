@@ -111,6 +111,33 @@ check("the switch path calls the refresh", not _missing,
       f"wired: {sorted(k for k, v in _found.items() if v)}"
       + (f"; MISSING: {_missing}" if _missing else ""))
 
+# The check above asserts the function CONTAINS a refresh, which is not enough:
+# soccer gathers switch-mode managers in three separate places, and an early
+# version of this fix guarded only one of them. display() still contained a
+# call, so this test passed while the per-league display modes -- the ones the
+# core actually registers -- refreshed nothing. So pin every gathering site.
+_sites, _unguarded = 0, []
+for _node in ast.walk(_tree):
+    _body = getattr(_node, "body", None)
+    if not isinstance(_body, list):
+        continue
+    for _i, _stmt in enumerate(_body):
+        if not (isinstance(_stmt, ast.Assign)
+                and any(isinstance(t, ast.Name) and t.id == "managers_to_try"
+                        for t in _stmt.targets)
+                and isinstance(_stmt.value, ast.List) and not _stmt.value.elts):
+            continue
+        _sites += 1
+        _prev = _body[_i - 1] if _i else None
+        guarded = (isinstance(_prev, ast.Expr) and isinstance(_prev.value, ast.Call)
+                   and isinstance(_prev.value.func, ast.Attribute)
+                   and _prev.value.func.attr == "_refresh_switch_mode_managers")
+        if not guarded:
+            _unguarded.append(_stmt.lineno)
+check("every switch-mode manager gathering site refreshes first",
+      not _unguarded,
+      f"{_sites} site(s)" + (f"; UNGUARDED at {_unguarded}" if _unguarded else ""))
+
 print("\n" + "=" * 62)
 if FAILURES:
     print(f"{len(FAILURES)} check(s) failed: {FAILURES}")
