@@ -262,10 +262,28 @@ class GameRenderer(SportsGameRendererMixin):
                             game.get(f'{team_key.replace("abbr", "logo_url")}')
                         )
                         if logo:
-                            self._logo_cache[self._logo_cache_key(abbr)] = logo
-        
+                            self._store_logo(self._logo_cache_key(abbr), logo)
+
         self.logger.debug(f"Preloaded {len(self._logo_cache)} team logos")
-    
+
+    #: Decoded logos to keep (core #559). Keys are size-scoped, so a strip
+    #: holds one entry per team per card size; 64 covers a full AFL round
+    #: several times over while still bounding a long-running process.
+    _LOGO_CACHE_MAX = 64
+
+    def _store_logo(self, key: str, logo: Image.Image) -> None:
+        """Cache a decoded logo, evicting the least recently used past the cap.
+
+        The cache may be a plain dict handed in by the scroll display; dicts
+        keep insertion order, so the eviction still drops the oldest entry,
+        and hits refresh recency only where the cache supports move_to_end.
+        """
+        self._logo_cache[key] = logo
+        if hasattr(self._logo_cache, "move_to_end"):
+            self._logo_cache.move_to_end(key)
+        while len(self._logo_cache) > self._LOGO_CACHE_MAX:
+            self._logo_cache.pop(next(iter(self._logo_cache)))
+
     def _load_and_resize_logo(
         self, 
         team_id: str, 
@@ -281,6 +299,8 @@ class GameRenderer(SportsGameRendererMixin):
         # second per logo on a Pi.
         cache_key = self._logo_cache_key(team_abbrev)
         if cache_key in self._logo_cache:
+            if hasattr(self._logo_cache, "move_to_end"):
+                self._logo_cache.move_to_end(cache_key)
             return self._logo_cache[cache_key]
         
         try:
@@ -309,7 +329,7 @@ class GameRenderer(SportsGameRendererMixin):
                     logo = logo.crop(bbox)
                 logo.thumbnail((self._logo_slot_width(), self.display_height), Image.Resampling.LANCZOS)
 
-                self._logo_cache[self._logo_cache_key(team_abbrev)] = logo
+                self._store_logo(self._logo_cache_key(team_abbrev), logo)
                 return logo
             else:
                 self.logger.error(f"Logo file still doesn't exist at {logo_path} after download attempt")
@@ -842,11 +862,13 @@ class GameRenderer(SportsGameRendererMixin):
     def _get_team_display_text(self, abbr: str, record: str) -> str:
         """Get the display text for a team (ranking or record)."""
         if self.show_ranking and self.show_records:
-            # Rankings replace records when both are enabled
+            # Rankings replace records when both are enabled; an unranked
+            # team still shows its record rather than nothing (as in
+            # basketball-scoreboard).
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:
                 return f"#{rank}"
-            return ''
+            return record
         elif self.show_ranking:
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:

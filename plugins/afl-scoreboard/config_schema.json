@@ -131,6 +131,18 @@
           "description": "Draw the start time on upcoming cards.",
           "default": true
         },
+        "switch_show_date": {
+          "type": "boolean",
+          "title": "Show Date (Full-Screen)",
+          "description": "Draw the date on the full-screen (switch mode) upcoming scoreboard. Its own switch because Show Date above predates this display reading the block: turning that off for the scroll card never hid the full-screen date, and still doesn't.",
+          "default": true
+        },
+        "switch_show_time": {
+          "type": "boolean",
+          "title": "Show Time (Full-Screen)",
+          "description": "Draw the start time on the full-screen (switch mode) upcoming scoreboard. Its own switch because Show Time above predates this display reading the block: turning that off for the scroll card never hid the full-screen time, and still doesn't.",
+          "default": true
+        },
         "swap_date_time": {
           "type": "boolean",
           "title": "Swap Date and Time",
@@ -373,6 +385,22 @@
       "minimum": 10,
       "maximum": 300,
       "description": "Update interval for live games (seconds)",
+      "x-advanced": true
+    },
+    "odds_update_interval": {
+      "type": "integer",
+      "default": 3600,
+      "minimum": 60,
+      "maximum": 86400,
+      "description": "How long fetched betting odds for a recent or upcoming game are reused before asking again (seconds)",
+      "x-advanced": true
+    },
+    "live_odds_update_interval": {
+      "type": "integer",
+      "default": 60,
+      "minimum": 30,
+      "maximum": 3600,
+      "description": "How long fetched betting odds for a live game are reused before asking again (seconds)",
       "x-advanced": true
     },
     "stale_game_timeout": {
@@ -1518,6 +1546,8 @@
     "upcoming_game_duration",
     "update_interval_seconds",
     "live_update_interval",
+    "odds_update_interval",
+    "live_odds_update_interval",
     "stale_game_timeout",
     "recent_update_interval",
     "upcoming_update_interval",
