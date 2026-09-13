@@ -544,6 +544,22 @@
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
               "x-advanced": true
             },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -1032,6 +1048,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -1524,6 +1556,22 @@
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
               "x-advanced": true
             },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -2012,6 +2060,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -2504,6 +2568,22 @@
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
               "x-advanced": true
             },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -2992,6 +3072,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -3484,6 +3580,22 @@
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
               "x-advanced": true
             },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -3972,6 +4084,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -4464,6 +4592,22 @@
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
               "x-advanced": true
             },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
+              "x-advanced": true
+            },
             "celebration_enabled": {
               "type": "boolean",
               "default": true,
@@ -4952,6 +5096,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -5706,6 +5866,22 @@
             "minimum": 60,
             "maximum": 3600,
             "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+            "x-advanced": true
+          },
+          "odds_update_interval": {
+            "type": "integer",
+            "default": 3600,
+            "minimum": 60,
+            "maximum": 86400,
+            "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+            "x-advanced": true
+          },
+          "live_odds_update_interval": {
+            "type": "integer",
+            "default": 60,
+            "minimum": 15,
+            "maximum": 3600,
+            "description": "How often (seconds) to refresh betting odds for games in progress.",
             "x-advanced": true
           }
         },

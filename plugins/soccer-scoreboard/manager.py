@@ -348,61 +348,52 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._mode_start_time: Dict[str, float] = {}
 
     def _initialize_managers(self):
-        """Initialize all manager instances."""
-        try:
-            # Initialize managers for each enabled league
-            for league_key in LEAGUE_KEYS:
-                if not self.league_enabled.get(league_key, False):
-                    continue
-                
+        """Initialize all manager instances.
+
+        Each league is built in its own try. One try around the whole loop
+        meant a single league failing -- a bad hand-edited value raising inside
+        its config translation, say -- silently skipped every league after it
+        in LEAGUE_KEYS. A failed league's three attributes are set to None,
+        which the registry and the update/display paths already treat as "no
+        manager" (ported from hockey-scoreboard).
+        """
+        # Looked up at call time, so the module-level factories stay the
+        # single source (and remain patchable).
+        factories = {
+            'eng.1': create_premier_league_managers,
+            'esp.1': create_la_liga_managers,
+            'ger.1': create_bundesliga_managers,
+            'ita.1': create_serie_a_managers,
+            'fra.1': create_ligue_1_managers,
+            'usa.1': create_mls_managers,
+            'por.1': create_liga_portugal_managers,
+            'uefa.champions': create_champions_league_managers,
+            'uefa.europa': create_europa_league_managers,
+            'fifa.world': create_world_cup_managers,
+        }
+        for league_key in LEAGUE_KEYS:
+            if not self.league_enabled.get(league_key, False):
+                continue
+            factory = factories.get(league_key)
+            attrs = PREDEFINED_LEAGUE_ATTR_MAP.get(league_key)
+            if factory is None or attrs is None:
+                continue
+            try:
                 league_config = self._adapt_config_for_manager(league_key)
-                
-                # Create managers based on league
-                if league_key == 'eng.1':
-                    self.eng1_live, self.eng1_recent, self.eng1_upcoming = create_premier_league_managers(
-                        league_config, self.display_manager, self.cache_manager
-                    )
-                elif league_key == 'esp.1':
-                    self.esp1_live, self.esp1_recent, self.esp1_upcoming = create_la_liga_managers(
-                        league_config, self.display_manager, self.cache_manager
-                    )
-                elif league_key == 'ger.1':
-                    self.ger1_live, self.ger1_recent, self.ger1_upcoming = create_bundesliga_managers(
-                        league_config, self.display_manager, self.cache_manager
-                    )
-                elif league_key == 'ita.1':
-                    self.ita1_live, self.ita1_recent, self.ita1_upcoming = create_serie_a_managers(
-                        league_config, self.display_manager, self.cache_manager
-                    )
-                elif league_key == 'fra.1':
-                    self.fra1_live, self.fra1_recent, self.fra1_upcoming = create_ligue_1_managers(
-                        league_config, self.display_manager, self.cache_manager
-                    )
-                elif league_key == 'usa.1':
-                    self.usa1_live, self.usa1_recent, self.usa1_upcoming = create_mls_managers(
-                        league_config, self.display_manager, self.cache_manager
-                    )
-                elif league_key == 'por.1':
-                    self.por1_live, self.por1_recent, self.por1_upcoming = create_liga_portugal_managers(
-                        league_config, self.display_manager, self.cache_manager
-                    )
-                elif league_key == 'uefa.champions':
-                    self.champions_live, self.champions_recent, self.champions_upcoming = create_champions_league_managers(
-                        league_config, self.display_manager, self.cache_manager
-                    )
-                elif league_key == 'uefa.europa':
-                    self.europa_live, self.europa_recent, self.europa_upcoming = create_europa_league_managers(
-                        league_config, self.display_manager, self.cache_manager
-                    )
-                elif league_key == 'fifa.world':
-                    self.world_cup_live, self.world_cup_recent, self.world_cup_upcoming = create_world_cup_managers(
-                        league_config, self.display_manager, self.cache_manager
-                    )
-
+                live, recent, upcoming = factory(
+                    league_config, self.display_manager, self.cache_manager
+                )
+                for attr, manager in zip(attrs, (live, recent, upcoming)):
+                    setattr(self, attr, manager)
                 self.logger.info(f"{LEAGUE_NAMES[league_key]} managers initialized")
-
-        except Exception as e:
-            self.logger.error(f"Error initializing managers: {e}", exc_info=True)
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to initialize {LEAGUE_NAMES.get(league_key, league_key)} "
+                    f"managers: {e}",
+                    exc_info=True,
+                )
+                for attr in attrs:
+                    setattr(self, attr, None)
 
     def _adapt_config_for_manager(self, league_key: str) -> Dict[str, Any]:
         """
@@ -462,8 +453,13 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_games_min_quality": game_limits.get(
                     "other_games_min_quality", "ranked"
                 ),
-                "other_games_divisions": list(
-                    game_limits.get("other_games_divisions", ["fbs"])
+                # Passed through raw; sports.py's _normalise_divisions does the
+                # coercion. list() here turned a hand-edited "fbs" into
+                # ['f','b','s'] (matching nothing, so every non-favourite game
+                # was rejected) and raised TypeError on a null, which the single
+                # try in _initialize_managers turned into no managers at all.
+                "other_games_divisions": game_limits.get(
+                    "other_games_divisions", ["fbs"]
                 ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", league_config.get("upcoming_games_to_show", 10)),
                 "show_records": display_options.get(
@@ -480,6 +476,21 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "recent_update_interval": league_config.get("recent_update_interval", 3600),
                 "upcoming_update_interval": league_config.get("upcoming_update_interval", 3600),
                 "stale_game_timeout": league_config.get("stale_game_timeout", 300),
+                # Read by SportsCore/SportsLive out of this translated block.
+                # Every league block declares the celebration keys, and none
+                # of them arrived: celebrations were always on, always 8s.
+                "celebration_enabled": league_config.get("celebration_enabled", True),
+                "celebration_duration": league_config.get("celebration_duration", 8),
+                "celebrate_opponent_goals": league_config.get(
+                    "celebrate_opponent_goals", False
+                ),
+                "odds_update_interval": league_config.get("odds_update_interval", 3600),
+                "live_odds_update_interval": league_config.get(
+                    "live_odds_update_interval", 60
+                ),
+                # Drives the simulated live game (SportsLive.test_mode); not
+                # in the schema, but unreachable from config without this.
+                "test_mode": league_config.get("test_mode", False),
                 "live_game_duration": league_config.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": league_config.get(
                     "non_favorite_live_game_duration", 0
@@ -793,8 +804,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_games_min_quality": game_limits.get(
                     "other_games_min_quality", "ranked"
                 ),
-                "other_games_divisions": list(
-                    game_limits.get("other_games_divisions", ["fbs"])
+                # Raw, as above: _normalise_divisions coerces it.
+                "other_games_divisions": game_limits.get(
+                    "other_games_divisions", ["fbs"]
                 ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", 10),
                 # custom_leagues declares no display_options block, so these
@@ -813,6 +825,16 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "recent_update_interval": custom_league.get("recent_update_interval", 3600),
                 "upcoming_update_interval": custom_league.get("upcoming_update_interval", 3600),
                 "stale_game_timeout": custom_league.get("stale_game_timeout", 300),
+                "celebration_enabled": custom_league.get("celebration_enabled", True),
+                "celebration_duration": custom_league.get("celebration_duration", 8),
+                "celebrate_opponent_goals": custom_league.get(
+                    "celebrate_opponent_goals", False
+                ),
+                "odds_update_interval": custom_league.get("odds_update_interval", 3600),
+                "live_odds_update_interval": custom_league.get(
+                    "live_odds_update_interval", 60
+                ),
+                "test_mode": custom_league.get("test_mode", False),
                 "live_game_duration": custom_league.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": custom_league.get(
                     "non_favorite_live_game_duration", 0
