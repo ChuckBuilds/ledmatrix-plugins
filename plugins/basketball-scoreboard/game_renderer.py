@@ -292,10 +292,41 @@ class GameRenderer(SportsGameRendererMixin):
                         if logo_path:
                             logo = self._load_and_resize_logo(abbr, logo_path, league)
                             if logo:
-                                self._logo_cache[cache_key] = logo
+                                self._remember_logo(cache_key, logo)
         
         self.logger.debug(f"Preloaded {len(self._logo_cache)} team logos")
     
+    #: Decoded logos to keep (ported from core #559). Higher than SportsCore's
+    #: 64 because this cache is keyed per league AND logo slot, and one
+    #: Vegas strip can span four leagues' slates.
+    _LOGO_CACHE_MAX = 128
+
+    def _cached_logo(self, key: str) -> Optional[Image.Image]:
+        """A cached logo, marked most recently used, or None."""
+        cache = self._logo_cache
+        logo = cache.get(key)
+        if logo is not None:
+            self._touch_logo(key, logo)
+        return logo
+
+    def _touch_logo(self, key: str, logo: Image.Image) -> None:
+        # The cache may be handed in by the scroll display as a plain dict,
+        # which keeps insertion order but has no move_to_end.
+        cache = self._logo_cache
+        if hasattr(cache, "move_to_end"):
+            cache.move_to_end(key)
+        else:
+            cache.pop(key, None)
+            cache[key] = logo
+
+    def _remember_logo(self, key: str, logo: Image.Image) -> None:
+        """Store a logo and evict the least recently used past the cap."""
+        cache = self._logo_cache
+        cache[key] = logo
+        self._touch_logo(key, logo)
+        while len(cache) > self._LOGO_CACHE_MAX:
+            cache.pop(next(iter(cache)), None)
+
     def _load_and_resize_logo(
         self, 
         team_abbrev: str, 
@@ -318,8 +349,9 @@ class GameRenderer(SportsGameRendererMixin):
         # "<league>:<abbr>" while every store used the slot-scoped form, so the
         # guard never matched and each card re-decoded its source PNGs.
         cache_key = self._logo_cache_key(f"{league}:{team_abbrev}")
-        if cache_key in self._logo_cache:
-            return self._logo_cache[cache_key]
+        cached = self._cached_logo(cache_key)
+        if cached is not None:
+            return cached
         
         try:
             # Try to load from path
@@ -339,7 +371,7 @@ class GameRenderer(SportsGameRendererMixin):
                     # Copy before context manager closes file handle
                     logo = img.copy()
 
-                self._logo_cache[cache_key] = logo
+                self._remember_logo(cache_key, logo)
                 return logo
             else:
                 # Try to load from league-specific logo directory
@@ -358,7 +390,7 @@ class GameRenderer(SportsGameRendererMixin):
                         # Copy before context manager closes file handle
                         logo = img.copy()
 
-                    self._logo_cache[cache_key] = logo
+                    self._remember_logo(cache_key, logo)
                     return logo
                 else:
                     self.logger.debug(f"Logo not found at {logo_path} or {logo_file}")
