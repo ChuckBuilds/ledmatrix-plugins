@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.4] - 2026-09-12
+
+### Removed
+- **`convert_to_plugin.py`.** A one-off migration script that opened
+  `flight_manager_original.py` at import time, with no `__main__` guard, and
+  that file exists nowhere -- so any tool that imported or collected it failed
+  with `FileNotFoundError`. Nothing referenced it; plugin behaviour is unchanged.
+
 ## [1.13.3] - 2026-09-11
 
 ### Fixed

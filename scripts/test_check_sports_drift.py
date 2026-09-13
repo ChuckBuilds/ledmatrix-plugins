@@ -121,16 +121,26 @@ lineages = {p for per in index.values() for p in per}
 
 # The recursion bug found 16. Anything in that region means the gate has
 # stopped descending into class bodies again.
-check("it collects a plausible number of functions", len(index) >= 200,
+check("it collects a plausible number of functions", len(index) >= 300,
       f"{len(index)} functions")
 check("it sees most of the scoreboard lineages", len(lineages) >= 8,
       f"{len(lineages)} lineages")
 
 tracked_seen = {f for f, _ in index}
 check("every tracked filename contributed something",
-      tracked_seen >= {"sports.py", "manager.py", "game_renderer.py",
-                       "scroll_display.py"},
-      ", ".join(sorted(tracked_seen)))
+      tracked_seen == set(gate.TRACKED_FILES),
+      ", ".join(sorted(set(gate.TRACKED_FILES) - tracked_seen)) or "all")
+
+# The support modules were the audit's blind spot: 6-9 divergent copies each
+# with fixes landed in some lineages only. Pin that they stay tracked.
+check("the copied support modules are tracked",
+      {"base_odds_manager.py", "data_sources.py", "dynamic_team_resolver.py",
+       "logo_downloader.py"} <= set(gate.TRACKED_FILES))
+check("the support modules are compared across several lineages",
+      all(max((len(per) for (f, _), per in index.items() if f == name),
+              default=0) >= 5
+          for name in ("base_odds_manager.py", "data_sources.py",
+                       "dynamic_team_resolver.py", "logo_downloader.py")))
 
 # has_live_content is the function this gate was built for. If it stops being
 # indexed -- a rename, a fold that over-matches -- the gate goes quiet.
