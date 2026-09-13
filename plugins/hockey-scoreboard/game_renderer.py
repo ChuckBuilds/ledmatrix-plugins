@@ -7,6 +7,7 @@ Returns PIL Images instead of updating display directly.
 
 import logging
 import os
+from collections import OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional, Tuple
@@ -82,6 +83,11 @@ class GameRenderer(SportsGameRendererMixin):
     to provide a reusable component for both switch and scroll display modes.
     """
 
+    #: Most decoded logos the (shared) cache keeps. Larger than SportsCore's
+    #: 64 because one scroll strip renders a whole slate at once, and keys are
+    #: per card size as well as per team.
+    _LOGO_CACHE_MAX: ClassVar[int] = 128
+
     def __init__(
         self,
         display_width: int,
@@ -106,7 +112,7 @@ class GameRenderer(SportsGameRendererMixin):
         self.logger = custom_logger or logger
 
         # Shared logo cache for performance
-        self._logo_cache = logo_cache if logo_cache is not None else {}
+        self._logo_cache = logo_cache if logo_cache is not None else OrderedDict()
 
         # Load fonts
         self.fonts = self._unshare_element_fonts(self._load_fonts())
@@ -289,6 +295,8 @@ class GameRenderer(SportsGameRendererMixin):
         box_h = self.display_height
         cache_key = f"{league}_{team_abbrev}_{box_w}x{box_h}"
         if cache_key in self._logo_cache:
+            if hasattr(self._logo_cache, "move_to_end"):
+                self._logo_cache.move_to_end(cache_key)
             return self._logo_cache[cache_key]
 
         try:
@@ -313,6 +321,11 @@ class GameRenderer(SportsGameRendererMixin):
                 logo.thumbnail((box_w, box_h), RESAMPLE_FILTER)
 
                 self._logo_cache[cache_key] = logo
+                # Bounded, least recently used first out (core #559). Keys
+                # carry the card size, and a college slate rotates hundreds of
+                # teams through a season; unbounded, every one stayed decoded.
+                while len(self._logo_cache) > self._LOGO_CACHE_MAX:
+                    self._logo_cache.pop(next(iter(self._logo_cache)))
                 return logo
             else:
                 self.logger.debug(f"Logo not found at {logo_path}")
@@ -436,12 +449,12 @@ class GameRenderer(SportsGameRendererMixin):
         if 'status_text' in normalized and not status.get('detail'):
             status['detail'] = normalized.get('status_text', '')
         # The extractor's status_text ("P2 12:34", "Final", "7:30 PM") is the
-        # same value data_fetcher.py stores as short_detail.
+        # value the nested payload shape carries as short_detail.
         if 'status_text' in normalized and not status.get('short_detail'):
             status['short_detail'] = normalized.get('status_text', '')
         if 'period' in normalized and not status.get('period'):
             status['period'] = normalized.get('period', '')
-        # display_clock is the canonical nested key (data_fetcher.py builds it,
+        # display_clock is the canonical nested key (the nested shape carries it,
         # _draw_live_game_status reads it). Writing only 'clock' here left live
         # scroll/Vegas cards rendering "P2" with the game clock silently
         # dropped; 'clock' is kept alongside it for any external consumer.
@@ -701,7 +714,7 @@ class GameRenderer(SportsGameRendererMixin):
         ``start_time_utc`` datetime -- it has no ``status.short_detail`` and no
         ``start_time``. Reading only the nested keys is what left these cards
         showing a bare "VS": both lookups missed and each branch drew nothing.
-        Prefer the flat keys, then the nested payload built by data_fetcher.py,
+        Prefer the flat keys, then the nested ``status.short_detail`` payload,
         then parse the raw start time as a last resort.
         """
         date_text = str(game.get("game_date", "") or "")
@@ -709,7 +722,7 @@ class GameRenderer(SportsGameRendererMixin):
         if date_text or time_text:
             return date_text, time_text
 
-        # Nested shape (data_fetcher.py): "9/19 - 7:00 PM EDT" carries both
+        # Nested shape: "9/19 - 7:00 PM EDT" carries both
         # halves in one string, which overflows the card if drawn as-is.
         short_detail = str(game.get("status", {}).get("short_detail", "") or "")
         if short_detail:
@@ -859,7 +872,9 @@ class GameRenderer(SportsGameRendererMixin):
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:
                 return f"#{rank}"
-            return ''
+            # With records also on, an unranked team shows its record rather
+            # than nothing -- most college teams are unranked.
+            return record if self.show_records else ''
         if self.show_records:
             return record
         return ''

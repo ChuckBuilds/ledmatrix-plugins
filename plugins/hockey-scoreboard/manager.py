@@ -46,6 +46,9 @@ from ncaaw_hockey_managers import (
 from hockey_timezone import resolve_timezone_name
 from hockey_favorite_check import FavoriteTeamCheck
 
+# Scroll display key Vegas renders its combined live/recent/upcoming slate into.
+VEGAS_SCROLL_KEY = 'mixed'
+
 
 _ROOT_CONFIG_KEYS = (
     "schedule_lookback_days",
@@ -177,6 +180,8 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._live_scroll_rebuilt_at = {}
         # Seconds the last strip render took, per mode; feeds the duty-cycle cap.
         self._live_scroll_rebuild_cost = {}
+        # Fingerprint of the slate the Vegas cards were last built from.
+        self._vegas_signature: Optional[tuple] = None
         
         # Enable high-FPS mode for scroll display (allows 100+ FPS scrolling)
         # This signals to the display controller to use high-FPS loop (8ms = 125 FPS)
@@ -799,6 +804,8 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         recent_update_interval = resolve_value(["update_intervals", "recent"], ["recent_update_interval"], 3600)
         upcoming_update_interval = resolve_value(["update_intervals", "upcoming"], ["upcoming_update_interval"], 3600)
         stale_game_timeout = resolve_value(["update_intervals", "stale_game_timeout"], ["stale_game_timeout"], 300)
+        odds_update_interval = resolve_value(["update_intervals", "odds"], ["odds_update_interval"], 3600)
+        live_odds_update_interval = resolve_value(["update_intervals", "live_odds"], ["live_odds_update_interval"], 60)
 
         # Resolve display durations
         def resolve_live_duration() -> int:
@@ -848,7 +855,13 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_recent_games_to_show": other_recent_games_to_show,
                 "other_rotation_interval_seconds": other_rotation_interval_seconds,
                 "other_games_min_quality": other_games_min_quality,
-                "other_games_divisions": list(other_games_divisions or []),
+                # Passed through raw. list() here defeated the coercion in
+                # sports.py twice over: a hand-edited "fbs" became
+                # ['f','b','s'] -- already a list, so the string branch never
+                # fired, and the filter then matched nothing and rejected every
+                # non-favourite game -- while a non-iterable raised TypeError
+                # inside this translation, leaving that league's managers None.
+                "other_games_divisions": other_games_divisions,
                 "show_records": show_records,
                 "show_ranking": show_ranking,
                 "show_odds": show_odds,
@@ -863,6 +876,15 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "recent_update_interval": recent_update_interval,
                 "upcoming_update_interval": upcoming_update_interval,
                 "stale_game_timeout": stale_game_timeout,
+                # Read by sports.py for every odds request; the schema has
+                # offered update_intervals.odds for a long time while no
+                # translation carried it, so the code always used its default.
+                "odds_update_interval": odds_update_interval,
+                "live_odds_update_interval": live_odds_update_interval,
+                # test_mode drives the built-in simulated live game. Without
+                # passing it through, SportsLive.test_mode could never be set
+                # from config and _test_mode_update() was unreachable.
+                "test_mode": league_config.get("test_mode", False),
                 "live_game_duration": resolve_live_duration(),
                 "non_favorite_live_game_duration": resolve_non_favorite_live_duration(),
                 "background_service": {
@@ -3519,31 +3541,115 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         Get content for Vegas-style continuous scroll mode.
 
-        Triggers scroll content generation if cache is empty, then returns
-        the cached scroll image(s) for Vegas to compose into its scroll strip.
+        Returns one card per game across every enabled league and game type,
+        read from the dedicated 'mixed' scroll display rather than the union
+        of all displays: once a standalone mode had rendered, the union was
+        that mode's games, and a game held by two displays showed twice.
+
+        The slate is rebuilt when the game signature changes, not only when
+        the cache is empty -- otherwise the first build froze scores and the
+        game list until restart. No update() call: refreshing data is the
+        update cycle's job, and network I/O here stalls the Vegas render loop.
+        Same fix as baseball-scoreboard (d23c03f).
 
         Returns:
-            List of PIL Images from scroll displays, or None if no content
+            List of PIL Images, one per game, or None if there is nothing to show
         """
-        if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
+        if not getattr(self, '_scroll_manager', None):
             return None
 
-        images = self._scroll_manager.get_all_vegas_content_items()
+        try:
+            games, leagues = self._collect_games_for_scroll()
+        except Exception:
+            self.logger.exception("[Hockey Vegas] Failed to collect games")
+            return None
+
+        if not games:
+            self.logger.debug("[Hockey Vegas] No games available")
+            return None
+
+        signature = self._vegas_game_signature(games)
+        images = self._scroll_manager.get_vegas_content_items_for(VEGAS_SCROLL_KEY)
+
+        if not images or signature != getattr(self, '_vegas_signature', None):
+            reason = "no cached content" if not images else "game data changed"
+            self.logger.info(
+                "[Hockey Vegas] Rebuilding scroll content (%s): %d game(s) from %s",
+                reason, len(games), ', '.join(leagues) or 'no leagues'
+            )
+            if self._build_vegas_scroll_content(games, leagues):
+                self._vegas_signature = signature
+            images = self._scroll_manager.get_vegas_content_items_for(VEGAS_SCROLL_KEY)
 
         if not images:
-            self.logger.info("[Hockey Vegas] Triggering scroll content generation")
-            self._ensure_scroll_content_for_vegas()
-            images = self._scroll_manager.get_all_vegas_content_items()
+            return None
 
-        if images:
-            total_width = sum(img.width for img in images)
-            self.logger.info(
-                "[Hockey Vegas] Returning %d image(s), %dpx total",
-                len(images), total_width
+        self.logger.debug(
+            "[Hockey Vegas] Returning %d image(s), %dpx total",
+            len(images), sum(img.width for img in images)
+        )
+        return images
+
+    def _vegas_game_signature(self, games: List[Dict]) -> tuple:
+        """Cheap fingerprint of what the Vegas cards draw.
+
+        The set of games, their state and score, and the period text, so a
+        goal or a period change rebuilds the cards. The clock is left out on
+        purpose, as in the live scroll strip: it changes on every update and
+        re-rendering every card that often is the frame budget on a Pi. Every
+        field is read with .get() because game dicts vary by league.
+        """
+        fingerprint = []
+        for game in games:
+            status = game.get('status')
+            state = status.get('state') if isinstance(status, dict) else status
+            fingerprint.append((
+                game.get('id') or game.get('game_id') or game.get('start_time'),
+                game.get('league'),
+                state,
+                game.get('home_abbr'), game.get('away_abbr'),
+                game.get('home_score'), game.get('away_score'),
+                game.get('period'), game.get('period_text'),
+                game.get('is_final'),
+                bool(game.get('odds')),
+            ))
+        return tuple(fingerprint)
+
+    def _build_vegas_scroll_content(
+        self, games: List[Dict], leagues: List[str]
+    ) -> bool:
+        """Render the combined slate into the dedicated Vegas scroll display."""
+        try:
+            # prepare_content, not prepare_and_display: the latter also makes
+            # this the active scroll display, hijacking the standalone
+            # rotation's in-progress scroll.
+            success = self._scroll_manager.prepare_content(
+                games, VEGAS_SCROLL_KEY, leagues, None
             )
-            return images
+        except Exception:
+            self.logger.exception("[Hockey Vegas] Error rendering scroll content")
+            return False
 
-        return None
+        if not success:
+            self.logger.warning("[Hockey Vegas] Failed to generate scroll content")
+            return False
+
+        counts = {'live': 0, 'recent': 0, 'upcoming': 0}
+        for game in games:
+            status = game.get('status')
+            state = status.get('state') if isinstance(status, dict) else status
+            if state == 'in':
+                counts['live'] += 1
+            elif state == 'post':
+                counts['recent'] += 1
+            elif state == 'pre':
+                counts['upcoming'] += 1
+        summary = ', '.join(f"{n} {kind}" for kind, n in counts.items() if n)
+        self.logger.info(
+            "[Hockey Vegas] Generated scroll content: %d games (%s) from %s",
+            len(games), summary or 'unclassified', ', '.join(leagues)
+        )
+        return True
 
     def get_vegas_content_type(self) -> str:
         """
@@ -3579,47 +3685,21 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         Ensure scroll content is generated for Vegas mode.
 
-        This method is called by get_vegas_content() when the scroll cache is empty.
-        It collects all game types (live, recent, upcoming) organized by league.
+        Retained for backward compatibility; get_vegas_content() now rebuilds
+        directly, keyed off a data fingerprint. Collects all game types (live,
+        recent, upcoming) organized by league. No network work.
         """
-        if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
+        if not getattr(self, '_scroll_manager', None):
             self.logger.debug("[Hockey Vegas] No scroll manager available")
             return
 
-        # Collect all games (live, recent, upcoming) organized by league
         games, leagues = self._collect_games_for_scroll()
-
         if not games:
             self.logger.debug("[Hockey Vegas] No games available")
             return
 
-        # Count games by type for logging
-        game_type_counts = {'live': 0, 'recent': 0, 'upcoming': 0}
-        for game in games:
-            state = game.get('status', {}).get('state', '')
-            if state == 'in':
-                game_type_counts['live'] += 1
-            elif state == 'post':
-                game_type_counts['recent'] += 1
-            elif state == 'pre':
-                game_type_counts['upcoming'] += 1
-
-        # Prepare scroll content with mixed game types
-        # Note: Using 'mixed' as game_type indicator for scroll config
-        success = self._scroll_manager.prepare_and_display(
-            games, 'mixed', leagues, None
-        )
-
-        if success:
-            type_summary = ', '.join(
-                f"{count} {gtype}" for gtype, count in game_type_counts.items() if count > 0
-            )
-            self.logger.info(
-                f"[Hockey Vegas] Successfully generated scroll content: "
-                f"{len(games)} games ({type_summary}) from {', '.join(leagues)}"
-            )
-        else:
-            self.logger.warning("[Hockey Vegas] Failed to generate scroll content")
+        if self._build_vegas_scroll_content(games, leagues):
+            self._vegas_signature = self._vegas_game_signature(games)
 
     def cleanup(self) -> None:
         """Clean up resources."""
