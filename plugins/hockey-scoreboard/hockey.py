@@ -93,11 +93,17 @@ class Hockey(SportsCore):
                     period_text = f"P{period}"  # Periods 1-3
                 elif period > 3:
                     period_text = f"OT{period - 3}"  # Overtime
-            elif status["type"]["state"] == "post":
+            elif details.get("is_final"):
                 if period > 3:
                     period_text = "Final/OT"
                 else:
                     period_text = "Final"
+            elif status["type"]["state"] == "post":
+                # Postponed, cancelled or suspended: ESPN files these under
+                # "post" too. Labelling them "Final" is what put them on the
+                # Recent screen as a 0-0 result, via the "final" in
+                # period_text fallback there, even with is_final False.
+                period_text = status["type"].get("shortDetail") or ""
             elif status["type"]["state"] == "pre":
                 period_text = details.get("game_time", "")  # Show time for upcoming
 
@@ -192,12 +198,15 @@ class HockeyLive(Hockey, SportsLive):
                 self.logger.error(
                     f"Failed to load logos for live game: {game.get('id')}"
                 )
-                # Draw placeholder text if logos fail
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                # Draw placeholder text if logos fail, on the image that gets
+                # pasted: drawing on a throwaway .convert("RGB") copy and
+                # pasting main_img left a black panel.
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image.paste(main_img.convert("RGB"), (0, 0))
+                self.display_manager.image.paste(error_img, (0, 0))
                 self.display_manager.update_display()
                 return
 
@@ -267,7 +276,11 @@ class HockeyLive(Hockey, SportsLive):
             # Draw odds if available
             if "odds" in game and game["odds"]:
                 self._draw_dynamic_odds(
-                    draw_overlay, game["odds"], self.display_width, self.display_height
+                    draw_overlay, game["odds"], self.display_width, self.display_height,
+                    top_span=self._top_row_span(
+                        draw_overlay, period_clock_text, self.fonts["time"],
+                        self.display_width,
+                        self._get_layout_offset('status_text', 'x_offset')),
                 )
 
             # Draw records or rankings if enabled
