@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.25.0] - 2026-09-12
+
+### Fixed
+- **Postponed / cancelled games no longer show as "Final 0-0" on Recent.**
+  ESPN files them under state `post` with zero scores; `is_final` now also
+  requires `status.type.completed` and a played status, and the period label
+  uses ESPN's own ("Postponed", "Canceled").
+- **Full-screen odds no longer overprint the top-centre text.** A total with no
+  favourite anchors left instead of centring through the period / "Final" /
+  league header, and steps down a row if it would still collide. A home spread
+  of 0.0 is kept; a non-numeric top-level spread no longer drops the odds.
+- **Saved-but-ignored settings now apply:** `display_options.show_records`,
+  `show_ranking`, `show_odds` (ahead of the root duplicates), the celebration
+  settings, `test_mode`, and `odds_update_interval` /
+  `live_odds_update_interval` (now declared in the schema).
+- **`other_games_divisions`** as a hand-edited string or null no longer
+  filters out every game or leaves the plugin blank.
+- **Vegas** rebuilds its cards when the game slate changes, reads only its own
+  display, and logs per-frame at debug.
+- Ported: `switch_show_date` / `switch_show_time` for the full-screen upcoming
+  scorebug (#342); the lookahead cutoff and dwell reset on mode re-entry (#345);
+  odds for rotated-in games (#343); bounded LRU logo caches (core #559); an
+  unranked team shows its record when rankings and records are both on; a config
+  `Infinity` no longer crashes manager init.
+
+### Changed
+- Minimum core raised to 3.3.1, the first release shipping
+  `src.common.sports_shared`.
+
 ## [1.24.1] - 2026-09-11
 
 ### Fixed

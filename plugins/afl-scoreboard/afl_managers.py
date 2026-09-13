@@ -12,7 +12,8 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 import pytz
 
-from sports import SportsCore, SportsLive, SportsRecent, SportsUpcoming
+from sports import (SportsCore, SportsLive, SportsRecent, SportsUpcoming,
+                    _status_is_final)
 
 # ESPN API base URL for Australian Football (AFL)
 ESPN_AFL_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/australian-football"
@@ -229,7 +230,14 @@ class BaseAflManager(SportsCore):
                 else:
                     period_text = f"Q{period}"
             elif status_state == "post":
-                period_text = "Final"
+                # A postponed/cancelled fixture is also state "post". Labelling
+                # it "Final" made the Recent screen's "appears finished" check
+                # admit it anyway, so it drew as "Final 0-0"; use ESPN's own
+                # short label ("Postponed", "Canceled") instead.
+                if _status_is_final(status["type"]):
+                    period_text = "Final"
+                else:
+                    period_text = status["type"].get("shortDetail") or status_name
             elif status_state == "pre":
                 period_text = details.get("game_time", "")
 
