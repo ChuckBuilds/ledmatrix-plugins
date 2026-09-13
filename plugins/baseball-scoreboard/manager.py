@@ -33,14 +33,37 @@ import time
 from typing import Dict, Any, Set, Optional, Tuple, List
 
 
+# Core imports, each guarded on its own and only against the module being
+# ABSENT. One bare `except ImportError` around all three used to swallow a
+# failure raised inside a core module that is present (a missing transitive
+# dependency), null BasePlugin, and turn the plugin into a plain `object`
+# subclass -- surfacing later as confusing attribute errors instead of the
+# real import error.
 try:
-    from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
-    from src.background_data_service import get_background_service
-    from src.base_odds_manager import BaseOddsManager
-except ImportError:
+    from src.plugin_system.base_plugin import BasePlugin
+except ModuleNotFoundError as exc:
+    if exc.name not in {"src", "src.plugin_system", "src.plugin_system.base_plugin"}:
+        raise
     BasePlugin = None
+
+try:
+    from src.plugin_system.base_plugin import VegasDisplayMode
+except ImportError:
+    # Older cores ship BasePlugin without the Vegas hooks.
     VegasDisplayMode = None
+
+try:
+    from src.background_data_service import get_background_service
+except ModuleNotFoundError as exc:
+    if exc.name not in {"src", "src.background_data_service"}:
+        raise
     get_background_service = None
+
+try:
+    from src.base_odds_manager import BaseOddsManager
+except ModuleNotFoundError as exc:
+    if exc.name not in {"src", "src.base_odds_manager"}:
+        raise
     BaseOddsManager = None
 
 # Import the copied manager classes
@@ -396,55 +419,46 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             if hasattr(self, attr):
                 setattr(self, attr, None)
 
+    #: (league, enabled attribute, (live, recent, upcoming) manager classes,
+    #: label). A table so every league goes through the same isolated build.
+    _LEAGUE_MANAGER_CLASSES = (
+        ("mlb", "mlb_enabled",
+         (MLBLiveManager, MLBRecentManager, MLBUpcomingManager), "MLB"),
+        ("milb", "milb_enabled",
+         (MiLBLiveManager, MiLBRecentManager, MiLBUpcomingManager), "MiLB"),
+        ("ncaa_baseball", "ncaa_baseball_enabled",
+         (NCAABaseballLiveManager, NCAABaseballRecentManager,
+          NCAABaseballUpcomingManager), "NCAA Baseball"),
+    )
+
     def _initialize_managers(self):
-        """Initialize all manager instances."""
-        try:
-            # Create adapted configs for managers
-            mlb_config = self._adapt_config_for_manager("mlb")
-            milb_config = self._adapt_config_for_manager("milb")
-            ncaa_baseball_config = self._adapt_config_for_manager("ncaa_baseball")
+        """Initialize all manager instances.
 
-            # Initialize MLB managers if enabled
-            if self.mlb_enabled:
-                self.mlb_live = MLBLiveManager(
-                    mlb_config, self.display_manager, self.cache_manager
+        Each league is built in its own try. One shared try meant a failure in
+        the first league -- a bad config value, a constructor raising -- skipped
+        every league after it, so a broken MLB block also blanked MiLB and NCAA.
+        A league that fails has all three of its managers set to None, which
+        update() and display() already treat as "not available".
+        """
+        for league, enabled_attr, classes, label in self._LEAGUE_MANAGER_CLASSES:
+            if not getattr(self, enabled_attr, False):
+                continue
+            try:
+                league_config = self._adapt_config_for_manager(league)
+                live_cls, recent_cls, upcoming_cls = classes
+                live = live_cls(league_config, self.display_manager, self.cache_manager)
+                recent = recent_cls(league_config, self.display_manager, self.cache_manager)
+                upcoming = upcoming_cls(league_config, self.display_manager, self.cache_manager)
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to initialize {label} managers: {e}", exc_info=True
                 )
-                self.mlb_recent = MLBRecentManager(
-                    mlb_config, self.display_manager, self.cache_manager
-                )
-                self.mlb_upcoming = MLBUpcomingManager(
-                    mlb_config, self.display_manager, self.cache_manager
-                )
-                self.logger.info("MLB managers initialized")
-
-            # Initialize MiLB managers if enabled
-            if self.milb_enabled:
-                self.milb_live = MiLBLiveManager(
-                    milb_config, self.display_manager, self.cache_manager
-                )
-                self.milb_recent = MiLBRecentManager(
-                    milb_config, self.display_manager, self.cache_manager
-                )
-                self.milb_upcoming = MiLBUpcomingManager(
-                    milb_config, self.display_manager, self.cache_manager
-                )
-                self.logger.info("MiLB managers initialized")
-
-            # Initialize NCAA Baseball managers if enabled
-            if self.ncaa_baseball_enabled:
-                self.ncaa_baseball_live = NCAABaseballLiveManager(
-                    ncaa_baseball_config, self.display_manager, self.cache_manager
-                )
-                self.ncaa_baseball_recent = NCAABaseballRecentManager(
-                    ncaa_baseball_config, self.display_manager, self.cache_manager
-                )
-                self.ncaa_baseball_upcoming = NCAABaseballUpcomingManager(
-                    ncaa_baseball_config, self.display_manager, self.cache_manager
-                )
-                self.logger.info("NCAA Baseball managers initialized")
-
-        except Exception as e:
-            self.logger.error(f"Error initializing managers: {e}", exc_info=True)
+                live = recent = upcoming = None
+            else:
+                self.logger.info(f"{label} managers initialized")
+            setattr(self, f"{league}_live", live)
+            setattr(self, f"{league}_recent", recent)
+            setattr(self, f"{league}_upcoming", upcoming)
 
     def _initialize_league_registry(self) -> None:
         """
@@ -744,16 +758,29 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_rotation_interval_seconds": game_limits.get(
                     "other_rotation_interval_seconds", 1800
                 ),
+                # Only NCAA Baseball has a national poll; for MLB and MiLB
+                # "ranked" lets everything through, so their neutral fallback
+                # says so rather than borrowing college football's default.
                 "other_games_min_quality": game_limits.get(
-                    "other_games_min_quality", "ranked"
+                    "other_games_min_quality",
+                    "ranked" if league == "ncaa_baseball" else "any",
                 ),
-                "other_games_divisions": list(
-                    game_limits.get("other_games_divisions", ["fbs"])
+                # Passed through raw. list() here defeated the coercion in
+                # sports.py twice over: a hand-edited "fcs" became
+                # ['f','c','s'] -- already a list, so the string branch never
+                # fired -- while a null raised TypeError inside this
+                # translation and left the league's managers unbuilt.
+                # _normalise_divisions handles a string, null or garbage.
+                # Empty is the neutral default: the FBS/FCS rosters exist for
+                # college football only, so baseball has nothing to filter.
+                "other_games_divisions": game_limits.get(
+                    "other_games_divisions", []
                 ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", 10),
                 "show_records": display_options.get("show_records", False),
                 "show_ranking": display_options.get("show_ranking", False),
                 "show_odds": display_options.get("show_odds", False),
+                "show_series_summary": display_options.get("show_series_summary", False),
                 "show_pitcher_batter": display_options.get("show_pitcher_batter", False),
                 "show_last_play": display_options.get("show_last_play", False),
                 "show_player_card": display_options.get("show_player_card", False),
@@ -765,6 +792,16 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "recent_update_interval": league_config.get("recent_update_interval", 3600),
                 "upcoming_update_interval": league_config.get("upcoming_update_interval", 3600),
                 "stale_game_timeout": league_config.get("stale_game_timeout", 300),
+                "odds_update_interval": league_config.get("odds_update_interval", 3600),
+                "live_odds_update_interval": league_config.get(
+                    "live_odds_update_interval", 60
+                ),
+                "play_by_play_update_interval": league_config.get(
+                    "play_by_play_update_interval", 20
+                ),
+                "player_bio_update_interval": league_config.get(
+                    "player_bio_update_interval", 300
+                ),
                 "live_game_duration": league_config.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": league_config.get(
                     "non_favorite_live_game_duration", 0
