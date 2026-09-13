@@ -239,19 +239,49 @@ class GameRenderer(SportsGameRendererMixin):
         for game in games:
             for team_key in ['home_abbr', 'away_abbr']:
                 abbr = game.get(team_key, '')
-                if abbr and self._logo_cache_key(abbr) not in self._logo_cache:
+                team_id = game.get(team_key.replace('abbr', 'id'), '')
+                if abbr and self._logo_cache_key(self._team_logo_name(abbr, team_id)) not in self._logo_cache:
                     logo_path = game.get(f'{team_key.replace("abbr", "logo_path")}')
                     if logo_path:
-                        logo = self._load_and_resize_logo(
-                            game.get(team_key.replace('abbr', 'id'), ''),
+                        # _load_and_resize_logo stores what it loads.
+                        self._load_and_resize_logo(
+                            team_id,
                             abbr,
                             logo_path,
                             game.get(f'{team_key.replace("abbr", "logo_url")}')
                         )
-                        if logo:
-                            self._logo_cache[self._logo_cache_key(abbr)] = logo
-        
+
         self.logger.debug(f"Preloaded {len(self._logo_cache)} team logos")
+
+    #: Decoded logos to keep (core #559); the dict is shared with the scroll
+    #: display, so bound it here where it is written.
+    _LOGO_CACHE_MAX: ClassVar[int] = 64
+
+    @staticmethod
+    def _team_logo_name(team_abbrev: str, team_id: Any = None) -> str:
+        """Cache name unique per team.
+
+        NRL abbreviations collide ("NEW" is Newcastle and the Warriors, "CAN"
+        Canberra and Canterbury), so keying by abbreviation alone handed one
+        club the other's logo. Matches sports.py _team_logo_key.
+        """
+        return f"{team_abbrev}#{team_id}" if team_id not in (None, "") else str(team_abbrev)
+
+    @staticmethod
+    def _legacy_logo_path(logo_path, team_id: Any = None):
+        """``<ABBR>.png`` for a per-team ``<ABBR>_<id>.png`` path, else None.
+
+        Existing installs only have the abbreviation-named file; sports.py
+        downloads the per-team one, so until it has, the scroll card keeps
+        drawing the old file instead of no logo at all.
+        """
+        if team_id in (None, ""):
+            return None
+        path = Path(logo_path)
+        suffix = f"_{team_id}"
+        if not path.stem.endswith(suffix) or len(path.stem) == len(suffix):
+            return None
+        return path.with_name(path.stem[:-len(suffix)] + path.suffix)
     
     def _load_and_resize_logo(
         self, 
@@ -266,13 +296,20 @@ class GameRenderer(SportsGameRendererMixin):
         # so the lookup never matched and each card re-decoded and re-resized
         # the source PNG. Some shipped logos are 4096x4096, which is most of a
         # second per logo on a Pi.
-        cache_key = self._logo_cache_key(team_abbrev)
-        if cache_key in self._logo_cache:
-            return self._logo_cache[cache_key]
-        
+        cache = self._logo_cache
+        cache_key = self._logo_cache_key(self._team_logo_name(team_abbrev, team_id))
+        if cache_key in cache:
+            logo = cache.pop(cache_key)
+            cache[cache_key] = logo     # most recently used
+            return logo
+
         try:
+            if logo_path and not os.path.exists(logo_path):
+                legacy = self._legacy_logo_path(logo_path, team_id)
+                if legacy is not None and legacy.exists():
+                    logo_path = legacy
             # Try to load from path
-            if os.path.exists(logo_path):
+            if logo_path and os.path.exists(logo_path):
                 logo = Image.open(logo_path)
                 if logo.mode != "RGBA":
                     logo = logo.convert("RGBA")
@@ -285,7 +322,9 @@ class GameRenderer(SportsGameRendererMixin):
                     logo = logo.crop(bbox)
                 logo.thumbnail((self._logo_slot_width(), self.display_height), Image.Resampling.LANCZOS)
 
-                self._logo_cache[self._logo_cache_key(team_abbrev)] = logo
+                cache[cache_key] = logo
+                while len(cache) > self._LOGO_CACHE_MAX:
+                    cache.pop(next(iter(cache)))    # evict least recently used
                 return logo
             else:
                 self.logger.debug(f"Logo not found at {logo_path}")
@@ -817,11 +856,12 @@ class GameRenderer(SportsGameRendererMixin):
     def _get_team_display_text(self, abbr: str, record: str) -> str:
         """Get the display text for a team (ranking or record)."""
         if self.show_ranking and self.show_records:
-            # Rankings replace records when both are enabled
+            # Rankings replace records when both are enabled; an unranked
+            # team still shows its record rather than nothing.
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:
                 return f"#{rank}"
-            return ''
+            return record
         elif self.show_ranking:
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:

@@ -42,20 +42,73 @@ sys.path.insert(0, str(CORE))
 
 results = []
 
-# Values chosen to differ from every default, so a dropped key cannot pass.
-PROBE = {
-    "other_upcoming_games_to_show": 7,
-    "other_recent_games_to_show": 6,
-    "other_rotation_interval_seconds": 900,
-    "other_games_min_quality": "broadcast",
-    "other_games_divisions": ["fcs"],
-    # Read by sports.py out of the translated config, and for a while declared
-    # in three plugins' schemas while no translation carried them -- a control
-    # the form offered and the board ignored.
-    "recent_update_interval": 1234,
-    "upcoming_update_interval": 2345,
-    "stale_game_timeout": 456,
+# Keys the schema declares that deliberately do NOT go through the manager
+# translation, each with where it is consumed instead. Anything else the schema
+# offers must arrive -- the probe list is built from the schema, so a setting
+# added there without being forwarded fails here instead of shipping inert.
+ALLOWLIST = {
+    "display_modes": "reshaped to per-mode booleans; *_display_mode is read by "
+                     "manager.py _parse_display_mode_settings",
+    "scroll_settings": "read from the plugin config by scroll_display.py",
+    "display_duration": "read by manager.py and the core, not the league managers",
+    "game_display_duration": "read by manager.py, not the league managers",
+    "dynamic_duration": "read by manager.py's dynamic-duration support",
+    "mode_durations": "read by manager.py's per-mode cycle durations",
 }
+# Objects whose leaves are flattened into the manager block by the translation.
+CONTAINERS = ("game_limits", "filtering", "display_options")
+# Values that must be valid to survive the translation's own resolution.
+SPECIAL = {"timezone": "Australia/Sydney"}
+
+
+def _probe_value(key, node):
+    """A value for ``node`` that is valid for its schema and differs from its default."""
+    if key in SPECIAL:
+        return SPECIAL[key]
+    default = node.get("default")
+    kind = node.get("type")
+    if isinstance(kind, list):
+        kind = next((k for k in kind if k != "null"), None)
+    if "enum" in node:
+        others = [v for v in node["enum"] if v != default]
+        return others[0] if others else default
+    if kind == "boolean":
+        return not bool(default)
+    if kind in ("integer", "number"):
+        low = node.get("minimum", 0)
+        high = node.get("maximum", 10 ** 6)
+        base = default if isinstance(default, (int, float)) else low
+        value = base + 7 if base + 7 <= high else base - 1
+        if value < low:
+            value = low if low != default else high
+        return int(value) if kind == "integer" else value + 0.5
+    if kind == "array":
+        items = node.get("items") or {}
+        pool = [v for v in items.get("enum", []) if v not in (default or [])]
+        return [pool[0] if pool else "probe-%s" % key]
+    if kind == "object":
+        return {k: _probe_value(k, v) for k, v in (node.get("properties") or {}).items()
+                if isinstance(v, dict)}
+    return "probe-%s" % key
+
+
+def _build_probe():
+    import json as _json
+    schema = _json.load(open(plugin_dir / "config_schema.json", encoding="utf-8"))
+    props = schema.get("properties") or {}
+    probe = {}
+    for key, node in props.items():
+        if key in ALLOWLIST or not isinstance(node, dict):
+            continue
+        if key in CONTAINERS:
+            for leaf, leaf_node in (node.get("properties") or {}).items():
+                probe.setdefault(leaf, _probe_value(leaf, leaf_node))
+            continue
+        probe[key] = _probe_value(key, node)
+    return probe
+
+
+PROBE = _build_probe()
 
 
 def check(case, passed, detail=""):
@@ -161,6 +214,7 @@ def main():
     # wrong shape still yields a block, just one full of defaults -- which
     # looks exactly like the bug this test exists to catch.
     best, best_league, best_build, best_score = None, None, None, -1
+    best_adapted = None
     for league, build in shapes:
         obj.config = build(league_block)
         try:
@@ -176,6 +230,7 @@ def main():
             score = sum(1 for k, want in PROBE.items() if value.get(k) == want)
             if score > best_score:
                 best, best_league, best_build, best_score = value, league, build, score
+                best_adapted = adapted
         if best_score == len(PROBE):
             break
 
@@ -187,7 +242,9 @@ def main():
 
     print("  league: %s" % (best_league or "<single>"))
     for key, want in PROBE.items():
-        got = best.get(key)
+        # Root keys (timezone, customization, scroll_card, the schedule window)
+        # land beside the league block rather than in it.
+        got = best[key] if key in best else (best_adapted or {}).get(key)
         check("%s reaches the manager (%r)" % (key, want), got == want,
               "got %r" % (got,))
 
@@ -213,6 +270,8 @@ def main():
     if any(k in block_props for k in PROBE):
         places.append((None, block_props))
     for name, node in sorted(block_props.items()):
+        if name not in CONTAINERS:
+            continue   # e.g. background_service.enabled is not the root enabled
         sub = (node or {}).get("properties") if isinstance(node, dict) else None
         if isinstance(sub, dict) and any(k in sub for k in PROBE):
             places.append((name, sub))
@@ -243,7 +302,8 @@ def main():
         for key in [k for k in PROBE if k in declared_in]:
             check("%s survives a config that only sets it in %s"
                   % (key, where or "the config root"),
-                  landed.get(key) == PROBE[key], "got %r" % (landed.get(key),))
+                  (landed[key] if key in landed else (adapted or {}).get(key)) == PROBE[key],
+                  "got %r" % (landed.get(key, (adapted or {}).get(key)),))
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
