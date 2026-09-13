@@ -265,14 +265,22 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
 
     def _initialize_managers(self):
         """Initialize all manager instances."""
+        # Every league's attributes exist from the start, so a league that fails
+        # to build reads as None everywhere (_get_current_manager returns the
+        # attribute directly) instead of raising AttributeError.
+        for _league in ("ncaa_mens", "ncaa_womens"):
+            for _mode in ("live", "recent", "upcoming"):
+                if not hasattr(self, f"{_league}_{_mode}"):
+                    setattr(self, f"{_league}_{_mode}", None)
         try:
-            # Create adapted configs for managers
-            ncaa_mens_config = self._adapt_config_for_manager("ncaa_mens")
-            ncaa_womens_config = self._adapt_config_for_manager("ncaa_womens")
-
-            # Initialize NCAA Men's managers if enabled
+            # Initialize NCAA Men's managers if enabled. The config translation
+            # sits inside each league's own try: it used to run for both leagues
+            # up front, so one league's unusable config (a hand-edited value the
+            # translation cannot coerce) raised past both blocks and left the
+            # OTHER league unbuilt too.
             if self.ncaa_mens_enabled:
                 try:
+                    ncaa_mens_config = self._adapt_config_for_manager("ncaa_mens")
                     self.ncaa_mens_live = NCAAMLacrosseLiveManager(
                         ncaa_mens_config, self.display_manager, self.cache_manager
                     )
@@ -286,16 +294,14 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                 except Exception as e:
                     self.logger.error(f"Failed to initialize NCAA Men's Lacrosse managers: {e}", exc_info=True)
                     # Set to None so hasattr checks work correctly
-                    if not hasattr(self, "ncaa_mens_live"):
-                        self.ncaa_mens_live = None
-                    if not hasattr(self, "ncaa_mens_recent"):
-                        self.ncaa_mens_recent = None
-                    if not hasattr(self, "ncaa_mens_upcoming"):
-                        self.ncaa_mens_upcoming = None
+                    self.ncaa_mens_live = None
+                    self.ncaa_mens_recent = None
+                    self.ncaa_mens_upcoming = None
 
             # Initialize NCAA Women's managers if enabled
             if self.ncaa_womens_enabled:
                 try:
+                    ncaa_womens_config = self._adapt_config_for_manager("ncaa_womens")
                     self.ncaa_womens_live = NCAAWLacrosseLiveManager(
                         ncaa_womens_config, self.display_manager, self.cache_manager
                     )
@@ -309,12 +315,9 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                 except Exception as e:
                     self.logger.error(f"Failed to initialize NCAA Women's Lacrosse managers: {e}", exc_info=True)
                     # Set to None so hasattr checks work correctly
-                    if not hasattr(self, "ncaa_womens_live"):
-                        self.ncaa_womens_live = None
-                    if not hasattr(self, "ncaa_womens_recent"):
-                        self.ncaa_womens_recent = None
-                    if not hasattr(self, "ncaa_womens_upcoming"):
-                        self.ncaa_womens_upcoming = None
+                    self.ncaa_womens_live = None
+                    self.ncaa_womens_recent = None
+                    self.ncaa_womens_upcoming = None
 
         except Exception as e:
             self.logger.error(f"Error initializing managers: {e}", exc_info=True)
@@ -776,6 +779,10 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         recent_update_interval = resolve_value(["update_intervals", "recent"], ["recent_update_interval"], 3600)
         upcoming_update_interval = resolve_value(["update_intervals", "upcoming"], ["upcoming_update_interval"], 3600)
         stale_game_timeout = resolve_value(["update_intervals", "stale_game_timeout"], ["stale_game_timeout"], 300)
+        # Read by sports.py (_fetch_odds, _attach_odds_to_rotated_games). The
+        # schema declared update_intervals.odds but nothing carried it here.
+        odds_update_interval = resolve_value(["update_intervals", "odds"], ["odds_update_interval"], 3600)
+        live_odds_update_interval = resolve_value(["update_intervals", "live_odds"], ["live_odds_update_interval"], 60)
 
         # Resolve display durations
         def resolve_live_duration() -> int:
@@ -823,7 +830,13 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_recent_games_to_show": other_recent_games_to_show,
                 "other_rotation_interval_seconds": other_rotation_interval_seconds,
                 "other_games_min_quality": other_games_min_quality,
-                "other_games_divisions": list(other_games_divisions or []),
+                # Passed through raw. list() here defeated the coercion in
+                # sports.py (_normalise_divisions): a hand-edited "fcs" became
+                # ['f','c','s'] -- already a list, so the string branch never
+                # fired and the filter rejected every non-favourite game --
+                # while a non-iterable raised TypeError inside this
+                # translation, leaving the league's managers None.
+                "other_games_divisions": other_games_divisions,
                 "show_records": show_records,
                 "show_ranking": show_ranking,
                 "show_odds": show_odds,
@@ -838,6 +851,11 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "recent_update_interval": recent_update_interval,
                 "upcoming_update_interval": upcoming_update_interval,
                 "stale_game_timeout": stale_game_timeout,
+                "odds_update_interval": odds_update_interval,
+                "live_odds_update_interval": live_odds_update_interval,
+                # SportsLive reads test_mode for its simulated live game; without
+                # this it could never be set from config (as football/baseball).
+                "test_mode": league_config.get("test_mode", False),
                 "live_game_duration": resolve_live_duration(),
                 "non_favorite_live_game_duration": resolve_non_favorite_live_duration(),
                 "background_service": {

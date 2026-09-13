@@ -533,6 +533,14 @@
               "minimum": 60,
               "maximum": 86400,
               "description": "Update interval for NCAA Men's Lacrosse betting odds data"
+            },
+            "live_odds": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 60,
+              "minimum": 30,
+              "maximum": 3600,
+              "description": "Update interval for NCAA Men's Lacrosse betting odds while a game is live"
             }
           }
         },
@@ -1015,6 +1023,14 @@
               "minimum": 60,
               "maximum": 86400,
               "description": "Update interval for NCAA Women's Lacrosse betting odds data"
+            },
+            "live_odds": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 60,
+              "minimum": 30,
+              "maximum": 3600,
+              "description": "Update interval for NCAA Women's Lacrosse betting odds while a game is live"
             }
           }
         },
