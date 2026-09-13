@@ -141,6 +141,8 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Track current scroll state
         self._scroll_active: Dict[str, bool] = {}
         self._scroll_prepared: Dict[str, bool] = {}
+        # Fingerprint of the fights the Vegas cards were last built from.
+        self._vegas_signature: Optional[tuple] = None
 
         # Enable high-FPS mode for scroll display
         self.enable_scrolling = self._scroll_manager is not None
@@ -188,24 +190,44 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
     def _initialize_managers(self):
         """Initialize UFC manager instances."""
         self._managers_initialized = False
+        # Every attribute exists, None when its manager could not be built, so
+        # update()/display() can test for None instead of hasattr -- and one
+        # manager failing to construct no longer takes the other two with it.
+        # This plugin has a single league, so the siblings' per-league isolation
+        # is per-manager here: a Recent that raises still leaves Live and
+        # Upcoming on the panel.
+        self.ufc_live = None
+        self.ufc_recent = None
+        self.ufc_upcoming = None
         try:
             ufc_config = self._adapt_config_for_manager("ufc")
-
-            if self.ufc_enabled:
-                self.ufc_live = UFCLiveManager(
-                    ufc_config, self.display_manager, self.cache_manager
-                )
-                self.ufc_recent = UFCRecentManager(
-                    ufc_config, self.display_manager, self.cache_manager
-                )
-                self.ufc_upcoming = UFCUpcomingManager(
-                    ufc_config, self.display_manager, self.cache_manager
-                )
-                self.logger.info("UFC managers initialized")
-                self._managers_initialized = True
-
         except Exception as e:
-            self.logger.error(f"Error initializing managers: {e}", exc_info=True)
+            self.logger.error(f"Error adapting UFC config: {e}", exc_info=True)
+            return
+
+        if not self.ufc_enabled:
+            return
+
+        for attr, manager_cls in (
+            ("ufc_live", UFCLiveManager),
+            ("ufc_recent", UFCRecentManager),
+            ("ufc_upcoming", UFCUpcomingManager),
+        ):
+            try:
+                setattr(
+                    self,
+                    attr,
+                    manager_cls(ufc_config, self.display_manager, self.cache_manager),
+                )
+            except Exception as e:
+                self.logger.error(
+                    f"Error initializing {manager_cls.__name__}: {e}", exc_info=True
+                )
+        self._managers_initialized = any(
+            m is not None for m in (self.ufc_live, self.ufc_recent, self.ufc_upcoming)
+        )
+        if self._managers_initialized:
+            self.logger.info("UFC managers initialized")
 
     def _initialize_league_registry(self) -> None:
         """Initialize the league registry with the UFC league."""
@@ -318,8 +340,14 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_games_min_quality": game_limits.get(
                     "other_games_min_quality", "ranked"
                 ),
-                "other_games_divisions": list(
-                    game_limits.get("other_games_divisions", ["fbs"])
+                # Passed through raw; sports.py _normalise_divisions coerces it.
+                # list() here defeated that twice over: a hand-edited "fbs"
+                # became ['f','b','s'] (already a list, so the string branch
+                # never fired, and the filter matched nothing), and a null
+                # raised TypeError inside this translation, which left every
+                # manager None and the plugin blank.
+                "other_games_divisions": game_limits.get(
+                    "other_games_divisions", ["fbs"]
                 ),
                 "upcoming_games_to_show": game_limits.get(
                     "upcoming_games_to_show", 10
@@ -340,8 +368,21 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "upcoming_game_duration": league_config.get(
                     "upcoming_game_duration", 15
                 ),
+                "odds_update_interval": league_config.get(
+                    "odds_update_interval", 3600
+                ),
+                "live_odds_update_interval": league_config.get(
+                    "live_odds_update_interval", 60
+                ),
                 "live_priority": league_config.get("live_priority", True),
                 "show_favorite_fighters_only": show_favorites_only,
+                # The shared sports.py reads the team-sport name of this switch
+                # (mma.py's Upcoming filter included), so the fighters setting
+                # never reached it and "favorites only" did nothing. The team
+                # keys it also reads -- favorite_teams and show_ranking -- stay
+                # unset on purpose: fights carry no team abbreviations to match
+                # and MMA has no poll, so their defaults ([] / False) are right.
+                "show_favorite_teams_only": show_favorites_only,
                 "show_all_live": show_all_live,
                 "filtering": filtering,
                 "background_service": {
@@ -487,16 +528,18 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not self.is_enabled:
             return
 
-        try:
-            if self.ufc_enabled:
-                if hasattr(self, "ufc_live"):
-                    self.ufc_live.update()
-                if hasattr(self, "ufc_recent"):
-                    self.ufc_recent.update()
-                if hasattr(self, "ufc_upcoming"):
-                    self.ufc_upcoming.update()
-        except Exception as e:
-            self.logger.error(f"Error updating managers: {e}", exc_info=True)
+        if not self.ufc_enabled:
+            return
+        for attr in ("ufc_live", "ufc_recent", "ufc_upcoming"):
+            manager = getattr(self, attr, None)
+            if manager is None:
+                continue
+            # One try per manager: a Live update that raises must not starve
+            # Recent and Upcoming of their refresh.
+            try:
+                manager.update()
+            except Exception as e:
+                self.logger.error(f"Error updating {attr}: {e}", exc_info=True)
 
     def display(self, display_mode: Optional[str] = None, force_clear: bool = False) -> bool:
         """Display UFC fights for a specific mode.
@@ -726,6 +769,30 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not self.is_enabled:
             return False
         return self.ufc_enabled and self.ufc_live_priority
+
+    def get_update_interval(self):
+        """Poll at the live interval while a fight is in progress, else no opinion.
+
+        The manifest pins update_interval to 60s, which is the only number the
+        core scheduler used, so ufc.live_update_interval (30s by default) could
+        never fire more often than once a minute. The core now consults this
+        hook on every tick (core #555); the eight sibling scoreboards gained it
+        in #479 and this plugin was left out.
+
+        Returning None when nothing is live keeps the idle cadence exactly where
+        the manifest puts it. Cheap by construction -- attribute reads on a
+        manager we already hold; in particular it does not call
+        has_live_content(), which walks the fights and applies favourites.
+        """
+        if not self.is_enabled or not self.ufc_enabled:
+            return None
+        manager = getattr(self, "ufc_live", None)
+        # live_games rather than has_live_content(): a fight the favourites
+        # filter hides still needs fresh data, because the filter can stop
+        # hiding it the moment a favourite's fight ends.
+        if manager is None or not getattr(manager, "live_games", None):
+            return None
+        return getattr(manager, "update_interval", None)
 
     # --- Vegas ticker weighting ------------------------------------------
     #
@@ -992,22 +1059,14 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not self._dynamic_feature_enabled():
             return True
 
-        # Check scroll mode completion
-        if self._current_active_display_mode:
-            mode_type = self._extract_mode_type(self._current_active_display_mode)
-            if (
-                mode_type
-                and self._should_use_scroll_mode(mode_type)
-                and self._scroll_manager
-            ):
-                is_complete = self._scroll_manager.is_scroll_complete()
-                self.logger.info(
-                    f"is_cycle_complete() [scroll]: "
-                    f"mode={self._current_active_display_mode}, "
-                    f"returning {is_complete}"
-                )
-                return is_complete
-
+        # No scroll-completion branch. The schema offers *_display_mode:
+        # "scroll", but display() always draws the switch card -- this plugin
+        # has no display-path scroll renderer (see KNOWN_MISSING_SCROLL in
+        # scripts/test_scroll_mode_is_reachable.py). Asking the scroll helper
+        # here, when nothing on the panel is scrolling, answered False forever,
+        # so a mode set to "scroll" held the board until the dynamic-duration
+        # cap. The only scroll content is Vegas's, which has its own lifecycle.
+        # Completion follows the cards actually shown, whatever the setting.
         self._evaluate_dynamic_cycle_completion(
             display_mode=self._current_active_display_mode
         )
@@ -1212,31 +1271,76 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         Get content for Vegas-style continuous scroll mode.
 
-        Triggers scroll content generation if cache is empty, then returns
-        the cached scroll image(s) for Vegas to compose into its scroll strip.
+        Returns the cached fight cards, rebuilt only when the fights behind
+        them change. The cache used to be rebuilt only when it was EMPTY, and
+        this flat scroll manager keeps its cards in _vegas_content_items, which
+        the core's cache clear never touches -- so once built, the ticker
+        showed the first slate it ever saw (a live round clock frozen, a result
+        never appearing) until restart.
+
+        Does not call update(). Refreshing data is the update cycle's job;
+        network I/O here stalls the Vegas render loop with the panel frozen.
 
         Returns:
-            List of PIL Images from scroll displays, or None if no content
+            List of PIL Images, one per fight card, or None if no content
         """
-        if not hasattr(self, "_scroll_manager") or not self._scroll_manager:
+        if not getattr(self, "_scroll_manager", None):
             return None
 
+        try:
+            fights, _leagues = self._collect_fights_for_scroll()
+        except Exception:
+            self.logger.exception("[UFC Vegas] Failed to collect fights")
+            return None
+        if not fights:
+            self.logger.debug("[UFC Vegas] No fights available")
+            return None
+
+        signature = self._vegas_fight_signature(fights)
         images = self._scroll_manager.get_all_vegas_content_items()
 
-        if not images:
-            self.logger.info("[UFC Vegas] Triggering scroll content generation")
-            self._ensure_scroll_content_for_vegas()
+        if not images or signature != getattr(self, "_vegas_signature", None):
+            self.logger.info(
+                "[UFC Vegas] Rebuilding scroll content (%s): %d fight(s)",
+                "no cached content" if not images else "fight data changed",
+                len(fights),
+            )
+            if self._ensure_scroll_content_for_vegas(fights):
+                self._vegas_signature = signature
             images = self._scroll_manager.get_all_vegas_content_items()
 
         if images:
             total_width = sum(img.width for img in images)
-            self.logger.info(
+            self.logger.debug(
                 "[UFC Vegas] Returning %d image(s), %dpx total",
                 len(images), total_width
             )
             return images
 
         return None
+
+    @staticmethod
+    def _vegas_fight_signature(fights: List[Dict]) -> tuple:
+        """Cheap fingerprint of what the Vegas cards show.
+
+        Rebuilding re-renders every card, so it should happen only when a
+        viewer would notice: the set of fights, their state, the round clock,
+        the result, or odds arriving. Every field is read with .get().
+        """
+        fingerprint = []
+        for fight in fights:
+            status = fight.get("status")
+            state = status.get("state") if isinstance(status, dict) else status
+            fingerprint.append((
+                fight.get("id") or fight.get("comp_id"),
+                state,
+                fight.get("is_live"), fight.get("is_final"),
+                fight.get("period"), fight.get("clock"),
+                fight.get("status_text"),
+                fight.get("home_score"), fight.get("away_score"),
+                bool(fight.get("odds")),
+            ))
+        return tuple(fingerprint)
 
     def get_vegas_content_type(self) -> str:
         """Indicate the type of content for Vegas scroll."""
@@ -1256,23 +1360,24 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
             return VegasDisplayMode.SCROLL
         return "scroll"
 
-    def _ensure_scroll_content_for_vegas(self) -> None:
-        """Ensure scroll content is generated for Vegas mode."""
+    def _ensure_scroll_content_for_vegas(
+        self, games: Optional[List[Dict]] = None
+    ) -> bool:
+        """Render the fights into Vegas scroll content. True on success.
+
+        No update() here: this runs on the Vegas render path, and data is
+        refreshed by the update cycle.
+        """
         if not self._scroll_manager:
-            return
+            return False
 
-        # Refresh managers
-        try:
-            self.update()
-        except Exception as e:
-            self.logger.debug(f"[UFC Vegas] Manager refresh failed: {e}")
-
-        # Collect all fights
-        games, leagues = self._collect_fights_for_scroll()
+        leagues = ["ufc"]
+        if games is None:
+            games, leagues = self._collect_fights_for_scroll()
 
         if not games:
             self.logger.debug("[UFC Vegas] No fights available")
-            return
+            return False
 
         # Count fight types
         type_counts = {"live": 0, "recent": 0, "upcoming": 0}
@@ -1300,6 +1405,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
             )
         else:
             self.logger.warning("[UFC Vegas] Failed to generate scroll content")
+        return bool(success)
 
     def _collect_fights_for_scroll(
         self, mode_type: Optional[str] = None

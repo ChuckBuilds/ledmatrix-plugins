@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.10.0] - 2026-09-12
+
+### Added
+- `ufc.odds_update_interval` and `ufc.live_odds_update_interval` (advanced).
+  The code already read them; the schema now offers them.
+
+### Fixed
+- **Live fights refresh at `live_update_interval`.** The plugin implements
+  `get_update_interval()` (core #555), which the eight sibling scoreboards
+  gained in #479; the manifest's 60s used to be the only cadence. The live
+  update also no longer dies on a `KeyError` for MMA fights, which carry no
+  `is_halftime` flag or team abbreviations.
+- **`*_display_mode: "scroll"` no longer holds the board to the dynamic-duration
+  cap.** This plugin has no display-path scroll renderer, so waiting for scroll
+  completion waited forever.
+- **Vegas cards follow the fights.** They were built once and never rebuilt
+  (the cache the core clears is not the one this plugin uses), and building
+  them called `update()` — network I/O on the render path.
+- **Postponed, cancelled and suspended bouts are no longer shown as results**
+  on Recent: final now requires `status.type.completed` and excludes those
+  statuses.
+- **Upcoming honours `schedule_lookahead_days`**, instead of every fight in the
+  season-wide fetch; and a mode re-taking the panel gives its current card a
+  full dwell rather than advancing immediately (#345).
+- **Full-screen odds no longer print through the round clock, result or fight
+  class.** With no favourite the O/U anchors left and steps down a row on
+  collision; a home spread of 0.0 is no longer treated as missing.
+- Decoded headshot caches are LRU-bounded (core #559).
+- One manager failing to construct no longer leaves Live, Recent and Upcoming
+  all blank; each is built and updated independently.
+- `other_games_divisions` is passed through raw (a string was split into
+  letters, a null crashed the adapter), an `Infinity` window or interval setting
+  falls back to its default, and "favorite fighters only" reaches the shared
+  filter it never reached.
+- "Logo Error" fallback in the shared switch renderer draws on the image it
+  shows instead of a discarded copy.
+
 ## [1.9.2] - 2026-09-11
 
 ### Fixed
