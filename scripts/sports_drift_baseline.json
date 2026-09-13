@@ -170,7 +170,6 @@
     "sports.py::SportsUpcoming._select_S_for_display",
     "sports.py::SportsUpcoming.display",
     "sports.py::SportsUpcoming.update",
-    "sports.py::_clamp_window",
     "sports.py::_status_is_final"
   ],
   "known_unthrottled": [

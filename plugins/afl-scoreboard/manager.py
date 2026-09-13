@@ -86,6 +86,28 @@ MODE_TYPES = ("live", "recent", "upcoming")
 DISPLAY_MODES = tuple(f"afl_{m}" for m in MODE_TYPES)  # afl_live, afl_recent, afl_upcoming
 
 
+_MISSING = object()
+
+
+def _display_option(display_options: Dict[str, Any], root: Dict[str, Any],
+                    key: str, default: Any, legacy_root: Optional[str] = None) -> Any:
+    """Resolve a toggle declared both in display_options and at the root.
+
+    Up to 1.24.1 only the root key was read, so that is where any setting a
+    user actually changed lives. The web UI saves schema defaults into both
+    blocks, so a display_options value equal to the default says nothing about
+    intent. Precedence: a changed display_options value, then a root value
+    (or the legacy plural name), then the default.
+    """
+    value = display_options.get(key, _MISSING)
+    if value is not _MISSING and value != default:
+        return value
+    for name in (key, legacy_root):
+        if name and name in root:
+            return root[name]
+    return default if value is _MISSING else value
+
+
 def _mode_type_of(display_mode: str) -> Optional[str]:
     """Return 'live'/'recent'/'upcoming' for an afl_* display mode, else None."""
     if not display_mode:
@@ -329,18 +351,18 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
                 # display_options is the block the web UI renders these in;
                 # the root keys are older duplicates. Reading only the root
                 # (and the plural show_rankings, which the schema never
-                # declared) left the UI toggles saved and ignored. Same
-                # resolution as nrl-scoreboard.
-                "show_records": display_options.get(
-                    "show_records", cfg.get("show_records", False)
-                ),
-                "show_ranking": display_options.get(
-                    "show_ranking",
-                    cfg.get("show_ranking", cfg.get("show_rankings", False)),
-                ),
-                "show_odds": display_options.get(
-                    "show_odds", cfg.get("show_odds", False)
-                ),
+                # declared) left the UI toggles saved and ignored. But the
+                # root keys were the only ones that ever worked, and the store
+                # saves schema defaults into both blocks, so a display_options
+                # value equal to its default is not evidence the user chose
+                # it: a changed root value wins over it. See _display_option.
+                "show_records": _display_option(
+                    display_options, cfg, "show_records", False),
+                "show_ranking": _display_option(
+                    display_options, cfg, "show_ranking", False,
+                    legacy_root="show_rankings"),
+                "show_odds": _display_option(
+                    display_options, cfg, "show_odds", True),
                 # Declared in the schema and read by SportsLive, but never
                 # carried across, so celebrations were always on and always
                 # 8s whatever the user set.

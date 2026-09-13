@@ -26,8 +26,13 @@
   `Infinity` no longer crashes manager init.
 
 ### Changed
-- Minimum core raised to 3.3.1, the first release shipping
-  `src.common.sports_shared`.
+- Behaviour change: `scroll_card.show_date` / `show_time` no longer hide the
+  date and time on the full-screen upcoming scorebug (they did since #336). A
+  config that turned them off shows the date/time there again; turn off
+  `switch_show_date` / `switch_show_time` to hide them.
+- The core floor stays at 3.3.0. `sports.py` imports `src.common.sports_shared`,
+  which first shipped in core v3.3.1, but that release still reports
+  `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
 
 ## [1.24.1] - 2026-09-11
 

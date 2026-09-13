@@ -111,12 +111,24 @@ MODULE_FIRST_VERSION = {
     # v3.3.0
     "src.common.sports_card": "3.3.0",
     "src.common.sports_game_renderer": "3.3.0",
-    # v3.3.1
+    # v3.3.1 (but see REPORTED_AS: that release reports itself as 3.3.0)
     "src.common.sports_shared": "3.3.1",
     # on core main, in no tagged release yet
     "src.common.font_layout": None,
     "src.common.path_safety": None,
     "src.common.scroll_config": None,
+}
+
+#: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
+#: install gate compares a floor against that string, so the highest floor
+#: that still admits such a release is the version it *reports*: core v3.3.1
+#: ships ``__version__ = "3.3.0"``, and a 3.3.1 floor refuses every current
+#: core, v3.3.1 included. A module first shipped in one of these releases is
+#: satisfied by the reported version. A real 3.3.0 core without the module
+#: still passes the gate; no floor can separate the two until core bumps its
+#: version string. Remove the entry once core main reports 3.3.1 or later.
+REPORTED_AS = {
+    "3.3.1": "3.3.0",
 }
 
 _TEST_DIRS = {"test", "tests", "__pycache__", ".venv", "venv", "node_modules"}
@@ -310,12 +322,13 @@ def check_plugin(plugin_dir: Path) -> List[str]:
                     f"in no released core yet (floor {fmt(floor)}). Guard it "
                     f"with try/except ImportError and a fallback.")
                 continue
-            need_v = parse_version(needed)
+            enforceable = REPORTED_AS.get(needed, needed)
+            need_v = parse_version(enforceable)
             if need_v > floor:
                 reported.add((lineno, key))
                 problems.append(
                     f"{pid}/{rel}:{lineno}: unguarded import of {key} needs core "
-                    f">= {needed}, but the manifest admits {fmt(floor)}. Raise "
+                    f">= {enforceable}, but the manifest admits {fmt(floor)}. Raise "
                     f"the floor (ledmatrix_min_version / compatible_versions) "
                     f"or guard the import.")
     return problems

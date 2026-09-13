@@ -2228,8 +2228,11 @@ class BaseballLive(Baseball, SportsLive):
 
             # Draw gambling odds if available
             if game.get("odds"):
+                # top_span: the inning is centred on the same top row, so odds
+                # that would overlap it step down a row (P-M17).
                 self._draw_dynamic_odds(
-                    draw_overlay, game["odds"], self.display_width, self.display_height
+                    draw_overlay, game["odds"], self.display_width, self.display_height,
+                    top_span=(inning_x, inning_x + inning_width),
                 )
 
             # Composite the text overlay onto the main image

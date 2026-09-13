@@ -3125,6 +3125,18 @@ class SportsRecent(SportsCore):
 
 class SportsLive(SportsCore):
 
+    def display(self, force_clear: bool = False) -> bool:
+        """Render the live fight, giving it a full dwell when the mode re-enters.
+
+        Live rotation stays in update(), but update() below will not advance
+        while the mode is off screen, and the first frame back resets the dwell
+        clock -- the live half of the #345 port the Upcoming and Recent screens
+        already have.
+        """
+        if self._reset_dwell_on_reentry():
+            force_clear = True
+        return super().display(force_clear)
+
     def __init__(
         self,
         config: Dict[str, Any],
@@ -3628,9 +3640,17 @@ class SportsLive(SportsCore):
             # Handle game switching (outside test mode check, thread-safe)
             # Fix: Don't check for switching if last_game_switch is still 0 (games haven't been loaded yet)
             # This prevents immediate switching when the system has been running for a while before games load
+            # Off screen (displayed before, but not within the re-entry gap):
+            # do not rotate. display() resets the dwell when the mode comes
+            # back, and a switch made here first would skip the fight that was
+            # cut off at the end of the previous block.
+            last_display = getattr(self, "_last_display_call_monotonic", 0.0)
+            off_screen = (last_display > 0.0 and time.monotonic() - last_display
+                          >= self._DWELL_REENTRY_GAP_SECONDS)
             with self._games_lock:
                 if (
                     not self.test_mode
+                    and not off_screen
                     and len(self.live_games) > 1
                     and self.last_game_switch > 0
                     and (current_time - self.last_game_switch) >= self.game_display_duration

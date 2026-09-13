@@ -59,6 +59,10 @@
 - **Live run counts** honour the `score_text` colour.
 
 ### Changed
+- Behaviour change: `scroll_card.show_date` / `show_time` no longer hide the
+  date and time on the full-screen upcoming scorebug (they did since #336). A
+  config that turned them off shows the date/time there again; turn off
+  `switch_show_date` / `switch_show_time` to hide them.
 - Recent shows extra innings ("Final/10") where it fits between the logos.
 
 ### Removed

@@ -5,13 +5,15 @@ The gate reports by absence, so a version that stopped looking would print OK
 just as confidently as one that looked and found nothing. These pin:
 
 - **Detection.** The M5 shape -- an unguarded ``src.common.sports_shared``
-  import under a 3.3.0 floor -- is reported, and raising the floor clears it.
+  import under a floor below what its first release reports -- is reported,
+  and raising the floor clears it. Core v3.3.1 reports itself as 3.3.0
+  (``REPORTED_AS``), so a 3.3.0 floor is the highest one that admits it.
 - **Guards.** Only a ``try`` whose handler would catch ImportError excuses an
   import; an ``except ValueError`` or an import in the handler itself does not.
 - **The floor is the one the install gate enforces**, including a
   ``compatible_versions`` bound above the declared minimum.
 - **It is really scanning the tree**, and the tree is clean once the eight
-  scoreboards declare 3.3.1.
+  scoreboards declare 3.3.0.
 - **The table matches core's tags**, when a core checkout with tags is
   available via LEDMATRIX_CORE (that section is skipped otherwise).
 
@@ -45,7 +47,7 @@ def run(files, manifest=None):
     pdir = root / "p"
     pdir.mkdir()
     (pdir / "manifest.json").write_text(json.dumps(
-        manifest if manifest is not None else floor("3.3.0")))
+        manifest if manifest is not None else floor("3.2.0")))
     for name, src in files.items():
         path = pdir / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -66,16 +68,21 @@ SHARED = "from src.common.sports_shared import parse_game\n"
 # --------------------------------------------------------------------------
 print("detection")
 
-check("unguarded sports_shared under a 3.3.0 floor is reported",
-      len(run({"sports.py": SHARED})) == 1)
-check("a 3.3.1 floor clears it",
+check("unguarded sports_shared under a 3.2.0 floor is reported",
+      len(run({"sports.py": SHARED}, floor("3.2.0"))) == 1)
+check("a 3.3.0 floor clears it: v3.3.1 reports __version__ 3.3.0",
+      run({"sports.py": SHARED}, floor("3.3.0")) == [])
+check("a 3.3.1 floor clears it too",
       run({"sports.py": SHARED}, floor("3.3.1")) == [])
+CARD = "from src.common.sports_card import x\n"
+check("a 3.3.0 module under a 3.2.0 floor is reported",
+      len(run({"card.py": CARD}, floor("3.2.0"))) == 1)
 check("a compatible_versions bound above the declared min counts",
-      run({"sports.py": SHARED}, floor("3.3.0", compat=">=3.3.1")) == [])
+      run({"sports.py": SHARED}, floor("3.2.0", compat=">=3.3.0")) == [])
 check("a declared min above compatible_versions counts",
       run({"sports.py": SHARED},
           {"id": "p", "compatible_versions": [">=2.0.0"],
-           "min_ledmatrix_version": "3.3.1"}) == [])
+           "min_ledmatrix_version": "3.3.0"}) == [])
 check("no floor at all reads as 0.0.0 and is reported",
       len(run({"sports.py": SHARED}, {"id": "p"})) == 1)
 check("'import src.x' is seen as well as 'from src.x import'",
@@ -168,17 +175,16 @@ for pdir in plugin_dirs:
 check("it finds a plausible number of core imports in the tree", seen >= 150,
       f"{seen} imports across {len(plugin_dirs)} plugins")
 
-# The M5 fix raises the scoreboards' floor to 3.3.1. Simulate that without
-# touching manifests, so this passes both before and after it merges and
-# asserts nothing *else* in the tree trips the gate.
+# The scoreboards floor at 3.3.0, which v3.3.1 reports. Simulate that without
+# touching manifests, so this asserts nothing *else* in the tree trips the gate.
 real_floor = gate.effective_floor
-gate.effective_floor = lambda m: max(real_floor(m), (3, 3, 1)) \
+gate.effective_floor = lambda m: max(real_floor(m), (3, 3, 0)) \
     if str(m.get("id", "")).endswith("-scoreboard") else real_floor(m)
 try:
     remaining = [p for d in plugin_dirs for p in gate.check_plugin(d)]
 finally:
     gate.effective_floor = real_floor
-check("the tree is clean once scoreboards declare 3.3.1", not remaining,
+check("the tree is clean once scoreboards declare 3.3.0", not remaining,
       "; ".join(remaining[:3]))
 
 # --------------------------------------------------------------------------
@@ -218,6 +224,19 @@ else:
             wrong.append(f"{module}: not first shipped in {version}")
     check("every table entry first ships in the tag it names", not wrong,
           "; ".join(wrong[:3]))
+
+    # REPORTED_AS must describe what the tag really says about itself; drop
+    # an entry once core ships a correct version string.
+    import re as _re
+    misreport = []
+    for tag, says in gate.REPORTED_AS.items():
+        out = subprocess.run(["git", "-C", core, "show", f"v{tag}:src/__init__.py"],
+                             capture_output=True, text=True)
+        m = _re.search(r'__version__\s*=\s*["\']([^"\']+)', out.stdout)
+        if not m or m.group(1) != says:
+            misreport.append(f"v{tag} reports {m.group(1) if m else '?'}, table says {says}")
+    check("REPORTED_AS matches each tag's __version__", not misreport,
+          "; ".join(misreport))
 
     # A new core module on HEAD that the table does not know about would be
     # silently treated as always-available.

@@ -193,6 +193,12 @@ def main():
         got = adapted.get(key)
         check("root %s reaches the manager config (%r)" % (key, want),
               got == want, "got %r" % (got,))
+    # test_mode is not in the schema (hand-edited), so no probe covers it.
+    saved = obj.config
+    obj.config = {LEAGUE: {"test_mode": True}}
+    got = obj._adapt_config_for_manager(LEAGUE)["%s_scoreboard" % LEAGUE].get("test_mode")
+    check("a hand-set test_mode reaches the manager", got is True, "got %r" % (got,))
+    obj.config = saved
     check("customization reaches the manager config",
           adapted.get("customization") == customization,
           "got %r" % (adapted.get("customization"),))

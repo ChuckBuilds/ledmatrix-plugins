@@ -52,8 +52,17 @@ Drift fixes: behaviour sibling scoreboards already had, ported here.
 - The vendored `logo_downloader.py`.
 
 ### Changed
-- Minimum LEDMatrix core is now 3.3.1, the first release with
-  `src.common.sports_shared`, which this plugin imports unguarded.
+- Behaviour change: `scroll_card.show_date` / `show_time` no longer hide the
+  date and time on the full-screen upcoming scorebug (they did since #336). A
+  config that turned them off shows the date/time there again; turn off
+  `switch_show_date` / `switch_show_time` to hide them.
+- Behaviour change: Upcoming used to show the next games however far away
+  they were. It now hides anything past `schedule_lookahead_days` (default 7),
+  a favourite's game included, so in preseason or a long break the screen is
+  empty until a game is inside the window. Raise the setting to see it sooner.
+- The core floor stays at 3.3.0. `sports.py` imports `src.common.sports_shared`,
+  which first shipped in core v3.3.1, but that release still reports
+  `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
 
 ## [1.26.1] - 2026-09-11
 

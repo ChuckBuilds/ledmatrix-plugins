@@ -38,8 +38,19 @@ Fixes ported from the sibling scoreboards after the drift audit:
   the managers.
 - A config value of `Infinity` for an other-games count can no longer crash
   selection.
-- The minimum core version is now 3.3.1, the first release that ships
-  `src.common.sports_shared`.
+- The core floor stays at 3.3.0. `sports.py` imports `src.common.sports_shared`,
+  which first shipped in core v3.3.1, but that release still reports
+  `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
+
+### Changed
+- Behaviour change: `scroll_card.show_date` / `show_time` no longer hide the
+  date and time on the full-screen upcoming scorebug (they did since #336). A
+  config that turned them off shows the date/time there again; turn off
+  `switch_show_date` / `switch_show_time` to hide them.
+- Behaviour change: Upcoming used to show the next games however far away
+  they were. It now hides anything past `schedule_lookahead_days` (default 7),
+  a favourite's game included, so in preseason or a long break the screen is
+  empty until a game is inside the window. Raise the setting to see it sooner.
 
 ## [1.26.1] - 2026-09-11
 

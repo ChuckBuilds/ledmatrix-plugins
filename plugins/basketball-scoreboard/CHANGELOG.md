@@ -41,8 +41,13 @@
   `_clamp_window` / `_setting_int`).
 
 ### Changed
-- `ledmatrix_min_version` raised to 3.3.1, the first core release that ships
-  `src.common.sports_shared`, which `sports.py` imports unguarded.
+- Behaviour change: `scroll_card.show_date` / `show_time` no longer hide the
+  date and time on the full-screen upcoming scorebug (they did since #336). A
+  config that turned them off shows the date/time there again; turn off
+  `switch_show_date` / `switch_show_time` to hide them.
+- The core floor stays at 3.3.0. `sports.py` imports `src.common.sports_shared`,
+  which first shipped in core v3.3.1, but that release still reports
+  `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
 - Removed the unused bundled `logo_downloader.py`; `sports.py` already imports
   `src.logo_downloader`.
 - `test_settings_reach_the_manager.py` builds its probes from

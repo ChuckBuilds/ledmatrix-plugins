@@ -34,6 +34,7 @@ else:
     sys.exit(2)
 
 from ufc_managers import UFCRecentManager as MMARecent, UFCUpcomingManager as MMAUpcoming  # noqa: E402  (concrete)
+from ufc_managers import UFCLiveManager as MMALiveManager  # noqa: E402
 
 FAILURES = []
 
@@ -140,6 +141,19 @@ for cls in (MMAUpcoming, MMARecent):
     mgr.display()
     check(f"{cls.__name__}: re-entry shows the card it left on, not the next one",
           mgr.drawn == ["1"], f"drew {mgr.drawn}")
+
+print("\nlive: re-entry gets a full dwell too")
+live = displaying(MMALiveManager)
+live.live_games = list(live.games_list)
+live.test_mode = False
+live.display()
+check("UFCLiveManager: re-entry shows the fight it left on",
+      live.drawn == ["1"], f"drew {live.drawn}")
+check("... and the dwell clock restarts", time.time() - live.last_game_switch < 1)
+
+import sports as _sports  # noqa: E402
+check("SportsLive.update() will not rotate while the mode is off screen",
+      "_DWELL_REENTRY_GAP_SECONDS" in _sports.SportsLive.update.__code__.co_names)
 
 print("\n" + "=" * 60)
 if FAILURES:

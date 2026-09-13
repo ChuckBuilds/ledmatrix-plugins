@@ -18,7 +18,7 @@
   ],
   "icon": "fas fa-hockey-puck",
   "compatible_versions": [
-    ">=3.3.1"
+    ">=3.3.0"
   ],
   "requires": {
     "python": ">=3.9",
@@ -57,8 +57,8 @@
     {
       "version": "1.27.0",
       "released": "2026-09-12",
-      "ledmatrix_min_version": "3.3.1",
-      "notes": "Drift fixes ported from sibling scoreboards. Postponed, cancelled and suspended games no longer show on Recent as Final 0-0. A failed logo now shows Logo Error instead of a black panel. Full-screen odds no longer overprint the period, Final or Next Game; a 0.0 home spread is a pick'em, not missing. Upcoming honours schedule_lookahead_days, the current card gets a full dwell when a mode retakes the panel, rotated-in games get odds, and new scroll_card.switch_show_date / switch_show_time govern the full-screen date and time. Vegas rebuilds when scores change, reads only its own slate and logs at debug. Cached no-odds markers are a cache hit. Unranked teams fall back to their record on scroll cards when records and rankings are both on. Logos use the core downloader so failed downloads are retried; decoded logo caches are bounded. other_games_divisions, test_mode and the odds intervals (new update_intervals.live_odds) reach the managers, and a config Infinity no longer crashes init. Removes the unused data_fetcher.py, debug_tb_games.py and vendored logo_downloader.py. Floor raised to 3.3.1, the first core shipping src.common.sports_shared."
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Drift fixes ported from sibling scoreboards. Postponed, cancelled and suspended games no longer show on Recent as Final 0-0. A failed logo now shows Logo Error instead of a black panel. Full-screen odds no longer overprint the period, Final or Next Game; a 0.0 home spread is a pick'em, not missing. Upcoming honours schedule_lookahead_days, the current card gets a full dwell when a mode retakes the panel, rotated-in games get odds, and new scroll_card.switch_show_date / switch_show_time govern the full-screen date and time. Vegas rebuilds when scores change, reads only its own slate and logs at debug. Cached no-odds markers are a cache hit. Unranked teams fall back to their record on scroll cards when records and rankings are both on. Logos use the core downloader so failed downloads are retried; decoded logo caches are bounded. other_games_divisions, test_mode and the odds intervals (new update_intervals.live_odds) reach the managers, and a config Infinity no longer crashes init. Removes the unused data_fetcher.py, debug_tb_games.py and vendored logo_downloader.py."
     },
     {
       "version": "1.26.1",

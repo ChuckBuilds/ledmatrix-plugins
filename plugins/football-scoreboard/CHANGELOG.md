@@ -35,8 +35,9 @@
   are declared in the schema and forwarded to the managers.
 
 ### Changed
-- Requires LEDMatrix core 3.3.1, the first release with
-  `src.common.sports_shared`, which `sports.py` imports.
+- The core floor stays at 3.3.0. `sports.py` imports `src.common.sports_shared`,
+  which first shipped in core v3.3.1, but that release still reports
+  `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
 - DYNAMIC_DURATION.md and the `layout_mode` / `switch_upcoming_center` schema
   text now describe what the code actually does.
 

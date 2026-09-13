@@ -595,6 +595,12 @@ def main():
           probe._setting_int("other_recent_games_to_show", 3, 0, 20) == 20)
     check("a missing key uses the default",
           probe._setting_int("not_present_at_all", 7, 0, 20) == 7)
+    try:
+        clamped = sports._clamp_window(float("inf"), 7)
+    except OverflowError as exc:
+        clamped = exc
+    check("an Infinity schedule window falls back instead of raising",
+          clamped == 7, clamped)
 
     check("a bare string division becomes one name, not three letters",
           sports.SportsCore._normalise_divisions("fbs") == ["fbs"])

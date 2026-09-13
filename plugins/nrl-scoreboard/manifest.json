@@ -21,8 +21,8 @@
     {
       "version": "1.24.0",
       "released": "2026-09-12",
-      "ledmatrix_min_version": "3.3.1",
-      "notes": "Drift fixes ported from the other scoreboards. Newcastle and the Warriors (both \"NEW\") and Canberra and Canterbury (both \"CAN\") no longer share one logo: logos are stored and cached per ESPN team id, and the old abbreviation-named file is still used until the per-team one has downloaded. Postponed, cancelled and suspended fixtures no longer appear on Recent as \"Final 0-0\": a game is final only when ESPN marks it completed. Full-screen odds no longer draw through the top-row status text when only an over/under is available (they step down a row), and a pick'em home spread of 0.0 is no longer treated as missing. A failed logo now shows \"Logo Error\" instead of a black panel. The upcoming scorebug reads its own scroll_card.switch_show_date / switch_show_time instead of the scroll card's toggles. Upcoming games are trimmed to schedule_lookahead_days, and a mode retaking the panel gives its current card a full dwell. Games rotated into the other-games slice get odds fetched off the display path. Vegas rebuilds its dedicated slate when the games change instead of freezing on whatever a standalone mode last rendered. A cached \"no odds\" result is now a cache hit rather than a refetch. Decoded logo caches are bounded (core #559). With rankings and records both on, an unranked team shows its record on the scroll card. A config Infinity no longer crashes manager init; a string or null other_games_divisions no longer blanks the plugin; test_mode, odds_update_interval and live_odds_update_interval now reach the managers, and the two odds intervals are declared in the schema. The floor rises to 3.3.1, the first core release that ships src.common.sports_shared, which this plugin imports unguarded."
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Drift fixes ported from the other scoreboards. Newcastle and the Warriors (both \"NEW\") and Canberra and Canterbury (both \"CAN\") no longer share one logo: logos are stored and cached per ESPN team id, and the old abbreviation-named file is still used until the per-team one has downloaded. Postponed, cancelled and suspended fixtures no longer appear on Recent as \"Final 0-0\": a game is final only when ESPN marks it completed. Full-screen odds no longer draw through the top-row status text when only an over/under is available (they step down a row), and a pick'em home spread of 0.0 is no longer treated as missing. A failed logo now shows \"Logo Error\" instead of a black panel. The upcoming scorebug reads its own scroll_card.switch_show_date / switch_show_time instead of the scroll card's toggles. Upcoming games are trimmed to schedule_lookahead_days, and a mode retaking the panel gives its current card a full dwell. Games rotated into the other-games slice get odds fetched off the display path. Vegas rebuilds its dedicated slate when the games change instead of freezing on whatever a standalone mode last rendered. A cached \"no odds\" result is now a cache hit rather than a refetch. Decoded logo caches are bounded (core #559). With rankings and records both on, an unranked team shows its record on the scroll card. A config Infinity no longer crashes manager init; a string or null other_games_divisions no longer blanks the plugin; test_mode, odds_update_interval and live_odds_update_interval now reach the managers, and the two odds intervals are declared in the schema."
     },
     {
       "version": "1.23.1",
@@ -388,6 +388,6 @@
   "class_name": "NrlScoreboardPlugin",
   "config_schema": "config_schema.json",
   "compatible_versions": [
-    ">=3.3.1"
+    ">=3.3.0"
   ]
 }

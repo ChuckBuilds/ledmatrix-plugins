@@ -375,6 +375,11 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "live_odds_update_interval", 60
                 ),
                 "live_priority": league_config.get("live_priority", True),
+                # SportsLive and UFCLiveManager read test_mode for the simulated
+                # live fight; without it here the setting never reached them.
+                # Same forwarding as the team-sport scoreboards.
+                "test_mode": league_config.get(
+                    "test_mode", self.config.get("test_mode", False)),
                 "show_favorite_fighters_only": show_favorites_only,
                 # The shared sports.py reads the team-sport name of this switch
                 # (mma.py's Upcoming filter included), so the fighters setting
