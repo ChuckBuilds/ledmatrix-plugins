@@ -167,6 +167,10 @@ class Lacrosse(SportsCore):
                     period_text = f"Q{period}"
                 elif period > 4:
                     period_text = f"OT{period - 4}"
+            elif status["type"]["state"] == "post" and not details.get("is_final"):
+                # Postponed / cancelled / suspended: say so rather than "Final".
+                period_text = (status["type"].get("shortDetail")
+                               or status["type"].get("description") or "")
             elif status["type"]["state"] == "post":
                 if period > 4:
                     period_text = "Final/OT"
@@ -290,11 +294,14 @@ class LacrosseLive(Lacrosse, SportsLive):
                 self.logger.error(
                     f"Failed to load logos for live game: {game.get('id')}"
                 )
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                # Draw on the image that is pasted: convert() returns a copy,
+                # so drawing on one copy and pasting another showed black.
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image.paste(main_img.convert("RGB"), (0, 0))
+                self.display_manager.image.paste(error_img, (0, 0))
                 self.display_manager.update_display()
                 return
 
@@ -361,7 +368,9 @@ class LacrosseLive(Lacrosse, SportsLive):
             # Draw odds if available
             if game.get("odds"):
                 self._draw_dynamic_odds(
-                    draw_overlay, game["odds"], self.display_width, self.display_height
+                    draw_overlay, game["odds"], self.display_width, self.display_height,
+                    top_span=self._odds_top_row_span(
+                        draw_overlay, period_clock_text, self.fonts["time"]),
                 )
 
             # Draw records or rankings if enabled
