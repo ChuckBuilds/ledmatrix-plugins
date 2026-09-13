@@ -1,5 +1,54 @@
 # Changelog
 
+## [1.31.0] - 2026-09-12
+
+### Added
+- `scroll_card.switch_show_date` / `switch_show_time` for the full-screen
+  upcoming scorebug (default on), so the scroll-card toggles no longer blank it
+  (port of #342).
+- Advanced per-league `odds_update_interval` (default 3600) and
+  `live_odds_update_interval` (default 60). The code already read them, but
+  they were undeclared and never forwarded to the managers.
+
+### Fixed
+- **Postponed, cancelled and suspended games no longer show as "Final 0-0"**
+  on Recent. `is_final` now requires a completed, played game, and the period
+  text shows ESPN's own label for these games.
+- **Full-screen odds no longer overprint the top-centre text.** With only an
+  O/U, it was centred on the row holding "Final", the quarter or "Next Game".
+  It is now anchored left, and the odds step down a row on collision, as the
+  scroll cards already do. A home spread of 0.0 is no longer treated as
+  missing, and a non-numeric top-level spread no longer drops the whole line.
+- **"Logo Error" is drawn instead of a black panel** at all three fallback
+  sites (live, upcoming, recent).
+- **Vegas cards follow the game data.** They are rebuilt when the slate's
+  signature changes (previously only when empty). They are read from the
+  dedicated 'mixed' display and rendered without hijacking the active
+  standalone scroll. No network on that path.
+- **One failing league no longer takes the others down.** Each league is
+  initialised in its own try. A failed league's managers are None, and
+  update() skips them instead of raising AttributeError every tick.
+- A cached "no odds" marker is a cache hit again instead of refetching.
+- Decoded-logo caches in `sports.py` and `game_renderer.py` are bounded LRUs
+  (port of core #559).
+- Upcoming games are trimmed to `schedule_lookahead_days`, the dwell clock
+  resets when a mode comes back on screen, and games the other-games rotation
+  swaps in get odds (ports of #345, #343).
+- `other_games_divisions` is passed through raw, so a hand-edited string no
+  longer becomes a list of letters and `null` no longer blanks the plugin.
+- `test_mode` is forwarded to the managers.
+- A config `Infinity` no longer crashes init (`OverflowError` in
+  `_clamp_window` / `_setting_int`).
+
+### Changed
+- `ledmatrix_min_version` raised to 3.3.1, the first core release that ships
+  `src.common.sports_shared`, which `sports.py` imports unguarded.
+- Removed the unused bundled `logo_downloader.py`; `sports.py` already imports
+  `src.logo_downloader`.
+- `test_settings_reach_the_manager.py` builds its probes from
+  `config_schema.json`, with an allowlist that gives a reason for each key
+  consumed outside the league managers.
+
 ## [1.30.1] - 2026-09-11
 
 ### Fixed

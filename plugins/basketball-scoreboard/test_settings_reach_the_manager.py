@@ -8,18 +8,22 @@ log line: the setting appears in the web UI, the user changes it, saves, and
 nothing happens. The code silently keeps its own default.
 
 That is exactly what happened to the five settings added for favourite
-prioritisation. All five were declared in the schema, rendered in the UI,
-read by sports.py -- and never passed through the translation, so every one of
-them was inert. Nothing failed, which is what makes this class of bug worth a
-test of its own rather than trusting review.
+prioritisation, and later to odds_update_interval: declared (or read), shown,
+and never passed through.
 
-The check is deliberately blunt: set a value that is NOT the default, run the
-real translation, and assert the value arrives. A test using default values
-would pass against a translation that dropped the key entirely.
+The probe list is built from config_schema.json, not typed out here. A fixed
+list only ever covered the keys someone remembered, which is how a dead
+setting in a sibling plugin sat next to a passing copy of this test. Every
+leaf the schema declares on a league block, and every plugin-root key, is set
+to a value that is NOT its default, run through the real translation, and must
+arrive. A key that is legitimately consumed somewhere other than the league
+managers is allowlisted below with the reason, so adding a schema key without
+either forwarding it or explaining it fails here.
 
 Run: <core-venv>/bin/python plugins/basketball-scoreboard/test_settings_reach_the_manager.py
 """
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -42,19 +46,29 @@ sys.path.insert(0, str(CORE))
 
 results = []
 
-# Values chosen to differ from every default, so a dropped key cannot pass.
-PROBE = {
-    "other_upcoming_games_to_show": 7,
-    "other_recent_games_to_show": 6,
-    "other_rotation_interval_seconds": 900,
-    "other_games_min_quality": "broadcast",
-    "other_games_divisions": ["fcs"],
-    # Read by sports.py out of the translated config, and for a while declared
-    # in three plugins' schemas while no translation carried them -- a control
-    # the form offered and the board ignored.
-    "recent_update_interval": 1234,
-    "upcoming_update_interval": 2345,
-    "stale_game_timeout": 456,
+#: League-block keys the league managers do not read, and who does.
+LEAGUE_ALLOW = {
+    "enabled": "the fixture turns the league on; forwarded verbatim",
+    "favorite_teams": "the fixture sets it; forwarded verbatim",
+    "display_modes": "show_* are renamed to <league>_live/_recent/_upcoming "
+                     "(checked separately below); *_display_mode is read from "
+                     "the plugin config by manager._get_display_mode",
+    "scroll_settings": "read from the plugin config by the scroll display",
+    "display_durations": "read from the plugin config by manager.get_display_duration",
+    "dynamic_duration": "read from the plugin config by the manager's "
+                        "dynamic-duration helpers",
+    "mode_durations": "read from the plugin config by manager.get_display_duration",
+}
+
+#: Plugin-root keys the league managers do not read, and who does.
+ROOT_ALLOW = {
+    "enabled": "read by the core plugin manager",
+    "display_duration": "read by the core plugin manager",
+    "update_interval": "read by the core plugin manager (the manifest wins)",
+    "game_display_duration": "read by manager.py from the plugin config",
+    "background_service": "plugin-level; the adapter pins the per-league "
+                          "service settings",
+    "timezone": "resolved into the adapter's root 'timezone' (checked separately)",
 }
 
 
@@ -64,74 +78,59 @@ def check(case, passed, detail=""):
                            "" if passed else "  <- " + str(detail)))
 
 
+def _types(spec):
+    t = spec.get("type")
+    return set(t) if isinstance(t, list) else {t}
+
+
+def probe_value(spec):
+    """A value valid for ``spec`` that differs from its default."""
+    default = spec.get("default")
+    if "enum" in spec:
+        return next(v for v in spec["enum"] if v != default)
+    types = _types(spec)
+    if "boolean" in types:
+        return not bool(default)
+    if "integer" in types or "number" in types:
+        lo = spec.get("minimum", 0)
+        hi = spec.get("maximum", 10 ** 6)
+        base = default if isinstance(default, (int, float)) else lo
+        step = 7 if "integer" in types else 1.5
+        for cand in (base + step, base - step, lo, hi, lo + 1):
+            if lo <= cand <= hi and cand != default:
+                return int(cand) if "integer" in types else cand
+        raise AssertionError("no probe value for %r" % spec)
+    if "array" in types:
+        items = spec.get("items") or {}
+        if "enum" in items:
+            return [next(v for v in items["enum"] if v not in (default or []))]
+        return ["PROBE"]
+    if "object" in types:
+        return {k: probe_value(v) for k, v in (spec.get("properties") or {}).items()
+                if not (v.get("type") == "object")}
+    return "probe-value"
+
+
 def main():
     os.chdir(str(CORE))
     import manager as plugin_manager
-
-    cls = None
-    for name in dir(plugin_manager):
-        obj = getattr(plugin_manager, name)
-        if isinstance(obj, type) and hasattr(obj, "_adapt_config_for_manager"):
-            cls = obj
-            break
-    if cls is None:
-        print("SKIP: no class with _adapt_config_for_manager in this plugin")
-        return 2
-
     import logging
     from unittest.mock import MagicMock
+
+    cls = next(obj for obj in vars(plugin_manager).values()
+               if isinstance(obj, type) and hasattr(obj, "_adapt_config_for_manager"))
     obj = cls.__new__(cls)
     obj.logger = logging.getLogger("adapt_probe")
-    # The translation reads a few collaborators while building its dict.
     for attr in ("cache_manager", "display_manager", "plugin_manager",
                  "config_manager", "font_manager"):
         setattr(obj, attr, MagicMock())
 
-    # The schema puts these settings in different places per plugin -- some in
-    # game_limits, some in filtering, some at the league root. Offer all three
-    # so this one fixture works for whichever lineage it is copied into.
-    league_block = {
-        "enabled": True,
-        "favorite_teams": ["UGA"],
-        "game_limits": dict(PROBE),
-        "filtering": dict(PROBE),
-    }
-    league_block.update(PROBE)
-
-    # League names come from the plugin's own schema rather than a hardcoded
-    # list: these nine plugins disagree about what a league is called, and a
-    # guessed name that matches nothing reports a clean SKIP having checked
-    # nothing at all.
-    import json as _json
-    schema = _json.load(open(plugin_dir / "config_schema.json"))
-    leagues = [
-        name for name, node in (schema.get("properties") or {}).items()
-        if isinstance(node, dict) and isinstance(node.get("properties"), dict)
-        and any(k in node["properties"] for k in
-                ("game_limits", "favorite_teams", "filtering", "display_modes"))
-    ]
-    # Soccer keeps its leagues under config["leagues"][key] rather than at the
-    # top level, and names them "eng.1" style, so schema scanning finds none.
-    for extra in (schema.get("properties", {}).get("leagues", {}) or {}).get("properties", {}):
-        if extra not in leagues:
-            leagues.append(extra)
-    if not leagues:
-        leagues = ["eng.1", ""]   # a nested-league guess, then no-league at all
-
-    import inspect
-    takes_league = len(inspect.signature(cls._adapt_config_for_manager).parameters) > 1
-
     def adapt(league):
-        """Call the real translation, filling in collaborators as it asks.
-
-        Each lineage reads a different set of attributes off the plugin while
-        building its dict. Rather than hardcode one plugin's list, supply what
-        is missing on demand -- bounded, so a genuine error still surfaces.
-        """
+        # Fill in collaborators the translation reads, bounded so a genuine
+        # AttributeError still surfaces.
         for _ in range(40):
             try:
-                return obj._adapt_config_for_manager(league) if takes_league \
-                    else obj._adapt_config_for_manager()
+                return obj._adapt_config_for_manager(league)
             except AttributeError as exc:
                 name = str(exc).rsplit("'", 2)[-2] if "'" in str(exc) else ""
                 if not name or hasattr(obj, name):
@@ -139,111 +138,78 @@ def main():
                 setattr(obj, name, MagicMock())
         raise RuntimeError("gave up filling in attributes")
 
-    errors = []
-    # Each lineage reads its league config from a different place. Try the
-    # shapes rather than assuming one; assuming produced a clean SKIP that had
-    # verified nothing.
-    shapes = []
-    if not takes_league:
-        # Single-league plugins read self.config directly; nesting the block
-        # under a league name would hide it from them entirely.
-        shapes.append(("", lambda b: dict(b)))
-    else:
-        for league in leagues:
-            if not league:
-                continue
-            shapes.append((league, lambda b, l=league: {l: b}))
-            shapes.append((league, lambda b, l=league: {"leagues": {l: b}}))
-        shapes.append(("eng.1", lambda b: {"leagues": {"eng.1": b}}))
+    schema = json.loads((plugin_dir / "config_schema.json").read_text(encoding="utf-8"))
+    props = schema["properties"]
+    leagues = [name for name, node in props.items()
+               if isinstance(node, dict) and "game_limits" in (node.get("properties") or {})]
+    check("the schema declares league blocks", bool(leagues), leagues)
 
-    # Try every shape and keep the one that fits best. Stopping at the first
-    # shape that merely PRODUCED a block is wrong: feeding the config in the
-    # wrong shape still yields a block, just one full of defaults -- which
-    # looks exactly like the bug this test exists to catch.
-    best, best_league, best_build, best_score = None, None, None, -1
-    for league, build in shapes:
-        obj.config = build(league_block)
+    for league in leagues:
+        print("\n  league: %s" % league)
+        block_props = props[league]["properties"]
+        probes = {}          # leaf -> (path, value)
+        block = {"enabled": True, "favorite_teams": ["UGA"]}
+        for key, spec in block_props.items():
+            if key in LEAGUE_ALLOW:
+                continue
+            if spec.get("type") == "object" and spec.get("properties"):
+                sub_block = block.setdefault(key, {})
+                for sub, sub_spec in spec["properties"].items():
+                    assert sub not in probes, "leaf name %s declared twice" % sub
+                    value = probe_value(sub_spec)
+                    sub_block[sub] = value
+                    probes[sub] = ((key, sub), value)
+            else:
+                assert key not in probes, "leaf name %s declared twice" % key
+                value = probe_value(spec)
+                block[key] = value
+                probes[key] = ((key,), value)
+        block["display_modes"] = {"show_live": False, "show_recent": False,
+                                  "show_upcoming": False}
+
+        obj.config = {league: block}
         try:
             adapted = adapt(league)
         except Exception as exc:
-            errors.append("%s: %s: %s" % (league or "<none>", type(exc).__name__, exc))
+            check("%s: the translation survives the probe config" % league, False,
+                  "%s: %s" % (type(exc).__name__, exc))
             continue
-        if not isinstance(adapted, dict):
+        landed = max((v for v in adapted.values() if isinstance(v, dict)),
+                     key=lambda v: sum(1 for leaf in probes if leaf in v))
+
+        for leaf, (path, want) in sorted(probes.items()):
+            got = landed.get(leaf, (landed.get(path[0]) or {}).get(leaf)
+                             if len(path) == 2 and isinstance(landed.get(path[0]), dict)
+                             else None)
+            check("%s.%s reaches the manager" % (league, ".".join(path)),
+                  got == want, "got %r, want %r" % (got, want))
+
+        modes = landed.get("display_modes") or {}
+        check("%s.display_modes.show_* reach the manager as %s_live/_recent/_upcoming"
+              % (league, league),
+              all(modes.get("%s_%s" % (league, m)) is False
+                  for m in ("live", "recent", "upcoming")), modes)
+
+    # -- plugin-root keys --
+    print("\n  plugin root")
+    root_probes = {}
+    root_config = {}
+    for key, spec in props.items():
+        if key in leagues or key in ROOT_ALLOW:
             continue
-        for value in adapted.values():
-            if not isinstance(value, dict) or not any(k in value for k in PROBE):
-                continue
-            score = sum(1 for k, want in PROBE.items() if value.get(k) == want)
-            if score > best_score:
-                best, best_league, best_build, best_score = value, league, build, score
-        if best_score == len(PROBE):
-            break
-
-    if best is None:
-        print("FAILED: the translation never produced a usable block.")
-        for e in errors:
-            print("   ", e)
-        return 1
-
-    print("  league: %s" % (best_league or "<single>"))
-    for key, want in PROBE.items():
-        got = best.get(key)
-        check("%s reaches the manager (%r)" % (key, want), got == want,
-              "got %r" % (got,))
-
-    # A location the schema OFFERS has to be a location that works. Two of
-    # these plugins declare the same keys twice -- at the root of the config
-    # and inside game_limits -- and the web UI renders both, so whichever one
-    # the user fills in is the one that has to arrive. Each adapter read one of
-    # the two, which left the other in the same state as a key missing from the
-    # translation entirely: accepted, saved, ignored. Plugins that declare them
-    # in one place are checked for that one place.
-    block_props = {}
-    props = (schema.get("properties") or {})
-    if not takes_league:
-        block_props = props
-    else:
-        node = props.get(best_league) or \
-            ((props.get("leagues") or {}).get("properties") or {}).get(best_league) or {}
-        block_props = node.get("properties") or {}
-    # Not just game_limits: hockey and lacrosse declare the same keys under
-    # filtering. Take whichever sub-block a plugin's own schema uses rather
-    # than naming one and reporting "nothing to check" for the rest.
-    places = []
-    if any(k in block_props for k in PROBE):
-        places.append((None, block_props))
-    for name, node in sorted(block_props.items()):
-        sub = (node or {}).get("properties") if isinstance(node, dict) else None
-        if isinstance(sub, dict) and any(k in sub for k in PROBE):
-            places.append((name, sub))
-    if not places:
-        print("  (the schema declares none of these keys on this block; "
-              "the location check has nothing to check)")
-
-    for where, declared_in in places:
-        only = {"enabled": True, "favorite_teams": ["UGA"]}
-        if where is None:
-            only.update(PROBE)
-        else:
-            only[where] = dict(PROBE)
-        obj.config = best_build(only)
-        try:
-            adapted = adapt(best_league)
-        except Exception as exc:
-            check("the translation survives a %s-only config"
-                  % (where or "root"), False, "%s: %s" % (type(exc).__name__, exc))
-            continue
-        landed, landed_score = {}, -1
-        for value in (adapted or {}).values():
-            if not isinstance(value, dict) or not any(k in value for k in PROBE):
-                continue
-            score = sum(1 for k, want in PROBE.items() if value.get(k) == want)
-            if score > landed_score:
-                landed, landed_score = value, score
-        for key in [k for k in PROBE if k in declared_in]:
-            check("%s survives a config that only sets it in %s"
-                  % (key, where or "the config root"),
-                  landed.get(key) == PROBE[key], "got %r" % (landed.get(key),))
+        value = probe_value(spec)
+        root_config[key] = value
+        root_probes[key] = value
+    root_config["timezone"] = "America/Chicago"
+    league = leagues[0]
+    root_config[league] = {"enabled": True}
+    obj.config = root_config
+    adapted = adapt(league)
+    for key, want in sorted(root_probes.items()):
+        check("root %s reaches the manager" % key, adapted.get(key) == want,
+              "got %r" % (adapted.get(key),))
+    check("root timezone reaches the manager",
+          adapted.get("timezone") == "America/Chicago", adapted.get("timezone"))
 
     failed = [c for c, ok in results if not ok]
     print("\n%d checks, %d failed" % (len(results), len(failed)))
