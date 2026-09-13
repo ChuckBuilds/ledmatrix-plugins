@@ -15,6 +15,11 @@ images already cover the pixels; what they cannot show is *why* a render
 matched -- a style helper that silently returned the classic value for
 everything would pass them too.
 
+Half of these need a core that provides BasePlugin.styles. On an older core the
+plugin is meant to fall back to its shipped styling, so those tests SKIP rather
+than fail: a red gate there would only be reporting the core's version. The two
+that describe the fallback itself always run.
+
 Run with the core venv from a LEDMatrix checkout so PIL + assets/fonts resolve:
     LEDMatrix/.venv/bin/python <thisfile>
 """
@@ -24,6 +29,19 @@ from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.dirname(__file__))
 from manager import WeatherPlugin  # noqa: E402
+
+try:  # The style system lives in the core, not in this plugin.
+    from src.plugin_system.base_plugin import BasePlugin as _BasePlugin
+    STYLE_SYSTEM = hasattr(_BasePlugin, "styles")
+except Exception:  # pragma: no cover - depends on the installed core
+    STYLE_SYSTEM = False
+
+
+def requires_style_system(fn):
+    """Mark a test that only means anything on a core with BasePlugin.styles."""
+    fn.requires_style_system = True
+    return fn
+
 
 CLASSIC = {
     "condition_text": ("PressStart2P-Regular.ttf", 8, (255, 255, 255)),
@@ -66,11 +84,13 @@ def test_untouched_config_keeps_the_shipped_styling():
         assert style.visible is True, element
 
 
+@requires_style_system
 def test_a_chosen_colour_reaches_the_draw():
     plugin = _plugin({"temp_text": {"text_color": [0, 255, 255]}})
     assert _style(plugin, "temp_text").color == (0, 255, 255)
 
 
+@requires_style_system
 def test_a_chosen_font_replaces_the_shipped_object():
     plugin = _plugin({"condition_text": {"font": "4x6-font.ttf",
                                          "font_size": 6}})
@@ -79,16 +99,19 @@ def test_a_chosen_font_replaces_the_shipped_object():
         "a genuine font choice must swap the object, not just the name")
 
 
+@requires_style_system
 def test_an_offset_is_reported():
     plugin = _plugin({"layout": {"temp_text": {"x_offset": -4, "y_offset": 2}}})
     assert _style(plugin, "temp_text").offset == (-4, 2)
 
 
+@requires_style_system
 def test_an_element_can_be_hidden():
     plugin = _plugin({"high_low_text": {"visible": False}})
     assert _style(plugin, "high_low_text").visible is False
 
 
+@requires_style_system
 def test_the_icon_takes_a_scale():
     plugin = _plugin({"layout": {"weather_icon": {"scale": 0.5}}})
     style = plugin._style("weather_icon", "PressStart2P-Regular.ttf", 8,
@@ -96,6 +119,7 @@ def test_the_icon_takes_a_scale():
     assert style.scale == 0.5
 
 
+@requires_style_system
 def test_the_metric_bar_reports_whether_its_colour_was_chosen():
     """Each metric carries its own colour (UV is graded by severity), so the
     bar only takes a single colour when the user actually picked one."""
@@ -125,14 +149,21 @@ def test_a_core_without_the_style_system_still_renders():
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failures = 0
+    skipped = 0
     for test in tests:
+        if getattr(test, "requires_style_system", False) and not STYLE_SYSTEM:
+            skipped += 1
+            print(f"  SKIP  {test.__name__}: core has no BasePlugin.styles")
+            continue
         try:
             test()
             print(f"  PASS  {test.__name__}")
         except Exception as exc:  # noqa: BLE001 - this is the runner
             failures += 1
             print(f"  FAIL  {test.__name__}: {exc}")
-    print(f"\n{len(tests) - failures}/{len(tests)} passed")
+    passed = len(tests) - failures - skipped
+    print(f"\n{passed}/{len(tests) - skipped} passed"
+          + (f", {skipped} skipped (core has no style system)" if skipped else ""))
     return 1 if failures else 0
 
 
