@@ -12,7 +12,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from PIL import Image, ImageDraw
 
 from data_sources import ESPNDataSource
-from sports import RESAMPLE_FILTER, SportsCore, SportsLive, SportsRecent
+from sports import (
+    RESAMPLE_FILTER, SportsCore, SportsLive, SportsRecent, _resolve_font_path)
 
 # ESPN categorical play types that map unambiguously to a short code.
 CLEAN_PLAY_TYPE_MAP: Dict[str, str] = {
@@ -276,47 +277,6 @@ class Baseball(SportsCore):
         # rotate in for live action, final/recent games, or both.
         self._trad_scoreboard_last_shown = 0.0
         self._trad_scoreboard_showing_until = 0.0
-
-    def _is_baseball_game_live(self, game: Dict) -> bool:
-        """Check if a baseball game is currently live."""
-        try:
-            # Check if game is marked as live
-            is_live = game.get("is_live", False)
-            if is_live:
-                return True
-
-            # Check inning to determine if game is active
-            inning = game.get("inning", "")
-            if inning and inning != "Final":
-                return True
-
-            return False
-
-        except Exception as e:
-            self.logger.error(f"Error checking if baseball game is live: {e}")
-            return False
-
-    def _get_baseball_game_status(self, game: Dict) -> str:
-        """Get baseball-specific game status."""
-        try:
-            status = game.get("status_text", "")
-            inning = game.get("inning", "")
-
-            if self._is_baseball_game_live(game):
-                if inning:
-                    return f"Live - {inning}"
-                else:
-                    return "Live"
-            elif game.get("is_final", False):
-                return "Final"
-            elif game.get("is_upcoming", False):
-                return "Upcoming"
-            else:
-                return status
-
-        except Exception as e:
-            self.logger.error(f"Error getting baseball game status: {e}")
-            return ""
 
     def _extract_game_details(self, game_event: Dict) -> Optional[Dict]:
         """Extract relevant game details from ESPN Baseball API response."""
@@ -1157,6 +1117,34 @@ class BaseballLive(Baseball, SportsLive):
         if str(game.get("status") or "").lower() in self._NOT_PLAYED_STATUSES:
             return True
         return super()._is_game_really_over(game)
+
+    def _count_bdf_font(self):
+        """A private 7px 5x7 BDF face for the balls-strikes count.
+
+        This used to call set_char_size on display_manager.calendar_font,
+        resizing the one face every other user of calendar_font shares. Load
+        our own copy from the same file instead; if that is not possible use
+        the shared face as it is, without touching it.
+        """
+        face = getattr(self, "_count_font_face", None)
+        if face is not None:
+            return face
+        shared = self.display_manager.calendar_font
+        face = shared
+        # Not every display manager records where the face came from (the
+        # safety harness's does not); both load the core's bundled 5x7.bdf.
+        path = (getattr(self.display_manager, "calendar_font_path", None)
+                or "assets/fonts/5x7.bdf")
+        try:
+            import freetype
+
+            private = freetype.Face(_resolve_font_path(path))
+            private.set_char_size(height=7 * 64)
+            face = private
+        except Exception as e:  # missing freetype/file: keep the shared face
+            self.logger.debug(f"Using shared calendar_font for the count: {e}")
+        self._count_font_face = face
+        return face
 
     def _prune_stale_play_by_play(self) -> None:
         """Drop cached/attempted entries for games no longer live so this
@@ -2110,10 +2098,7 @@ class BaseballLive(Baseball, SportsLive):
                     self.last_count_log_time = current_time
 
                 count_text = f"{balls}-{strikes}"
-                bdf_font = self.display_manager.calendar_font
-                if not hasattr(self, '_bdf_font_sized'):
-                    bdf_font.set_char_size(height=7 * 64)  # Set 7px height once
-                    self._bdf_font_sized = True
+                bdf_font = self._count_bdf_font()
                 count_text_width = self.display_manager.get_text_width(count_text, bdf_font)
 
                 # Position below the base/out cluster
@@ -2174,20 +2159,22 @@ class BaseballLive(Baseball, SportsLive):
             label_font = self.display_manager.font  # Use PressStart2P
             score_font = self.fonts.get("score", label_font)
             outline_color = (0, 0, 0)
+            label_text_color = (255, 255, 255)
+            # The run counts honour customization.score_text.text_color, as
+            # Recent's score already does; white when unset, as before.
+            color_getter = getattr(self, "_element_color", None)
             score_text_color = (
-                255,
-                255,
-                255,
+                color_getter("score_text") if color_getter else (255, 255, 255)
             )
 
             # Helper function for outlined text
-            def draw_bottom_outlined_text(x, y, text, font):
+            def draw_bottom_outlined_text(x, y, text, font, fill=label_text_color):
                 self._draw_text_with_outline(
                     draw_overlay,
                     text,
                     (x, y),
                     font,
-                    fill=score_text_color,
+                    fill=fill,
                     outline_color=outline_color,
                 )
 
@@ -2226,7 +2213,7 @@ class BaseballLive(Baseball, SportsLive):
             draw_bottom_outlined_text(away_x, label_y, away_label, label_font)
             draw_bottom_outlined_text(
                 away_x + text_width(away_label, label_font), score_y,
-                away_score_str, score_font)
+                away_score_str, score_font, score_text_color)
 
             # Home Team:Score (Bottom Right)
             home_width = (text_width(home_label, label_font)
@@ -2237,7 +2224,7 @@ class BaseballLive(Baseball, SportsLive):
             draw_bottom_outlined_text(home_x, label_y, home_label, label_font)
             draw_bottom_outlined_text(
                 home_x + text_width(home_label, label_font), score_y,
-                home_score_str, score_font)
+                home_score_str, score_font, score_text_color)
 
             # Draw gambling odds if available
             if game.get("odds"):
