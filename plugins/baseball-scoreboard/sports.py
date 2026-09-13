@@ -1407,8 +1407,19 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                 "status_text": status["type"][
                     "shortDetail"
                 ],  # e.g., "Final", "7:30 PM", "Q1 12:34"
-                "is_live": status["type"]["state"] == "in",
-                "is_final": status["type"]["state"] == "post",
+                # A postponed, cancelled or suspended game is not live and
+                # not final: ESPN files a rainout under state "post" with a
+                # "0" score, and read as final it showed on Recent as
+                # "Final 0-0". Final also needs ESPN's completed flag.
+                "is_live": status["type"]["state"] == "in"
+                and status["type"].get("name") not in (
+                    "STATUS_POSTPONED", "STATUS_CANCELED", "STATUS_CANCELLED",
+                    "STATUS_SUSPENDED", "STATUS_ABANDONED"),
+                "is_final": status["type"]["state"] == "post"
+                and bool(status["type"].get("completed"))
+                and status["type"].get("name") not in (
+                    "STATUS_POSTPONED", "STATUS_CANCELED", "STATUS_CANCELLED",
+                    "STATUS_SUSPENDED", "STATUS_ABANDONED"),
                 "is_upcoming": (
                     status["type"]["state"] == "pre"
                     or status["type"]["name"].lower()
@@ -2907,6 +2918,21 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
             status_text = game.get(
                 "period_text", "Final"
             )  # Use formatted period text (e.g., "Final/OT") or default "Final"
+            # Baseball never sets period_text, so extra innings ("Final/10",
+            # or "Final/7" for a doubleheader) come in on status_text. Show
+            # that when it is no wider than the visible gap between the logos
+            # (or than the plain "Final" it replaces, on panels where even
+            # that already overlaps them). Measured on the logos' opaque
+            # pixels: their canvases carry transparent padding.
+            extended = str(game.get("status_text") or "")
+            if "period_text" not in game and extended.lower().startswith("final/"):
+                away_box = away_logo.getchannel("A").getbbox() if away_logo.mode == "RGBA" else None
+                home_box = home_logo.getchannel("A").getbbox() if home_logo.mode == "RGBA" else None
+                gap = ((home_x + (home_box[0] if home_box else 0))
+                       - (away_x + (away_box[2] if away_box else away_logo.width)))
+                plain_width = draw_overlay.textlength(status_text, font=self.fonts["time"])
+                if draw_overlay.textlength(extended, font=self.fonts["time"]) <= max(gap, plain_width):
+                    status_text = extended
             status_width = draw_overlay.textlength(status_text, font=self.fonts["time"])
             status_x = (display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
             status_y = 1 + self._get_layout_offset('status_text', 'y_offset')
