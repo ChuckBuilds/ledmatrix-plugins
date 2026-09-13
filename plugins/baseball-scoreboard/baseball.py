@@ -386,8 +386,10 @@ class Baseball(SportsCore):
                 # Determine inning half from status information
                 inning_half = "top"  # Default
 
-                # Handle end of inning: next inning is top
-                if "end" in status_detail or "end" in status_short:
+                # Handle end of inning: next inning is top. startswith, not
+                # "in": "susp-end-ed" contains "end", which turned a game
+                # suspended in the 7th into a live "▲8".
+                if status_detail.startswith("end") or status_short.startswith("end"):
                     inning_half = "top"
                     inning = (
                         status.get("period", 1) + 1
@@ -1135,6 +1137,26 @@ class BaseballLive(Baseball, SportsLive):
                     self._prefetch_headshot(pid, url)
 
         self._prune_stale_play_by_play()
+
+    # ESPN status names (lower-cased, as _extract_game_details stores them in
+    # "status") for games that stopped without finishing. MiLB's converter
+    # maps its detailedState onto the same names.
+    _NOT_PLAYED_STATUSES = frozenset({
+        "status_postponed", "status_canceled", "status_cancelled",
+        "status_suspended", "status_abandoned",
+    })
+
+    def _is_game_really_over(self, game: Dict) -> bool:
+        """A suspended/postponed game is over for the live rotation.
+
+        The shared live loop still treats any raw ESPN state "in" as live,
+        so a game ESPN reports as suspended mid-inning would otherwise cycle
+        a frozen count all day: last_seen refreshes on every poll, so the
+        stale-game timeout never clears it.
+        """
+        if str(game.get("status") or "").lower() in self._NOT_PLAYED_STATUSES:
+            return True
+        return super()._is_game_really_over(game)
 
     def _prune_stale_play_by_play(self) -> None:
         """Drop cached/attempted entries for games no longer live so this

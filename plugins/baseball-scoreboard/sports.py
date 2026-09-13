@@ -1367,8 +1367,19 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                 "status_text": status["type"][
                     "shortDetail"
                 ],  # e.g., "Final", "7:30 PM", "Q1 12:34"
-                "is_live": status["type"]["state"] == "in",
-                "is_final": status["type"]["state"] == "post",
+                # A postponed, cancelled or suspended game is not live and
+                # not final: ESPN files a rainout under state "post" with a
+                # "0" score, and read as final it showed on Recent as
+                # "Final 0-0". Final also needs ESPN's completed flag.
+                "is_live": status["type"]["state"] == "in"
+                and status["type"].get("name") not in (
+                    "STATUS_POSTPONED", "STATUS_CANCELED", "STATUS_CANCELLED",
+                    "STATUS_SUSPENDED", "STATUS_ABANDONED"),
+                "is_final": status["type"]["state"] == "post"
+                and bool(status["type"].get("completed"))
+                and status["type"].get("name") not in (
+                    "STATUS_POSTPONED", "STATUS_CANCELED", "STATUS_CANCELLED",
+                    "STATUS_SUSPENDED", "STATUS_ABANDONED"),
                 "is_upcoming": (
                     status["type"]["state"] == "pre"
                     or status["type"]["name"].lower()
