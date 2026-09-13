@@ -287,11 +287,27 @@ class GameRenderer(SportsGameRendererMixin):
         else:
             return Path("assets/sports/mlb_logos") / f"{team_abbrev}.png"
 
+    #: Decoded logos kept at once. Same cap and reasoning as the core's
+    #: SportsCore logo cache (LEDMatrix #559): a season of rotating slates
+    #: otherwise grows this without bound on a Pi.
+    _LOGO_CACHE_MAX: ClassVar[int] = 64
+
     def _load_and_resize_logo(self, league: str, team_abbrev: str) -> Optional[Image.Image]:
-        """Load and resize a team logo, with caching."""
-        cache_key = f"{league}_{team_abbrev}"
+        """Load and resize a team logo, with caching.
+
+        The key carries the card size. The cache is handed in by the scroll
+        display and outlives any one renderer, and the thumbnail is sized from
+        this card's width and height -- keyed on league and team alone, a
+        renderer built at a different card size (a width probe, a resize, the
+        Vegas card) was served logos scaled for another card.
+        """
+        cache_key = f"{league}_{team_abbrev}_{self.display_width}x{self.display_height}"
         if cache_key in self._logo_cache:
-            return self._logo_cache[cache_key]
+            # Refresh recency. Works for the plain dict the scroll display
+            # passes as well as an OrderedDict: re-inserting moves it last.
+            cached = self._logo_cache.pop(cache_key)
+            self._logo_cache[cache_key] = cached
+            return cached
 
         logo_path = self._get_logo_path(league, team_abbrev)
 
@@ -331,6 +347,10 @@ class GameRenderer(SportsGameRendererMixin):
                 cached_logo = logo.copy()
 
             self._logo_cache[cache_key] = cached_logo
+            while len(self._logo_cache) > self._LOGO_CACHE_MAX:
+                # Oldest first: dicts iterate in insertion order, and a hit
+                # re-inserts, so the front is the least recently used.
+                self._logo_cache.pop(next(iter(self._logo_cache)))
             return cached_logo
 
         except OSError:
@@ -479,10 +499,6 @@ class GameRenderer(SportsGameRendererMixin):
             inning_num = game.get('inning', 1)
             if game.get('is_final'):
                 inning_text = "FINAL"
-            elif inning_half == 'end':
-                inning_text = f"E{inning_num}"
-            elif inning_half == 'mid':
-                inning_text = f"M{inning_num}"
             else:
                 symbol = "▲" if inning_half == 'top' else "▼"
                 inning_text = f"{symbol}{inning_num}"
@@ -928,10 +944,6 @@ class GameRenderer(SportsGameRendererMixin):
         inning_num = game.get('inning', 1)
         if game.get('is_final'):
             return "FINAL"
-        if inning_half == 'end':
-            return f"E{inning_num}"
-        if inning_half == 'mid':
-            return f"M{inning_num}"
         symbol = "\u25b2" if inning_half == 'top' else "\u25bc"
         return f"{symbol}{inning_num}"
 
