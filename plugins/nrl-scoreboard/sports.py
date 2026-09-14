@@ -4044,7 +4044,10 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
         game_str = f"{game.get('away_abbr')}@{game.get('home_abbr')}"
 
         # Check if period_text indicates final
-        period_text = game.get("period_text", "").lower()
+        # ESPN can send the key as null, and .get()'s default only covers a
+        # missing key, so a None here crashed the whole live update.
+        raw_period_text = game.get("period_text")
+        period_text = raw_period_text.lower() if isinstance(raw_period_text, str) else ""
         if "final" in period_text:
             self.logger.debug(
                 f"_is_game_really_over({game_str}): "

@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.27.1] - 2026-09-14
+
+### Fixed
+- **Hardening: the live "looks finished" check no longer raises on a None or
+  non-string period text.** `game.get("period_text", "").lower()` only
+  defaults a missing key, so a `None` value raised, and `SportsLive.update()`
+  does not catch it. The AFL parser only produces that for a postponed-style
+  fixture where ESPN sends both a null `shortDetail` and a null status name.
+  Such values are now treated as empty / period 0; the end-of-game rule is
+  unchanged.
+
 ## [1.27.0] - 2026-09-14
 
 ### Fixed

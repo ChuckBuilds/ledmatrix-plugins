@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.29.1",
+  "version": "2.29.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.29.2",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Hardening: the live check that drops games which look finished no longer raises on a None or non-string period text. The soccer parser never produces one today. If it ever did, the exception would abandon that league's whole live refresh, leaving the panel on its last live games. Such values are now treated as empty / period 0; the end-of-game rule is unchanged."
+    },
     {
       "version": "2.29.1",
       "released": "2026-09-14",

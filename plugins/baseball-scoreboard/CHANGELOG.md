@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.45.1] - 2026-09-14
+
+### Fixed
+- **Hardening: the live "looks finished" check no longer raises on a None or
+  non-numeric period or period text.** `game.get("period_text", "").lower()`
+  only defaults a missing key, so a `None` value raised, and
+  `SportsLive.update()` does not catch it. Baseball's parsers (ESPN and MiLB)
+  never set `period` or `period_text` on a game, so baseball was not affected;
+  this keeps its copy in line with the other scoreboards. Such values are now
+  treated as empty / period 0; the end-of-game rule is unchanged.
+
 ## [1.45.0] - 2026-09-14
 
 ### Added

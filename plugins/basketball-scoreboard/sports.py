@@ -3683,7 +3683,10 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
         game_str = f"{game.get('away_abbr')}@{game.get('home_abbr')}"
 
         # Check if period_text indicates final
-        period_text = game.get("period_text", "").lower()
+        # ESPN can send the key as null, and .get()'s default only covers a
+        # missing key, so a None here crashed the whole live update.
+        raw_period_text = game.get("period_text")
+        period_text = raw_period_text.lower() if isinstance(raw_period_text, str) else ""
         if "final" in period_text:
             self.logger.debug(
                 f"_is_game_really_over({game_str}): "
@@ -3693,7 +3696,11 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
 
         # Check if clock is 0:00 in Q4 or OT (period >= 4)
         raw_clock = game.get("clock")
-        period = game.get("period", 0)
+        # Same for a null or non-numeric period: treat it as period 0.
+        try:
+            period = int(game.get("period") or 0)
+        except (TypeError, ValueError, OverflowError):
+            period = 0
 
         # Only check clock-based finish if we have a valid clock string
         if isinstance(raw_clock, str) and raw_clock.strip() and period >= 4:

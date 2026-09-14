@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.29.1] - 2026-09-14
+
+### Fixed
+- **A null period no longer stops live games updating.** The live check that
+  drops games which look finished compared `game.get("period", 0) >= 4`; that
+  default only covers a missing key, so a scheduled or postponed game whose ESPN `status.period`
+  was null raised `TypeError` (a `None` period text likewise raised
+  `AttributeError`). `SportsLive.update()` does not catch it, so that league's
+  whole live refresh was abandoned: live games already on the panel kept their
+  last scores, new ones never appeared, and the error repeated on every poll
+  while that game stayed in the feed.
+  `update()` refreshes every league inside one `try`, so it also skipped that
+  cycle's Recent/Upcoming refresh and every league after the failing one. A null or non-numeric period now
+  counts as 0 and a null or non-string period text as empty; thresholds and
+  clock handling are unchanged. ESPN normally sends an integer, so this takes a
+  malformed feed.
+
 ## [1.29.0] - 2026-09-14
 
 ### Added
