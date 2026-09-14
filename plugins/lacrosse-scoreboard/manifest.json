@@ -54,7 +54,7 @@
       "version": "1.28.0",
       "released": "2026-09-14",
       "ledmatrix_min_version": "3.3.0",
-      "notes": "Adds favorite_rotation_boost (1-5, default 1) beside the other game-limit settings: in switch mode a favorite team's recent or upcoming card gets that many turns per rotation for every one turn other cards get, spread out by the same smooth weighted round-robin the live rotation uses. games_list stays one entry per game, so cycle-duration counts, the scroll strip and the other-games re-cut are unchanged, and the walk resyncs from current_game_index whenever update() or the other-games rotation swaps a list in. The default keeps the old order exactly. Ported across all nine scoreboards per CLAUDE.md non-negotiable #7."
+      "notes": "Adds favorite_rotation_boost (1-5, default 1) beside the other game-limit settings: in switch mode a favorite team's recent or upcoming card gets that many turns per rotation for every one turn other cards get, its extra turns spread evenly around the loop and kept apart whenever enough other cards remain to separate them (the live rotation's smooth weighted round-robin shows a boosted game back to back where it wraps). games_list stays one entry per game, so cycle-duration counts, the scroll strip and the other-games re-cut are unchanged, and the walk resyncs from current_game_index whenever update() or the other-games rotation swaps a list in. The default keeps the old order exactly. Ported across all nine scoreboards per CLAUDE.md non-negotiable #7."
     },
     {
       "released": "2026-09-11",

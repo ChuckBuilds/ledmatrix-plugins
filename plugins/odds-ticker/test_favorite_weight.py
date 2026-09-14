@@ -128,6 +128,13 @@ def main():
     check("weight 3 -> three turns, still spread (%s)" % order,
           order.count(uf) == 3 and not cyclic_repeats(order))
 
+    print("\na weight above the other games keeps the ratio")
+    t = _Ticker(weight=3)
+    pair = [game("uf", 0, home="UF"), game("x", 1)]
+    order = t._weighted_ticker_order(pair)
+    check("three UF cards and one other (%s)" % order,
+          order.count(0) == 3 and order.count(1) == 1)
+
     print("\na favourite of another league is not boosted")
     t = _Ticker(weight=3)
     other = [game("a", 0), game("b", 1, home="UF", league="nhl"), game("c", 2)]

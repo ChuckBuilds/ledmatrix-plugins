@@ -2032,6 +2032,11 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         weighted round-robin schedules a boosted game first and last, so a
         rotation that wraps shows it back to back. Equal weights come back in
         plain order, so a boost that applies to no card changes nothing.
+
+        Repeats are kept apart only where the ratio leaves room: once one
+        weight exceeds all the others combined, no cyclic order can separate
+        its turns ([3, 1, 1] gives [0, 1, 0, 2, 0]). Each index still gets
+        exactly its weight in turns -- the configured ratio wins over spacing.
         """
         count = len(weights)
         slots = []
@@ -2044,8 +2049,10 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         """The games_list index switch mode shows next.
 
         favorite_rotation_boost gives a favourite's card that many turns for
-        every one turn another card gets, spread through the rotation rather
-        than back to back. games_list itself stays one entry per game -- the
+        every one turn another card gets, spread through the rotation and kept
+        apart wherever the other cards leave room (a boost above the number of
+        other cards makes some repeats adjacent; the ratio is kept either way).
+        games_list itself stays one entry per game -- the
         cycle-duration count, the scroll strip and the other-games re-cut all
         read it -- so the weighting is an order walked over it instead.
 

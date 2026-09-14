@@ -80,7 +80,8 @@ def main():
     s = _Switch([game("a"), game("uf", "UF"), game("c"), game("d")], boost=2)
     cycle = s.walk(5)
     check("five cards per cycle (%s)" % cycle, sorted(cycle) == ["a", "c", "d", "uf", "uf"])
-    check("never back to back, including the wrap", not back_to_back(cycle))
+    check("never back to back, including the wrap (3 other cards leave room)",
+          not back_to_back(cycle))
     check("the next cycle repeats it", s.walk(5) == cycle)
     others = [gid for gid in cycle if gid != "uf"]
     check("the other cards keep schedule order", others in (["c", "d", "a"], ["a", "c", "d"], ["d", "a", "c"]))
@@ -97,6 +98,23 @@ def main():
     cycle = s.walk(9)
     check("3 + 1 + 3 + 1 + 1 cards (%s)" % cycle,
           cycle.count("a") == 3 and cycle.count("c") == 3 and len(cycle) == 9)
+
+    print("\na boost above the other cards keeps the ratio, not the spacing")
+    # No cyclic order can separate 3 turns among 2 other cards; the ratio wins.
+    for weights, expected in (([3, 1, 1], [0, 1, 0, 2, 0]),
+                              ([1, 3, 1], [0, 1, 1, 2, 1]),
+                              ([5, 1], None),
+                              ([2, 1], None)):
+        order = SportsCore._spread_weighted_order(weights)
+        counts = [order.count(i) for i in range(len(weights))]
+        check("%s -> each index gets its weight in turns (%s)" % (weights, order),
+              counts == weights and len(order) == sum(weights))
+        if expected is not None:
+            check("%s -> %s" % (weights, expected), order == expected)
+    s = _Switch([game("uf", "UF"), game("b")], boost=5)
+    cycle = s.walk(6)
+    check("boost 5 with one other card: 5 + 1 per cycle (%s)" % cycle,
+          cycle.count("uf") == 5 and cycle.count("b") == 1)
 
     print("\nthe walk resumes from the card on screen after a re-cut")
     s = _Switch([game("a"), game("uf", "UF"), game("c"), game("d")], boost=2)

@@ -1223,8 +1223,10 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
 
         Each game keeps its own slot, so the sort order still reads left to
         right, and a favourite's extra turns land at even fractions of the
-        strip after it, wrapping round -- so the looping marquee never shows
-        the same card back to back across the seam.
+        strip after it, wrapping round -- so the looping marquee keeps a
+        favourite's cards apart across the seam wherever the other games leave
+        room. A weight above the number of other games makes some repeats
+        adjacent; each game still appears exactly its weight in cards.
         """
         count = len(games)
         if self.favorite_weight <= 1:

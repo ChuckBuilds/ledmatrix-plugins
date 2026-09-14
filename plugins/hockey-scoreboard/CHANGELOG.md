@@ -6,8 +6,9 @@
 - **Favorite games get extra turns in switch mode.** New game-limit setting
   `favorite_rotation_boost` (1-5, default 1): a favorite team's recent or
   upcoming card gets that many turns per rotation for every one turn other
-  cards get, its extra turns spread evenly around the loop so it is never
-  shown back to back. Previously only live games could weight favorites.
+  cards get, its extra turns spread evenly around the loop and kept apart
+  whenever enough other cards remain to separate them. Previously only live
+  games could weight favorites.
 
   Existing configs are unaffected: at the default of 1 every card is shown
   once per rotation, in the same order as before.
