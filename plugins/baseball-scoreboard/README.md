@@ -418,6 +418,14 @@ plugin and has no per-league setting.
 | `display_options.show_odds` | `true` | Draw the betting line when ESPN has one |
 | `display_options.show_ranking` | `false` | **Advanced.** Rank badge. Meaningful for NCAA; MLB and MiLB publish no poll |
 | `display_options.show_series_summary` | `false` | **Advanced.** Where the teams stand in the current series |
+| `display_options.show_innings` | `true` | **Advanced.** The ▲/▼ inning at the top of the live scorebug (and the batting-half arrow on the traditional scoreboard). A finished game's `FINAL` always shows |
+| `display_options.show_bases` | `true` | **Advanced.** The base-runner diamonds on the live scorebug |
+| `display_options.show_outs` | `true` | **Advanced.** The outs dots on the live scorebug, and the `O` row of the traditional scoreboard's at-bat panel |
+| `display_options.show_count` | `true` | **Advanced.** The balls-strikes count on the live scorebug, and the `B`/`S` rows of the traditional scoreboard's at-bat panel |
+
+Turning one of the four live-scorebug elements off leaves a gap rather than
+moving the others, so the layout you are used to stays put. NCAA Baseball's
+feed carries no outs or count, so those two have nothing to hide there.
 
 ![The same finished game with show_records off and on; with it on, 69-70 and
 82-56 appear in the bottom corners](../../docs/assets/baseball-scoreboard/show-records.png)

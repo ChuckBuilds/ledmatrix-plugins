@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.26.1] - 2026-09-14
+
+### Fixed
+- A root `show_records` / `show_ranking` / `show_odds` you changed is no
+  longer overridden by the `display_options` copy of the same toggle still at
+  its default. The web UI saves defaults into both blocks, and the adapter read
+  `display_options` first. A changed `display_options` value still wins. Same
+  precedence as afl-scoreboard.
+
 ## [1.26.0] - 2026-09-14
 
 ### Added

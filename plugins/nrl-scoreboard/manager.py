@@ -78,6 +78,28 @@ FAVORITE_CHECK_LEAGUES = {FAVORITE_CHECK_KEY: ('NRL', 'rugby-league/3')}
 
 logger = logging.getLogger(__name__)
 
+_MISSING = object()
+
+
+def _display_option(display_options: Dict[str, Any], root: Dict[str, Any],
+                    key: str, default: Any, legacy_root: Optional[str] = None) -> Any:
+    """Resolve a toggle declared both in display_options and at the root.
+
+    Ported from afl-scoreboard. The web UI saves schema defaults into both
+    blocks, so a display_options value equal to the default says nothing about
+    intent, and reading it first let a saved default silently undo a root
+    toggle the user had changed. Precedence: a changed display_options value,
+    then a root value (or a legacy name), then the default.
+    """
+    value = display_options.get(key, _MISSING)
+    if value is not _MISSING and value != default:
+        return value
+    for name in (key, legacy_root):
+        if name and name in root:
+            return root[name]
+    return default if value is _MISSING else value
+
+
 # NRL is a single league. Its ESPN league slug is "3" (see nrl_managers.py), but
 # the plugin's display modes / config are keyed with the friendly "nrl" name.
 LEAGUE_KEY = NRL_LEAGUE_SLUG  # "3" — ESPN's NRL slug, do not change to "nrl"
@@ -270,7 +292,7 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 return game_limits[key]
             return cfg.get(key, default)
 
-        display_options = cfg.get("display_options", {})
+        display_options = cfg.get("display_options") or {}
 
         manager_config = {
             "nrl_scoreboard": {
@@ -305,19 +327,17 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 # TypeError inside this translation, leaving no managers.
                 "other_games_divisions": limit("other_games_divisions", ["fbs"]),
                 "upcoming_games_to_show": limit("upcoming_games_to_show", 1),
-                "show_records": display_options.get(
-                    "show_records", cfg.get("show_records", False)
-                ),
-                "show_ranking": display_options.get(
-                    "show_ranking", cfg.get("show_ranking", False)
-                ),
-                # Fallbacks mirror config_schema.json, which is the documented
-                # contract. They only fire for a hand-written or partial config
-                # -- and a fresh install before the UI has saved once -- which is
-                # exactly when disagreeing with the schema is least visible.
-                "show_odds": display_options.get(
-                    "show_odds", cfg.get("show_odds", True)
-                ),
+                # Declared both here (display_options) and at the root, and
+                # the web UI saves defaults into both, so a display_options
+                # value still at its default must not override a root toggle
+                # the user changed. See _display_option. Defaults mirror
+                # config_schema.json.
+                "show_records": _display_option(
+                    display_options, cfg, "show_records", False),
+                "show_ranking": _display_option(
+                    display_options, cfg, "show_ranking", False),
+                "show_odds": _display_option(
+                    display_options, cfg, "show_odds", True),
                 "update_interval_seconds": cfg.get("update_interval_seconds", 3600),
                 "live_update_interval": cfg.get("live_update_interval", 30),
                 "recent_update_interval": cfg.get("recent_update_interval", 3600),

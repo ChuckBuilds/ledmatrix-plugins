@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.29.1] - 2026-09-14
+
+### Fixed
+- **Plugin-level copies of league settings now apply.** Eighteen settings are
+  declared both at the plugin root and in every league block
+  (`show_records`/`show_ranking`/`show_odds`, the update intervals,
+  `live_game_duration`, the game limits, the other-games selection and
+  `show_favorite_teams_only`), and changing the root copy did nothing. A root
+  value you changed now applies to every league whose own value is still at its
+  default; a league value you changed still wins. Each copy is compared with
+  its own default, so `live_game_duration`'s root default of 30 does not
+  override the leagues' 20.
+- **Disabling a league at runtime takes effect immediately.** Its managers were
+  left in place, and turning off the last enabled league fell back to the
+  default Premier League modes, which kept drawing them until a restart.
+
 ## [2.29.0] - 2026-09-14
 
 Drift-audit fixes ported from the sibling scoreboards.
