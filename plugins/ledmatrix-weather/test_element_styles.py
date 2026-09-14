@@ -146,6 +146,97 @@ def test_a_core_without_the_style_system_still_renders():
         del type(plugin).styles
 
 
+# --- The Vegas tile is sized from the same styles it is drawn with ---------
+#
+# get_vegas_content packs the current-conditions screen to the width its
+# content needs (_compact_current_width) and hands that to the renderer. The
+# width used to be measured with the shipped fonts and the base icon size, so
+# a styled screen was drawn into a tile sized for an unstyled one: a larger
+# condition font ran back over the icon and off the tile's left edge, and a
+# hidden metric bar still reserved its full width. These need real fonts and
+# a panel wide enough that packing applies at all (at 128 and 256 wide the
+# fixture's metric bar alone fills the panel, so the tile is the panel).
+
+VEGAS_W, VEGAS_H = 512, 32
+
+
+def _sized_plugin(customization=None):
+    import json
+    from manager import _resolve_font_path
+    from PIL import ImageFont
+    plugin = _plugin(customization)
+    display = plugin.display_manager
+    display.small_font = ImageFont.truetype(
+        _resolve_font_path(os.path.join("assets", "fonts",
+                                        "PressStart2P-Regular.ttf")), 8)
+    display.matrix.width, display.matrix.height = VEGAS_W, VEGAS_H
+    fixture = os.path.join(os.path.dirname(__file__), "test", "fixtures",
+                           "mock.json")
+    with open(fixture, encoding="utf-8") as f:
+        plugin.weather_data = next(iter(json.load(f).values()))["current"]
+    return plugin
+
+
+def _condition_left_edge(plugin, width):
+    from PIL import Image, ImageDraw
+    layout = plugin._get_layout()
+    style = _style(plugin, "condition_text", plugin.display_manager.small_font)
+    measure = ImageDraw.Draw(Image.new("RGB", (1, 1)))
+    measure.fontmode = "1"
+    text = plugin.weather_data["weather"][0]["main"]
+    return width - measure.textlength(text, font=style.font) - layout["right_margin"]
+
+
+def test_an_untouched_vegas_tile_matches_the_classic_sizing():
+    """The styled measurement must agree with the pre-style one when nothing
+    is configured, or every Vegas ticker would shift on upgrade."""
+    styled = _sized_plugin()._compact_current_width()
+    plugin = _sized_plugin()
+    type(plugin).styles = property(
+        lambda self: (_ for _ in ()).throw(AttributeError("no styles")))
+    try:
+        classic = plugin._compact_current_width()
+    finally:
+        del type(plugin).styles
+    assert styled == classic
+    assert styled is not None and styled < VEGAS_W, (
+        "the fixture must actually pack at this width, or nothing here is tested")
+
+
+@requires_style_system
+def test_a_larger_condition_font_does_not_run_over_the_icon():
+    plugin = _sized_plugin({"condition_text": {
+        "font": "PressStart2P-Regular.ttf", "font_size": 32}})
+    width = plugin._compact_current_width() or VEGAS_W
+    layout = plugin._get_layout()
+    icon_right = layout["current_icon_x"] + layout["current_icon_size"]
+    assert _condition_left_edge(plugin, width) >= icon_right
+
+
+@requires_style_system
+def test_a_hidden_metric_bar_stops_reserving_its_width():
+    untouched = _sized_plugin()._compact_current_width()
+    hidden = _sized_plugin({"metric_text": {"visible": False}})._compact_current_width()
+    assert hidden is not None and hidden < untouched
+
+
+@requires_style_system
+def test_a_larger_icon_widens_the_tile():
+    untouched = _sized_plugin()._compact_current_width()
+    # Hide the metric bar so the text block, which carries the icon, sets the width.
+    base = _sized_plugin({"metric_text": {"visible": False}})._compact_current_width()
+    scaled = _sized_plugin({"metric_text": {"visible": False},
+                            "layout": {"weather_icon": {"scale": 2.0}}})._compact_current_width()
+    assert untouched is not None and base is not None
+    assert scaled is None or scaled > base
+
+
+@requires_style_system
+def test_an_offset_stops_the_tile_being_packed():
+    plugin = _sized_plugin({"layout": {"temp_text": {"x_offset": -4, "y_offset": 0}}})
+    assert plugin._compact_current_width() is None
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failures = 0

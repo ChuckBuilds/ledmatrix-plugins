@@ -2092,19 +2092,52 @@ class WeatherPlugin(BasePlugin):
             measure = ImageDraw.Draw(Image.new('RGB', (1, 1)))
             measure.fontmode = "1"  # match the real draws; mono hints advances differently
 
+            # Measure what _render_current_weather_image will actually draw.
+            # The styles resolve to the shipped font objects when nothing is
+            # configured, so an untouched config sizes the tile exactly as
+            # before; a chosen font, icon scale or hidden element now changes
+            # the width the renderer is handed instead of being ignored by it.
+            icon_style = self._style('weather_icon', 'PressStart2P-Regular.ttf',
+                                     8, self.COLORS['text'])
+            stack_styles = (
+                self._style('condition_text', 'PressStart2P-Regular.ttf', 8,
+                            self.COLORS['text'], small),
+                self._style('temp_text', 'PressStart2P-Regular.ttf', 8,
+                            self.COLORS['highlight'], small),
+                self._style('high_low_text', 'PressStart2P-Regular.ttf', 8,
+                            self.COLORS['dim'], small),
+            )
+            metric_style = self._style('metric_text', '4x6-font.ttf', 7,
+                                       self.COLORS['text'], tiny)
+
+            # An offset moves an element against a layout sized for the whole
+            # panel. A tile packed to its content has no slack to absorb that
+            # shift, so nudging an element could push it into the icon or off
+            # the tile's edge. Don't pack; the renderer gets the panel width.
+            for style in (icon_style, metric_style) + stack_styles:
+                if style.visible and tuple(style.offset) != (0, 0):
+                    return None
+
             main = self.weather_data['main']
             temp = int(main['temp'])
             condition = self.weather_data['weather'][0]['main']
+            stack_texts = (
+                condition,
+                f"{temp}°",
+                f"{int(main['temp_min'])}°/{int(main['temp_max'])}°",
+            )
             stack_w = max(
-                measure.textlength(condition, font=small),
-                measure.textlength(f"{temp}\u00b0", font=small),
-                measure.textlength(
-                    f"{int(main['temp_min'])}\u00b0/{int(main['temp_max'])}\u00b0",
-                    font=small),
+                (measure.textlength(text, font=style.font)
+                 for style, text in zip(stack_styles, stack_texts)
+                 if style.visible),
+                default=0,
             )
             gap = max(4, layout['right_margin'] * 2)
-            text_block = (layout['current_icon_x'] + layout['current_icon_size']
-                          + gap + int(stack_w) + layout['right_margin'])
+            # Same rounding as the renderer, so the reserved and drawn icon agree.
+            icon_w = (max(1, int(round(layout['current_icon_size'] * icon_style.scale)))
+                      if icon_style.visible else 0)
+            text_block = (layout['current_icon_x'] + (icon_w + gap if icon_w else 0)
+                          + int(stack_w) + layout['right_margin'])
 
             items = self._build_metric_items(
                 main.get('uvi', 0), main['humidity'],
@@ -2113,8 +2146,9 @@ class WeatherPlugin(BasePlugin):
                 self.weather_data['wind'].get('gust'), main.get('feels_like'),
                 main.get('dew_point'), main.get('visibility'), main.get('pressure'))
             metrics_block = 0
-            if items:
-                widest = max(measure.textlength(t, font=tiny) for t, _c, _d in items)
+            if items and metric_style.visible:
+                widest = max(measure.textlength(t, font=metric_style.font)
+                             for t, _c, _d in items)
                 # The bar centres every item in an equal section, so the gap
                 # left between neighbours is (section - widest). Sizing to the
                 # text plus a few pixels squeezed that to 15px against the

@@ -18,6 +18,11 @@
   A colour chosen for the metric bar replaces the per-metric colours,
   including the UV severity grading; leaving it alone keeps the grading.
 
+  The Vegas ticker's current-conditions tile is sized from these same
+  settings: a larger font or icon widens it, a hidden element stops reserving
+  room, and an offset makes it use the full panel width rather than pack an
+  element into the icon or off the tile's edge.
+
   Requires a LEDMatrix core with the element-style system. On older cores the
   section is ignored and the shipped styling is used.
 
