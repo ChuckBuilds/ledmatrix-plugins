@@ -820,7 +820,27 @@ class StaticImagePlugin(BasePlugin):
         
         Static images don't change, so this method is a no-op.
         """
-    
+
+    @property
+    def needs_high_fps(self) -> bool:
+        """Whether the display controller should run its 125 fps loop.
+
+        Only an animated GIF needs it. Without this declaration the controller
+        forces static-image into the high-FPS loop unconditionally, so a still
+        PNG was re-pushed ~125 times a second for its whole display duration --
+        CPU the panel's refresh thread needs, which shows up as flicker on the
+        still image. Any configured .gif also counts, because the controller
+        reads this once per mode entry and per-image rotation can move to a GIF
+        mid-mode; that GIF must not animate at 1 fps.
+        """
+        if self.is_animated:
+            return True
+        for img_info in self.images_list:
+            img_path = img_info.get('path', '') if isinstance(img_info, dict) else str(img_info)
+            if img_path and img_path.lower().endswith('.gif'):
+                return True
+        return False
+
     def display(self, force_clear: bool = False) -> None:
         """
         Display the static image or animated GIF on the LED matrix.
@@ -867,8 +887,11 @@ class StaticImagePlugin(BasePlugin):
             # Check if we should rotate based on time intervals
             time_intervals = self.rotation_settings.get('time_intervals', {})
             if time_intervals.get('enabled', False):
-                # Use time_intervals if enabled, otherwise use per-image timing
-                if not should_reload:  # Only override if not already set by per-image timing
+                # Reload only once the interval is due -- _get_next_image()
+                # advances on the same condition. Reloading unconditionally
+                # re-decoded and re-resized the file on every display() call.
+                interval_seconds = time_intervals.get('interval_seconds', 3600)
+                if not should_reload and time.time() - self.last_rotation_time >= interval_seconds:
                     should_reload = True
         elif self.rotation_mode == 'sequential':
             # For sequential, check per-image timing (already set above)
@@ -914,10 +937,11 @@ class StaticImagePlugin(BasePlugin):
                         self.last_frame_time = current_time
                         self.logger.debug(f"Advanced to GIF frame {self.current_frame_index + 1}/{len(self.gif_frames)} (delay: {frame_delay}ms, elapsed: {elapsed_ms:.1f}ms)")
                 
-                # Clear display if requested (only on first frame)
-                if force_clear and self.current_frame_index == 0:
-                    self.display_manager.clear()
-                
+                # No clear() on force_clear: every frame is an opaque
+                # display-sized canvas that replaces the whole panel, and
+                # clear() blanks the matrix front buffer immediately, which
+                # showed as a black blink before the frame was swapped in.
+
                 # Set the current frame on the display manager
                 self.display_manager.image = self.current_image.copy()
                 
@@ -926,15 +950,11 @@ class StaticImagePlugin(BasePlugin):
                 
                 self.logger.debug(f"Displayed GIF frame {self.current_frame_index + 1}/{len(self.gif_frames)}: {self.image_path}")
             else:
-                # Handle static images (existing behavior)
-                # Clear display if requested
-                if force_clear:
-                    self.display_manager.clear()
-                
-                # Set the image on the display manager
+                # Handle static images. No clear() on force_clear, for the
+                # same reason as the GIF path above. Re-pushing an unchanged
+                # frame is cheap: update_display() skips the panel swap when
+                # the frame digest matches what the panel already shows.
                 self.display_manager.image = self.current_image.copy()
-                
-                # Update the display
                 self.display_manager.update_display()
                 
                 self.logger.debug(f"Displayed image: {self.image_path} (mode: {self.rotation_mode})")
