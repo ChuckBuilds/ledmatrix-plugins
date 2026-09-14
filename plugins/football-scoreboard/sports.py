@@ -643,6 +643,52 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                      if self._card_option("switch_show_time", True) else "")
         return date_text, time_text
 
+    def _mode_customization(self) -> dict:
+        """``customization`` with this mode's overrides merged over it.
+
+        SportsUpcoming / SportsRecent / SportsLive are separate instances
+        with their own SKIN_MODE, so merging once here makes every
+        per-element lookup mode-aware without changing one of them.
+
+        ``None`` in a mode block means "inherit", which is what lets a user
+        restyle one element on live cards and leave everything else
+        following the settings above. It has to stay distinct from 0: a mode
+        y_offset of 0 means "sit at the base position", not "no preference".
+        """
+        customization = self.config.get('customization', {})
+        if not isinstance(customization, dict):
+            return {}
+        mode = getattr(self, 'SKIN_MODE', None)
+        if not mode:
+            return customization
+        modes = customization.get('modes')
+        block = modes.get(mode) if isinstance(modes, dict) else None
+        if not isinstance(block, dict):
+            return customization
+
+        merged = dict(customization)
+        for element, override in block.items():
+            if element == 'layout' or not isinstance(override, dict):
+                continue
+            base = merged.get(element)
+            base = dict(base) if isinstance(base, dict) else {}
+            base.update({k: v for k, v in override.items() if v is not None})
+            merged[element] = base
+
+        mode_layout = block.get('layout')
+        if isinstance(mode_layout, dict):
+            base_layout = merged.get('layout')
+            new_layout = dict(base_layout) if isinstance(base_layout, dict) else {}
+            for element, axes in mode_layout.items():
+                if not isinstance(axes, dict):
+                    continue
+                current = new_layout.get(element)
+                current = dict(current) if isinstance(current, dict) else {}
+                current.update({k: v for k, v in axes.items() if v is not None})
+                new_layout[element] = current
+            merged['layout'] = new_layout
+        return merged
+
     def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
         """
         Get layout offset for a specific element and axis.
@@ -656,18 +702,31 @@ class SportsCore(SportsCoreSharedMixin, ABC):
             Offset value from config or default (always returns int)
         """
         if STYLE_AVAILABLE:
-            # Shared resolver (rebuilt if the config dict was swapped out,
-            # matching the old code's read-config-on-every-call semantics)
+            # Shared resolver, rebuilt when on_config_change swaps the config
+            # dict out.
+            #
+            # It is handed the *mode-merged* customization, not self.config.
+            # A resolver reading self.config never sees
+            # customization.modes.<SKIN_MODE>.layout, so every per-card offset
+            # was silently ignored on any core with the style system -- the
+            # fallback below was the only path that honoured them. Merging here
+            # rather than passing ElementStyleResolver(mode=...) because the
+            # oldest supported core (ledmatrix_min_version 3.3.0) ships a
+            # resolver whose constructor takes only (config, defaults).
             resolver = getattr(self, '_style_resolver_cached', None)
-            if resolver is None or resolver._config is not self.config:
+            if (resolver is None
+                    or getattr(self, '_style_resolver_source', None) is not self.config):
                 schema_path = os.path.join(
                     os.path.dirname(os.path.abspath(__file__)), 'config_schema.json')
+                resolver_config = dict(self.config)
+                resolver_config['customization'] = self._mode_customization()
                 resolver = ElementStyleResolver(
-                    self.config, defaults_from_schema_file(schema_path))
+                    resolver_config, defaults_from_schema_file(schema_path))
                 self._style_resolver_cached = resolver
+                self._style_resolver_source = self.config
             return resolver.offset_value(element, axis, default)
         try:
-            layout_config = self.config.get('customization', {}).get('layout', {})
+            layout_config = self._mode_customization().get('layout', {})
             element_config = layout_config.get(element, {})
             offset_value = element_config.get(axis, default)
 
@@ -803,8 +862,9 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         """Load fonts used by the scoreboard from config or use defaults."""
         fonts = {}
         
-        # Get customization config, with backward compatibility
-        customization = self.config.get('customization', {})
+        # Get customization config, with backward compatibility.
+        # Mode-merged, so a per-mode font or size reaches the right card.
+        customization = self._mode_customization()
         
         # Load fonts from config with defaults for backward compatibility
         score_config = customization.get('score_text', {})
@@ -2083,6 +2143,7 @@ class SportsCore(SportsCoreSharedMixin, ABC):
 
 
 class SportsUpcoming(SportsCore):
+    SKIN_MODE = "upcoming"
     #: This screen shows the date and the time, never a score.
     _DRAWS_SCORE: ClassVar[bool] = False
 
@@ -2668,6 +2729,7 @@ class SportsUpcoming(SportsCore):
 
 
 class SportsRecent(SportsRecentSharedMixin, SportsCore):
+    SKIN_MODE = "recent"
 
     def _select_recent_games_for_display(
         self, processed_games: List[Dict], favorite_teams: List[str]
@@ -3249,6 +3311,7 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
 
 
 class SportsLive(SportsLiveSharedMixin, SportsCore):
+    SKIN_MODE = "live"
 
     def __init__(
         self,

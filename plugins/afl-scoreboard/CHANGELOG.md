@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.24.2] - 2026-09-12
+## [1.25.1] - 2026-09-14
 
 ### Fixed
 - **Switch mode refreshes its managers before it draws them.**
@@ -22,6 +22,20 @@
   Pinned by a test that asserts the wiring structurally as well as behaviourally
   -- deleting the call leaves every behavioural check passing while the panel
   silently goes stale, which is how this survived in three plugins.
+
+## [1.25.0] - 2026-09-11
+
+### Added
+- **Style each card separately.** Font, size, colour and position for the
+  score, clock, team abbreviation, status, detail, odds and ranking can now
+  differ between the live, upcoming and recent cards. Set them under
+  "Per-Mode Overrides" in the plugin's settings; anything left blank follows
+  the settings above it, so a single change applies to one card and leaves
+  the others alone.
+
+  Existing configs are unaffected: with no per-mode overrides set, every card
+  renders exactly as before -- verified against the golden images at all
+  eight panel sizes.
 
 ## [1.24.1] - 2026-09-11
 

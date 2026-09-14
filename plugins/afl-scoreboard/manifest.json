@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.24.2",
+  "version": "1.25.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -19,10 +19,16 @@
   ],
   "versions": [
     {
-      "version": "1.24.2",
-      "released": "2026-09-12",
+      "version": "1.25.1",
+      "released": "2026-09-14",
       "ledmatrix_min_version": "3.3.0",
       "notes": "Switch mode refreshes its managers before it draws them. The switch path went straight to manager.display(), so it showed whatever the last background plugin.update() left behind -- baseball, basketball, football, hockey and lacrosse have called _ensure_manager_updated() unconditionally in _try_manager_display() all along, and these three had no equivalent. Measured with no background update at all: afl's switch mode made zero draw-time refreshes and the panel stayed frozen for ten simulated minutes, while baseball's picked the score up in thirty seconds. It is invisible at the 60s default and an hour stale for anyone who raises update_interval -- and unlike baseball/football, which declare update_interval in their manifest and so override any config value, these three declare none, which is what makes the config value apply and the slow case reachable. A stale manager also reads as having nothing to show, so a league with a live game could be skipped from the rotation entirely; the refresh therefore runs before the candidate managers are read, not after. _ensure_manager_updated() is interval-guarded, so on frames where no refresh is due this costs two getattrs and a comparison. Pinned by a test that asserts the wiring structurally as well as behaviourally -- deleting the call leaves every behavioural check passing while the panel silently goes stale, which is how this survived in three plugins."
+    },
+    {
+      "released": "2026-09-11",
+      "version": "1.25.0",
+      "changelog": "Style the live, upcoming and recent cards separately",
+      "ledmatrix_min_version": "3.3.0"
     },
     {
       "version": "1.24.1",
@@ -381,7 +387,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-07",
+  "last_updated": "2026-09-11",
   "stars": 0,
   "downloads": 0,
   "verified": true,
