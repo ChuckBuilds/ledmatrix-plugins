@@ -15,16 +15,20 @@ The block now drives every display mode. What this pins down:
     "the user has not touched this" is not a state the code can observe.
     Compared against a literal reference drawing, not against the
     implementation's own helpers, so it fails if the layout drifts.
-  * the two keys that exist because the displays disagree about a default --
+  * the keys that exist because the displays disagree about a default --
     switch_upcoming_center (the cards say "vs", this has always stacked the
     date and time) and switch_date_format (the cards say "Sep 19", this has
     always said "9/19") -- hold this display to what it already drew, and
     take "inherit" to opt into the scroll and Vegas setting.
+  * switch_show_date/switch_show_time (default true) are that same idea for
+    hiding a line: the shared show_date/show_time governed only the cards
+    before this display read the block, so a config that turned them off
+    there must not blank a scorebug that has always drawn both rows.
   * "vs" draws the configured separator in the middle, empty draws nothing,
     and the date and time move out to the top and bottom rows, keeping the
     face they are drawn in -- the mode changes placement, not type.
-  * vs_text, time_format, show_date/show_time and swap_date_time are shared
-    outright, and do reach this display.
+  * vs_text, time_format and swap_date_time are shared outright, and do
+    reach this display.
 
 Renders into a bare Image rather than through the display manager: the point
 is the pixels _draw_upcoming_center_switch puts down, and going through
@@ -242,14 +246,17 @@ def main():
           Bug({"scroll_card": {"switch_date_format": "day_first"}})
           ._format_game_date("9/19", GAME) == "19 Sep")
 
-    no_time, _ = render({"scroll_card": {"show_time": False}})
-    check("show_time: false drops the time and leaves the date where it was",
+    no_time, _ = render({"scroll_card": {"switch_show_time": False}})
+    check("switch_show_time: false drops the time and leaves the date where it was",
           lit_rows(no_time) and lit_rows(no_time) < lit_rows(default_img))
-    no_date, _ = render({"scroll_card": {"show_date": False}})
-    check("show_date: false drops the date and leaves the time where it was",
+    no_date, _ = render({"scroll_card": {"switch_show_date": False}})
+    check("switch_show_date: false drops the date and leaves the time where it was",
           lit_rows(no_date) and lit_rows(no_date) < lit_rows(default_img))
-    check("show_date and show_time together cover the default render",
+    check("switch_show_date and switch_show_time together cover the default render",
           lit_rows(no_time) | lit_rows(no_date) == lit_rows(default_img))
+    shared_off, _ = render({"scroll_card": {"show_date": False, "show_time": False}})
+    check("scroll-card show_date/show_time do not blank this display",
+          list(shared_off.getdata()) == list(default_img.getdata()))
 
     swapped, _ = render({"scroll_card": {"swap_date_time": True}})
     check("swap_date_time: puts the time on top",

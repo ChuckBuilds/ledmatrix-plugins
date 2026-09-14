@@ -2,8 +2,9 @@
 """Keep the copied sports modules from silently drifting apart.
 
 The scoreboard plugins deliberately ship *copies* of `sports.py`,
-`manager.py`, `game_renderer.py` and `scroll_display.py` rather than sharing
-them (CLAUDE.md non-negotiable #7). The rule that makes that safe is "a fix in
+`manager.py`, `game_renderer.py`, `scroll_display.py` and their support modules
+(`base_odds_manager.py`, `data_sources.py`, `dynamic_team_resolver.py`,
+`logo_downloader.py`) rather than sharing them (CLAUDE.md non-negotiable #7). The rule that makes that safe is "a fix in
 one lineage must be ported to its siblings in the same PR", and until now
 nothing enforced it.
 
@@ -52,8 +53,13 @@ PLUGINS_DIR = os.path.join(REPO, "plugins")
 BASELINE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                         "sports_drift_baseline.json")
 
-#: The files the lineages copy between each other.
-TRACKED_FILES = ("sports.py", "manager.py", "game_renderer.py", "scroll_display.py")
+#: The files the lineages copy between each other. The last four were added
+#: after a drift audit found six to nine divergent copies of each with fixes
+#: (the no-odds cache marker, logo placeholder refresh) landed in some and not
+#: others -- invisible here because nothing compared them.
+TRACKED_FILES = ("sports.py", "manager.py", "game_renderer.py", "scroll_display.py",
+                 "base_odds_manager.py", "data_sources.py",
+                 "dynamic_team_resolver.py", "logo_downloader.py")
 
 #: Sport, league and competition tokens that legitimately differ between
 #: lineages. Folded to a single placeholder before comparing, so that

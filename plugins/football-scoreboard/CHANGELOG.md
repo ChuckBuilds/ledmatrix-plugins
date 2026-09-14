@@ -1,5 +1,46 @@
 # Changelog
 
+## [3.10.0] - 2026-09-14
+
+### Fixed
+- **Adaptive scorebug draws odds, records and rankings.** The renderer was
+  built from the manager-shaped config, where those options live under
+  `nfl_scoreboard`, and found none of them.
+- **Adaptive scorebug follows the full-screen settings.** It read the scroll
+  card's `upcoming_center`, `show_date`, `show_time` and `date_format`; it now
+  reads the `switch_*` keys like the classic scorebug.
+- **Celebration score stays on the panel** at 48px and 64px height, placed from
+  the measured ink instead of `display_height - 14`.
+- **`ncaa_fb_*` modes use NCAA FB's own mode duration** (the mode name was
+  split on the first underscore).
+- **Postponed, cancelled and suspended games are not "Final 0-0".**
+- **Full-screen odds no longer overprint** "Final", the clock or "Next Game":
+  the O/U anchors left and the row steps down when it would overlap. A 0.0 home
+  spread is a pick'em, and a non-numeric spread no longer drops the O/U.
+- **"Logo Error" shows** instead of a black panel when logos fail to load.
+- **A cached no-odds marker is a cache hit**, not a fresh ESPN request.
+- **One league failing to initialise no longer blanks the other.**
+- **Vegas content rebuilds when the games change**, reads its own `mixed`
+  display, and never calls `update()` (network) on the render path.
+- **Decoded logo caches are bounded** LRUs (port of core #559).
+- **Failed logo downloads are retried**: logos now come from the core
+  `src.logo_downloader`, whose placeholders carry the refresh marker.
+- Adaptive odds text uses `%g` ("-7", not "-7.0"); unranked teams show their
+  record when rankings and records are both on; the classic live score uses
+  the #338 centring; `get_info` reports the manifest version.
+- `_clamp_window` tolerates a config `Infinity`.
+
+### Added
+- `odds_update_interval` and `live_odds_update_interval` (advanced, per league)
+  are declared in the schema and forwarded to the managers.
+
+### Changed
+- The core floor stays at 3.3.0. `sports.py` imports `src.common.sports_shared`,
+  which first shipped in core v3.3.1, but that release still reports
+  `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
+- DYNAMIC_DURATION.md and the `layout_mode` / `switch_upcoming_center` schema
+  text now describe what the code actually does.
+
 ## [3.9.0] - 2026-09-14
 
 ### Added

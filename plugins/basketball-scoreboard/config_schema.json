@@ -130,6 +130,18 @@
           "description": "Draw the start time on upcoming cards.",
           "default": true
         },
+        "switch_show_date": {
+          "type": "boolean",
+          "title": "Show Date (Full-Screen)",
+          "description": "Draw the date on the full-screen (switch mode) upcoming scoreboard. Show Date above now applies only to the scroll and Vegas cards. Before this release it also hid the full-screen date, so a config that turned it off shows the date here again until this switch is turned off.",
+          "default": true
+        },
+        "switch_show_time": {
+          "type": "boolean",
+          "title": "Show Time (Full-Screen)",
+          "description": "Draw the start time on the full-screen (switch mode) upcoming scoreboard. Show Time above now applies only to the scroll and Vegas cards. Before this release it also hid the full-screen time, so a config that turned it off shows the time here again until this switch is turned off.",
+          "default": true
+        },
         "swap_date_time": {
           "type": "boolean",
           "title": "Swap Date and Time",
@@ -487,6 +499,22 @@
           "minimum": 60,
           "maximum": 3600,
           "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+          "x-advanced": true
+        },
+        "odds_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often betting odds are refreshed for recent and upcoming games (seconds). Only matters when Show Odds is on.",
+          "x-advanced": true
+        },
+        "live_odds_update_interval": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "How often betting odds are refreshed for games in progress (seconds). Only matters when Show Odds is on.",
           "x-advanced": true
         },
         "update_interval_seconds": {
@@ -1005,6 +1033,22 @@
           "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
           "x-advanced": true
         },
+        "odds_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often betting odds are refreshed for recent and upcoming games (seconds). Only matters when Show Odds is on.",
+          "x-advanced": true
+        },
+        "live_odds_update_interval": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "How often betting odds are refreshed for games in progress (seconds). Only matters when Show Odds is on.",
+          "x-advanced": true
+        },
         "update_interval_seconds": {
           "x-advanced": true,
           "type": "integer",
@@ -1480,6 +1524,22 @@
           "minimum": 60,
           "maximum": 3600,
           "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+          "x-advanced": true
+        },
+        "odds_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often betting odds are refreshed for recent and upcoming games (seconds). Only matters when Show Odds is on.",
+          "x-advanced": true
+        },
+        "live_odds_update_interval": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "How often betting odds are refreshed for games in progress (seconds). Only matters when Show Odds is on.",
           "x-advanced": true
         },
         "update_interval_seconds": {
@@ -1995,6 +2055,22 @@
           "minimum": 60,
           "maximum": 3600,
           "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+          "x-advanced": true
+        },
+        "odds_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often betting odds are refreshed for recent and upcoming games (seconds). Only matters when Show Odds is on.",
+          "x-advanced": true
+        },
+        "live_odds_update_interval": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "How often betting odds are refreshed for games in progress (seconds). Only matters when Show Odds is on.",
           "x-advanced": true
         },
         "update_interval_seconds": {

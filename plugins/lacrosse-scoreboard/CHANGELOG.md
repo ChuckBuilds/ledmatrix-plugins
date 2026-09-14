@@ -1,5 +1,57 @@
 # Changelog
 
+## [1.29.0] - 2026-09-14
+
+### Added
+- `update_intervals.live_odds` (advanced, default 60s) is declared in the
+  schema. It and `update_intervals.odds` now actually reach the managers.
+
+### Fixed
+Fixes ported from the sibling scoreboards after the drift audit:
+- The full-screen upcoming scorebug reads `switch_show_date` /
+  `switch_show_time`, so turning off date/time on scroll cards no longer
+  blanks it (football #342).
+- Upcoming drops games past `schedule_lookahead_days`, and a mode that comes
+  back on screen gives its current card a full dwell (#345).
+- Non-favourite games swapped in by the other-games rotation get odds (#343).
+- Postponed, cancelled and suspended games are no longer "final", so they
+  don't show on Recent as "Final 0-0".
+- When a logo fails to load, "Logo Error" is drawn on the image that gets
+  shown, instead of a black panel.
+- Full-screen odds with no favourite are anchored left rather than centred on
+  top of the quarter / "Final" / "Next Game". Any odds label that would still
+  overlap that text steps down a row. A 0.0 home spread is treated as a real
+  line, and a non-numeric spread no longer knocks the odds off the card.
+- Decoded logo caches are LRU-bounded (core #559).
+- Vegas rebuilds its cards when the game slate changes. It reads only its own
+  combined display, and never calls `update()` on the render path.
+- A cached "no odds" marker counts as a cache hit, so it no longer triggers a
+  refetch on every call.
+- `sports.py` uses the core logo downloader, so a failed download is retried
+  instead of leaving a grey placeholder forever. The bundled fallback
+  downloader won't save a non-image response.
+- The scroll card shows an unranked team's record when both ranking and
+  records are on.
+- The top-N rankings shortcut skips tournament and lower-division polls.
+- If one league fails to build, the other league still loads.
+  `other_games_divisions` accepts a plain string. `test_mode` is forwarded to
+  the managers.
+- A config value of `Infinity` for an other-games count can no longer crash
+  selection.
+- The core floor stays at 3.3.0. `sports.py` imports `src.common.sports_shared`,
+  which first shipped in core v3.3.1, but that release still reports
+  `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
+
+### Changed
+- Behaviour change: `scroll_card.show_date` / `show_time` no longer hide the
+  date and time on the full-screen upcoming scorebug (they did since #336). A
+  config that turned them off shows the date/time there again; turn off
+  `switch_show_date` / `switch_show_time` to hide them.
+- Behaviour change: Upcoming used to show the next games however far away
+  they were. It now hides anything past `schedule_lookahead_days` (default 7),
+  a favourite's game included, so in preseason or a long break the screen is
+  empty until a game is inside the window. Raise the setting to see it sooner.
+
 ## [1.28.0] - 2026-09-14
 
 ### Added

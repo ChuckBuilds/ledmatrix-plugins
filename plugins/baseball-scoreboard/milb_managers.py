@@ -107,11 +107,35 @@ class BaseMiLBManager(Baseball):
         status_obj = game.get("status", {})
         linescore = game.get("linescore", {})
 
-        # Map status
+        # Map status. abstractGameState alone is not enough: the Stats API
+        # files Postponed (D) and Cancelled (C) under "Final", Suspended (T)
+        # under "Live" and Warmup under "Live" too. Taken at face value a
+        # rainout became a "Final 0-0" on Recent, a suspended game froze in
+        # the live rotation all day, and a warming-up game drew "▼0". The
+        # detailedState says what actually happened, so it decides first,
+        # using ESPN's own status names so the shared extractor treats both
+        # sources alike (not final, not live, not upcoming).
         abstract_state = status_obj.get("abstractGameState", "Preview")
-        detailed_state = status_obj.get("detailedState", "")
+        detailed_state = status_obj.get("detailedState", "") or ""
+        detailed_lower = detailed_state.lower()
 
-        if abstract_state == "Live":
+        if detailed_lower.startswith("postponed"):
+            abstract_state = "NotPlayed"
+            state = "post"
+            status_name = "STATUS_POSTPONED"
+        elif detailed_lower.startswith("cancel"):
+            abstract_state = "NotPlayed"
+            state = "post"
+            status_name = "STATUS_CANCELED"
+        elif detailed_lower.startswith("suspended"):
+            abstract_state = "NotPlayed"
+            state = "post"
+            status_name = "STATUS_SUSPENDED"
+        elif detailed_lower.startswith("warmup"):
+            abstract_state = "Preview"
+            state = "pre"
+            status_name = "STATUS_SCHEDULED"
+        elif abstract_state == "Live":
             state = "in"
             status_name = "STATUS_IN_PROGRESS"
         elif abstract_state == "Final":
@@ -133,7 +157,9 @@ class BaseMiLBManager(Baseball):
                 detail_text = f"Final/{current_inning}"
                 short_detail = f"Final/{current_inning}"
         elif abstract_state == "Live":
-            half = "Top" if inning_state.lower().startswith("top") else "Bot"
+            # An empty inningState (the first pitch not yet thrown) is the
+            # top of the inning, matching the ESPN parser's default.
+            half = "Bot" if inning_state.lower().startswith("bot") else "Top"
             if "mid" in inning_state.lower():
                 half = "Mid"
             elif "end" in inning_state.lower():
@@ -224,7 +250,10 @@ class BaseMiLBManager(Baseball):
                             "shortDetail": short_detail,
                             "completed": abstract_state == "Final",
                         },
-                        "period": current_inning or 0,
+                        # 1, not 0: a live game with no inning yet would
+                        # otherwise draw "▲0" (the scorebug's own default
+                        # never applies because the key is present).
+                        "period": current_inning or 1,
                         "displayClock": "0:00",
                     },
                     "situation": situation or {},
@@ -293,10 +322,16 @@ class BaseMiLBManager(Baseball):
 
     def _fetch_todays_games(self) -> Optional[Dict]:
         """Override SportsCore's ESPN-based fetch with MLB Stats API fetch."""
-        now = datetime.now(pytz.utc)
+        # The Stats API files games under their local (US) date, so the UTC
+        # calendar asked for tomorrow from 8 pm Eastern on and every night
+        # game still in progress dropped out of live. Use the Eastern date
+        # with a one-day lookback, the same window the ESPN path uses, so a
+        # game that runs past Eastern midnight is still found.
+        now = datetime.now(pytz.timezone("America/New_York"))
         today = now.strftime("%Y-%m-%d")
-        self.logger.debug(f"Fetching today's MiLB games for {today}")
-        return self._fetch_from_mlb_stats_api(today, today)
+        yesterday = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+        self.logger.debug(f"Fetching MiLB games for {yesterday} to {today}")
+        return self._fetch_from_mlb_stats_api(yesterday, today)
 
     def _fetch_milb_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """Fetch MiLB season schedule data using MLB Stats API.

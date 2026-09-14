@@ -131,6 +131,18 @@
           "description": "Draw the start time on upcoming cards.",
           "default": true
         },
+        "switch_show_date": {
+          "type": "boolean",
+          "title": "Show Date (Full-Screen)",
+          "description": "Draw the date on the full-screen (switch mode) upcoming scoreboard. Show Date above now applies only to the scroll and Vegas cards. Before this release it also hid the full-screen date, so a config that turned it off shows the date here again until this switch is turned off.",
+          "default": true
+        },
+        "switch_show_time": {
+          "type": "boolean",
+          "title": "Show Time (Full-Screen)",
+          "description": "Draw the start time on the full-screen (switch mode) upcoming scoreboard. Show Time above now applies only to the scroll and Vegas cards. Before this release it also hid the full-screen time, so a config that turned it off shows the time here again until this switch is turned off.",
+          "default": true
+        },
         "swap_date_time": {
           "type": "boolean",
           "title": "Swap Date and Time",
@@ -413,54 +425,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -530,6 +498,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -912,54 +896,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -1029,6 +969,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -1411,54 +1367,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -1528,6 +1440,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -1910,54 +1838,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -2027,6 +1911,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -2409,54 +2309,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -2526,6 +2382,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -2908,54 +2780,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -3025,6 +2853,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -3407,54 +3251,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -3524,6 +3324,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -3906,54 +3722,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -4023,6 +3795,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -4405,54 +4193,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -4522,6 +4266,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -4904,54 +4664,10 @@
             },
             "scroll_settings": {
               "type": "object",
-              "title": "Scroll Settings",
-              "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
-              "properties": {
-                "scroll_speed": {
-                  "type": "number",
-                  "default": 1.0,
-                  "minimum": 0.01,
-                  "maximum": 200.0,
-                  "description": "Scroll speed in pixels per second",
-                  "x-advanced": true
-                },
-                "scroll_delay": {
-                  "type": "number",
-                  "default": 0.01,
-                  "minimum": 0.001,
-                  "maximum": 0.1,
-                  "description": "Delay between scroll frames in seconds (lower = smoother)",
-                  "x-advanced": true
-                },
-                "gap_between_games": {
-                  "type": "integer",
-                  "default": 48,
-                  "minimum": 8,
-                  "maximum": 128,
-                  "description": "Gap in pixels between game cards when scrolling",
-                  "x-advanced": true
-                },
-                "show_league_separators": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Show league icons between different leagues",
-                  "x-advanced": true
-                },
-                "dynamic_duration": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Automatically calculate display duration based on content width",
-                  "x-advanced": true
-                },
-                "game_card_width": {
-                  "type": "integer",
-                  "default": 128,
-                  "minimum": 32,
-                  "maximum": 512,
-                  "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously.",
-                  "x-advanced": true
-                }
-              }
+              "title": "Scroll Settings (retired)",
+              "description": "Retired: these values were never read. The scrolling strip is one surface shared by every league and uses the soccer defaults plus the device-wide scroll frame rate. Still accepted so configs saved by earlier versions keep validating.",
+              "properties": {},
+              "x-advanced": true
             },
             "live_priority": {
               "type": "boolean",
@@ -5021,6 +4737,22 @@
               "minimum": 60,
               "maximum": 3600,
               "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "odds_update_interval": {
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+              "x-advanced": true
+            },
+            "live_odds_update_interval": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "maximum": 3600,
+              "description": "How often (seconds) to refresh betting odds for games in progress.",
               "x-advanced": true
             },
             "celebration_enabled": {
@@ -5794,6 +5526,22 @@
             "maximum": 3600,
             "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
             "x-advanced": true
+          },
+          "odds_update_interval": {
+            "type": "integer",
+            "default": 3600,
+            "minimum": 60,
+            "maximum": 86400,
+            "description": "How often (seconds) to refresh betting odds for recent and upcoming games. Odds are cached per game, so this bounds requests rather than adding them.",
+            "x-advanced": true
+          },
+          "live_odds_update_interval": {
+            "type": "integer",
+            "default": 60,
+            "minimum": 15,
+            "maximum": 3600,
+            "description": "How often (seconds) to refresh betting odds for games in progress.",
+            "x-advanced": true
           }
         },
         "required": [
@@ -6549,6 +6297,7 @@
     "recent_games_to_show",
     "other_recent_games_to_show",
     "other_rotation_interval_seconds",
+    "favorite_rotation_boost",
     "other_games_min_quality",
     "other_games_divisions",
     "upcoming_games_to_show",

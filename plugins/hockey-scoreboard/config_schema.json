@@ -130,6 +130,18 @@
           "description": "Draw the start time on upcoming cards.",
           "default": true
         },
+        "switch_show_date": {
+          "type": "boolean",
+          "title": "Show Date (Full-Screen)",
+          "description": "Draw the date on the full-screen (switch mode) upcoming scoreboard. Show Date above now applies only to the scroll and Vegas cards. Before this release it also hid the full-screen date, so a config that turned it off shows the date here again until this switch is turned off.",
+          "default": true
+        },
+        "switch_show_time": {
+          "type": "boolean",
+          "title": "Show Time (Full-Screen)",
+          "description": "Draw the start time on the full-screen (switch mode) upcoming scoreboard. Show Time above now applies only to the scroll and Vegas cards. Before this release it also hid the full-screen time, so a config that turned it off shows the time here again until this switch is turned off.",
+          "default": true
+        },
         "swap_date_time": {
           "type": "boolean",
           "title": "Swap Date and Time",
@@ -604,6 +616,14 @@
               "minimum": 60,
               "maximum": 86400,
               "description": "Update interval for NHL betting odds data"
+            },
+            "live_odds": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 60,
+              "minimum": 30,
+              "maximum": 3600,
+              "description": "Update interval for NHL betting odds while a game is live"
             }
           }
         },
@@ -1107,6 +1127,14 @@
               "minimum": 60,
               "maximum": 86400,
               "description": "Update interval for NCAA Men's Hockey betting odds data"
+            },
+            "live_odds": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 60,
+              "minimum": 30,
+              "maximum": 3600,
+              "description": "Update interval for NCAA Men's Hockey betting odds while a game is live"
             }
           }
         },
@@ -1610,6 +1638,14 @@
               "minimum": 60,
               "maximum": 86400,
               "description": "Update interval for NCAA Women's Hockey betting odds data"
+            },
+            "live_odds": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 60,
+              "minimum": 30,
+              "maximum": 3600,
+              "description": "Update interval for NCAA Women's Hockey betting odds while a game is live"
             }
           }
         },
@@ -2450,7 +2486,7 @@
       "minimum": 1,
       "maximum": 60,
       "title": "Schedule lookahead (days)",
-      "description": "How far ahead to fetch games for the Upcoming screen. Raise it for a league that plays weekly: a fixture just beyond this horizon is not fetched at all, so it never reaches the board even though the date is known.",
+      "description": "How far ahead the Upcoming screen looks. The season schedule is already cached, but games further out than this are not shown, a favourite team's included: in the off-season or a long break (All-Star, Olympics) Upcoming stays empty until the next game is inside this window. Raise it to see those games sooner.",
       "x-advanced": true
     },
     "no_data_interval_seconds": {

@@ -1,5 +1,82 @@
 # Changelog
 
+## [1.44.0] - 2026-09-14
+
+### Added
+- **`scroll_card.switch_show_date` / `switch_show_time`** (advanced): show or
+  hide the date and time on the full-screen upcoming scoreboard. The scroll
+  card's `show_date` / `show_time` used to blank it as well.
+- **Per-league `odds_update_interval` and `live_odds_update_interval`**
+  (advanced), and **`play_by_play_update_interval` /
+  `player_bio_update_interval`** for MLB and NCAA Baseball. All four were read
+  by the code but could not be set.
+- **`customization.layout.date`**: the offset the recent date already read.
+
+### Fixed
+- **Settings that did nothing.** `display_options.show_series_summary` was
+  never forwarded to the managers. The layout offsets the web UI saves as
+  `status` and `record` were read under the names `status_text` and `records`;
+  both spellings now work. Recent now honours `records.y_offset` and
+  `away_x_offset` like Upcoming.
+- **Upcoming showed games weeks out.** MLB fetches the whole season, and
+  selection never applied `schedule_lookahead_days`. It does now.
+- **The first card of a mode was skipped on re-entry.** The dwell clock kept
+  running while the mode was off screen. Retaking the panel now gives the
+  current card a full turn.
+- **Rotated-in games had no odds** until the next hourly update. They are now
+  fetched off the display path when the slice rotates.
+- **A failed logo blanked the panel.** "Logo Error" was drawn onto a copy that
+  was thrown away.
+- **Full-screen odds overprinted "Next Game" and "Final".** An O/U with no
+  favourite anchors left and steps down a row when it would collide. A home
+  spread of 0.0 is no longer treated as missing, and a non-numeric spread no
+  longer raises.
+- **Unbounded logo caches.** Both caches now evict least-recently-used past 64
+  logos. The scroll card cache is keyed by card size, so a card of another size
+  is not served a wrongly scaled logo.
+- **A cached "no odds" marker refetched on every call.** It is now a cache hit.
+- **A failed logo download stayed a grey box forever.** Logos now load through
+  the core's downloader, whose placeholders are retried; the vendored
+  `logo_downloader.py` is gone.
+- **One failing league blanked the others.** Each league's managers are built
+  in their own try.
+- **`other_games_divisions`**: a string no longer becomes a list of letters and
+  null no longer breaks init. The college-football defaults (`["fbs"]`, and
+  `ranked` for MLB/MiLB) are replaced with neutral ones.
+- **A config `Infinity` crashed manager init.** It now falls back to the
+  default.
+- **Import errors inside the core were masked.** `manager.py` only falls back
+  when the core module is absent.
+- **Postponed and cancelled games showed as "Final 0-0" on Recent.** Final now
+  needs ESPN's completed flag, and MiLB statuses come from `detailedState`.
+- **Suspended games** leave the live rotation, and ESPN "Suspended" is no
+  longer read as end-of-inning (it used to jump the inning, e.g. to 8th).
+- **MiLB Warmup** is treated as pre-game (it used to draw inning 0). A live
+  game with no inning yet shows Top 1st.
+- **MiLB live dropped night games after 8 pm ET.** It now queries the Eastern
+  date plus the previous day.
+- **Live count font:** no longer resizes the display manager's shared 5x7 font.
+- **Live run counts** honour the `score_text` colour.
+
+### Changed
+- Behaviour change: `scroll_card.show_date` / `show_time` no longer hide the
+  date and time on the full-screen upcoming scorebug (they did since #336). A
+  config that turned them off shows the date/time there again; turn off
+  `switch_show_date` / `switch_show_time` to hide them.
+- Recent shows extra innings ("Final/10") where it fits between the logos.
+
+### Removed
+- Dead code: `data_manager.py`, `odds_manager.py`, the unused team-logo loaders
+  in `logo_manager.py`, the MLB/Soccer API data sources and unused ESPN fetch
+  methods, the unused live-status helpers, and unreachable end/mid inning
+  branches. The duplicate poll-choice rule is now one shared function.
+
+### Docs
+- README: removed the per-league `background_service` settings (they do not
+  exist), corrected the `mode_durations` and MiLB display-flag claims, fixed the
+  table broken by a blockquote, and documented `scroll_settings.dynamic_duration`
+  and the new intervals.
+
 ## [1.43.0] - 2026-09-14
 
 ### Added

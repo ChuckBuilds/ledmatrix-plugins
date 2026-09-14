@@ -227,7 +227,15 @@ class BaseNrlManager(SportsCore):
                 else:
                     period_text = f"P{period}"
             elif status_state == "post":
-                period_text = "Final"
+                # Only a game played to a result says "Final". A postponed or
+                # cancelled fixture is "post" too, and labelling it Final made
+                # the Recent screen's "final in period_text" check admit it as a
+                # 0-0 result. Show ESPN's own wording instead.
+                if details.get("is_final"):
+                    period_text = "Final"
+                else:
+                    period_text = (status["type"].get("shortDetail")
+                                   or status["type"].get("description") or "")
             elif status_state == "pre":
                 period_text = details.get("game_time", "")
 

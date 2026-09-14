@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.43.0",
+  "version": "1.44.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.44.0",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Drift fixes ported from the sibling scoreboards, plus MiLB status fixes. Settings that did nothing now work: display_options.show_series_summary is forwarded to the managers, and the layout offsets the web UI saves as status and record now reach the draw code, which asked for status_text and records (both spellings accepted); Recent also honours records.y_offset and away_x_offset like Upcoming, and the date offset is declared. New advanced settings: scroll_card.switch_show_date / switch_show_time for the full-screen upcoming scoreboard (the scroll card's show_date/show_time no longer blank it), odds_update_interval and live_odds_update_interval per league, and play_by_play_update_interval / player_bio_update_interval for MLB and NCAA. Upcoming is trimmed to schedule_lookahead_days (MLB fetched the whole season and could show games weeks out), and a mode retaking the panel gives its current card a full dwell instead of skipping it. Non-favourite games rotated in between updates now get their odds. A failed logo shows 'Logo Error' instead of a black panel. Full-screen odds no longer overprint 'Next Game' or 'Final': an O/U with no favourite anchors left and steps down a row on collision, a home spread of 0.0 is no longer treated as missing, and a non-numeric spread no longer raises. Decoded logo caches are bounded (LRU, 64) and the scroll card's cache is keyed by card size. A cached no-odds marker is a cache hit instead of refetching every call. Logos load through the core's downloader, whose placeholders can be retried, so a failed download is no longer a permanent grey box; the vendored logo_downloader.py is removed. Each league's managers are built independently, so one failing league no longer blanks the others. other_games_divisions is passed through unmangled (a string no longer becomes letters, null no longer breaks init), and the football defaults (divisions [\"fbs\"], quality ranked for MLB/MiLB) are replaced with neutral ones. A config Infinity no longer crashes manager init. The core import guard in manager.py only falls back when the module is absent. MiLB: warmup no longer draws inning 0, suspended games leave the live rotation, extra innings show on Recent, the calendar font is no longer resized for every plugin, and live scores honour score_text colour. Removed dead code: data_manager.py, odds_manager.py, unused logo, data-source and live-status helpers, and unreachable inning branches."
+    },
     {
       "version": "1.43.0",
       "released": "2026-09-14",
@@ -638,7 +644,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-11",
+  "last_updated": "2026-09-14",
   "stars": 0,
   "downloads": 0,
   "verified": true,

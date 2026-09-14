@@ -472,18 +472,14 @@ Sizes each mode's total time from how much there is to show.
 
 ### Scroll settings
 
-| Key | Type | Default | What it does |
-|---|---|---|---|
-| `<league>.scroll_settings.scroll_speed` | number | `1.0` | Scroll speed in pixels per second. |
-| `<league>.scroll_settings.scroll_delay` | number | `0.01` | Frame delay; `0.01` is 100 FPS. Lower is smoother. |
-| `<league>.scroll_settings.gap_between_games` | number | `48` | Gap between match cards. |
-| `<league>.scroll_settings.show_league_separators` | boolean | `true` | Draw league icons between leagues. |
-| `<league>.scroll_settings.dynamic_duration` | boolean | `true` | Size the scroll duration from the content width. |
-| `<league>.scroll_settings.game_card_width` | number | `128` | Card width. Lower it on a multi-panel chain to fit more matches on screen at once. |
-
-These are read through the LEDMatrix core's scroll base class rather than by
-this plugin directly, which is why they do not appear in a grep of the plugin's
-own `manager.py`.
+The per-league `<league>.scroll_settings` block is retired as of 2.27.0. Nothing
+ever read it: the core scroll base only looks for `scroll_settings` at the top
+level of a league key, and this plugin keeps its leagues under `leagues`. The
+scrolling strip is also one surface shared by every league, so a per-league
+speed has no single meaning. The strip uses the soccer defaults (50 px/s, a
+24 px gap, cards sized from the panel height) and the device-wide scroll
+frame rate. The key is still accepted, so configs saved by older versions keep
+validating; its values are ignored.
 
 ## Matchup separator and the upcoming card middle
 

@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.28.0",
+  "version": "2.29.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.29.0",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Drift-audit fixes ported from the sibling scoreboards. Settings that did nothing now work: goal/win celebration on/off, duration and opponent goals (never forwarded, so celebrations were always on and always 8s), the new odds refresh intervals, and test_mode. One league failing to start no longer blanks every league after it, and a hand-edited other_games_divisions string no longer rejects every non-favourite game. Postponed, cancelled and abandoned fixtures no longer show as 'Final 0-0' on Recent. Full-screen odds with only an over/under no longer print through the header, 'Final' or the live clock; a 0.0 home spread is kept. The full-screen upcoming scorebug reads its own switch_show_date/switch_show_time. Upcoming honours schedule_lookahead_days in selection, and a mode retaking the panel gives its current card a full turn. Rotated-in games get odds. 'Logo Error' shows instead of a black panel. Decoded logo caches are bounded. The scroll card shows an unranked team's record when rankings and records are both on. Vegas rebuilds when the games change instead of only when empty. The per-league scroll_settings block, which nothing ever read, is retired. Also lists the root-level favorite_rotation_boost in x-propertyOrder: the previous release declared it but left it out of the order, so the web UI's config form never rendered the field (caught by scripts/test_property_order_coverage.py)."
+    },
     {
       "version": "2.28.0",
       "released": "2026-09-14",
@@ -531,7 +537,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-11",
+  "last_updated": "2026-09-14",
   "stars": 0,
   "downloads": 0,
   "verified": true,

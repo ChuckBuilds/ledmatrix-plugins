@@ -105,6 +105,19 @@ class LogoDownloader:
             
         return variations
 
+def _is_image_body(content: bytes) -> bool:
+    """True if `content` decodes as an image PIL can open."""
+    if not content:
+        return False
+    try:
+        from io import BytesIO
+        with Image.open(BytesIO(content)) as img:
+            img.verify()
+        return True
+    except Exception:
+        return False
+
+
 def download_missing_logo(sport_key: str, team_id: str, team_abbr: str, logo_path: Path, logo_url: Optional[str] = None) -> bool:
     """
     Download missing logo for a team.
@@ -133,7 +146,10 @@ def download_missing_logo(sport_key: str, team_id: str, team_abbr: str, logo_pat
         # If we have a logo URL, try to download it
         if logo_url:
             response = requests.get(logo_url, timeout=30)
-            if response.status_code == 200:
+            # A 200 is not proof of an image: CDNs answer with HTML error and
+            # captive-portal pages. Saved under the logo's filename, that body
+            # made every later open fail until someone deleted the file.
+            if response.status_code == 200 and _is_image_body(response.content):
                 with open(logo_path, 'wb') as f:
                     f.write(response.content)
                 logger.info(f"Downloaded logo for {team_abbr} from {logo_url}")

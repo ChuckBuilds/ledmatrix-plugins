@@ -81,6 +81,11 @@ class Basketball(SportsCore):
                     period_text = f"OT{period - 4}"
             elif status_state == "halftime" or status["type"]["name"] == "STATUS_HALFTIME":
                 period_text = "HALF"
+            elif status_state == "post" and not details.get("is_final", True):
+                # Postponed / cancelled / suspended: ESPN files these under
+                # "post" too, but they were never played to a final.
+                period_text = (status["type"].get("shortDetail")
+                               or status["type"].get("description") or "")
             elif status_state == "post":
                 if period > 4:
                     period_text = "Final/OT"
@@ -165,9 +170,12 @@ class BasketballLive(Basketball, SportsLive):
 
             if not home_logo or not away_logo:
                 self.logger.error(f"Failed to load logos for live game: {game.get('id')}")
-                draw_final = ImageDraw.Draw(main_img.convert('RGB'))
+                # Draw on the copy that is pasted. Drawing on one throwaway
+                # convert() and pasting another left a black panel.
+                error_img = main_img.convert('RGB')
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(draw_final, "Logo Error", (5, 5), self.fonts['status'])
-                self.display_manager.image.paste(main_img.convert('RGB'), (0, 0))
+                self.display_manager.image.paste(error_img, (0, 0))
                 self.display_manager.update_display()
                 return
 
@@ -201,6 +209,7 @@ class BasketballLive(Basketball, SportsLive):
             status_x = (display_width - status_width) // 2
             status_y = 1
             self._draw_text_with_outline(draw_overlay, period_clock_text, (status_x, status_y), self.fonts['time'])
+            top_span = (status_x, status_x + status_width)
 
             # Scores (centered) - convert to integers to remove decimal points
             def format_score(score):
@@ -271,7 +280,8 @@ class BasketballLive(Basketball, SportsLive):
 
             # Draw odds if available
             if 'odds' in game and game['odds']:
-                self._draw_dynamic_odds(draw_overlay, game['odds'], display_width, display_height)
+                self._draw_dynamic_odds(draw_overlay, game['odds'], display_width, display_height,
+                                        top_span=top_span)
 
             # Draw records, rankings, or tournament seeds if enabled
             is_tourney = game.get("is_tournament", False)

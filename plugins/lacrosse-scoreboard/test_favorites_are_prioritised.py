@@ -128,6 +128,7 @@ def make(sports, favorites, fav_limit, other_limit):
     obj.other_rotation_interval_seconds = 0      # pinned unless a test asks
     obj._other_window_start = 0
     obj._other_window_rotated_at = 0.0
+    obj.show_odds = False                        # rotation offers the new slice odds
     obj.other_games_min_quality = "any"          # filters off unless a test asks
     obj.other_games_divisions = []
     obj._team_rankings_cache = {}
@@ -594,6 +595,12 @@ def main():
           probe._setting_int("other_recent_games_to_show", 3, 0, 20) == 20)
     check("a missing key uses the default",
           probe._setting_int("not_present_at_all", 7, 0, 20) == 7)
+    try:
+        clamped = sports._clamp_window(float("inf"), 7)
+    except OverflowError as exc:
+        clamped = exc
+    check("an Infinity schedule window falls back instead of raising",
+          clamped == 7, clamped)
 
     check("a bare string division becomes one name, not three letters",
           sports.SportsCore._normalise_divisions("fbs") == ["fbs"])

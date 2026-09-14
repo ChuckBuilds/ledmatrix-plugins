@@ -1,5 +1,69 @@
 # Changelog
 
+## [1.29.0] - 2026-09-14
+
+Drift fixes: behaviour sibling scoreboards already had, ported here.
+
+### Added
+- `scroll_card.switch_show_date` / `switch_show_time` (football #342). The
+  full-screen upcoming scorebug read the scroll card's `show_date`/`show_time`,
+  so hiding the date on the ticker also blanked it on the scoreboard.
+- `update_intervals.live_odds` (default 60s). `update_intervals.odds` was
+  declared but never forwarded to the managers; both now reach them.
+
+### Fixed
+- **Postponed, cancelled and suspended games no longer show on Recent as
+  "Final 0-0".** ESPN files them under state `post`. A game is now final only
+  when `status.type.completed` is set and the status is not
+  postponed/canceled/suspended/delayed/abandoned.
+- **A failed logo shows "Logo Error" instead of a black panel.** The text was
+  drawn on a throwaway `.convert("RGB")` copy (three sites).
+- **Full-screen odds no longer overprint the period and clock, "Final" or
+  "Next Game".** An O/U with no favourite sits on the left instead of the
+  centre, and the odds move down a row if they would still hit the top-centre
+  text. A home spread of 0.0 is a pick'em, not a missing value, and a
+  non-numeric top-level spread no longer raises.
+- Upcoming now stops at `schedule_lookahead_days`. Selection read the
+  season-wide cache, so it could show games weeks away (football #345).
+- A mode that retakes the panel gives its current card a full dwell instead
+  of skipping straight past it (football #345).
+- Games rotated in between hourly updates now get odds (football #343).
+- Vegas: the cards are rebuilt when scores or the slate change, not only when
+  the cache is empty. Vegas reads only its own 'mixed' display and no longer
+  takes over the standalone scroll. The per-frame "Returning N image(s)" log
+  is now debug.
+- A cached "no odds" marker is a cache hit, so ESPN is no longer asked again
+  on every call.
+- Scroll cards: with rankings and records both on, an unranked team now shows
+  its record instead of nothing.
+- Logos come from the core's `src.logo_downloader`. The bundled copy saved any
+  HTTP 200 body as a PNG and wrote unmarked placeholders the refresh check
+  could not recognise, so one failed download left a permanent grey box.
+- Decoded logo caches are bounded LRU (core #559).
+- `other_games_divisions` is passed through as-is: a hand-edited `"fcs"` string
+  is no longer split into letters, and a null no longer breaks the adapter.
+  `test_mode` now reaches the managers.
+- A config `Infinity` in the schedule window or an integer setting no longer
+  crashes manager construction.
+
+### Removed
+- `data_fetcher.py`, `debug_tb_games.py` and the test that covered only
+  `data_fetcher.py`. Nothing at runtime imported them.
+- The vendored `logo_downloader.py`.
+
+### Changed
+- Behaviour change: `scroll_card.show_date` / `show_time` no longer hide the
+  date and time on the full-screen upcoming scorebug (they did since #336). A
+  config that turned them off shows the date/time there again; turn off
+  `switch_show_date` / `switch_show_time` to hide them.
+- Behaviour change: Upcoming used to show the next games however far away
+  they were. It now hides anything past `schedule_lookahead_days` (default 7),
+  a favourite's game included, so in preseason or a long break the screen is
+  empty until a game is inside the window. Raise the setting to see it sooner.
+- The core floor stays at 3.3.0. `sports.py` imports `src.common.sports_shared`,
+  which first shipped in core v3.3.1, but that release still reports
+  `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
+
 ## [1.28.0] - 2026-09-14
 
 ### Added

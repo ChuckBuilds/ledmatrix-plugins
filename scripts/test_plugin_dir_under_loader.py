@@ -67,6 +67,12 @@ def load_like_the_loader(plugin_id: str, plugin_dir: Path):
     safe = plugin_id.replace("-", "_")
     for stale in ("sports", f"_plg_{safe}_sports"):
         sys.modules.pop(stale, None)
+    # PluginLoader._evict_stale_bare_modules: a sibling module another plugin
+    # left under a bare name (dynamic_team_resolver, ...) must not satisfy
+    # this plugin's imports -- the loader drops those before exec_module.
+    siblings = {py.stem for py in plugin_dir.glob("*.py")} - {"sports"}
+    for name in siblings:
+        sys.modules.pop(name, None)
 
     sys.path.insert(0, str(plugin_dir))
     try:
@@ -80,6 +86,9 @@ def load_like_the_loader(plugin_id: str, plugin_dir: Path):
     # PluginLoader._namespace_plugin_modules: move it aside, drop the bare key.
     sys.modules[f"_plg_{safe}_sports"] = mod
     del sys.modules["sports"]
+    for name in siblings:
+        if name in sys.modules:
+            sys.modules[f"_plg_{safe}_{name}"] = sys.modules.pop(name)
     return mod
 
 

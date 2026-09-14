@@ -86,6 +86,28 @@ MODE_TYPES = ("live", "recent", "upcoming")
 DISPLAY_MODES = tuple(f"afl_{m}" for m in MODE_TYPES)  # afl_live, afl_recent, afl_upcoming
 
 
+_MISSING = object()
+
+
+def _display_option(display_options: Dict[str, Any], root: Dict[str, Any],
+                    key: str, default: Any, legacy_root: Optional[str] = None) -> Any:
+    """Resolve a toggle declared both in display_options and at the root.
+
+    Up to 1.24.1 only the root key was read, so that is where any setting a
+    user actually changed lives. The web UI saves schema defaults into both
+    blocks, so a display_options value equal to the default says nothing about
+    intent. Precedence: a changed display_options value, then a root value
+    (or the legacy plural name), then the default.
+    """
+    value = display_options.get(key, _MISSING)
+    if value is not _MISSING and value != default:
+        return value
+    for name in (key, legacy_root):
+        if name and name in root:
+            return root[name]
+    return default if value is _MISSING else value
+
+
 def _mode_type_of(display_mode: str) -> Optional[str]:
     """Return 'live'/'recent'/'upcoming' for an afl_* display mode, else None."""
     if not display_mode:
@@ -275,6 +297,7 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         filtering = cfg.get("filtering", {})
         game_limits = cfg.get("game_limits", {})
+        display_options = cfg.get("display_options") or {}
 
         def limit(key, default):
             """A limit from wherever the schema offers it.
@@ -316,15 +339,45 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_games_min_quality": limit(
                     "other_games_min_quality", "ranked"
                 ),
-                "other_games_divisions": list(
-                    limit("other_games_divisions", ["fbs"])
-                ),
+                # Passed through raw. list() here defeated the coercion in
+                # sports.py twice over: a hand-edited "fbs" became
+                # ['f','b','s'] -- already a list, so the string branch never
+                # fired, and the filter then matched nothing and rejected every
+                # non-favourite game -- while a null raised TypeError inside
+                # this translation, which _initialize_managers catches and logs
+                # once, leaving every manager missing and the plugin rendering
+                # nothing at all. Ported from football-scoreboard.
+                "other_games_divisions": limit("other_games_divisions", ["fbs"]),
                 "upcoming_games_to_show": limit("upcoming_games_to_show", 10),
-                "show_records": cfg.get("show_records", False),
-                "show_ranking": cfg.get("show_rankings", cfg.get("show_ranking", False)),
-                "show_odds": cfg.get("show_odds", False),
+                # display_options is the block the web UI renders these in;
+                # the root keys are older duplicates. Reading only the root
+                # (and the plural show_rankings, which the schema never
+                # declared) left the UI toggles saved and ignored. But the
+                # root keys were the only ones that ever worked, and the store
+                # saves schema defaults into both blocks, so a display_options
+                # value equal to its default is not evidence the user chose
+                # it: a changed root value wins over it. See _display_option.
+                "show_records": _display_option(
+                    display_options, cfg, "show_records", False),
+                "show_ranking": _display_option(
+                    display_options, cfg, "show_ranking", False,
+                    legacy_root="show_rankings"),
+                "show_odds": _display_option(
+                    display_options, cfg, "show_odds", True),
+                # Declared in the schema and read by SportsLive, but never
+                # carried across, so celebrations were always on and always
+                # 8s whatever the user set.
+                "celebration_enabled": cfg.get("celebration_enabled", True),
+                "celebration_duration": cfg.get("celebration_duration", 8),
+                "celebrate_opponent_goals": cfg.get("celebrate_opponent_goals", False),
+                # test_mode drives SportsLive's simulated live game; without
+                # passing it through it could never be set from config.
+                "test_mode": cfg.get("test_mode", False),
                 "update_interval_seconds": cfg.get("update_interval_seconds", 300),
                 "live_update_interval": cfg.get("live_update_interval", 30),
+                # Odds cache lifetimes, read by SportsCore; defaults match it.
+                "odds_update_interval": cfg.get("odds_update_interval", 3600),
+                "live_odds_update_interval": cfg.get("live_odds_update_interval", 60),
                 "recent_update_interval": cfg.get("recent_update_interval", 3600),
                 "upcoming_update_interval": cfg.get("upcoming_update_interval", 3600),
                 "stale_game_timeout": cfg.get("stale_game_timeout", 300),
@@ -521,6 +574,9 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
             self._active_update_threads.clear()
             self._scroll_prepared.clear()
             self._scroll_active.clear()
+            # New settings can change how the Vegas cards draw even when the
+            # game slate is identical; drop the fingerprint so they rebuild.
+            self._vegas_signature = None
 
             self._initialize_managers()
             self._display_mode_settings = self._parse_display_mode_settings()
@@ -1543,22 +1599,94 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
     # ------------------------------------------------------------------
     # Vegas scroll mode support
     # ------------------------------------------------------------------
+    #: Scroll display that holds the combined live/recent/upcoming Vegas strip.
+    _VEGAS_SCROLL_KEY = "mixed"
+
     def get_vegas_content(self) -> Optional[Any]:
-        """Return cached scroll image(s) for Vegas continuous scroll mode."""
+        """Return scroll image(s) for Vegas continuous scroll mode.
+
+        Rebuilt whenever the game slate changes, not only when nothing is
+        cached: the old empty-only check kept serving the first strip it
+        ever built, so scores in the ticker froze until a restart. Reads its
+        own 'mixed' display rather than the union of every display, which
+        could hand Vegas whatever a standalone mode last rendered, or a game
+        twice. Never calls update(): refreshing data is the update cycle's
+        job, and network I/O here would stall the Vegas render loop. Ported
+        from baseball-scoreboard.
+        """
         if not getattr(self, "_scroll_manager", None):
             return None
 
-        images = self._scroll_manager.get_all_vegas_content_items()
-        if not images:
-            self.logger.info("[AFL Vegas] Triggering scroll content generation")
-            self._ensure_scroll_content_for_vegas()
-            images = self._scroll_manager.get_all_vegas_content_items()
+        games = self._collect_vegas_games()
+        if not games:
+            self.logger.debug("[AFL Vegas] No games available")
+            return None
 
-        if images:
-            total_width = sum(img.width for img in images)
-            self.logger.info("[AFL Vegas] Returning %d image(s), %dpx total", len(images), total_width)
-            return images
-        return None
+        signature = self._vegas_game_signature(games)
+        images = self._vegas_items()
+        if not images or signature != getattr(self, "_vegas_signature", None):
+            self.logger.info(
+                "[AFL Vegas] Rebuilding scroll content (%s): %d game(s)",
+                "no cached content" if not images else "game data changed",
+                len(games),
+            )
+            if self._ensure_scroll_content_for_vegas(games):
+                self._vegas_signature = signature
+            images = self._vegas_items()
+
+        if not images:
+            return None
+        self.logger.debug(
+            "[AFL Vegas] Returning %d image(s), %dpx total",
+            len(images), sum(img.width for img in images),
+        )
+        return images
+
+    def _collect_vegas_games(self) -> List[Dict]:
+        """Every live, recent and upcoming game the managers currently hold."""
+        games: List[Dict] = []
+        for mode_type in MODE_TYPES:
+            manager = self._get_manager(mode_type)
+            games.extend(self._normalize_games_for_scroll(
+                self._get_games_from_manager(manager, mode_type), mode_type
+            ))
+        return games
+
+    @staticmethod
+    def _vegas_game_signature(games: List[Dict]) -> tuple:
+        """A cheap fingerprint of what the Vegas cards draw.
+
+        Deliberately leaves out the running clock (and period_text, which
+        embeds it): those tick every second and would rebuild every card that
+        often. The numeric period still catches a quarter change. Odds are
+        counted by presence, since they can land mid-dwell from a background
+        fetch.
+        """
+        return tuple(
+            (
+                game.get("id"),
+                game.get("is_live"), game.get("is_final"),
+                game.get("is_upcoming"), game.get("is_halftime"),
+                game.get("home_abbr"), game.get("away_abbr"),
+                game.get("home_score"), game.get("away_score"),
+                game.get("period"),
+                game.get("home_record"), game.get("away_record"),
+                bool(game.get("odds")),
+            )
+            for game in games
+        )
+
+    def _vegas_items(self) -> List[Any]:
+        """The Vegas items of the dedicated Vegas display only."""
+        manager = self._scroll_manager
+        getter = getattr(manager, "get_vegas_content_items_for", None)
+        if callable(getter):
+            # The callable() test above is the guard; getattr's None default
+            # is what a static checker sees.
+            return list(getter(self._VEGAS_SCROLL_KEY) or [])  # pylint: disable=not-callable
+        displays = getattr(manager, "_scroll_displays", None) or {}
+        display = displays.get(self._VEGAS_SCROLL_KEY)
+        return list(getattr(display, "_vegas_content_items", None) or [])
 
     def get_vegas_content_type(self) -> str:
         """Plugin provides multiple scrollable items (games)."""
@@ -1576,29 +1704,40 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
             return VegasDisplayMode.SCROLL
         return "scroll"
 
-    def _ensure_scroll_content_for_vegas(self) -> None:
-        """Generate scroll content across all mode types for Vegas mode."""
+    def _ensure_scroll_content_for_vegas(self, games: Optional[List[Dict]] = None) -> bool:
+        """Render the combined game slate into the Vegas scroll display."""
         if not getattr(self, "_scroll_manager", None):
             self.logger.debug("[AFL Vegas] No scroll manager available")
-            return
+            return False
 
-        games: List[Dict] = []
-        for mode_type in MODE_TYPES:
-            manager = self._get_manager(mode_type)
-            mode_games = self._normalize_games_for_scroll(
-                self._get_games_from_manager(manager, mode_type), mode_type
-            )
-            games.extend(mode_games)
-
+        if games is None:
+            games = self._collect_vegas_games()
         if not games:
             self.logger.debug("[AFL Vegas] No games available")
-            return
+            return False
 
-        success = self._scroll_manager.prepare_and_display(games, 'mixed', [AFL_LEAGUE_KEY], None)
+        key = self._VEGAS_SCROLL_KEY
+        try:
+            get_display = getattr(self._scroll_manager, "get_scroll_display", None)
+            if callable(get_display):
+                # Build on the Vegas display directly: prepare_and_display
+                # would also make it the active strip, hijacking a standalone
+                # scroll mode that is mid-marquee -- which matters now that
+                # this rebuilds on every slate change, not just once.
+                success = get_display(key).prepare_scroll_content(  # pylint: disable=not-callable
+                    games, key, [AFL_LEAGUE_KEY], None)
+            else:
+                success = self._scroll_manager.prepare_and_display(
+                    games, key, [AFL_LEAGUE_KEY], None)
+        except Exception:
+            self.logger.exception("[AFL Vegas] Error rendering scroll content")
+            return False
+
         if success:
             self.logger.info(f"[AFL Vegas] Generated scroll content: {len(games)} games")
         else:
             self.logger.warning("[AFL Vegas] Failed to generate scroll content")
+        return bool(success)
 
     def cleanup(self) -> None:
         """Clean up resources."""

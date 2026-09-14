@@ -1,5 +1,60 @@
 # Changelog
 
+## [2.29.0] - 2026-09-14
+
+Drift-audit fixes ported from the sibling scoreboards.
+
+### Fixed
+- **Celebration settings now work.** `celebration_enabled`,
+  `celebration_duration` and `celebrate_opponent_goals` were declared in every
+  league block but never forwarded to the managers, so celebrations were always
+  on and always 8s. `test_mode` is forwarded too.
+- **One failing league no longer blanks the rest.** Each league is built in its
+  own try; a failed league's managers are `None`.
+- **`other_games_divisions`** is passed through raw. A hand-edited `"fbs"` used
+  to become `['f','b','s']` and reject every non-favourite game; `null` raised
+  inside the translation.
+- **Postponed, cancelled and abandoned fixtures** no longer show as
+  "Final 0-0" on Recent. A final must be completed and actually played; these
+  are labelled PPD/CANC/SUSP/ABD instead.
+- **Full-screen odds** with only an over/under are anchored left instead of
+  centred through the league header, "Final" or the live clock, and step down a
+  row if they would still collide. A home spread of 0.0 is kept as a real line.
+- **Full-screen upcoming scorebug** reads `scroll_card.switch_show_date` /
+  `switch_show_time`, so hiding the date or time on the scroll card no longer
+  blanks it here.
+- **Upcoming** enforces `schedule_lookahead_days` in selection, and a mode
+  retaking the panel gives its current card a full dwell.
+- **Rotated-in other games** get odds without waiting for the hourly update.
+- **"Logo Error"** is drawn on the image that is shown, instead of a black panel.
+- **Decoded logo caches are bounded** (LRU), per manager and for the shared
+  scroll cache.
+- **Scroll card, rankings and records both on:** an unranked team shows its
+  record instead of nothing.
+- **Vegas** rebuilds its cards when the game data changes, not only when its
+  cache is empty, and no longer takes over the standalone scroll display.
+- A cached "no odds" marker is a cache hit, not a refetch on every call.
+- A config `Infinity` can no longer crash manager construction.
+
+### Added
+- `odds_update_interval` and `live_odds_update_interval` (advanced), per league
+  and per custom league.
+- `scroll_card.switch_show_date` / `switch_show_time`.
+
+### Changed
+- Behaviour change: `scroll_card.show_date` / `show_time` no longer hide the
+  date and time on the full-screen upcoming scorebug (they did since #336). A
+  config that turned them off shows the date/time there again; turn off
+  `switch_show_date` / `switch_show_time` to hide them.
+- The per-league `scroll_settings` block is retired. Nothing ever read it; it
+  stays accepted so saved configs still validate.
+- The core floor stays at 3.3.0. `sports.py` imports `src.common.sports_shared`,
+  which first shipped in core v3.3.1, but that release still reports
+  `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
+
+### Fixed
+- **Favorite game turns shows up in the web UI.** Also lists the root-level favorite_rotation_boost in x-propertyOrder: the previous release declared it but left it out of the order, so the web UI's config form never rendered the field (caught by scripts/test_property_order_coverage.py).
+
 ## [2.28.0] - 2026-09-14
 
 ### Added

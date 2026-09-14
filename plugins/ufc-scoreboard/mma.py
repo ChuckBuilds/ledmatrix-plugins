@@ -12,7 +12,15 @@ from PIL import Image, ImageDraw, ImageFont
 LANCZOS = getattr(Image, "Resampling", Image).LANCZOS
 
 from data_sources import ESPNDataSource
-from sports import SportsCore, SportsLive, SportsRecent, SportsUpcoming, _DEFAULT_LOOKBACK_DAYS
+from sports import (
+    SportsCore,
+    SportsLive,
+    SportsRecent,
+    SportsUpcoming,
+    _DEFAULT_LOOKAHEAD_DAYS,
+    _DEFAULT_LOOKBACK_DAYS,
+    _status_is_final,
+)
 
 
 class MMA(SportsCore):
@@ -89,7 +97,7 @@ class MMA(SportsCore):
         self.logger.debug(f"Headshot path: {image_path}")
         if fighter_id in self._logo_cache:
             self.logger.debug(f"Using cached headshot for {fighter_name}")
-            return self._logo_cache[fighter_id]
+            return self._cached_logo(fighter_id)
 
         try:
             if not image_path.exists():
@@ -157,7 +165,7 @@ class MMA(SportsCore):
                 max_height = int(self.display_height * 1.5)
                 logo.thumbnail((max_width, max_height), LANCZOS)
                 logo.load()  # Ensure pixel data is loaded before closing file
-            self._logo_cache[fighter_id] = logo
+            self._cache_logo(fighter_id, logo)
             return logo
 
         except Exception as e:
@@ -275,12 +283,19 @@ class MMA(SportsCore):
                 "start_time_utc": start_time_utc,
                 "status_text": status["type"]["shortDetail"],
                 "is_live": status["type"]["state"] == "in",
-                "is_final": status["type"]["state"] == "post",
+                # Not state alone: a cancelled or postponed bout is "post" too,
+                # and showed on Recent as a finished fight.
+                "is_final": _status_is_final(status["type"]),
                 "is_upcoming": (
                     status["type"]["state"] == "pre"
                     or status["type"]["name"].lower()
                     in ["scheduled", "pre-game", "status_scheduled"]
                 ),
+                # MMA has no halftime, but the shared SportsLive.update() reads
+                # details["is_halftime"] by subscript for every non-live fight
+                # in the feed. Without the key the first scheduled bout raised
+                # KeyError and the whole live update was abandoned.
+                "is_halftime": False,
                 "is_period_break": status["type"]["name"] == "STATUS_END_PERIOD",
                 "home_score": str(fighter1_score),
                 "away_score": str(fighter2_score),
@@ -405,7 +420,10 @@ class MMARecent(MMA, SportsRecent):
 
             if game.get("odds"):
                 self._draw_dynamic_odds(
-                    draw_overlay, game["odds"], self.display_width, self.display_height
+                    draw_overlay, game["odds"], self.display_width, self.display_height,
+                    top_span=self._top_row_span(
+                        draw_overlay, status_text, self.fonts["time"],
+                        self._get_layout_offset("status_text", "x_offset")),
                 )
 
             # Draw records if enabled
@@ -718,7 +736,9 @@ class MMAUpcoming(MMA, SportsUpcoming):
 
             if game.get("odds"):
                 self._draw_dynamic_odds(
-                    draw_overlay, game["odds"], self.display_width, self.display_height
+                    draw_overlay, game["odds"], self.display_width, self.display_height,
+                    top_span=self._top_row_span(
+                        draw_overlay, status_text, self.fonts["time"]),
                 )
 
             # Draw records if enabled
@@ -770,10 +790,19 @@ class MMAUpcoming(MMA, SportsUpcoming):
                 for event in events
                 for comp in event.get("competitions", [])
             ]
+            # How far ahead this screen looks (#345). The fetch is season-wide
+            # (Jan-Dec), so without a cutoff every fight ESPN had published was
+            # eligible and Upcoming filled with cards months out, ignoring
+            # schedule_lookahead_days. Mirrors the lookback cutoff on Recent.
+            upcoming_cutoff = datetime.now(timezone.utc) + timedelta(
+                days=getattr(self, "schedule_lookahead_days", _DEFAULT_LOOKAHEAD_DAYS))
             for event in flattened_events:
                 game = self._extract_game_details(event)
                 if game and game["is_upcoming"]:
                     all_upcoming_games += 1
+                    start_time = game.get("start_time_utc")
+                    if start_time and start_time > upcoming_cutoff:
+                        continue
                     if self.show_favorite_teams_only and (
                         self.favorite_fighters or self.favorite_weight_class
                     ):
@@ -989,7 +1018,10 @@ class MMALive(MMA, SportsLive):
             # Draw odds if available
             if game.get("odds"):
                 self._draw_dynamic_odds(
-                    draw_overlay, game["odds"], self.display_width, self.display_height
+                    draw_overlay, game["odds"], self.display_width, self.display_height,
+                    top_span=self._top_row_span(
+                        draw_overlay, period_clock_text, self.fonts["time"],
+                        self._get_layout_offset("status_text", "x_offset")),
                 )
 
             # Draw records if enabled

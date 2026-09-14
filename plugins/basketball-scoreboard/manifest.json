@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.32.0",
+  "version": "1.33.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.33.0",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Ports of fixes that had reached only some scoreboards. Postponed, cancelled and suspended games no longer show on Recent as 'Final 0-0'. Full-screen odds no longer print through 'Final', the quarter or 'Next Game' when ESPN sends only an O/U; a home pick'em (spread 0.0) is no longer replaced by the top-level spread. A failed logo shows 'Logo Error' instead of a black panel. Vegas cards are rebuilt when scores change and come from the combined slate, not whatever standalone scroll last rendered. One league failing to initialise no longer stops the other leagues or makes update() raise every tick. A cached no-odds marker no longer triggers a fresh ESPN request. Decoded logo caches are bounded (core #559). Upcoming games respect schedule_lookahead_days, the dwell clock resets on mode re-entry, and games rotated in between updates get odds. The full-screen scorebug has its own switch_show_date/switch_show_time. New advanced settings odds_update_interval and live_odds_update_interval now reach the managers, as do test_mode and a hand-edited other_games_divisions string or null. A config Infinity no longer crashes manager init. The unused bundled logo_downloader.py is removed (sports.py imports the core's)."
+    },
     {
       "version": "1.32.0",
       "released": "2026-09-14",
@@ -455,7 +461,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-11",
+  "last_updated": "2026-09-14",
   "verified": true,
   "screenshot": "",
   "display_modes": [

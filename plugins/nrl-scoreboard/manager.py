@@ -88,6 +88,8 @@ MODE_LIVE = "nrl_live"
 MODE_RECENT = "nrl_recent"
 MODE_UPCOMING = "nrl_upcoming"
 MODE_TYPES = ("live", "recent", "upcoming")
+# Scroll display that holds Vegas's combined live/recent/upcoming slate.
+VEGAS_SCROLL_KEY = "mixed"
 
 
 class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
@@ -296,9 +298,12 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_games_min_quality": limit(
                     "other_games_min_quality", "ranked"
                 ),
-                "other_games_divisions": list(
-                    limit("other_games_divisions", ["fbs"])
-                ),
+                # Passed through raw; sports.py normalises it. list() here
+                # turned a hand-edited "fbs" into ['f','b','s'] -- already a
+                # list, so the string branch never fired and the filter
+                # rejected every non-favourite game -- and made a null raise
+                # TypeError inside this translation, leaving no managers.
+                "other_games_divisions": limit("other_games_divisions", ["fbs"]),
                 "upcoming_games_to_show": limit("upcoming_games_to_show", 1),
                 "show_records": display_options.get(
                     "show_records", cfg.get("show_records", False)
@@ -318,6 +323,12 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "recent_update_interval": cfg.get("recent_update_interval", 3600),
                 "upcoming_update_interval": cfg.get("upcoming_update_interval", 3600),
                 "stale_game_timeout": cfg.get("stale_game_timeout", 300),
+                # Read by sports.py _fetch_odds / _attach_odds_to_rotated_games.
+                "odds_update_interval": cfg.get("odds_update_interval", 3600),
+                "live_odds_update_interval": cfg.get("live_odds_update_interval", 60),
+                # Drives SportsLive's simulated game; without it test_mode could
+                # never be set from config (same as football/baseball).
+                "test_mode": cfg.get("test_mode", False),
                 "live_game_duration": cfg.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": cfg.get(
                     "non_favorite_live_game_duration", 0
@@ -1324,6 +1335,8 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
 
             self._scroll_prepared.clear()
             self._scroll_active.clear()
+            # New managers: force Vegas to rebuild its slate from them.
+            self._vegas_signature = None
 
             self._initialize_managers()
             self._display_mode_settings = self._parse_display_mode_settings()
@@ -1616,21 +1629,43 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
     # Vegas scroll mode support
     # ------------------------------------------------------------------
     def get_vegas_content(self) -> Optional[Any]:
-        """Get content for Vegas-style continuous scroll mode."""
+        """Get content for Vegas-style continuous scroll mode.
+
+        Reads the dedicated 'mixed' display, not the union of every display:
+        the union only got rebuilt when it was empty, so once any standalone
+        mode had rendered, Vegas froze on that mode's games and never picked
+        up a score change. Content is rebuilt when the slate's fingerprint
+        changes. No update() here -- fetching is the update cycle's job, and
+        network I/O on this path stalls the Vegas render loop. Same as
+        baseball-scoreboard.
+        """
         if not getattr(self, "_scroll_manager", None):
             return None
 
-        images = self._scroll_manager.get_all_vegas_content_items()
-        if not images:
-            self.logger.info("[NRL Vegas] Triggering scroll content generation")
-            self._ensure_scroll_content_for_vegas()
-            images = self._scroll_manager.get_all_vegas_content_items()
+        try:
+            games, leagues = self._collect_games_for_scroll(mode_type=None)
+        except Exception:
+            self.logger.exception("[NRL Vegas] Failed to collect games")
+            return None
+        if not games:
+            self.logger.debug("[NRL Vegas] No games available")
+            return None
 
-        if images:
-            total_width = sum(img.width for img in images)
-            self.logger.info("[NRL Vegas] Returning %d image(s), %dpx total", len(images), total_width)
-            return images
-        return None
+        signature = self._fingerprint_games(games)
+        images = self._scroll_manager.get_vegas_content_items_for(VEGAS_SCROLL_KEY)
+        if not images or signature != getattr(self, "_vegas_signature", None):
+            self.logger.info(
+                "[NRL Vegas] Rebuilding scroll content (%s): %d game(s)",
+                "no cached content" if not images else "game data changed", len(games))
+            if self._build_vegas_scroll_content(games, leagues):
+                self._vegas_signature = signature
+            images = self._scroll_manager.get_vegas_content_items_for(VEGAS_SCROLL_KEY)
+
+        if not images:
+            return None
+        self.logger.debug("[NRL Vegas] Returning %d image(s), %dpx total",
+                          len(images), sum(img.width for img in images))
+        return images
 
     def get_vegas_content_type(self) -> str:
         """This plugin provides multiple scrollable items (games)."""
@@ -1648,17 +1683,12 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
             return VegasDisplayMode.SCROLL
         return "scroll"
 
-    def _ensure_scroll_content_for_vegas(self) -> None:
-        """Ensure scroll content is generated for Vegas mode."""
-        if not getattr(self, "_scroll_manager", None):
-            self.logger.debug("[NRL Vegas] No scroll manager available")
-            return
+    def _build_vegas_scroll_content(self, games: List[Dict], leagues: List[str]) -> bool:
+        """Render the combined slate into the dedicated Vegas scroll display.
 
-        games, leagues = self._collect_games_for_scroll(mode_type=None)
-        if not games:
-            self.logger.debug("[NRL Vegas] No games available")
-            return
-
+        prepare_content, not prepare_and_display: the latter also makes this
+        the active scroll display, hijacking the standalone rotation's scroll.
+        """
         game_type_counts = {"live": 0, "recent": 0, "upcoming": 0}
         for game in games:
             state = game.get("status", {}).get("state", "")
@@ -1669,7 +1699,8 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
             elif state == "pre":
                 game_type_counts["upcoming"] += 1
 
-        success = self._scroll_manager.prepare_and_display(games, "mixed", leagues, None)
+        success = self._scroll_manager.prepare_content(
+            games, VEGAS_SCROLL_KEY, leagues, self._get_rankings_cache())
         if success:
             type_summary = ", ".join(
                 f"{count} {gtype}" for gtype, count in game_type_counts.items() if count > 0
@@ -1677,6 +1708,7 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
             self.logger.info(f"[NRL Vegas] Generated scroll content: {len(games)} games ({type_summary})")
         else:
             self.logger.warning("[NRL Vegas] Failed to generate scroll content")
+        return bool(success)
 
     def cleanup(self) -> None:
         """Clean up resources."""

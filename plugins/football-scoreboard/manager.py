@@ -27,7 +27,9 @@ This replaces the previous "sticky manager" approach which prevented league rota
 and made it difficult to ensure both leagues were displayed.
 """
 
+import json
 import logging
+import os
 from contextlib import contextmanager
 import time
 from typing import Dict, Any, Set, Optional, Tuple, List
@@ -61,6 +63,10 @@ except ImportError:
 
 from football_timezone import resolve_timezone_name
 from football_favorite_check import FavoriteTeamCheck
+
+
+#: Scroll display the Vegas ticker's combined live/recent/upcoming slate uses.
+VEGAS_SCROLL_KEY = 'mixed'
 
 
 _ROOT_CONFIG_KEYS = (
@@ -197,6 +203,8 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # rebuilds it mid-cycle instead of at the end of one.
         self._live_scroll_fingerprints = {}
         self._live_scroll_rebuilt_at = {}
+        # Fingerprint of the slate the Vegas cards were last built from.
+        self._vegas_signature = None
         # Seconds the last strip render took, per mode; feeds the duty-cycle cap.
         self._live_scroll_rebuild_cost = {}
         self._scroll_active_league: Dict[str, str] = {}  # {game_type: league currently prepared}
@@ -366,40 +374,36 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 setattr(self, attr, None)
 
     def _initialize_managers(self):
-        """Initialize all manager instances."""
-        try:
-            # Create adapted configs for managers
-            nfl_config = self._adapt_config_for_manager("nfl")
-            ncaa_fb_config = self._adapt_config_for_manager("ncaa_fb")
+        """Initialize all manager instances.
 
-            # Initialize NFL managers if enabled
-            if self.nfl_enabled:
-                self.nfl_live = NFLLiveManager(
-                    nfl_config, self.display_manager, self.cache_manager
+        Each league is built in its own try: one league's bad config or
+        failing constructor used to abort the whole method, leaving the other
+        league's managers unset and the plugin blank. A failed league's three
+        attributes are set to None, which update() and the display paths
+        already skip.
+        """
+        leagues = (
+            ("nfl", "NFL", self.nfl_enabled,
+             (NFLLiveManager, NFLRecentManager, NFLUpcomingManager)),
+            ("ncaa_fb", "NCAA FB", self.ncaa_fb_enabled,
+             (NCAAFBLiveManager, NCAAFBRecentManager, NCAAFBUpcomingManager)),
+        )
+        for league, label, enabled, classes in leagues:
+            if not enabled:
+                continue
+            try:
+                league_config = self._adapt_config_for_manager(league)
+                built = [cls(league_config, self.display_manager, self.cache_manager)
+                         for cls in classes]
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to initialize {label} managers: {e}", exc_info=True
                 )
-                self.nfl_recent = NFLRecentManager(
-                    nfl_config, self.display_manager, self.cache_manager
-                )
-                self.nfl_upcoming = NFLUpcomingManager(
-                    nfl_config, self.display_manager, self.cache_manager
-                )
-                self.logger.info("NFL managers initialized")
-
-            # Initialize NCAA FB managers if enabled
-            if self.ncaa_fb_enabled:
-                self.ncaa_fb_live = NCAAFBLiveManager(
-                    ncaa_fb_config, self.display_manager, self.cache_manager
-                )
-                self.ncaa_fb_recent = NCAAFBRecentManager(
-                    ncaa_fb_config, self.display_manager, self.cache_manager
-                )
-                self.ncaa_fb_upcoming = NCAAFBUpcomingManager(
-                    ncaa_fb_config, self.display_manager, self.cache_manager
-                )
-                self.logger.info("NCAA FB managers initialized")
-
-        except Exception as e:
-            self.logger.error(f"Error initializing managers: {e}", exc_info=True)
+                built = [None, None, None]
+            else:
+                self.logger.info(f"{label} managers initialized")
+            for mode_type, manager in zip(("live", "recent", "upcoming"), built):
+                setattr(self, f"{league}_{mode_type}", manager)
 
     def _initialize_league_registry(self) -> None:
         """
@@ -721,6 +725,12 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "recent_update_interval": league_config.get("recent_update_interval", 3600),
                 "upcoming_update_interval": league_config.get("upcoming_update_interval", 3600),
                 "stale_game_timeout": league_config.get("stale_game_timeout", 300),
+                # Read by sports.py from this block; neither was forwarded, so
+                # odds refreshed only at the code defaults.
+                "odds_update_interval": league_config.get("odds_update_interval", 3600),
+                "live_odds_update_interval": league_config.get(
+                    "live_odds_update_interval", 60
+                ),
                 "live_game_duration": league_config.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": league_config.get(
                     "non_favorite_live_game_duration", 0
@@ -1106,21 +1116,22 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         self._check_favorite_teams()
 
-        try:
-            # Update NFL managers if enabled
-            if self.nfl_enabled:
-                self.nfl_live.update()
-                self.nfl_recent.update()
-                self.nfl_upcoming.update()
-
-            # Update NCAA FB managers if enabled
-            if self.ncaa_fb_enabled:
-                self.ncaa_fb_live.update()
-                self.ncaa_fb_recent.update()
-                self.ncaa_fb_upcoming.update()
-
-        except Exception as e:
-            self.logger.error(f"Error updating managers: {e}")
+        for league, enabled in (("nfl", self.nfl_enabled),
+                                ("ncaa_fb", self.ncaa_fb_enabled)):
+            if not enabled:
+                continue
+            for mode_type in ("live", "recent", "upcoming"):
+                # None when that league failed to initialise; one manager's
+                # failure no longer skips every manager after it.
+                manager = getattr(self, f"{league}_{mode_type}", None)
+                if manager is None:
+                    continue
+                try:
+                    manager.update()
+                except Exception as e:
+                    self.logger.error(
+                        f"Error updating {league}_{mode_type} manager: {e}"
+                    )
 
     def _get_managers_in_priority_order(self, mode_type: str) -> list:
         """
@@ -2825,26 +2836,24 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             - no mode_duration, dynamic_cap=45s → returns None (use dynamic calculation with cap)
             - neither set → returns None (use dynamic calculation)
         """
-        # Parse display_mode to extract league if it's a granular mode
+        # Parse display_mode to extract league if it's a granular mode. Match
+        # against the registry, as get_cycle_duration does (7c6281d):
+        # split("_", 1) turned "ncaa_fb_recent" into ("ncaa", "fb_recent"),
+        # so league stayed None and NCAA FB silently took the combined-mode
+        # duration and caps instead of its own per-league settings.
         league = None
         if "_" in display_mode and not display_mode.startswith("football_"):
-            # Granular mode: e.g., "nfl_recent", "ncaa_fb_upcoming"
-            parts = display_mode.split("_", 1)
-            if len(parts) == 2:
-                potential_league, potential_mode_type = parts
-                # Validate it's a known league
-                if potential_league in self._league_registry:
-                    league = potential_league
-                    # Use the mode_type from the display_mode if it matches
-                    if potential_mode_type == mode_type:
-                        # Mode type matches, use this league
-                        pass
-                    else:
+            # Longest id first, so a league id that prefixes another cannot win.
+            for league_id in sorted(self._league_registry, key=len, reverse=True):
+                if display_mode.startswith(f"{league_id}_"):
+                    league = league_id
+                    if display_mode != f"{league_id}_{mode_type}":
                         # Mode type doesn't match - might be invalid, but continue anyway
                         self.logger.debug(
                             f"Mode type mismatch in _get_effective_mode_duration: "
                             f"display_mode={display_mode}, mode_type={mode_type}"
                         )
+                    break
         
         # Get base mode duration (with league if granular mode)
         mode_duration = self._get_mode_duration(mode_type, league=league)
@@ -3146,6 +3155,17 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             self.logger.error(f"Error calculating cycle duration for {display_mode}: {e}")
             return None
 
+    @staticmethod
+    def _manifest_version() -> str:
+        """This plugin's version as the store knows it: manifest.json's."""
+        try:
+            path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "manifest.json")
+            with open(path, encoding="utf-8") as fh:
+                return str(json.load(fh).get("version", "unknown"))
+        except (OSError, ValueError, AttributeError):
+            return "unknown"
+
     def get_info(self) -> Dict[str, Any]:
         """Get plugin information."""
         try:
@@ -3155,7 +3175,8 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             info = {
                 "plugin_id": self.plugin_id,
                 "name": "Football Scoreboard",
-                "version": "2.6.0",
+                # Read, not hard-coded: this said "2.6.0" through 3.x.
+                "version": self._manifest_version(),
                 "enabled": self.is_enabled,
                 "display_size": f"{self.display_width}x{self.display_height}",
                 "nfl_enabled": self.nfl_enabled,
@@ -4233,25 +4254,107 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         Returns:
             List of PIL Images from scroll displays, or None if no content
         """
-        if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
+        if not getattr(self, '_scroll_manager', None):
             return None
 
-        images = self._scroll_manager.get_all_vegas_content_items()
+        # Reads the dedicated 'mixed' display, not the union of every scroll
+        # display: once a standalone scroll mode had rendered, the union was
+        # non-empty, so Vegas inherited that mode's games and never rebuilt.
+        # Rebuilt when the slate's fingerprint changes, and never via
+        # update(): network I/O here froze the Vegas render loop.
+        try:
+            games, leagues = self._collect_games_for_scroll(live_priority_active=False)
+        except Exception:
+            self.logger.exception("[Football Vegas] Failed to collect games")
+            return None
 
-        if not images or 'mixed' not in self._scroll_manager._scroll_displays:
-            self.logger.info("[Football Vegas] Triggering scroll content generation")
-            self._ensure_scroll_content_for_vegas()
-            images = self._scroll_manager.get_all_vegas_content_items()
+        if not games:
+            self.logger.debug("[Football Vegas] No games available")
+            return None
 
-        if images:
-            total_width = sum(img.width for img in images)
+        signature = self._vegas_game_signature(games)
+        images = self._scroll_manager.get_vegas_content_items_for(VEGAS_SCROLL_KEY)
+
+        if not images or signature != getattr(self, '_vegas_signature', None):
+            reason = "no cached content" if not images else "game data changed"
             self.logger.info(
-                "[Football Vegas] Returning %d image(s), %dpx total",
-                len(images), total_width
+                "[Football Vegas] Rebuilding scroll content (%s): %d game(s) from %s",
+                reason, len(games), ', '.join(leagues) or 'no leagues'
             )
-            return images
+            if self._build_vegas_scroll_content(games, leagues):
+                self._vegas_signature = signature
+            images = self._scroll_manager.get_vegas_content_items_for(VEGAS_SCROLL_KEY)
 
-        return None
+        if not images:
+            return None
+
+        total_width = sum(img.width for img in images)
+        self.logger.debug(
+            "[Football Vegas] Returning %d image(s), %dpx total",
+            len(images), total_width
+        )
+        return images
+
+    def _vegas_game_signature(self, games: List[Dict]) -> tuple:
+        """Cheap fingerprint of what the Vegas cards draw.
+
+        The clock is deliberately left out, as in the live scroll refresh: it
+        changes on every poll and would rebuild every card each time.
+        """
+        fingerprint = []
+        for game in games:
+            status = game.get('status')
+            state = status.get('state') if isinstance(status, dict) else status
+            odds = game.get('odds') if isinstance(game.get('odds'), dict) else {}
+            fingerprint.append((
+                game.get('id') or game.get('start_time'),
+                game.get('league'),
+                state,
+                game.get('home_abbr'), game.get('away_abbr'),
+                game.get('home_score'), game.get('away_score'),
+                game.get('period'), game.get('period_text'),
+                game.get('down_distance_text'), game.get('possession'),
+                game.get('scoring_event'), game.get('is_final'),
+                game.get('home_record'), game.get('away_record'),
+                odds.get('spread'), odds.get('over_under'),
+            ))
+        return tuple(fingerprint)
+
+    def _build_vegas_scroll_content(self, games: List[Dict], leagues: List[str]) -> bool:
+        """Render the combined slate into the Vegas scroll display."""
+        rankings_cache = (
+            self._get_rankings_cache() if hasattr(self, '_get_rankings_cache') else None
+        )
+        try:
+            # prepare_content, not prepare_and_display: the latter also makes
+            # 'mixed' the active display and hijacks a standalone scroll.
+            success = self._scroll_manager.prepare_content(
+                games, VEGAS_SCROLL_KEY, leagues, rankings_cache
+            )
+        except Exception:
+            self.logger.exception("[Football Vegas] Error rendering scroll content")
+            return False
+
+        if not success:
+            self.logger.warning("[Football Vegas] Failed to generate scroll content")
+            return False
+
+        counts = {'live': 0, 'recent': 0, 'upcoming': 0}
+        for game in games:
+            status = game.get('status')
+            state = status.get('state') if isinstance(status, dict) else status
+            if state == 'in':
+                counts['live'] += 1
+            elif state == 'post':
+                counts['recent'] += 1
+            elif state == 'pre':
+                counts['upcoming'] += 1
+        summary = ', '.join(f"{n} {kind}" for kind, n in counts.items() if n)
+        self.logger.info(
+            "[Football Vegas] Generated scroll content: %d games (%s) from %s",
+            len(games), summary or 'unclassified', ', '.join(leagues)
+        )
+        return True
 
     def get_vegas_content_type(self) -> str:
         """
@@ -4285,66 +4388,24 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
     def _ensure_scroll_content_for_vegas(self) -> None:
         """
-        Ensure scroll content is generated for Vegas mode.
+        Build the combined Vegas slate if it is missing.
 
-        This method is called by get_vegas_content() when the scroll cache is empty.
-        It collects all game types (live, recent, upcoming) organized by league.
+        Retained for backward compatibility; get_vegas_content() now rebuilds
+        directly and keys off a data fingerprint. It no longer calls update():
+        refreshing data is the update cycle's job, and network I/O on the
+        Vegas render path stalled the scroll with the panel frozen.
         """
-        if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
+        if not getattr(self, '_scroll_manager', None):
             self.logger.debug("[Football Vegas] No scroll manager available")
             return
 
-        # Refresh internal managers/cache so Vegas has up-to-date content
-        try:
-            if hasattr(self, 'update') and callable(self.update):
-                self.update()
-                self.logger.debug("[Football Vegas] Refreshed managers via update()")
-            elif hasattr(self, 'refresh_managers') and callable(self.refresh_managers):
-                self.refresh_managers()
-                self.logger.debug("[Football Vegas] Refreshed managers via refresh_managers()")
-            elif hasattr(self, '_update') and callable(self._update):
-                self._update()
-                self.logger.debug("[Football Vegas] Refreshed managers via _update()")
-        except Exception as e:
-            self.logger.debug(f"[Football Vegas] Manager refresh failed (non-fatal): {e}")
-
-        # Collect all games (live, recent, upcoming) organized by league
         games, leagues = self._collect_games_for_scroll(live_priority_active=False)
-
         if not games:
             self.logger.debug("[Football Vegas] No games available")
             return
 
-        # Count games by type for logging
-        game_type_counts = {'live': 0, 'recent': 0, 'upcoming': 0}
-        for game in games:
-            state = game.get('status', {}).get('state', '')
-            if state == 'in':
-                game_type_counts['live'] += 1
-            elif state == 'post':
-                game_type_counts['recent'] += 1
-            elif state == 'pre':
-                game_type_counts['upcoming'] += 1
-
-        # Get rankings cache if available
-        rankings_cache = self._get_rankings_cache() if hasattr(self, '_get_rankings_cache') else None
-
-        # Prepare scroll content with mixed game types
-        # Note: Using 'mixed' as game_type indicator for scroll config
-        success = self._scroll_manager.prepare_and_display(
-            games, 'mixed', leagues, rankings_cache
-        )
-
-        if success:
-            type_summary = ', '.join(
-                f"{count} {gtype}" for gtype, count in game_type_counts.items() if count > 0
-            )
-            self.logger.info(
-                f"[Football Vegas] Successfully generated scroll content: "
-                f"{len(games)} games ({type_summary}) from {', '.join(leagues)}"
-            )
-        else:
-            self.logger.warning("[Football Vegas] Failed to generate scroll content")
+        if self._build_vegas_scroll_content(games, leagues):
+            self._vegas_signature = self._vegas_game_signature(games)
 
     def cleanup(self) -> None:
         """Clean up resources."""

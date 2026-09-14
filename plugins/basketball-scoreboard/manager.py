@@ -60,6 +60,9 @@ from basketball_timezone import resolve_timezone_name
 from basketball_favorite_check import FavoriteTeamCheck
 
 
+#: Scroll display key the combined live/recent/upcoming Vegas slate renders into.
+VEGAS_SCROLL_KEY = 'mixed'
+
 _ROOT_CONFIG_KEYS = (
     "schedule_lookback_days",
     "schedule_lookahead_days",
@@ -177,6 +180,10 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         else:
             self.logger.debug("Scroll mode not available - ScrollDisplayManager not imported")
         
+        # Fingerprint of the slate the Vegas cards were last rendered from, so
+        # they are re-rendered when the games change and not otherwise.
+        self._vegas_signature: Optional[tuple] = None
+
         # Track current scroll state
         self._scroll_active: Dict[str, bool] = {}  # {game_type: is_active}
         self._scroll_prepared: Dict[str, bool] = {}  # {game_type: is_prepared}
@@ -264,68 +271,48 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._current_display_mode_type: Optional[str] = None  # 'live', 'recent', 'upcoming'
 
     def _initialize_managers(self):
-        """Initialize all manager instances."""
-        try:
-            # Create adapted configs for managers
-            nba_config = self._adapt_config_for_manager("nba")
-            wnba_config = self._adapt_config_for_manager("wnba")
-            ncaam_config = self._adapt_config_for_manager("ncaam")
-            ncaaw_config = self._adapt_config_for_manager("ncaaw")
+        """Initialize all manager instances.
 
-            # Initialize NBA managers if enabled
-            if self.nba_enabled:
-                self.nba_live = NBALiveManager(
-                    nba_config, self.display_manager, self.cache_manager
+        Each league is built in its own try. With one try around all four, a
+        league that failed to construct (a bad config value, a bad asset)
+        skipped every league after it, and left its own attributes unset, so
+        update() raised AttributeError on every tick. A league that fails now
+        gets None for all three managers, which update() skips and the display
+        paths already treat as "nothing to show".
+        """
+        leagues = (
+            ("nba", "NBA", NBALiveManager, NBARecentManager, NBAUpcomingManager),
+            ("wnba", "WNBA", WNBALiveManager, WNBARecentManager, WNBAUpcomingManager),
+            ("ncaam", "NCAA Men's", NCAAMBasketballLiveManager,
+             NCAAMBasketballRecentManager, NCAAMBasketballUpcomingManager),
+            ("ncaaw", "NCAA Women's", NCAAWBasketballLiveManager,
+             NCAAWBasketballRecentManager, NCAAWBasketballUpcomingManager),
+        )
+        for league, label, live_cls, recent_cls, upcoming_cls in leagues:
+            if not getattr(self, f"{league}_enabled", False):
+                continue
+            try:
+                league_config = self._adapt_config_for_manager(league)
+                built = {
+                    "live": live_cls(
+                        league_config, self.display_manager, self.cache_manager
+                    ),
+                    "recent": recent_cls(
+                        league_config, self.display_manager, self.cache_manager
+                    ),
+                    "upcoming": upcoming_cls(
+                        league_config, self.display_manager, self.cache_manager
+                    ),
+                }
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to initialize {label} managers: {e}", exc_info=True
                 )
-                self.nba_recent = NBARecentManager(
-                    nba_config, self.display_manager, self.cache_manager
-                )
-                self.nba_upcoming = NBAUpcomingManager(
-                    nba_config, self.display_manager, self.cache_manager
-                )
-                self.logger.info("NBA managers initialized")
-
-            # Initialize WNBA managers if enabled
-            if self.wnba_enabled:
-                self.wnba_live = WNBALiveManager(
-                    wnba_config, self.display_manager, self.cache_manager
-                )
-                self.wnba_recent = WNBARecentManager(
-                    wnba_config, self.display_manager, self.cache_manager
-                )
-                self.wnba_upcoming = WNBAUpcomingManager(
-                    wnba_config, self.display_manager, self.cache_manager
-                )
-                self.logger.info("WNBA managers initialized")
-
-            # Initialize NCAA Men's managers if enabled
-            if self.ncaam_enabled:
-                self.ncaam_live = NCAAMBasketballLiveManager(
-                    ncaam_config, self.display_manager, self.cache_manager
-                )
-                self.ncaam_recent = NCAAMBasketballRecentManager(
-                    ncaam_config, self.display_manager, self.cache_manager
-                )
-                self.ncaam_upcoming = NCAAMBasketballUpcomingManager(
-                    ncaam_config, self.display_manager, self.cache_manager
-                )
-                self.logger.info("NCAA Men's managers initialized")
-
-            # Initialize NCAA Women's managers if enabled
-            if self.ncaaw_enabled:
-                self.ncaaw_live = NCAAWBasketballLiveManager(
-                    ncaaw_config, self.display_manager, self.cache_manager
-                )
-                self.ncaaw_recent = NCAAWBasketballRecentManager(
-                    ncaaw_config, self.display_manager, self.cache_manager
-                )
-                self.ncaaw_upcoming = NCAAWBasketballUpcomingManager(
-                    ncaaw_config, self.display_manager, self.cache_manager
-                )
-                self.logger.info("NCAA Women's managers initialized")
-
-        except Exception as e:
-            self.logger.error(f"Error initializing managers: {e}", exc_info=True)
+                built = {"live": None, "recent": None, "upcoming": None}
+            else:
+                self.logger.info(f"{label} managers initialized")
+            for mode, manager in built.items():
+                setattr(self, f"{league}_{mode}", manager)
 
     def _initialize_league_registry(self) -> None:
         """
@@ -833,8 +820,15 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_games_min_quality": game_limits.get(
                     "other_games_min_quality", "ranked"
                 ),
-                "other_games_divisions": list(
-                    game_limits.get("other_games_divisions", ["fbs"])
+                # Passed through raw. list() here defeated the coercion in
+                # sports.py (_normalise_divisions) twice over: a hand-edited
+                # "fbs" became ['f','b','s'] -- already a list, so the string
+                # branch never fired, and the filter then matched nothing and
+                # rejected every non-favourite game -- while a null raised
+                # TypeError inside this translation, which _initialize_managers
+                # caught, leaving the managers None and the plugin blank.
+                "other_games_divisions": game_limits.get(
+                    "other_games_divisions", ["fbs"]
                 ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", 10),
                 "show_records": display_options.get("show_records", False),
@@ -847,11 +841,21 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "recent_update_interval": league_config.get("recent_update_interval", 3600),
                 "upcoming_update_interval": league_config.get("upcoming_update_interval", 3600),
                 "stale_game_timeout": league_config.get("stale_game_timeout", 300),
+                # Read by SportsCore._fetch_odds and the rotated-in odds pass.
+                # Defaults match the code's own fallbacks.
+                "odds_update_interval": league_config.get("odds_update_interval", 3600),
+                "live_odds_update_interval": league_config.get(
+                    "live_odds_update_interval", 60
+                ),
                 "live_game_duration": league_config.get("live_game_duration", 20),
                 "non_favorite_live_game_duration": league_config.get(
                     "non_favorite_live_game_duration", 0
                 ),
                 "live_priority": league_config.get("live_priority", False),
+                # test_mode drives SportsLive's simulated live game. Without
+                # passing it through it could never be set from config, so the
+                # _test_mode_update() path was unreachable.
+                "test_mode": league_config.get("test_mode", False),
                 "show_favorite_teams_only": show_favorites_only,
                 "show_all_live": show_all_live,
                 "filtering": filtering,
@@ -1046,34 +1050,24 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Collect all manager update tasks
         update_tasks = []
         
-        if self.nba_enabled:
-            update_tasks.extend([
-                ("NBA Live", self.nba_live.update),
-                ("NBA Recent", self.nba_recent.update),
-                ("NBA Upcoming", self.nba_upcoming.update),
-            ])
-        
-        if self.wnba_enabled:
-            update_tasks.extend([
-                ("WNBA Live", self.wnba_live.update),
-                ("WNBA Recent", self.wnba_recent.update),
-                ("WNBA Upcoming", self.wnba_upcoming.update),
-            ])
-        
-        if self.ncaam_enabled:
-            update_tasks.extend([
-                ("NCAA Men's Live", self.ncaam_live.update),
-                ("NCAA Men's Recent", self.ncaam_recent.update),
-                ("NCAA Men's Upcoming", self.ncaam_upcoming.update),
-            ])
-        
-        if self.ncaaw_enabled:
-            update_tasks.extend([
-                ("NCAA Women's Live", self.ncaaw_live.update),
-                ("NCAA Women's Recent", self.ncaaw_recent.update),
-                ("NCAA Women's Upcoming", self.ncaaw_upcoming.update),
-            ])
-        
+        leagues = (
+            ("nba", "NBA"),
+            ("wnba", "WNBA"),
+            ("ncaam", "NCAA Men's"),
+            ("ncaaw", "NCAA Women's"),
+        )
+        for league, label in leagues:
+            if not getattr(self, f"{league}_enabled", False):
+                continue
+            for mode in ("live", "recent", "upcoming"):
+                # None when this league failed to initialize; skip it rather
+                # than raise AttributeError and take the other leagues with it.
+                manager = getattr(self, f"{league}_{mode}", None)
+                if manager is not None:
+                    update_tasks.append(
+                        (f"{label} {mode.capitalize()}", manager.update)
+                    )
+
         if not update_tasks:
             return
         
@@ -3710,31 +3704,130 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         Get content for Vegas-style continuous scroll mode.
 
-        Triggers scroll content generation if cache is empty, then returns
-        the cached scroll image(s) for Vegas to compose into its scroll strip.
+        Returns one card per game across every enabled league and all three
+        game types, read from the dedicated 'mixed' scroll display rather than
+        the union of every display. get_all_vegas_content_items() returned
+        whatever the standalone scroll modes had last rendered, so once one of
+        them had run, Vegas inherited that mode's games -- and it was only
+        rebuilt when that union came back EMPTY, so a changed score never
+        reached the ticker.
+
+        Content is rebuilt when the game data's signature changes, so the
+        common case is a cheap cache read. It does not call update(): that is
+        the update cycle's job, and network I/O here stalls the Vegas render
+        loop with the panel frozen.
 
         Returns:
-            List of PIL Images from scroll displays, or None if no content
+            List of PIL Images, one per game, or None if there is nothing to show
         """
-        if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
+        if not getattr(self, '_scroll_manager', None):
             return None
 
-        images = self._scroll_manager.get_all_vegas_content_items()
+        try:
+            games, leagues = self._collect_games_for_scroll(mode_type=None)
+        except Exception:
+            self.logger.exception("[Basketball Vegas] Failed to collect games")
+            return None
+
+        if not games:
+            self.logger.debug("[Basketball Vegas] No games available")
+            return None
+
+        signature = self._vegas_game_signature(games)
+        images = self._vegas_items()
+
+        if not images or signature != getattr(self, '_vegas_signature', None):
+            reason = "no cached content" if not images else "game data changed"
+            self.logger.debug(
+                "[Basketball Vegas] Rebuilding scroll content (%s): %d game(s) from %s",
+                reason, len(games), ', '.join(leagues) or 'no leagues'
+            )
+            if self._build_vegas_scroll_content(games, leagues):
+                self._vegas_signature = signature
+            images = self._vegas_items()
 
         if not images:
-            self.logger.info("[Basketball Vegas] Triggering scroll content generation")
-            self._ensure_scroll_content_for_vegas()
-            images = self._scroll_manager.get_all_vegas_content_items()
+            return None
 
-        if images:
-            total_width = sum(img.width for img in images)
-            self.logger.info(
-                "[Basketball Vegas] Returning %d image(s), %dpx total",
-                len(images), total_width
-            )
-            return images
+        total_width = sum(img.width for img in images)
+        self.logger.debug(
+            "[Basketball Vegas] Returning %d image(s), %dpx total",
+            len(images), total_width
+        )
+        return images
 
-        return None
+    def _vegas_items(self) -> List[Any]:
+        """The Vegas cards of the 'mixed' scroll display only."""
+        getter = getattr(self._scroll_manager, 'get_vegas_content_items_for', None)
+        if getter is not None:
+            return getter(VEGAS_SCROLL_KEY)
+        scroll_display = getattr(self._scroll_manager, '_scroll_displays', {}).get(
+            VEGAS_SCROLL_KEY
+        )
+        return list(getattr(scroll_display, '_vegas_content_items', None) or [])
+
+    def _vegas_game_signature(self, games: List[Dict]) -> tuple:
+        """
+        Cheap fingerprint of the slate: the set of games and what a card draws
+        from each. The live clock is deliberately left out -- it ticks every
+        second and re-rendering every card that often would eat the frame
+        budget -- but the period, score and final flag are in. Every field is
+        read with .get() because game dicts vary by league.
+        """
+        fingerprint = []
+        for game in games:
+            status = game.get('status')
+            state = status.get('state') if isinstance(status, dict) else status
+            fingerprint.append((
+                game.get('id') or game.get('start_time_utc'),
+                game.get('league'),
+                state,
+                game.get('home_abbr'), game.get('away_abbr'),
+                game.get('home_score'), game.get('away_score'),
+                game.get('period'), game.get('period_text'),
+                game.get('is_final'),
+                bool(game.get('odds')),
+            ))
+        return tuple(fingerprint)
+
+    def _build_vegas_scroll_content(self, games: List[Dict], leagues: List[str]) -> bool:
+        """Render the combined slate into the 'mixed' scroll display.
+
+        Uses prepare_content, not prepare_and_display: the latter also makes
+        'mixed' the active scroll display, which hijacked the standalone
+        rotation's in-progress scroll.
+        """
+        rankings_cache = (
+            self._get_rankings_cache() if hasattr(self, '_get_rankings_cache') else None
+        )
+        prepare = getattr(self._scroll_manager, 'prepare_content', None) \
+            or self._scroll_manager.prepare_and_display
+        try:
+            success = prepare(games, VEGAS_SCROLL_KEY, leagues, rankings_cache)
+        except Exception:
+            self.logger.exception("[Basketball Vegas] Error rendering scroll content")
+            return False
+
+        if not success:
+            self.logger.warning("[Basketball Vegas] Failed to generate scroll content")
+            return False
+
+        counts = {'live': 0, 'recent': 0, 'upcoming': 0}
+        for game in games:
+            status = game.get('status')
+            state = status.get('state') if isinstance(status, dict) else status
+            if state == 'in':
+                counts['live'] += 1
+            elif state == 'post':
+                counts['recent'] += 1
+            elif state == 'pre':
+                counts['upcoming'] += 1
+        summary = ', '.join(f"{n} {kind}" for kind, n in counts.items() if n)
+        self.logger.info(
+            "[Basketball Vegas] Generated scroll content: %d games (%s) from %s",
+            len(games), summary or 'unclassified', ', '.join(leagues)
+        )
+        return True
 
     def get_vegas_content_type(self) -> str:
         """
@@ -3768,52 +3861,22 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
     def _ensure_scroll_content_for_vegas(self) -> None:
         """
-        Ensure scroll content is generated for Vegas mode.
+        Build the combined Vegas slate if it is missing.
 
-        This method is called by get_vegas_content() when the scroll cache is empty.
-        It collects all game types (live, recent, upcoming) organized by league.
+        Retained for callers of the old name; get_vegas_content() rebuilds on
+        its own, keyed off a data fingerprint.
         """
-        if not hasattr(self, '_scroll_manager') or not self._scroll_manager:
+        if not getattr(self, '_scroll_manager', None):
             self.logger.debug("[Basketball Vegas] No scroll manager available")
             return
 
-        # Collect all games (live, recent, upcoming) organized by league
         games, leagues = self._collect_games_for_scroll(mode_type=None)
-
         if not games:
             self.logger.debug("[Basketball Vegas] No games available")
             return
 
-        # Count games by type for logging
-        game_type_counts = {'live': 0, 'recent': 0, 'upcoming': 0}
-        for game in games:
-            state = game.get('status', {}).get('state', '')
-            if state == 'in':
-                game_type_counts['live'] += 1
-            elif state == 'post':
-                game_type_counts['recent'] += 1
-            elif state == 'pre':
-                game_type_counts['upcoming'] += 1
-
-        # Get rankings cache if available
-        rankings_cache = self._get_rankings_cache() if hasattr(self, '_get_rankings_cache') else None
-
-        # Prepare scroll content with mixed game types
-        # Note: Using 'mixed' as game_type indicator for scroll config
-        success = self._scroll_manager.prepare_and_display(
-            games, 'mixed', leagues, rankings_cache
-        )
-
-        if success:
-            type_summary = ', '.join(
-                f"{count} {gtype}" for gtype, count in game_type_counts.items() if count > 0
-            )
-            self.logger.info(
-                f"[Basketball Vegas] Successfully generated scroll content: "
-                f"{len(games)} games ({type_summary}) from {', '.join(leagues)}"
-            )
-        else:
-            self.logger.warning("[Basketball Vegas] Failed to generate scroll content")
+        if self._build_vegas_scroll_content(games, leagues):
+            self._vegas_signature = self._vegas_game_signature(games)
 
     def cleanup(self) -> None:
         """Clean up resources."""

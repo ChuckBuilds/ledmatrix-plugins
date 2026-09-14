@@ -485,9 +485,29 @@ def test_golden_celebration_screen():
               "so assets/fonts resolves; production fonts are required, not bundled)")
         return
     update = os.environ.get("UPDATE_GOLDEN") == "1"
-    for w, h in ((128, 32), (128, 64)):
+    for w, h in ((128, 32), (128, 64), (192, 48)):
         _check_golden("celebration_switch", _render_celebration("away", w, h), update)
     print("PASS: golden celebration screen" + (" (regenerated)" if update else ""))
+
+
+def test_celebration_score_fits_on_tall_panels():
+    """#338 scales the score font with panel height (16px at 48 and 64 tall),
+    but the celebration still placed it at display_height - 14, sized for the
+    old 8px face -- so the bottom of the digits ran off the panel. Nothing may
+    be drawn on the bottom row between the logos."""
+    # 192x48 is the panel this was reported on. At 128x64 the two 64px logos
+    # fill the width, so the between-the-logos probe has nothing to look at;
+    # the 128x64 golden covers that size.
+    for w, h in ((192, 48),):
+        img = _render_celebration("away", w, h)
+        # Between the two edge-pasted logos (each at most h wide).
+        left, right = h, w - h
+        bottom = img.crop((left, h - 1, right, h)).convert("RGB")
+        lit = max(bottom.getextrema()[i][1] for i in range(3))
+        assert lit < 10, f"celebration score clipped at the bottom edge of {w}x{h}"
+        assert not _is_mostly_black(img, (left, h // 2, right, h - 1)), (
+            f"no celebration score drawn at {w}x{h}")
+    print("PASS: celebration score stays inside tall panels")
 
 
 def main():
@@ -512,6 +532,7 @@ def main():
         test_config_adapter_forwards_celebration_keys,
         test_celebration_renders_score_and_side_highlight,
         test_golden_celebration_screen,
+        test_celebration_score_fits_on_tall_panels,
     ]
     failed = 0
     for t in tests:

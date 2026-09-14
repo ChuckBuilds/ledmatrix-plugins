@@ -131,10 +131,11 @@ class DynamicTeamResolver:
     # reaches the panel.
     #
     # An EXCLUDE list, not an allow list, so a poll ESPN invents at the top
-    # division still counts. Kept in step with SportsCore._choose_poll in
-    # sports.py, which cannot be imported here: sports.py imports this module,
-    # and the core loads both as bare top-level names with no package context,
-    # so the dependency has to point one way.
+    # division still counts. SportsCore._choose_poll in sports.py uses the
+    # same rule through choose_top_division_poll at the bottom of this file.
+    # The shared copy lives here, not in sports.py: sports.py imports this
+    # module, and the core loads both as bare top-level names with no package
+    # context, so the dependency has to point one way.
     _NON_TOP_POLL_TYPES = frozenset({'tournament', 'fcs'})
     _NON_TOP_POLL_NAMES = ('tournament', 'seedings', 'fcs',
                            'division ii', 'division iii',
@@ -146,18 +147,7 @@ class DynamicTeamResolver:
         ESPN's own order is otherwise kept, so whichever poll it fronts is
         still the one AP_TOP_n slices.
         """
-        for block in rankings_data or []:
-            name = str(block.get('name') or '').lower()
-            kind = str(block.get('type') or '').lower()
-            if kind in self._NON_TOP_POLL_TYPES or any(
-                marker in name for marker in self._NON_TOP_POLL_NAMES
-            ):
-                self.logger.debug(
-                    "Skipping %s -- not a top-division poll",
-                    block.get('name') or kind)
-                continue
-            return block
-        return {}
+        return choose_top_division_poll(rankings_data, self.logger)
 
     def _fetch_rankings(self, sport: str) -> List[str]:
         """
@@ -217,3 +207,25 @@ class DynamicTeamResolver:
     def _is_potential_dynamic_team(self, team: str) -> bool:
         """Check if a team name looks like a dynamic team pattern."""
         return team.startswith('AP_') or team.startswith('TOP_')
+
+
+def choose_top_division_poll(rankings_data, logger=None, label=None):
+    """The first block in ESPN's rankings list that is a top-division poll.
+
+    The one definition, shared by DynamicTeamResolver._choose_poll and
+    SportsCore._choose_poll in sports.py. It lives here because the import can
+    only point one way: sports.py already imports this module at load time.
+    """
+    for block in rankings_data or []:
+        name = str(block.get('name') or '').lower()
+        kind = str(block.get('type') or '').lower()
+        if kind in DynamicTeamResolver._NON_TOP_POLL_TYPES or any(
+            marker in name for marker in DynamicTeamResolver._NON_TOP_POLL_NAMES
+        ):
+            if logger is not None:
+                logger.debug(
+                    "%sskipping %s -- not a top-division poll",
+                    "%s: " % label if label else "", block.get('name') or kind)
+            continue
+        return block
+    return {}

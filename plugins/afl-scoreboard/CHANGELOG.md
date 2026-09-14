@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.27.0] - 2026-09-14
+
+### Fixed
+- **Postponed / cancelled games no longer show as "Final 0-0" on Recent.**
+  ESPN files them under state `post` with zero scores; `is_final` now also
+  requires `status.type.completed` and a played status, and the period label
+  uses ESPN's own ("Postponed", "Canceled").
+- **Full-screen odds no longer overprint the top-centre text.** A total with no
+  favourite anchors left instead of centring through the period / "Final" /
+  league header, and steps down a row if it would still collide. A home spread
+  of 0.0 is kept; a non-numeric top-level spread no longer drops the odds.
+- **Saved-but-ignored settings now apply:** `display_options.show_records`,
+  `show_ranking`, `show_odds` (ahead of the root duplicates), the celebration
+  settings, `test_mode`, and `odds_update_interval` /
+  `live_odds_update_interval` (now declared in the schema).
+- **`other_games_divisions`** as a hand-edited string or null no longer
+  filters out every game or leaves the plugin blank.
+- **Vegas** rebuilds its cards when the game slate changes, reads only its own
+  display, and logs per-frame at debug.
+- Ported: `switch_show_date` / `switch_show_time` for the full-screen upcoming
+  scorebug (#342); the lookahead cutoff and dwell reset on mode re-entry (#345);
+  odds for rotated-in games (#343); bounded LRU logo caches (core #559); an
+  unranked team shows its record when rankings and records are both on; a config
+  `Infinity` no longer crashes manager init.
+
+### Changed
+- Behaviour change: `scroll_card.show_date` / `show_time` no longer hide the
+  date and time on the full-screen upcoming scorebug (they did since #336). A
+  config that turned them off shows the date/time there again; turn off
+  `switch_show_date` / `switch_show_time` to hide them.
+- The core floor stays at 3.3.0. `sports.py` imports `src.common.sports_shared`,
+  which first shipped in core v3.3.1, but that release still reports
+  `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
+
+### Fixed
+- **Favorite game turns shows up in the web UI.** Also lists the root-level favorite_rotation_boost in x-propertyOrder: the previous release declared it but left it out of the order, so the web UI's config form never rendered the field (caught by scripts/test_property_order_coverage.py).
+
 ## [1.26.0] - 2026-09-14
 
 ### Added

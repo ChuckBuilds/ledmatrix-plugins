@@ -1,10 +1,11 @@
 """
 Baseball Logo Manager
 
-Handles logo loading, caching, and auto-download for all baseball leagues.
+Loads and caches player headshots for the player card. Team logos are loaded
+by SportsCore._load_and_resize_logo (sports.py) and the scroll card renderer;
+the team-logo loaders that used to live here had no callers.
 """
 
-import os
 import logging
 from io import BytesIO
 from pathlib import Path
@@ -19,44 +20,6 @@ try:
     RESAMPLE_FILTER = Image.Resampling.LANCZOS
 except AttributeError:
     RESAMPLE_FILTER = Image.LANCZOS
-
-try:
-    from src.logo_downloader import LogoDownloader, download_missing_logo
-except ImportError:
-    LogoDownloader = None
-    download_missing_logo = None
-
-
-def _logo_needs_refresh(logo_file) -> bool:
-    """True if this file is a placeholder stale enough to retry the real logo.
-
-    A failed logo download is cached as a placeholder wearing the real logo's
-    filename, so "the file exists" is not proof the logo was ever fetched.
-    Without this check one transient failure leaves a team a grey box forever.
-
-    Returns False on a core that predates placeholder marking, which keeps the
-    previous behaviour rather than breaking the load.
-    """
-    # Imported from the core by its full path, never as a bare name: a
-    # deferred bare-name import can bind another plugin's vendored
-    # logo_downloader once the core isolates top-level plugin modules.
-    try:
-        from src.logo_downloader import (
-            PLACEHOLDER_RETRY_SECONDS,
-            is_placeholder_logo,
-            placeholder_age_seconds,
-        )
-    except ImportError:
-        return False
-
-    try:
-        if not is_placeholder_logo(logo_file):
-            return False
-        age = placeholder_age_seconds(logo_file)
-        return age is None or age >= PLACEHOLDER_RETRY_SECONDS
-    except Exception:
-        return False
-
 
 class BaseballLogoManager:
     """Manages logo loading, caching, and downloading for baseball teams."""
@@ -87,135 +50,6 @@ class BaseballLogoManager:
             # Fallback dimensions
             self.display_width = 128
             self.display_height = 32
-
-    def load_logo(self, team_id: str, team_abbr: str, logo_path: Path, 
-                  logo_url: Optional[str] = None, sport_key: Optional[str] = None) -> Optional[Image.Image]:
-        """
-        Load and resize a team logo, with caching and automatic download if missing.
-
-        Args:
-            team_id: Team identifier
-            team_abbr: Team abbreviation
-            logo_path: Path to logo file
-            logo_url: Optional logo URL for download
-            sport_key: Sport key for logo download (uses self.sport_key if not provided)
-
-        Returns:
-            PIL Image of the logo, or None if loading failed
-        """
-        self.logger.debug(f"Loading logo for {team_abbr} at {logo_path}")
-
-        # Check cache first
-        if team_abbr in self._logo_cache:
-            self.logger.debug(f"Using cached logo for {team_abbr}")
-            return self._logo_cache[team_abbr]
-
-        try:
-            # Try different filename variations first (for cases like TA&M vs TAANDM)
-            actual_logo_path = None
-            if LogoDownloader:
-                filename_variations = LogoDownloader.get_logo_filename_variations(team_abbr)
-                
-                for filename in filename_variations:
-                    test_path = logo_path.parent / filename
-                    if test_path.exists() and not _logo_needs_refresh(test_path):
-                        actual_logo_path = test_path
-                        self.logger.debug(f"Found logo at alternative path: {actual_logo_path}")
-                        break
-            else:
-                # Fallback: just try the original path
-                if logo_path.exists() and not _logo_needs_refresh(logo_path):
-                    actual_logo_path = logo_path
-
-            # If no variation found, try to download missing logo
-            if not actual_logo_path:
-                self.logger.info(f"Logo not found for {team_abbr} at {logo_path}. Attempting to download.")
-                
-                # Try to download the logo from ESPN API (this will create placeholder if download fails)
-                if download_missing_logo:
-                    sport_key_to_use = sport_key or self.sport_key or "baseball"
-                    download_missing_logo(sport_key_to_use, team_id, team_abbr, logo_path, logo_url)
-                    actual_logo_path = logo_path
-                else:
-                    self.logger.warning("LogoDownloader not available - cannot download missing logos")
-
-            # Use the original path if no alternative was found
-            if not actual_logo_path:
-                actual_logo_path = logo_path
-
-            # Only try to open the logo if the file exists
-            if os.path.exists(actual_logo_path):
-                with Image.open(actual_logo_path) as src:
-                    logo = src.convert('RGBA')
-            else:
-                self.logger.error(f"Logo file still doesn't exist at {actual_logo_path} after download attempt")
-                return None
-
-            # Crop transparent padding so scaling operates on actual content
-            bbox = logo.getbbox()
-            if bbox:
-                logo = logo.crop(bbox)
-
-            # Cap at logo slot width and 75% of display height
-            logo_slot = min(self.display_height, self.display_width // 2)
-            max_logo_h = int(self.display_height * 0.75)
-            logo.thumbnail((logo_slot, max_logo_h), RESAMPLE_FILTER)
-
-            # Cache the logo
-            self._logo_cache[team_abbr] = logo
-            return logo
-
-        except Exception as e:
-            self.logger.error(f"Error loading logo for {team_abbr}: {e}", exc_info=True)
-            return None
-
-    def load_milb_logo(self, team_abbr: str, logo_dir: Path) -> Optional[Image.Image]:
-        """
-        Load MiLB team logo (simpler version without download).
-
-        Args:
-            team_abbr: Team abbreviation
-            logo_dir: Logo directory path
-
-        Returns:
-            PIL Image of the logo, or None if loading failed
-        """
-        self.logger.debug(f"Loading MiLB logo for {team_abbr} from {logo_dir}")
-
-        # Check cache first
-        if team_abbr in self._logo_cache:
-            self.logger.debug(f"Using cached logo for {team_abbr}")
-            return self._logo_cache[team_abbr]
-
-        try:
-            logo_path = logo_dir / f"{team_abbr}.png"
-            
-            if logo_path.exists():
-                with Image.open(logo_path) as src:
-                    logo = src.convert('RGBA')
-            else:
-                self.logger.warning(f"MiLB logo not found for {team_abbr} at {logo_path}")
-                return None
-
-            # Crop transparent padding so scaling operates on actual content
-            bbox = logo.getbbox()
-            if bbox:
-                logo = logo.crop(bbox)
-
-            # MiLB logos are landscape banner art (1.2–2.7:1 aspect ratio).
-            # Cap width at 1/3 of display width and height at full display height so
-            # the logo stays within its corner and never overlaps center score text.
-            max_logo_w = self.display_width // 3
-            max_logo_h = self.display_height
-            logo.thumbnail((max_logo_w, max_logo_h), RESAMPLE_FILTER)
-
-            # Cache the logo
-            self._logo_cache[team_abbr] = logo
-            return logo
-
-        except Exception as e:
-            self.logger.error(f"Error loading MiLB logo for {team_abbr}: {e}", exc_info=True)
-            return None
 
     # Player headshots are cached on disk under the plugin dir, namespaced by
     # league (MLB and NCAA athlete-id spaces differ), plus an in-memory cache

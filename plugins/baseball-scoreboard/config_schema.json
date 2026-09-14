@@ -130,6 +130,18 @@
           "description": "Draw the start time on upcoming cards.",
           "default": true
         },
+        "switch_show_date": {
+          "type": "boolean",
+          "title": "Show Date (Full-Screen)",
+          "description": "Draw the date on the full-screen (switch mode) upcoming scoreboard. Show Date above now applies only to the scroll and Vegas cards. Before this release it also hid the full-screen date, so a config that turned it off shows the date here again until this switch is turned off.",
+          "default": true
+        },
+        "switch_show_time": {
+          "type": "boolean",
+          "title": "Show Time (Full-Screen)",
+          "description": "Draw the start time on the full-screen (switch mode) upcoming scoreboard. Show Time above now applies only to the scroll and Vegas cards. Before this release it also hid the full-screen time, so a config that turned it off shows the time here again until this switch is turned off.",
+          "default": true
+        },
         "swap_date_time": {
           "type": "boolean",
           "title": "Swap Date and Time",
@@ -476,6 +488,38 @@
           "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
           "x-advanced": true
         },
+        "odds_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often betting odds are refreshed for recent and upcoming games (seconds). Only matters when Show Odds is on.",
+          "x-advanced": true
+        },
+        "live_odds_update_interval": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "How often betting odds are refreshed for games in progress (seconds). Only matters when Show Odds is on.",
+          "x-advanced": true
+        },
+        "play_by_play_update_interval": {
+          "type": "integer",
+          "default": 20,
+          "minimum": 5,
+          "maximum": 600,
+          "description": "How often the live game summary (pitcher, batter, last play) is refetched for the game on screen (seconds). Only matters when Show Pitcher/Batter, Show Last Play or Show Player Card is on.",
+          "x-advanced": true
+        },
+        "player_bio_update_interval": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often a player's bio and headshot are refetched for the player card (seconds). Only matters when Show Player Card is on.",
+          "x-advanced": true
+        },
         "update_interval_seconds": {
           "x-advanced": true,
           "type": "integer",
@@ -547,7 +591,7 @@
                 "ranked"
               ],
               "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots.",
-              "default": "ranked",
+              "default": "any",
               "x-advanced": true
             },
             "other_games_divisions": {
@@ -562,9 +606,7 @@
                 ]
               },
               "uniqueItems": true,
-              "default": [
-                "fbs"
-              ],
+              "default": [],
               "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
               "x-widget": "checkbox-group",
               "x-advanced": true
@@ -1007,6 +1049,22 @@
           "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
           "x-advanced": true
         },
+        "odds_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often betting odds are refreshed for recent and upcoming games (seconds). Only matters when Show Odds is on.",
+          "x-advanced": true
+        },
+        "live_odds_update_interval": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "How often betting odds are refreshed for games in progress (seconds). Only matters when Show Odds is on.",
+          "x-advanced": true
+        },
         "update_interval_seconds": {
           "x-advanced": true,
           "type": "integer",
@@ -1078,7 +1136,7 @@
                 "ranked"
               ],
               "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots.",
-              "default": "ranked",
+              "default": "any",
               "x-advanced": true
             },
             "other_games_divisions": {
@@ -1093,9 +1151,7 @@
                 ]
               },
               "uniqueItems": true,
-              "default": [
-                "fbs"
-              ],
+              "default": [],
               "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
               "x-widget": "checkbox-group",
               "x-advanced": true
@@ -1514,6 +1570,38 @@
           "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
           "x-advanced": true
         },
+        "odds_update_interval": {
+          "type": "integer",
+          "default": 3600,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often betting odds are refreshed for recent and upcoming games (seconds). Only matters when Show Odds is on.",
+          "x-advanced": true
+        },
+        "live_odds_update_interval": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "How often betting odds are refreshed for games in progress (seconds). Only matters when Show Odds is on.",
+          "x-advanced": true
+        },
+        "play_by_play_update_interval": {
+          "type": "integer",
+          "default": 20,
+          "minimum": 5,
+          "maximum": 600,
+          "description": "How often the live game summary (pitcher, batter, last play) is refetched for the game on screen (seconds). Only matters when Show Pitcher/Batter, Show Last Play or Show Player Card is on.",
+          "x-advanced": true
+        },
+        "player_bio_update_interval": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "How often a player's bio and headshot are refetched for the player card (seconds). Only matters when Show Player Card is on.",
+          "x-advanced": true
+        },
         "update_interval_seconds": {
           "x-advanced": true,
           "type": "integer",
@@ -1600,9 +1688,7 @@
                 ]
               },
               "uniqueItems": true,
-              "default": [
-                "fbs"
-              ],
+              "default": [],
               "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
               "x-widget": "checkbox-group",
               "x-advanced": true
@@ -2069,6 +2155,26 @@
               },
               "additionalProperties": false
             },
+            "date": {
+              "type": "object",
+              "title": "Game Date",
+              "description": "Moves the date along the bottom of the recent scoreboard and the date on an upcoming card.",
+              "properties": {
+                "x_offset": {
+                  "x-advanced": true,
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset from default position (default: 0)"
+                },
+                "y_offset": {
+                  "x-advanced": true,
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Vertical offset from default position (default: 0)"
+                }
+              },
+              "additionalProperties": false
+            },
             "status": {
               "type": "object",
               "title": "Game Status/Inning",
@@ -2086,7 +2192,8 @@
                   "description": "Vertical offset from default position (default: 0)"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": false,
+              "description": "Moves \"Next Game\" on the upcoming scoreboard and \"Final\" on the recent one. Also accepted as status_text in a hand-edited config."
             },
             "record": {
               "type": "object",
@@ -2117,7 +2224,8 @@
                   "description": "Additional horizontal offset for home team record (default: 0)"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": false,
+              "description": "Moves the win-loss record (or rank badge) in the bottom corners on the recent and upcoming scoreboards. Also accepted as records in a hand-edited config."
             },
             "ranking": {
               "type": "object",
@@ -2162,6 +2270,7 @@
             "home_logo",
             "away_logo",
             "score",
+            "date",
             "status",
             "record",
             "ranking",

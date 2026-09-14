@@ -4,6 +4,7 @@ import re
 import threading
 import time
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Tuple
@@ -23,7 +24,18 @@ except AttributeError:
 
 # Import simplified dependencies for plugin use
 from dynamic_team_resolver import DynamicTeamResolver
-from logo_downloader import LogoDownloader, download_missing_logo
+# The core's logo downloader, not the bundled copy. The bundled one writes no
+# placeholder marker, so _logo_needs_refresh() can never tell its grey box from
+# a real logo and one failed download pinned a team to it for good; it also
+# saved whatever body a 200 returned, HTML error pages included. The bundled
+# copy is only the fallback for a core without src.logo_downloader, and the
+# name check keeps a failure raised INSIDE a present core module visible.
+try:
+    from src.logo_downloader import LogoDownloader, download_missing_logo
+except ModuleNotFoundError as exc:
+    if exc.name not in {"src", "src.logo_downloader"}:
+        raise
+    from logo_downloader import LogoDownloader, download_missing_logo
 # Prefer the core-shipped odds manager (adds cache_ttl support); fall back to
 # the bundled copy for cores that don't ship src.base_odds_manager yet.
 # Both branches are module-level imports, so they are collision-safe under the
@@ -40,6 +52,38 @@ from data_sources import ESPNDataSource
 from lacrosse_timezone import resolve_timezone
 from src.common.sports_shared import (
     SportsCoreSharedMixin, SportsLiveSharedMixin, SportsRecentSharedMixin)
+
+
+#: ESPN statuses that arrive with state "post" although nothing was played.
+#: A rained-out or cancelled game is "post" with a score of 0, so treating
+#: every "post" as final put it on Recent as "Final 0-0".
+_NOT_PLAYED_STATUS_NAMES = frozenset({
+    "STATUS_POSTPONED", "STATUS_CANCELED", "STATUS_CANCELLED",
+    "STATUS_SUSPENDED", "STATUS_ABANDONED",
+})
+
+
+def _is_completed_final(status: Dict[str, Any]) -> bool:
+    """True only for a game that was actually played to completion.
+
+    ESPN marks postponed/cancelled games completed=False; that flag is what
+    decides. A payload without the key (older fixtures) is judged on state and
+    status name alone rather than dropped.
+    """
+    stype = (status or {}).get("type") or {}
+    if stype.get("state") != "post" or stype.get("completed") is False:
+        return False
+    return str(stype.get("name") or "").upper() not in _NOT_PLAYED_STATUS_NAMES
+
+
+def _trim_logo_cache(cache: Dict, cap: int) -> None:
+    """Evict least-recently-used logos past `cap` (plain dict or OrderedDict).
+
+    Port of core #559: the cache holds decoded thumbnails keyed by team, and a
+    college league ships hundreds of teams, so unbounded it held the league.
+    """
+    while len(cache) > cap:
+        del cache[next(iter(cache))]
 
 
 def _resolve_font_path(path: str) -> str:
@@ -95,7 +139,7 @@ def _clamp_window(value: Any, fallback: int) -> int:
     """Days for one side of the schedule window, or the default if unusable."""
     try:
         days = int(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return fallback
     return max(_MIN_WINDOW_DAYS, min(_MAX_WINDOW_DAYS, days))
 
@@ -271,6 +315,11 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         )
         self._other_window_start: int = 0
         self._other_window_rotated_at: float = 0.0
+        # Monotonic stamp of the previous display() call. display() only runs
+        # while this manager's mode is on the panel, so a large gap between
+        # two calls means the mode just took (or retook) the screen -- see
+        # _reset_dwell_on_reentry.
+        self._last_display_call_monotonic: float = 0.0
         # Which non-favourite games are worth a slot. Selection is otherwise
         # purely chronological, and on a college slate two thirds of what that
         # returns is filler nobody asked for: rotating harder just serves more
@@ -308,7 +357,7 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
 
-        self._logo_cache = {}
+        self._logo_cache = OrderedDict()
 
         # Set up headers
         self.headers = {
@@ -550,11 +599,19 @@ class SportsCore(SportsCoreSharedMixin, ABC):
 
     def _upcoming_date_and_time_text(self, game_date: str, game_time: str,
                                      game: Optional[Dict] = None) -> Tuple[str, str]:
-        """The formatted (date, time) pair, blanked by show_date/show_time."""
+        """The formatted (date, time) pair, blanked by switch_show_date/_time.
+
+        Deliberately not the shared show_date/show_time: those governed only
+        the scroll and Vegas cards before this display read the block, so a
+        config that had turned them off there would silently blank a scorebug
+        that has always drawn both lines. The switch keys default to True for
+        the same reason switch_upcoming_center defaults to "date_time" -- an
+        untouched panel keeps rendering exactly what it rendered before.
+        """
         date_text = (self._format_game_date(game_date, game)
-                     if self._card_option("show_date", True) else "")
+                     if self._card_option("switch_show_date", True) else "")
         time_text = (self._format_game_time(game_time)
-                     if self._card_option("show_time", True) else "")
+                     if self._card_option("switch_show_time", True) else "")
         return date_text, time_text
 
     def _mode_customization(self) -> dict:
@@ -887,10 +944,53 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         except Exception:
             return (0, 255, 0)
 
+    def _odds_top_row_span(self, draw, text, font, element="status_text"):
+        """(left, right) of `text` centred on the top row, or None.
+
+        The scorebugs centre their status ("Q2 5:00", "Final", "Next Game") on
+        the same row the odds use, so the odds need to know where it sits.
+        """
+        if not text or font is None:
+            return None
+        try:
+            text_width = draw.textlength(text, font=font)
+            left = ((self.display_width - text_width) // 2
+                    + self._get_layout_offset(element, "x_offset"))
+        except Exception:
+            return None
+        return (left, left + text_width)
+
+    def _upcoming_top_row_span(self, draw, game, game_date, game_time):
+        """Span of the date/time the core helper moves onto the top row.
+
+        In the "vs" and "none" centre modes _draw_upcoming_center_switch drops
+        the "Next Game" header and draws the time (or, swapped, the date)
+        there instead; this measures that text the same way it draws it.
+        """
+        try:
+            date_text, time_text = self._upcoming_date_and_time_text(
+                game_date, game_time, game)
+            if self._card_option("swap_date_time", False):
+                text, element = date_text, "date"
+            else:
+                text, element = time_text, "time"
+            if not text:
+                return None
+            font = self._scorebug_font(draw, text, self.display_width)
+            return self._odds_top_row_span(draw, text, font, element)
+        except Exception:
+            return None
+
     def _draw_dynamic_odds(
-        self, draw: ImageDraw.Draw, odds: Dict[str, Any], width: int, height: int
+        self, draw: ImageDraw.Draw, odds: Dict[str, Any], width: int, height: int,
+        top_span=None,
     ) -> None:
-        """Draw odds with dynamic positioning - only show negative spread and position O/U based on favored team."""
+        """Draw odds with dynamic positioning - only show negative spread and position O/U based on favored team.
+
+        `top_span` is the (left, right) of the text the caller centred on the
+        top row; when an odds label would overlap it, the odds step down one
+        text row instead of printing through it.
+        """
         try:
             # Skip odds rendering in test mode or if odds data is invalid
             if (
@@ -914,12 +1014,17 @@ class SportsCore(SportsCoreSharedMixin, ABC):
             # Get top-level spread as fallback
             top_level_spread = odds.get("spread")
 
-            # If we have a top-level spread and the individual spreads are None or 0, use the top-level
+            # Fall back to the top-level spread only when a side's spread is
+            # truly missing. A 0.0 is a real pick'em line, not an absence, and
+            # the negation needs a number (a string spread raised here and the
+            # except dropped the odds off the card).
             if top_level_spread is not None:
-                if home_spread is None or home_spread == 0.0:
+                if home_spread is None:
                     home_spread = top_level_spread
                 if away_spread is None:
-                    away_spread = -top_level_spread
+                    away_spread = (-top_level_spread
+                                   if isinstance(top_level_spread, (int, float))
+                                   else None)
 
             # Determine which team is favored (has negative spread)
             # Add type checking to handle Mock objects in test environment
@@ -948,64 +1053,47 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                     "No clear favorite - spreads: home={home_spread}, away={away_spread}"
                 )
 
-            # Show the negative spread on the appropriate side
+            font = self.fonts.get("odds") or self.fonts["detail"]
+
+            # Work out both labels before drawing either, so the row is chosen
+            # once with full knowledge of what has to fit (port of the scroll
+            # renderer's _odds_would_hit_top_row rule).
+            placements = []
             if favored_spread is not None:
                 spread_text = str(favored_spread)
-                font = self.fonts.get("odds") or self.fonts["detail"]
+                spread_width = draw.textlength(spread_text, font=font)
+                # Spread on the favoured team's side.
+                spread_x = width - spread_width if favored_side == "home" else 0
+                placements.append((spread_text, spread_x, spread_width))
 
-                if favored_side == "home":
-                    # Home team is favored, show spread on right side
-                    spread_width = draw.textlength(spread_text, font=font)
-                    spread_x = width - spread_width  # Top right
-                    spread_y = 0
-                    self._draw_text_with_outline(
-                        draw, spread_text, (spread_x, spread_y), font, fill=self._odds_color()
-                    )
-                    self.logger.debug(
-                        f"Showing home spread '{spread_text}' on right side"
-                    )
-                else:
-                    # Away team is favored, show spread on left side
-                    spread_x = 0  # Top left
-                    spread_y = 0
-                    self._draw_text_with_outline(
-                        draw, spread_text, (spread_x, spread_y), font, fill=self._odds_color()
-                    )
-                    self.logger.debug(
-                        f"Showing away spread '{spread_text}' on left side"
-                    )
-
-            # Show over/under on the opposite side of the favored team
             over_under = odds.get("over_under")
             if over_under is not None and isinstance(over_under, (int, float)):
                 ou_text = f"O/U: {over_under}"
-                font = self.fonts.get("odds") or self.fonts["detail"]
                 ou_width = draw.textlength(ou_text, font=font)
-
-                if favored_side == "home":
-                    # Home favored, show O/U on left side (opposite of spread)
-                    ou_x = 0  # Top left
-                    ou_y = 0
-                    self.logger.debug(
-                        f"Showing O/U '{ou_text}' on left side (home favored)"
-                    )
-                elif favored_side == "away":
-                    # Away favored, show O/U on right side (opposite of spread)
-                    ou_x = width - ou_width  # Top right
-                    ou_y = 0
-                    self.logger.debug(
-                        f"Showing O/U '{ou_text}' on right side (away favored)"
-                    )
+                if favored_side == "away":
+                    ou_x = width - ou_width
                 else:
-                    # No clear favorite, show O/U in center
-                    ou_x = (width - ou_width) // 2
-                    ou_y = 0
-                    self.logger.debug(
-                        f"Showing O/U '{ou_text}' in center (no clear favorite)"
-                    )
+                    # Home favoured, or no favourite. No favourite used to
+                    # CENTRE the O/U, on top of the centred status text --
+                    # "O/U: 12.5" printed through "Final" / the quarter.
+                    ou_x = 0
+                placements.append((ou_text, ou_x, ou_width))
 
+            if not placements:
+                return
+
+            odds_y = 0
+            if top_span and any(
+                x < top_span[1] + 1 and x + w > top_span[0] - 1
+                for _text, x, w in placements
+            ):
+                # Step down one text row. Measured, not keyed to a panel size:
+                # wide panels never reach the centre and never move.
+                odds_y += draw.textbbox((0, 0), "A", font=font)[3] + 2
+
+            for text, x, _w in placements:
                 self._draw_text_with_outline(
-                    draw, ou_text, (ou_x, ou_y), font, fill=self._odds_color()
+                    draw, text, (x, odds_y), font, fill=self._odds_color()
                 )
 
         except Exception as e:
@@ -1025,6 +1113,11 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         "rank": "rank_text",
     }
 
+    #: Decoded logos to keep (core #559). An other-games rotation shows on the
+    #: order of 20 games (40 teams), so this holds a full cycle without
+    #: thrashing while staying well below a college league's team count.
+    _LOGO_CACHE_MAX: ClassVar[int] = 64
+
     def _load_and_resize_logo(
         self, team_id: str, team_abbrev: str, logo_path: Path, logo_url: str | None
     ) -> Optional[Image.Image]:
@@ -1032,6 +1125,8 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         self.logger.debug(f"Logo path: {logo_path}")
         if team_abbrev in self._logo_cache:
             self.logger.debug(f"Using cached logo for {team_abbrev}")
+            # Re-insert to mark it most recently used.
+            self._logo_cache[team_abbrev] = self._logo_cache.pop(team_abbrev)
             return self._logo_cache[team_abbrev]
 
         try:
@@ -1099,6 +1194,7 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                 max_width = max(8, min(max_width, reach))
             logo.thumbnail((max_width, max_height), RESAMPLE_FILTER)
             self._logo_cache[team_abbrev] = logo
+            _trim_logo_cache(self._logo_cache, self._LOGO_CACHE_MAX)
             return logo
 
         except Exception as e:
@@ -1346,7 +1442,7 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                     "shortDetail"
                 ],  # e.g., "Final", "7:30 PM", "Q1 12:34"
                 "is_live": status["type"]["state"] == "in",
-                "is_final": status["type"]["state"] == "post",
+                "is_final": _is_completed_final(status),
                 "is_upcoming": (
                     status["type"]["state"] == "pre"
                     or status["type"]["name"].lower()
@@ -1550,7 +1646,8 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         """
         try:
             return max(low, min(high, int(self.mode_config.get(key, default))))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
+            # OverflowError: json parses bare Infinity, and int(inf) raises it.
             self.logger.warning(
                 "%s: ignoring unusable %s=%r, using %s",
                 getattr(self, "league", "?"), key,
@@ -1750,6 +1847,91 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                 ", ".join("%s@%s" % (g.get("away_abbr"), g.get("home_abbr"))
                           for g in rebuilt),
             )
+        self._attach_odds_to_rotated_games(rebuilt)
+        return True
+
+    def _attach_odds_to_rotated_games(self, games: List[Dict]) -> None:
+        """Fetch odds for freshly rotated-in games off the display path.
+
+        The rotation deliberately does no network work, but odds are only
+        attached in update(), and for an upcoming list that runs hourly --
+        far longer than any rotated-in card stays on screen. Every slice cut
+        between updates therefore rendered without a line even though ESPN
+        had one, while the favourites, which survive every cut, kept the
+        odds update() gave them.
+
+        One daemon thread per rotation, bounded by the slice size rather
+        than the pool's: only games actually going on screen are asked
+        about, and get_odds caches per game, so one re-entering the window
+        inside its TTL costs a cache lookup rather than a request. The
+        thread mutates each game dict in place; the renderer re-reads
+        game["odds"] every frame, so a line appears as soon as its fetch
+        lands, mid-dwell included.
+        """
+        if not self.show_odds:
+            return
+        pending = [g for g in games if not g.get("odds")]
+        if not pending:
+            return
+        interval = self.mode_config.get("odds_update_interval", 3600)
+
+        def fetch() -> None:
+            for game in pending:
+                try:
+                    odds = self.odds_manager.get_odds(
+                        sport=self.sport,
+                        league=self.league,
+                        event_id=game["id"],
+                        update_interval_seconds=interval,
+                    )
+                    if odds:
+                        game["odds"] = odds
+                except Exception as exc:
+                    self.logger.debug(
+                        "Odds fetch for rotated-in game %s failed: %s",
+                        game.get("id"), exc)
+
+        threading.Thread(
+            target=fetch, daemon=True,
+            name="%s-rotated-odds" % self.sport_key).start()
+
+    #: Longest gap between two display() calls that still counts as one
+    #: on-screen stint. Frames arrive many times a second while a mode is on
+    #: the panel; between mode blocks the gap is the length of every other
+    #: mode's block -- a minute or more. Anything past a few seconds can only
+    #: be a block boundary, or the very first frame after startup.
+    _DWELL_REENTRY_GAP_SECONDS: ClassVar[float] = 5.0
+
+    def _reset_dwell_on_reentry(self) -> bool:
+        """Give the current card a full turn when this mode (re)takes the panel.
+
+        The dwell clock (last_game_switch) keeps running while the mode is off
+        screen, so on re-entry it was always long expired and the first
+        display() call advanced immediately: the card cut off by the end of
+        the previous block was skipped instead of shown, and after a service
+        restart the clock started at manager construction, seconds before the
+        first frame, shaving that much off the first card. Both are the same
+        defect: the dwell clock counting time the viewer never saw.
+
+        Returns True when the dwell was reset, so the caller forces a redraw.
+        Port of football-scoreboard 2bac9ba (#345).
+        """
+        # getattr, and zero treated as "never displayed": the managers are
+        # constructed in several places -- the plugin tests among them -- not
+        # all of which set every attribute, and a freshly booted Pi can reach
+        # the first frame while time.monotonic() itself is still under the
+        # gap threshold, which would make `now - 0.0` look like one stint.
+        last = getattr(self, "_last_display_call_monotonic", 0.0)
+        now = time.monotonic()
+        self._last_display_call_monotonic = now
+        if last > 0.0 and now - last < self._DWELL_REENTRY_GAP_SECONDS:
+            return False
+        if getattr(self, "last_game_switch", 0) <= 0:
+            # Zero is the live screen's "no game shown yet" sentinel with its
+            # own handling; overwriting it here would hide the first game's
+            # arrival from that logic.
+            return False
+        self.last_game_switch = time.time()
         return True
 
     @staticmethod
@@ -1960,6 +2142,16 @@ class SportsUpcoming(SportsCore):
             favorite_games_found = 0
             all_upcoming_games = 0  # Count all upcoming games regardless of favorites
 
+            # How far ahead this screen looks. The ranged fetch already uses
+            # this horizon, but selection reads the season-wide cache, so
+            # without a cutoff here every fixture ESPN has published was
+            # eligible and Upcoming could show games weeks out. Mirrors the
+            # lookback cutoff on the Recent screen (port of football 2bac9ba).
+            now = datetime.now(timezone.utc)
+            lookahead_days = getattr(
+                self, "schedule_lookahead_days", _DEFAULT_LOOKAHEAD_DAYS)
+            upcoming_cutoff = now + timedelta(days=lookahead_days)
+
             for event in events:
                 game = self._extract_game_details(event)
                 # Count all upcoming games for debugging
@@ -1968,6 +2160,9 @@ class SportsUpcoming(SportsCore):
 
                 # Filter criteria: must be upcoming ('pre' state)
                 if game and game["is_upcoming"]:
+                    start_time = game.get("start_time_utc")
+                    if start_time and start_time > upcoming_cutoff:
+                        continue
                     # Only fetch odds for games that will be displayed
                     # If show_favorite_teams_only is True but no favorites configured, show all
                     if self.show_favorite_teams_only and self.favorite_teams:
@@ -2148,11 +2343,14 @@ class SportsUpcoming(SportsCore):
                 self.logger.error(
                     f"Failed to load logos for game: {game.get('id')}"
                 )  # Changed log prefix
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                # Draw on the image that is pasted: convert() returns a copy,
+                # so drawing on one copy and pasting another showed black.
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image.paste(main_img.convert("RGB"), (0, 0))
+                self.display_manager.image.paste(error_img, (0, 0))
                 self.display_manager.update_display()
                 return
 
@@ -2179,6 +2377,7 @@ class SportsUpcoming(SportsCore):
             # instead of stopping at the ticker. "vs" and "none" move the date
             # and time out to the top and bottom rows, and the top row is where
             # the header sits, so the helper reports whether it still has a slot.
+            top_span = None
             if self._draw_upcoming_center_switch(
                     draw_overlay, game, center_y, game_date, game_time,
                     display_width=self.display_width, display_height=self.display_height):
@@ -2193,11 +2392,16 @@ class SportsUpcoming(SportsCore):
                 self._draw_text_with_outline(
                     draw_overlay, status_text, (status_x, status_y), status_font
                 )
+                top_span = self._odds_top_row_span(draw_overlay, status_text, status_font)
+            else:
+                top_span = self._upcoming_top_row_span(
+                    draw_overlay, game, game_date, game_time)
 
             # Draw odds if available
             if "odds" in game and game["odds"]:
                 self._draw_dynamic_odds(
-                    draw_overlay, game["odds"], self.display_width, self.display_height
+                    draw_overlay, game["odds"], self.display_width, self.display_height,
+                    top_span=top_span,
                 )
 
             # Draw records or rankings if enabled
@@ -2326,6 +2530,11 @@ class SportsUpcoming(SportsCore):
                 )  # Changed log prefix
                 self.last_warning_time = current_time
             return False  # Skip display update
+
+        # The mode just took the panel: the current card gets its full turn
+        # before the dwell check below is allowed to advance.
+        if self._reset_dwell_on_reentry():
+            force_clear = True
 
         # Before the dwell check, so a fresh slice is on screen for a full
         # duration rather than for whatever was left of the previous card's.
@@ -2666,11 +2875,14 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
                     f"Failed to load logos for game: {game.get('id')}"
                 )  # Changed log prefix
                 # Draw placeholder text if logos fail (similar to live)
-                draw_final = ImageDraw.Draw(main_img.convert("RGB"))
+                # Draw on the image that is pasted: convert() returns a copy,
+                # so drawing on one copy and pasting another showed black.
+                error_img = main_img.convert("RGB")
+                draw_final = ImageDraw.Draw(error_img)
                 self._draw_text_with_outline(
                     draw_final, "Logo Error", (5, 5), self.fonts["status"]
                 )
-                self.display_manager.image.paste(main_img.convert("RGB"), (0, 0))
+                self.display_manager.image.paste(error_img, (0, 0))
                 self.display_manager.update_display()
                 return
 
@@ -2717,7 +2929,9 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
             # Draw odds if available
             if "odds" in game and game["odds"]:
                 self._draw_dynamic_odds(
-                    draw_overlay, game["odds"], self.display_width, self.display_height
+                    draw_overlay, game["odds"], self.display_width, self.display_height,
+                    top_span=self._odds_top_row_span(
+                        draw_overlay, status_text, self.fonts["time"]),
                 )
 
             # Draw records or rankings if enabled
@@ -2837,6 +3051,11 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
             if not self.games_list and self.current_game:
                 self.current_game = None  # Clear internal state if list becomes empty
             return False
+
+        # The mode just took the panel: the current card gets its full turn
+        # before the dwell check below is allowed to advance.
+        if self._reset_dwell_on_reentry():
+            force_clear = True
 
         # Before the dwell check, so a fresh slice is on screen for a full
         # duration rather than for whatever was left of the previous card's.
@@ -3373,6 +3592,11 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
         """
         if not self.is_enabled:
             return False
+        # Same re-entry rule as the other screens: retaking the panel gives
+        # the current game a full dwell instead of an instant advance. The
+        # advance itself lives in _advance_live_game_if_due below, so the
+        # reset has to land first.
+        self._reset_dwell_on_reentry()
         self._advance_live_game_if_due()
         return super().display(force_clear)
 

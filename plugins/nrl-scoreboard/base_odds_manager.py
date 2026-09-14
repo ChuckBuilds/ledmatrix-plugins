@@ -98,10 +98,13 @@ class BaseOddsManager:
 
         if cached_data:
             # Filter out the "no_odds" marker - it should not be returned
-            # as valid odds data.  Treat it as a cache miss so a fresh API
-            # call is made once the cache entry expires.
+            # as valid odds data, but it IS a cache hit: the cache entry's
+            # own ttl already governs when a fresh API call is warranted,
+            # so this must return here rather than fall through and hit
+            # ESPN again on every call until the entry naturally expires.
             if isinstance(cached_data, dict) and cached_data.get("no_odds"):
                 self.logger.debug(f"Cached no-odds marker for {cache_key}, skipping")
+                return None
             else:
                 self.logger.info(f"Using cached odds from ESPN for {cache_key}")
                 return cached_data

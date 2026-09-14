@@ -29,7 +29,6 @@ inning, bases, outs and count are what the panel showed at that moment.*
    - [Per-league: how many games](#per-league-how-many-games)
    - [Per-league: durations](#per-league-durations)
    - [Per-league: update intervals](#per-league-update-intervals)
-   - [Per-league: background fetching](#per-league-background-fetching)
    - [Per-league: what appears on the card](#per-league-what-appears-on-the-card)
    - [The extra baseball screens](#the-extra-baseball-screens)
    - [The matchup card: separator, date and time](#the-matchup-card-separator-date-and-time)
@@ -192,7 +191,7 @@ Two settings decide what qualifies, and both have important limits in baseball:
 | Option | Values | Reality in this plugin |
 |--------|--------|------------------------|
 | `other_games_min_quality` | `ranked`, `any` | `ranked` needs a national poll. MLB and MiLB publish none, so it lets every game through and no poll is requested. It only bites for NCAA Baseball |
-| `other_games_divisions` | e.g. `["fbs"]` | Needs ESPN's FBS/FCS group rosters, which exist for **college football and nothing else**. Inert here — no lookup is made |
+| `other_games_divisions` | `[]` | Needs ESPN's FBS/FCS group rosters, which exist for **college football and nothing else**. Inert here — no lookup is made |
 
 **Your favourite teams are never filtered by either.** Follow a lower-division
 side and its games always appear; these only decide what fills the *remaining*
@@ -258,15 +257,16 @@ These nine sit at the top level, outside any league block.
 | `update_interval` | `3600` | Base fetch interval |
 | `timezone` | `""` | **Advanced.** IANA timezone for start times, e.g. `America/Chicago`. Blank follows the global LEDMatrix timezone, then the system one |
 
+| `schedule_lookback_days` | `14` | **Advanced.** How far back the recent screens can see |
+| `schedule_lookahead_days` | `7` | **Advanced.** How far ahead the upcoming screens can see |
+| `no_data_interval_seconds` | `300` | **Advanced.** Gap between live checks when nothing is on, backing off the longer it stays quiet |
+| `live_idle_max_interval_seconds` | `900` | **Advanced.** Ceiling for that back-off |
+
 > **A leftover `"UTC"` from an older version?** This plugin used to persist
 > `"timezone": "UTC"` into your saved config, where it then shadowed your real
 > global timezone. That stale value is now detected and ignored automatically
 > whenever your global or system timezone disagrees — no manual edit needed. If
 > you genuinely want UTC here, set `Etc/UTC`, which is always honoured.
-| `schedule_lookback_days` | `14` | **Advanced.** How far back the recent screens can see |
-| `schedule_lookahead_days` | `7` | **Advanced.** How far ahead the upcoming screens can see |
-| `no_data_interval_seconds` | `300` | **Advanced.** Gap between live checks when nothing is on, backing off the longer it stays quiet |
-| `live_idle_max_interval_seconds` | `900` | **Advanced.** Ceiling for that back-off |
 
 Baseball is a daily sport in season and dormant out of it, so the back-off pair
 matters: out of season the plugin settles to one check every 15 minutes rather
@@ -314,8 +314,8 @@ cost of size; the `scroll_card` and `scroll_settings` groups only affect it.
 | `game_limits.other_upcoming_games_to_show` | `1` | **Advanced.** Non-favourite scheduled games, same path |
 | `game_limits.other_rotation_interval_seconds` | `1800` | **Advanced.** How often the non-favourite window advances |
 | `game_limits.favorite_rotation_boost` | `1` | **Advanced.** Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
-| `game_limits.other_games_min_quality` | `ranked` | **Advanced.** Which non-favourite games earn a slot. Meaningful for NCAA, where a national ranking exists |
-| `game_limits.other_games_divisions` | `["fbs"]` | **Advanced.** Divisions non-favourite games may come from. NCAA only |
+| `game_limits.other_games_min_quality` | `any` (`ranked` for NCAA Baseball) | **Advanced.** Which non-favourite games earn a slot. Meaningful for NCAA, where a national ranking exists |
+| `game_limits.other_games_divisions` | `[]` | **Advanced.** Divisions non-favourite games may come from. A college football taxonomy, so it has no effect in any baseball league |
 
 Note the asymmetric defaults: five recent games but one upcoming. That suits
 baseball's daily schedule — yesterday produced a full slate of finals worth
@@ -355,8 +355,8 @@ all three.
 | `<league>.dynamic_duration.modes.upcoming.min_duration_seconds` | — | **Advanced.** |
 | `<league>.dynamic_duration.modes.upcoming.max_duration_seconds` | — | **Advanced.** |
 
-`mode_durations` is read by the LEDMatrix core rather than by this plugin, which
-is why the keys do not appear anywhere in the plugin's own source.
+`mode_durations` is read by the plugin itself (`_get_mode_duration` in
+`manager.py`): a value set there replaces the per-game maths for that mode.
 
 ### Per-league: scroll tuning
 
@@ -369,6 +369,7 @@ three league blocks, and all are **Advanced**.
 | `<league>.scroll_settings.scroll_delay` | `0.01` | Delay between frames; `0.01` is 100 FPS. Lower is smoother. |
 | `<league>.scroll_settings.gap_between_games` | `48` | Pixels between game cards. |
 | `<league>.scroll_settings.show_league_separators` | `true` | Draw a league icon between leagues in a mixed ticker. |
+| `<league>.scroll_settings.dynamic_duration` | `true` | Size the mode's duration from how long the scroll actually takes, so a long slate is not cut off mid-scroll. |
 | `<league>.scroll_settings.game_card_width` | `128` | Width of each card. Lower it on a multi-panel chain to fit more games on screen at once. |
 
 `non_favorite_live_game_duration` is the setting for a full slate: with fifteen
@@ -399,18 +400,13 @@ a panel.
 | `upcoming_update_interval` | `3600` | How often the upcoming list is rebuilt |
 | `update_interval_seconds` | `3600` | Base fetch interval for this league |
 | `stale_game_timeout` | `300` | How long a live game may go without an update before it is dropped |
+| `odds_update_interval` | `3600` | How often betting odds are refreshed for recent and upcoming games |
+| `live_odds_update_interval` | `60` | How often betting odds are refreshed for games in progress |
+| `play_by_play_update_interval` | `20` | MLB and NCAA only. How often the live at-bat summary is refetched for the pitcher/batter, last-play and player-card screens |
+| `player_bio_update_interval` | `300` | MLB and NCAA only. How often a player's bio and headshot are refetched for the player card |
 
-### Per-league: background fetching
-
-Data is fetched on a background thread so the panel never stalls on the
-network. Under each league's `background_service`, all **advanced**:
-
-| Option | Default | What it does |
-|--------|---------|--------------|
-| `enabled` | `true` | Fetch in the background rather than inline |
-| `request_timeout` | `30` | Seconds before a request gives up |
-| `max_retries` | `3` | Retries per failed request |
-| `priority` | `2` | Queue priority against other plugins' fetches (medium) |
+Background fetching itself (timeout, retries, queue priority) is fixed by the
+plugin and has no per-league setting.
 
 ---
 
@@ -449,8 +445,7 @@ all cost an extra per-game data fetch.
 field to that screen rather than being a screen of its own.
 
 **All four are MLB and NCAA Baseball only.** MiLB's data does not come from
-ESPN in the same shape, so the flags exist under `milb.display_options` but
-nothing is wired up behind them. The pitcher/batter and player-card screens are
+ESPN in the same shape, so `milb.display_options` does not offer them. The pitcher/batter and player-card screens are
 additionally **live-games only**, since the current at-bat is the data they are
 built from; only the traditional scoreboard has a `game_scope` option, because
 only it has anything to say about a finished game.
