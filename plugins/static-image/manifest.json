@@ -1,7 +1,7 @@
 {
   "id": "static-image",
   "name": "Static Image Display",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": "ChuckBuilds",
   "description": "Display static images on your LED matrix with automatic scaling, aspect ratio preservation, and transparency support. Perfect for logos, artwork, or custom graphics.",
   "entry_point": "manager.py",
@@ -18,6 +18,12 @@
     "static_image"
   ],
   "versions": [
+    {
+      "version": "1.1.2",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Still images no longer flicker. The plugin now declares needs_high_fps (true only for animated GIFs, or when any configured image is a .gif), so a still PNG runs in the controller's 1 fps loop instead of being re-pushed ~125 times a second. GIFs keep the high-FPS loop. Also: time_based rotation reloads only when its interval is due, instead of re-decoding the file every frame, and force_clear no longer blanks the panel before drawing a full-panel frame."
+    },
     {
       "version": "1.1.1",
       "released": "2026-09-11",
