@@ -51,13 +51,21 @@ except (json.JSONDecodeError, ValueError) as e:
 plugin_config = config.get('of-the-day', {})
 categories = plugin_config.get('categories', {})
 
-# Check if category exists
+# A data file with no config entry is listed as enabled by list_files.py and
+# shown by the plugin, so toggling it must create the entry rather than fail.
 if category_name not in categories:
-    print(json.dumps({
-        'status': 'error',
-        'message': f'Category "{category_name}" not found in config'
-    }))
-    sys.exit(1)
+    data_file = Path(__file__).parent.parent / 'of_the_day' / f'{category_name}.json'
+    if not data_file.is_file():
+        print(json.dumps({
+            'status': 'error',
+            'message': f'Category "{category_name}" not found in config or of_the_day/'
+        }))
+        sys.exit(1)
+    categories[category_name] = {
+        'enabled': True,
+        'data_file': f'of_the_day/{category_name}.json',
+        'display_name': category_name.replace('_', ' ').title()
+    }
 
 # Determine new enabled state
 if 'enabled' in params:

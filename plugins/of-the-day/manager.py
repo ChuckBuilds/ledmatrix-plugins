@@ -68,9 +68,8 @@ class OfTheDayPlugin(BasePlugin):
         self.auto_fit_text = config.get('auto_fit_text', True)
 
         # Categories
-        self.categories = config.get('categories', {})
-        self.category_order = config.get('category_order', [])
-        
+        self.categories, self.category_order = self._resolve_categories(config)
+
         # State
         self.current_day = None
         self.current_items = {}
@@ -181,6 +180,41 @@ class OfTheDayPlugin(BasePlugin):
         return (fonts[0], self.title_color, (0, 0),
                 fonts[1], self.subtitle_color, (0, 0))
     
+    @staticmethod
+    def _resolve_categories(config: Dict[str, Any]):
+        """Return (categories, category_order) for the display.
+
+        Every .json file in of_the_day/ is a category, enabled by default,
+        with entries in config['categories'] layered on top. This is the same
+        rule the web UI's file manager (scripts/list_files.py) uses when it
+        shows a file as enabled, so the panel and the UI agree -- previously a
+        fresh install listed both bundled files as enabled while the empty
+        categories block made the panel show "No Data".
+
+        category_order is honoured first; names it lists that aren't
+        categories are dropped, and categories it leaves out are appended.
+        """
+        data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'of_the_day')
+        try:
+            filenames = sorted(f for f in os.listdir(data_dir) if f.endswith('.json'))
+        except OSError:
+            filenames = []
+
+        categories = {}
+        for filename in filenames:
+            name = filename[:-len('.json')]
+            categories[name] = {
+                'enabled': True,
+                'data_file': f'of_the_day/{filename}',
+                'display_name': name.replace('_', ' ').title(),
+            }
+        for name, category_config in (config.get('categories') or {}).items():
+            categories[name] = {**categories.get(name, {}), **(category_config or {})}
+
+        order = [c for c in dict.fromkeys(config.get('category_order') or []) if c in categories]
+        order += [c for c in categories if c not in order]
+        return categories, order
+
     def _load_data_files(self):
         """Load all data files for enabled categories."""
         for category_name, category_config in self.categories.items():
@@ -855,8 +889,7 @@ class OfTheDayPlugin(BasePlugin):
         self.display_rotate_interval = config.get('display_rotate_interval', 20)
         self.subtitle_rotate_interval = config.get('subtitle_rotate_interval', 10)
         self.auto_fit_text = config.get('auto_fit_text', True)
-        self.categories = config.get('categories', {})
-        self.category_order = config.get('category_order', [])
+        self.categories, self.category_order = self._resolve_categories(config)
 
         # Reset state
         self.current_category_index = 0
