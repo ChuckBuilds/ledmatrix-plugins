@@ -166,6 +166,7 @@ Per league, under `filtering`, all **Advanced**:
 | `other_recent_games_to_show` | `5` | How many **non-favorite** finished games to add. `0` gives favorites only. |
 | `other_upcoming_games_to_show` | `10` | The same for scheduled games. |
 | `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
+| `favorite_rotation_boost` | `1` | Turns a favorite's recent/upcoming card gets per turn for other cards in switch mode. `1` shows each game once. |
 | `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `any` or `ranked`. |
 | `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. |
 
@@ -350,6 +351,7 @@ See [The selection settings](#the-selection-settings). All **Advanced**.
 | `<league>.filtering.other_recent_games_to_show` | 0–20 | `5` |
 | `<league>.filtering.other_upcoming_games_to_show` | 0–20 | `10` |
 | `<league>.filtering.other_rotation_interval_seconds` | 0–86400 s | `1800` |
+| `<league>.filtering.favorite_rotation_boost` | 1–5 | `1` |
 | `<league>.filtering.other_games_min_quality` | `any` \| `ranked` | `ranked` |
 | `<league>.filtering.other_games_divisions` | array | `["fbs"]` |
 

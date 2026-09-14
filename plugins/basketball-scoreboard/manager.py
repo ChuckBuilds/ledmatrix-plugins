@@ -829,6 +829,7 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_rotation_interval_seconds": game_limits.get(
                     "other_rotation_interval_seconds", 1800
                 ),
+                "favorite_rotation_boost": game_limits.get("favorite_rotation_boost", 1),
                 "other_games_min_quality": game_limits.get(
                     "other_games_min_quality", "ranked"
                 ),

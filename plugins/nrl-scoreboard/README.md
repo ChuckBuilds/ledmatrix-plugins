@@ -109,6 +109,7 @@ Which of three regimes you are in depends on `favorite_teams` and
 | `other_upcoming_games_to_show` | `1` | How many **non-favorite** upcoming games to add. `0` gives you favorites only. |
 | `other_recent_games_to_show` | `1` | The same, for finished games. |
 | `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
+| `favorite_rotation_boost` | `1` | Turns a favorite's recent/upcoming card gets per turn for other cards in switch mode. `1` shows each game once. |
 | `other_games_min_quality` | `ranked` | Which non-favorite games qualify. Inert here — see below. |
 | `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. Inert here — see below. |
 

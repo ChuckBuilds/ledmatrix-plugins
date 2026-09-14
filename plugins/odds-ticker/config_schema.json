@@ -179,7 +179,15 @@
           "default": 1,
           "minimum": 1,
           "maximum": 5,
-          "description": "Number of games to show per favorite team"
+          "description": "Number of games to show per favorite team. Applies with 'show favorite teams only', and to the games a favorite weight above 1 guarantees a slot"
+        },
+        "favorite_weight": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 1,
+          "minimum": 1,
+          "maximum": 5,
+          "description": "How many times each favorite team's game appears in the scroll for every 1 time other games appear, spread evenly through it. Above 1, each favorite's next games (up to 'games per favorite team') also always make their league's cut, even when they are not among the soonest. Set to 1 to show every game once"
         },
         "max_games_per_league": {
           "x-advanced": true,

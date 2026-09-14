@@ -312,6 +312,7 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_rotation_interval_seconds": limit(
                     "other_rotation_interval_seconds", 1800
                 ),
+                "favorite_rotation_boost": limit("favorite_rotation_boost", 1),
                 "other_games_min_quality": limit(
                     "other_games_min_quality", "ranked"
                 ),

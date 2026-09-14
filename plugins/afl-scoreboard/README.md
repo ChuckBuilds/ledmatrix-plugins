@@ -377,6 +377,7 @@ also driving a panel, and raising the polling rate rarely helps.
 | `other_recent_games_to_show` | `1` | **Advanced.** Non-favourite recent games, in "favourites first" mode |
 | `other_upcoming_games_to_show` | `1` | **Advanced.** Non-favourite upcoming games, in "favourites first" mode |
 | `other_rotation_interval_seconds` | `1800` | **Advanced.** How often the non-favourite window advances |
+| `favorite_rotation_boost` | `1` | **Advanced.** Turns a favorite's recent/upcoming card gets per turn for other cards in switch mode. `1` shows each game once. |
 | `other_games_min_quality` | `ranked` | **Advanced.** Which non-favourite games earn a slot: `any` or `ranked`. **Inert for AFL** — see below |
 | `other_games_divisions` | `["fbs"]` | **Advanced.** Which divisions non-favourite games may come from. **Inert for AFL** — see below |
 | `show_records` | `false` | **Advanced.** Draw each team's season record in the bottom corners |

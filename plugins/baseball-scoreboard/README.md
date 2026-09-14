@@ -313,6 +313,7 @@ cost of size; the `scroll_card` and `scroll_settings` groups only affect it.
 | `game_limits.other_recent_games_to_show` | `5` | **Advanced.** Non-favourite finished games, in the favourites-first path |
 | `game_limits.other_upcoming_games_to_show` | `1` | **Advanced.** Non-favourite scheduled games, same path |
 | `game_limits.other_rotation_interval_seconds` | `1800` | **Advanced.** How often the non-favourite window advances |
+| `game_limits.favorite_rotation_boost` | `1` | **Advanced.** Turns a favorite's recent/upcoming card gets per turn for other cards in switch mode. `1` shows each game once. |
 | `game_limits.other_games_min_quality` | `ranked` | **Advanced.** Which non-favourite games earn a slot. Meaningful for NCAA, where a national ranking exists |
 | `game_limits.other_games_divisions` | `["fbs"]` | **Advanced.** Divisions non-favourite games may come from. NCAA only |
 
