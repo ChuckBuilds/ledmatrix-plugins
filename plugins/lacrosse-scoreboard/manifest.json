@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.27.0",
+  "version": "1.28.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -51,10 +51,16 @@
   ],
   "versions": [
     {
-      "version": "1.27.0",
+      "version": "1.28.0",
       "released": "2026-09-14",
       "ledmatrix_min_version": "3.3.0",
       "notes": "Adds favorite_rotation_boost (1-5, default 1) beside the other game-limit settings: in switch mode a favorite team's recent or upcoming card gets that many turns per rotation for every one turn other cards get, spread out by the same smooth weighted round-robin the live rotation uses. games_list stays one entry per game, so cycle-duration counts, the scroll strip and the other-games re-cut are unchanged, and the walk resyncs from current_game_index whenever update() or the other-games rotation swaps a list in. The default keeps the old order exactly. Ported across all nine scoreboards per CLAUDE.md non-negotiable #7."
+    },
+    {
+      "released": "2026-09-11",
+      "version": "1.27.0",
+      "changelog": "Style the live, upcoming and recent cards separately",
+      "ledmatrix_min_version": "3.3.0"
     },
     {
       "version": "1.26.1",
@@ -430,7 +436,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-07",
+  "last_updated": "2026-09-11",
   "stars": 0,
   "downloads": 0,
   "verified": true,

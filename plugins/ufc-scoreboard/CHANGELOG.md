@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.11.0] - 2026-09-14
+
+### Added
+- **Favorite games get extra turns in switch mode.** New game-limit setting
+  `favorite_rotation_boost` (1-5, default 1): a favorite team's recent or
+  upcoming card gets that many turns per rotation for every one turn other
+  cards get, its extra turns spread evenly around the loop so it is never
+  shown back to back. Previously only live games could weight favorites.
+
+  Existing configs are unaffected: at the default of 1 every card is shown
+  once per rotation, in the same order as before.
+
+## [1.10.0] - 2026-09-11
+
+### Added
+- **Style each card separately.** The font and size of the fighter names,
+  status, result and detail text, and the position of the fighter images,
+  fighter names, records, status, result, fight class, date, time and odds,
+  can now differ between the live, upcoming and recent cards. Set them under
+  "Per-Mode Overrides" in the plugin's settings; anything left blank follows
+  the settings above it, so a single change applies to one card and leaves
+  the others alone. Text colour is not configurable in this plugin.
+
+  Existing configs are unaffected: with no per-mode overrides set, every card
+  renders exactly as before -- verified against the golden images at all
+  eight panel sizes.
+
 ## [1.9.2] - 2026-09-11
 
 ### Fixed
