@@ -12,6 +12,31 @@
   Existing configs are unaffected: at the default of 1 every card is shown
   once per rotation, in the same order as before.
 
+## [2.27.1] - 2026-09-14
+
+### Fixed
+- **Switch mode refreshes its managers before it draws them.**
+  The switch path went straight to manager.display(), so it showed whatever the
+  last background plugin.update() left behind -- baseball, basketball, football,
+  hockey and lacrosse have called _ensure_manager_updated() unconditionally in
+  _try_manager_display() all along, and these three had no equivalent. Measured
+  with no background update at all: afl's switch mode made zero draw-time
+  refreshes and the panel stayed frozen for ten simulated minutes, while
+  baseball's picked the score up in thirty seconds. It is invisible at the 60s
+  default and an hour stale for anyone who raises update_interval -- and unlike
+  baseball/football, which declare update_interval in their manifest and so
+  override any config value, these three declare none, which is what makes the
+  config value apply and the slow case reachable. A stale manager also reads as
+  having nothing to show, so a league with a live game could be skipped from the
+  rotation entirely; the refresh therefore runs before the candidate managers
+  are read, not after. _ensure_manager_updated() is interval-guarded, so on
+  frames where no refresh is due this costs two getattrs and a comparison.
+  Pinned by a test that asserts the wiring structurally as well as behaviourally
+  -- deleting the call leaves every behavioural check passing while the panel
+  silently goes stale, which is how this survived in three plugins.
+
+The refresh is dispatched to a daemon thread rather than run inline, so a due fetch never stalls the render thread: at most one refresh per manager runs at a time, dispatches for a manager are at least 5s apart, and each manager's own update interval still decides whether anything is fetched.
+
 ## [2.27.0] - 2026-09-11
 
 ### Added
