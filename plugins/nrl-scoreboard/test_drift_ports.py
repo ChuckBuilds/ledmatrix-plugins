@@ -26,7 +26,6 @@ import logging
 import os
 import sys
 import tempfile
-import threading
 import time
 from pathlib import Path
 
@@ -135,7 +134,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         Image.new("RGBA", (16, 16), (255, 0, 0, 255)).save(tmp / "NEW.png")
-        r = gr.GameRenderer.__new__(gr.GameRenderer)
+        r = object.__new__(gr.GameRenderer)
         r.display_width, r.display_height, r.config = 128, 32, {}
         r.logger, r._logo_cache = LOG, {}
         legacy = r._load_and_resize_logo("4337", "NEW", tmp / warriors)
@@ -237,7 +236,7 @@ def main():
 
     # -- B3 -----------------------------------------------------------------
     print("\nB3: rankings and records both on")
-    rr = gr.GameRenderer.__new__(gr.GameRenderer)
+    rr = object.__new__(gr.GameRenderer)
     rr.show_ranking = rr.show_records = True
     rr._team_rankings_cache = {"MEL": 1}
     check("a ranked team shows its rank", rr._get_team_display_text("MEL", "5-1") == "#1")

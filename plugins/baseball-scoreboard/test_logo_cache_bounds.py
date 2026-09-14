@@ -91,6 +91,10 @@ def test_sports_cache(tmp):
 
 
 def test_renderer_cache(tmp):
+    # GameRenderer._load_and_resize_logo(league, team_abbrev) takes two
+    # arguments; a static checker resolves the name to SportsCore's
+    # four-argument method and reports a missing logo_path.
+    # pylint: disable=no-value-for-parameter
     print("\nGameRenderer logo cache")
     os.chdir(str(tmp))
     _write_logos(tmp / "assets" / "sports" / "mlb_logos")

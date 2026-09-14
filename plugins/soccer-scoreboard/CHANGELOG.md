@@ -52,6 +52,9 @@ Drift-audit fixes ported from the sibling scoreboards.
   which first shipped in core v3.3.1, but that release still reports
   `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
 
+### Fixed
+- **Favorite game turns shows up in the web UI.** Also lists the root-level favorite_rotation_boost in x-propertyOrder: the previous release declared it but left it out of the order, so the web UI's config form never rendered the field (caught by scripts/test_property_order_coverage.py).
+
 ## [2.28.0] - 2026-09-14
 
 ### Added

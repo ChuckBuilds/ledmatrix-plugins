@@ -89,7 +89,7 @@ def main():
           abbrs[1] not in core._logo_cache)
 
     for cache in (OrderedDict(), {}):
-        renderer = game_renderer.GameRenderer.__new__(game_renderer.GameRenderer)
+        renderer = object.__new__(game_renderer.GameRenderer)
         renderer._logo_cache = cache
         rcap = renderer._LOGO_CACHE_MAX
         img = Image.new("RGBA", (4, 4))

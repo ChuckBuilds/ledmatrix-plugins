@@ -235,7 +235,7 @@ def cache_checks():
     check("a recently hit logo survives eviction", "T0" in mgr._logo_cache)
     check("the least recently used logo is evicted", "T1" not in mgr._logo_cache)
 
-    gr = game_renderer.GameRenderer.__new__(game_renderer.GameRenderer)
+    gr = object.__new__(game_renderer.GameRenderer)
     gr._logo_cache = {}
     gcap = game_renderer.GameRenderer._LOGO_CACHE_MAX
     for i in range(gcap + 5):
@@ -248,7 +248,7 @@ def cache_checks():
 
 def ranking_checks():
     print("\nP-B3: ranking + records both on")
-    gr = game_renderer.GameRenderer.__new__(game_renderer.GameRenderer)
+    gr = object.__new__(game_renderer.GameRenderer)
     gr.show_ranking = True
     gr.show_records = True
     gr._team_rankings_cache = {"ARS": 3}

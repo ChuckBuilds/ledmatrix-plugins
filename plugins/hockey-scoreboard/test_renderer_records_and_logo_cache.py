@@ -44,7 +44,7 @@ def check(name, ok, detail=None):
 
 
 def _renderer(show_ranking, show_records):
-    r = GameRenderer.__new__(GameRenderer)
+    r = object.__new__(GameRenderer)
     r.show_ranking = show_ranking
     r.show_records = show_records
     r._team_rankings_cache = {"BU": 3}
@@ -52,6 +52,10 @@ def _renderer(show_ranking, show_records):
 
 
 def main():
+    # This plugin's GameRenderer._get_team_display_text(abbr, record) takes two
+    # arguments; a static checker resolves the name to a sibling plugin's
+    # three-argument renderer and reports a missing show_records.
+    # pylint: disable=no-value-for-parameter
     print("rank or record")
     both = _renderer(True, True)
     check("ranked team shows its rank", both._get_team_display_text("BU", "20-4") == "#3")
@@ -69,7 +73,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         logo = Path(tmp) / "logo.png"
         Image.new("RGBA", (40, 40), (255, 0, 0, 255)).save(logo)
-        r = GameRenderer.__new__(GameRenderer)
+        r = object.__new__(GameRenderer)
         r.display_width, r.display_height = 128, 32
         r.logger = logging.getLogger("logo_cache_probe")
         r.logo_dirs = {}
@@ -87,7 +91,7 @@ def main():
               not any(k.startswith("ncaam_hockey_T1_") for k in r._logo_cache))
         check("a cache hit returns the decoded logo", first is not None)
 
-        plain = GameRenderer.__new__(GameRenderer)
+        plain = object.__new__(GameRenderer)
         plain.display_width, plain.display_height = 128, 32
         plain.logger = r.logger
         plain.logo_dirs = {}

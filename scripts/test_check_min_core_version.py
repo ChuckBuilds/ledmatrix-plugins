@@ -24,7 +24,7 @@ Exit: 0 pass, 1 fail, 2 skip.
 import json
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404 - runs git on the developer's own core checkout
 import sys
 import tempfile
 from pathlib import Path
@@ -194,7 +194,8 @@ core = os.environ.get("LEDMATRIX_CORE", "")
 
 
 def tree(ref):
-    out = subprocess.run(["git", "-C", core, "ls-tree", "-r", "--name-only", ref,
+    # nosec B603 - fixed argv, no shell; core is LEDMATRIX_CORE, ref a pinned tag
+    out = subprocess.run(["git", "-C", core, "ls-tree", "-r", "--name-only", ref,  # nosec B603
                           "--", "src"], capture_output=True, text=True)
     return set(out.stdout.split()) if out.returncode == 0 else None
 
@@ -230,7 +231,7 @@ else:
     import re as _re
     misreport = []
     for tag, says in gate.REPORTED_AS.items():
-        out = subprocess.run(["git", "-C", core, "show", f"v{tag}:src/__init__.py"],
+        out = subprocess.run(["git", "-C", core, "show", f"v{tag}:src/__init__.py"],  # nosec B603
                              capture_output=True, text=True)
         m = _re.search(r'__version__\s*=\s*["\']([^"\']+)', out.stdout)
         if not m or m.group(1) != says:

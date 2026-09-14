@@ -207,7 +207,7 @@ def test_logo_cache_is_bounded():
         check("a recently used logo survives eviction", first in obj._logo_cache)
         check("the least recently used logo was evicted", "T001" not in obj._logo_cache)
 
-        gr = game_renderer.GameRenderer.__new__(game_renderer.GameRenderer)
+        gr = object.__new__(game_renderer.GameRenderer)
         gr.logger = LOG
         gr.display_width, gr.display_height = 64, 32
         gr._logo_cache = {}
@@ -223,7 +223,7 @@ def test_logo_cache_is_bounded():
 
 
 def test_unranked_team_shows_record_with_both_toggles():
-    gr = game_renderer.GameRenderer.__new__(game_renderer.GameRenderer)
+    gr = object.__new__(game_renderer.GameRenderer)
     gr.show_ranking = True
     gr.show_records = True
     gr._team_rankings_cache = {"DUKE": 3}

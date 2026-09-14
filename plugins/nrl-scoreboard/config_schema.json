@@ -1538,6 +1538,7 @@
     "recent_games_to_show",
     "other_recent_games_to_show",
     "other_rotation_interval_seconds",
+    "favorite_rotation_boost",
     "other_games_min_quality",
     "other_games_divisions",
     "upcoming_games_to_show",

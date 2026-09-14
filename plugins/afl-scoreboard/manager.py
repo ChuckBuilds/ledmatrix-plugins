@@ -1681,7 +1681,9 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
         manager = self._scroll_manager
         getter = getattr(manager, "get_vegas_content_items_for", None)
         if callable(getter):
-            return list(getter(self._VEGAS_SCROLL_KEY) or [])
+            # The callable() test above is the guard; getattr's None default
+            # is what a static checker sees.
+            return list(getter(self._VEGAS_SCROLL_KEY) or [])  # pylint: disable=not-callable
         displays = getattr(manager, "_scroll_displays", None) or {}
         display = displays.get(self._VEGAS_SCROLL_KEY)
         return list(getattr(display, "_vegas_content_items", None) or [])
@@ -1722,7 +1724,7 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
                 # would also make it the active strip, hijacking a standalone
                 # scroll mode that is mid-marquee -- which matters now that
                 # this rebuilds on every slate change, not just once.
-                success = get_display(key).prepare_scroll_content(
+                success = get_display(key).prepare_scroll_content(  # pylint: disable=not-callable
                     games, key, [AFL_LEAGUE_KEY], None)
             else:
                 success = self._scroll_manager.prepare_and_display(
