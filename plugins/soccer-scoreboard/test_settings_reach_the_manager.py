@@ -85,8 +85,8 @@ for _dup in ("show_records", "show_ranking", "show_odds", "live_game_duration",
              "upcoming_update_interval", "recent_games_to_show",
              "upcoming_games_to_show", "show_favorite_teams_only",
              "other_upcoming_games_to_show", "other_recent_games_to_show",
-             "other_rotation_interval_seconds", "other_games_min_quality",
-             "other_games_divisions"):
+             "other_rotation_interval_seconds", "favorite_rotation_boost",
+             "other_games_min_quality", "other_games_divisions"):
     ROOT_ALLOW[_dup] = "root duplicate of the league-block key, which wins"
 
 results = []
