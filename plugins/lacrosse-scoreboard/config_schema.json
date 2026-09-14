@@ -1211,6 +1211,11 @@
       "type": "object",
       "title": "Display Customization",
       "description": "Customize fonts for different text elements on the scoreboard",
+      "x-style-modes": [
+        "live",
+        "upcoming",
+        "recent"
+      ],
       "properties": {
         "score_text": {
           "type": "object",

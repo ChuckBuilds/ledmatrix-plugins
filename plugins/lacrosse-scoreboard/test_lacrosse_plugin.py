@@ -54,6 +54,25 @@ def _install_host_stubs() -> None:
     ]
     for name in stub_modules:
         sys.modules.setdefault(name, types.ModuleType(name))
+
+    # Before anything is loaded from the core, not after: the stubs above are
+    # plain ModuleTypes, so `from src.common.X import Y` fails with
+    # "'src.common' is not a package" even when a real core is on the path.
+    # Giving them a __path__ lets genuine submodules resolve from the core
+    # while the stubbed ones stay stubbed. sports_card imports font_layout at
+    # module level, so the hand-load below is itself such an import -- running
+    # this afterwards was too late and broke the import it was meant to fix.
+    _core = os.environ.get("LEDMATRIX_CORE") or next(
+        (p for p in sys.path
+         if p and os.path.isdir(os.path.join(p, "src", "common"))), None)
+    if _core:
+        if "src" in sys.modules and not hasattr(sys.modules["src"], "__path__"):
+            sys.modules["src"].__path__ = [os.path.join(_core, "src")]
+        if ("src.common" in sys.modules
+                and not hasattr(sys.modules["src.common"], "__path__")):
+            sys.modules["src.common"].__path__ = [
+                os.path.join(_core, "src", "common")]
+
     # These two are pure Python with no hardware dependency, so the real
     # modules are loaded rather than stubbed: game_renderer calls into them for
     # colours, dates, font sizes and the card geometry, and a bare stub would
@@ -90,23 +109,6 @@ def _install_host_stubs() -> None:
     sys.modules["src.common.sports_scroll"].SportsScrollDisplayManager = type(
         "SportsScrollDisplayManager", (object,), {})
     sys.modules["src.api_counter"].increment_api_counter = lambda *a, **k: None
-
-    # The stubs above are plain ModuleTypes, so `from src.common.X import Y`
-    # fails with "'src.common' is not a package" even when a real core is on
-    # the path. Giving them a __path__ lets genuine submodules -- sports_shared,
-    # sports_card -- resolve from the core while the stubbed ones stay stubbed.
-    # Stubbing those too would make this test pass against dummies instead of
-    # the code under test.
-    _core = os.environ.get("LEDMATRIX_CORE") or next(
-        (p for p in sys.path
-         if p and os.path.isdir(os.path.join(p, "src", "common"))), None)
-    if _core:
-        if "src" in sys.modules and not hasattr(sys.modules["src"], "__path__"):
-            sys.modules["src"].__path__ = [os.path.join(_core, "src")]
-        if ("src.common" in sys.modules
-                and not hasattr(sys.modules["src.common"], "__path__")):
-            sys.modules["src.common"].__path__ = [
-                os.path.join(_core, "src", "common")]
 
 
 _install_host_stubs()
