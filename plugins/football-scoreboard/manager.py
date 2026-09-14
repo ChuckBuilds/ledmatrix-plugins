@@ -203,7 +203,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         # Enable high-FPS mode for scroll display (allows 100+ FPS scrolling)
         # This signals to the display controller to use high-FPS loop (8ms = 125 FPS)
-        self.enable_scrolling = self._scroll_manager is not None
+        self.enable_scrolling = self._has_any_scroll_mode()
         if self.enable_scrolling:
             self.logger.info("High-FPS scrolling enabled for football scoreboard")
 
@@ -311,7 +311,9 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             except Exception as e:
                 self.logger.warning(f"Could not rebuild scroll display manager: {e}")
                 self._scroll_manager = None
-        self.enable_scrolling = self._scroll_manager is not None
+        # Re-evaluated here, not just at construction: a config reload can
+        # turn every mode back to 'switch' while the scroll manager still builds.
+        self.enable_scrolling = self._has_any_scroll_mode()
         self._scroll_active = {}
         self._scroll_prepared = {}
         self._scroll_active_league = {}
@@ -844,6 +846,22 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             return True
         return False
     
+    def _has_any_scroll_mode(self) -> bool:
+        """Return True if any enabled league uses scroll display for any mode.
+
+        Named to match afl/nrl/soccer, which already gate enable_scrolling
+        this way. Football kept the older test -- whether the scroll manager
+        could be built at all -- which stays true even when every mode is
+        'switch', so the controller ran its 125 FPS loop to redraw a static
+        scorebug.
+        """
+        if not self._scroll_manager:
+            return False
+        return any(
+            self._should_use_scroll_mode(mode_type)
+            for mode_type in ('live', 'recent', 'upcoming')
+        )
+
     def _collect_games_for_scroll(
         self,
         mode_type: Optional[str] = None,
