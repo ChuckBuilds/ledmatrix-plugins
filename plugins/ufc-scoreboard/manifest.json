@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.12.1",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Removes the five other-games settings from ufc.game_limits (other_upcoming_games_to_show, other_recent_games_to_show, other_rotation_interval_seconds, other_games_min_quality, other_games_divisions). UFC's fight selection never used them, so changing them did nothing. A value already saved still loads and is dropped the next time the settings are saved. The README now describes how fights are actually chosen."
+    },
     {
       "version": "1.12.0",
       "released": "2026-09-14",

@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.12.1] - 2026-09-14
+
+### Removed
+- The `ufc.game_limits` settings `other_upcoming_games_to_show`,
+  `other_recent_games_to_show`, `other_rotation_interval_seconds`,
+  `other_games_min_quality` and `other_games_divisions`. `MMARecent` and
+  `MMAUpcoming` build their own fight lists and never run the shared
+  favorites-then-others selection, so no other-games slice was ever built or
+  rotated and changing these did nothing. `game_limits` does not reject
+  unknown keys, so a saved value still loads; the web UI drops it on the next
+  save. The README's "Which fights get shown" now describes what the selection
+  actually does.
+
 ## [1.12.0] - 2026-09-14
 
 ### Added

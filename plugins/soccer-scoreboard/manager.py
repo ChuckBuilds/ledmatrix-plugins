@@ -150,6 +150,58 @@ PREDEFINED_LEAGUE_ATTR_MAP = {
 LEAGUE_KEYS = PREDEFINED_LEAGUE_KEYS
 LEAGUE_NAMES = PREDEFINED_LEAGUE_NAMES.copy()
 
+_MISSING = object()
+
+#: Keys config_schema.json declares in every predefined league block AND at the
+#: plugin root, as (league-block default, root default). They mirror the
+#: schema; test_root_settings_precedence.py fails if the two drift apart.
+_ROOT_DUPLICATE_DEFAULTS = {
+    "show_records": (False, False),
+    "show_ranking": (False, False),
+    "show_odds": (True, True),
+    "live_game_duration": (20, 30),
+    "update_interval_seconds": (3600, 3600),
+    "live_update_interval": (30, 30),
+    "stale_game_timeout": (300, 300),
+    "recent_update_interval": (3600, 3600),
+    "upcoming_update_interval": (3600, 3600),
+    "recent_games_to_show": (1, 1),
+    "upcoming_games_to_show": (1, 1),
+    "show_favorite_teams_only": (True, True),
+    "other_upcoming_games_to_show": (1, 1),
+    "other_recent_games_to_show": (1, 1),
+    "other_rotation_interval_seconds": (1800, 1800),
+    "favorite_rotation_boost": (1, 1),
+    "other_games_min_quality": ("ranked", "ranked"),
+    "other_games_divisions": (["fbs"], ["fbs"]),
+}
+
+
+def _league_or_root(block: Dict[str, Any], root: Dict[str, Any], key: str,
+                    fallback: Any) -> Any:
+    """Resolve a league setting the schema also offers at the plugin root.
+
+    Both copies render in the web UI and the UI saves schema defaults into
+    both, so a value equal to its default says nothing about what the user
+    chose. The root copies used to be read only as a fallback the saved league
+    value always beat (show_records/show_ranking/show_odds), or not at all (the
+    rest), so changing one did nothing. Precedence, the same rule afl- and
+    nrl-scoreboard use for their display_options duplicates: a league value
+    changed from its default, then a root value changed from its default,
+    then the league value, then ``fallback`` when the league block lacks the
+    key. Comparing each copy with its OWN default matters for
+    live_game_duration, whose root default (30) is not the league's (20): a
+    root still at 30 must not override every league.
+    """
+    league_default, root_default = _ROOT_DUPLICATE_DEFAULTS[key]
+    value = block.get(key, _MISSING)
+    if value is not _MISSING and value != league_default:
+        return value
+    root_value = root.get(key, _MISSING)
+    if root_value is not _MISSING and root_value != root_default:
+        return root_value
+    return fallback if value is _MISSING else value
+
 
 class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
     """
@@ -376,11 +428,18 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
             'fifa.world': create_world_cup_managers,
         }
         for league_key in LEAGUE_KEYS:
-            if not self.league_enabled.get(league_key, False):
-                continue
             factory = factories.get(league_key)
             attrs = PREDEFINED_LEAGUE_ATTR_MAP.get(league_key)
             if factory is None or attrs is None:
+                continue
+            if not self.league_enabled.get(league_key, False):
+                # Drop any managers a previous build left behind. on_config_change
+                # rebuilds through here, and a league disabled at runtime kept
+                # its old managers: turning off the last league fell back to the
+                # default soccer_eng.1_* modes, which found the stale EPL managers
+                # in the registry and kept drawing them until a restart.
+                for attr in attrs:
+                    setattr(self, attr, None)
                 continue
             try:
                 league_config = self._adapt_config_for_manager(league_key)
@@ -427,9 +486,15 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         # read it: all thirty settings rendered in the web UI, saved, and did
         # nothing, while the plugin-level key alone reached the card. That is
         # also the opposite precedence to every sibling scoreboard, where the
-        # per-league copy wins. The league block wins here now, with the
-        # plugin-level key as the fallback.
+        # per-league copy wins. The league block is read now, and a league
+        # value still at its default gives way to a plugin-level value the user
+        # changed (see _league_or_root).
         display_options = league_config.get("display_options", {})
+        root = self.config
+
+        def dup(block, key, fallback):
+            """A league key also declared at the plugin root; see _league_or_root."""
+            return _league_or_root(block, root, key, fallback)
 
         # Create manager config with expected structure
         manager_config = {
@@ -438,49 +503,54 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "favorite_teams": league_config.get("favorite_teams", []),
                 "exclude_teams": league_config.get("exclude_teams", []),
                 "display_modes": manager_display_modes,
-                "recent_games_to_show": game_limits.get("recent_games_to_show", league_config.get("recent_games_to_show", 5)),
+                # Every dup() below is a key the schema declares both in this
+                # league block and at the plugin root: a changed league value
+                # wins, then a changed root value, then the league value. See
+                # _league_or_root.
+                "recent_games_to_show": dup(
+                    game_limits, "recent_games_to_show",
+                    league_config.get("recent_games_to_show", 5)),
                 # These ride the same source as the limits above, which is where the
                 # schema declares them. Managers read a translated config, not the
                 # plugin config, so a key missing here is a setting the user can
                 # change in the web UI that silently never reaches the code.
-                "other_upcoming_games_to_show": game_limits.get(
-                    "other_upcoming_games_to_show",
+                "other_upcoming_games_to_show": dup(
+                    game_limits, "other_upcoming_games_to_show",
                     game_limits.get("upcoming_games_to_show", 10),
                 ),
-                "other_recent_games_to_show": game_limits.get(
-                    "other_recent_games_to_show",
+                "other_recent_games_to_show": dup(
+                    game_limits, "other_recent_games_to_show",
                     game_limits.get("recent_games_to_show", 5),
                 ),
-                "other_rotation_interval_seconds": game_limits.get(
-                    "other_rotation_interval_seconds", 1800
+                "other_rotation_interval_seconds": dup(
+                    game_limits, "other_rotation_interval_seconds", 1800
                 ),
-                "favorite_rotation_boost": game_limits.get("favorite_rotation_boost", 1),
-                "other_games_min_quality": game_limits.get(
-                    "other_games_min_quality", "ranked"
+                "favorite_rotation_boost": dup(
+                    game_limits, "favorite_rotation_boost", 1),
+                "other_games_min_quality": dup(
+                    game_limits, "other_games_min_quality", "ranked"
                 ),
                 # Passed through raw; sports.py's _normalise_divisions does the
                 # coercion. list() here turned a hand-edited "fbs" into
                 # ['f','b','s'] (matching nothing, so every non-favourite game
                 # was rejected) and raised TypeError on a null, which the single
                 # try in _initialize_managers turned into no managers at all.
-                "other_games_divisions": game_limits.get(
-                    "other_games_divisions", ["fbs"]
+                "other_games_divisions": dup(
+                    game_limits, "other_games_divisions", ["fbs"]
                 ),
-                "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", league_config.get("upcoming_games_to_show", 10)),
-                "show_records": display_options.get(
-                    "show_records", self.config.get("show_records", False)),
-                "show_ranking": display_options.get(
-                    "show_ranking", self.config.get("show_ranking", False)),
-                # Schema default is true; the fallback said false.
-                "show_odds": display_options.get(
-                    "show_odds", self.config.get("show_odds", True)),
-                "update_interval_seconds": league_config.get(
-                    "update_interval_seconds", 3600
+                "upcoming_games_to_show": dup(
+                    game_limits, "upcoming_games_to_show",
+                    league_config.get("upcoming_games_to_show", 10)),
+                "show_records": dup(display_options, "show_records", False),
+                "show_ranking": dup(display_options, "show_ranking", False),
+                "show_odds": dup(display_options, "show_odds", True),
+                "update_interval_seconds": dup(
+                    league_config, "update_interval_seconds", 3600
                 ),
-                "live_update_interval": league_config.get("live_update_interval", 30),
-                "recent_update_interval": league_config.get("recent_update_interval", 3600),
-                "upcoming_update_interval": league_config.get("upcoming_update_interval", 3600),
-                "stale_game_timeout": league_config.get("stale_game_timeout", 300),
+                "live_update_interval": dup(league_config, "live_update_interval", 30),
+                "recent_update_interval": dup(league_config, "recent_update_interval", 3600),
+                "upcoming_update_interval": dup(league_config, "upcoming_update_interval", 3600),
+                "stale_game_timeout": dup(league_config, "stale_game_timeout", 300),
                 # Read by SportsCore/SportsLive out of this translated block.
                 # Every league block declares the celebration keys, and none
                 # of them arrived: celebrations were always on, always 8s.
@@ -496,14 +566,18 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 # Drives the simulated live game (SportsLive.test_mode); not
                 # in the schema, but unreachable from config without this.
                 "test_mode": league_config.get("test_mode", False),
-                "live_game_duration": league_config.get("live_game_duration", 20),
+                "live_game_duration": dup(league_config, "live_game_duration", 20),
                 "non_favorite_live_game_duration": league_config.get(
                     "non_favorite_live_game_duration", 0
                 ),
                 "recent_game_duration": league_config.get("recent_game_duration", 15),
                 "upcoming_game_duration": league_config.get("upcoming_game_duration", 15),
                 "live_priority": league_config.get("live_priority", False),
-                "show_favorite_teams_only": filtering.get("show_favorite_teams_only", league_config.get("show_favorite_teams_only", False)),
+                # Flattened, so it takes precedence over the filtering dict
+                # below in SportsCore.
+                "show_favorite_teams_only": dup(
+                    filtering, "show_favorite_teams_only",
+                    league_config.get("show_favorite_teams_only", False)),
                 "show_all_live": filtering.get("show_all_live", league_config.get("show_all_live", False)),
                 "filtering": filtering if filtering else {
                     "show_favorite_teams_only": league_config.get("show_favorite_teams_only", False),

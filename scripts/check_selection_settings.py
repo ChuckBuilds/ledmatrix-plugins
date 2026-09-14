@@ -48,6 +48,23 @@ REQUIRED = {
     "other_games_divisions": ("array", None, None, {"fbs", "fcs", "other"}),
 }
 
+# Keys a plugin's sports.py copy mentions but that plugin never runs, so they
+# are deliberately NOT declared. ufc-scoreboard's sports.py carries the shared
+# favourites-then-others selection, but MMARecent and MMAUpcoming override
+# update() and never call _favorites_first, so no other-games slice is ever
+# built or rotated. The keys were offered in its schema and did nothing, and
+# were removed in ufc-scoreboard 1.12.1. Wire the selection into mma.py first,
+# then drop the entry here and declare the keys again.
+NOT_WIRED = {
+    "ufc-scoreboard": frozenset({
+        "other_upcoming_games_to_show",
+        "other_recent_games_to_show",
+        "other_rotation_interval_seconds",
+        "other_games_min_quality",
+        "other_games_divisions",
+    }),
+}
+
 
 def _blocks(node, path="", in_row_editor=False):
     """Every settings block, and whether it lives inside a row editor.
@@ -87,7 +104,9 @@ def _settings_the_code_reads(plugin_id):
     if not source.exists():
         return {}
     text = source.read_text()
-    return {key: spec for key, spec in REQUIRED.items() if '"%s"' % key in text}
+    skipped = NOT_WIRED.get(plugin_id, frozenset())
+    return {key: spec for key, spec in REQUIRED.items()
+            if '"%s"' % key in text and key not in skipped}
 
 
 def check_plugin(plugin_id):

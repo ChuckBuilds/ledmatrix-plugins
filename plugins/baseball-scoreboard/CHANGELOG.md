@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.45.0] - 2026-09-14
+
+### Added
+- **`display_options.show_innings`, `show_bases`, `show_outs`, `show_count`**
+  (advanced, per league, default on). Hide the inning, the base diamonds, the
+  outs or the balls-strikes count on the live scorebug: the full-screen one,
+  the scroll/Vegas live card, and (outs, count and the batting-half arrow) the
+  traditional scoreboard's At Bat panel. `baseball.py` read these since the
+  plugin was written, but nothing drew on them, the manager adapter never
+  forwarded them and the schema never offered them. A hidden element leaves
+  its space empty rather than moving the others; `FINAL` always shows.
+
+### Fixed
+- **Scroll and Vegas result cards show extra innings.** The card hard-coded
+  "Final". It now shows the game's "Final/10" (or MiLB's 7-inning "Final/7")
+  when that fits between the logos, the rule the full-screen Recent scorebug
+  already uses.
+
 ## [1.44.0] - 2026-09-14
 
 ### Added

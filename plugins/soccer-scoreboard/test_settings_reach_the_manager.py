@@ -76,9 +76,9 @@ ROOT_ALLOW = {
     "background_service": "not forwarded: the adapter pins request_timeout/"
                           "max_retries/priority per league (legacy duplicate)",
 }
-# Root duplicates of league-block keys. After the core merges schema defaults
-# every league block carries its own copy, which always wins, so the root copy
-# is only the adapter's last-resort fallback.
+# Root duplicates of league-block keys. They are not forwarded as root keys;
+# each is resolved into every league's own value (a changed league value wins,
+# then a changed root value). test_root_settings_precedence.py covers that.
 for _dup in ("show_records", "show_ranking", "show_odds", "live_game_duration",
              "update_interval_seconds", "live_update_interval",
              "stale_game_timeout", "recent_update_interval",
@@ -87,7 +87,7 @@ for _dup in ("show_records", "show_ranking", "show_odds", "live_game_duration",
              "other_upcoming_games_to_show", "other_recent_games_to_show",
              "other_rotation_interval_seconds", "favorite_rotation_boost",
              "other_games_min_quality", "other_games_divisions"):
-    ROOT_ALLOW[_dup] = "root duplicate of the league-block key, which wins"
+    ROOT_ALLOW[_dup] = "root duplicate, resolved into each league block"
 
 results = []
 

@@ -104,7 +104,11 @@ def main():
           getattr(obj, "ger1_upcoming", None))
     check("the failed league's managers are None",
           (obj.esp1_live, obj.esp1_recent, obj.esp1_upcoming) == (None, None, None))
-    check("disabled leagues are left untouched", not hasattr(obj, "ita1_live"))
+    # Disabled leagues get no managers. They are set to None rather than left
+    # unset, so a rebuild after a league is disabled at runtime drops the old
+    # ones (test_disabled_league_clears_managers.py).
+    check("disabled leagues get no managers",
+          getattr(obj, "ita1_live", None) is None, getattr(obj, "ita1_live", None))
 
     print("\nother_games_divisions passes through the adapter raw")
     for raw in ("fbs", None, ["fcs"]):

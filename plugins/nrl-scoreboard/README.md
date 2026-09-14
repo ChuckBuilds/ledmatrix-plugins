@@ -255,9 +255,13 @@ number.
 | `show_records` | boolean | `false` | Draw each club's win-loss record in the bottom corners. |
 | `show_ranking` | boolean | `false` | Draw ladder positions where ESPN publishes them. |
 | `show_odds` | boolean | `true` | Draw betting odds. |
-| `display_options.show_records` | boolean | `false` | **Advanced.** Nested copy; wins over the root key when present. |
+| `display_options.show_records` | boolean | `false` | **Advanced.** Nested copy; see below for which one wins. |
 | `display_options.show_ranking` | boolean | `false` | **Advanced.** Nested copy. |
 | `display_options.show_odds` | boolean | `true` | **Advanced.** Nested copy. |
+
+The web UI saves a value into both copies, so a copy still at its default says
+nothing about what you chose. A `display_options` value you changed wins; if you
+left it at the default, the root key decides.
 
 ![show_records on and off](../../docs/assets/nrl-scoreboard/show-records.png)
 

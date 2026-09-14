@@ -494,6 +494,13 @@ class GameRenderer(SportsGameRendererMixin):
                   + self._layout_offset('home_logo', 'x_offset'))
             main_img.paste(home_logo, (home_x, center_y - home_logo.height // 2), home_logo)
 
+            # display_options toggles for this game's league. Hidden elements
+            # keep their geometry, so the others do not move.
+            show_innings = self._scorebug_element_shown(game, 'show_innings')
+            show_bases = self._scorebug_element_shown(game, 'show_bases')
+            show_outs = self._scorebug_element_shown(game, 'show_outs')
+            show_count = self._scorebug_element_shown(game, 'show_count')
+
             # Inning indicator (top center)
             inning_half = game.get('inning_half', 'top')
             inning_num = game.get('inning', 1)
@@ -508,7 +515,10 @@ class GameRenderer(SportsGameRendererMixin):
             inning_width = inning_bbox[2] - inning_bbox[0]
             inning_x = (self.display_width - inning_width) // 2
             inning_y = 1
-            self._draw_text_with_outline(draw, inning_text, (inning_x, inning_y), inning_font)
+            # "FINAL" is the status, not the inning, so show_innings keeps it.
+            inning_shown = show_innings or bool(game.get('is_final'))
+            if inning_shown:
+                self._draw_text_with_outline(draw, inning_text, (inning_x, inning_y), inning_font)
 
             # Bases diamond + Outs circles
             bases_occupied = game.get('bases_occupied', [False, False, False])
@@ -552,7 +562,8 @@ class GameRenderer(SportsGameRendererMixin):
             c2x = bases_origin_x + base_cluster_width // 2
             c2y = overall_start_y + h_d
             poly2 = [(c2x, overall_start_y), (c2x + h_d, c2y), (c2x, c2y + h_d), (c2x - h_d, c2y)]
-            draw.polygon(poly2, fill=base_fill if bases_occupied[1] else None, outline=base_outline)
+            if show_bases:
+                draw.polygon(poly2, fill=base_fill if bases_occupied[1] else None, outline=base_outline)
 
             base_bottom_y = c2y + h_d
 
@@ -560,16 +571,18 @@ class GameRenderer(SportsGameRendererMixin):
             c3x = bases_origin_x + h_d
             c3y = base_bottom_y + base_vert_spacing + h_d
             poly3 = [(c3x, base_bottom_y + base_vert_spacing), (c3x + h_d, c3y), (c3x, c3y + h_d), (c3x - h_d, c3y)]
-            draw.polygon(poly3, fill=base_fill if bases_occupied[2] else None, outline=base_outline)
+            if show_bases:
+                draw.polygon(poly3, fill=base_fill if bases_occupied[2] else None, outline=base_outline)
 
             # 1st base (bottom right)
             c1x = bases_origin_x + base_cluster_width - h_d
             c1y = base_bottom_y + base_vert_spacing + h_d
             poly1 = [(c1x, base_bottom_y + base_vert_spacing), (c1x + h_d, c1y), (c1x, c1y + h_d), (c1x - h_d, c1y)]
-            draw.polygon(poly1, fill=base_fill if bases_occupied[0] else None, outline=base_outline)
+            if show_bases:
+                draw.polygon(poly1, fill=base_fill if bases_occupied[0] else None, outline=base_outline)
 
             # Outs circles (only when count data is available)
-            if has_count_data:
+            if has_count_data and show_outs:
                 outs_fill = tuple(outs_cfg.get('counted_color', [255, 255, 255]))
                 outs_empty = tuple(outs_cfg.get('empty_color', [100, 100, 100]))
                 for i in range(3):
@@ -582,7 +595,7 @@ class GameRenderer(SportsGameRendererMixin):
                         draw.ellipse(coords, outline=outs_empty)
 
             # Balls-strikes count (below bases, only when count data is available)
-            if has_count_data:
+            if has_count_data and show_count:
                 balls = game.get('balls', 0)
                 strikes = game.get('strikes', 0)
                 count_text = f"{balls}-{strikes}"
@@ -614,7 +627,8 @@ class GameRenderer(SportsGameRendererMixin):
             if game.get('odds'):
                 self._draw_dynamic_odds(
                     draw, game['odds'], game=game,
-                    top_span=self._top_row_span(draw, inning_text, inning_font))
+                    top_span=self._top_row_span(
+                        draw, inning_text if inning_shown else None, inning_font))
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -649,8 +663,11 @@ class GameRenderer(SportsGameRendererMixin):
                   + self._layout_offset('home_logo', 'x_offset'))
             main_img.paste(home_logo, (home_x, center_y - home_logo.height // 2), home_logo)
 
-            # "Final" (top center)
-            status_text = "Final"
+            # "Final" (top center) -- or the game's own "Final/10" (extra
+            # innings, or "Final/7" for a MiLB doubleheader), chosen exactly
+            # as the full-screen Recent scorebug in sports.py does.
+            status_text = self._final_status_text(
+                draw, game, away_logo, away_x, home_logo, home_x)
             status_width = draw.textlength(status_text, font=self.fonts['time'])
             self._draw_text_with_outline(draw, status_text, ((self.display_width - status_width) // 2, 1), self.fonts['time'])
 
@@ -673,7 +690,7 @@ class GameRenderer(SportsGameRendererMixin):
             if game.get('odds'):
                 self._draw_dynamic_odds(
                     draw, game['odds'], game=game,
-                    top_span=self._top_row_span(draw, "Final", self.fonts['time']))
+                    top_span=self._top_row_span(draw, status_text, self.fonts['time']))
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -681,6 +698,42 @@ class GameRenderer(SportsGameRendererMixin):
         except Exception:
             self.logger.exception("Error rendering recent game")
             return self._render_error_card("Display error")
+
+    def _scorebug_element_shown(self, game: Dict, key: str) -> bool:
+        """A live-card display_options toggle for this game's league.
+
+        The renderer holds the whole plugin config, so it reads the league
+        block the game came from, the way _draw_records does. Default on,
+        matching config_schema.json and baseball.py.
+        """
+        league_config = self.config.get(game.get('league', 'mlb')) or {}
+        display_options = league_config.get('display_options') or {}
+        return bool(display_options.get(key, True))
+
+    def _final_status_text(self, draw, game: Dict, away_logo, away_x: int,
+                           home_logo, home_x: int) -> str:
+        """"Final", or the game's "Final/N" when it fits between the logos.
+
+        Same rule as SportsRecent._draw_scorebug_layout in sports.py: baseball
+        never sets period_text, so extra innings arrive on status_text. Use it
+        when it is no wider than the visible gap between the logos (or than
+        the plain "Final" it replaces, where even that already overlaps them),
+        measured on the logos' opaque pixels because their canvases carry
+        transparent padding.
+        """
+        status_text = game.get('period_text', "Final")
+        extended = str(game.get('status_text') or "")
+        if 'period_text' in game or not extended.lower().startswith("final/"):
+            return status_text
+        font = self.fonts['time']
+        away_box = away_logo.getchannel("A").getbbox() if away_logo.mode == "RGBA" else None
+        home_box = home_logo.getchannel("A").getbbox() if home_logo.mode == "RGBA" else None
+        gap = ((home_x + (home_box[0] if home_box else 0))
+               - (away_x + (away_box[2] if away_box else away_logo.width)))
+        plain_width = draw.textlength(status_text, font=font)
+        if draw.textlength(extended, font=font) <= max(gap, plain_width):
+            return extended
+        return status_text
 
     # ------------------------------------------------------------------
     # Card options -- config["scroll_card"], plus the shared

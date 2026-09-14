@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.44.0",
+  "version": "1.45.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.45.0",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "The live scorebug's element toggles work: new advanced per-league display_options.show_innings, show_bases, show_outs and show_count (default on) hide the inning, base diamonds, outs or balls-strikes count on the full-screen live scorebug and the scroll/Vegas live card, and the outs/count rows and batting-half arrow on the traditional scoreboard. baseball.py had read these since the plugin was written, but nothing drew on them, the manager never received them and the schema never offered them. A hidden element leaves its space empty and FINAL always shows. Scroll and Vegas result cards now show extra innings (\"Final/10\", or MiLB's \"Final/7\") when it fits between the logos, like the full-screen Recent scorebug, instead of a hard-coded \"Final\"."
+    },
     {
       "version": "1.44.0",
       "released": "2026-09-14",

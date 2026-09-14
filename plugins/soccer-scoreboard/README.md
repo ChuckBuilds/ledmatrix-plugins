@@ -230,8 +230,10 @@ Per league, under `game_limits`:
 | `other_games_min_quality` | `ranked` | Which non-favorite matches qualify: `any` or `ranked`. |
 | `other_games_divisions` | `["fbs"]` | Which divisions non-favorite matches may come from. |
 
-The same eight keys also exist at the **plugin level**. `game_limits` wins where
-the key is present, then the flat per-league key, then the plugin-level one.
+The same eight keys also exist at the **plugin level**. The web UI saves a value
+into both places, so each copy is only taken as a choice when it differs from its
+default: a league value you changed wins, then a plugin-level value you changed
+(applied to every league left at its default), then the league's own value.
 
 **Your favorite clubs are never filtered by the last two.** Those settings only
 decide what fills the *remaining* slots.
@@ -335,13 +337,14 @@ Defaults are the schema defaults, which is what the web UI writes.
 
 ![show_records on and off](../../docs/assets/soccer-scoreboard/show-records.png)
 
-> **`show_records`, `show_ranking` and `show_odds` are per-league settings with
-> a plugin-level fallback.** Each league block declares a `display_options`
-> object with the same three keys; that copy wins, and these plugin-level keys
-> apply to any league that has not set its own. Same precedence as every other
-> scoreboard in this repo. Note that the web UI writes the schema default into
-> every league block, so once settings have been saved the per-league copy is
-> the one in play.
+> **The display toggles, update intervals, `live_game_duration` and
+> `show_favorite_teams_only` here are also per-league settings.** Every league
+> block declares the same keys, and the web UI writes the schema default into
+> each of them, so a copy still at its default is not taken as a choice. A
+> league value you changed wins; otherwise a plugin-level value you changed
+> applies to that league; otherwise the league's own value stands. Each copy is
+> compared with its own default, so the plugin-level `live_game_duration` of 30
+> does not override a league's 20. This matches afl- and nrl-scoreboard.
 
 ### Background service
 
@@ -439,8 +442,8 @@ See [The selection settings](#the-selection-settings).
 | `<league>.display_options.show_ranking` | boolean | `false` |
 | `<league>.display_options.show_odds` | boolean | `true` |
 
-> **These win over the plugin-level keys of the same name**, which apply only
-> to a league that has not set its own. See the note under
+> **A value changed here wins over the plugin-level key of the same name**,
+> which applies to any league left at its default. See the note under
 > [Plugin level](#plugin-level).
 
 ### Mode durations
@@ -638,10 +641,12 @@ soccer-scoreboard --check`.
 `enabled` is on. With `filtering.show_favorite_teams_only` at its default of
 `true` and no `favorite_teams` set, there is nothing to select from.
 
-**Records, rankings or odds will not turn on.** The per-league
-`leagues.<slug>.display_options` copy wins over the plugin-level key, and the
-web UI writes a value into every league block, so set them on the league you
-are watching rather than at the plugin level.
+**Records, rankings or odds will not turn on.** A per-league
+`leagues.<slug>.display_options` value changed from its default wins over the
+plugin-level key. Records and rankings default off, so turning them on at the
+plugin level reaches every league; odds default on, so a league whose
+`show_odds` was switched off keeps them off whatever the plugin-level key says.
+Turn it back on for that league.
 
 **A club I follow never shows up.** `favorite_teams` needs the ESPN
 abbreviation, not the club name — see [TEAMS.md](TEAMS.md). Enable debug logging

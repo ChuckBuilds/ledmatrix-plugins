@@ -677,7 +677,14 @@ class Baseball(SportsCore):
             margin = 1
             is_live_now = bool(game.get("is_live")) and not game.get("is_final")
             has_count_data = game.get("has_count_data", True)
-            at_bat_panel_applicable = is_live_now and has_count_data
+            # display_options.show_count drives the B and S rows, show_outs the
+            # O row; with both off there is no At Bat column at all, and the
+            # width goes back to the inning grid.
+            show_count = getattr(self, "show_count", True)
+            show_outs = getattr(self, "show_outs", True)
+            at_bat_panel_applicable = (
+                is_live_now and has_count_data and (show_count or show_outs)
+            )
 
             # font_size acts as an optional cap, not a fixed size: by default
             # (24, the max) this auto-fits the largest text that still fills
@@ -942,16 +949,19 @@ class Baseball(SportsCore):
             # vertically aligned with the header/away/home rows.
             if at_bat_panel_applicable:
                 self._draw_traditional_scoreboard_at_bat_side_panel(
-                    draw, game, font, row_h, at_bat_x, header_y, away_y, home_y, text_color, highlight_color
+                    draw, game, font, row_h, at_bat_x, header_y, away_y, home_y, text_color, highlight_color,
+                    show_count=show_count, show_outs=show_outs,
                 )
                 # Batting-team ▲/▼ indicator, in the header row's team
                 # column -- otherwise-empty space right above the team
-                # abbreviations, next to the inning numbers.
-                inning_half = (game.get("inning_half") or "top").lower()
-                at_bat_indicator = "▲" if inning_half == "top" else "▼"
-                self._draw_text_with_outline(
-                    draw, at_bat_indicator, (team_x, header_y), font, fill=highlight_color
-                )
+                # abbreviations, next to the inning numbers. It is the
+                # half-inning, so display_options.show_innings governs it.
+                if getattr(self, "show_innings", True):
+                    inning_half = (game.get("inning_half") or "top").lower()
+                    at_bat_indicator = "▲" if inning_half == "top" else "▼"
+                    self._draw_text_with_outline(
+                        draw, at_bat_indicator, (team_x, header_y), font, fill=highlight_color
+                    )
 
             self.display_manager.image.paste(img, (0, 0))
             self.display_manager.update_display()
@@ -963,6 +973,7 @@ class Baseball(SportsCore):
         self, draw, game: Dict, font, row_h: int, x: int,
         header_y: int, away_y: int, home_y: int,
         text_color: tuple, highlight_color: tuple,
+        show_count: bool = True, show_outs: bool = True,
     ) -> None:
         """Draw ball/strike/out indicators as a compact vertical column to
         the right of the grid, one row each aligned with the header/away/
@@ -985,9 +996,13 @@ class Baseball(SportsCore):
                 draw.ellipse([dx, y + 1, dx + dot_d, y + 1 + dot_d], fill=color)
                 dx += dot_d + 2
 
-        draw_row(header_y, "B", balls, 3)
-        draw_row(away_y, "S", strikes, 2)
-        draw_row(home_y, "O", outs, 2)
+        # Rows keep their slots when one is hidden, so B, S and O stay level
+        # with the header/away/home rows they have always sat beside.
+        if show_count:
+            draw_row(header_y, "B", balls, 3)
+            draw_row(away_y, "S", strikes, 2)
+        if show_outs:
+            draw_row(home_y, "O", outs, 2)
 
 
 
@@ -1951,17 +1966,27 @@ class BaseballLive(Baseball, SportsLive):
             inning_width = inning_bbox[2] - inning_bbox[0]
             inning_x = (self.display_width - inning_width) // 2
             inning_y = 1  # Position near top center
-            self._draw_text_with_outline(
-                draw_overlay,
-                inning_text,
-                (inning_x, inning_y),
-                self.display_manager.font,
-            )
+            # display_options.show_innings hides the ▲/▼ inning; "FINAL" is
+            # the game's status, not the inning, and stays. The bbox above is
+            # still measured so the bases sit where they always have.
+            if game["is_final"] or getattr(self, "show_innings", True):
+                self._draw_text_with_outline(
+                    draw_overlay,
+                    inning_text,
+                    (inning_x, inning_y),
+                    self.display_manager.font,
+                )
 
             # --- REVISED BASES AND OUTS DRAWING ---
             bases_occupied = game["bases_occupied"]  # [1st, 2nd, 3rd]
             outs = game.get("outs", 0)
             inning_half = game["inning_half"]
+            # display_options toggles. getattr: tests and the harness build
+            # managers without __init__. Hidden elements keep their geometry,
+            # so turning one off never shifts the others around the panel.
+            show_bases = getattr(self, "show_bases", True)
+            show_outs = getattr(self, "show_outs", True)
+            show_count = getattr(self, "show_count", True)
 
             # Read configurable game display settings
             customization = self.config.get('customization', {})
@@ -2028,10 +2053,11 @@ class BaseballLive(Baseball, SportsLive):
                 (c2x, c2y + h_d),
                 (c2x - h_d, c2y),
             ]
-            if bases_occupied[1]:
-                draw_overlay.polygon(poly2, fill=base_color_occupied)
-            else:
-                draw_overlay.polygon(poly2, outline=base_color_empty)
+            if show_bases:
+                if bases_occupied[1]:
+                    draw_overlay.polygon(poly2, fill=base_color_occupied)
+                else:
+                    draw_overlay.polygon(poly2, outline=base_color_empty)
 
             base_bottom_y = c2y + h_d  # Bottom Y of 2nd base diamond
 
@@ -2044,10 +2070,11 @@ class BaseballLive(Baseball, SportsLive):
                 (c3x, c3y + h_d),
                 (c3x - h_d, c3y),
             ]
-            if bases_occupied[2]:
-                draw_overlay.polygon(poly3, fill=base_color_occupied)
-            else:
-                draw_overlay.polygon(poly3, outline=base_color_empty)
+            if show_bases:
+                if bases_occupied[2]:
+                    draw_overlay.polygon(poly3, fill=base_color_occupied)
+                else:
+                    draw_overlay.polygon(poly3, outline=base_color_empty)
 
             # 1st Base (Bottom right relative to bases_origin_x)
             c1x = bases_origin_x + base_cluster_width - h_d
@@ -2058,14 +2085,15 @@ class BaseballLive(Baseball, SportsLive):
                 (c1x, c1y + h_d),
                 (c1x - h_d, c1y),
             ]
-            if bases_occupied[0]:
-                draw_overlay.polygon(poly1, fill=base_color_occupied)
-            else:
-                draw_overlay.polygon(poly1, outline=base_color_empty)
+            if show_bases:
+                if bases_occupied[0]:
+                    draw_overlay.polygon(poly1, fill=base_color_occupied)
+                else:
+                    draw_overlay.polygon(poly1, outline=base_color_empty)
 
             # --- Draw Outs (Vertical Circles) ---
             # Only render outs and count when data is available (ESPN NCAA doesn't provide these)
-            if has_count_data:
+            if has_count_data and show_outs:
                 circle_color_out = tuple(outs_cfg.get('counted_color', [255, 255, 255]))
                 circle_color_empty_outline = tuple(outs_cfg.get('empty_color', [100, 100, 100]))
 
@@ -2081,7 +2109,7 @@ class BaseballLive(Baseball, SportsLive):
                         draw_overlay.ellipse(coords, outline=circle_color_empty_outline)
 
             # --- Draw Balls-Strikes Count (BDF Font) ---
-            if has_count_data:
+            if has_count_data and show_count:
                 balls = game.get("balls", 0)
                 strikes = game.get("strikes", 0)
 
@@ -2229,10 +2257,12 @@ class BaseballLive(Baseball, SportsLive):
             # Draw gambling odds if available
             if game.get("odds"):
                 # top_span: the inning is centred on the same top row, so odds
-                # that would overlap it step down a row (P-M17).
+                # that would overlap it step down a row (P-M17). A hidden
+                # inning (show_innings off) leaves that row free.
+                inning_drawn = game["is_final"] or getattr(self, "show_innings", True)
                 self._draw_dynamic_odds(
                     draw_overlay, game["odds"], self.display_width, self.display_height,
-                    top_span=(inning_x, inning_x + inning_width),
+                    top_span=(inning_x, inning_x + inning_width) if inning_drawn else None,
                 )
 
             # Composite the text overlay onto the main image

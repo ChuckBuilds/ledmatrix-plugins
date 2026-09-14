@@ -110,14 +110,15 @@ place between visits, so a pool of 3 means the board rotates through the same 3
 fights until the card moves on. A bigger number gives you a *longer lap*, so any
 one fight comes round **less** often.
 
-Which regime you are in depends on `ufc.favorite_fighters` (or
-`favorite_weight_classes`) and `ufc.filtering.show_favorite_fighters_only`:
+What you get depends on `ufc.favorite_fighters` (or `favorite_weight_classes`)
+and, for upcoming fights, `ufc.filtering.show_favorite_fighters_only`:
 
-| Favorites set? | `show_favorite_fighters_only` | What you get |
+| Screen | Favorites set? | What you get |
 |---|---|---|
-| No | either | The next N fights chronologically. Every fight is a non-favorite fight, so the `other_*` filters apply to all of them. |
-| Yes | **on** | Only your fighters and weight classes. The limit is a budget **per fighter**. |
-| Yes | **off** (default) | **Your fighters first, then other fights to fill.** Both limits are **totals**. |
+| Recent | No | The `recent_games_to_show` most recent finished fights. |
+| Recent | Yes | The most recent finished fight for each favorite fighter and weight class. |
+| Upcoming | No, or `show_favorite_fighters_only` **off** (default) | The next `upcoming_games_to_show` fights chronologically. |
+| Upcoming | Yes, with `show_favorite_fighters_only` **on** | The next `upcoming_games_to_show` fights involving your fighters or weight classes. |
 
 `show_favorite_fighters_only` defaults to **off** here, unlike the team
 scoreboards where the equivalent defaults on. `ufc.filtering.show_all_live`
@@ -131,37 +132,15 @@ Per `ufc.game_limits`:
 |---|---|---|
 | `recent_games_to_show` | `5` | Pool size for finished fights. |
 | `upcoming_games_to_show` | `5` | The same for scheduled fights. |
-| `other_recent_games_to_show` | `5` | **Advanced.** How many **non-favorite** finished fights to add. `0` gives favorites only. |
-| `other_upcoming_games_to_show` | `5` | **Advanced.** The same for scheduled fights. |
-| `other_rotation_interval_seconds` | `1800` | **Advanced.** How often the non-favorite slice advances. `0` pins it. |
-| `favorite_rotation_boost` | `1` | **Advanced.** Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
-| `other_games_min_quality` | `ranked` | **Advanced.** Inert here — see below. |
-| `other_games_divisions` | `["fbs"]` | **Advanced.** Inert here — see below. |
+| `favorite_rotation_boost` | `1` | **Advanced.** In switch mode, the number of turns a favorite fighter's card gets for every 1 turn other cards get. `1` shows each fight once. |
 
-**Your favorite fighters are never filtered by the last two** — a fighter you
-follow always appears. Those settings only decide what fills the *remaining*
-slots.
-
-> **Both are inert in this plugin.** `ranked` needs a national poll and the
-> division filter needs ESPN's FBS/FCS group rosters — a college *football*
-> taxonomy — so every fight passes both and neither costs a request. They are
-> present because the selection code is shared with the team scoreboards, which
-> is also why their help text talks about teams and divisions. That text also
-> offers a `broadcast` value the enum does not have; it was retired.
-
-### Variety comes from turnover
-
-Rather than widening the pool, the non-favorite slice **moves**: the window
-advances by its own width every `other_rotation_interval_seconds`, so
-consecutive windows do not overlap and the board works through the card instead
-of resampling the front of it. Your favorites are not rotated — for upcoming
-fights the soonest ones are the point.
-
-Both filters **fail open**: if the data behind them cannot be fetched, the fight
-is allowed through. They fail open a second time as a set — if the filters
-between them leave nothing at all, the unfiltered list is used instead. Setting
-`other_upcoming_games_to_show` or `other_recent_games_to_show` to `0` is the one
-way to ask for an empty slate, and that is honoured.
+> **No "other games" settings.** The team scoreboards offer
+> `other_upcoming_games_to_show`, `other_recent_games_to_show`,
+> `other_rotation_interval_seconds`, `other_games_min_quality` and
+> `other_games_divisions`. This plugin used to list them too, but its fight
+> selection never used them, so changing them did nothing. They were removed in
+> 1.12.1. A value already saved in your config still loads, and is dropped the
+> next time you save the plugin's settings.
 
 ## Panel sizes
 
@@ -354,10 +333,9 @@ that at least one of `show_live` / `show_recent` / `show_upcoming` is on.
 as ESPN publishes it, not a nickname or surname. Following the weight class with
 `favorite_weight_classes` is a broader alternative.
 
-**The same few fights keep repeating.** That is the pool cycling. Lower
-`other_rotation_interval_seconds` for faster turnover rather than raising the
-pool size — a larger pool makes the lap longer, so each fight appears less
-often, not more.
+**The same few fights keep repeating.** That is the pool cycling. Raising
+`recent_games_to_show` or `upcoming_games_to_show` brings more fights in, but
+it also makes the lap longer, so each fight appears less often.
 
 **Text overlaps on a small panel.** Two headshots, two names and two records is
 a lot for 128x32. Turn off `show_fighter_names` or `show_records`, or use a
