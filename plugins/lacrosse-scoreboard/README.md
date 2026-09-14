@@ -296,6 +296,7 @@ Every table below exists twice, once under `ncaa_mens` and once under
 | `<league>.filtering.other_upcoming_games_to_show` | 0–20 | `10` | **Advanced.** How many non-favorite upcoming games to add. `0` gives favorites only. |
 | `<league>.filtering.other_recent_games_to_show` | 0–20 | `5` | **Advanced.** The same for finished games. |
 | `<league>.filtering.other_rotation_interval_seconds` | 0–86400 s | `1800` | **Advanced.** How often the non-favorite window advances. `0` pins it. |
+| `<league>.filtering.favorite_rotation_boost` | 1–5 | `1` | **Advanced.** Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
 | `<league>.filtering.other_games_min_quality` | `any` \| `ranked` | `ranked` | **Advanced.** Restrict non-favorite games to those involving a poll team. Works in this plugin — lacrosse has a national poll. |
 | `<league>.filtering.other_games_divisions` | array | `["fbs"]` | **Advanced.** Inert here; a college football taxonomy. |
 

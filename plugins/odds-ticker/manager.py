@@ -209,6 +209,13 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         # Filtering settings
         self.show_favorite_teams_only = get_config(filtering, 'show_favorite_teams_only', False)
         self.games_per_favorite_team = get_config(filtering, 'games_per_favorite_team', 1)
+        # Turns a favourite team's game gets in the scroll for every one turn
+        # another game gets. Above 1 its next games also always make the cut.
+        try:
+            self.favorite_weight = max(1, min(5, int(
+                get_config(filtering, 'favorite_weight', 1))))
+        except (TypeError, ValueError, OverflowError):
+            self.favorite_weight = 1
         self.max_games_per_league = get_config(filtering, 'max_games_per_league', 5)
         self.show_odds_only = get_config(filtering, 'show_odds_only', False)
         # game_id -> the arguments its odds request would need. Filled while
@@ -1058,9 +1065,10 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                     league_games = all_games
                     if self.show_odds_only:
                         league_games = [g for g in league_games if g.get('odds') and not g.get('odds', {}).get('no_odds', False)]
-                    # Sort by start_time
-                    league_games.sort(key=lambda x: x.get('start_time', datetime.max))
-                    league_games = league_games[:self.max_games_per_league]
+                    # Soonest first, capped at max_games_per_league -- with
+                    # favourites guaranteed a slot when favorite_weight is on.
+                    # The same selection priced the odds, so the two agree.
+                    league_games = self._select_games(league_games, league_config)
                 
                 # Sorting (default is soonest)
                 if self.sort_order == 'soonest':
@@ -1154,18 +1162,34 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         alternatives to fall back on rather than an empty ticker.
         """
         ordered = sorted(games, key=lambda g: g.get('start_time') or datetime.max)
+        limit = max(1, self.max_games_per_league) * headroom
+        favorites = list(league_config.get('favorite_teams') or [])
+        per_team = max(1, self.games_per_favorite_team) * headroom
 
         if not self.show_favorite_teams_only:
-            return ordered[:max(1, self.max_games_per_league) * headroom]
+            if self.favorite_weight <= 1 or not favorites:
+                return ordered[:limit]
+            # Weighted but not exclusive: each favourite's next games are
+            # guaranteed a slot, and the soonest other games fill the rest.
+            # Without this a favourite playing later in the week than five
+            # other games never reached the ticker, whatever its weight.
+            chosen = self._favorite_quota(ordered, favorites, per_team)[:limit]
+            taken = {g.get('id') for g in chosen}
+            chosen += [g for g in ordered if g.get('id') not in taken][:limit - len(chosen)]
+            return sorted(chosen, key=lambda g: g.get('start_time') or datetime.max)
 
-        favorites = list(league_config.get('favorite_teams') or [])
         if not favorites:
             return []
+        return self._favorite_quota(ordered, favorites, per_team)[:limit]
 
-        # Per-team quota, matching the display path: each favourite gets up to
-        # games_per_favorite_team, and a game involving two favourites counts
-        # for both.
-        per_team = max(1, self.games_per_favorite_team) * headroom
+    @staticmethod
+    def _favorite_quota(ordered: List[Dict[str, Any]], favorites: List[str],
+                        per_team: int) -> List[Dict[str, Any]]:
+        """Each favourite's next ``per_team`` games, in the order given.
+
+        Matches the display path's per-team quota: a game involving two
+        favourites is taken once and counts for both.
+        """
         counts = {team: 0 for team in favorites}
         seen = set()
         chosen = []
@@ -1186,8 +1210,33 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                 counts[away] += 1
             if all(c >= per_team for c in counts.values()):
                 break
+        return chosen
 
-        return chosen[:max(1, self.max_games_per_league) * headroom]
+    def _is_favorite_game(self, game: Dict[str, Any]) -> bool:
+        """Whether either side is a favourite of the league the game came from."""
+        league_config = self.league_configs.get(game.get('league')) or {}
+        favorites = league_config.get('favorite_teams') or ()
+        return game.get('home_team') in favorites or game.get('away_team') in favorites
+
+    def _weighted_ticker_order(self, games: List[Dict[str, Any]]) -> List[int]:
+        """Indices into ``games`` in strip order, favourites repeated.
+
+        Each game keeps its own slot, so the sort order still reads left to
+        right, and a favourite's extra turns land at even fractions of the
+        strip after it, wrapping round -- so the looping marquee keeps a
+        favourite's cards apart across the seam wherever the other games leave
+        room. A weight above the number of other games makes some repeats
+        adjacent; each game still appears exactly its weight in cards.
+        """
+        count = len(games)
+        if self.favorite_weight <= 1:
+            return list(range(count))
+        slots = []
+        for index, game in enumerate(games):
+            weight = self.favorite_weight if self._is_favorite_game(game) else 1
+            for turn in range(weight):
+                slots.append(((index + turn * count / weight) % count, turn > 0, index))
+        return [index for _, _, index in sorted(slots)]
 
     def _attach_odds_to_candidates(self, games: List[Dict[str, Any]],
                                    league_config: Dict[str, Any]) -> None:
@@ -2380,8 +2429,16 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             return
 
         logger.debug(f"Creating ticker image for {len(self.games_data)} games.")
-        game_images = [self._create_game_display(game) for game in self.games_data]
-        logger.debug(f"Created {len(game_images)} game images")
+        # favorite_weight repeats favourite cards in the strip. games_data stays
+        # one entry per game, and each game is rendered once however many
+        # times it appears.
+        rendered = {}
+        game_images = []
+        for index in self._weighted_ticker_order(self.games_data):
+            if index not in rendered:
+                rendered[index] = self._create_game_display(self.games_data[index])
+            game_images.append(rendered[index])
+        logger.debug(f"Created {len(rendered)} game images for {len(game_images)} cards")
         
         if not game_images:
             logger.warning("Failed to create any game images.")

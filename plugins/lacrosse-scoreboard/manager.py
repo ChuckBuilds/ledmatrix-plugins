@@ -767,6 +767,7 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         other_upcoming_games_to_show = resolve_value(["filtering", "other_upcoming_games_to_show"], ["other_upcoming_games_to_show"], upcoming_games_to_show)
         other_recent_games_to_show = resolve_value(["filtering", "other_recent_games_to_show"], ["other_recent_games_to_show"], recent_games_to_show)
         other_rotation_interval_seconds = resolve_value(["filtering", "other_rotation_interval_seconds"], ["other_rotation_interval_seconds"], 1800)
+        favorite_rotation_boost = resolve_value(["filtering", "favorite_rotation_boost"], ["favorite_rotation_boost"], 1)
         other_games_min_quality = resolve_value(["filtering", "other_games_min_quality"], ["other_games_min_quality"], "ranked")
         other_games_divisions = resolve_value(["filtering", "other_games_divisions"], ["other_games_divisions"], ["fbs"])
 
@@ -822,6 +823,7 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_upcoming_games_to_show": other_upcoming_games_to_show,
                 "other_recent_games_to_show": other_recent_games_to_show,
                 "other_rotation_interval_seconds": other_rotation_interval_seconds,
+                "favorite_rotation_boost": favorite_rotation_boost,
                 "other_games_min_quality": other_games_min_quality,
                 "other_games_divisions": list(other_games_divisions or []),
                 "show_records": show_records,

@@ -68,6 +68,8 @@ class _Ticker:
     _ODDS_CANDIDATE_HEADROOM = OddsTickerPlugin._ODDS_CANDIDATE_HEADROOM
     _odds_candidates = OddsTickerPlugin._odds_candidates
     _select_games = OddsTickerPlugin._select_games
+    _favorite_quota = staticmethod(OddsTickerPlugin._favorite_quota)
+    favorite_weight = 1
     _collection_limit = OddsTickerPlugin._collection_limit
     _attach_odds_to_candidates = OddsTickerPlugin._attach_odds_to_candidates
     # Re-wrap: reading a staticmethod off the class yields a plain function,

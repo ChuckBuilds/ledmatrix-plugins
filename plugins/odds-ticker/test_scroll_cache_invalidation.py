@@ -90,6 +90,9 @@ class _Ticker:
     # The methods under test, unmodified.
     display = OddsTickerPlugin.display
     _create_ticker_image = OddsTickerPlugin._create_ticker_image
+    # The strip's card order; at weight 1 it is one pass over games_data.
+    _weighted_ticker_order = OddsTickerPlugin._weighted_ticker_order
+    favorite_weight = 1
     # display() reads the resolved scroll pacing through this. Borrowed rather
     # than stubbed so it stays honest: it returns 1 when _scroll_settings is
     # absent, which is what this double wants anyway.

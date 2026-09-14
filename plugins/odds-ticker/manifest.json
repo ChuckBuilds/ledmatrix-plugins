@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.4.8",
+  "version": "1.5.0",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.5.0",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Adds filtering.favorite_weight (1-5, default 1). Favorite teams used to matter only with show_favorite_teams_only on; otherwise the ticker took each league's soonest max_games_per_league games, so a favorite's game could miss the ticker entirely and games_per_favorite_team did nothing. Above 1, each favorite's next games (up to games_per_favorite_team) always make their league's cut, with the soonest other games filling the rest, and each favorite game appears that many times in the scroll, its extra turns spread evenly around the loop. games_data stays one entry per game -- the weighting is applied only when the strip is composed, each game rendered once -- so live detection, update logging and odds fetches are unchanged. The candidate selection used for odds requests follows the same rule, so every guaranteed favorite is priced. The default keeps the old behaviour exactly."
+    },
     {
       "version": "1.4.8",
       "released": "2026-09-11",

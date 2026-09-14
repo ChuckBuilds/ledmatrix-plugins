@@ -134,6 +134,7 @@ Per `ufc.game_limits`:
 | `other_recent_games_to_show` | `5` | **Advanced.** How many **non-favorite** finished fights to add. `0` gives favorites only. |
 | `other_upcoming_games_to_show` | `5` | **Advanced.** The same for scheduled fights. |
 | `other_rotation_interval_seconds` | `1800` | **Advanced.** How often the non-favorite slice advances. `0` pins it. |
+| `favorite_rotation_boost` | `1` | **Advanced.** Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
 | `other_games_min_quality` | `ranked` | **Advanced.** Inert here — see below. |
 | `other_games_divisions` | `["fbs"]` | **Advanced.** Inert here — see below. |
 

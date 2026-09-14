@@ -85,7 +85,8 @@ level is **rejected**, not ignored. The full schema is
 | Key | Default | Notes |
 |---|---|---|
 | `filtering.show_favorite_teams_only` | `false` | Only show odds for favorite teams across all leagues. |
-| `filtering.games_per_favorite_team` | `1` | Number of games to show per favorite team (1–5). |
+| `filtering.games_per_favorite_team` | `1` | Number of games to show per favorite team (1–5). Applies with `show_favorite_teams_only`, and to the games `favorite_weight` guarantees a slot. |
+| `filtering.favorite_weight` | `1` | How many times each favorite team's game appears in the scroll for every 1 time other games appear, spread evenly (1–5). Above 1, each favorite's next games also always make their league's `max_games_per_league` cut. `1` shows every game once. |
 | `filtering.max_games_per_league` | `5` | Maximum number of games to show per league (1–20). |
 | `filtering.show_odds_only` | `false` | Include only games that have odds data; games without odds will be excluded from the ticker. |
 | `filtering.sort_order` | `"soonest"` | Sort order for displaying games — one of `soonest`, `league`, `team`. |
