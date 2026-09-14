@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.33.0",
+  "version": "1.33.1",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.33.1",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "A scheduled, halftime or postponed game whose ESPN period is null no longer stops live games updating. The live check that drops games which look finished compared the period with >= 4 and raised on None; the exception escaped SportsLive.update() and abandoned that league's whole live refresh, so live games already on the panel kept their last scores, new ones never appeared, and the error repeated on every poll while that game stayed in the feed. A null or non-numeric period now counts as 0 and a null period text as empty; thresholds and clock handling are unchanged. ESPN normally sends an integer period, so this takes a malformed feed."
+    },
     {
       "version": "1.33.0",
       "released": "2026-09-14",

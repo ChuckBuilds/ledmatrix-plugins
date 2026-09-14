@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.26.1",
+  "version": "1.26.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "nrl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.26.2",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Hardening: the live check that drops games which look finished no longer raises on a None or non-string period text. The NRL parser never produces one today. If it ever did, the exception would abandon that league's whole live refresh, leaving the panel on its last live games. Such values are now treated as empty / period 0; the end-of-game rule is unchanged."
+    },
     {
       "version": "1.26.1",
       "released": "2026-09-14",
