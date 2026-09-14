@@ -18,6 +18,7 @@ Run: PYTHONPATH=<core> <core-venv>/bin/python plugins/nrl-scoreboard/test_switch
 import ast
 import os
 import sys
+import time
 
 PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
 if PLUGIN_DIR not in sys.path:
@@ -44,6 +45,13 @@ class _Manager:
 
 class _Base:
     _refresh_switch_mode_managers = Plugin._refresh_switch_mode_managers
+    _dispatch_switch_refresh = Plugin._dispatch_switch_refresh
+    _SWITCH_REFRESH_MIN_GAP_SECONDS = Plugin._SWITCH_REFRESH_MIN_GAP_SECONDS
+
+    def _settle(self):
+        """Wait for the dispatched refreshes -- they run on daemon threads."""
+        for thread in list(getattr(self, "_switch_refresh_threads", {}).values()):
+            thread.join(timeout=5)
 
     def __init__(self):
         self.refreshed = []
@@ -68,6 +76,7 @@ class _Stub(_Base):
 print("the switch path refreshes before it reads")
 s = _Stub()
 s._refresh_switch_mode_managers("live")
+s._settle()
 check("refreshes the mode's manager", len(s.refreshed) == 1, f"{len(s.refreshed)}")
 
 s = _Stub(manager=None)
@@ -79,15 +88,50 @@ except Exception as exc:
 
 
 class _Angry(_Stub):
-    def _ensure_manager_updated(self, manager):
-        raise OSError("network on fire")
+    def _get_manager(self, mode_type):
+        raise OSError("registry on fire")
 
 
 try:
     _Angry()._refresh_switch_mode_managers("live")
-    check("a manager that raises does not take down the frame", True)
+    check("a manager lookup that raises does not take down the frame", True)
 except Exception as exc:
-    check("a manager that raises does not take down the frame", False, str(exc))
+    check("a manager lookup that raises does not take down the frame", False, str(exc))
+
+print("\nthe refresh never runs on the render thread")
+PER_CALL = 1
+
+
+class _Slow(_Stub):
+    def _ensure_manager_updated(self, manager):
+        time.sleep(0.5)
+        self.refreshed.append(manager)
+
+
+s = _Slow()
+_started = time.monotonic()
+s._refresh_switch_mode_managers("live")
+_elapsed = time.monotonic() - _started
+check("returns before a slow update finishes", _elapsed < 0.2, f"{_elapsed:.3f}s")
+check("the update is still running in the background", not s.refreshed)
+s._SWITCH_REFRESH_MIN_GAP_SECONDS = 0
+s._refresh_switch_mode_managers("live")
+s._settle()
+check("a manager already refreshing is not started twice",
+      len(s.refreshed) == PER_CALL, f"{len(s.refreshed)}")
+
+s = _Stub()
+s._refresh_switch_mode_managers("live")
+s._settle()
+s._refresh_switch_mode_managers("live")
+s._settle()
+check("dispatches inside the gap are skipped", len(s.refreshed) == PER_CALL,
+      f"{len(s.refreshed)}")
+s._switch_refresh_at = {k: v - 60 for k, v in getattr(s, "_switch_refresh_at", {}).items()}
+s._refresh_switch_mode_managers("live")
+s._settle()
+check("the next dispatch after the gap refreshes again",
+      len(s.refreshed) == 2 * PER_CALL, f"{len(s.refreshed)}")
 
 CALLERS = ["_display_switch_mode"]
 
@@ -137,6 +181,17 @@ for _node in ast.walk(_tree):
 check("every switch-mode manager gathering site refreshes first",
       not _unguarded,
       f"{_sites} site(s)" + (f"; UNGUARDED at {_unguarded}" if _unguarded else ""))
+
+# And the refresh path must hand the update to a thread, never call it inline:
+# an inline manager.update() blocks the frame for a whole network round trip.
+_inline = []
+for _node in ast.walk(_tree):
+    if isinstance(_node, ast.FunctionDef) and _node.name == "_refresh_switch_mode_managers":
+        _inline = [c.func.attr for c in ast.walk(_node)
+                   if isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)
+                   and c.func.attr in ("_ensure_manager_updated", "update")]
+check("the refresh path never updates a manager inline", not _inline,
+      f"inline calls: {_inline}" if _inline else "")
 
 print("\n" + "=" * 62)
 if FAILURES:

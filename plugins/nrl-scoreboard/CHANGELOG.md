@@ -23,6 +23,8 @@
   -- deleting the call leaves every behavioural check passing while the panel
   silently goes stale, which is how this survived in three plugins.
 
+The refresh is dispatched to a daemon thread rather than run inline, so a due fetch never stalls the render thread: at most one refresh per manager runs at a time, dispatches for a manager are at least 5s apart, and each manager's own update interval still decides whether anything is fetched.
+
 ## [1.24.0] - 2026-09-11
 
 ### Added

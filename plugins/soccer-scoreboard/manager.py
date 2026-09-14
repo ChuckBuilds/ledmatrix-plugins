@@ -2082,6 +2082,54 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         
         return False
     
+    #: Floor between two draw-time refresh dispatches for one manager. The
+    #: manager's own update() still decides whether anything is fetched; this
+    #: only stops display() starting a thread on every frame just to be told
+    #: the interval has not elapsed.
+    _SWITCH_REFRESH_MIN_GAP_SECONDS = 5.0
+
+    def _dispatch_switch_refresh(self, manager) -> None:
+        """Run _ensure_manager_updated(manager) on a daemon thread.
+
+        Called from display(), so it must not block: when an update is due,
+        manager.update() fetches rankings and the schedule over the network,
+        and doing that inline stalled the frame for the length of the round
+        trip. The refreshed games land in the manager a few frames later --
+        still within the manager's own interval, which is the freshness the
+        switch path was missing.
+
+        At most one refresh per manager runs at a time, and dispatches for the
+        same manager are at least _SWITCH_REFRESH_MIN_GAP_SECONDS apart. Only
+        the render thread touches the two bookkeeping dicts, so they need no
+        lock; manager.update() stamps last_update before it fetches, so a
+        concurrent background plugin.update() for the same manager returns
+        early rather than fetching twice.
+        """
+        threads = getattr(self, "_switch_refresh_threads", None)
+        if threads is None:
+            threads = self._switch_refresh_threads = {}
+        stamps = getattr(self, "_switch_refresh_at", None)
+        if stamps is None:
+            stamps = self._switch_refresh_at = {}
+
+        key = id(manager)
+        running = threads.get(key)
+        if running is not None and running.is_alive():
+            return
+        now = time.monotonic()
+        last = stamps.get(key)
+        if last is not None and now - last < self._SWITCH_REFRESH_MIN_GAP_SECONDS:
+            return
+        stamps[key] = now
+        thread = threading.Thread(
+            target=self._ensure_manager_updated,
+            args=(manager,),
+            daemon=True,
+            name="SwitchRefresh-%s" % type(manager).__name__,
+        )
+        threads[key] = thread
+        thread.start()
+
     def _refresh_switch_mode_managers(self, mode_type) -> None:
         """Refresh the switch-mode managers before drawing them.
 
@@ -2103,8 +2151,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         handles: a per-league accessor pair, and a single _get_manager. Anything
         else refreshes nothing, which leaves this inert rather than wrong.
 
-        _ensure_manager_updated() is itself interval-guarded, so on frames where
-        no refresh is due this costs two getattrs and a comparison.
+        The refresh itself runs off the render thread -- see
+        _dispatch_switch_refresh(). A due manager.update() fetches rankings and
+        the schedule synchronously, and this is called from display().
         """
         managers = []
         leagues_for_mode = getattr(self, "_get_enabled_leagues_for_mode", None)
@@ -2143,12 +2192,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 managers.append(manager)
 
         for manager in managers:
-            try:
-                self._ensure_manager_updated(manager)
-            except (AttributeError, KeyError, TypeError, ValueError, OSError) as exc:
-                # _ensure_manager_updated() already swallows whatever
-                # manager.update() raises, so anything here is a lookup error.
-                self.logger.debug("Switch-mode refresh skipped: %s", exc)
+            self._dispatch_switch_refresh(manager)
 
     def _display_switch_mode_fallback(self, display_mode: str, mode_type: str, force_clear: bool) -> bool:
         """Fallback to switch mode when scroll is not available."""
