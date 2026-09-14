@@ -217,7 +217,7 @@ def test_logo_cache_is_bounded():
         for i in range(gr._LOGO_CACHE_MAX + 5):
             abbr = "T%03d" % (i % n)
             path = tmpdir / ("%s.png" % abbr)
-            gr._load_and_resize_logo("R%03d" % i, path, "ncaa_mens")
+            gr._load_and_resize_logo("R%03d" % i, path, "ncaa_mens")  # pylint: disable=too-many-function-args
         check("GameRenderer logo cache is capped at %d" % gr._LOGO_CACHE_MAX,
               len(gr._logo_cache) == gr._LOGO_CACHE_MAX, len(gr._logo_cache))
 
@@ -227,13 +227,13 @@ def test_unranked_team_shows_record_with_both_toggles():
     gr.show_ranking = True
     gr.show_records = True
     gr._team_rankings_cache = {"DUKE": 3}
-    check("ranked team shows its rank", gr._get_team_display_text("DUKE", "9-1") == "#3")
+    check("ranked team shows its rank", gr._get_team_display_text("DUKE", "9-1") == "#3")  # pylint: disable=no-value-for-parameter
     check("unranked team falls back to its record",
-          gr._get_team_display_text("UVA", "7-3") == "7-3",
-          gr._get_team_display_text("UVA", "7-3"))
+          gr._get_team_display_text("UVA", "7-3") == "7-3",  # pylint: disable=no-value-for-parameter
+          gr._get_team_display_text("UVA", "7-3"))  # pylint: disable=no-value-for-parameter
     gr.show_records = False
     check("ranking only: unranked team shows nothing",
-          gr._get_team_display_text("UVA", "7-3") == "")
+          gr._get_team_display_text("UVA", "7-3") == "")  # pylint: disable=no-value-for-parameter
 
 
 if __name__ == "__main__":

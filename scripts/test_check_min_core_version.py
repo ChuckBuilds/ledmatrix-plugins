@@ -226,8 +226,8 @@ else:
     check("every table entry first ships in the tag it names", not wrong,
           "; ".join(wrong[:3]))
 
-    # REPORTED_AS must describe what the tag really says about itself; drop
-    # an entry once core ships a correct version string.
+    # REPORTED_AS must describe what each published tag really says about
+    # itself. Tags do not change, so an entry that passes here stays correct.
     import re as _re
     misreport = []
     for tag, says in gate.REPORTED_AS.items():

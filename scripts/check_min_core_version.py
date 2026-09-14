@@ -120,13 +120,17 @@ MODULE_FIRST_VERSION = {
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
-#: install gate compares a floor against that string, so the highest floor
-#: that still admits such a release is the version it *reports*: core v3.3.1
-#: ships ``__version__ = "3.3.0"``, and a 3.3.1 floor refuses every current
-#: core, v3.3.1 included. A module first shipped in one of these releases is
-#: satisfied by the reported version. A real 3.3.0 core without the module
-#: still passes the gate; no floor can separate the two until core bumps its
-#: version string. Remove the entry once core main reports 3.3.1 or later.
+#: install gate compares a floor against that string, so the floor that
+#: admits such a release is the version it *reports*: core v3.3.1 ships
+#: ``__version__ = "3.3.0"``, and no core has ever reported 3.3.1, so a 3.3.1
+#: floor would refuse every core. A module first shipped in one of these
+#: releases is therefore satisfied by the reported version.
+#:
+#: That is exact, not a loophole: tag v3.3.0 itself reports "3.2.0" (its
+#: bump, #516, landed after the tag), so a core reporting "3.3.0" is v3.3.1 or
+#: later and has ``sports_shared``. The only exception is a dev checkout of
+#: core main between #516 and #515, a few hours on 2026-09-03. Entries
+#: describe published tags, so they are permanent.
 REPORTED_AS = {
     "3.3.1": "3.3.0",
 }

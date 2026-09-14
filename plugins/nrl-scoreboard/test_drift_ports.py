@@ -137,11 +137,11 @@ def main():
         r = object.__new__(gr.GameRenderer)
         r.display_width, r.display_height, r.config = 128, 32, {}
         r.logger, r._logo_cache = LOG, {}
-        legacy = r._load_and_resize_logo("4337", "NEW", tmp / warriors)
+        legacy = r._load_and_resize_logo("4337", "NEW", tmp / warriors)  # pylint: disable=too-many-function-args
         check("scroll card: per-team file missing -> the legacy file still loads",
               legacy is not None)
         Image.new("RGBA", (16, 16), (0, 0, 255, 255)).save(tmp / knights)
-        own = r._load_and_resize_logo("4338", "NEW", tmp / knights)
+        own = r._load_and_resize_logo("4338", "NEW", tmp / knights)  # pylint: disable=too-many-function-args
         check("scroll card: the other NEW club gets its own logo, not the cached one",
               own is not None and own is not legacy
               and own.convert("RGB").getpixel((own.width // 2, own.height // 2)) == (0, 0, 255))
@@ -151,7 +151,7 @@ def main():
         r._LOGO_CACHE_MAX = 3
         for i in range(6):
             Image.new("RGBA", (8, 8), (0, 255, 0, 255)).save(tmp / ("T%d_%d.png" % (i, i)))
-            r._load_and_resize_logo(str(i), "T%d" % i, tmp / ("T%d_%d.png" % (i, i)))
+            r._load_and_resize_logo(str(i), "T%d" % i, tmp / ("T%d_%d.png" % (i, i)))  # pylint: disable=too-many-function-args
         check("renderer cache holds at most _LOGO_CACHE_MAX", len(r._logo_cache) <= 3,
               len(r._logo_cache))
     check("sports.py cache is an LRU with a cap",
@@ -239,8 +239,8 @@ def main():
     rr = object.__new__(gr.GameRenderer)
     rr.show_ranking = rr.show_records = True
     rr._team_rankings_cache = {"MEL": 1}
-    check("a ranked team shows its rank", rr._get_team_display_text("MEL", "5-1") == "#1")
-    check("an unranked team shows its record", rr._get_team_display_text("PAR", "3-3") == "3-3")
+    check("a ranked team shows its rank", rr._get_team_display_text("MEL", "5-1") == "#1")  # pylint: disable=no-value-for-parameter
+    check("an unranked team shows its record", rr._get_team_display_text("PAR", "3-3") == "3-3")  # pylint: disable=no-value-for-parameter
 
     # -- OVF ----------------------------------------------------------------
     print("\nOVF: Infinity in config")
