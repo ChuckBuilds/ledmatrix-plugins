@@ -1,7 +1,7 @@
 {
   "id": "news",
   "name": "News Ticker",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
   "author": "ChuckBuilds",
   "category": "content",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/news",
   "versions": [
+    {
+      "version": "1.4.4",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Saving the config page no longer loses dynamic duration settings. dynamic_duration was typed boolean-or-object, so the web form drew it as a single checkbox and every save replaced the stored object (min/max duration, buffer ratio) with true. It is now a plain object; a legacy true/false is still read by the plugin and becomes the object on the next save. A custom feed logo now needs only a path: the plugin never read the id, and a logo stored without one failed validation on every save."
+    },
     {
       "version": "1.4.3",
       "released": "2026-09-11",

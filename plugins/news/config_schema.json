@@ -73,58 +73,40 @@
           "x-advanced": true
         },
         "dynamic_duration": {
-          "type": [
-            "boolean",
-            "object"
-          ],
+          "type": "object",
           "description": "Dynamic duration settings for synchronising display time with content width",
-          "default": {
-            "enabled": true,
-            "min_duration_seconds": 30,
-            "max_duration_seconds": 300,
-            "buffer_ratio": 0.1
-          },
-          "oneOf": [
-            {
+          "properties": {
+            "enabled": {
               "type": "boolean",
-              "description": "[Legacy] Enable/disable dynamic duration"
+              "default": true,
+              "description": "Enable dynamic duration based on content width"
             },
-            {
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Enable dynamic duration based on content width"
-                },
-                "min_duration_seconds": {
-                  "type": "integer",
-                  "default": 30,
-                  "minimum": 10,
-                  "maximum": 300,
-                  "description": "Minimum display duration when dynamic duration is enabled",
-                  "x-advanced": true
-                },
-                "max_duration_seconds": {
-                  "type": "integer",
-                  "default": 300,
-                  "minimum": 30,
-                  "maximum": 600,
-                  "description": "Maximum display duration when dynamic duration is enabled",
-                  "x-advanced": true
-                },
-                "buffer_ratio": {
-                  "type": "number",
-                  "default": 0.1,
-                  "minimum": 0.01,
-                  "maximum": 1.0,
-                  "description": "Extra buffer applied to the calculated duration (percentage expressed as 0-1)",
-                  "x-advanced": true
-                }
-              },
-              "additionalProperties": false
+            "min_duration_seconds": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 10,
+              "maximum": 300,
+              "description": "Minimum display duration when dynamic duration is enabled",
+              "x-advanced": true
+            },
+            "max_duration_seconds": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 30,
+              "maximum": 600,
+              "description": "Maximum display duration when dynamic duration is enabled",
+              "x-advanced": true
+            },
+            "buffer_ratio": {
+              "type": "number",
+              "default": 0.1,
+              "minimum": 0.01,
+              "maximum": 1.0,
+              "description": "Extra buffer applied to the calculated duration (percentage expressed as 0-1)",
+              "x-advanced": true
             }
-          ]
+          },
+          "additionalProperties": false
         },
         "headline_paging": {
           "type": "object",
@@ -323,7 +305,6 @@
                   }
                 },
                 "required": [
-                  "id",
                   "path"
                 ]
               }
