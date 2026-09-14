@@ -251,6 +251,11 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         self.other_rotation_interval_seconds: int = self._setting_int(
             "other_rotation_interval_seconds", 1800, 0, 86400
         )
+        # Turns a favourite's card gets in the recent/upcoming switch rotation
+        # for every one turn any other card gets. 1 walks games_list in order.
+        self.favorite_rotation_boost: int = self._setting_int(
+            "favorite_rotation_boost", 1, 1, 5
+        )
         self._other_window_start: int = 0
         self._other_window_rotated_at: float = 0.0
         # Monotonic stamp of the previous display() call. display() only runs
@@ -696,6 +701,52 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                      if self._card_option("switch_show_time", True) else "")
         return date_text, time_text
 
+    def _mode_customization(self) -> dict:
+        """``customization`` with this mode's overrides merged over it.
+
+        SportsUpcoming / SportsRecent / SportsLive are separate instances
+        with their own SKIN_MODE, so merging once here makes every
+        per-element lookup mode-aware without changing one of them.
+
+        ``None`` in a mode block means "inherit", which is what lets a user
+        restyle one element on live cards and leave everything else
+        following the settings above. It has to stay distinct from 0: a mode
+        y_offset of 0 means "sit at the base position", not "no preference".
+        """
+        customization = self.config.get('customization', {})
+        if not isinstance(customization, dict):
+            return {}
+        mode = getattr(self, 'SKIN_MODE', None)
+        if not mode:
+            return customization
+        modes = customization.get('modes')
+        block = modes.get(mode) if isinstance(modes, dict) else None
+        if not isinstance(block, dict):
+            return customization
+
+        merged = dict(customization)
+        for element, override in block.items():
+            if element == 'layout' or not isinstance(override, dict):
+                continue
+            base = merged.get(element)
+            base = dict(base) if isinstance(base, dict) else {}
+            base.update({k: v for k, v in override.items() if v is not None})
+            merged[element] = base
+
+        mode_layout = block.get('layout')
+        if isinstance(mode_layout, dict):
+            base_layout = merged.get('layout')
+            new_layout = dict(base_layout) if isinstance(base_layout, dict) else {}
+            for element, axes in mode_layout.items():
+                if not isinstance(axes, dict):
+                    continue
+                current = new_layout.get(element)
+                current = dict(current) if isinstance(current, dict) else {}
+                current.update({k: v for k, v in axes.items() if v is not None})
+                new_layout[element] = current
+            merged['layout'] = new_layout
+        return merged
+
     def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
         """
         Get layout offset for a specific element and axis.
@@ -709,7 +760,7 @@ class SportsCore(SportsCoreSharedMixin, ABC):
             Offset value from config or default (always returns int)
         """
         try:
-            layout_config = self.config.get('customization', {}).get('layout', {})
+            layout_config = self._mode_customization().get('layout', {})
             element_config = layout_config.get(element, {})
             offset_value = element_config.get(axis, default)
 
@@ -922,8 +973,9 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         """Load fonts used by the scoreboard from config or use defaults."""
         fonts = {}
         
-        # Get customization config, with backward compatibility
-        customization = self.config.get('customization', {})
+        # Get customization config, with backward compatibility.
+        # Mode-merged, so a per-mode font or size reaches the right card.
+        customization = self._mode_customization()
         
         # Load fonts from config with defaults for backward compatibility
         score_config = customization.get('score_text', {})
@@ -2122,6 +2174,68 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         self.last_game_switch = time.time()
         return True
 
+    @staticmethod
+    def _spread_weighted_order(weights: List[int]) -> List[int]:
+        """Indices into ``weights``, each repeated by its weight and spread out.
+
+        Each index keeps its own slot and places its extra turns at even
+        fractions of the rotation after it, wrapping round. That keeps the
+        list's schedule order for everything else and spaces a favourite's
+        repeats evenly *around the loop* -- the live rotation's smooth
+        weighted round-robin schedules a boosted game first and last, so a
+        rotation that wraps shows it back to back. Equal weights come back in
+        plain order, so a boost that applies to no card changes nothing.
+
+        Repeats are kept apart only where the ratio leaves room: once one
+        weight exceeds all the others combined, no cyclic order can separate
+        its turns ([3, 1, 1] gives [0, 1, 0, 2, 0]). Each index still gets
+        exactly its weight in turns -- the configured ratio wins over spacing.
+        """
+        count = len(weights)
+        slots = []
+        for index, weight in enumerate(weights):
+            for turn in range(weight):
+                slots.append(((index + turn * count / weight) % count, turn > 0, index))
+        return [index for _, _, index in sorted(slots)]
+
+    def _next_switch_index(self) -> int:
+        """The games_list index switch mode shows next.
+
+        favorite_rotation_boost gives a favourite's card that many turns for
+        every one turn another card gets, spread through the rotation and kept
+        apart wherever the other cards leave room (a boost above the number of
+        other cards makes some repeats adjacent; the ratio is kept either way).
+        games_list itself stays one entry per game -- the
+        cycle-duration count, the scroll strip and the other-games re-cut all
+        read it -- so the weighting is an order walked over it instead.
+
+        The order is rebuilt whenever the list's games change, and the walk
+        resyncs from current_game_index whenever the two disagree: update()
+        and the other-games rotation both set the index directly when they
+        swap a list in, and the card on screen is where the walk resumes.
+
+        Called with _games_lock held and games_list non-empty.
+        """
+        count = len(self.games_list)
+        boost = getattr(self, "favorite_rotation_boost", 1)
+        if boost <= 1 or count < 2:
+            return (self.current_game_index + 1) % count
+        key = (boost, tuple(g.get("id") for g in self.games_list))
+        if getattr(self, "_switch_order_key", None) != key:
+            self._switch_order = self._spread_weighted_order(
+                [boost if self._is_favorite_game(g) else 1 for g in self.games_list]
+            )
+            self._switch_order_key = key
+            self._switch_position = -1
+        order = self._switch_order
+        position = getattr(self, "_switch_position", -1)
+        if not 0 <= position < len(order) or order[position] != self.current_game_index:
+            position = (order.index(self.current_game_index)
+                        if self.current_game_index in order else -1)
+        position = (position + 1) % len(order)
+        self._switch_position = position
+        return order[position]
+
     def _advance_other_games_if_due(self) -> List[Dict]:
         """Re-cut the non-favourite slice on the display path, or [] if not due.
 
@@ -2145,6 +2259,7 @@ class SportsCore(SportsCoreSharedMixin, ABC):
 
 
 class SportsUpcoming(SportsCore):
+    SKIN_MODE = "upcoming"
     #: This screen shows the date and the time, never a score.
     _DRAWS_SCORE: ClassVar[bool] = False
 
@@ -2702,9 +2817,7 @@ class SportsUpcoming(SportsCore):
                     len(self.games_list) > 1
                     and current_time - self.last_game_switch >= self.game_display_duration
                 ):
-                    self.current_game_index = (self.current_game_index + 1) % len(
-                        self.games_list
-                    )
+                    self.current_game_index = self._next_switch_index()
                     self.current_game = self.games_list[self.current_game_index]
                     self.last_game_switch = current_time
                     force_clear = True  # Force redraw on switch
@@ -2744,6 +2857,7 @@ class SportsUpcoming(SportsCore):
 
 
 class SportsRecent(SportsRecentSharedMixin, SportsCore):
+    SKIN_MODE = "recent"
 
     def _select_recent_games_for_display(
         self, processed_games: List[Dict], favorite_teams: List[str]
@@ -3274,9 +3388,7 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
                     len(self.games_list) > 1
                     and current_time - self.last_game_switch >= self.game_display_duration
                 ):
-                    self.current_game_index = (self.current_game_index + 1) % len(
-                        self.games_list
-                    )
+                    self.current_game_index = self._next_switch_index()
                     self.current_game = self.games_list[self.current_game_index]
                     self.last_game_switch = current_time
                     force_clear = True  # Force redraw on switch
@@ -3316,6 +3428,7 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
 
 
 class SportsLive(SportsLiveSharedMixin, SportsCore):
+    SKIN_MODE = "live"
 
     def __init__(
         self,

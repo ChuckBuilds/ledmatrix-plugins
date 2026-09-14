@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.27.0] - 2026-09-12
+## [2.29.0] - 2026-09-14
 
 Drift-audit fixes ported from the sibling scoreboards.
 
@@ -51,6 +51,58 @@ Drift-audit fixes ported from the sibling scoreboards.
 - The core floor stays at 3.3.0. `sports.py` imports `src.common.sports_shared`,
   which first shipped in core v3.3.1, but that release still reports
   `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
+
+## [2.28.0] - 2026-09-14
+
+### Added
+- **Favorite games get extra turns in switch mode.** New game-limit setting
+  `favorite_rotation_boost` (1-5, default 1): a favorite team's recent or
+  upcoming card gets that many turns per rotation for every one turn other
+  cards get, its extra turns spread evenly around the loop and kept apart
+  whenever enough other cards remain to separate them. Previously only live
+  games could weight favorites.
+
+  Existing configs are unaffected: at the default of 1 every card is shown
+  once per rotation, in the same order as before.
+
+## [2.27.1] - 2026-09-14
+
+### Fixed
+- **Switch mode refreshes its managers before it draws them.**
+  The switch path went straight to manager.display(), so it showed whatever the
+  last background plugin.update() left behind -- baseball, basketball, football,
+  hockey and lacrosse have called _ensure_manager_updated() unconditionally in
+  _try_manager_display() all along, and these three had no equivalent. Measured
+  with no background update at all: afl's switch mode made zero draw-time
+  refreshes and the panel stayed frozen for ten simulated minutes, while
+  baseball's picked the score up in thirty seconds. It is invisible at the 60s
+  default and an hour stale for anyone who raises update_interval -- and unlike
+  baseball/football, which declare update_interval in their manifest and so
+  override any config value, these three declare none, which is what makes the
+  config value apply and the slow case reachable. A stale manager also reads as
+  having nothing to show, so a league with a live game could be skipped from the
+  rotation entirely; the refresh therefore runs before the candidate managers
+  are read, not after. _ensure_manager_updated() is interval-guarded, so on
+  frames where no refresh is due this costs two getattrs and a comparison.
+  Pinned by a test that asserts the wiring structurally as well as behaviourally
+  -- deleting the call leaves every behavioural check passing while the panel
+  silently goes stale, which is how this survived in three plugins.
+
+The refresh is dispatched to a daemon thread rather than run inline, so a due fetch never stalls the render thread: at most one refresh per manager runs at a time, dispatches for a manager are at least 5s apart, and each manager's own update interval still decides whether anything is fetched.
+
+## [2.27.0] - 2026-09-11
+
+### Added
+- **Style each card separately.** Font, size, colour and position for the
+  score, clock, team abbreviation, status, detail, odds and ranking can now
+  differ between the live, upcoming and recent cards. Set them under
+  "Per-Mode Overrides" in the plugin's settings; anything left blank follows
+  the settings above it, so a single change applies to one card and leaves
+  the others alone.
+
+  Existing configs are unaffected: with no per-mode overrides set, every card
+  renders exactly as before -- verified against the golden images at all
+  eight panel sizes.
 
 ## [2.26.1] - 2026-09-11
 

@@ -37,6 +37,7 @@ REQUIRED = {
     "other_upcoming_games_to_show": ("integer", 0, 20, None),
     "other_recent_games_to_show": ("integer", 0, 20, None),
     "other_rotation_interval_seconds": ("integer", 0, 86400, None),
+    "favorite_rotation_boost": ("integer", 1, 5, None),
     # "broadcast" was retired in football-scoreboard 3.0.0: ESPN lists a
     # broadcaster for nearly every game now, ESPN+ included, so it passed 174
     # of 175 games on a real slate -- a quality bar that behaved as "any".

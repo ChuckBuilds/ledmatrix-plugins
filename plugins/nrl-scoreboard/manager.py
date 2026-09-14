@@ -294,6 +294,7 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_rotation_interval_seconds": limit(
                     "other_rotation_interval_seconds", 1800
                 ),
+                "favorite_rotation_boost": limit("favorite_rotation_boost", 1),
                 "other_games_min_quality": limit(
                     "other_games_min_quality", "ranked"
                 ),
@@ -920,8 +921,124 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         return False
 
+    #: Floor between two draw-time refresh dispatches for one manager. The
+    #: manager's own update() still decides whether anything is fetched; this
+    #: only stops display() starting a thread on every frame just to be told
+    #: the interval has not elapsed.
+    _SWITCH_REFRESH_MIN_GAP_SECONDS = 5.0
+
+    def _dispatch_switch_refresh(self, manager) -> None:
+        """Run _ensure_manager_updated(manager) on a daemon thread.
+
+        Called from display(), so it must not block: when an update is due,
+        manager.update() fetches rankings and the schedule over the network,
+        and doing that inline stalled the frame for the length of the round
+        trip. The refreshed games land in the manager a few frames later --
+        still within the manager's own interval, which is the freshness the
+        switch path was missing.
+
+        At most one refresh per manager runs at a time, and dispatches for the
+        same manager are at least _SWITCH_REFRESH_MIN_GAP_SECONDS apart. Only
+        the render thread touches the two bookkeeping dicts, so they need no
+        lock; manager.update() stamps last_update before it fetches, so a
+        concurrent background plugin.update() for the same manager returns
+        early rather than fetching twice.
+        """
+        threads = getattr(self, "_switch_refresh_threads", None)
+        if threads is None:
+            threads = self._switch_refresh_threads = {}
+        stamps = getattr(self, "_switch_refresh_at", None)
+        if stamps is None:
+            stamps = self._switch_refresh_at = {}
+
+        key = id(manager)
+        running = threads.get(key)
+        if running is not None and running.is_alive():
+            return
+        now = time.monotonic()
+        last = stamps.get(key)
+        if last is not None and now - last < self._SWITCH_REFRESH_MIN_GAP_SECONDS:
+            return
+        stamps[key] = now
+        thread = threading.Thread(
+            target=self._ensure_manager_updated,
+            args=(manager,),
+            daemon=True,
+            name="SwitchRefresh-%s" % type(manager).__name__,
+        )
+        threads[key] = thread
+        thread.start()
+
+    def _refresh_switch_mode_managers(self, mode_type) -> None:
+        """Refresh the switch-mode managers before drawing them.
+
+        baseball, basketball, football, hockey and lacrosse call
+        _ensure_manager_updated() unconditionally in _try_manager_display(), so
+        their switch mode is as fresh as the manager's own interval. These three
+        had no equivalent: the switch path went straight to manager.display(),
+        so it only ever showed whatever the last background plugin.update() left
+        behind. That is invisible at the 60s default and an hour stale for anyone
+        who raises update_interval -- reachable here because, unlike
+        baseball/football, these manifests declare no update_interval of their
+        own, so the config value is what applies.
+
+        This runs before the candidate managers are *read*, not just before they
+        are drawn: a stale manager reads as having nothing to show, so a league
+        with a live game would be dropped from the rotation entirely.
+
+        Two shapes across the lineage, the same split _live_scroll_managers()
+        handles: a per-league accessor pair, and a single _get_manager. Anything
+        else refreshes nothing, which leaves this inert rather than wrong.
+
+        The refresh itself runs off the render thread -- see
+        _dispatch_switch_refresh(). A due manager.update() fetches rankings and
+        the schedule synchronously, and this is called from display().
+        """
+        managers = []
+        leagues_for_mode = getattr(self, "_get_enabled_leagues_for_mode", None)
+        manager_for_league = getattr(self, "_get_league_manager_for_mode", None)
+        if callable(leagues_for_mode) and callable(manager_for_league):
+            try:
+                # pylint: disable=not-callable
+                # Lineages without these accessors infer them as None, so a
+                # static checker calls them uncallable. The callable() test
+                # above is the runtime guard; the branch is dead there.
+                league_keys = list(leagues_for_mode(mode_type) or [])
+            except (AttributeError, KeyError, TypeError, ValueError, OSError) as exc:
+                self.logger.debug("Switch-mode refresh skipped: %s", exc)
+                return
+            for league_key in league_keys:
+                try:
+                    # pylint: disable=not-callable
+                    manager = manager_for_league(league_key, mode_type)
+                except (AttributeError, KeyError, TypeError, ValueError, OSError) as exc:
+                    self.logger.debug(
+                        "Switch-mode refresh skipped for %s: %s", league_key, exc)
+                    continue
+                if manager is not None:
+                    managers.append(manager)
+        else:
+            getter = getattr(self, "_get_manager", None)
+            if not callable(getter):
+                return
+            try:
+                # pylint: disable=not-callable
+                manager = getter(mode_type)
+            except (AttributeError, KeyError, TypeError, ValueError, OSError) as exc:
+                self.logger.debug("Switch-mode refresh skipped: %s", exc)
+                return
+            if manager is not None:
+                managers.append(manager)
+
+        for manager in managers:
+            self._dispatch_switch_refresh(manager)
+
     def _display_switch_mode(self, mode_type: str, force_clear: bool) -> bool:
         """Display a single game for a mode type via the manager (switch mode)."""
+
+        # Refresh before reading the managers -- a stale manager can look
+        # like it has nothing to show and be skipped entirely.
+        self._refresh_switch_mode_managers(mode_type)
         manager = self._get_manager(mode_type)
         if not manager or not self._manager_has_displayable_games(manager, mode_type):
             return False

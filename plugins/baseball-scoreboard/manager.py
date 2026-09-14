@@ -758,6 +758,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "other_rotation_interval_seconds": game_limits.get(
                     "other_rotation_interval_seconds", 1800
                 ),
+                "favorite_rotation_boost": game_limits.get("favorite_rotation_boost", 1),
                 # Only NCAA Baseball has a national poll; for MLB and MiLB
                 # "ranked" lets everything through, so their neutral fallback
                 # says so rather than borrowing college football's default.

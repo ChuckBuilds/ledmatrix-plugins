@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.24.0",
+  "version": "1.26.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -19,10 +19,28 @@
   ],
   "versions": [
     {
-      "version": "1.24.0",
-      "released": "2026-09-12",
+      "version": "1.26.0",
+      "released": "2026-09-14",
       "ledmatrix_min_version": "3.3.0",
       "notes": "Drift fixes ported from the other scoreboards. Newcastle and the Warriors (both \"NEW\") and Canberra and Canterbury (both \"CAN\") no longer share one logo: logos are stored and cached per ESPN team id, and the old abbreviation-named file is still used until the per-team one has downloaded. Postponed, cancelled and suspended fixtures no longer appear on Recent as \"Final 0-0\": a game is final only when ESPN marks it completed. Full-screen odds no longer draw through the top-row status text when only an over/under is available (they step down a row), and a pick'em home spread of 0.0 is no longer treated as missing. A failed logo now shows \"Logo Error\" instead of a black panel. The upcoming scorebug reads its own scroll_card.switch_show_date / switch_show_time instead of the scroll card's toggles. Upcoming games are trimmed to schedule_lookahead_days, and a mode retaking the panel gives its current card a full dwell. Games rotated into the other-games slice get odds fetched off the display path. Vegas rebuilds its dedicated slate when the games change instead of freezing on whatever a standalone mode last rendered. A cached \"no odds\" result is now a cache hit rather than a refetch. Decoded logo caches are bounded (core #559). With rankings and records both on, an unranked team shows its record on the scroll card. A config Infinity no longer crashes manager init; a string or null other_games_divisions no longer blanks the plugin; test_mode, odds_update_interval and live_odds_update_interval now reach the managers, and the two odds intervals are declared in the schema."
+    },
+    {
+      "version": "1.25.0",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Adds favorite_rotation_boost (1-5, default 1) beside the other game-limit settings: in switch mode a favorite team's recent or upcoming card gets that many turns per rotation for every one turn other cards get, its extra turns spread evenly around the loop and kept apart whenever enough other cards remain to separate them (the live rotation's smooth weighted round-robin shows a boosted game back to back where it wraps). games_list stays one entry per game, so cycle-duration counts, the scroll strip and the other-games re-cut are unchanged, and the walk resyncs from current_game_index whenever update() or the other-games rotation swaps a list in. The default keeps the old order exactly. Ported across all nine scoreboards per CLAUDE.md non-negotiable #7."
+    },
+    {
+      "version": "1.24.1",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Switch mode refreshes its managers before it draws them. The switch path went straight to manager.display(), so it showed whatever the last background plugin.update() left behind -- baseball, basketball, football, hockey and lacrosse have called _ensure_manager_updated() unconditionally in _try_manager_display() all along, and these three had no equivalent. Measured with no background update at all: afl's switch mode made zero draw-time refreshes and the panel stayed frozen for ten simulated minutes, while baseball's picked the score up in thirty seconds. It is invisible at the 60s default and an hour stale for anyone who raises update_interval -- and unlike baseball/football, which declare update_interval in their manifest and so override any config value, these three declare none, which is what makes the config value apply and the slow case reachable. A stale manager also reads as having nothing to show, so a league with a live game could be skipped from the rotation entirely; the refresh therefore runs before the candidate managers are read, not after. _ensure_manager_updated() is interval-guarded, so on frames where no refresh is due this costs two getattrs and a comparison. Pinned by a test that asserts the wiring structurally as well as behaviourally -- deleting the call leaves every behavioural check passing while the panel silently goes stale, which is how this survived in three plugins. The refresh is dispatched to a daemon thread rather than run inline, so a due fetch never stalls the render thread: at most one refresh per manager runs at a time, dispatches for a manager are at least 5s apart, and each manager's own update interval still decides whether anything is fetched."
+    },
+    {
+      "released": "2026-09-11",
+      "version": "1.24.0",
+      "changelog": "Style the live, upcoming and recent cards separately",
+      "ledmatrix_min_version": "3.3.0"
     },
     {
       "version": "1.23.1",
@@ -379,7 +397,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-12",
+  "last_updated": "2026-09-14",
   "stars": 0,
   "downloads": 0,
   "verified": true,

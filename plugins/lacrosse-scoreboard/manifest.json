@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.27.0",
+  "version": "1.29.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -51,10 +51,22 @@
   ],
   "versions": [
     {
-      "version": "1.27.0",
-      "released": "2026-09-12",
+      "version": "1.29.0",
+      "released": "2026-09-14",
       "ledmatrix_min_version": "3.3.0",
       "notes": "Drift-audit ports from the sibling scoreboards. Full-screen upcoming reads switch_show_date/switch_show_time; Upcoming honours schedule_lookahead_days and a returning mode gives its card a full dwell; rotated-in other games get odds. Postponed/cancelled/suspended games no longer show as 'Final 0-0'. 'Logo Error' is visible instead of a black panel. Odds without a favourite no longer print through the centred status text, and step down a row on overlap; a 0.0 home spread is a real line. Decoded logo caches are LRU-bounded (core #559). Vegas rebuilds when scores change and never fetches on the render path. A cached no-odds marker is a cache hit. sports.py uses the core logo downloader, so a failed download is retried. The scroll card shows an unranked team's record when ranking and records are both on. The top-N rankings shortcut skips tournament and lower-division polls. One league failing to build no longer disables the other; other_games_divisions accepts a string; update_intervals.odds, the new update_intervals.live_odds and test_mode reach the managers."
+    },
+    {
+      "version": "1.28.0",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Adds favorite_rotation_boost (1-5, default 1) beside the other game-limit settings: in switch mode a favorite team's recent or upcoming card gets that many turns per rotation for every one turn other cards get, its extra turns spread evenly around the loop and kept apart whenever enough other cards remain to separate them (the live rotation's smooth weighted round-robin shows a boosted game back to back where it wraps). games_list stays one entry per game, so cycle-duration counts, the scroll strip and the other-games re-cut are unchanged, and the walk resyncs from current_game_index whenever update() or the other-games rotation swaps a list in. The default keeps the old order exactly. Ported across all nine scoreboards per CLAUDE.md non-negotiable #7."
+    },
+    {
+      "released": "2026-09-11",
+      "version": "1.27.0",
+      "changelog": "Style the live, upcoming and recent cards separately",
+      "ledmatrix_min_version": "3.3.0"
     },
     {
       "version": "1.26.1",
@@ -430,7 +442,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-07",
+  "last_updated": "2026-09-14",
   "stars": 0,
   "downloads": 0,
   "verified": true,

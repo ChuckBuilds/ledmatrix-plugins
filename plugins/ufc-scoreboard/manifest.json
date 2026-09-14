@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.10.0",
+  "version": "1.12.0",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -33,10 +33,22 @@
   "config_schema": "config_schema.json",
   "versions": [
     {
-      "version": "1.10.0",
-      "released": "2026-09-12",
+      "version": "1.12.0",
+      "released": "2026-09-14",
       "ledmatrix_min_version": "2.0.0",
       "notes": "Port the sibling scoreboards' drift fixes. Live fights poll at live_update_interval via get_update_interval() (the live update also stopped raising KeyError on MMA fights, which have no halftime flag or team abbreviations). is_cycle_complete no longer waits on a scroll that never runs. Vegas cards rebuild when the fights change and get_vegas_content no longer calls update(). Postponed/cancelled bouts are not shown as results. Upcoming honours schedule_lookahead_days and a mode re-taking the panel gives its current card a full dwell. Full-screen odds step down a row instead of printing through the top-centre text; a 0.0 home spread is kept. Decoded headshot caches are LRU-bounded. One manager failing to construct no longer blanks the other two. other_games_divisions is passed through raw, an Infinity window/interval setting falls back to the default, and favorites-only now reaches the shared filter. New x-advanced keys odds_update_interval and live_odds_update_interval."
+    },
+    {
+      "version": "1.11.0",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Adds favorite_rotation_boost (1-5, default 1) beside the other game-limit settings: in switch mode a favorite team's recent or upcoming card gets that many turns per rotation for every one turn other cards get, its extra turns spread evenly around the loop and kept apart whenever enough other cards remain to separate them (the live rotation's smooth weighted round-robin shows a boosted game back to back where it wraps). games_list stays one entry per game, so cycle-duration counts, the scroll strip and the other-games re-cut are unchanged, and the walk resyncs from current_game_index whenever update() or the other-games rotation swaps a list in. The default keeps the old order exactly. Ported across all nine scoreboards per CLAUDE.md non-negotiable #7."
+    },
+    {
+      "released": "2026-09-11",
+      "version": "1.10.0",
+      "changelog": "Style the live, upcoming and recent cards separately",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "version": "1.9.2",
@@ -253,7 +265,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-07",
+  "last_updated": "2026-09-14",
   "stars": 0,
   "downloads": 0,
   "verified": true,

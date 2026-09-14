@@ -109,10 +109,11 @@ Which of three regimes you are in depends on `favorite_teams` and
 | `other_upcoming_games_to_show` | `1` | How many **non-favorite** upcoming games to add. `0` gives you favorites only. |
 | `other_recent_games_to_show` | `1` | The same, for finished games. |
 | `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
+| `favorite_rotation_boost` | `1` | Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
 | `other_games_min_quality` | `ranked` | Which non-favorite games qualify. Inert here — see below. |
 | `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. Inert here — see below. |
 
-All seven are declared **twice**: at the root of the config and inside
+All eight are declared **twice**: at the root of the config and inside
 `game_limits`. Both render in the web UI and both are read. **`game_limits` wins
 where the key is present**, and the root value is used otherwise. Set one place
 or the other, not both.

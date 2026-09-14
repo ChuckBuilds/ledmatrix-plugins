@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.8.0] - 2026-09-12
+## [3.10.0] - 2026-09-14
 
 ### Fixed
 - **Adaptive scorebug draws odds, records and rankings.** The renderer was
@@ -40,6 +40,33 @@
   `__version__ = "3.3.0"`, so a 3.3.1 floor would refuse every current core.
 - DYNAMIC_DURATION.md and the `layout_mode` / `switch_upcoming_center` schema
   text now describe what the code actually does.
+
+## [3.9.0] - 2026-09-14
+
+### Added
+- **Favorite games get extra turns in switch mode.** New game-limit setting
+  `favorite_rotation_boost` (1-5, default 1): a favorite team's recent or
+  upcoming card gets that many turns per rotation for every one turn other
+  cards get, its extra turns spread evenly around the loop and kept apart
+  whenever enough other cards remain to separate them. Previously only live
+  games could weight favorites.
+
+  Existing configs are unaffected: at the default of 1 every card is shown
+  once per rotation, in the same order as before.
+
+## [3.8.0] - 2026-09-11
+
+### Added
+- **Style each card separately.** Font, size, colour and position for the
+  score, clock, team abbreviation, status, detail, odds and ranking can now
+  differ between the live, upcoming and recent cards. Set them under
+  "Per-Mode Overrides" in the plugin's settings; anything left blank follows
+  the settings above it, so a single change applies to one card and leaves
+  the others alone.
+
+  Existing configs are unaffected: with no per-mode overrides set, every card
+  renders exactly as before -- verified against the golden images at all
+  eight panel sizes.
 
 ## [3.7.2] - 2026-09-11
 

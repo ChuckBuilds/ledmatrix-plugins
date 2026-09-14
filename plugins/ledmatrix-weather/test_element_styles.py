@@ -1,0 +1,262 @@
+#!/usr/bin/env python3
+"""The current-conditions screen honours the user's per-element styling.
+
+The contract worth holding is in two halves:
+
+1. With nothing configured, every element resolves to exactly what the plugin
+   shipped -- same font object, same colour, no offset. That is what let this
+   plugin adopt the element-style system without a single golden image moving
+   at any of the eight panel sizes.
+2. A configured value reaches the draw. Colour, font, size, offset, visibility
+   and (for the icon) scale.
+
+These assert on the resolved style rather than on pixels, because the golden
+images already cover the pixels; what they cannot show is *why* a render
+matched -- a style helper that silently returned the classic value for
+everything would pass them too.
+
+Half of these need a core that provides BasePlugin.styles. On an older core the
+plugin is meant to fall back to its shipped styling, so those tests SKIP rather
+than fail: a red gate there would only be reporting the core's version. The two
+that describe the fallback itself always run.
+
+Run with the core venv from a LEDMatrix checkout so PIL + assets/fonts resolve:
+    LEDMatrix/.venv/bin/python <thisfile>
+"""
+import os
+import sys
+from unittest.mock import MagicMock
+
+sys.path.insert(0, os.path.dirname(__file__))
+from manager import WeatherPlugin  # noqa: E402
+
+try:  # The style system lives in the core, not in this plugin.
+    from src.plugin_system.base_plugin import BasePlugin as _BasePlugin
+    STYLE_SYSTEM = hasattr(_BasePlugin, "styles")
+except Exception:  # pragma: no cover - depends on the installed core
+    STYLE_SYSTEM = False
+
+
+def requires_style_system(fn):
+    """Mark a test that only means anything on a core with BasePlugin.styles."""
+    fn.requires_style_system = True
+    return fn
+
+
+CLASSIC = {
+    "condition_text": ("PressStart2P-Regular.ttf", 8, (255, 255, 255)),
+    "temp_text": ("PressStart2P-Regular.ttf", 8, (255, 200, 0)),
+    "high_low_text": ("PressStart2P-Regular.ttf", 8, (180, 180, 180)),
+    "metric_text": ("4x6-font.ttf", 7, (255, 255, 255)),  # _detail_font grid
+}
+
+
+def _plugin(customization=None):
+    config = {"enabled": True}
+    if customization is not None:
+        config["customization"] = customization
+    display = MagicMock()
+    display.small_font = "SMALL_FONT_SENTINEL"
+    display.extra_small_font = "EXTRA_SMALL_FONT_SENTINEL"
+    plugin = WeatherPlugin("ledmatrix-weather", config, display, MagicMock(),
+                           MagicMock())
+    return plugin
+
+
+def _style(plugin, element, classic_font_obj="SMALL_FONT_SENTINEL"):
+    font, size, color = CLASSIC[element] if element in CLASSIC else (
+        "PressStart2P-Regular.ttf", 8, (255, 255, 255))
+    return plugin._style(element, font, size, color, classic_font_obj)
+
+
+def test_untouched_config_keeps_the_shipped_styling():
+    plugin = _plugin()
+    for element, (_font, _size, color) in CLASSIC.items():
+        obj = ("EXTRA_SMALL_FONT_SENTINEL" if element == "metric_text"
+               else "SMALL_FONT_SENTINEL")
+        style = _style(plugin, element, obj)
+        assert style.font is obj, (
+            f"{element}: the display manager's own font object must be reused, "
+            "so an untouched config is provably byte-identical rather than "
+            "merely equivalent")
+        assert style.color == color, element
+        assert style.offset == (0, 0), element
+        assert style.visible is True, element
+
+
+@requires_style_system
+def test_a_chosen_colour_reaches_the_draw():
+    plugin = _plugin({"temp_text": {"text_color": [0, 255, 255]}})
+    assert _style(plugin, "temp_text").color == (0, 255, 255)
+
+
+@requires_style_system
+def test_a_chosen_font_replaces_the_shipped_object():
+    plugin = _plugin({"condition_text": {"font": "4x6-font.ttf",
+                                         "font_size": 6}})
+    style = _style(plugin, "condition_text")
+    assert style.font != "SMALL_FONT_SENTINEL", (
+        "a genuine font choice must swap the object, not just the name")
+
+
+@requires_style_system
+def test_an_offset_is_reported():
+    plugin = _plugin({"layout": {"temp_text": {"x_offset": -4, "y_offset": 2}}})
+    assert _style(plugin, "temp_text").offset == (-4, 2)
+
+
+@requires_style_system
+def test_an_element_can_be_hidden():
+    plugin = _plugin({"high_low_text": {"visible": False}})
+    assert _style(plugin, "high_low_text").visible is False
+
+
+@requires_style_system
+def test_the_icon_takes_a_scale():
+    plugin = _plugin({"layout": {"weather_icon": {"scale": 0.5}}})
+    style = plugin._style("weather_icon", "PressStart2P-Regular.ttf", 8,
+                          (255, 255, 255))
+    assert style.scale == 0.5
+
+
+@requires_style_system
+def test_the_metric_bar_reports_whether_its_colour_was_chosen():
+    """Each metric carries its own colour (UV is graded by severity), so the
+    bar only takes a single colour when the user actually picked one."""
+    assert _style(_plugin(), "metric_text",
+                  "EXTRA_SMALL_FONT_SENTINEL").color_chosen is False
+    plugin = _plugin({"metric_text": {"text_color": [255, 120, 0]}})
+    style = _style(plugin, "metric_text", "EXTRA_SMALL_FONT_SENTINEL")
+    assert style.color_chosen is True
+    assert style.color == (255, 120, 0)
+
+
+def test_a_core_without_the_style_system_still_renders():
+    """Older cores have no BasePlugin.styles; the shipped styling stands."""
+    plugin = _plugin()
+    type(plugin).styles = property(
+        lambda self: (_ for _ in ()).throw(AttributeError("no styles")))
+    try:
+        style = _style(plugin, "temp_text")
+        assert style.font == "SMALL_FONT_SENTINEL"
+        assert style.color == (255, 200, 0)
+        assert style.offset == (0, 0)
+        assert style.visible is True
+    finally:
+        del type(plugin).styles
+
+
+# --- The Vegas tile is sized from the same styles it is drawn with ---------
+#
+# get_vegas_content packs the current-conditions screen to the width its
+# content needs (_compact_current_width) and hands that to the renderer. The
+# width used to be measured with the shipped fonts and the base icon size, so
+# a styled screen was drawn into a tile sized for an unstyled one: a larger
+# condition font ran back over the icon and off the tile's left edge, and a
+# hidden metric bar still reserved its full width. These need real fonts and
+# a panel wide enough that packing applies at all (at 128 and 256 wide the
+# fixture's metric bar alone fills the panel, so the tile is the panel).
+
+VEGAS_W, VEGAS_H = 512, 32
+
+
+def _sized_plugin(customization=None):
+    import json
+    from manager import _resolve_font_path
+    from PIL import ImageFont
+    plugin = _plugin(customization)
+    display = plugin.display_manager
+    display.small_font = ImageFont.truetype(
+        _resolve_font_path(os.path.join("assets", "fonts",
+                                        "PressStart2P-Regular.ttf")), 8)
+    display.matrix.width, display.matrix.height = VEGAS_W, VEGAS_H
+    fixture = os.path.join(os.path.dirname(__file__), "test", "fixtures",
+                           "mock.json")
+    with open(fixture, encoding="utf-8") as f:
+        plugin.weather_data = next(iter(json.load(f).values()))["current"]
+    return plugin
+
+
+def _condition_left_edge(plugin, width):
+    from PIL import Image, ImageDraw
+    layout = plugin._get_layout()
+    style = _style(plugin, "condition_text", plugin.display_manager.small_font)
+    measure = ImageDraw.Draw(Image.new("RGB", (1, 1)))
+    measure.fontmode = "1"
+    text = plugin.weather_data["weather"][0]["main"]
+    return width - measure.textlength(text, font=style.font) - layout["right_margin"]
+
+
+def test_an_untouched_vegas_tile_matches_the_classic_sizing():
+    """The styled measurement must agree with the pre-style one when nothing
+    is configured, or every Vegas ticker would shift on upgrade."""
+    styled = _sized_plugin()._compact_current_width()
+    plugin = _sized_plugin()
+    type(plugin).styles = property(
+        lambda self: (_ for _ in ()).throw(AttributeError("no styles")))
+    try:
+        classic = plugin._compact_current_width()
+    finally:
+        del type(plugin).styles
+    assert styled == classic
+    assert styled is not None and styled < VEGAS_W, (
+        "the fixture must actually pack at this width, or nothing here is tested")
+
+
+@requires_style_system
+def test_a_larger_condition_font_does_not_run_over_the_icon():
+    plugin = _sized_plugin({"condition_text": {
+        "font": "PressStart2P-Regular.ttf", "font_size": 32}})
+    width = plugin._compact_current_width() or VEGAS_W
+    layout = plugin._get_layout()
+    icon_right = layout["current_icon_x"] + layout["current_icon_size"]
+    assert _condition_left_edge(plugin, width) >= icon_right
+
+
+@requires_style_system
+def test_a_hidden_metric_bar_stops_reserving_its_width():
+    untouched = _sized_plugin()._compact_current_width()
+    hidden = _sized_plugin({"metric_text": {"visible": False}})._compact_current_width()
+    assert hidden is not None and hidden < untouched
+
+
+@requires_style_system
+def test_a_larger_icon_widens_the_tile():
+    untouched = _sized_plugin()._compact_current_width()
+    # Hide the metric bar so the text block, which carries the icon, sets the width.
+    base = _sized_plugin({"metric_text": {"visible": False}})._compact_current_width()
+    scaled = _sized_plugin({"metric_text": {"visible": False},
+                            "layout": {"weather_icon": {"scale": 2.0}}})._compact_current_width()
+    assert untouched is not None and base is not None
+    assert scaled is None or scaled > base
+
+
+@requires_style_system
+def test_an_offset_stops_the_tile_being_packed():
+    plugin = _sized_plugin({"layout": {"temp_text": {"x_offset": -4, "y_offset": 0}}})
+    assert plugin._compact_current_width() is None
+
+
+def main():
+    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
+    failures = 0
+    skipped = 0
+    for test in tests:
+        if getattr(test, "requires_style_system", False) and not STYLE_SYSTEM:
+            skipped += 1
+            print(f"  SKIP  {test.__name__}: core has no BasePlugin.styles")
+            continue
+        try:
+            test()
+            print(f"  PASS  {test.__name__}")
+        except Exception as exc:  # noqa: BLE001 - this is the runner
+            failures += 1
+            print(f"  FAIL  {test.__name__}: {exc}")
+    passed = len(tests) - failures - skipped
+    print(f"\n{passed}/{len(tests) - skipped} passed"
+          + (f", {skipped} skipped (core has no style system)" if skipped else ""))
+    return 1 if failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

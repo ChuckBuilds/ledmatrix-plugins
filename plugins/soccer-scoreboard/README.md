@@ -226,10 +226,11 @@ Per league, under `game_limits`:
 | `other_recent_games_to_show` | `1` | How many **non-favorite** finished matches to add. `0` gives favorites only. |
 | `other_upcoming_games_to_show` | `1` | The same for scheduled matches. |
 | `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
+| `favorite_rotation_boost` | `1` | Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
 | `other_games_min_quality` | `ranked` | Which non-favorite matches qualify: `any` or `ranked`. |
 | `other_games_divisions` | `["fbs"]` | Which divisions non-favorite matches may come from. |
 
-The same seven keys also exist at the **plugin level**. `game_limits` wins where
+The same eight keys also exist at the **plugin level**. `game_limits` wins where
 the key is present, then the flat per-league key, then the plugin-level one.
 
 **Your favorite clubs are never filtered by the last two.** Those settings only
@@ -318,6 +319,7 @@ Defaults are the schema defaults, which is what the web UI writes.
 | `other_recent_games_to_show` | 0–20 | `1` | **Advanced.** Non-favorite finished matches to add. |
 | `other_upcoming_games_to_show` | 0–20 | `1` | **Advanced.** The same for scheduled matches. |
 | `other_rotation_interval_seconds` | 0–86400 s | `1800` | **Advanced.** How often the non-favorite slice advances. |
+| `favorite_rotation_boost` | 1–5 | `1` | **Advanced.** Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
 | `other_games_min_quality` | `any` \| `ranked` | `ranked` | **Advanced.** Inert in soccer — see above. |
 | `other_games_divisions` | array | `["fbs"]` | **Advanced.** Inert in soccer — see above. |
 | `update_interval_seconds` | 30–86400 s | `3600` | **Advanced.** Base data refresh cadence. |
@@ -398,6 +400,7 @@ See [The selection settings](#the-selection-settings).
 | `<league>.game_limits.other_recent_games_to_show` | 0–20 | `1` |
 | `<league>.game_limits.other_upcoming_games_to_show` | 0–20 | `1` |
 | `<league>.game_limits.other_rotation_interval_seconds` | 0–86400 s | `1800` |
+| `<league>.game_limits.favorite_rotation_boost` | 1–5 | `1` |
 | `<league>.game_limits.other_games_min_quality` | `any` \| `ranked` | `ranked` |
 | `<league>.game_limits.other_games_divisions` | array | `["fbs"]` |
 

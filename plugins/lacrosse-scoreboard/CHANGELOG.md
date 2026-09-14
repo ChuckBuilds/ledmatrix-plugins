@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.27.0] - 2026-09-12
+## [1.29.0] - 2026-09-14
 
 ### Added
 - `update_intervals.live_odds` (advanced, default 60s) is declared in the
@@ -51,6 +51,33 @@ Fixes ported from the sibling scoreboards after the drift audit:
   they were. It now hides anything past `schedule_lookahead_days` (default 7),
   a favourite's game included, so in preseason or a long break the screen is
   empty until a game is inside the window. Raise the setting to see it sooner.
+
+## [1.28.0] - 2026-09-14
+
+### Added
+- **Favorite games get extra turns in switch mode.** New game-limit setting
+  `favorite_rotation_boost` (1-5, default 1): a favorite team's recent or
+  upcoming card gets that many turns per rotation for every one turn other
+  cards get, its extra turns spread evenly around the loop and kept apart
+  whenever enough other cards remain to separate them. Previously only live
+  games could weight favorites.
+
+  Existing configs are unaffected: at the default of 1 every card is shown
+  once per rotation, in the same order as before.
+
+## [1.27.0] - 2026-09-11
+
+### Added
+- **Style each card separately.** Font, size, colour and position for the
+  score, clock, team abbreviation, status, detail, odds and ranking can now
+  differ between the live, upcoming and recent cards. Set them under
+  "Per-Mode Overrides" in the plugin's settings; anything left blank follows
+  the settings above it, so a single change applies to one card and leaves
+  the others alone.
+
+  Existing configs are unaffected: with no per-mode overrides set, every card
+  renders exactly as before -- verified against the golden images at all
+  eight panel sizes.
 
 ## [1.26.1] - 2026-09-11
 

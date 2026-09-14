@@ -59,10 +59,12 @@ categories — a word today, a quote next turn — in `category_order`.
 **Manually.** Copy this directory into your LEDMatrix `plugin-repos/` and
 restart the display service.
 
-> **A fresh install shows "No Data".** Two things are off by default:
-> `enabled` is `false`, and — more surprisingly — **the `categories` block is
-> empty**. The bundled data files exist, but nothing points at them until you
-> add a category. See below.
+> **Every data file is a category.** Each `.json` file in `of_the_day/` is shown,
+> enabled, whether or not it appears in the `categories` block, so a fresh
+> install shows both bundled lists as soon as the plugin itself is enabled
+> (`enabled` is `false` by default). Entries in `categories` override a file's
+> defaults, for example to disable it. Before 1.4.5 an empty `categories` block
+> showed "No Data" even though the web UI listed the files as enabled.
 
 ---
 
@@ -275,10 +277,10 @@ If the definitions matter to you, 64 rows is worth more than 256 columns.
 ## Troubleshooting
 
 **It says "No Data".**
-The most likely cause is that no category is configured — the `categories`
-block is empty on a fresh install even though the data files ship with the
-plugin. Add one from the plugin's tab in the web UI, or by hand as
-[shown above](#adding-a-category).
+Every category is disabled, every data file failed to load, or no file has an
+entry for today's day-of-year number. The log says which: look for
+`Could not find data file`, `Error loading data file` or `No entry found for
+day`. On versions before 1.4.5 it also meant the `categories` block was empty.
 
 **Nothing appears at all.**
 `enabled` defaults to `false`.

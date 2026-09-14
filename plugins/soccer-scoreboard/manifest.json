@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.27.0",
+  "version": "2.29.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -54,10 +54,28 @@
   ],
   "versions": [
     {
-      "version": "2.27.0",
-      "released": "2026-09-12",
+      "version": "2.29.0",
+      "released": "2026-09-14",
       "ledmatrix_min_version": "3.3.0",
       "notes": "Drift-audit fixes ported from the sibling scoreboards. Settings that did nothing now work: goal/win celebration on/off, duration and opponent goals (never forwarded, so celebrations were always on and always 8s), the new odds refresh intervals, and test_mode. One league failing to start no longer blanks every league after it, and a hand-edited other_games_divisions string no longer rejects every non-favourite game. Postponed, cancelled and abandoned fixtures no longer show as 'Final 0-0' on Recent. Full-screen odds with only an over/under no longer print through the header, 'Final' or the live clock; a 0.0 home spread is kept. The full-screen upcoming scorebug reads its own switch_show_date/switch_show_time. Upcoming honours schedule_lookahead_days in selection, and a mode retaking the panel gives its current card a full turn. Rotated-in games get odds. 'Logo Error' shows instead of a black panel. Decoded logo caches are bounded. The scroll card shows an unranked team's record when rankings and records are both on. Vegas rebuilds when the games change instead of only when empty. The per-league scroll_settings block, which nothing ever read, is retired."
+    },
+    {
+      "version": "2.28.0",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Adds favorite_rotation_boost (1-5, default 1) beside the other game-limit settings: in switch mode a favorite team's recent or upcoming card gets that many turns per rotation for every one turn other cards get, its extra turns spread evenly around the loop and kept apart whenever enough other cards remain to separate them (the live rotation's smooth weighted round-robin shows a boosted game back to back where it wraps). games_list stays one entry per game, so cycle-duration counts, the scroll strip and the other-games re-cut are unchanged, and the walk resyncs from current_game_index whenever update() or the other-games rotation swaps a list in. The default keeps the old order exactly. Ported across all nine scoreboards per CLAUDE.md non-negotiable #7."
+    },
+    {
+      "version": "2.27.1",
+      "released": "2026-09-14",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Switch mode refreshes its managers before it draws them. The switch path went straight to manager.display(), so it showed whatever the last background plugin.update() left behind -- baseball, basketball, football, hockey and lacrosse have called _ensure_manager_updated() unconditionally in _try_manager_display() all along, and these three had no equivalent. Measured with no background update at all: afl's switch mode made zero draw-time refreshes and the panel stayed frozen for ten simulated minutes, while baseball's picked the score up in thirty seconds. It is invisible at the 60s default and an hour stale for anyone who raises update_interval -- and unlike baseball/football, which declare update_interval in their manifest and so override any config value, these three declare none, which is what makes the config value apply and the slow case reachable. A stale manager also reads as having nothing to show, so a league with a live game could be skipped from the rotation entirely; the refresh therefore runs before the candidate managers are read, not after. _ensure_manager_updated() is interval-guarded, so on frames where no refresh is due this costs two getattrs and a comparison. Pinned by a test that asserts the wiring structurally as well as behaviourally -- deleting the call leaves every behavioural check passing while the panel silently goes stale, which is how this survived in three plugins. The refresh is dispatched to a daemon thread rather than run inline, so a due fetch never stalls the render thread: at most one refresh per manager runs at a time, dispatches for a manager are at least 5s apart, and each manager's own update interval still decides whether anything is fetched."
+    },
+    {
+      "released": "2026-09-11",
+      "version": "2.27.0",
+      "changelog": "Style the live, upcoming and recent cards separately",
+      "ledmatrix_min_version": "3.3.0"
     },
     {
       "version": "2.26.1",
@@ -519,7 +537,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-07",
+  "last_updated": "2026-09-14",
   "stars": 0,
   "downloads": 0,
   "verified": true,

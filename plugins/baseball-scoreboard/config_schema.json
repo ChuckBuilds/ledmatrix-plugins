@@ -574,6 +574,15 @@
               "maximum": 86400,
               "x-advanced": true
             },
+            "favorite_rotation_boost": {
+              "type": "integer",
+              "title": "Favorite game turns",
+              "description": "In switch mode, how many turns each favorite team's recent or upcoming game gets for every 1 turn other games get. The extra turns are spread through the rotation, and kept apart whenever there are enough other games to separate them. Set to 1 to show every game once per rotation.",
+              "default": 1,
+              "minimum": 1,
+              "maximum": 5,
+              "x-advanced": true
+            },
             "other_games_min_quality": {
               "type": "string",
               "title": "Which other games to show",
@@ -1110,6 +1119,15 @@
               "maximum": 86400,
               "x-advanced": true
             },
+            "favorite_rotation_boost": {
+              "type": "integer",
+              "title": "Favorite game turns",
+              "description": "In switch mode, how many turns each favorite team's recent or upcoming game gets for every 1 turn other games get. The extra turns are spread through the rotation, and kept apart whenever there are enough other games to separate them. Set to 1 to show every game once per rotation.",
+              "default": 1,
+              "minimum": 1,
+              "maximum": 5,
+              "x-advanced": true
+            },
             "other_games_min_quality": {
               "type": "string",
               "title": "Which other games to show",
@@ -1638,6 +1656,15 @@
               "maximum": 86400,
               "x-advanced": true
             },
+            "favorite_rotation_boost": {
+              "type": "integer",
+              "title": "Favorite game turns",
+              "description": "In switch mode, how many turns each favorite team's recent or upcoming game gets for every 1 turn other games get. The extra turns are spread through the rotation, and kept apart whenever there are enough other games to separate them. Set to 1 to show every game once per rotation.",
+              "default": 1,
+              "minimum": 1,
+              "maximum": 5,
+              "x-advanced": true
+            },
             "other_games_min_quality": {
               "type": "string",
               "title": "Which other games to show",
@@ -1904,6 +1931,11 @@
       "type": "object",
       "title": "Display Customization",
       "description": "Customize fonts, colors, and layout positioning for scoreboard elements",
+      "x-style-modes": [
+        "live",
+        "upcoming",
+        "recent"
+      ],
       "properties": {
         "score_text": {
           "type": "object",
