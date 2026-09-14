@@ -13,10 +13,13 @@ Run from the core LEDMatrix tree (needs src.*):
     python -m pytest /path/to/of-the-day/test_category_resolution.py -q
 """
 
+import io
 import json
 import os
-import subprocess
+import runpy
 import sys
+
+import pytest
 
 PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
 if PLUGIN_DIR not in sys.path:
@@ -72,23 +75,40 @@ class TestResolveCategories:
         assert set(p.data_files) == {WORD, SLOVENIAN}
 
 
-def _toggle(tmp_path, params, config):
-    (tmp_path / "config").mkdir(exist_ok=True)
-    config_path = tmp_path / "config" / "config.json"
-    config_path.write_text(json.dumps(config), encoding="utf-8")
-    env = dict(os.environ, LEDMATRIX_ROOT=str(tmp_path))
-    proc = subprocess.run(
-        [sys.executable, os.path.join(PLUGIN_DIR, "scripts", "toggle_category.py")],
-        input=json.dumps(params), capture_output=True, text=True, env=env)
-    return proc, json.loads(proc.stdout), json.loads(config_path.read_text(encoding="utf-8"))
+@pytest.fixture
+def toggle(tmp_path, monkeypatch, capsys):
+    """Run scripts/toggle_category.py in-process against a temp config.json.
+
+    Returns (exit_code, stdout_json, saved_config). The script reads
+    LEDMATRIX_ROOT at import and params from stdin, as the action endpoint
+    provides them.
+    """
+    script = os.path.join(PLUGIN_DIR, "scripts", "toggle_category.py")
+
+    def run(params, config):
+        (tmp_path / "config").mkdir(exist_ok=True)
+        config_path = tmp_path / "config" / "config.json"
+        config_path.write_text(json.dumps(config), encoding="utf-8")
+        monkeypatch.setenv("LEDMATRIX_ROOT", str(tmp_path))
+        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(params)))
+        capsys.readouterr()
+        code = 0
+        try:
+            runpy.run_path(script, run_name="__main__")
+        except SystemExit as exc:
+            code = exc.code or 0
+        out = json.loads(capsys.readouterr().out)
+        return code, out, json.loads(config_path.read_text(encoding="utf-8"))
+
+    return run
 
 
 class TestToggleScript:
-    def test_toggling_an_unconfigured_data_file_creates_its_entry(self, tmp_path):
-        proc, out, config = _toggle(
-            tmp_path, {"category_name": SLOVENIAN, "enabled": False},
+    def test_toggling_an_unconfigured_data_file_creates_its_entry(self, toggle):
+        code, out, config = toggle(
+            {"category_name": SLOVENIAN, "enabled": False},
             {"of-the-day": {"enabled": True}})
-        assert proc.returncode == 0, out
+        assert code == 0, out
         assert config["of-the-day"]["categories"][SLOVENIAN] == {
             "enabled": False,
             "data_file": f"of_the_day/{SLOVENIAN}.json",
@@ -96,15 +116,15 @@ class TestToggleScript:
         }
         assert config["of-the-day"]["enabled"] is True
 
-    def test_existing_entry_is_only_flipped(self, tmp_path):
+    def test_existing_entry_is_only_flipped(self, toggle):
         entry = {"enabled": True, "data_file": "x.json", "display_name": "X"}
-        proc, _, config = _toggle(
-            tmp_path, {"category_name": WORD},
+        code, _, config = toggle(
+            {"category_name": WORD},
             {"of-the-day": {"categories": {WORD: dict(entry)}}})
-        assert proc.returncode == 0
+        assert code == 0
         assert config["of-the-day"]["categories"][WORD] == dict(entry, enabled=False)
 
-    def test_unknown_category_still_fails_with_a_message(self, tmp_path):
-        proc, out, _ = _toggle(tmp_path, {"category_name": "nope"}, {})
-        assert proc.returncode == 1
+    def test_unknown_category_still_fails_with_a_message(self, toggle):
+        code, out, _ = toggle({"category_name": "nope"}, {})
+        assert code == 1
         assert "nope" in out["message"]
