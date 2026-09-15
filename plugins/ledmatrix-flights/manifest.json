@@ -1,9 +1,10 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.13.4",
+  "version": "1.13.5",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
+  "category": "custom",
   "entry_point": "manager.py",
   "class_name": "FlightTrackerPlugin",
   "api_version": "1.0.0",
@@ -35,8 +36,13 @@
     ">=2.0.0"
   ],
   "min_ledmatrix_version": "2.0.0",
-  "max_ledmatrix_version": "3.0.0",
   "versions": [
+    {
+      "version": "1.13.5",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Turning on Overhead Live Priority now takes effect without a restart. The core reads a plugin's display modes once, at load, and the flight_tracker_live slot was only listed while live priority was already on -- so switching it on in the web UI named a slot the core had never registered and nothing preempted until the display restarted. The slot is now always registered and is skipped while live priority is off or nothing is overhead. Separately, the code defaults for tile_provider, fade_intensity, custom_tile_server, show_trails, header_color, show_aircraft_icon and max_api_calls_per_hour now match config_schema.json (they only differed when a key was missing from the saved config). Removed the unenforced max_ledmatrix_version field and added a manifest category."
+    },
     {
       "version": "1.13.4",
       "released": "2026-09-12",
