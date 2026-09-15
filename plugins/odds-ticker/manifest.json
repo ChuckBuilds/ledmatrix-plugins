@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.6.0",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Requires LEDMatrix core 3.4.0 or newer, because the ticker uses the new scroll frame pacing. Since #462 (2026-09-07) display() passes frame_hold to display_manager.set_scrolling_state(), an argument core 3.3.x does not have. The call sits inside the try that wraps the whole frame, so on those cores every frame raised TypeError, logged an error and drew the fallback message instead of the odds. The manifest still admitted any core from 2.0.0, so the store kept offering it there. The floor is now 3.4.0 (versions[0] and compatible_versions), so the store refuses the install on an older core and asks the user to update LEDMatrix first. A copy already installed on a 3.3.x core stays broken until that core is updated. No code change."
+    },
     {
       "version": "1.5.0",
       "released": "2026-09-14",
@@ -167,7 +173,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-03",
+  "last_updated": "2026-09-15",
   "verified": true,
   "screenshot": "",
   "display_modes": [
@@ -175,7 +181,7 @@
   ],
   "class_name": "OddsTickerPlugin",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.4.0"
   ],
   "entry_point": "manager.py"
 }

@@ -1,7 +1,7 @@
 {
   "id": "stock-news",
   "name": "Stock News Ticker",
-  "version": "2.6.2",
+  "version": "2.7.0",
   "author": "ChuckBuilds",
   "description": "Live stock headlines via Yahoo Finance search API with RSS fallback, company logos, configurable display styles (logo+ticker, ticker only, logo only), Vegas scroll integration, and per-day/hour request budgeting",
   "entry_point": "manager.py",
@@ -25,6 +25,18 @@
   "branch": "main",
   "plugin_path": "plugins/stock-news",
   "versions": [
+    {
+      "version": "2.7.0",
+      "released": "2026-09-15",
+      "notes": "Requires LEDMatrix core 3.4.0 or newer, because the ticker uses the new scroll frame pacing. Since 2.6.2 display() passes frame_hold to display_manager.set_scrolling_state(), an argument core 3.3.x does not have, so on those cores every frame raised TypeError and the ticker stayed blank. The manifest still admitted any core from 2.0.0, so the store kept offering it there. The floor is now 3.4.0 (versions[0] and compatible_versions), so the store refuses the install on an older core and asks the user to update LEDMatrix first. A copy already installed on a 3.3.x core stays broken until that core is updated. No code change.",
+      "ledmatrix_min_version": "3.4.0"
+    },
+    {
+      "version": "2.6.2",
+      "released": "2026-09-07",
+      "notes": "Scroll speed is resolved through the core's shared scroll resolver (src.common.scroll_config) when the core has it, which snaps the speed to one the panel can draw in whole pixels, and the frame hold it reports is passed to set_scrolling_state(), so slow speeds stay crisp (#462). Cores without the resolver keep the previous speed arithmetic. This entry was missing when 2.6.2 shipped. Note that the frame_hold argument needs core 3.4.0; 2.7.0 raises the floor to match.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "2.6.1",
       "released": "2026-09-03",
@@ -160,12 +172,12 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-03",
+  "last_updated": "2026-09-15",
   "stars": 0,
   "downloads": 0,
   "verified": true,
   "screenshot": "",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.4.0"
   ]
 }
