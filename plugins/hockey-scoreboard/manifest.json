@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.29.1",
+  "version": "1.30.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.30.0",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "show_powerplay now does something (#431). ESPN's power-play flag was read and stored but never drawn. During a power play a live card shows a yellow PP between the clock and the score on panels 48 rows or taller; on 32-row panels, which have no free row, the period and clock text turns yellow instead. Switch, scroll and Vegas cards all follow the setting (on by default for the NHL, off for NCAA). No config keys were added. The README's stale note that scroll and Vegas cards never show shots on goal is also corrected."
+    },
     {
       "version": "1.29.1",
       "released": "2026-09-14",

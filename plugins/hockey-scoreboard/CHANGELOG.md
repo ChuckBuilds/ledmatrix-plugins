@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.30.0] - 2026-09-15
+
+### Added
+- **`show_powerplay` draws a power-play marker (#431).** ESPN's
+  `situation.isPowerPlay` was parsed into `power_play` and the setting was
+  resolved into the manager config, but nothing drew either. A live card now
+  shows a yellow `PP` centred between the clock and the score when those rows
+  can hold it (every panel 48 rows or taller). On 32-row panels, which have no
+  free row, the period/clock text is drawn yellow instead. The switch scorebug
+  (`hockey.py`) and the scroll/Vegas card (`game_renderer.py`) share the rule,
+  and the card resolves the setting through the same
+  `display_options` → league → `defaults` ladder as shots on goal. With the
+  setting off, or no power play, renders are unchanged.
+
+### Documentation
+- Removed the README's stale note that scroll and Vegas cards never show shots
+  on goal; `game_renderer.py` already reads `show_shots_on_goal`.
+
 ## [1.29.1] - 2026-09-14
 
 ### Fixed
