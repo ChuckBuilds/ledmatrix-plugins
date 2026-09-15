@@ -27,6 +27,7 @@ Run: <core-venv>/bin/python scripts/test_odds_centre_collision.py
 import importlib.util
 import inspect
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -59,8 +60,12 @@ def check(label, ok):
 
 
 def _core():
-    for candidate in (Path("/home/rackpi/projects/LEDMatrix"),
-                      REPO.parent / "LEDMatrix"):
+    # LEDMATRIX_CORE first: CI checks the core out at $GITHUB_WORKSPACE/core,
+    # which neither fallback matches, so without it this guard never ran there.
+    env = os.environ.get("LEDMATRIX_CORE")
+    for candidate in ((Path(env),) if env else ()) + (
+            Path("/home/rackpi/projects/LEDMatrix"),
+            REPO.parent / "LEDMatrix"):
         if (candidate / "src" / "common" / "__init__.py").exists():
             return str(candidate)
     return ""
@@ -135,8 +140,10 @@ def probe(plugin_dir):
 
 def main():
     if not _core():
+        # Exit 2, not 0: the CI guard loop reports only 2 as "skipped", so a
+        # 0 here read as a pass while checking nothing.
         print("  SKIP  no LEDMatrix core checkout found (set LEDMATRIX_CORE)")
-        return 0
+        return 2
 
     print("no odds label may intrude on the centre of the row")
     renderers = sorted((REPO / "plugins").glob("*/game_renderer.py"))
