@@ -86,7 +86,6 @@ A fully specified configuration:
     "scroll_loop": true,
     "scroll_speed": 1,
     "scroll_delay": 0.01,
-    "target_fps": 120,
     "scroll_gap_width": 32,
     "text_color": [255, 255, 255],
     "background_color": [0, 0, 0],
@@ -148,33 +147,34 @@ Larger sizes are more readable but fit less on the panel, which is what makes
 |--------|------|---------|--------------|
 | `scroll` | boolean | `true` | Scroll the text, or draw it statically |
 | `scroll_loop` | boolean | `true` | Loop continuously, or scroll once and stop |
-| `scroll_speed` | number | `1` | Pixels moved per frame |
-| `scroll_delay` | number | `0.01` | Seconds per frame |
-| `target_fps` | number | `120` | Target frame rate hint |
+| `scroll_speed` | number | `1` | Pixels moved per step |
+| `scroll_delay` | number | `0.01` | Seconds per step |
 | `scroll_gap_width` | number | `32` | Blank pixels between the end and the restart |
 
 ### How fast it moves
 
-Three settings look like they control speed. Only two of them actually set it:
+Two settings set the speed together:
 
 ```text
 pixels per second = scroll_speed / scroll_delay
 ```
 
-So the defaults — 1 pixel per frame every 0.01s — give 100 px/s.
+So the defaults — 1 pixel every 0.01s — give 100 px/s.
 
-- **`scroll_speed`** is pixels per *frame*, not per second. It is clamped to a
-  maximum of 5; above that the movement reads as jumping rather than scrolling,
-  and the plugin logs a warning if you set more. Values above 5 in an old config
-  usually mean it was written when this was pixels-per-second.
-- **`scroll_delay`** is the throttle — seconds between frames. Lowering it
-  raises both the frame rate and the CPU cost.
-- **`target_fps`** is a pacing hint passed to the core's scroll helper, clamped
-  to 30–200. It does not by itself change the pixels-per-second figure above;
-  raising it without lowering `scroll_delay` will not make text move faster.
+The LEDMatrix core then moves that figure to the nearest speed the panel can
+draw in whole pixels (on a 100Hz panel: 100, 50, 33.3, 66.7 px/s and so on),
+because anything in between either repeats frames or blends columns, and both
+read as judder. The speed it settled on is logged at startup and after every
+save as `Scroll configured: …`. It is kept between 1 and 500 px/s.
 
-To make text move faster, prefer raising `scroll_speed` a little (1 → 2) over
-driving `scroll_delay` very low. To make it smoother, lower `scroll_delay`.
+- **`scroll_speed`** is pixels per *step*, not per second. Values in the tens in
+  an old config usually mean it was written when this was pixels-per-second.
+- **`scroll_delay`** is seconds per step. A smaller delay is faster; it does not
+  change how often the panel is redrawn.
+
+Speed changes saved in the web UI apply straight away, the same as after a
+restart. `target_fps` was removed in 1.3.0: nothing read it, so it never
+changed the speed.
 
 ### Looping and the gap
 
@@ -298,13 +298,15 @@ That is static `manual` mode with text wider than the panel. Switch to
 `font_mode: auto`, lower `font_size`, or turn on `scroll`.
 
 **Scrolling looks jumpy.**
-`scroll_speed` is pixels per *frame*. Values above 2 visibly step; above 5 the
-plugin clamps and logs a warning. Lower `scroll_speed` and lower `scroll_delay`
-instead.
+Fast speeds move several pixels at a time and slow ones hold each frame for
+several refreshes; both read as stepping. Check the `Scroll configured:` log
+line for what the speed resolved to, and move `scroll_speed / scroll_delay`
+towards 100 px/s, which is one pixel per refresh on a 100Hz panel. See
+[How fast it moves](#how-fast-it-moves).
 
-**I raised `target_fps` and nothing got faster.**
-It is a pacing hint, not the speed control. Speed is
-`scroll_speed / scroll_delay` — see [How fast it moves](#how-fast-it-moves).
+**The speed is not exactly what I set.**
+It is moved to the nearest speed the panel can draw in whole pixels — see
+[How fast it moves](#how-fast-it-moves).
 
 **I only ever see the middle of the message.**
 `display_duration` is ending the turn before a full pass completes. Raise it,
@@ -332,9 +334,10 @@ text-display/
 └── README.md
 ```
 
-Scrolling is delegated to the core's `ScrollHelper` in frame-based mode, which
-is the same mechanism the stock and leaderboard tickers use — so scrolling here
-behaves consistently with those.
+Scrolling is delegated to the core's `ScrollHelper`, paced by the core's shared
+scroll resolver (`src.common.scroll_config`), which is the same mechanism the
+stock, news and leaderboard tickers use — so a given speed setting behaves the
+same here as in those.
 
 ### Performance
 

@@ -57,7 +57,7 @@
       "default": 1,
       "minimum": 0.1,
       "maximum": 10,
-      "description": "Scroll speed in pixels per frame. Higher values = faster scrolling. Typical range: 1-2 pixels/frame for smooth scrolling. Works with scroll_delay to control actual speed."
+      "description": "Pixels moved per scroll step. Speed is scroll_speed / scroll_delay pixels per second (default 1 / 0.01 = 100 px/s), moved to the nearest speed the panel can draw in whole pixels."
     },
     "scroll_delay": {
       "type": "number",
@@ -65,15 +65,7 @@
       "default": 0.01,
       "minimum": 0.001,
       "maximum": 0.1,
-      "description": "Delay in seconds per frame. Lower values = higher FPS = smoother scrolling. Default 0.01 = 100 FPS. For 120 FPS use 0.0083, for 240 FPS use 0.0042."
-    },
-    "target_fps": {
-      "type": "number",
-      "x-advanced": true,
-      "default": 120,
-      "minimum": 30,
-      "maximum": 240,
-      "description": "Target frames per second for scrolling. Higher FPS = smoother scrolling. Recommended: 120-240 for smooth scrolling. Lower values may cause pixel skipping."
+      "description": "Seconds per scroll step. Speed is scroll_speed / scroll_delay pixels per second, so a smaller delay scrolls faster."
     },
     "scroll_loop": {
       "type": "boolean",
