@@ -1063,15 +1063,18 @@ class WeatherPlugin(BasePlugin):
 
         # Process daily forecast — filter to future days from today so stale cached
         # data doesn't show past days (mirrors the hourly filter above).
-        today = datetime.now().date()
+        # Both sides in the location's timezone, as hourly does: Open-Meteo
+        # stamps each day at the location's midnight, which on a UTC Pi east of
+        # Greenwich is still the previous date, so naive labels ran a day early.
+        today = datetime.now(location_tz).date()
         daily_list = [
             day for day in forecast_data.get('daily', [])
-            if datetime.fromtimestamp(day.get('dt', 0)).date() > today
+            if datetime.fromtimestamp(day.get('dt', 0), tz=location_tz).date() > today
         ][:3]
         self.daily_forecast = []
-        
+
         for day_data in daily_list:
-            dt = datetime.fromtimestamp(day_data['dt'])
+            dt = datetime.fromtimestamp(day_data['dt'], tz=location_tz)
             temp_high = round(day_data['temp']['max'])
             temp_low = round(day_data['temp']['min'])
             condition = day_data['weather'][0]['main']
