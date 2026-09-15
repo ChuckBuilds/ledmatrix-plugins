@@ -2,10 +2,10 @@
 """Fail when a plugin needs a newer core than its manifest admits.
 
 A plugin that does an *unguarded* ``from src.common.sports_shared import ...``
-cannot even be imported on a core older than 3.3.1, where that module first
-shipped. If its manifest still declares a 3.3.0 floor, the install gate lets
-it onto a 3.3.0 core and the plugin dies at load with ``ModuleNotFoundError``
--- which is exactly what the eight scoreboards did (drift audit finding M5).
+cannot even be imported on a core older than 3.3.0, where that module first
+shipped. If its manifest declares a lower floor, the install gate lets it
+onto an older core and the plugin dies at load with ``ModuleNotFoundError``
+-- the shape of the eight scoreboards' drift audit finding M5 (#485).
 Nothing checked it, because the floor and the imports live in different files
 and are edited by different PRs.
 
@@ -111,12 +111,13 @@ MODULE_FIRST_VERSION = {
     # v3.3.0
     "src.common.sports_card": "3.3.0",
     "src.common.sports_game_renderer": "3.3.0",
-    # v3.3.1 (but see REPORTED_AS: that release reports itself as 3.3.0)
-    "src.common.sports_shared": "3.3.1",
+    "src.common.sports_shared": "3.3.0",
     # on core main, in no tagged release yet
+    "src.auto_update_setup": None,
     "src.common.font_layout": None,
     "src.common.path_safety": None,
     "src.common.scroll_config": None,
+    "src.display_geometry": None,
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
@@ -126,11 +127,11 @@ MODULE_FIRST_VERSION = {
 #: floor would refuse every core. A module first shipped in one of these
 #: releases is therefore satisfied by the reported version.
 #:
-#: That is exact, not a loophole: tag v3.3.0 itself reports "3.2.0" (its
-#: bump, #516, landed after the tag), so a core reporting "3.3.0" is v3.3.1 or
-#: later and has ``sports_shared``. The only exception is a dev checkout of
-#: core main between #516 and #515, a few hours on 2026-09-03. Entries
-#: describe published tags, so they are permanent.
+#: Facts from the published tags: v3.3.0 (bc2dbf38) and v3.3.1 (32d637a4)
+#: both report "3.3.0" and both contain ``sports_shared``; v3.3.1 adds no
+#: ``src`` module, so no table entry names 3.3.1 and this mapping is
+#: currently inert. It stays because it is true (the tag test checks it).
+#: Entries describe published tags, so they are permanent.
 REPORTED_AS = {
     "3.3.1": "3.3.0",
 }
