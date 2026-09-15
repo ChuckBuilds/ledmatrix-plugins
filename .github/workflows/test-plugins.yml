@@ -102,23 +102,19 @@ jobs:
           # crafted directory name on a PR branch could otherwise inject code.
           IDS: ${{ steps.changed.outputs.ids }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        # check_version_bump.py requires, per changed plugin: version strictly
+        # greater than base (semver; a downgrade fails), version ==
+        # versions[0].version, and versions[0] a new entry. The inline check it
+        # replaced only asked for "different", so a downgrade passed, and so
+        # did stocks 2.9.1 / stock-news 2.6.2 with no versions[] entry.
+        # Changed plugins only, like before; `--all` audits the whole repo.
         run: |
-          fail=0
           for pid in $IDS; do
             case "$pid" in
-              '' | *[!a-z0-9._-]*) echo "::error::invalid plugin id '$pid'"; fail=1; continue ;;
+              '' | *[!a-z0-9._-]*) echo "::error::invalid plugin id '$pid'"; exit 1 ;;
             esac
-            cur=$(python -c "import json;print(json.load(open('plugins/$pid/manifest.json'))['version'])")
-            old=$(git show "$BASE_SHA:plugins/$pid/manifest.json" 2>/dev/null \
-              | python -c "import json,sys;print(json.load(sys.stdin)['version'])" 2>/dev/null || echo "")
-            if [ -n "$old" ] && [ "$cur" = "$old" ]; then
-              echo "::error::$pid code changed but version not bumped (still $cur). Users won't get the update."
-              fail=1
-            else
-              echo "[ok] $pid version $old -> $cur"
-            fi
           done
-          exit $fail
+          python scripts/check_version_bump.py --base "$BASE_SHA" $IDS
 
       # The floor the store and loader actually read is versions[0]. Requiring
       # the new spelling only on plugins that are already being bumped lets the
