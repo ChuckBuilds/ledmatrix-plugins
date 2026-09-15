@@ -6,9 +6,20 @@ In the monorepo model, each plugin's manifest.json is the source of truth
 for version information. This script reads each plugin's manifest and
 updates the registry accordingly.
 
+It only ever updates entries that already exist, so it also checks the two
+ways the registry and plugins/ can silently disagree:
+
+- a plugins/<dir> with a manifest but no registry entry whose plugin_path
+  points at it. The plugin is never published to the store, and nothing
+  else notices. (Adding a monorepo plugin still means adding its entry by
+  hand; this makes forgetting it loud.)
+- a registry plugin_path that has no plugins/<dir>/manifest.json. The store
+  would offer a plugin that cannot be installed.
+
 Usage:
-    python update_registry.py              # Update plugins.json
+    python update_registry.py              # Update plugins.json (warns on the above)
     python update_registry.py --dry-run    # Show what would change
+    python update_registry.py --check      # CI: dry run, exit 1 on the above
 """
 
 import json
@@ -41,6 +52,46 @@ def read_manifest(plugin_dir: Path) -> dict | None:
         return None
     with open(manifest_path, "r", encoding="utf-8") as f:
         return parse_json_with_trailing_commas(f.read())
+
+
+def _normalise_plugin_path(plugin_path: str) -> str:
+    return plugin_path.replace("\\", "/").strip().strip("/")
+
+
+def find_consistency_problems(registry: dict, plugins_dir: Path) -> list[str]:
+    """Registry/plugins-tree disagreements that update_registry cannot fix.
+
+    Matching is by plugin_path, not id: registry ids and manifest ids already
+    differ for weather, stocks, music and leaderboard, and the core's store
+    resolves those through plugin_path.
+    """
+    problems: list[str] = []
+    registered: dict[str, str] = {}
+    for plugin in registry.get("plugins", []):
+        path = _normalise_plugin_path(plugin.get("plugin_path") or "")
+        if not path:
+            continue  # third-party entry
+        if path in registered:
+            problems.append(
+                f"registry entries '{registered[path]}' and '{plugin.get('id')}' "
+                f"both claim plugin_path '{path}'")
+        registered[path] = plugin.get("id", "?")
+        target = plugins_dir.parent / path
+        if not (target / "manifest.json").is_file():
+            problems.append(
+                f"registry entry '{plugin.get('id')}' has plugin_path '{path}', "
+                f"but there is no {path}/manifest.json")
+
+    for d in sorted(plugins_dir.iterdir()):
+        if not d.is_dir() or not (d / "manifest.json").is_file():
+            continue
+        path = f"{plugins_dir.name}/{d.name}"
+        if path not in registered:
+            problems.append(
+                f"{path} has a manifest but no plugins.json entry with "
+                f"plugin_path '{path}', so the store never publishes it. Add an "
+                f"entry (see docs/plugin-development/07-testing-ci-and-registry.md)")
+    return problems
 
 
 def update_registry(registry_path: str = "plugins.json", dry_run: bool = False) -> bool:
@@ -133,7 +184,15 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False) 
     return updates_made
 
 
-def main():
+def check_consistency(registry_path: str = "plugins.json") -> list[str]:
+    """Load the registry and report registry/plugins-tree disagreements."""
+    registry_file = Path(registry_path)
+    with open(registry_file, "r", encoding="utf-8") as f:
+        registry = json.load(f)
+    return find_consistency_problems(registry, registry_file.parent / "plugins")
+
+
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description="Update plugins.json from local plugin manifests"
     )
@@ -147,17 +206,36 @@ def main():
         action="store_true",
         help="Show what would be updated without making changes",
     )
-    args = parser.parse_args()
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Dry run that exits 1 when a plugin directory has no registry "
+             "entry or a registry plugin_path has no plugin (for CI)",
+    )
+    args = parser.parse_args(argv)
 
     try:
-        update_registry(args.registry, args.dry_run)
+        update_registry(args.registry, args.dry_run or args.check)
+        problems = check_consistency(args.registry)
     except FileNotFoundError:
         print(f"Error: Could not find {args.registry}")
-        sys.exit(1)
+        return 1
     except json.JSONDecodeError:
         print(f"Error: {args.registry} is not valid JSON")
-        sys.exit(1)
+        return 1
+
+    if not problems:
+        print("\nPASS every plugins/ directory has a registry entry, and every "
+              "registry plugin_path exists")
+        return 0
+    label = "FAIL" if args.check else "WARNING"
+    print()
+    for problem in problems:
+        print(f"{label} {problem}")
+    # The post-merge sync still writes the version updates above; only the PR
+    # check fails, so one bad entry can't hold every other plugin's release.
+    return 1 if args.check else 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
