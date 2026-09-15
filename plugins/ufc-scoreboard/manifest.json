@@ -33,6 +33,12 @@
   "config_schema": "config_schema.json",
   "versions": [
     {
+      "version": "1.13.0",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Requires LEDMatrix core 3.4.0. ufc.scroll_settings.scroll_speed and scroll_delay now set the scroll speed: the shared resolver was handed the whole config, never looked in ufc.scroll_settings, and ran every user at its 100 px/s default. The speed is passed as pixels per second (a value under 10 still means pixels per scroll_delay step) and snapped to the nearest speed the panel can move in whole pixels. The frame hold that snap needs is applied while a scroll frame is drawn (set_scrolling_state(True, frame_hold=...), a 3.4.0 argument, hence the floor) and released when the scroll completes or is reset. Removed the frame-based setup and target_fps writes the resolver overwrote. Note: this scroll path is only reached through the fight-card strip the plugin builds; display() does not call display_scroll_frame, so what changes on a panel today is the Vegas card set's pacing inputs, not a scroll mode."
+    },
+    {
       "version": "1.12.2",
       "released": "2026-09-14",
       "ledmatrix_min_version": "2.0.0",
@@ -283,6 +289,6 @@
   "verified": true,
   "screenshot": "",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.4.0"
   ]
 }
