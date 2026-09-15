@@ -10,7 +10,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from PIL import Image, ImageDraw, ImageFont
 
 # Import common utilities
-from src.common import ScrollHelper, LogoHelper, TextHelper
+from src.common import ScrollHelper, LogoHelper
 
 
 def _pixel_draw(image):
@@ -116,7 +116,6 @@ class StockDisplayRenderer:
         
         # Initialize helpers
         self.logo_helper = LogoHelper(display_width, display_height, logger=logger)
-        self.text_helper = TextHelper(logger=self.logger)
         
         # Initialize scroll helper
         self.scroll_helper = ScrollHelper(display_width, display_height, logger)
@@ -490,14 +489,6 @@ class StockDisplayRenderer:
             self.logger.warning("Error loading logo for %s: %s", symbol, e)
             return None
     
-    def _get_stock_color(self, change: float) -> Tuple[int, int, int]:
-        """Get color based on stock performance - matching old stock manager."""
-        if change > 0:
-            return (0, 255, 0)  # Green for positive
-        elif change < 0:
-            return (255, 0, 0)  # Red for negative
-        return (255, 255, 0)  # Yellow for no change
-    
     def _draw_mini_chart(self, draw: ImageDraw.Draw, price_history: List[Dict],
                         width: int, height: int, color: Tuple[int, int, int],
                         chart_x: Optional[int] = None) -> None:
@@ -555,22 +546,45 @@ class StockDisplayRenderer:
         image = Image.new('RGB', (int(self.display_width), int(self.display_height)), (0, 0, 0))
         draw = _pixel_draw(image)
         
-        # Use symbol font for error display
-        error_font = self.symbol_font
-        
-        # Draw error message
-        error_text = "No Data Available"
+        # Draw error message in the largest font that fits: "No Data Available"
+        # is 136px in the 8px symbol font, wider than a 128px panel, and was
+        # centred off both edges. Next try the 4x6 face at its crisp 7px size,
+        # then truncate with an ellipsis as a last resort.
+        error_font, error_text = self._fit_error_text(draw, "No Data Available",
+                                                      int(self.display_width))
         bbox = draw.textbbox((0, 0), error_text, font=error_font)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
-        
-        # Ensure dimensions are integers
-        x = (int(self.display_width) - text_width) // 2
-        y = (int(self.display_height) - text_height) // 2
+
+        # Ensure dimensions are integers; clamp so the text never starts off-panel
+        x = max(0, (int(self.display_width) - text_width) // 2)
+        y = max(0, (int(self.display_height) - text_height) // 2)
         
         draw.text((x, y), error_text, font=error_font, fill=(255, 0, 0))
-        
+
         return image
+
+    def _fit_error_text(self, draw, text: str, max_width: int):
+        """(font, text) for a one-line message that fits max_width pixels."""
+        def width_of(candidate_text, font):
+            return draw.textbbox((0, 0), candidate_text, font=font)[2]
+
+        candidates = [self.symbol_font]
+        small_font_path = os.path.join('assets', 'fonts', '4x6-font.ttf')
+        try:
+            candidates.append(ImageFont.truetype(small_font_path, 7))
+        except OSError:
+            pass
+        for font in candidates:
+            if width_of(text, font) <= max_width:
+                return font, text
+
+        font = candidates[-1]
+        ellipsis = ".."
+        trimmed = text
+        while trimmed and width_of(trimmed + ellipsis, font) > max_width:
+            trimmed = trimmed[:-1]
+        return font, (trimmed.rstrip() + ellipsis) if trimmed else ellipsis
     
     def set_toggle_chart(self, enabled: bool) -> None:
         """Set whether to show mini charts."""

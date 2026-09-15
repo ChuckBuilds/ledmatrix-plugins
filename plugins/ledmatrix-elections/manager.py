@@ -91,39 +91,8 @@ class ElectionPlugin(BasePlugin):
         self.providers = create_providers(config, cache_manager)
         self.store = RaceStore(override_votes=override_votes, cache_manager=cache_manager)
 
-        self.scroll_speed = float(config.get("scroll_speed", 1.0))
-        self.scroll_delay = float(config.get("scroll_delay", 0.01))
         self.scroll_helper = ScrollHelper(self.display_width, self.display_height, self.logger)
-        self.scroll_helper.set_frame_based_scrolling(True)
-        self.scroll_helper.set_scroll_speed(self.scroll_speed)
-        self.scroll_helper.set_scroll_delay(self.scroll_delay)
-        self.scroll_helper.set_dynamic_duration_settings(
-            enabled=True, min_duration=int(self.display_duration), max_duration=300
-        )
-
-        # Shared resolver wins over the setup above, which stays as the
-        # fallback for cores that predate it.
-        if _scroll_config is not None:
-            self._scroll_settings = _scroll_config.configure(
-                self.scroll_helper,
-                plugin_config=self.config,
-                global_config=self.config.get('global', {}) or {},
-                display_manager=self.display_manager,
-                plugin_logger=self.logger,
-            )
-        else:
-            self._scroll_settings = None
-        # Honor the global smooth-scrolling FPS target (older cores lack the setter).
-        # The convention (news, leaderboard) is a `global` section in the plugin config.
-        self.global_config = config.get('global', {}) or {}
-        global_config = self.global_config
-        target_fps = global_config.get('target_fps') or global_config.get('scroll_target_fps', 100)
-        if hasattr(self.scroll_helper, 'set_target_fps'):
-            self.scroll_helper.set_target_fps(target_fps)
-            self.logger.info(f"Target FPS set to: {target_fps}")
-        else:
-            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
-            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
+        self._configure_scroll()
 
         # State
         self.races: List[Race] = []
@@ -187,35 +156,9 @@ class ElectionPlugin(BasePlugin):
         self.providers = create_providers(config, self.cache_manager)
         self.store = RaceStore(override_votes=override_votes, cache_manager=self.cache_manager)
 
-        # Reconfigure the scroll helper in place (panel dimensions are unchanged).
-        self.scroll_speed = float(config.get("scroll_speed", 1.0))
-        self.scroll_delay = float(config.get("scroll_delay", 0.01))
-        self.scroll_helper.set_scroll_speed(self.scroll_speed)
-        self.scroll_helper.set_scroll_delay(self.scroll_delay)
-        self.scroll_helper.set_dynamic_duration_settings(
-            enabled=True, min_duration=int(self.display_duration), max_duration=300
-        )
-
-        # Shared resolver wins over the setup above, which stays as the
-        # fallback for cores that predate it.
-        if _scroll_config is not None:
-            self._scroll_settings = _scroll_config.configure(
-                self.scroll_helper,
-                plugin_config=self.config,
-                global_config=self.config.get('global', {}) or {},
-                display_manager=self.display_manager,
-                plugin_logger=self.logger,
-            )
-        else:
-            self._scroll_settings = None
-        # Refresh the FPS target from the (possibly edited) global section.
-        self.global_config = config.get('global', {}) or {}
-        target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps', 100)
-        if hasattr(self.scroll_helper, 'set_target_fps'):
-            self.scroll_helper.set_target_fps(target_fps)
-        else:
-            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
-            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
+        # Re-resolve the scroll pacing in place (panel dimensions are unchanged),
+        # so a speed edit also gets the matching frame hold.
+        self._configure_scroll()
 
         # Force a re-fetch + segment rebuild with the new filters/sources.
         self.races = []
@@ -241,6 +184,40 @@ class ElectionPlugin(BasePlugin):
         """
         settings = getattr(self, "_scroll_settings", None)
         return getattr(settings, "frame_hold", 1) if settings else 1
+
+    def _configure_scroll(self) -> None:
+        """Resolve scroll pacing from config through the core's shared resolver.
+
+        The resolver reads the root ``scroll_speed`` / ``scroll_delay`` pair,
+        snaps it to a speed the panel can draw in whole pixels, and applies it
+        to the helper. Nothing is set on the helper afterwards: a later speed
+        or FPS write would override the resolved pacing. Called from __init__
+        and on_config_change so a live edit gets the same treatment.
+        """
+        # Mirrors config_schema.json (scroll_speed 1.0, scroll_delay 0.03).
+        self.scroll_speed = float(self.config.get("scroll_speed", 1.0))
+        self.scroll_delay = float(self.config.get("scroll_delay", 0.03))
+        self.scroll_helper.set_dynamic_duration_settings(
+            enabled=True, min_duration=int(self.display_duration), max_duration=300
+        )
+        if _scroll_config is None:
+            # Unreachable on the 3.4.0 floor; the import stays guarded only
+            # because the module gate does not yet list scroll_config as
+            # released. The helper keeps its own default pacing.
+            self._scroll_settings = None
+            return
+        # The resolver's root pair needs both keys, so hand it the values with
+        # the schema defaults filled in: a config missing scroll_delay would
+        # otherwise fall through to the core's 100 px/s default.
+        plugin_config = dict(self.config, scroll_speed=self.scroll_speed,
+                             scroll_delay=self.scroll_delay)
+        self._scroll_settings = _scroll_config.configure(
+            self.scroll_helper,
+            plugin_config=plugin_config,
+            global_config=self.config.get('global', {}) or {},
+            display_manager=self.display_manager,
+            plugin_logger=self.logger,
+        )
 
     def update(self) -> None:
         now = time.time()
@@ -505,6 +482,9 @@ class ElectionPlugin(BasePlugin):
 
     def _display_called_card(self, race: Race, force_clear: bool) -> None:
         self._showing_called = True
+        # A static card: release the scroll state (and its frame hold) so the
+        # card is presented every refresh and deferred work may run.
+        self.display_manager.set_scrolling_state(False)
         img = renderer.render_called_card(race, self.display_width, self.display_height)
         self.display_manager.image = img
         self.display_manager.update_display()
@@ -519,7 +499,10 @@ class ElectionPlugin(BasePlugin):
             self._build_scroll_image()
 
         if not self._scroll_ready:
-            return False  # nothing to show; controller skips to the next mode
+            # Nothing to show; controller skips to the next mode. Release the
+            # scroll state rather than leaving it to the inactivity timeout.
+            self.display_manager.set_scrolling_state(False)
+            return False
 
         if force_clear:
             try:
@@ -527,11 +510,9 @@ class ElectionPlugin(BasePlugin):
             except Exception as e:
                 self.logger.debug("reset_scroll failed: %s", e)
 
-        try:
-            self.display_manager.set_scrolling_state(
-                True, frame_hold=self._scroll_frame_hold())
-        except Exception as e:
-            self.logger.debug("set_scrolling_state failed: %s", e)
+        # frame_hold needs core 3.4.0, which the manifest floor guarantees.
+        self.display_manager.set_scrolling_state(
+            True, frame_hold=self._scroll_frame_hold())
 
         self.scroll_helper.update_scroll_position()
         visible = self.scroll_helper.get_visible_portion()
@@ -557,7 +538,11 @@ class ElectionPlugin(BasePlugin):
         races had scrolled by.
         """
         tsw = getattr(self.scroll_helper, "total_scroll_width", 0) or 0
-        pps = (self.scroll_speed / self.scroll_delay) if self.scroll_delay > 0 else self.scroll_speed * 50
+        # The speed the resolver actually applied (snapped to whole pixels per
+        # frame), not speed/delay as configured: snapping can move 62.5 px/s
+        # to 66.7, and the duration has to match what the panel really does.
+        settings = getattr(self, "_scroll_settings", None)
+        pps = float(getattr(settings, "pixels_per_second", 0) or 0)
         if tsw <= 0 or pps <= 0:
             return self.display_duration
         # total_scroll_width is the distance at which the scroller reports the

@@ -16,6 +16,49 @@
       "maximum": 3600,
       "default": 600
     },
+    "show_change": {
+      "x-advanced": true,
+      "type": "boolean",
+      "description": "Show the price change in dollars (e.g. +1.25) for stocks",
+      "default": true
+    },
+    "show_percentage": {
+      "x-advanced": true,
+      "type": "boolean",
+      "description": "Show the price change as a percentage (e.g. (+0.8%)) for stocks",
+      "default": true
+    },
+    "api": {
+      "type": "object",
+      "description": "Yahoo Finance request settings",
+      "properties": {
+        "timeout": {
+          "x-advanced": true,
+          "type": "number",
+          "description": "Seconds before a quote request gives up",
+          "minimum": 1,
+          "maximum": 60,
+          "default": 10
+        },
+        "retry_count": {
+          "x-advanced": true,
+          "type": "integer",
+          "description": "Retries with backoff when a quote request fails with a 429 or 5xx response",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3
+        },
+        "rate_limit_delay": {
+          "x-advanced": true,
+          "type": "number",
+          "description": "Seconds to pause between symbols while fetching",
+          "minimum": 0,
+          "maximum": 5,
+          "default": 0.1
+        }
+      },
+      "additionalProperties": false
+    },
     "display": {
       "type": "object",
       "description": "Display and scrolling settings",
@@ -39,7 +82,7 @@
         "scroll_speed": {
           "x-advanced": true,
           "type": "number",
-          "description": "Scrolling speed in pixels per frame",
+          "description": "Pixels moved per scroll step. Speed is scroll_speed / scroll_delay pixels per second (default 1.0 / 0.02 = 50 px/s), moved to the nearest speed the panel can draw in whole pixels.",
           "minimum": 0.5,
           "maximum": 5.0,
           "default": 1.0
@@ -47,7 +90,7 @@
         "scroll_delay": {
           "x-advanced": true,
           "type": "number",
-          "description": "Delay between scroll steps in seconds",
+          "description": "Seconds per scroll step. A smaller delay scrolls faster.",
           "minimum": 0.001,
           "maximum": 0.1,
           "default": 0.02
@@ -136,9 +179,11 @@
           "maxItems": 50
         },
         "display_format": {
+          "x-advanced": true,
+          "x-display": "hidden",
           "type": "string",
-          "description": "Display format string. Use {symbol}, {price}, {change} as placeholders",
-          "default": "{symbol}: ${price} ({change}%)"
+          "description": "Deprecated — no longer used: the layout is fixed. Kept for backward compatibility with existing configs.",
+          "title": "Display Format (deprecated)"
         }
       },
       "required": [
@@ -157,10 +202,22 @@
         },
         "update_interval": {
           "type": "integer",
-          "description": "Data refresh interval in seconds",
+          "description": "How long a crypto quote is reused before it is fetched again, in seconds. Set it below the top-level update_interval to refresh crypto more often than stocks.",
           "minimum": 60,
           "maximum": 3600,
           "default": 600
+        },
+        "show_change": {
+          "x-advanced": true,
+          "type": "boolean",
+          "description": "Show the price change in dollars for crypto",
+          "default": true
+        },
+        "show_percentage": {
+          "x-advanced": true,
+          "type": "boolean",
+          "description": "Show the price change as a percentage for crypto",
+          "default": true
         },
         "symbols": {
           "type": "array",
@@ -177,9 +234,11 @@
           "maxItems": 15
         },
         "display_format": {
+          "x-advanced": true,
+          "x-display": "hidden",
           "type": "string",
-          "description": "Display format string. Use {symbol}, {price}, {change} as placeholders",
-          "default": "{symbol}: ${price} ({change}%)"
+          "description": "Deprecated — no longer used: the layout is fixed. Kept for backward compatibility with existing configs.",
+          "title": "Display Format (deprecated)"
         }
       },
       "required": [

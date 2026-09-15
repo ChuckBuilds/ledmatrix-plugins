@@ -47,7 +47,10 @@ class DataFetcher:
             standings = self._fetch_ncaam_hockey_rankings(league_config)
         elif league_key in ['mens-college-basketball', 'womens-college-basketball']:
             standings = self._fetch_ncaa_basketball_rankings(league_config)
-        elif league_key in ['nfl', 'mlb', 'nhl', 'college-baseball']:
+        elif league_key in ['nfl', 'nba', 'mlb', 'nhl', 'college-baseball']:
+            # NBA belongs here: league_config defines its standings_url. The
+            # teams endpoint it used to fall through to carries no records, so
+            # every NBA team showed 0-0 in whatever order ESPN listed them.
             standings = self._fetch_standings_data(league_config)
         else:
             standings = self._fetch_teams_data(league_config)

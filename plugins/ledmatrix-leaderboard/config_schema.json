@@ -10,11 +10,11 @@
       "description": "Enable or disable the leaderboard plugin"
     },
     "display_duration": {
+      "x-advanced": true,
+      "x-display": "hidden",
       "type": "number",
-      "default": 30,
-      "minimum": 10,
-      "maximum": 300,
-      "description": "How long to display the leaderboard in seconds"
+      "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs. The leaderboard uses global.display_duration.",
+      "title": "Display Duration (deprecated)"
     },
     "update_interval": {
       "x-advanced": true,
@@ -36,27 +36,24 @@
         },
         "scroll_speed": {
           "x-advanced": true,
+          "x-display": "hidden",
           "type": "number",
-          "default": 1,
-          "minimum": 0.1,
-          "maximum": 10,
-          "description": "Scrolling speed multiplier"
+          "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs. Scroll speed comes from global.display.scroll_speed / scroll_delay.",
+          "title": "Scroll Speed (deprecated)"
         },
         "target_fps": {
           "x-advanced": true,
-          "type": "integer",
-          "default": 100,
-          "minimum": 30,
-          "maximum": 200,
-          "description": "Target frames per second for scrolling"
+          "x-display": "hidden",
+          "type": "number",
+          "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs.",
+          "title": "Target FPS (deprecated)"
         },
         "scroll_speed_scale": {
           "x-advanced": true,
+          "x-display": "hidden",
           "type": "number",
-          "default": 8,
-          "minimum": 1,
-          "maximum": 20,
-          "description": "Scroll speed scale factor"
+          "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs.",
+          "title": "Scroll Speed Scale (deprecated)"
         },
         "request_timeout": {
           "x-advanced": true,
@@ -152,11 +149,10 @@
         },
         "scroll_pixels_per_second": {
           "x-advanced": true,
+          "x-display": "hidden",
           "type": "number",
-          "default": 15.0,
-          "minimum": 5.0,
-          "maximum": 50.0,
-          "description": "[Deprecated] Scroll speed in pixels per second. Use display.scroll_speed and display.scroll_delay for finer control"
+          "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs. Scroll speed comes from global.display.scroll_speed / scroll_delay.",
+          "title": "Scroll Pixels Per Second (deprecated)"
         },
         "display": {
           "type": "object",
@@ -183,11 +179,10 @@
         },
         "scroll_target_fps": {
           "x-advanced": true,
+          "x-display": "hidden",
           "type": "number",
-          "default": 100.0,
-          "minimum": 30.0,
-          "maximum": 200.0,
-          "description": "Target FPS for scrolling"
+          "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs.",
+          "title": "Scroll Target FPS (deprecated)"
         },
         "scroll_mode": {
           "x-advanced": true,
@@ -201,27 +196,24 @@
         },
         "scroll_direction": {
           "x-advanced": true,
+          "x-display": "hidden",
           "type": "string",
-          "enum": [
-            "left",
-            "right"
-          ],
-          "default": "left",
-          "description": "Scroll direction"
+          "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs.",
+          "title": "Scroll Direction (deprecated)"
         },
         "enable_scroll_metrics": {
           "x-advanced": true,
+          "x-display": "hidden",
           "type": "boolean",
-          "default": false,
-          "description": "Enable scroll performance metrics"
+          "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs.",
+          "title": "Enable Scroll Metrics (deprecated)"
         },
         "scroll_delay": {
           "x-advanced": true,
+          "x-display": "hidden",
           "type": "number",
-          "default": 0.01,
-          "minimum": 0.001,
-          "maximum": 0.1,
-          "description": "Delay between scroll steps in seconds"
+          "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs. Scroll speed comes from global.display.scroll_speed / scroll_delay.",
+          "title": "Scroll Delay (deprecated)"
         },
         "loop": {
           "x-advanced": true,
