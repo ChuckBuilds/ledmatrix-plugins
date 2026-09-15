@@ -69,22 +69,6 @@
           "maximum": 0.1,
           "default": 0.02
         },
-        "scroll_pixels_per_second": {
-          "x-advanced": true,
-          "type": "number",
-          "default": 50.0,
-          "minimum": 5.0,
-          "maximum": 100.0,
-          "description": "Scroll speed in pixels per second (used for dynamic duration calculation). Set to match your actual scroll rate: scroll_speed / scroll_delay"
-        },
-        "target_fps": {
-          "x-advanced": true,
-          "type": "integer",
-          "default": 120,
-          "minimum": 30,
-          "maximum": 200,
-          "description": "Target frames per second for smooth scrolling. Higher values = smoother animation (120 recommended)"
-        },
         "loop": {
           "x-advanced": true,
           "type": "boolean",

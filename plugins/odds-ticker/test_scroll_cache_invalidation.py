@@ -68,6 +68,10 @@ class _Matrix:
 
 
 class _DisplayManager:
+    # display() and the strip read display_manager.width/height now, not
+    # .matrix (which is None when the hardware failed to initialise).
+    width, height = WIDTH, HEIGHT
+
     def __init__(self):
         self.matrix = _Matrix()
         self.image = Image.new('RGB', (WIDTH, HEIGHT), (0, 0, 0))

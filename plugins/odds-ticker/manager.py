@@ -93,26 +93,31 @@ except ImportError:
         def get_odds(self, sport, league, event_id, update_interval_seconds=None, is_live=False):
             return None
 
-# Import background service and dynamic resolver
+# Optional core services, each guarded on its own. One try around all of
+# them meant a failed import of any one also replaced ScrollHelper with an
+# empty stub, which raised as soon as the ticker was constructed.
 try:
     from src.background_data_service import get_background_service
-    from src.dynamic_team_resolver import DynamicTeamResolver
-    from src.logo_downloader import download_missing_logo
-    from src.common.scroll_helper import ScrollHelper
 except ImportError:
-    # Fallback implementations
     def get_background_service(cache_manager, max_workers=1):
         return None
-    
+
+try:
+    from src.dynamic_team_resolver import DynamicTeamResolver
+except ImportError:
     class DynamicTeamResolver:
         def resolve_teams(self, teams, league):
             return teams
-    
+
+try:
+    from src.logo_downloader import download_missing_logo
+except ImportError:
     def download_missing_logo(league, team_id, team_abbr, logo_path, logo_url):
         return False
-    
-    class ScrollHelper:
-        pass  # Will be handled by proper import
+
+# Not optional: the ticker cannot draw without it, and every core this plugin
+# admits ships it.
+from src.common.scroll_helper import ScrollHelper
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -174,8 +179,14 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         # Initialize BasePlugin first
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
         
-        # Initialize BaseOddsManager with cache_manager only (no config_manager available)
+        # Initialize BaseOddsManager with cache_manager only (no config_manager available).
+        # Its __init__ assigns self.logger = logging.getLogger(<core module>),
+        # replacing the logger BasePlugin set up, so every line this plugin
+        # logged lost its plugin id. Keep the plugin's.
+        plugin_logger = getattr(self, 'logger', None)
         BaseOddsManager.__init__(self, cache_manager)
+        if plugin_logger is not None:
+            self.logger = plugin_logger
         
         # Resolve project root path (plugin_dir -> plugins -> project_root)
         self.project_root = Path(__file__).resolve().parent.parent.parent
@@ -206,30 +217,10 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         def get_config(section, key, default, old_key=None):
             return self._get_config_value(section, key, default, self.odds_ticker_config, old_key)
 
-        # Filtering settings
-        self.show_favorite_teams_only = get_config(filtering, 'show_favorite_teams_only', False)
-        self.games_per_favorite_team = get_config(filtering, 'games_per_favorite_team', 1)
-        # Turns a favourite team's game gets in the scroll for every one turn
-        # another game gets. Above 1 its next games also always make the cut.
-        try:
-            self.favorite_weight = max(1, min(5, int(
-                get_config(filtering, 'favorite_weight', 1))))
-        except (TypeError, ValueError, OverflowError):
-            self.favorite_weight = 1
-        self.max_games_per_league = get_config(filtering, 'max_games_per_league', 5)
-        self.show_odds_only = get_config(filtering, 'show_odds_only', False)
         # game_id -> the arguments its odds request would need. Filled while
         # the schedule is parsed, drained for the display candidates only.
         self._odds_pending: Dict[str, Dict[str, Any]] = {}
-        self.sort_order = get_config(filtering, 'sort_order', 'soonest')
-
-        # Data settings
-        self.fetch_odds = get_config(data_settings, 'fetch_odds', True)
-        self.update_interval = get_config(data_settings, 'update_interval', 3600)
-        self.live_game_update_interval = get_config(data_settings, 'live_game_update_interval', 60)
-        self.future_fetch_days = get_config(data_settings, 'future_fetch_days', 7)
-        self.request_timeout = get_config(data_settings, 'request_timeout', 30)
-        self.base_update_interval = self.update_interval  # Store base interval for switching
+        self._load_filter_settings()
 
         # Thread safety lock for concurrent access during live updates
         self._update_lock = threading.Lock()
@@ -245,48 +236,11 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
 
         # Display options
         self.display_duration = get_config(display_options, 'display_duration', 30)
-        self.target_fps = get_config(display_options, 'target_fps', 120)
         self.loop = get_config(display_options, 'loop', True)
         self.show_channel_logos = get_config(display_options, 'show_channel_logos', True)
         self.broadcast_logo_height_ratio = get_config(display_options, 'broadcast_logo_height_ratio', 0.8)
         self.broadcast_logo_max_width_ratio = get_config(display_options, 'broadcast_logo_max_width_ratio', 0.8)
 
-        # Scroll speed configuration with backward compatibility
-        # Precedence order (highest to lowest):
-        #   1. display_options.scroll_speed/delay (CURRENT - recommended)
-        #   2. display.scroll_speed/delay (DEPRECATED - old nested format)
-        #   3. scroll_pixels_per_second (DEPRECATED - flat format)
-        #   4. scroll_speed/delay at root level (LEGACY - flat format)
-        display_config = self.odds_ticker_config.get('display', {})
-        if display_options and ('scroll_speed' in display_options or 'scroll_delay' in display_options):
-            # Priority 1: Current format - use display_options object
-            self.scroll_speed = display_options.get('scroll_speed', 1.0)
-            self.scroll_delay = display_options.get('scroll_delay', 0.02)
-            # Must be None here, exactly as the display_config branch below
-            # does it. config_schema.json gives this deprecated key a default
-            # of 50.0, and schema defaults are merged into plugin config, so
-            # reading it on this path left it permanently non-None and
-            # use_frame_based below could never be True -- the documented
-            # scroll_speed/scroll_delay settings were unreachable for every
-            # user. See issue #408.
-            self.scroll_pixels_per_second = None
-            self.logger.info(f"Using display_options.scroll_speed={self.scroll_speed} px/frame, display_options.scroll_delay={self.scroll_delay}s (frame-based mode)")
-        elif display_config and ('scroll_speed' in display_config or 'scroll_delay' in display_config):
-            # Old nested format: use display object for granular control
-            self.scroll_speed = display_config.get('scroll_speed', 1.0)
-            self.scroll_delay = display_config.get('scroll_delay', 0.02)
-            self.scroll_pixels_per_second = None  # Not using pixels per second mode
-            self.logger.info(f"Using display.scroll_speed={self.scroll_speed} px/frame, display.scroll_delay={self.scroll_delay}s (frame-based mode)")
-        else:
-            # Legacy flat format: use scroll_pixels_per_second (backward compatibility)
-            self.scroll_pixels_per_second = self.odds_ticker_config.get('scroll_pixels_per_second')
-            self.scroll_speed = self.odds_ticker_config.get('scroll_speed', 2)
-            self.scroll_delay = self.odds_ticker_config.get('scroll_delay', 0.05)
-            if self.scroll_pixels_per_second is not None:
-                self.logger.info(f"Using scroll_pixels_per_second={self.scroll_pixels_per_second} px/s (time-based mode, backward compatibility)")
-            else:
-                # Calculate from legacy scroll_speed/scroll_delay
-                self.logger.info(f"Using legacy scroll_speed={self.scroll_speed}, scroll_delay={self.scroll_delay} (backward compatibility)")
 
         # Dynamic duration settings
         self.dynamic_duration_enabled = get_config(display_options, 'dynamic_duration', True)
@@ -344,81 +298,18 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         # Enable scrolling for high FPS mode in display controller
         # This tells the display controller to use 8ms intervals (125 FPS) instead of slower updates
         self.enable_scrolling = True
-        logger.info(f"High FPS scrolling enabled: enable_scrolling={self.enable_scrolling}, target_fps={self.target_fps}")
-        
-        # Initialize ScrollHelper for scrolling functionality
-        display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') else 128
-        display_height = self.display_manager.matrix.height if hasattr(self.display_manager, 'matrix') else 32
-        self.scroll_helper = ScrollHelper(display_width, display_height, logger=self.logger)
-        
-        # Configure ScrollHelper with plugin settings
-        # Check if we should use frame-based scrolling (new format) or time-based (old format)
-        # Accept either config shape. This previously consulted only
-        # display_config (the deprecated "display" block), so even with the
-        # fix above the recommended display_options format could never select
-        # frame-based mode. Both halves of #408 are needed.
-        use_frame_based = (
-            self.scroll_pixels_per_second is None
-            and (
-                (display_options and ('scroll_speed' in display_options
-                                      or 'scroll_delay' in display_options))
-                or (display_config and ('scroll_speed' in display_config
-                                        or 'scroll_delay' in display_config))
-            )
-        )
-        
-        if use_frame_based:
-            # New format: use frame-based scrolling for finer control
-            if hasattr(self.scroll_helper, 'set_frame_based_scrolling'):
-                self.scroll_helper.set_frame_based_scrolling(True)
-                self.logger.info(f"Frame-based scrolling enabled: {self.scroll_speed} px/frame, {self.scroll_delay}s delay")
-            # In frame-based mode, scroll_speed is pixels per frame
-            self.scroll_helper.set_scroll_speed(self.scroll_speed)
-            self.scroll_helper.set_scroll_delay(self.scroll_delay)
-            # Log effective pixels per second for reference
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 50
-            self.logger.info(f"Effective scroll speed: {pixels_per_second:.1f} px/s ({self.scroll_speed} px/frame at {1.0/self.scroll_delay:.0f} FPS)")
-        else:
-            # Old format: use time-based scrolling (backward compatibility)
-            if self.scroll_pixels_per_second is not None:
-                pixels_per_second = self.scroll_pixels_per_second
-                self.logger.info(f"Using scroll_pixels_per_second: {pixels_per_second} px/s (time-based mode)")
-            else:
-                # Convert scroll_speed from pixels per frame to pixels per second (backward compatibility)
-                # scroll_speed is pixels per frame, scroll_delay is seconds per frame
-                # So pixels per second = scroll_speed / scroll_delay
-                pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 20
-                self.logger.info(f"Calculated scroll speed: {pixels_per_second} px/s (from scroll_speed={self.scroll_speed}, scroll_delay={self.scroll_delay})")
-            
-            self.scroll_helper.set_scroll_speed(pixels_per_second)
-            self.scroll_helper.set_scroll_delay(self.scroll_delay)
-        
-        # Set target FPS for high-performance scrolling (backward compatible)
-        if hasattr(self.scroll_helper, 'set_target_fps'):
-            self.scroll_helper.set_target_fps(self.target_fps)
-        else:
-            # Fallback for older ScrollHelper versions - set target_fps directly
-            self.scroll_helper.target_fps = max(30.0, min(200.0, self.target_fps))
-            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
-            self.logger.debug(f"Target FPS set to: {self.scroll_helper.target_fps} FPS (using fallback method)")
+        logger.info(f"High FPS scrolling enabled: enable_scrolling={self.enable_scrolling}")
 
-        # The shared resolver takes precedence over the block above, which is
-        # kept as the fallback for cores that predate it. Running both costs a
-        # few microseconds once at construction and avoids re-indenting logic
-        # that other config shapes still depend on.
-        if _scroll_config is not None:
-            self._scroll_settings = _scroll_config.configure(
-                self.scroll_helper,
-                plugin_config=self.config,
-                global_config=self.global_config,
-                display_manager=self.display_manager,
-                plugin_logger=self.logger,
-            )
-            self.logger.info(
-                "Scroll pacing came from the shared resolver; any scroll speed "
-                "logged above this line by the legacy path was superseded")
-        else:
-            self._scroll_settings = None
+        # display_manager.width, not .matrix.width: matrix is None when the
+        # hardware failed to initialise, and the AttributeError stopped the
+        # plugin loading at all.
+        self.scroll_helper = ScrollHelper(self.display_manager.width,
+                                          self.display_manager.height,
+                                          logger=self.logger)
+        # Speed comes from core's shared resolver, which also reports the
+        # frame hold display() applies. The precedence ladder and px/frame
+        # conversions that used to run here were overwritten by it.
+        self._apply_scroll_config()
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=self.dynamic_duration_enabled,
             min_duration=self.min_duration,
@@ -426,6 +317,17 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             buffer=self.duration_buffer
         )
         
+        self._load_league_configs()
+        self.initialized = True
+
+    def _load_league_configs(self) -> None:
+        """Per-league settings, favourite teams and enabled_leagues.
+
+        Called at load and on every config save: on_config_change used to
+        skip this, so enabling a league or changing favourites did nothing
+        until a restart.
+        """
+        plugin_manager = self.plugin_manager
         # Get main app config for fallback to scoreboard settings
         main_config = {}
         if hasattr(plugin_manager, 'config_manager') and plugin_manager.config_manager:
@@ -579,7 +481,37 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
 
         logger.info(f"OddsTickerManager initialized with enabled leagues: {self.enabled_leagues}")
         logger.info(f"Show favorite teams only: {self.show_favorite_teams_only}")
-        self.initialized = True
+
+    def _load_filter_settings(self) -> None:
+        """Filtering and data-fetch settings, read at load and on every config save."""
+        config = self.odds_ticker_config
+        filtering = config.get('filtering', {})
+        data_settings = config.get('data_settings', {})
+
+        def get_config(section, key, default, old_key=None):
+            return self._get_config_value(section, key, default, config, old_key)
+
+        # Filtering settings
+        self.show_favorite_teams_only = get_config(filtering, 'show_favorite_teams_only', False)
+        self.games_per_favorite_team = get_config(filtering, 'games_per_favorite_team', 1)
+        # Turns a favourite team's game gets in the scroll for every one turn
+        # another game gets. Above 1 its next games also always make the cut.
+        try:
+            self.favorite_weight = max(1, min(5, int(
+                get_config(filtering, 'favorite_weight', 1))))
+        except (TypeError, ValueError, OverflowError):
+            self.favorite_weight = 1
+        self.max_games_per_league = get_config(filtering, 'max_games_per_league', 5)
+        self.show_odds_only = get_config(filtering, 'show_odds_only', False)
+        self.sort_order = get_config(filtering, 'sort_order', 'soonest')
+
+        # Data settings
+        self.fetch_odds = get_config(data_settings, 'fetch_odds', True)
+        self.update_interval = get_config(data_settings, 'update_interval', 3600)
+        self.live_game_update_interval = get_config(data_settings, 'live_game_update_interval', 60)
+        self.future_fetch_days = get_config(data_settings, 'future_fetch_days', 7)
+        self.request_timeout = get_config(data_settings, 'request_timeout', 30)
+        self.base_update_interval = self.update_interval  # Store base interval for switching
 
     def _get_config_value(self, section: Dict, key: str, default: Any,
                           config_dict: Dict[str, Any], old_key: str = None) -> Any:
@@ -606,6 +538,20 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
 
         return value
 
+    @staticmethod
+    def _bdf_pixel_size(path):
+        """The pixel size a .bdf font declares, or None if it does not."""
+        try:
+            with open(path, "r", encoding="latin-1") as handle:
+                for line in handle:
+                    if line.startswith("PIXEL_SIZE"):
+                        return int(line.split()[1])
+                    if line.startswith("CHARS"):
+                        break  # past the header
+        except (OSError, ValueError, IndexError):
+            return None
+        return None
+
     def _load_custom_font_from_element_config(self, element_config: Dict[str, Any], default_size: int = 8, default_font_name: str = 'PressStart2P-Regular.ttf') -> ImageFont.FreeTypeFont:
         """
         Load a custom font from an element configuration dictionary.
@@ -629,11 +575,27 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                     self.logger.debug(f"Loaded font: {font_name} at size {font_size}")
                     return font
                 elif font_path.lower().endswith('.bdf'):
+                    # A .bdf is a bitmap face that exists at exactly one pixel
+                    # size; FreeType refuses every other. Retry at the size the
+                    # file declares rather than dropping to the default font --
+                    # otherwise picking 5x7.bdf or 4x6.bdf at the schema's size 8
+                    # silently kept PressStart2P. Same loader as ledmatrix-stocks
+                    # and news.
                     try:
                         font = ImageFont.truetype(font_path, font_size)
                         self.logger.debug(f"Loaded BDF font: {font_name} at size {font_size}")
                         return font
                     except Exception:
+                        native = self._bdf_pixel_size(font_path)
+                        if native is not None and native != font_size:
+                            try:
+                                font = ImageFont.truetype(font_path, native)
+                                self.logger.debug(
+                                    "Loaded bitmap font %s at its native size %d "
+                                    "(requested %d)", font_name, native, font_size)
+                                return font
+                            except Exception:
+                                pass
                         self.logger.warning(f"Could not load BDF font {font_name} with PIL, using default")
                 else:
                     self.logger.warning(f"Unknown font file type: {font_name}, using default")
@@ -735,38 +697,6 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         except Exception as e:
             self.logger.debug(f"Error parsing start_time '{start_time}': {e}")
             return None
-
-    def _fetch_team_record(self, team_abbr: str, league: str) -> str:
-        """Fetch team record from ESPN API."""
-        # This is a simplified implementation; a more robust solution would cache team data
-        try:
-            sport = 'baseball' if league == 'mlb' else 'football' if league in ['nfl', 'college-football'] else 'basketball'
-            
-            # Use a more specific endpoint for college sports
-            if league == 'college-football':
-                url = f"https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams/{team_abbr}"
-            else:
-                url = f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/teams/{team_abbr}"
-
-            response = requests.get(url, timeout=self.request_timeout)
-            response.raise_for_status()
-            data = response.json()
-            
-            
-            # Different path for college sports records
-            if league == 'college-football':
-                record_items = data.get('team', {}).get('record', {}).get('items', [])
-                if record_items:
-                    return record_items[0].get('summary', 'N/A')
-                else:
-                    return 'N/A'
-            else:
-                record = data.get('team', {}).get('record', {}).get('summary', 'N/A')
-                return record
-
-        except Exception as e:
-            logger.error(f"Error fetching record for {team_abbr} in league {league}: {e}")
-            return "N/A"
 
     def _fetch_team_rankings(self, league_key: str = 'ncaa_fb') -> Dict[str, int]:
         """Fetch current team rankings from ESPN API for NCAA football or basketball."""
@@ -873,6 +803,13 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             self.logger.info(f"Using cached odds from ESPN for {cache_key}")
             return cached_data
 
+        skip_until = getattr(self, '_skip_network_until', 0.0)
+        if time.monotonic() < skip_until:
+            self.logger.debug(
+                "Skipping odds fetch for %s: a recent request failed, holding off "
+                "for another %.0fs", cache_key, skip_until - time.monotonic())
+            return self.cache_manager.get_with_auto_strategy(cache_key)
+
         self.logger.info(f"Cache miss - fetching fresh odds from ESPN for {cache_key}")
         
         try:
@@ -889,9 +826,13 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             url = f"{self.base_url}/{sport}/leagues/{espn_league}/events/{event_id}/competitions/{event_id}/odds"
             self.logger.info(f"Requesting odds from URL: {url}")
             
-            response = requests.get(url, timeout=self.request_timeout)
+            # A bare requests.get identified itself as python-requests/x.y,
+            # which ESPN has rejected; core's session sends the project UA.
+            session = getattr(self, 'session', None) or requests
+            response = session.get(url, timeout=self._ODDS_REQUEST_TIMEOUT)
             response.raise_for_status()
             raw_data = response.json()
+            self._skip_network_until = 0.0  # reachable again
             
             self.logger.debug(f"Received raw odds data from ESPN: {json.dumps(raw_data, indent=2)}")
             
@@ -912,7 +853,11 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             return odds_data
 
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"Error fetching odds from ESPN API for {cache_key}: {e}")
+            self._skip_network_until = time.monotonic() + self._FAILURE_COOLDOWN
+            self.logger.error(
+                "Error fetching odds from ESPN API for %s: %s. Holding off on odds "
+                "for %.0fs so a slate of games does not pay this timeout each.",
+                cache_key, e, self._FAILURE_COOLDOWN)
         except json.JSONDecodeError:
             self.logger.error(f"Error decoding JSON response from ESPN API for {cache_key}.")
         
@@ -1111,6 +1056,14 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
     # How many extra games to price when show_odds_only is on, so the filter
     # has alternatives when the nearest games have no lines posted yet.
     _ODDS_CANDIDATE_HEADROOM = 3
+
+    # Odds requests match core BaseOddsManager.get_odds: its identifying
+    # session, a 5s timeout (data_settings.request_timeout, 30s by default,
+    # is for the schedule fetch), and after a failure no further odds
+    # requests for _FAILURE_COOLDOWN seconds, so one unreachable ESPN does
+    # not cost a timeout per game.
+    _ODDS_REQUEST_TIMEOUT = 5
+    _FAILURE_COOLDOWN = 60.0
 
     def _collection_limit(self) -> int:
         """How many games the schedule pass must keep before odds are attached.
@@ -1560,10 +1513,11 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                                         if team in team_games_found and team_games_found[team] < max_games:
                                             team_games_found[team] += 1
                     # Stop if we have enough games for the league (when not showing favorite teams only)
-                    if not self.show_favorite_teams_only and max_games_per_league and games_found >= max_games_per_league:
+                    if (not self.show_favorite_teams_only and max_games_per_league
+                            and games_found >= self._collection_limit()):
                         break
                 except requests.exceptions.HTTPError as http_err:
-                    status_code = http_err.response.status_code if http_err.response else None
+                    status_code = http_err.response.status_code if http_err.response is not None else None
                     if status_code == 404:
                         logger.debug(f"No games found for {league} on {date} (404)")
                     elif status_code == 503:
@@ -1580,7 +1534,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                     logger.warning(f"Connection error fetching games for {league} on {date} - network may be unavailable")
                 except Exception as e:
                     logger.error(f"Unexpected error fetching games for {league_config.get('league', 'unknown')} on {date}: {e}", exc_info=True)
-            if not self.show_favorite_teams_only and max_games_per_league and games_found >= max_games_per_league:
+            if (not self.show_favorite_teams_only and max_games_per_league
+                            and games_found >= self._collection_limit()):
                 break
         self._attach_odds_to_candidates(all_games, league_config)
         return all_games
@@ -1893,8 +1848,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
 
     def _create_game_display(self, game: Dict[str, Any]) -> Image.Image:
         """Create a display image for a game in the new format."""
-        width = self.display_manager.matrix.width
-        height = self.display_manager.matrix.height
+        width = self.display_manager.width
+        height = self.display_manager.height
         
         # Fit logos inside the panel. This used to be int(height * 1.2), which
         # with the (height - logo_size) // 2 centering below resolved to a
@@ -2448,7 +2403,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             return
 
         gap_width = 24  # Gap between games
-        height = self.display_manager.matrix.height
+        height = self.display_manager.height
         
         # Use ScrollHelper to create the scrolling image
         # ScrollHelper automatically adds display_width padding at the start
@@ -2460,7 +2415,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         
         # Add white vertical bars between games for visual separation
         # ScrollHelper places items with gaps, so we need to find where to add bars
-        display_width = self.display_manager.matrix.width
+        display_width = self.display_manager.width
         current_x = display_width  # Start after initial padding
         
         for idx, img in enumerate(game_images):
@@ -2526,44 +2481,16 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
     # Dynamic duration calculation is now handled by ScrollHelper
 
     def get_dynamic_duration(self) -> int:
-        """Get the calculated dynamic duration for display.
+        """The dynamic duration computed when the strip was last built.
 
-        Returns cached duration during active scrolling to prevent race conditions.
-        Only fetches new data when not actively scrolling.
+        Cached data only. This used to fetch games, odds and rankings and
+        rebuild the strip (logo downloads included) under _update_lock whenever
+        no strip had been built -- and it is reached through
+        get_display_duration() from the render loop, Vegas and get_info() (web
+        UI polling), so off-season, with no games, every call went to the
+        network. update() and the background rebuild in display() fetch; this
+        only reports.
         """
-        current_time = time.time()
-
-        # Return cached duration if scrolling is active and cache is fresh (5 sec)
-        if self._cached_dynamic_duration is not None:
-            cache_age = current_time - self._duration_cache_time
-            is_scrolling = hasattr(self, 'scroll_helper') and self.scroll_helper.scroll_position > 0
-            if cache_age < 5.0 and is_scrolling:
-                logger.debug(f"Returning cached duration: {self._cached_dynamic_duration}s (cache age: {cache_age:.1f}s)")
-                return self._cached_dynamic_duration
-
-        # If we don't have a valid dynamic duration yet (total_scroll_width is 0),
-        # try to update the data first, but only if not actively scrolling
-        if self.total_scroll_width == 0 and self.is_enabled:
-            is_scrolling = hasattr(self, 'scroll_helper') and self.scroll_helper.scroll_position > 0
-            if not is_scrolling:
-                logger.debug("get_dynamic_duration called but total_scroll_width is 0, attempting update...")
-                try:
-                    # Use lock to prevent concurrent modifications
-                    with self._update_lock:
-                        # Force an update to get the data and calculate proper duration
-                        self.games_data = self._fetch_upcoming_games()
-                        self.scroll_helper.reset_scroll()
-                        self.current_game_index = 0
-                        self._create_ticker_image()
-                        logger.debug(f"Force update completed, total_scroll_width: {self.total_scroll_width}px")
-                except Exception as e:
-                    logger.exception(f"Error updating odds ticker for dynamic duration: {e}")
-
-        # Cache the duration
-        self._cached_dynamic_duration = self.dynamic_duration
-        self._duration_cache_time = current_time
-
-        logger.debug(f"get_dynamic_duration called, returning: {self.dynamic_duration}s")
         return self.dynamic_duration
 
     def supports_dynamic_duration(self) -> bool:
@@ -2621,112 +2548,83 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         self._end_reached_logged = False
 
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
-        """
-        Handle configuration changes, particularly for dynamic duration settings.
+        """Apply a saved configuration without a restart.
 
-        Args:
-            new_config: The new plugin configuration dictionary
+        This used to update some display options only, re-apply speed through
+        the legacy set_scroll_speed/set_scroll_delay/set_target_fps setters, and
+        skip BasePlugin.on_config_change. The setters cleared the resolver's
+        fixed whole-pixel step while _scroll_settings kept the old frame hold,
+        so after any save the ticker paced differently until a restart; league,
+        favourite-team and filter changes were ignored; and self.enabled went
+        stale.
         """
-        # Update the plugin's config reference
-        old_config = self.config.copy() if self.config else {}
-        self.config = new_config
+        if hasattr(super(), 'on_config_change'):
+            super().on_config_change(new_config)
+        else:  # running outside LEDMatrix (fallback BasePlugin)
+            self.config = new_config or {}
+        new_config = self.config
         self.odds_ticker_config = new_config
+        self.is_enabled = new_config.get('enabled', self.is_enabled)
 
-        # Get nested config sections (support both old flat and new nested structure)
-        display_options = new_config.get('display_options', {})
-        old_display_options = old_config.get('display_options', {})
+        display_options = new_config.get('display_options', {}) or {}
 
-        # Check if dynamic duration settings changed
-        old_dynamic = self._get_config_value(old_display_options, 'dynamic_duration', True, old_config)
-        new_dynamic = self._get_config_value(display_options, 'dynamic_duration', True, new_config)
+        def get_config(key, default):
+            return self._get_config_value(display_options, key, default, new_config)
 
-        if isinstance(old_dynamic, dict):
-            old_enabled = old_dynamic.get('enabled', True)
-        else:
-            old_enabled = old_dynamic
+        dynamic = get_config('dynamic_duration', True)
+        self.dynamic_duration_enabled = (dynamic.get('enabled', True)
+                                         if isinstance(dynamic, dict) else dynamic)
+        self.min_duration = get_config('min_duration', 30)
+        self.max_duration = get_config('max_duration', 300)
+        self.duration_buffer = get_config('duration_buffer', 0.1)
+        self.scroll_helper.set_dynamic_duration_settings(
+            enabled=self.dynamic_duration_enabled,
+            min_duration=self.min_duration,
+            max_duration=self.max_duration,
+            buffer=self.duration_buffer,
+        )
 
-        if isinstance(new_dynamic, dict):
-            new_enabled = new_dynamic.get('enabled', True)
-        else:
-            new_enabled = new_dynamic
+        # Speed and frame hold through the shared resolver, exactly as at load.
+        self._apply_scroll_config()
 
-        if old_enabled != new_enabled:
-            self.logger.info(
-                "Dynamic duration %s for odds-ticker plugin",
-                "enabled" if new_enabled else "disabled"
+        self.display_duration = get_config('display_duration', 30)
+        self.loop = get_config('loop', True)
+        self.show_channel_logos = get_config('show_channel_logos', True)
+        self.broadcast_logo_height_ratio = get_config('broadcast_logo_height_ratio', 0.8)
+        self.broadcast_logo_max_width_ratio = get_config('broadcast_logo_max_width_ratio', 0.8)
+
+        self._load_filter_settings()
+        self._load_league_configs()
+
+        # Leagues, favourites and filters decide which games are fetched, so
+        # refetch: display() sees the elapsed interval and defers the refresh
+        # off the render thread.
+        self.last_update = 0
+        self._cached_dynamic_duration = None
+        self.logger.info("Odds ticker configuration reloaded")
+
+    def _apply_scroll_config(self) -> None:
+        """Resolve the scroll speed through core's shared resolver and apply it.
+
+        display_options.scroll_speed / scroll_delay (px per step, s per step),
+        with the resolver's fallbacks for the deprecated display.* and root
+        shapes. Used at load and on every config save, so a save paces the
+        ticker exactly as a restart would.
+        """
+        display_options = self.odds_ticker_config.get('display_options', {}) or {}
+        # Kept for get_info().
+        self.scroll_speed = display_options.get('scroll_speed', 1.0)
+        self.scroll_delay = display_options.get('scroll_delay', 0.02)
+        if _scroll_config is not None:
+            self._scroll_settings = _scroll_config.configure(
+                self.scroll_helper,
+                plugin_config=self.odds_ticker_config,
+                global_config=getattr(self, 'global_config', {}) or {},
+                display_manager=self.display_manager,
+                plugin_logger=self.logger,
             )
-
-        # Update tournament seed display setting
-        plugin_leagues = new_config.get('leagues', {})
-        ncaam_config = plugin_leagues.get('ncaam_basketball', {})
-        self.show_seeds_in_tournament = ncaam_config.get('show_seeds_in_tournament', True)
-
-        # Update dynamic duration settings from config (support both old and new structure)
-        self.dynamic_duration_enabled = self._get_config_value(display_options, 'dynamic_duration', True, new_config)
-        if isinstance(self.dynamic_duration_enabled, dict):
-            self.dynamic_duration_enabled = self.dynamic_duration_enabled.get('enabled', True)
-
-        self.min_duration = self._get_config_value(display_options, 'min_duration', 30, new_config)
-        self.max_duration = self._get_config_value(display_options, 'max_duration', 300, new_config)
-        self.duration_buffer = self._get_config_value(display_options, 'duration_buffer', 0.1, new_config)
-        
-        # Update ScrollHelper with new settings
-        if hasattr(self, 'scroll_helper') and self.scroll_helper:
-            self.scroll_helper.set_dynamic_duration_settings(
-                enabled=self.dynamic_duration_enabled,
-                min_duration=self.min_duration,
-                max_duration=self.max_duration,
-                buffer=self.duration_buffer
-            )
-            self.logger.debug(
-                "Updated ScrollHelper dynamic duration settings: enabled=%s, min=%ds, max=%ds, buffer=%.1f%%",
-                self.dynamic_duration_enabled,
-                self.min_duration,
-                self.max_duration,
-                self.duration_buffer * 100
-            )
-
-        # Update scroll speed and delay settings
-        display_config = new_config.get('display', {})
-
-        # Read new scroll settings (support both old and new config structure)
-        if display_options and ('scroll_speed' in display_options or 'scroll_delay' in display_options):
-            new_scroll_speed = display_options.get('scroll_speed', self.scroll_speed)
-            new_scroll_delay = display_options.get('scroll_delay', self.scroll_delay)
-        elif display_config and ('scroll_speed' in display_config or 'scroll_delay' in display_config):
-            new_scroll_speed = display_config.get('scroll_speed', self.scroll_speed)
-            new_scroll_delay = display_config.get('scroll_delay', self.scroll_delay)
-        else:
-            new_scroll_speed = new_config.get('scroll_speed', self.scroll_speed)
-            new_scroll_delay = new_config.get('scroll_delay', self.scroll_delay)
-
-        # Update scroll speed if changed
-        if new_scroll_speed != self.scroll_speed:
-            self.set_scroll_speed(new_scroll_speed)
-
-        # Update scroll delay if changed
-        if new_scroll_delay != self.scroll_delay:
-            self.set_scroll_delay(new_scroll_delay)
-
-        # Update target_fps
-        new_target_fps = self._get_config_value(display_options, 'target_fps', self.target_fps, new_config)
-        if new_target_fps != self.target_fps:
-            self.target_fps = new_target_fps
-            if hasattr(self, 'scroll_helper') and self.scroll_helper and hasattr(self.scroll_helper, 'set_target_fps'):
-                self.scroll_helper.set_target_fps(self.target_fps)
-            self.logger.info(f"Target FPS updated to: {self.target_fps}")
-
-        # Update loop setting
-        new_loop = self._get_config_value(display_options, 'loop', self.loop, new_config)
-        if new_loop != self.loop:
-            self.loop = new_loop
-            self.logger.info(f"Loop setting updated to: {self.loop}")
-
-        # Update show_channel_logos
-        new_show_logos = self._get_config_value(display_options, 'show_channel_logos', self.show_channel_logos, new_config)
-        if new_show_logos != self.show_channel_logos:
-            self.show_channel_logos = new_show_logos
-            self.logger.info(f"Show channel logos updated to: {self.show_channel_logos}")
+        else:  # unreachable under the manifest floor (core 3.4.0)
+            self._scroll_settings = None
 
     def _scroll_frame_hold(self) -> int:
         """Refreshes to hold each frame for, from the resolved scroll settings.
@@ -3084,8 +2982,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                     logger.info("Odds ticker reached end - scroll complete")
                     self._end_reached_logged = True
                 # Signal that scrolling has stopped
-                if hasattr(self.display_manager, 'set_scrolling_state'):
-                    self.display_manager.set_scrolling_state(False)
+                self.display_manager.set_scrolling_state(False)
             
             # Get the visible portion of the scrolling image
             visible_image = self.scroll_helper.get_visible_portion()
@@ -3095,13 +2992,12 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                 self._display_fallback_message()
                 return
             
-            # Signal scrolling state
-            if hasattr(self.display_manager, 'set_scrolling_state'):
-                if self.loop or not self.scroll_helper.is_scroll_complete():
-                    self.display_manager.set_scrolling_state(
-                        True, frame_hold=self._scroll_frame_hold())
-                else:
-                    self.display_manager.set_scrolling_state(False)
+            # Signal scrolling state, with the frame hold the resolver reports
+            if self.loop or not self.scroll_helper.is_scroll_complete():
+                self.display_manager.set_scrolling_state(
+                    True, frame_hold=self._scroll_frame_hold())
+            else:
+                self.display_manager.set_scrolling_state(False)
             
             # Update dynamic duration from ScrollHelper
             self.dynamic_duration = self.scroll_helper.get_dynamic_duration()
@@ -3109,8 +3005,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             # Display the visible portion (use paste like leaderboard for better performance)
             if visible_image:
                 # Ensure display_manager.image exists and is the right size
-                matrix_width = self.display_manager.matrix.width
-                matrix_height = self.display_manager.matrix.height
+                matrix_width = self.display_manager.width
+                matrix_height = self.display_manager.height
                 if not hasattr(self.display_manager, 'image') or self.display_manager.image is None:
                     self.display_manager.image = Image.new('RGB', (matrix_width, matrix_height), (0, 0, 0))
                 elif self.display_manager.image.size != (matrix_width, matrix_height):
@@ -3209,8 +3105,10 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
     def _display_fallback_message(self):
         """Display a fallback message when no games data is available."""
         try:
-            width = self.display_manager.matrix.width
-            height = self.display_manager.matrix.height
+            # Nothing is scrolling while the placeholder is up.
+            self.display_manager.set_scrolling_state(False)
+            width = self.display_manager.width
+            height = self.display_manager.height
             
             logger.debug(f"Displaying fallback message on {width}x{height} display")
             
@@ -3218,11 +3116,20 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             image = Image.new('RGB', (width, height), color=(50, 50, 50))  # Dark gray instead of black
             draw = _pixel_draw(image)
             
-            # Draw a simple message with larger font
-            message = "No odds data"
+            # Fit the panel. PressStart2P advances 8px a glyph, so "No odds
+            # data" is 96px and ran off both edges of a 64px panel. Prefer a
+            # shorter wording that fits, then truncate; one column is kept
+            # free on each side for the outline.
             font = self.fonts['large']  # Use large font for better visibility
+            message = "No odds data"
+            for candidate in ("No odds data", "No odds"):
+                message = candidate
+                if draw.textlength(candidate, font=font) <= width - 2:
+                    break
+            while message and draw.textlength(message, font=font) > width - 2:
+                message = message[:-1]
             text_width = draw.textlength(message, font=font)
-            text_x = (width - text_width) // 2
+            text_x = max(1, int((width - text_width) // 2))
             text_y = (height - font.size) // 2
             
             logger.debug(f"Drawing fallback message: '{message}' at position ({text_x}, {text_y})")
@@ -3244,43 +3151,6 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         """Get display duration from config."""
         return self.get_dynamic_duration()
 
-    def set_scroll_speed(self, speed: float) -> None:
-        """Set the scroll speed (pixels per frame, 0.5-5.0)."""
-        # Clamp to valid range
-        self.scroll_speed = max(0.5, min(5.0, speed))
-        self.logger.info(f"Scroll speed set to: {self.scroll_speed} pixels/frame")
-        
-        # Update ScrollHelper based on current mode
-        if hasattr(self.scroll_helper, 'frame_based_scrolling') and self.scroll_helper.frame_based_scrolling:
-            # Frame-based mode: set pixels per frame directly
-            self.scroll_helper.set_scroll_speed(self.scroll_speed)
-            # Log effective pixels per second
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 50
-            self.logger.info(f"Effective scroll speed: {pixels_per_second:.1f} px/s")
-        else:
-            # Time-based mode: convert to pixels per second
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 20
-            self.scroll_helper.set_scroll_speed(pixels_per_second)
-    
-    def set_scroll_delay(self, delay: float) -> None:
-        """Set the scroll delay (seconds between frames, 0.001-0.1)."""
-        # Clamp to valid range
-        self.scroll_delay = max(0.001, min(0.1, delay))
-        self.logger.info(f"Scroll delay set to: {self.scroll_delay}s")
-        
-        # Update ScrollHelper
-        self.scroll_helper.set_scroll_delay(self.scroll_delay)
-        
-        # Recalculate pixels per second if in time-based mode
-        if hasattr(self.scroll_helper, 'frame_based_scrolling') and self.scroll_helper.frame_based_scrolling:
-            # Frame-based mode: log effective pixels per second
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 50
-            self.logger.info(f"Effective scroll speed: {pixels_per_second:.1f} px/s ({self.scroll_speed} px/frame at {1.0/self.scroll_delay:.0f} FPS)")
-        else:
-            # Time-based mode: recalculate pixels per second
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 20
-            self.scroll_helper.set_scroll_speed(pixels_per_second)
-    
     def get_info(self) -> Dict[str, Any]:
         """Return plugin info for web UI."""
         info = {
