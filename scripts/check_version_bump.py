@@ -156,7 +156,14 @@ def load_base(pid: str, base: str) -> dict | None:
         if "does not exist" in err or "exists on disk, but not in" in err:
             return None
         raise RuntimeError(proc.stderr.strip() or f"git show failed for {pid}")
-    return json.loads(proc.stdout)
+    try:
+        return json.loads(proc.stdout)
+    except ValueError as e:
+        # A base manifest that isn't valid JSON has no comparable version. Treat
+        # it like a new plugin (rule 1 only) so the PR that repairs it can pass.
+        print(f"NOTE {pid}: base manifest is not valid JSON ({e}); "
+              f"no comparable base version, checking version sync only")
+        return None
 
 
 def run_all() -> int:

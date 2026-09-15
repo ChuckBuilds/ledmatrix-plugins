@@ -123,7 +123,18 @@ jobs:
               '' | *[!a-z0-9._-]*) echo "::error::invalid plugin id '$pid'"; exit 1 ;;
             esac
           done
+          # Exit 2 is "skipped, and said why" (the base manifest could not be
+          # read, e.g. git unavailable) -- a notice, not a red step, same as
+          # the guard loop below. Anything else nonzero is a real failure.
+          set +e
           python scripts/check_version_bump.py --base "$BASE_SHA" $IDS
+          status=$?
+          set -e
+          case "$status" in
+            0) ;;
+            2) echo "::notice::version bump check skipped (exit 2); see the log above" ;;
+            *) exit "$status" ;;
+          esac
 
       # The floor the store and loader actually read is versions[0]. Requiring
       # the new spelling only on plugins that are already being bumped lets the

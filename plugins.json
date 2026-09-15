@@ -27,7 +27,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.0.0"
+      "latest_version": "1.3.0"
     },
     {
       "id": "7-segment-clock",
@@ -439,7 +439,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.13.5"
+      "latest_version": "1.14.0"
     },
     {
       "id": "march-madness",
@@ -487,7 +487,7 @@
       "last_updated": "2026-09-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.0.1"
+      "latest_version": "3.1.0"
     },
     {
       "id": "mqtt-notifications",
@@ -681,7 +681,7 @@
       "last_updated": "2026-09-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "4.0.0"
+      "latest_version": "3.1.0"
     },
     {
       "id": "pga-tour-leaderboard",

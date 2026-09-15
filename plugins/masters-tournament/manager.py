@@ -100,6 +100,9 @@ class MastersTournamentPlugin(BasePlugin):
         self._schedule_data: List[Dict] = []
         self._last_update = 0
         self._update_interval = config.get("update_interval", 30)
+        # player id (or url) -> monotonic time before which a failed headshot
+        # download is not retried; see _prefetch_headshots.
+        self._headshot_retry_at: Dict[str, float] = {}
 
         # How many days after the final round to keep showing tournament data
         # before the countdown takes over. Default: 1 day.
@@ -116,9 +119,10 @@ class MastersTournamentPlugin(BasePlugin):
 
         # The core reads plugin.modes exactly once, when the plugin is
         # registered, so a list rebuilt later by phase never reaches the
-        # rotation. Register every mode up front and gate by phase in
-        # display() instead: an out-of-phase mode returns False and is skipped.
-        self.modes = list(self.ALL_MODES)
+        # rotation. Register every mode up front, in phase priority order (see
+        # _registered_modes), and gate by phase in display() instead: an
+        # out-of-phase mode returns False and the core skips straight past it.
+        self.modes = self._registered_modes()
         self._phase_modes = self._build_enabled_modes()
         self._phase_checked_at = time.time()
 
@@ -177,8 +181,8 @@ class MastersTournamentPlugin(BasePlugin):
             f"{len(self._phase_modes)} modes, phase: {self._tournament_phase}"
         )
 
-    # Every mode the manifest declares, in manifest order. This is what the
-    # core registers; PHASE_MODES below decides which of them draw right now.
+    # Every mode the manifest declares, in manifest order. _registered_modes()
+    # orders them for the core; PHASE_MODES below decides which draw right now.
     ALL_MODES = (
         "masters_leaderboard",
         "masters_player_card",
@@ -196,6 +200,9 @@ class MastersTournamentPlugin(BasePlugin):
         "masters_course_overview",
     )
 
+    # How long a failed headshot download waits before it is tried again.
+    HEADSHOT_RETRY_SECONDS = 600
+
     # display_modes.<key>.duration settings and their schema defaults. Modes
     # not listed here use the top-level display_duration.
     MODE_DURATION_DEFAULTS = {
@@ -208,13 +215,17 @@ class MastersTournamentPlugin(BasePlugin):
     }
 
     # ── Phase-aware mode definitions ──
-    # Each phase lists modes in priority order (shown most → least)
-    # The framework rotates through these, so order = screen time priority
+    # Each phase lists the modes that draw during it, in priority order.
+    # display() skips any registered mode not in the current phase's list.
+    # The core rotates through each mode name once per cycle (it
+    # de-duplicates plugin.modes), so a repeated entry does not add rotation
+    # screen time; repeats only weight an on-demand request for this plugin,
+    # which cycles the registered list as-is. See _registered_modes().
 
     PHASE_MODES = {
         "off-season": [
-            # masters_countdown appears 3x out of 10 entries (~30% screen time)
-            # so it dominates the rotation after the post-tournament window closes.
+            # masters_countdown is listed 3x: in the normal rotation it still
+            # gets one slot per cycle; an on-demand request shows it 3 of 10.
             "masters_countdown",
             "masters_countdown",
             "masters_fun_facts",
@@ -260,10 +271,10 @@ class MastersTournamentPlugin(BasePlugin):
         "tournament-live": [
             "masters_leaderboard",
             "masters_player_card",
-            "masters_leaderboard",       # Show leaderboard twice per cycle
+            "masters_leaderboard",       # repeated: weights on-demand only
             "masters_field_overview",
             "masters_live_action",
-            "masters_leaderboard",       # And a third time - it's the star
+            "masters_leaderboard",       # repeated: weights on-demand only
             "masters_featured_holes",
             "masters_amen_corner",
             "masters_schedule",
@@ -295,17 +306,48 @@ class MastersTournamentPlugin(BasePlugin):
         ],
     }
 
+    @classmethod
+    def _registered_modes(cls) -> List[str]:
+        """The list handed to the core as plugin.modes, built from PHASE_MODES.
+
+        The core reads plugin.modes once, so it must name every mode any phase
+        can show. Its first occurrences set the rotation order (the core keeps
+        one slot per name), and the full list, repeats included, is what an
+        on-demand request cycles through.
+
+        The off-season list goes first, verbatim -- it covers most of the
+        year, so a board rotates exactly as a 3.0.0 board loaded off-season
+        did. Then, phase by phase starting with tournament-live, each mode is
+        appended until it appears as many times as that phase lists it. Out of
+        phase, display() returns False and the core moves straight on (it logs
+        one INFO line per skipped mode per rotation).
+        """
+        first = ("off-season", "tournament-live")
+        phases = list(first) + [p for p in cls.PHASE_MODES if p not in first]
+        registered: List[str] = []
+        for phase in phases:
+            wanted: Dict[str, int] = {}
+            for mode in cls.PHASE_MODES[phase]:
+                wanted[mode] = wanted.get(mode, 0) + 1
+                if registered.count(mode) < wanted[mode]:
+                    registered.append(mode)
+        for mode in cls.ALL_MODES:
+            if mode not in registered:
+                registered.append(mode)
+        return registered
+
     def _meta_dates(self):
         """Return (start_date, end_date) from cached meta, or (None, None)."""
         meta = self._tournament_meta or {}
         return meta.get("start_date"), meta.get("end_date")
 
     def _build_enabled_modes(self) -> List[str]:
-        """Build mode list based on current tournament phase and time of day.
+        """Modes that draw in the current tournament phase and time of day.
 
-        The framework rotates through self.modes, so this controls what
-        the user sees and in what order. Modes listed multiple times get
-        proportionally more screen time.
+        This is not what the core rotates through -- that is self.modes, fixed
+        at registration by _registered_modes(). It is the gate display()
+        checks: a registered mode missing from this list returns False and is
+        skipped. Per-mode ``enabled: false`` settings are applied here too.
         """
         meta_start, meta_end = self._meta_dates()
         phase = get_detailed_phase(
@@ -397,14 +439,15 @@ class MastersTournamentPlugin(BasePlugin):
             self.logger.error(f"Error updating leaderboard: {e}", exc_info=True)
 
         try:
-            self._prefetch_headshots()
-        except Exception as e:
-            self.logger.warning(f"Error prefetching headshots: {e}")
-
-        try:
             self._update_schedule()
         except Exception as e:
             self.logger.error(f"Error updating schedule: {e}", exc_info=True)
+
+        # After the schedule: a slow image host must not starve it.
+        try:
+            self._prefetch_headshots()
+        except Exception as e:
+            self.logger.warning(f"Error prefetching headshots: {e}")
 
         try:
             self._update_favorite_players()
@@ -505,11 +548,26 @@ class MastersTournamentPlugin(BasePlugin):
         The renderers only read the local copy, so this is where the network
         happens: player cards rotate through the top 5 and the Vegas strip
         shows the top 10.
+
+        Each download can block update() for its 5 s timeout, so a failure is
+        not retried for HEADSHOT_RETRY_SECONDS, and the first failure ends this
+        cycle's prefetch: an unreachable image host costs one timeout per
+        update, not ten.
         """
+        now = time.monotonic()
         for player in self._leaderboard_data[:10]:
-            self.logo_loader.download_player_headshot(
-                player.get("player_id", ""), player.get("headshot_url")
-            )
+            player_id = player.get("player_id", "")
+            url = player.get("headshot_url")
+            if not url or self.logo_loader._headshot_path(player_id, url) is None:
+                continue
+            key = player_id or url
+            if self._headshot_retry_at.get(key, 0.0) > now:
+                continue
+            if self.logo_loader.download_player_headshot(player_id, url):
+                self._headshot_retry_at.pop(key, None)
+                continue
+            self._headshot_retry_at[key] = now + self.HEADSHOT_RETRY_SECONDS
+            break
 
     def _update_schedule(self):
         """Update schedule data from API."""

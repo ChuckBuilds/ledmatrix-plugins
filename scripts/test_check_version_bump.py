@@ -134,9 +134,39 @@ else:
               gate.main(["--base", base, "q"]) == 0)
         check("CLI rejects an injected id",
               gate.main(["--base", base, "p;rm -rf"]) == 1)
+
+        # A base manifest that is not valid JSON has no comparable version.
+        # The PR repairing it must be able to pass (rule 1 still applies).
+        (root / "plugins" / "r").mkdir()
+        rmf = root / "plugins" / "r" / "manifest.json"
+        rmf.write_text('{"version": "1.0.0", "versions": [')
+        git(root, "add", "-A")
+        git(root, "commit", "-qm", "broken manifest")
+        broken_base = git(root, "rev-parse", "HEAD")
+        check("load_base treats an unparseable base manifest as no base",
+              gate.load_base("r", broken_base) is None)
+        rmf.write_text(json.dumps(m("1.0.1", "1.0.1", "1.0.0")))
+        check("CLI passes the PR that repairs a broken base manifest",
+              gate.main(["--base", broken_base, "r"]) == 0)
+        rmf.write_text(json.dumps(m("1.0.1", "1.0.0")))
+        check("... but still fails version sync on the repaired manifest",
+              gate.main(["--base", broken_base, "r"]) == 1)
     finally:
         gate.REPO_ROOT, gate.PLUGINS = original
         shutil.rmtree(root, ignore_errors=True)
+
+print("\nCI step reports exit 2 as a skip, not a failure")
+workflow = (gate.REPO_ROOT / ".github" / "workflows" / "test-plugins.yml").read_text(
+    encoding="utf-8")
+step = workflow.split("- name: Enforce version bump on changed plugins", 1)
+body = step[1].split("\n      - name:", 1)[0] if len(step) == 2 else ""
+check("version bump step exists", bool(body))
+check("step captures the script's status instead of running it bare",
+      "set +e" in body and "status=$?" in body)
+check("step turns status 2 into a notice",
+      "2) echo \"::notice::" in body)
+check("step still fails on any other nonzero status",
+      '*) exit "$status"' in body)
 
 print("\n%s" % ("FAILED: %d" % len(failures) if failures else "All checks passed"))
 sys.exit(1 if failures else 0)

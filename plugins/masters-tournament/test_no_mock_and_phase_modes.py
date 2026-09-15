@@ -210,10 +210,25 @@ def plugin_checks():
         plugin = m.MastersTournamentPlugin(
             "masters-tournament", config, FakeDisplay(), FakeCache(), None)
 
-        print("\nevery manifest mode is registered")
-        check("plugin.modes is the manifest's display_modes",
-              list(plugin.modes) == manifest["display_modes"],
-              "got %r" % list(plugin.modes))
+        print("\nevery manifest mode is registered, in phase priority order")
+        registered = list(plugin.modes)
+        check("plugin.modes covers exactly the manifest's display_modes",
+              set(registered) == set(manifest["display_modes"]),
+              "got %r" % registered)
+        # The core de-duplicates plugin.modes into the rotation (first
+        # occurrence wins), so this is the order the panel cycles in.
+        rotation = list(dict.fromkeys(registered))
+        off = list(dict.fromkeys(m.MastersTournamentPlugin.PHASE_MODES["off-season"]))
+        check("off-season rotates in the same order as a board loaded off-season on 3.0.0",
+              [x for x in rotation if x in off] == off, "got %r" % rotation)
+        for phase, modes in m.MastersTournamentPlugin.PHASE_MODES.items():
+            for mode in set(modes):
+                check("%s listed at least %dx for %s (on-demand weighting)"
+                      % (mode, modes.count(mode), phase),
+                      registered.count(mode) >= modes.count(mode))
+        check("off-season list is registered verbatim at the front",
+              registered[:len(m.MastersTournamentPlugin.PHASE_MODES["off-season"])]
+              == m.MastersTournamentPlugin.PHASE_MODES["off-season"])
 
         print("\nout-of-phase modes skip")
         plugin._tournament_meta = None
@@ -254,6 +269,42 @@ def plugin_checks():
         "no_such_player_for_test", "https://a.espncdn.com/i/headshots/golf/players/full/0.png")
     check("get_player_headshot makes no HTTP request", img_net.calls == 0,
           "http calls=%d" % img_net.calls)
+
+    print("\na failed headshot download backs off instead of retrying every update")
+    import tempfile
+    plugin.logo_loader.players_dir = Path(tempfile.mkdtemp())
+    plugin._headshot_retry_at.clear()
+    plugin._leaderboard_data = [
+        {"player_id": "9%d" % i,
+         "headshot_url": "https://a.espncdn.com/i/headshots/golf/players/full/9%d.png" % i}
+        for i in range(10)
+    ]
+    img_net.payload = None  # every image request fails
+    img_net.calls = 0
+    plugin._prefetch_headshots()
+    check("the first failure ends this update's prefetch (one timeout, not ten)",
+          img_net.calls == 1, "http calls=%d" % img_net.calls)
+    plugin._prefetch_headshots()
+    check("the failed player is not retried on the next update",
+          img_net.calls == 2 and len(plugin._headshot_retry_at) == 2,
+          "http calls=%d, backed off=%r" % (img_net.calls, sorted(plugin._headshot_retry_at)))
+    for key in plugin._headshot_retry_at:
+        plugin._headshot_retry_at[key] = 0.0  # retry window elapsed
+    img_net.calls = 0
+    plugin._prefetch_headshots()
+    check("after the retry window the download is tried again",
+          img_net.calls == 1, "http calls=%d" % img_net.calls)
+
+    order = []
+    plugin._last_update = 0
+    plugin.data_source.fetch_tournament_meta = lambda: None
+    plugin._update_leaderboard = lambda: order.append("leaderboard")
+    plugin._update_schedule = lambda: order.append("schedule")
+    plugin._prefetch_headshots = lambda: order.append("headshots")
+    plugin._update_favorite_players = lambda: None
+    plugin.update()
+    check("update() refreshes the schedule before prefetching headshots",
+          order.index("schedule") < order.index("headshots"), "order=%r" % order)
 
     print("\nper-mode duration settings are honoured")
     plugin._current_display_mode = "masters_leaderboard"

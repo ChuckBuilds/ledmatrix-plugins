@@ -20,7 +20,7 @@
       "version": "1.1.1",
       "released": "2026-09-15",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "position_x and position_y now move the clock, as the README always said: they were read and never used. The whole rendered frame is shifted by the offsets and clipped at the edges; the default 0/0 renders exactly as before. An unrecognised timezone string now logs a warning and falls back to the LEDMatrix timezone, then system time, instead of failing validate_config -- which made core refuse to load the plugin, so a typo blanked the clock."
+      "notes": "position_x and position_y now move the clock, as the README always said: they were read and never used. The whole rendered frame is shifted by the offsets and clipped at the edges; the default 0/0 renders exactly as before. The offsets are bounded to -256..256 in the schema and clamped to one panel size in code, so a large hand-edited value cannot push the clock arbitrarily far; a stored value outside -256..256 is flagged by schema validation (the plugin still loads). An unrecognised timezone string now logs a warning and falls back to the LEDMatrix timezone, then system time, instead of failing validate_config -- which made core refuse to load the plugin, so a typo blanked the clock."
     },
     {
       "version": "1.1.0",
@@ -36,13 +36,13 @@
       "released": "2026-07-21",
       "version": "1.0.8",
       "ledmatrix_min": "2.0.0",
-      "notes": "Actually stop the per-second flash. The previous fix only avoided a full hardware clear on unchanged frames, but it still called display_manager.clear() whenever the visible content changed \u2014 and clear() writes black straight to the panel's front buffer, so the panel blanked between the clear and the redraw on the core's ~1 Hz loop. With seconds shown that content changes every second, so it flashed every second (and once a minute otherwise). The clock now rebuilds each frame on a fresh in-memory buffer and lets update_display() swap it in atomically (SwapOnVSync); dirty-tracking skips the push when pixels are unchanged. No hardware clear, so the panel never blanks \u2014 whether or not seconds are shown."
+      "notes": "Actually stop the per-second flash. The previous fix only avoided a full hardware clear on unchanged frames, but it still called display_manager.clear() whenever the visible content changed — and clear() writes black straight to the panel's front buffer, so the panel blanked between the clear and the redraw on the core's ~1 Hz loop. With seconds shown that content changes every second, so it flashed every second (and once a minute otherwise). The clock now rebuilds each frame on a fresh in-memory buffer and lets update_display() swap it in atomically (SwapOnVSync); dirty-tracking skips the push when pixels are unchanged. No hardware clear, so the panel never blanks — whether or not seconds are shown."
     },
     {
       "released": "2026-07-19",
       "version": "1.0.7",
       "ledmatrix_min": "2.0.0",
-      "notes": "Fix the clock flashing/blinking periodically. The plugin now redraws its content on every render tick and only clears the buffer when the displayed time or date changes, instead of skipping frames \u2014 so the panel stays lit steadily regardless of update_interval. Also fit the time/AM-PM and date to the panel width so content no longer overflows the edge on narrow (64px-wide) matrices; the weekday and date are abbreviated only when the full text wouldn't fit, so wider panels are unchanged."
+      "notes": "Fix the clock flashing/blinking periodically. The plugin now redraws its content on every render tick and only clears the buffer when the displayed time or date changes, instead of skipping frames — so the panel stays lit steadily regardless of update_interval. Also fit the time/AM-PM and date to the panel width so content no longer overflows the edge on narrow (64px-wide) matrices; the weekday and date are abbreviated only when the full text wouldn't fit, so wider panels are unchanged."
     },
     {
       "released": "2026-07-17",

@@ -606,6 +606,11 @@ class SimpleClock(BasePlugin):
                 offset_y = int(self.pos_y or 0)
             except (TypeError, ValueError):
                 offset_x = offset_y = 0
+            # Clamp to one panel size either way: a larger stored value (the
+            # schema caps it, but config.json can be hand-edited) would only
+            # push the whole clock off-screen.
+            offset_x = max(-width, min(width, offset_x))
+            offset_y = max(-height, min(height, offset_y))
             if offset_x or offset_y:
                 shifted = Image.new('RGB', (width, height), (0, 0, 0))
                 shifted.paste(self.display_manager.image, (offset_x, offset_y))

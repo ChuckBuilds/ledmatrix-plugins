@@ -1,7 +1,7 @@
 {
   "id": "masters-tournament",
   "name": "Masters Tournament",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "Broadcast-quality Masters Tournament display with real ESPN player headshots, accurate Augusta National hole layouts, fun facts, past champions, live leaderboards, and pixel-perfect LED matrix rendering",
   "category": "sports",
   "author": "ChuckBuilds",
@@ -45,10 +45,10 @@
   },
   "versions": [
     {
-      "version": "3.0.1",
+      "version": "3.1.0",
       "released": "2026-09-15",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Stop presenting the mock leaderboard as real: it is used only with mock_data on, and when ESPN serves another event or a fetch fails with no good copy from the last day, the leaderboard modes skip. The fallback copy is stored without a ttl so it survives core 3.3.0's ttl-over-max_age rule. Register all fourteen modes with the core (it reads plugin.modes once) and skip out-of-phase ones in display(), so a Pi started off-season shows the leaderboard in Masters week. The countdown no longer fetches from display() and no longer shows NOW all off-season on stale meta; headshots download in update(), not while drawing. The six display_modes.<mode>.duration settings now set that mode's time on screen. VegasDisplayMode import guarded for cores before 3.1.0. Adds a manifest category."
+      "notes": "Mode registration changed: the core reads plugin.modes once, so a phase-built list never followed the calendar and a Pi started off-season never showed the leaderboard in Masters week. All fourteen modes are now registered, ordered from the phase lists (the off-season order first, so the off-season rotation is unchanged), and display() skips modes that are out of phase. Each skip makes the core log one INFO line (\"display() returned False for mode ...\") per rotation; that is expected. Repeated phase entries still weight an on-demand request; the core's normal rotation has always shown each mode once per cycle. The six display_modes.<mode>.duration settings now set that mode's time on screen, so with defaults the leaderboard shows for 25 s and featured holes for 15 s instead of display_duration (20 s). Stop presenting the mock leaderboard as real: it is used only with mock_data on, and when ESPN serves another event or a fetch fails with no good copy from the last day, the leaderboard modes skip. The fallback copy is stored without a ttl so it survives core 3.3.0's ttl-over-max_age rule. The countdown no longer fetches from display() and no longer shows NOW all off-season on stale meta. Headshots download in update(), not while drawing, after the schedule refresh; a failed download waits 10 minutes before retrying and ends that update's prefetch, so an unreachable image host costs one 5 s timeout per update instead of ten. VegasDisplayMode import guarded for cores before 3.1.0. Adds a manifest category."
     },
     {
       "version": "3.0.0",
