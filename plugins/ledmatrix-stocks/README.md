@@ -38,7 +38,12 @@ generated from it. The most-used keys, with their actual nesting:
 | Key | Default | Notes |
 |---|---|---|
 | `enabled` | `false` | Master switch |
-| `update_interval` | `600` | Seconds between Yahoo Finance fetches for stocks |
+| `update_interval` | `600` | Seconds between Yahoo Finance fetches for stocks (60–3600) |
+| `show_change` | `true` | Show the dollar change (`+1.25`) for stocks |
+| `show_percentage` | `true` | Show the percentage change (`(+0.8%)`) for stocks |
+| `api.timeout` | `10` | Seconds before a quote request gives up |
+| `api.retry_count` | `3` | Retries with backoff on a 429 or 5xx response |
+| `api.rate_limit_delay` | `0.1` | Seconds to pause between symbols while fetching |
 
 ### `display.*` — how the ticker scrolls
 
@@ -46,8 +51,8 @@ generated from it. The most-used keys, with their actual nesting:
 |---|---|---|
 | `display.display_mode` | `"scroll"` | `"scroll"` or `"switch"` |
 | `display.switch_duration` | `15` | Seconds per symbol in switch mode |
-| `display.scroll_speed` | `1.0` | Scroll speed multiplier |
-| `display.scroll_delay` | `0.02` | Per-step delay (smaller = smoother but more CPU) |
+| `display.scroll_speed` | `1.0` | Pixels moved per scroll step. Speed is `scroll_speed / scroll_delay` px/s (default 50), moved by the LEDMatrix core to the nearest speed the panel draws in whole pixels |
+| `display.scroll_delay` | `0.02` | Seconds per scroll step (smaller = faster) |
 | `display.toggle_chart` | `true` | Show an inline mini-chart per symbol |
 | `display.chart_width_px` | `64` | Mini-chart width in pixels — a fixed size that does not scale with the display width (`8`-`256`) |
 | `display.chart_height_px` | `32` | Mini-chart height in pixels — a fixed size that does not scale with the display height; clamped to the panel (`6`-`256`) |
@@ -63,16 +68,18 @@ generated from it. The most-used keys, with their actual nesting:
 |---|---|---|
 | `stocks.enabled` | `true` | Enable the stocks list |
 | `stocks.symbols` | `["ASTS","SCHD","INTC","NVDA","T","VOO","SMCI"]` | Yahoo Finance symbols — stocks, indexes (`^GSPC`), commodities (`GC=F`), share classes (`BRK-B`), non-US listings (`7203.T`). See [Symbol format](#symbol-format) |
-| `stocks.display_format` | `"{symbol}: ${price} ({change}%)"` | Placeholders: `{symbol}`, `{price}`, `{change}` |
 
 ### `crypto.*`
 
 | Key | Default | Notes |
 |---|---|---|
 | `crypto.enabled` | `false` | Enable the crypto list |
-| `crypto.update_interval` | `600` | Seconds between crypto fetches |
+| `crypto.update_interval` | `600` | Seconds a crypto quote is reused before it is fetched again. Set it below the top-level `update_interval` to refresh crypto more often than stocks |
 | `crypto.symbols` | `["BTC-USD","ETH-USD"]` | Coin pairs. A bare symbol (`BTC`) is quoted in USD; name another currency to override (`BTC-EUR`) |
-| `crypto.display_format` | `"{symbol}: ${price} ({change}%)"` | Same placeholders as stocks |
+| `crypto.show_change` | `true` | Show the dollar change for crypto |
+| `crypto.show_percentage` | `true` | Show the percentage change for crypto |
+
+Each entry is drawn as logo, symbol, price and change; the layout is fixed.
 
 ### `customization.*`
 
@@ -193,8 +200,11 @@ plugin: prices on one rotation slot, related headlines on another.
   raising `update_interval` usually fixes it.
 
 **Scroll feels choppy**
-- Lower `display.scroll_delay` (default 0.02) toward 0.01 for smoother
-  motion at the cost of CPU.
+- Speed is `display.scroll_speed / display.scroll_delay` px/s (default 50).
+  Slow speeds hold each frame for several panel refreshes, which reads as
+  stepping; lowering `display.scroll_delay` toward 0.01 (100 px/s, one pixel per
+  refresh on a 100Hz panel) moves it faster and more smoothly. The log line
+  `Scroll configured: …` shows the speed actually used.
 - Or switch `display.display_mode` to `"switch"` to step through one
   symbol at a time instead of scrolling.
 

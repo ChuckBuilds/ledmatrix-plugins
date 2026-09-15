@@ -22,18 +22,16 @@ except ImportError:  # core predates the shared helper
 # Import our modular components
 from data_fetcher import StockDataFetcher
 from display_renderer import StockDisplayRenderer
-from chart_renderer import StockChartRenderer
 from config_manager import StockConfigManager
 
 
 class StockTickerPlugin(BasePlugin):
     """
     Stock and cryptocurrency ticker plugin with scrolling display.
-    
+
     This refactored version uses modular components:
     - StockDataFetcher: Handles API calls and data fetching
-    - StockDisplayRenderer: Handles display creation and layout
-    - StockChartRenderer: Handles chart drawing functionality
+    - StockDisplayRenderer: Handles display creation, layout and the mini chart
     - StockConfigManager: Handles configuration management
     """
     
@@ -46,22 +44,9 @@ class StockTickerPlugin(BasePlugin):
         self.display_width = display_manager.width
         self.display_height = display_manager.height
         
-        # Initialize modular components
-        self.config_manager = StockConfigManager(config, self.logger)
-        self.data_fetcher = StockDataFetcher(self.config_manager, self.cache_manager, self.logger)
-        self.display_renderer = StockDisplayRenderer(
-            self.config_manager.plugin_config, 
-            self.display_width, 
-            self.display_height, 
-            self.logger
-        )
-        self.chart_renderer = StockChartRenderer(
-            self.config_manager.plugin_config,
-            self.display_width,
-            self.display_height,
-            self.logger
-        )
-        
+        # Initialize modular components (rebuilt by on_config_change)
+        self._build_components(config)
+
         # Plugin state
         self.stock_data = {}
         self.current_stock_index = 0
@@ -73,24 +58,8 @@ class StockTickerPlugin(BasePlugin):
         self._switch_cycle_started = False
         self._switch_stocks_shown = 0
         
-        # Expose enable_scrolling for display controller FPS detection
-        self.enable_scrolling = self.config_manager.enable_scrolling
         self.last_update_time = 0
-        
-        # Initialize scroll helper
-        self.scroll_helper = self.display_renderer.get_scroll_helper()
-        
-        # Configure dynamic duration settings
-        self.scroll_helper.set_dynamic_duration_settings(
-            enabled=self.config_manager.dynamic_duration,
-            min_duration=int(self.config_manager.min_duration),
-            max_duration=int(self.config_manager.max_duration),
-            buffer=self.config_manager.duration_buffer
-        )
 
-        self.global_config = config.get('global', {}) or {}
-        self._configure_scroll(config)
-        
         self.logger.info("Stock ticker plugin initialized - %dx%d", 
                         self.display_width, self.display_height)
     
@@ -103,50 +72,96 @@ class StockTickerPlugin(BasePlugin):
         settings = getattr(self, "_scroll_settings", None)
         return getattr(settings, "frame_hold", 1) if settings else 1
 
-    def _configure_scroll(self, config):
-        """Apply scroll pacing via the shared helper, or the legacy path.
+    def _build_components(self, config: Dict[str, Any]) -> None:
+        """Build the config, fetch and render components from ``config``.
 
-        The helper resolves every config shape in one place, snaps the speed to
-        one the panel can render in whole pixels, and sets the frame hold that
-        lets speeds below one pixel per refresh stay crisp. Passing
-        display_manager matters: without it the hold cannot be applied and slow
-        speeds fall back to fractional pixels.
+        Called from __init__ and on_config_change, so a web-UI save rebuilds
+        them exactly as a restart does.
         """
-        if _scroll_config is not None:
-            self._scroll_settings = _scroll_config.configure(
-                self.scroll_helper,
-                plugin_config=config,
-                global_config=self.global_config,
-                display_manager=self.display_manager,
-                plugin_logger=self.logger,
-            )
-            return
+        self.config_manager = StockConfigManager(config, self.logger)
+        self.data_fetcher = StockDataFetcher(self.config_manager, self.cache_manager, self.logger)
+        self.display_renderer = StockDisplayRenderer(
+            self.config_manager.plugin_config,
+            self.display_width,
+            self.display_height,
+            self.logger
+        )
+        # Expose enable_scrolling for display controller FPS detection
+        self.enable_scrolling = self.config_manager.enable_scrolling
+        self.scroll_helper = self.display_renderer.get_scroll_helper()
+        self.global_config = config.get('global', {}) or {}
+        self._configure_scroll(config)
 
-        # Legacy path for cores without src.common.scroll_config. Kept because
-        # plugins update independently of the core and must not break on one
-        # that has not been upgraded yet.
-        self._scroll_settings = None
-        cfg = self.config_manager
-        pixels_per_second = (cfg.scroll_speed / cfg.scroll_delay
-                             if cfg.scroll_delay > 0 else cfg.scroll_speed * 100)
-        self.scroll_helper.set_scroll_speed(pixels_per_second)
-        self.scroll_helper.set_scroll_delay(cfg.scroll_delay)
-        target_fps = (self.global_config.get('target_fps')
-                      or self.global_config.get('scroll_target_fps', 100))
-        if hasattr(self.scroll_helper, 'set_target_fps'):
-            self.scroll_helper.set_target_fps(target_fps)
-        else:
-            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
-            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
-        self.logger.info(
-            "Scroll configured (legacy path): %.1f px/s", pixels_per_second)
+    def _configure_scroll(self, config):
+        """Resolve scroll pacing through the core's shared resolver.
+
+        The resolver reads display.scroll_speed / display.scroll_delay (pixels
+        per step, seconds per step), snaps the speed to one the panel can
+        render in whole pixels, and reports the frame hold that
+        _display_scrolling passes to set_scrolling_state. Passing
+        display_manager lets it see the panel's refresh rate. Nothing writes
+        the helper's speed or FPS afterwards.
+        """
+        self.scroll_helper.set_dynamic_duration_settings(
+            enabled=self.config_manager.dynamic_duration,
+            min_duration=int(self.config_manager.min_duration),
+            max_duration=int(self.config_manager.max_duration),
+            buffer=self.config_manager.duration_buffer
+        )
+        if _scroll_config is None:
+            # Unreachable on the 3.4.0 floor; the import stays guarded only
+            # because the module gate does not yet list scroll_config as
+            # released. The helper keeps its own default pacing.
+            self._scroll_settings = None
+            return
+        self._scroll_settings = _scroll_config.configure(
+            self.scroll_helper,
+            plugin_config=config,
+            global_config=self.global_config,
+            display_manager=self.display_manager,
+            plugin_logger=self.logger,
+        )
+
+    def _update_interval(self) -> float:
+        """Seconds between fetches: update_interval, or crypto.update_interval
+        when crypto is on and due sooner. Each quote is cached for its own
+        type's interval (data_fetcher), so the shorter cadence only re-fetches
+        the type that is due."""
+        interval = float(self.config_manager.update_interval)
+        if self.config_manager.crypto_symbols:
+            interval = min(interval, float(self.config_manager.crypto_update_interval))
+        return interval
+
+    def get_update_interval(self) -> Optional[float]:
+        """The configured interval, so the manifest's 600 is only a default.
+
+        Core prefers the manifest's update_interval over the plugin's config
+        unless the plugin answers here, so a user's shorter update_interval
+        was ignored. Attribute reads only: core calls this every tick.
+        """
+        return self._update_interval()
+
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply a web-UI save without a restart.
+
+        Rebuilds the components from the new config (symbols, fonts, colours,
+        chart), re-runs the scroll resolver, and schedules a fetch. The fetch
+        itself is left to update(): this runs on the web thread.
+        """
+        super().on_config_change(new_config)
+        old_fetcher = self.data_fetcher
+        self._build_components(self.config)
+        old_fetcher.cleanup()
+        self.reset_cycle_state()
+        self.last_update_time = 0  # the next update() fetches the new symbols
+        self.logger.info("Stock ticker config updated live")
 
     def update(self) -> None:
         """Update stock and crypto data."""
         current_time = time.time()
-        
+
         # Check if it's time to update
-        if current_time - self.last_update_time >= self.config_manager.update_interval:
+        if current_time - self.last_update_time >= self._update_interval():
             try:
                 self.logger.debug("Updating stock and crypto data")
                 fetched_data = self.data_fetcher.fetch_all_data()
@@ -167,6 +182,8 @@ class StockTickerPlugin(BasePlugin):
         """Display stocks with scrolling or static mode."""
         if not self.stock_data:
             self.logger.warning("No stock data available, showing error state")
+            # A static frame: release the scroll state and its frame hold.
+            self.display_manager.set_scrolling_state(False)
             self._show_error_state()
             return
         
@@ -421,30 +438,30 @@ class StockTickerPlugin(BasePlugin):
     
     def get_info(self) -> Dict[str, Any]:
         """Get plugin information."""
-        return self.config_manager.get_plugin_info()
-    
+        # Built on BasePlugin's info (which carries the real id) rather than a
+        # separate dict with a hard-coded name and a version stuck at 2.2.0.
+        info = super().get_info()
+        cfg = self.config_manager
+        settings = getattr(self, '_scroll_settings', None)
+        info.update({
+            'display_mode': cfg.display_mode,
+            'scrolling': cfg.enable_scrolling,
+            'chart_enabled': cfg.toggle_chart,
+            'stocks_enabled': cfg.stocks_enabled,
+            'stocks_count': len(cfg.stock_symbols),
+            'crypto_count': len(cfg.crypto_symbols),
+            'scroll_pixels_per_second': getattr(settings, 'pixels_per_second', None),
+            'update_interval': self._update_interval(),
+            'display_duration': cfg.display_duration,
+        })
+        return info
+
     # Configuration methods
     def set_toggle_chart(self, enabled: bool) -> None:
         """Set whether to show mini charts."""
         self.config_manager.set_toggle_chart(enabled)
         self.display_renderer.set_toggle_chart(enabled)
-    
-    def set_scroll_speed(self, speed: float) -> None:
-        """Set the scroll speed (pixels per frame)."""
-        self.config_manager.set_scroll_speed(speed)
-        # Convert pixels per frame to pixels per second for ScrollHelper
-        pixels_per_second = speed / self.config_manager.scroll_delay if self.config_manager.scroll_delay > 0 else speed * 100
-        self.scroll_helper.set_scroll_speed(pixels_per_second)
-    
-    def set_scroll_delay(self, delay: float) -> None:
-        """Set the scroll delay."""
-        self.config_manager.set_scroll_delay(delay)
-        # Update scroll helper with new delay and recalculate pixels per second
-        self.scroll_helper.set_scroll_delay(delay)
-        # Recalculate pixels per second with new delay
-        pixels_per_second = self.config_manager.scroll_speed / delay if delay > 0 else self.config_manager.scroll_speed * 100
-        self.scroll_helper.set_scroll_speed(pixels_per_second)
-    
+
     def set_display_mode(self, mode: str) -> None:
         """Set display mode ('scroll' or 'switch')."""
         self.config_manager.set_display_mode(mode)
@@ -473,7 +490,6 @@ class StockTickerPlugin(BasePlugin):
         # Update components with new config
         self.data_fetcher.config = self.config_manager.plugin_config
         self.display_renderer.config = self.config_manager.plugin_config
-        self.chart_renderer.config = self.config_manager.plugin_config
     
     def cleanup(self) -> None:
         """Clean up resources."""
