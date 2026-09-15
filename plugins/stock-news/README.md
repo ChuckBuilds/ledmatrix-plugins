@@ -17,7 +17,7 @@ A plugin for LEDMatrix that displays scrolling stock-specific news headlines and
 - **Custom Feeds**: Add your own financial RSS feed URLs
 - **Symbol Highlighting**: Color-coded display for stock symbols
 - **Configurable Display**: Adjustable scroll speed, colors, and filtering
-- **Background Data Fetching**: Efficient RSS parsing without blocking display
+- **Network off the render path**: Headlines, prices and logos are fetched in `update()`; drawing never waits on the network
 
 ## Configuration
 
@@ -44,7 +44,7 @@ The full schema is [`config_schema.json`](config_schema.json).
 | `global.publisher_font_path` | *(blank)* | Optional separate TTF for the publisher segment. Empty = use the small 4x6 pixel font by default, which stays crisp at small sizes. Advanced. |
 | `global.age_font_size` | `0` | Font size for the relative-age segment (e.g. '2h ago'). Set to 0 for a small pixel-perfect auto default (independent of the headline's font_size), or set an explicit size to override (0–24). Advanced. |
 | `global.age_font_path` | *(blank)* | Optional separate TTF for the relative-age segment. Empty = use the small 4x6 pixel font by default, which stays crisp at small sizes. Advanced. |
-| `global.logo_fetch_enabled` | `true` | Download company logos on first use and cache them to disk. Advanced. |
+| `global.logo_fetch_enabled` | `true` | Download company logos and cache them to disk. The download happens during the next data update, so a new symbol's logo appears shortly after its first headline. Advanced. |
 | `global.logo_size` | `0` | Logo height in pixels. Set to 0 for auto (= display height). Width scales freely to maintain aspect ratio (0–128). Advanced. |
 | `global.logo_url_template` | `"https://financialmodelingprep.com/image-stock/{symbol}.png"` | URL template for logo downloads. {symbol} is replaced with the ticker. Advanced. |
 
@@ -52,11 +52,7 @@ The full schema is [`config_schema.json`](config_schema.json).
 
 | Key | Default | Notes |
 |---|---|---|
-| `global.scroll_pixels_per_second` | `60.0` | Scroll speed in pixels per second (5.0–100.0). |
-| `global.scroll_target_fps` | `100.0` | Target frames per second for scroll animation (30.0–200.0). Advanced. |
-| `global.scroll_direction` | `"left"` | Direction the ticker scrolls — one of `left`, `right`. Advanced. |
-| `global.scroll_speed` | `1` | Legacy speed multiplier (used when scroll_pixels_per_second is absent) (0.1–10). Advanced. |
-| `global.scroll_delay` | `0.01` | Legacy frame delay in seconds (used when scroll_target_fps is absent) (0.001–0.1). Advanced. |
+| `global.scroll_pixels_per_second` | `60.0` | Scroll speed in pixels per second (5.0–100.0). The LEDMatrix core moves it to the nearest speed the panel can draw in whole pixels — on a 100Hz panel the default 60 runs at 66.7 — and logs the result as `Scroll configured: …`. |
 | `global.item_gap` | `0` | Blank pixels between stories. Set to 0 for auto (= display width) (0–512). Advanced. |
 | `global.dynamic_duration` | `true` | Let display time match actual scroll time (recommended). Advanced. |
 | `global.display_duration` | `30` | Fallback display duration in seconds when dynamic_duration is off (10–300). Advanced. |
@@ -87,14 +83,18 @@ The full schema is [`config_schema.json`](config_schema.json).
 | `global.off_hours_multiplier` | `4` | Multiply per-symbol fetch interval by this amount during off-hours (1–24). Advanced. |
 | `global.stale_threshold_multiplier` | `2` | Data older than update_interval_seconds × this factor dims the ticker colours (1–10). Advanced. |
 
-### Background service
+### HTTP requests (`background_service`)
 
 | Key | Default | Notes |
 |---|---|---|
-| `global.background_service.enabled` | `true` | . |
-| `global.background_service.request_timeout` | `30` | HTTP timeout in seconds (5–120). Advanced. |
-| `global.background_service.max_retries` | `3` | Retries with exponential backoff on failure (1–10). Advanced. |
-| `global.background_service.priority` | `2` | Background priority (1 = highest) (1–5). Advanced. |
+| `global.background_service.request_timeout` | `30` | HTTP timeout in seconds for headline and price requests (5–120). Logo downloads use a fixed 10s. Advanced. |
+| `global.background_service.max_retries` | `3` | Retries with exponential backoff when a request fails with a connection error or a 429/5xx response (1–10). Advanced. |
+
+Removed in 2.8.0 because nothing read them: `global.scroll_speed`,
+`global.scroll_delay`, `global.scroll_target_fps`, `global.scroll_direction`,
+`global.background_service.enabled` and `global.background_service.priority`.
+A config that still has them loads with a schema warning until it is next saved
+from the web UI.
 
 ### Feeds and colours
 
@@ -140,10 +140,12 @@ distinction to read at a glance.
 
 The stock news ticker displays information in a scrolling format showing:
 
+- **Logo**: the company logo, when one has been downloaded (`display_style`)
 - **Stock Symbol**: Ticker symbol in yellow (e.g., "AAPL:")
+- **Price**: when `show_price` is on
 - **Headline**: News headline text in green
-- **Separator**: Visual separator between items ("---")
-- **Source**: RSS feed source when available
+- **Publisher and age**: " - Reuters - 2h ago", each optional
+- **Gap**: blank space between stories (`item_gap`, default the panel width)
 
 ## Stock Symbol Format
 
@@ -157,14 +159,22 @@ Stock symbols should be in uppercase format:
 - **META**: Meta Platforms Inc.
 - **NFLX**: Netflix Inc.
 
-## Background Service
+## Data fetching
 
-The plugin uses background data fetching for efficient RSS parsing:
+Fetching happens in the plugin's `update()`, which the LEDMatrix core calls on
+its own schedule; drawing only ever reads what was fetched.
 
-- Requests timeout after 30 seconds (configurable)
-- Up to 5 retries for failed requests
-- Priority level 2 (medium priority)
-- Updates every 5 minutes by default (configurable)
+- One symbol is fetched per call, spread across `update_interval_seconds`
+  (default 900s, i.e. every 15 minutes for the whole list), and slower outside
+  US market hours (`off_hours_multiplier`). Right after a start or a symbol
+  change every symbol is fetched once straight away (`eager_fetch_on_startup`).
+- Requests time out after `background_service.request_timeout` seconds (default
+  30) and are retried up to `background_service.max_retries` times (default 3)
+  with exponential backoff.
+- Missing company logos are downloaded during the same update and cached on
+  disk; a symbol whose logo download fails is not retried until the plugin
+  restarts.
+- `max_daily_requests` and `max_requests_per_hour` cap the total.
 
 ## Data Sources
 
@@ -189,7 +199,7 @@ This plugin requires the main LEDMatrix installation and uses the cache manager 
 
 - **No headlines showing**: Check if stock symbols are valid and RSS feeds are accessible
 - **RSS parsing errors**: Verify feed URLs return proper XML format
-- **Slow scrolling**: Adjust scroll speed and delay settings
+- **Slow scrolling**: Raise `global.scroll_pixels_per_second`; the log line `Scroll configured: …` shows the speed actually used
 - **Network errors**: Check your internet connection and RSS server availability
 
 ## Advanced Features
@@ -197,13 +207,13 @@ This plugin requires the main LEDMatrix installation and uses the cache manager 
 - **Symbol Filtering**: Only show news for tracked stock symbols
 - **Multiple Headlines**: Display multiple headlines per symbol
 - **Rotation Cycles**: Cycle through headlines in batches
-- **Color Customization**: Configure colors for symbols, text, and separators
+- **Color Customization**: Configure colors for symbols, headlines, publisher, age and price
 - **Font Sizing**: Adjustable font size for readability
 
 ## Performance Notes
 
 - The plugin is designed to be lightweight and not impact display performance
-- RSS parsing happens in background to avoid blocking the display
+- Fetching and RSS parsing happen in `update()`, never while drawing
 - Configurable update intervals balance freshness vs. network load
 - Caching reduces unnecessary network requests
 

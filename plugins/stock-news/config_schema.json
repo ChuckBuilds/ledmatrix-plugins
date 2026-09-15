@@ -109,38 +109,7 @@
           "default": 60.0,
           "minimum": 5.0,
           "maximum": 100.0,
-          "description": "Scroll speed in pixels per second"
-        },
-        "scroll_target_fps": {
-          "x-advanced": true,
-          "type": "number",
-          "default": 100.0,
-          "minimum": 30.0,
-          "maximum": 200.0,
-          "description": "Target frames per second for scroll animation"
-        },
-        "scroll_direction": {
-          "x-advanced": true,
-          "type": "string",
-          "enum": ["left", "right"],
-          "default": "left",
-          "description": "Direction the ticker scrolls"
-        },
-        "scroll_speed": {
-          "x-advanced": true,
-          "type": "number",
-          "default": 1,
-          "minimum": 0.1,
-          "maximum": 10,
-          "description": "Legacy speed multiplier (used when scroll_pixels_per_second is absent)"
-        },
-        "scroll_delay": {
-          "x-advanced": true,
-          "type": "number",
-          "default": 0.01,
-          "minimum": 0.001,
-          "maximum": 0.1,
-          "description": "Legacy frame delay in seconds (used when scroll_target_fps is absent)"
+          "description": "Scroll speed in pixels per second. The LEDMatrix core moves it to the nearest speed the panel can draw in whole pixels (on a 100Hz panel e.g. 50, 66.7 or 100)."
         },
         "dynamic_duration": {
           "x-advanced": true,
@@ -284,15 +253,13 @@
         },
         "background_service": {
           "type": "object",
-          "title": "Background Service",
+          "title": "HTTP Requests",
+          "description": "Timeout and retries for headline, price and logo requests",
           "properties": {
-            "enabled": {"type": "boolean", "default": true},
             "request_timeout": {"x-advanced": true, "type": "integer", "default": 30, "minimum": 5, "maximum": 120,
-                                "description": "HTTP timeout in seconds"},
+                                "description": "HTTP timeout in seconds for headline and price requests"},
             "max_retries": {"x-advanced": true, "type": "integer", "default": 3, "minimum": 1, "maximum": 10,
-                            "description": "Retries with exponential backoff on failure"},
-            "priority": {"x-advanced": true, "type": "integer", "default": 2, "minimum": 1, "maximum": 5,
-                         "description": "Background priority (1 = highest)"}
+                            "description": "Retries with exponential backoff when a request fails with a connection error or a 429/5xx response"}
           },
           "additionalProperties": false
         }
