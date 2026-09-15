@@ -67,6 +67,13 @@
       "maximum": 0.1,
       "description": "Seconds per scroll step. Speed is scroll_speed / scroll_delay pixels per second, so a smaller delay scrolls faster."
     },
+    "target_fps": {
+      "x-advanced": true,
+      "x-display": "hidden",
+      "type": "number",
+      "description": "Deprecated — no longer used: nothing reads it, so it never changed the scroll speed. Kept for backward compatibility with existing configs.",
+      "title": "Target FPS (deprecated)"
+    },
     "scroll_loop": {
       "type": "boolean",
       "x-advanced": true,

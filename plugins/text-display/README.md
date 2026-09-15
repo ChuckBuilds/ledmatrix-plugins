@@ -173,8 +173,7 @@ save as `Scroll configured: …`. It is kept between 1 and 500 px/s.
   change how often the panel is redrawn.
 
 Speed changes saved in the web UI apply straight away, the same as after a
-restart. `target_fps` was removed in 1.3.0: nothing read it, so it never
-changed the speed.
+restart.
 
 ### Looping and the gap
 
