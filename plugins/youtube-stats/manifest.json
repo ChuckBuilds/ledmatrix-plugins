@@ -1,7 +1,7 @@
 {
   "id": "youtube-stats",
   "name": "YouTube Stats",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": "ChuckBuilds",
   "description": "Display YouTube channel statistics including subscriber count, total views, and channel name on your LED matrix",
   "category": "social",
@@ -33,6 +33,12 @@
     }
   ],
   "versions": [
+    {
+      "released": "2026-09-15",
+      "version": "1.2.3",
+      "changelog": "Channels that hide their subscriber count now display, shown as 'subs hidden', instead of failing to parse. The first frame no longer calls the YouTube API from display(); it draws 'Loading' and update() fetches. The missing-stats warning is logged when it changes or every five minutes instead of every frame, and that state now draws 'No data' instead of nothing.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-03",
       "version": "1.2.2",
