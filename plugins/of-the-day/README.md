@@ -304,7 +304,9 @@ turn ends before the body rotates. Raise the former or lower the latter.
 
 **The word did not change at midnight.**
 `update_interval` decides how often the date is re-checked; at the default it
-can be up to an hour late.
+can be up to an hour late. Midnight is midnight in the LEDMatrix timezone from
+the main settings, not the Pi's system zone; the system date is the fallback
+when that setting is missing or invalid.
 
 ---
 
