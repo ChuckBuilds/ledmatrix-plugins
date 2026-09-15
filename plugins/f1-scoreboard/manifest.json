@@ -30,6 +30,12 @@
   ],
   "versions": [
     {
+      "version": "1.9.0",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Requires LEDMatrix core 3.4.0. The standings header and title-battle cards count the season from the full schedule: the total was the number of upcoming calendar session entries (ten or so), so the header read \"Rd 17/10\" with a full bar and races remaining showed 0. Modes toggled in config now appear and disappear without a restart: core reads plugin.modes once, so all eight are registered and a disabled one returns False. A scroll mode with no data no longer re-renders every mode on every rotation (each render measured 12.46s on a Pi). upcoming.show_session_times, upcoming.countdown_enabled and qualifying.show_gaps now do what the README said; nothing read them before. scroll.scroll_speed and scroll.scroll_delay now set the speed: the shared resolver was handed the whole config and never looked in the scroll block. While scrolling the frame hold the resolver reports is applied (set_scrolling_state(True, frame_hold=...), a 3.4.0 argument, hence the floor) and released when a scroll completes or a static card is drawn. Removed the legacy frame-based setup, which read scroll.frame_based, scroll.min_duration and scroll.max_duration (never in the schema, so no one could set them), and the target_fps writes nothing read."
+    },
+    {
       "version": "1.8.10",
       "released": "2026-09-11",
       "notes": "Load the 4x6 face at 7px when drawing placeholder team logos -- 4x6-font is crisp only at multiples of 7.",
@@ -311,6 +317,6 @@
   "screenshot": "",
   "config_schema": "config_schema.json",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.4.0"
   ]
 }
