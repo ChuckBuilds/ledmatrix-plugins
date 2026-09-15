@@ -3493,14 +3493,23 @@ class FlightTrackerPlugin(BasePlugin):
         rotation slot (``flight_tracker_<view>``). An empty list means the plugin
         contributes no scroll-through slots.
 
-        The overhead live slot (``flight_tracker_live``) is always appended, even
-        while live priority or the proximity alert is off. The core reads
-        ``plugin.modes`` once, when the plugin is loaded or enabled, so a slot
-        added later by ``on_config_change`` is never registered: turning live
-        priority on in the web UI did nothing until a restart, because
-        ``get_live_modes()`` named a slot the core did not know. ``display()``
-        and ``_evaluate_proximity()`` already return False for this slot unless
-        both settings are on and a flight is locked, so the rotation skips it.
+        The overhead live slot (``flight_tracker_live``) is appended whenever
+        there is at least one other slot, even while live priority or the
+        proximity alert is off. The core reads ``plugin.modes`` once, when the
+        plugin is loaded or enabled, so a slot added later by
+        ``on_config_change`` is never registered: turning live priority on in
+        the web UI did nothing until a restart, because ``get_live_modes()``
+        named a slot the core did not know. ``display()`` and
+        ``_evaluate_proximity()`` return False for this slot unless both
+        settings are on and a flight is locked, so the rotation skips it.
+
+        With no views selected the live slot is added only while live priority
+        is on, exactly as before. An empty ``plugin.modes`` makes the core fall
+        back to the manifest's ``flight_tracker`` slot, which older configs
+        saved with no view ticked rely on to keep the legacy screen; always
+        listing the live slot there would replace that screen with one that is
+        blank unless a plane is overhead. The cost is one edge: with no views
+        selected, turning live priority on still needs a restart.
         """
         rotation_views = self.config.get('rotation_views', None)
         modes = []
@@ -3510,7 +3519,8 @@ class FlightTrackerPlugin(BasePlugin):
             for view in rotation_views:
                 if view in self._VALID_ROTATION_VIEWS:
                     modes.append(f'flight_tracker_{view}')
-        modes.append('flight_tracker_live')
+        if modes or (self.proximity_enabled and self.live_priority_enabled):
+            modes.append('flight_tracker_live')
         return modes
 
     def _closest_in_radius(self):

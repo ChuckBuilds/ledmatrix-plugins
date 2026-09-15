@@ -249,6 +249,41 @@
       },
       "additionalProperties": false
     },
+    "celebration_enabled": {
+      "type": "boolean",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Win Celebration (deprecated)",
+      "description": "Deprecated: ignored. There is no win-celebration screen. Kept only so configs that still carry this key keep validating."
+    },
+    "celebration_duration": {
+      "type": "integer",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Win Celebration Duration (deprecated)",
+      "description": "Deprecated: ignored. There is no win-celebration screen. Kept only so configs that still carry this key keep validating."
+    },
+    "show_records": {
+      "type": "boolean",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Show Records (deprecated)",
+      "description": "Deprecated: ignored. Team records were never drawn. Kept only so configs that still carry this key keep validating."
+    },
+    "recent_update_interval": {
+      "type": "integer",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Recent Update Interval (deprecated)",
+      "description": "Deprecated: ignored. Fetches use update_interval_seconds and live_update_interval. Kept only so configs that still carry this key keep validating."
+    },
+    "upcoming_update_interval": {
+      "type": "integer",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Upcoming Update Interval (deprecated)",
+      "description": "Deprecated: ignored. Fetches use update_interval_seconds and live_update_interval. Kept only so configs that still carry this key keep validating."
+    },
     "background_service": {
       "type": "object",
       "title": "Network",
@@ -261,6 +296,34 @@
           "maximum": 120,
           "description": "Request timeout in seconds",
           "x-advanced": true
+        },
+        "enabled": {
+          "type": "boolean",
+          "x-advanced": true,
+          "x-display": "hidden",
+          "title": "Background Service (deprecated)",
+          "description": "Deprecated: ignored. The plugin no longer uses the shared background service. Kept only so configs that still carry this key keep validating."
+        },
+        "max_workers": {
+          "type": "integer",
+          "x-advanced": true,
+          "x-display": "hidden",
+          "title": "Worker Threads (deprecated)",
+          "description": "Deprecated: ignored. The plugin no longer uses the shared background service. Kept only so configs that still carry this key keep validating."
+        },
+        "max_retries": {
+          "type": "integer",
+          "x-advanced": true,
+          "x-display": "hidden",
+          "title": "Max Retries (deprecated)",
+          "description": "Deprecated: ignored. The plugin no longer uses the shared background service. Kept only so configs that still carry this key keep validating."
+        },
+        "priority": {
+          "type": "integer",
+          "x-advanced": true,
+          "x-display": "hidden",
+          "title": "Service Priority (deprecated)",
+          "description": "Deprecated: ignored. The plugin no longer uses the shared background service. Kept only so configs that still carry this key keep validating."
         }
       },
       "additionalProperties": false
@@ -471,6 +534,11 @@
     "mode_durations",
     "display_modes",
     "background_service",
-    "customization"
+    "customization",
+    "celebration_enabled",
+    "celebration_duration",
+    "show_records",
+    "recent_update_interval",
+    "upcoming_update_interval"
   ]
 }

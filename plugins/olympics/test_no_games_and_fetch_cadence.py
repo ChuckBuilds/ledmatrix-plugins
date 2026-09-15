@@ -166,8 +166,27 @@ def plugin_checks():
     props = schema["properties"]
     for key in ("medal_cycle_duration", "live_priority"):
         check("declares %s" % key, key in props)
+    # Deprecated, not removed: core's web save deep-merges over the stored
+    # section, so a key dropped from the schema could never be cleared and
+    # would fail additionalProperties on every load. Declared with no default
+    # so a fresh config never gains them.
     for key in ("notifications_enabled", "favorite_countries", "webhooks"):
-        check("no dead %s setting" % key, key not in props)
+        spec = props.get(key, {})
+        check("%s still declared (old configs validate)" % key, key in props)
+        check("%s marked deprecated and hidden, no default" % key,
+              spec.get("x-display") == "hidden" and "default" not in spec
+              and spec.get("description", "").startswith("Deprecated: ignored"),
+              "got %r" % spec)
+    import jsonschema
+    stored = {"enabled": True, "notifications_enabled": True,
+              "favorite_countries": ["USA"],
+              "webhooks": [{"url": "https://example.com/h"}]}
+    errors = list(jsonschema.Draft7Validator(schema).iter_errors(stored))
+    check("a config still carrying the deprecated keys validates", not errors,
+          "; ".join(e.message for e in errors))
+    src = (PLUGIN_DIR / "manager.py").read_text(encoding="utf-8")
+    check("manager.py does not read the deprecated keys",
+          not any(k in src for k in ("notifications_enabled", "favorite_countries", "webhooks")))
 
 
 def main():

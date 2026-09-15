@@ -109,15 +109,38 @@ def main():
           plugin.logger is not m.logger and "cricket-scoreboard" in plugin.logger.name,
           "logger name %r" % plugin.logger.name)
 
-    print("\nschema carries no dead settings")
+    print("\ndead settings are deprecated, not removed")
+    # Core's web save deep-merges over the stored section, so a key dropped
+    # from the schema could never be cleared and would fail
+    # additionalProperties on every load. Declared with no default so a fresh
+    # config never gains them.
     schema = json.loads((PLUGIN_DIR / "config_schema.json").read_text(encoding="utf-8"))
     props = schema["properties"]
+    bg = props.get("background_service", {}).get("properties", {})
+
+    def deprecated(spec):
+        return (spec.get("x-display") == "hidden" and "default" not in spec
+                and spec.get("description", "").startswith("Deprecated: ignored"))
+
     for key in ("celebration_enabled", "celebration_duration", "show_records",
                 "recent_update_interval", "upcoming_update_interval"):
-        check("no %s" % key, key not in props)
-    bg = props.get("background_service", {}).get("properties", {})
-    check("background_service keeps only request_timeout", list(bg) == ["request_timeout"],
-          "has %r" % list(bg))
+        check("%s declared deprecated" % key, deprecated(props.get(key, {})),
+              "got %r" % props.get(key))
+    for key in ("enabled", "max_workers", "max_retries", "priority"):
+        check("background_service.%s declared deprecated" % key, deprecated(bg.get(key, {})),
+              "got %r" % bg.get(key))
+    check("request_timeout is still a live setting",
+          "default" in bg.get("request_timeout", {}) and not deprecated(bg["request_timeout"]))
+    import jsonschema
+    stored = {"enabled": True, "celebration_enabled": False, "celebration_duration": 12,
+              "show_records": True, "recent_update_interval": 600,
+              "upcoming_update_interval": 900,
+              "background_service": {"enabled": False, "max_workers": 4,
+                                     "max_retries": 5, "priority": 1,
+                                     "request_timeout": 30}}
+    errors = list(jsonschema.Draft7Validator(schema).iter_errors(stored))
+    check("a config still carrying the deprecated keys validates", not errors,
+          "; ".join(e.message for e in errors))
 
     print("\n%s" % ("FAILED: %d" % len(failures) if failures else "All checks passed"))
     return 1 if failures else 0

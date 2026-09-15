@@ -1,15 +1,27 @@
 # Changelog
 
-## [1.13.5] - 2026-09-15
+## [1.14.0] - 2026-09-15
+
+### Changed
+- **`flight_tracker_live` is registered whenever the plugin has another slot.**
+  The core reads a plugin's display modes once, when the plugin loads.
+  `flight_tracker_live` was listed only while live priority was already on, so
+  a board started with it off never registered the slot; enabling it from the
+  web UI rebuilt `self.modes`, but the core's live scan ignores slots it has not
+  registered and nothing preempted until the display restarted. The slot is now
+  registered next to the legacy `flight_tracker` slot or the selected rotation
+  views, and skipped while live priority is off or nothing is overhead, so
+  turning live priority on takes effect without a restart.
+- **Expected log line.** While the live slot is skipped the core logs
+  `Plugin ledmatrix-flights display() returned False for mode flight_tracker_live`
+  at INFO once per rotation. It is harmless.
+- **No views selected: unchanged.** With `rotation_views: []` the live slot is
+  still listed only while live priority is on. The core falls back to the
+  manifest's `flight_tracker` slot when a plugin lists no modes, and configs
+  saved with no view ticked rely on that to keep the legacy screen. The
+  remaining edge: on such a board, turning live priority on needs a restart.
 
 ### Fixed
-- **Turning on Overhead Live Priority works without a restart.** The core reads
-  a plugin's display modes once, when the plugin loads. `flight_tracker_live`
-  was listed only while live priority was already on, so a board started with
-  it off never registered the slot; enabling it from the web UI rebuilt
-  `self.modes`, but the core's live scan ignores slots it has not registered and
-  nothing preempted until the display restarted. The slot is now always
-  registered and is skipped while live priority is off or nothing is overhead.
 - **Code defaults match `config_schema.json`.** `tile_provider`,
   `fade_intensity`, `custom_tile_server`, `show_trails`, `header_color`,
   `show_aircraft_icon` and `max_api_calls_per_hour` fell back to different

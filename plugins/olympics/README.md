@@ -68,7 +68,10 @@ Screenshot Preview:
 
 Settings live in the plugin's tab in the web UI and in `config/config.json`
 under `olympics`. The schema sets `additionalProperties: false`, so a key that
-is not listed below will be **rejected**, not ignored. The full schema is
+is not listed below fails schema validation: the core logs a warning and flags
+the plugin as degraded in the web UI, but still loads it with that key ignored.
+`notifications_enabled`, `favorite_countries` and `webhooks` are still declared
+for that reason, as deprecated settings that do nothing. The full schema is
 [`config_schema.json`](config_schema.json).
 
 ### Basics

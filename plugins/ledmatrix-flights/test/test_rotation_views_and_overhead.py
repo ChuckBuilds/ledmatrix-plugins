@@ -103,9 +103,11 @@ def _set(p, *aircraft):
 # _get_available_modes
 # ---------------------------------------------------------------------------
 
-# The live slot is registered even with live_priority off: the core reads
-# plugin.modes once at load, so a slot added only when the setting is on could
-# never be registered by a live config change. display() skips it while off.
+# The live slot is registered even with live_priority off whenever the plugin
+# has another slot: the core reads plugin.modes once at load, so a slot added
+# only when the setting is on could never be registered by a live config
+# change. display() skips it while off. With no other slot the list stays
+# empty unless live priority is on (see the rotation_views == [] tests).
 
 def test_legacy_single_slot():
     p = make_plugin({})  # no rotation_views, live_priority off
@@ -133,9 +135,23 @@ def test_none_rotation_with_overhead_only():
     assert p.modes == ["flight_tracker_live"], p.modes
 
 
-def test_none_rotation_without_priority_is_live_slot_only():
+def test_none_rotation_without_priority_is_empty():
+    # Empty on purpose: the core falls back to the manifest's flight_tracker
+    # slot, so a config saved with no view ticked keeps the legacy screen.
+    # Listing only the live slot here would make flights vanish.
     p = make_plugin({"rotation_views": []})
-    assert p.modes == ["flight_tracker_live"], p.modes
+    assert p.modes == [], p.modes
+
+
+def test_only_invalid_views_without_priority_is_empty():
+    p = make_plugin({"rotation_views": ["overhead", "bogus"]})
+    assert p.modes == [], p.modes
+
+
+def test_none_rotation_with_priority_but_proximity_off_is_empty():
+    p = make_plugin({"rotation_views": [], "live_priority": True,
+                     "proximity_alert": {"enabled": False}})
+    assert p.modes == [], p.modes
 
 
 def test_rotation_views_plus_overhead():

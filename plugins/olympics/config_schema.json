@@ -119,6 +119,27 @@
       "default": true,
       "description": "Enable medal race comparison between countries"
     },
+    "notifications_enabled": {
+      "type": "boolean",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Notifications (deprecated)",
+      "description": "Deprecated: ignored. Nothing ever sent a notification. Kept only so configs that still carry this key keep validating."
+    },
+    "favorite_countries": {
+      "type": "array",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Notification Countries (deprecated)",
+      "description": "Deprecated: ignored. Was the country list for notifications, which were never sent. Kept only so configs that still carry this key keep validating."
+    },
+    "webhooks": {
+      "type": "array",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Webhooks (deprecated)",
+      "description": "Deprecated: ignored. Nothing ever called these webhooks. Kept only so configs that still carry this key keep validating."
+    },
     "vegas_mode": {
       "type": "string",
       "enum": ["scroll", "fixed", "static"],
