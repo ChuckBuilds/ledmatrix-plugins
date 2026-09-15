@@ -24,7 +24,14 @@ import time
 from typing import Dict, Any, Optional, List
 from PIL import Image
 
-from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
+from src.plugin_system.base_plugin import BasePlugin
+
+try:
+    from src.plugin_system.base_plugin import VegasDisplayMode
+except ImportError:
+    # Cores before v3.1.0 ship BasePlugin without the Vegas hooks and never
+    # call them; the Vegas methods below return None when this is missing.
+    VegasDisplayMode = None
 
 # Local imports
 from data import OlympicsDataFetcher, OlympicsData
@@ -118,7 +125,6 @@ class OlympicsPlugin(BasePlugin):
 
         # Content change detection
         self._last_content_hash: Optional[str] = None
-        self._last_vegas_content_hash: Optional[str] = None
 
         # Medal cycling state for switch mode (individual country display)
         self._current_medal_index = 0
@@ -228,32 +234,30 @@ class OlympicsPlugin(BasePlugin):
         thread = threading.Thread(target=do_update, daemon=True)
         thread.start()
 
-    def display(self, force_clear: bool = False) -> None:
+    def display(self, force_clear: bool = False) -> bool:
         """
         Display Olympics content in switch mode.
 
         Cycles through sections: medals, schedule, results.
         Falls back to countdown if Olympics not active.
+
+        Returns False (the core skips to the next plugin) when there is
+        nothing to show yet, or no known Games to count down to.
         """
         try:
             # Thread-safe snapshot of olympics_data
             with self._data_lock:
                 data_snapshot = self.olympics_data
 
-            # Ensure we have data
+            # No data yet: fetch off the render loop (a scrape can take 15 s)
+            # and give up this slot rather than block every plugin.
             if not data_snapshot:
-                self.update()
-                with self._data_lock:
-                    data_snapshot = self.olympics_data
-
-            if not data_snapshot:
-                self._display_error("Loading data...")
-                return
+                self._trigger_background_update()
+                return False
 
             # If Olympics not active, show countdown
             if not data_snapshot.is_active:
-                self._display_countdown()
-                return
+                return self._display_countdown()
 
             # Rotate through sections
             current_time = time.time()
@@ -265,10 +269,12 @@ class OlympicsPlugin(BasePlugin):
 
             # Display current section (force redraw on section change or force_clear)
             self._display_current_section(force_redraw=force_clear or section_changed)
+            return True
 
         except Exception as e:
             self.logger.error(f"Error displaying Olympics: {e}", exc_info=True)
             self._display_error("Display Error")
+            return True
 
     def _get_enabled_sections(self) -> List[int]:
         """Get list of enabled display sections based on config."""
@@ -417,18 +423,24 @@ class OlympicsPlugin(BasePlugin):
         )
         self.display_manager.image.paste(race_img, (0, 0))
 
-    def _display_countdown(self) -> None:
-        """Display countdown to Olympics opening."""
-        if not self.olympics_data:
-            self._draw_centered_text("Loading...")
-            return
+    def _display_countdown(self) -> bool:
+        """Display countdown to Olympics opening.
+
+        Returns False when there is no opening date -- past the last Games in
+        data/olympics_api.OLYMPIC_GAMES -- so the screen is skipped, as that
+        table promises, instead of raising into "Display Error".
+        """
+        data = self.olympics_data
+        if not data or data.opening_date is None:
+            return False
 
         self.countdown_renderer.display_countdown(
-            self.olympics_data.opening_date,
-            self.olympics_data.games_name,
-            self.olympics_data.games_type,
+            data.opening_date,
+            data.games_name,
+            data.games_type,
             is_closing=False
         )
+        return True
 
     def _filter_events(self, events: list) -> list:
         """Filter events by sport preferences."""
@@ -456,58 +468,6 @@ class OlympicsPlugin(BasePlugin):
     # Vegas Scroll Mode Support
     # =========================================================================
 
-    def _compute_vegas_content_hash(self) -> str:
-        """Compute a hash of Vegas mode content for change detection."""
-        hash_parts = []
-
-        with self._data_lock:
-            data = self.olympics_data
-
-        if not data:
-            return "no_data"
-
-        if not data.is_active:
-            return f"countdown:{data.opening_date}"
-
-        # Hash all displayable content
-        if self.show_medals and data.medal_counts:
-            medals = data.get_top_countries(self.top_countries_count)
-            for m in medals:
-                hash_parts.append(f"m:{m.country_code}:{m.gold}:{m.silver}:{m.bronze}")
-            for country_code in self.additional_countries:
-                medal = data.get_country_medals(country_code)
-                if medal:
-                    hash_parts.append(f"a:{medal.country_code}:{medal.total}")
-
-        if self.show_schedule and data.upcoming_events:
-            events = self._filter_events(data.upcoming_events)
-            for e in events[:self.upcoming_events_count]:
-                hash_parts.append(f"e:{e.sport}:{e.event_name}:{e.start_time}")
-
-        if data.live_events:
-            for e in data.live_events:
-                if not self.sport_filters or e.sport.lower() in self.sport_filters:
-                    hash_parts.append(f"l:{e.sport}:{e.event_name}")
-
-        if self.show_results and data.recent_results:
-            for r in data.recent_results[:self.recent_results_count]:
-                hash_parts.append(f"r:{r.sport}:{r.event_name}:{r.gold_country}")
-
-        return hashlib.md5("|".join(hash_parts).encode()).hexdigest()
-
-    def has_vegas_content_changed(self) -> bool:
-        """
-        Check if Vegas content has changed since last retrieval.
-
-        Useful for callers to decide whether to re-render.
-
-        Returns:
-            True if content has changed or never been retrieved
-        """
-        current_hash = self._compute_vegas_content_hash()
-        changed = current_hash != self._last_vegas_content_hash
-        return changed
-
     def get_vegas_content(self) -> Optional[List[Image.Image]]:
         """
         Get content for Vegas-style continuous scroll mode.
@@ -523,9 +483,6 @@ class OlympicsPlugin(BasePlugin):
         Returns:
             List of PIL Images or None if no content
         """
-        # Update content hash for change detection
-        self._last_vegas_content_hash = self._compute_vegas_content_hash()
-
         # Get a thread-safe snapshot of the data
         with self._data_lock:
             data = self.olympics_data
@@ -536,8 +493,11 @@ class OlympicsPlugin(BasePlugin):
         if not data:
             return None
 
-        # If Olympics not active, return countdown card
+        # If Olympics not active, return countdown card -- or nothing once
+        # the Games table has run out and there is no date to count to.
         if not data.is_active:
+            if data.opening_date is None:
+                return None
             countdown_card = self.countdown_renderer.render_countdown_card(
                 data.opening_date,
                 data.games_name,
@@ -613,6 +573,9 @@ class OlympicsPlugin(BasePlugin):
         otherwise SCROLL mode for continuous scrolling.
         Thread-safe: acquires _data_lock for consistent read.
         """
+        if VegasDisplayMode is None:
+            return None
+
         # Thread-safe snapshot for live finals check
         with self._data_lock:
             data = self.olympics_data
@@ -638,6 +601,8 @@ class OlympicsPlugin(BasePlugin):
 
     def get_supported_vegas_modes(self) -> List[VegasDisplayMode]:
         """Return list of Vegas display modes this plugin supports."""
+        if VegasDisplayMode is None:
+            return []
         return [VegasDisplayMode.SCROLL, VegasDisplayMode.FIXED_SEGMENT, VegasDisplayMode.STATIC]
 
     def has_live_content(self) -> bool:

@@ -78,8 +78,7 @@ Configured under the `cricket-scoreboard` key in `config/config.json`. See
 | `live_priority` | `true` | Live matches interrupt the normal rotation |
 | `display_modes` | all on | Toggle live / recent / upcoming |
 | `dynamic_duration`, `mode_durations` | off / null | Auto-size or cap each mode's total time |
-| `celebration_enabled`, `celebration_duration` | true / 8 | Win-celebration takeover |
-| `background_service` | enabled | Worker/timeout/retry tuning |
+| `background_service.request_timeout` | 30 | HTTP request timeout (seconds) |
 | `customization` | — | Fonts + colors for score / overs / team / status / detail text |
 
 ### Every setting
@@ -102,16 +101,11 @@ complete list, at the exact paths the schema expects — the schema sets
 | `upcoming_game_duration` | `15` | Duration in seconds to display each upcoming match (5–60). |
 | `update_interval_seconds` | `3600` | How often to fetch new match data (seconds) (30–86400). |
 | `live_update_interval` | `30` | Update interval for live matches (seconds) (10–300). |
-| `recent_update_interval` | `3600` | Update interval for recent matches (seconds) (60–86400). |
-| `upcoming_update_interval` | `3600` | Update interval for upcoming matches (seconds) (60–86400). |
 | `series_discovery_interval` | `86400` | How often to re-resolve numeric ESPN series IDs from the header endpoint (seconds). Series IDs change per tour/season, so they are re-discovered periodically rather than hardcoded. Default 24h (3600–604800). |
 | `recent_games_to_show` | `5` | Maximum number of recent (completed) matches to show (1–20). |
 | `upcoming_games_to_show` | `5` | Maximum number of upcoming (scheduled) matches to show (1–20). |
 | `live_priority` | `true` | Give live matches priority over other modes. Live matches interrupt normal rotation and are displayed immediately when available. |
-| `show_records` | `false` | Show team records (played-won) when available. |
 | `show_venue` | `true` | Show the venue/ground on upcoming match cards. |
-| `celebration_enabled` | `true` | Show a celebratory takeover screen when a favorite team wins a live match. |
-| `celebration_duration` | `8` | How long the win celebration stays on screen (seconds) (3–30). |
 | `dynamic_duration.enabled` | `false` | Enable dynamic duration (total_matches x per_match_duration). |
 | `dynamic_duration.min_duration_seconds` | `30` | Minimum total duration in seconds for a mode, even if few matches are available (10–300). |
 | `dynamic_duration.max_duration_seconds` | `300` | Maximum total duration in seconds for a mode (60–600). |
@@ -121,11 +115,7 @@ complete list, at the exact paths the schema expects — the schema sets
 | `display_modes.live` | `true` | Show live matches. |
 | `display_modes.recent` | `true` | Show recently completed matches. |
 | `display_modes.upcoming` | `true` | Show upcoming matches. |
-| `background_service.enabled` | `true` | Enable background service for data fetching. |
-| `background_service.max_workers` | `1` | Worker threads for background fetching (1–10). The service is shared process-wide, so the first plugin to start decides for everyone. |
-| `background_service.request_timeout` | `30` | Request timeout in seconds (5–120). |
-| `background_service.max_retries` | `3` | Maximum number of retries for failed requests (1–10). |
-| `background_service.priority` | `2` | Background service priority (1–5). |
+| `background_service.request_timeout` | `30` | Timeout in seconds for each request to ESPN (5–120). |
 | `customization.score_text.font` | `"PressStart2P-Regular.ttf"` | one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`. |
 | `customization.score_text.font_size` | `10` | (4–16). |
 | `customization.period_text.font` | `"PressStart2P-Regular.ttf"` | one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`. |

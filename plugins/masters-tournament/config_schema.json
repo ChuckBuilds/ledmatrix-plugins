@@ -153,7 +153,7 @@
             "enabled": {
               "type": "boolean",
               "default": true,
-              "description": "Show hole-by-hole scores for favorite players"
+              "description": "Show the hole-by-hole course tour (rotating hole cards)"
             },
             "duration": {
               "x-advanced": true,

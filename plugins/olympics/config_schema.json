@@ -35,6 +35,13 @@
       "maximum": 60,
       "description": "How long to show each section (medals, events, results) in switch mode"
     },
+    "medal_cycle_duration": {
+      "type": "integer",
+      "default": 3,
+      "minimum": 1,
+      "maximum": 60,
+      "description": "Seconds each country's medal card is shown before cycling to the next, in the medals section (switch mode)"
+    },
     "top_countries_count": {
       "type": "integer",
       "default": 5,
@@ -102,47 +109,15 @@
       "default": true,
       "description": "Enable priority alerts for live medal events"
     },
+    "live_priority": {
+      "type": "boolean",
+      "default": false,
+      "description": "Let a live medal final interrupt the normal rotation and take over the display (needs live_alerts_enabled)"
+    },
     "medal_race_enabled": {
       "type": "boolean",
       "default": true,
       "description": "Enable medal race comparison between countries"
-    },
-    "notifications_enabled": {
-      "type": "boolean",
-      "default": false,
-      "description": "Enable webhook notifications for medal wins, records, and live finals"
-    },
-    "favorite_countries": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^[A-Z]{3}$"
-      },
-      "default": [],
-      "description": "Countries to receive notifications for (ISO 3166-1 alpha-3, e.g., ['USA', 'CAN'])"
-    },
-    "webhooks": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Webhook URL to send notifications to"
-          },
-          "headers": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Optional custom headers to include"
-          }
-        },
-        "required": ["url"]
-      },
-      "default": [],
-      "description": "Webhook endpoints for notifications"
     },
     "vegas_mode": {
       "type": "string",

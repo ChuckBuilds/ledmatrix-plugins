@@ -28,6 +28,12 @@ CACHE_KEY_SCHEDULE = "masters_schedule"
 # read site.
 _NEVER_EXPIRE = 2**31 - 1
 
+# Fallback copies of the last good leaderboard / tee times, written without a
+# ttl so the reader's max_age governs them on every core version. A day covers
+# an ESPN outage during the tournament without resurrecting a past year.
+_STALE_SUFFIX = "_last_good"
+_STALE_MAX_AGE = 24 * 3600
+
 
 class MastersDataSource:
     """Fetches and caches Masters Tournament data from ESPN Golf API."""
@@ -84,7 +90,9 @@ class MastersDataSource:
         ttl = self._get_cache_ttl()
 
         cached = self._safe_cache_get(cache_key, max_age=ttl)
-        if cached:
+        if cached is not None:
+            # An empty list is a real answer too ("not the Masters right
+            # now"), cached so the off-season doesn't refetch every tick.
             self.logger.debug("Using cached leaderboard data")
             return cached
 
@@ -107,16 +115,24 @@ class MastersDataSource:
                 self.cache_manager.set(CACHE_KEY_META, meta, ttl=ttl)
 
             if not meta or not meta.get("is_masters"):
-                self.logger.info("Masters not currently in ESPN API, using mock data")
-                mock = self._generate_mock_leaderboard()
-                self.cache_manager.set(cache_key, mock, ttl=3600)
+                # Not the Masters. Report no leaderboard -- the mock field is
+                # only for mock_data mode, never a stand-in for real data.
+                # The empty result is cached for an hour so off-season polls
+                # stay cheap.
+                self.logger.info("Masters not currently in ESPN API; no leaderboard")
+                self.cache_manager.set(cache_key, [], ttl=3600)
                 # Clear any stale tee-time cache so we don't surface tee times
                 # from a previous tournament / non-Masters event.
                 self.cache_manager.set(CACHE_KEY_SCHEDULE, [], ttl=3600)
-                return mock
+                return []
 
             parsed = self._parse_leaderboard(data)
             self.cache_manager.set(cache_key, parsed, ttl=ttl)
+            # Keep a copy with no ttl for _get_fallback_data. Since core 3.3.0
+            # a stored ttl overrides the reader's max_age, so the ttl'd entry
+            # above reads back empty once it expires -- exactly when a failed
+            # fetch needs it.
+            self._set_stale_copy(cache_key, parsed)
 
             # Derive tee times from the same payload and cache them directly,
             # so fetch_schedule() is a pure cache read and never has to
@@ -124,6 +140,7 @@ class MastersDataSource:
             try:
                 tee_times = self._parse_tee_times_from_leaderboard(data)
                 self.cache_manager.set(CACHE_KEY_SCHEDULE, tee_times, ttl=ttl)
+                self._set_stale_copy(CACHE_KEY_SCHEDULE, tee_times)
             except Exception as e:
                 self.logger.warning(f"Tee-time parsing failed: {e}")
 
@@ -708,16 +725,27 @@ class MastersDataSource:
             return 300
         return 3600
 
+    def _set_stale_copy(self, cache_key: str, data: Any) -> None:
+        """Store the last good Masters payload with no ttl, for fallback reads."""
+        try:
+            self.cache_manager.set(f"{cache_key}{_STALE_SUFFIX}", data)
+        except Exception as e:
+            self.logger.debug(f"Could not store fallback copy of {cache_key}: {e}")
+
     def _get_fallback_data(self, cache_key: str) -> List[Dict]:
-        """Get stale cached data or mock data as fallback."""
-        cached = self._safe_cache_get(cache_key, max_age=_NEVER_EXPIRE)
+        """Last good Masters data from a recent fetch, or nothing.
+
+        Never the mock field: a failed fetch shows no leaderboard rather than
+        invented scores presented as real ones. The copy is capped at
+        _STALE_MAX_AGE so an outage next April cannot bring back this year's
+        final standings.
+        """
+        cached = self._safe_cache_get(f"{cache_key}{_STALE_SUFFIX}", max_age=_STALE_MAX_AGE)
         if cached:
             self.logger.warning("Using stale cached data for %s", cache_key)
             return cached
 
-        self.logger.warning("No fallback data for %s, using mock", cache_key)
-        if "leaderboard" in cache_key:
-            return self._generate_mock_leaderboard()
+        self.logger.warning("No fallback data for %s", cache_key)
         return []
 
     def _generate_mock_leaderboard(self) -> List[Dict]:
