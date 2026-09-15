@@ -163,8 +163,21 @@ class MastersLogoLoader:
         """Return a short stable identifier for a URL (no query params logged)."""
         return hashlib.sha256(url.encode()).hexdigest()[:12]
 
+    def _headshot_path(self, player_id: str, url: Optional[str]) -> Optional[Path]:
+        """Disk location for a headshot: by player_id, else by a hash of the URL."""
+        if player_id:
+            return self.players_dir / f"{player_id}.png"
+        if url:
+            return self.players_dir / f"{self._url_key(url)}.png"
+        return None
+
     def get_player_headshot(self, player_id: str, url: Optional[str], max_size: int = 24) -> Optional[Image.Image]:
-        """Get player headshot, crop-to-fill so it fills the display box."""
+        """Get player headshot, crop-to-fill so it fills the display box.
+
+        Reads the local copy only. This runs while a card is being drawn on
+        the shared render loop, so it never downloads; the plugin's update()
+        calls download_player_headshot() to fetch missing ones.
+        """
         # Use player_id as the cache/disk key when available; fall back to a
         # stable hash of the URL so callers with a valid URL but no id still get images.
         if not player_id and not url:
@@ -175,8 +188,7 @@ class MastersLogoLoader:
         if cache_key in self._cache:
             return self._cache[cache_key]
 
-        # Check disk cache (only when we have a stable player_id filename)
-        player_path = self.players_dir / f"{player_id}.png" if player_id else None
+        player_path = self._headshot_path(player_id, url)
         if player_path and player_path.exists():
             try:
                 img = Image.open(player_path).convert("RGBA")
@@ -184,27 +196,33 @@ class MastersLogoLoader:
                 self._cache[cache_key] = img
                 return img
             except Exception as e:
-                logger.warning(f"Failed to load cached headshot {player_id}: {e}")
-
-        # Download from URL
-        if url:
-            try:
-                response = requests.get(url, timeout=5, headers={
-                    "User-Agent": "LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)"
-                })
-                response.raise_for_status()
-
-                img = Image.open(BytesIO(response.content)).convert("RGBA")
-                if player_path:
-                    img.save(player_path, "PNG")
-
-                img = self._crop_to_fill(img, max_size)
-                self._cache[cache_key] = img
-                return img
-            except (requests.exceptions.RequestException, UnidentifiedImageError, OSError) as e:
-                logger.warning(f"Failed to download headshot for {stable_key}: {e}")
+                logger.warning(f"Failed to load cached headshot {stable_key}: {e}")
 
         return None
+
+    def download_player_headshot(self, player_id: str, url: Optional[str]) -> bool:
+        """Fetch a headshot to disk if it is not there yet. Call from update().
+
+        Returns True when a local copy exists afterwards.
+        """
+        player_path = self._headshot_path(player_id, url)
+        if player_path is None:
+            return False
+        if player_path.exists():
+            return True
+        if not url:
+            return False
+        try:
+            response = requests.get(url, timeout=5, headers={
+                "User-Agent": "LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)"
+            })
+            response.raise_for_status()
+            img = Image.open(BytesIO(response.content)).convert("RGBA")
+            img.save(player_path, "PNG")
+            return True
+        except (requests.exceptions.RequestException, UnidentifiedImageError, OSError) as e:
+            logger.warning(f"Failed to download headshot for {player_id or self._url_key(url)}: {e}")
+            return False
 
     def get_country_flag(self, country_code: str, width: int = 16, height: int = 10) -> Optional[Image.Image]:
         """Get a country flag image."""

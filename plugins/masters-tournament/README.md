@@ -129,7 +129,9 @@ Enable/disable specific modes and configure their settings:
 
 ### Display modes
 
-Each of the fourteen modes takes `enabled`; a few carry extra keys.
+Each of the fourteen modes takes `enabled`; a few carry extra keys. A mode's
+`duration` is how long that mode stays on screen, in place of the top-level
+`display_duration`.
 
 | Key | Default | Notes |
 |---|---|---|
@@ -140,7 +142,7 @@ Each of the fourteen modes takes `enabled`; a few carry extra keys.
 | `display_modes.player_cards.enabled` | `true` | Show individual player spotlight cards. |
 | `display_modes.course_tour.enabled` | `true` | Show rotating hole maps with course imagery. |
 | `display_modes.course_tour.show_divider` | `true` | Show the vertical divider line between the hole info and map columns. Set to false for a cleaner single-cell look. |
-| `display_modes.hole_by_hole.enabled` | `true` | Show hole-by-hole scores for favorite players. |
+| `display_modes.hole_by_hole.enabled` | `true` | Show the hole-by-hole course tour (the same rotating hole cards as the course tour; it does not show players' scores). |
 | `display_modes.hole_by_hole.duration` | `20` | Display duration (seconds) (5–120). |
 | `display_modes.live_action.enabled` | `true` | Show real-time birdie/eagle notifications. |
 | `display_modes.live_action.duration` | `10` | Notification display duration (seconds) (3–30). |
@@ -203,10 +205,15 @@ For testing when the Masters isn't live:
 ```
 
 This generates realistic mock leaderboard data with:
-- 10 players with authentic names
-- Scores ranging from -12 to -3
+- 15 players with authentic names
+- Scores ranging from -12 to +1
 - Round scores and thru indicators
 - Simulated tournament conditions
+
+Mock data appears only when `mock_data` is on. With it off, the plugin never
+substitutes it: when ESPN is serving a different event, or a fetch fails and
+there is no good copy from the last 24 hours, the leaderboard, player-card,
+field-overview and live-action modes are skipped instead.
 
 ## Usage Examples
 

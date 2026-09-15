@@ -1,8 +1,9 @@
 {
   "id": "masters-tournament",
   "name": "Masters Tournament",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Broadcast-quality Masters Tournament display with real ESPN player headshots, accurate Augusta National hole layouts, fun facts, past champions, live leaderboards, and pixel-perfect LED matrix rendering",
+  "category": "sports",
   "author": "ChuckBuilds",
   "class_name": "MastersTournamentPlugin",
   "entry_point": "manager.py",
@@ -43,6 +44,12 @@
     "height": 64
   },
   "versions": [
+    {
+      "version": "3.0.1",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Stop presenting the mock leaderboard as real: it is used only with mock_data on, and when ESPN serves another event or a fetch fails with no good copy from the last day, the leaderboard modes skip. The fallback copy is stored without a ttl so it survives core 3.3.0's ttl-over-max_age rule. Register all fourteen modes with the core (it reads plugin.modes once) and skip out-of-phase ones in display(), so a Pi started off-season shows the leaderboard in Masters week. The countdown no longer fetches from display() and no longer shows NOW all off-season on stale meta; headshots download in update(), not while drawing. The six display_modes.<mode>.duration settings now set that mode's time on screen. VegasDisplayMode import guarded for cores before 3.1.0. Adds a manifest category."
+    },
     {
       "version": "3.0.0",
       "released": "2026-09-07",
@@ -190,7 +197,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-07",
+  "last_updated": "2026-09-15",
   "compatible_versions": [
     ">=2.0.0"
   ]
