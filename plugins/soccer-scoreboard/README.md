@@ -72,17 +72,43 @@ API key required.
 
 ## Display modes
 
-Unlike the other scoreboards in this repo, soccer exposes **three modes in
-total** — not three per league. Every enabled league feeds the same three
-screens.
+Like the other multi-league scoreboards, soccer registers **three modes per
+league**, named `soccer_<league>_<type>`, where `<league>` is the ESPN league
+code:
 
-![The three display modes](../../docs/assets/soccer-scoreboard/display-modes.png)
+![Live, recent and upcoming screens](../../docs/assets/soccer-scoreboard/display-modes.png)
 
 | Mode | Shows |
 |---|---|
-| `soccer_live` | Matches in progress across every enabled league |
-| `soccer_recent` | Recently finished matches |
-| `soccer_upcoming` | Scheduled matches |
+| `soccer_<league>_live` | That league's matches in progress |
+| `soccer_<league>_recent` | That league's recently finished matches |
+| `soccer_<league>_upcoming` | That league's scheduled matches |
+
+The manifest declares the 30 modes for the ten built-in leagues, and those are
+the names to use in `display.plugin_rotation_order` or an on-demand request:
+
+| League | Modes |
+|---|---|
+| Premier League | `soccer_eng.1_live`, `soccer_eng.1_recent`, `soccer_eng.1_upcoming` |
+| La Liga | `soccer_esp.1_live`, `soccer_esp.1_recent`, `soccer_esp.1_upcoming` |
+| Bundesliga | `soccer_ger.1_live`, `soccer_ger.1_recent`, `soccer_ger.1_upcoming` |
+| Serie A | `soccer_ita.1_live`, `soccer_ita.1_recent`, `soccer_ita.1_upcoming` |
+| Ligue 1 | `soccer_fra.1_live`, `soccer_fra.1_recent`, `soccer_fra.1_upcoming` |
+| Liga Portugal | `soccer_por.1_live`, `soccer_por.1_recent`, `soccer_por.1_upcoming` |
+| MLS | `soccer_usa.1_live`, `soccer_usa.1_recent`, `soccer_usa.1_upcoming` |
+| Champions League | `soccer_uefa.champions_live`, `soccer_uefa.champions_recent`, `soccer_uefa.champions_upcoming` |
+| Europa League | `soccer_uefa.europa_live`, `soccer_uefa.europa_recent`, `soccer_uefa.europa_upcoming` |
+| FIFA World Cup | `soccer_fifa.world_live`, `soccer_fifa.world_recent`, `soccer_fifa.world_upcoming` |
+
+Only enabled leagues, and only the mode types switched on for them, are
+registered at runtime. A league added under `custom_leagues` registers
+`soccer_<code>_live` / `_recent` / `_upcoming` the same way, but it is not in
+the manifest, because its code is not known ahead of time.
+
+The old generic names `soccer_live`, `soccer_recent` and `soccer_upcoming` are
+no longer registered. The plugin still has a branch that accepts them and pools
+every enabled league, but LEDMatrix only sends registered mode names, so they
+cannot be selected; use the per-league names above.
 
 Each mode renders as **switch** (one match at a time, timed) or **scroll** (all
 matches scroll horizontally at high FPS), set per league and per mode with

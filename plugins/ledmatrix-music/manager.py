@@ -98,6 +98,13 @@ class MusicPlugin(BasePlugin):
         # stale prefetch is never used for a newly-started track.
         self._album_art_bytes = None
         self._album_art_bytes_url = None
+        # Guards the bytes/URL pair above (and the retry bookkeeping), so a
+        # reader never sees one track's bytes paired with another's URL.
+        self._album_art_lock = threading.Lock()
+        self._album_art_inflight_url = None
+        self._album_art_failed_url = None
+        self._album_art_retry_at = 0.0
+        self._album_art_retry_seconds = 30
         self.scroll_position_title = 0
         self.scroll_position_artist = 0
         self.scroll_position_album = 0
@@ -582,11 +589,11 @@ class MusicPlugin(BasePlugin):
                     self.logger.info(f"({source_description}) Album art URL changed. Clearing self.album_art_image to force re-fetch.")
                     self.album_art_image = None
                     self.last_album_art_url = new_album_art_url
-                    # Download here, on the polling thread. This block already
-                    # knows the art changed; it used to only invalidate the cache
-                    # and leave display() -- the render thread -- to do the HTTP
-                    # fetch, stalling the panel on every track change.
-                    self._prefetch_album_art(new_album_art_url)
+                    # The download happens in _prefetch_current_album_art(),
+                    # called by the polling/event thread after this returns --
+                    # not here, under track_info_lock, where display() would
+                    # wait on the lock for the HTTP round trip. This method is
+                    # also reached from display() via activate_music_display().
                 elif not self.last_album_art_url and new_album_art_url:
                     self.logger.info(f"({source_description}) New album art URL appeared. Clearing image.")
                     self.album_art_image = None
@@ -648,21 +655,19 @@ class MusicPlugin(BasePlugin):
         return simplified_info, significant_change_detected
 
     def activate_music_display(self):
-        """Activate music display and connect YTM if needed."""
+        """Mark the music display active and sync cached YTM state. No network.
+
+        Called from display(), on the render thread, so it must not connect:
+        connect_client() blocks for up to its timeout plus five seconds. While
+        the display is active the polling thread reconnects YTM (with backoff),
+        so a disconnected client is left to it.
+        """
         self.logger.info("Music display activated.")
         self.is_music_display_active = True
-        
+
         if self.ytm and self.preferred_source == "ytm":
             if not self.ytm.is_connected:
-                self.logger.info("Attempting to connect YTM client due to music display activation.")
-                if self.ytm.connect_client(timeout=10):
-                    self.logger.info("YTM client connected successfully on display activation.")
-                    latest_data = self.ytm.get_current_track()
-                    if latest_data:
-                        self.logger.debug("YTM Activate Sync: Processing current track data after successful connection.")
-                        self._process_ytm_data_update(latest_data, "YTM Activate Sync")
-                else:
-                    self.logger.warning("YTM client failed to connect on display activation.")
+                self.logger.debug("YTM client not connected on display activation; the polling thread will connect it.")
             else:
                 self.logger.debug("YTM client already connected during music display activation. Syncing state.")
                 latest_data = self.ytm.get_current_track()
@@ -696,24 +701,61 @@ class MusicPlugin(BasePlugin):
         
         # Process the data and get outcomes
         self._process_ytm_data_update(ytm_data, "YTM Event")
+        # Socket.IO event thread, outside track_info_lock: safe to download.
+        self._prefetch_current_album_art()
 
     def _prefetch_album_art(self, url) -> None:
-        """Download art for `url` on the calling (polling) thread."""
+        """Download art for `url` on the calling thread. Never from display()."""
         if not url:
-            self._album_art_bytes = None
-            self._album_art_bytes_url = None
+            with self._album_art_lock:
+                self._album_art_bytes = None
+                self._album_art_bytes_url = None
             return
         raw = self._fetch_album_art_bytes(url)
-        if raw:
-            self._album_art_bytes = raw
-            self._album_art_bytes_url = url
+        with self._album_art_lock:
+            if raw:
+                # Written together under the lock; display() snapshots both
+                # under it, so the pair it compares is always consistent.
+                self._album_art_bytes = raw
+                self._album_art_bytes_url = url
+                self._album_art_failed_url = None
+            else:
+                self._album_art_failed_url = url
+                self._album_art_retry_at = time.monotonic() + self._album_art_retry_seconds
+
+    def _prefetch_current_album_art(self) -> None:
+        """Download the current track's art unless it is already downloaded.
+
+        Called from the polling thread, the YTM event thread and update() --
+        never from display() -- and outside track_info_lock, so the render
+        thread is not left waiting on that lock for an HTTP round trip. A
+        failed download is retried after ``_album_art_retry_seconds``.
+        """
+        with self.track_info_lock:
+            url = self.current_track_info.get('album_art_url') if self.current_track_info else None
+        if not url:
+            return
+        with self._album_art_lock:
+            if self._album_art_bytes and self._album_art_bytes_url == url:
+                return
+            if self._album_art_inflight_url == url:
+                return
+            if self._album_art_failed_url == url and time.monotonic() < self._album_art_retry_at:
+                return
+            self._album_art_inflight_url = url
+        try:
+            self._prefetch_album_art(url)
+        finally:
+            with self._album_art_lock:
+                if self._album_art_inflight_url == url:
+                    self._album_art_inflight_url = None
 
     def _fetch_album_art_bytes(self, url: str) -> Union[bytes, None]:
         """Download album art. Network only -- never call this from display().
 
-        Split out from _fetch_and_resize_image so the slow half (an HTTP round
-        trip) can run on the polling thread while the fast half (decode and
-        resize) stays in display(), where the target size is finally known.
+        The slow half (an HTTP round trip) runs off the render thread while the
+        fast half, _render_album_art (decode and resize), stays in display(),
+        where the target size is finally known.
         """
         if not url:
             return None
@@ -741,46 +783,6 @@ class MusicPlugin(BasePlugin):
             return final_img
         except (IOError, OSError, ValueError) as e:
             self.logger.error(f"Error processing album art: {e}")
-            return None
-
-    def _fetch_and_resize_image(self, url: str, target_size: tuple) -> Union[Image.Image, None]:
-        """Fetch an image from a URL, resize it, and return a PIL Image object."""
-        if not url:
-            return None
-        try:
-            response = requests.get(url, timeout=5)
-            response.raise_for_status()
-
-            img_data = BytesIO(response.content)
-            img = Image.open(img_data)
-            
-            # Ensure image is RGB for compatibility with the matrix
-            img = img.convert("RGB") 
-            
-            img.thumbnail(target_size, Image.Resampling.LANCZOS)
-
-            # Enhance contrast
-            enhancer_contrast = ImageEnhance.Contrast(img)
-            img = enhancer_contrast.enhance(1.3)
-
-            # Enhance saturation (Color)
-            enhancer_saturation = ImageEnhance.Color(img)
-            img = enhancer_saturation.enhance(1.3)
-            
-            final_img = Image.new("RGB", target_size, (0,0,0))
-            paste_x = (target_size[0] - img.width) // 2
-            paste_y = (target_size[1] - img.height) // 2
-            final_img.paste(img, (paste_x, paste_y))
-            
-            return final_img
-        except requests.exceptions.RequestException as e:
-            self.logger.error(f"Error fetching image from {url}: {e}")
-            return None
-        except IOError as e:
-            self.logger.error(f"Error processing image from {url}: {e}")
-            return None
-        except Exception as e:
-            self.logger.error(f"Unexpected error fetching/processing image {url}: {e}")
             return None
 
     def _poll_music_data(self):
@@ -835,11 +837,9 @@ class MusicPlugin(BasePlugin):
                                 if new_album_art_url != old_album_art_url:
                                     self.album_art_image = None
                                     self.last_album_art_url = new_album_art_url
-                                    # Download here, on the polling thread. This block already
-                                    # knows the art changed; it used to only invalidate the cache
-                                    # and leave display() -- the render thread -- to do the HTTP
-                                    # fetch, stalling the panel on every track change.
-                                    self._prefetch_album_art(new_album_art_url)
+                                    # Downloaded at the end of this poll cycle by
+                                    # _prefetch_current_album_art(), outside
+                                    # track_info_lock so display() never waits on it.
                                 self.current_track_info['album_art_url_prev_spotify'] = new_album_art_url
 
                                 self.logger.debug(f"Polling Spotify: Active track - {spotify_track.get('item', {}).get('name')}")
@@ -902,7 +902,14 @@ class MusicPlugin(BasePlugin):
                                     self.last_album_art_url = None
                                     self.logger.info("Polling YTM: Reconnect failed. Updating to Nothing Playing.")
                                     
-            
+
+            # Download the current track's art here, on the polling thread and
+            # outside track_info_lock. display() only decodes what is cached.
+            try:
+                self._prefetch_current_album_art()
+            except Exception as e:
+                self.logger.error(f"Error prefetching album art: {e}")
+
             time.sleep(self.polling_interval)
 
     def get_simplified_track_info(self, track_data, source):
@@ -978,11 +985,6 @@ class MusicPlugin(BasePlugin):
         else:
             return nothing_playing_info.copy()
 
-    def get_current_display_info(self):
-        """Return the currently stored track information for display."""
-        with self.track_info_lock:
-            return self.current_track_info.copy() if self.current_track_info else None
-
     def start_polling(self):
         """Start polling for music data."""
         if not self.enabled:
@@ -1025,6 +1027,13 @@ class MusicPlugin(BasePlugin):
         # Start polling if not already running
         if not self.poll_thread or not self.poll_thread.is_alive():
             self.start_polling()
+
+        # Backfill album art the poller has not downloaded yet (first paint, or
+        # a failed download past its retry delay). display() never fetches.
+        try:
+            self._prefetch_current_album_art()
+        except Exception as e:
+            self.logger.error(f"Error prefetching album art in update(): {e}")
 
     def _progress_bar_width(self, text_area_width, lines):
         """Width for the progress bar, matched to the widest line of text.
@@ -1128,9 +1137,10 @@ class MusicPlugin(BasePlugin):
         art_url_currently_in_cache = None
         image_currently_in_cache = None
         
-        # Ensure music display is activated on first entry so YTM can connect
+        # Mark the display active on first entry so the polling thread connects
+        # YTM. activate_music_display() does no network itself.
         if not self.is_music_display_active:
-            self.logger.debug("MusicPlugin.display: Activating music display on entry (ensures YTM connection attempt).")
+            self.logger.debug("MusicPlugin.display: Activating music display on entry (poller will connect YTM if needed).")
             self.activate_music_display()
 
         # Check if an event previously signaled a need for immediate refresh
@@ -1286,15 +1296,20 @@ class MusicPlugin(BasePlugin):
         image_to_render_this_cycle = None
         target_art_url_for_current_track = current_track_info_snapshot.get('album_art_url')
 
+        # Snapshot the downloaded bytes and their URL together, under the lock
+        # that writes them together, so they always belong to the same track.
+        with self._album_art_lock:
+            prefetched_bytes = self._album_art_bytes
+            prefetched_url = self._album_art_bytes_url
+
         if target_art_url_for_current_track:
             if image_currently_in_cache and art_url_currently_in_cache == target_art_url_for_current_track:
                 image_to_render_this_cycle = image_currently_in_cache
-            elif (self._album_art_bytes
-                  and self._album_art_bytes_url == target_art_url_for_current_track):
-                # Already downloaded by the polling thread: decode and fit only,
-                # no network on the render thread.
+            elif (prefetched_bytes
+                  and prefetched_url == target_art_url_for_current_track):
+                # Already downloaded off the render thread: decode and fit only.
                 fetched_image = self._render_album_art(
-                    self._album_art_bytes, album_art_target_size)
+                    prefetched_bytes, album_art_target_size)
                 if fetched_image:
                     # Publish it, exactly as the inline fallback below does.
                     # Without this the decoded image was discarded and
@@ -1317,29 +1332,10 @@ class MusicPlugin(BasePlugin):
                                 f"to '{self.current_track_info.get('title', 'N/A')}' "
                                 "while it was being decoded.")
             else:
-                # Not prefetched yet -- first paint, or the poller has not caught
-                # up. Falls back to the original inline fetch so the art still
-                # appears rather than the panel going blank.
-                self.logger.info(f"MusicPlugin: Fetching album art for: {target_art_url_for_current_track}")
-                fetched_image = self._fetch_and_resize_image(target_art_url_for_current_track, album_art_target_size)
-                if fetched_image:
-                    self.logger.info(f"MusicPlugin: Album art for {target_art_url_for_current_track} fetched successfully.")
-                    with self.track_info_lock:
-                        latest_known_art_url_in_live_info = self.current_track_info.get('album_art_url') if self.current_track_info else None
-                        if target_art_url_for_current_track == latest_known_art_url_in_live_info:
-                            self.album_art_image = fetched_image
-                            self.last_album_art_url = target_art_url_for_current_track 
-                            image_to_render_this_cycle = fetched_image
-                            self.logger.debug(f"Cached and will render new art for {target_art_url_for_current_track}")
-                        else:
-                            self.logger.info(f"MusicPlugin: Discarding fetched art for {target_art_url_for_current_track}; "
-                                        f"track changed to '{self.current_track_info.get('title', 'N/A')}' "
-                                        f"with art '{latest_known_art_url_in_live_info}' during fetch.")
-                else:
-                    self.logger.warning(f"MusicPlugin: Failed to fetch or process album art for {target_art_url_for_current_track}.")
-                    with self.track_info_lock:
-                        if self.last_album_art_url == target_art_url_for_current_track:
-                            self.album_art_image = None 
+                # Not downloaded yet -- first paint, or a failed download the
+                # poller / update() will retry. Draw the placeholder this frame;
+                # never fetch here, display() runs on the render thread.
+                self.logger.debug(f"MusicPlugin: Album art for {target_art_url_for_current_track} not downloaded yet; drawing placeholder.")
         else:
             with self.track_info_lock:
                 if self.album_art_image is not None or self.last_album_art_url is not None:

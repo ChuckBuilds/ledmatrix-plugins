@@ -1,7 +1,7 @@
 {
   "id": "geochron",
   "name": "Geochron World Clock",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "author": "ChuckBuilds",
   "description": "High-fidelity world map clock showing the real-time day/night terminator with civil/nautical/astronomical twilight bands, the subsolar point, configurable city markers, and a digital UTC/local clock - a classic Geochron, reimagined for LED matrix panels of any size.",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.0.7",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Load the 4x6 face at 7px in the live renderer too, not only render_preview.py -- off its pixel grid the clock readout was anti-aliased. A timezone string pytz does not recognise (plugin or city) now logs a warning and falls back to the LEDMatrix timezone, then system time, instead of failing validate_config, which made core refuse to load the plugin."
+    },
     {
       "version": "1.0.6",
       "released": "2026-09-11",

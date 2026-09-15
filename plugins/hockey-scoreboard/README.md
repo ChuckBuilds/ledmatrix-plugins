@@ -120,20 +120,23 @@ by default for the NHL, off for both NCAA leagues.
 
 ![shots on goal on and off](../../docs/assets/hockey-scoreboard/shots-on-goal.png)
 
-> **`show_powerplay` currently does nothing.** ESPN's power-play flag is read and
-> stored on the game (`power_play`), and the setting is resolved into the
-> manager's config, but nothing in this plugin or in the LEDMatrix core ever
-> draws it. No value of the setting changes what appears. It is left in place
-> rather than removed so a future release can wire it up without a breaking
-> config change. Tracked as
-> [issue #431](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/431).
+Scroll and Vegas cards read the same setting, so the shot line appears there
+too.
 
-> **Shots do not appear on scroll or Vegas cards.** Those cards gate the shot
-> line on a flat `show_shots` key at the league root, which the schema does not
-> declare and the web UI therefore never writes — so it reads as `false` no
-> matter what you set `show_shots_on_goal` to. Switch mode is unaffected.
-> Tracked as
-> [issue #432](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/432).
+## Power play
+
+`show_powerplay` marks a live game while ESPN reports a power play
+(`situation.isPowerPlay`). It is on by default for the NHL, off for both NCAA
+leagues, and applies to switch, scroll and Vegas cards alike.
+
+- **Panels 48 rows or taller:** a yellow `PP` sits centred between the clock
+  and the score.
+- **32-row panels:** there is no free row for it, so the period and clock text
+  turns yellow instead.
+
+ESPN's flag does not say which team has the advantage, so the marker is
+centred rather than placed on a team's side. It disappears when the power play
+ends.
 
 ## How games are chosen
 
@@ -295,7 +298,7 @@ Fallbacks used when the corresponding per-league setting is absent.
 | `defaults.show_ranking` | boolean | `false` | **Advanced.** Draw poll rank badges. |
 | `defaults.show_odds` | boolean | `false` | **Advanced.** Draw betting odds. |
 | `defaults.show_shots_on_goal` | boolean | `false` | Draw the shot line on live cards. |
-| `defaults.show_powerplay` | boolean | `true` | Highlight power plays. Nothing draws this — see [Shots on goal](#shots-on-goal). |
+| `defaults.show_powerplay` | boolean | `true` | Mark live games during a power play — see [Power play](#power-play). |
 | `defaults.update_interval_seconds` | 30–86400 s | `3600` | **Advanced.** Base data refresh cadence. |
 | `defaults.season_cache_duration_seconds` | 3600–604800 s | `86400` | **Advanced.** How long season data is cached. |
 
@@ -390,7 +393,7 @@ All **Advanced**.
 | `<league>.display_options.show_ranking` | boolean | `false` / `true` | Draw poll rank badges where available. |
 | `<league>.display_options.show_odds` | boolean | `false` | Draw betting odds. |
 | `<league>.display_options.show_shots_on_goal` | boolean | `true` / `false` | Draw the shot line on live cards. |
-| `<league>.display_options.show_powerplay` | boolean | `true` / `false` | Highlight power plays. Nothing draws this yet. |
+| `<league>.display_options.show_powerplay` | boolean | `true` / `false` | Mark live games during a power play — see [Power play](#power-play). |
 
 ![show_records on and off](../../docs/assets/hockey-scoreboard/show-records.png)
 
@@ -649,14 +652,14 @@ durations.
 **Nothing appears.** Check that `enabled` is on, and that the league's own
 `enabled` is on — both NCAA leagues are off by default.
 
-**Shots on goal never show.** In scroll or Vegas mode they cannot — see
-[issue #432](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/432). In
-switch mode, confirm `<league>.display_options.show_shots_on_goal` is `true`;
-the NCAA leagues default it to `false`, and the `defaults` copy does not
-override the per-league one.
+**Shots on goal never show.** Confirm
+`<league>.display_options.show_shots_on_goal` is `true`; the NCAA leagues
+default it to `false`, and the `defaults` copy does not override the per-league
+one.
 
-**Power-play highlighting never shows.** Nothing draws it yet — see
-[issue #431](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/431).
+**Power play never shows.** Confirm `<league>.display_options.show_powerplay`
+is `true` (the NCAA leagues default it to `false`). The marker only appears on
+live games, and only while ESPN's feed reports a power play.
 
 **Records or rank badges are on when I turned them off.** You changed the
 `defaults` copy. The per-league `display_options` copy wins, and both NCAA

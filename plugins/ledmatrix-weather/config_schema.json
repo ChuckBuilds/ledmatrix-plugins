@@ -28,7 +28,7 @@
       "x-display": "hidden",
       "x-secret": true,
       "type": "string",
-      "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs.",
+      "description": "Deprecated: ignored. Kept for compatibility with existing configs; still shown in the settings form until core honours x-display: hidden.",
       "title": "API Key (deprecated)"
     },
     "location_city": {
@@ -73,10 +73,10 @@
     },
     "display_format": {
       "x-advanced": true,
+      "x-display": "hidden",
       "type": "string",
-      "default": "{temp}°F\n{condition}",
-      "description": "Display format for current weather. Supports placeholders: {temp}, {condition}, {humidity}, {wind}",
-      "title": "Display Format"
+      "description": "Deprecated: ignored. The current-conditions layout is set under customization. Kept for compatibility with existing configs; still shown in the settings form until core honours x-display: hidden.",
+      "title": "Display Format (deprecated)"
     },
     "show_current_weather": {
       "type": "boolean",

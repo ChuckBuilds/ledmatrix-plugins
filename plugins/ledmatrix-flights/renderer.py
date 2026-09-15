@@ -125,7 +125,7 @@ class FlightRenderer:
         self.wx_vis_unit = str(_mcfg.get("visibility_unit", "sm")).lower()
 
         # Colors
-        self.header_color = tuple(config.get("header_color", [255, 255, 255]))
+        self.header_color = tuple(config.get("header_color", [255, 200, 0]))
         self.airport_color = tuple(config.get("airport_color", [0, 120, 255]))
         self.metric_color = tuple(config.get("metric_color", [255, 255, 255]))
         self.error_color = tuple(config.get("error_color", [255, 0, 0]))
@@ -133,7 +133,7 @@ class FlightRenderer:
         self.route_color = (150, 220, 255)
 
         self.show_banner = config.get("show_banner", False)
-        self.show_aircraft_icon = config.get("show_aircraft_icon", False)
+        self.show_aircraft_icon = config.get("show_aircraft_icon", True)
         self.scroll_speed = config.get("scroll_speed", 2)
 
         # Overhead/area cards share one secondary text row between the flight

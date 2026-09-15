@@ -138,10 +138,12 @@ class TidePlugin(BasePlugin):
 
     # ── Customization (per-element text styling) ───────────────────────────────
 
-    # Default element face — exactly the display manager's extra-small font
-    # (assets/fonts/4x6-font.ttf @ 6), which is what every element used before
-    # customization existed. The schema defaults mirror this.
-    _DEF_ELEMENT_FONT = ('4x6-font.ttf', 6)
+    # Default element face — the display manager's extra-small font
+    # (assets/fonts/4x6-font.ttf, which core loads on its 7px pixel grid),
+    # which is what every element used before customization existed. This
+    # mirrors the schema default (font_size 7) so a merged-defaults config
+    # takes the default path instead of loading a second copy of the face.
+    _DEF_ELEMENT_FONT = ('4x6-font.ttf', 7)
 
     def _apply_customization(self, config: Dict) -> None:
         """Parse the optional `customization` block.
@@ -169,7 +171,7 @@ class TidePlugin(BasePlugin):
     def _load_element_font(self, element_cfg: Dict):
         """Resolve an element's configured font, or None for the default.
 
-        The schema default (4x6-font.ttf @ 6) is exactly the display manager's
+        The schema default (4x6-font.ttf @ 7) is exactly the display manager's
         extra-small font, so a default or merged-defaults config returns None
         and rendering is unchanged. Only a genuine non-default selection loads
         a custom face; load failures fall back to None with a warning.
@@ -302,10 +304,48 @@ class TidePlugin(BasePlugin):
     # confidently-wrong times (tides shift ~50 min/day), so a placeholder is safer.
     STALE_MAX_DAYS = 2
 
+    # ── Time ────────────────────────────────────────────────────────────────────
+
+    def _get_global_timezone(self) -> Optional[str]:
+        """The LEDMatrix timezone setting, or None when it cannot be read."""
+        try:
+            if hasattr(self.plugin_manager, 'config_manager') and self.plugin_manager.config_manager:
+                return self.plugin_manager.config_manager.get_timezone()
+            if hasattr(self.cache_manager, 'config_manager') and self.cache_manager.config_manager:
+                return self.cache_manager.config_manager.get_timezone()
+        except Exception as e:
+            self.logger.warning("Error getting global timezone: %s", e)
+        return None
+
+    def _now(self) -> datetime:
+        """Naive wall-clock time in the LEDMatrix timezone.
+
+        NOAA is asked for station-local times (time_zone=lst_ldt), parsed as
+        naive datetimes, so "now" has to be naive wall time in that same zone.
+        The predictions response does not name the station's zone; the
+        configured LEDMatrix timezone stands in for it, since a tide board
+        shows a nearby station. The Pi's system zone (often UTC) put the
+        next-tide highlight and the chart's now-marker hours off. Falls back
+        to system time when no timezone is configured or it does not resolve.
+        """
+        tz_name = self._get_global_timezone()
+        if tz_name:
+            try:
+                from zoneinfo import ZoneInfo
+                return datetime.now(ZoneInfo(tz_name)).replace(tzinfo=None)
+            except Exception:
+                if getattr(self, '_bad_tz_warned', None) != tz_name:
+                    self.logger.warning("Invalid timezone '%s'; using system time", tz_name)
+                    self._bad_tz_warned = tz_name
+        return datetime.now()
+
+    def _today(self) -> date:
+        return self._now().date()
+
     def update(self):
         if not self.station_id: return
         self._prune_legacy_daily_keys()
-        today   = date.today().strftime('%Y%m%d')
+        today   = self._today().strftime('%Y%m%d')
         u       = 'english' if self.units == 'imperial' else 'metric'
 
         # Stable, station-scoped keys (no date suffix) so each overwrites in place
@@ -351,10 +391,9 @@ class TidePlugin(BasePlugin):
                                 label, cached.get('date'), age)
         return None
 
-    @staticmethod
-    def _days_old(d):
+    def _days_old(self, d):
         try:
-            return (date.today() - datetime.strptime(str(d), '%Y%m%d').date()).days
+            return (self._today() -datetime.strptime(str(d), '%Y%m%d').date()).days
         except (TypeError, ValueError):
             return 999
 
@@ -375,7 +414,7 @@ class TidePlugin(BasePlugin):
         exposes no delete method."""
         if getattr(self, '_pruned_legacy', False): return
         self._pruned_legacy = True
-        today = date.today()
+        today = self._today()
         for n in range(0, 45):
             d = (today - timedelta(days=n)).strftime('%Y%m%d')
             self._cache_delete(f"{self.plugin_id}:hilo:{self.station_id}:{d}")
@@ -444,7 +483,7 @@ class TidePlugin(BasePlugin):
 
     def _fetch_hourly(self, u):
         try:
-            t  = date.today().strftime('%Y%m%d')
+            t  = self._today().strftime('%Y%m%d')
             p  = {**self._base(u),'product':'predictions','interval':'h','begin_date':t,'end_date':t}
             r  = requests.get(NOAA_BASE, params=p, timeout=10); r.raise_for_status()
             d  = r.json()
@@ -485,7 +524,7 @@ class TidePlugin(BasePlugin):
     def _current_level(self):
         if self.live is not None: return self.live
         if not self.hourly: return None
-        now = datetime.now()
+        now = self._now()
         h0  = self.hourly[min(now.hour, len(self.hourly)-1)]
         h1  = self.hourly[min(now.hour+1, len(self.hourly)-1)]
         return h0 + (h1-h0) * (now.minute/60.0)
@@ -501,7 +540,7 @@ class TidePlugin(BasePlugin):
 
     def _direction(self):
         if len(self.hourly) < 2: return 'SLACK'
-        now = datetime.now()
+        now = self._now()
         idx = min(now.hour, len(self.hourly)-2)
         cur = self.hourly[idx] + (self.hourly[idx+1]-self.hourly[idx])*(now.minute/60.0)
         nxt = self.hourly[min(idx+1, len(self.hourly)-1)]
@@ -511,7 +550,7 @@ class TidePlugin(BasePlugin):
         return 'SLACK'
 
     def _next_tides(self, n=2):
-        now, out = datetime.now(), []
+        now, out = self._now(), []
         for e in self.hilo:
             dt = _safe_iso(e['dt'])
             if dt and dt > now:
@@ -763,7 +802,7 @@ class TidePlugin(BasePlugin):
 
     def _mode_schedule(self, draw, dw, dh, L):
         if not self.hilo: self._loading(draw, dw, dh, L); return
-        now    = datetime.now()
+        now    = self._now()
         tides  = self.hilo[:4]
         n      = len(tides)
         if n == 0: return
@@ -861,7 +900,8 @@ class TidePlugin(BasePlugin):
                 if dy: draw.line([(x1,y1-dy),(x2,y2-dy)], fill=gc, width=1)
 
         # Current-time marker (draw first so H/L labels paint over it)
-        now_frac = datetime.now().hour + datetime.now().minute/60.0
+        now_dt   = self._now()
+        now_frac = now_dt.hour + now_dt.minute/60.0
         now_x    = cx + int(now_frac*cw/23)
         draw.line([(now_x,cy),(now_x,cy+ch)], fill=C_NOW_LINE, width=1)
         floor_idx = min(int(now_frac), len(heights) - 1)
@@ -920,7 +960,7 @@ class TidePlugin(BasePlugin):
         spring_c    = (255,145,40) if is_spring else C_LOW
 
         # Cycle progress
-        now  = datetime.now()
+        now  = self._now()
         past = [e for e in self.hilo if _safe_iso(e['dt']) and _safe_iso(e['dt']) <= now]
         fut  = [e for e in self.hilo if _safe_iso(e['dt']) and _safe_iso(e['dt']) > now]
         cycle_pct = None

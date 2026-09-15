@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.45.2] - 2026-09-15
+
+### Removed
+- **Unused `get_dynamic_duration_floor()`.** It was a second copy of the
+  dynamic-duration floor lookup that read only the league on screen. Nothing
+  called it; `get_cycle_duration` uses `_get_duration_floor_for_mode` (the
+  highest floor across enabled leagues), which is unchanged. No behaviour
+  change. `test_duration_floor_single_source.py` pins the floors.
+
 ## [1.45.1] - 2026-09-14
 
 ### Fixed

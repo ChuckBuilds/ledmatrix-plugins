@@ -196,11 +196,27 @@ class SimpleClock(BasePlugin):
         try:
             return pytz.timezone(self.timezone_str)
         except Exception:
-            self.logger.warning(
-                f"Invalid timezone '{self.timezone_str}'. Falling back to UTC. "
-                "Valid timezones can be found at: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
-            )
-            return pytz.utc
+            pass
+        # A typo must not blank the clock: fall back to the LEDMatrix timezone,
+        # then the host's system time (update() reads naive local time when
+        # self.timezone is None).
+        fallback = self._get_global_timezone()
+        if fallback and fallback != self.timezone_str:
+            try:
+                tz = pytz.timezone(fallback)
+                self.logger.warning(
+                    f"Invalid timezone '{self.timezone_str}'. Falling back to the "
+                    f"LEDMatrix timezone '{fallback}'. Valid timezones can be found at: "
+                    "https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                )
+                return tz
+            except Exception:
+                pass
+        self.logger.warning(
+            f"Invalid timezone '{self.timezone_str}'. Falling back to system time. "
+            "Valid timezones can be found at: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+        )
+        return None
 
     def _format_time_12h(self, dt: datetime) -> Tuple[str, str]:
         """Format time in 12-hour format."""
@@ -582,6 +598,25 @@ class SimpleClock(BasePlugin):
                         font=self.date_font
                     )
 
+            # position_x / position_y nudge the whole clock. Shift the finished
+            # frame rather than every draw call, so the layout maths above stays
+            # identical; anything pushed past an edge is clipped.
+            try:
+                offset_x = int(self.pos_x or 0)
+                offset_y = int(self.pos_y or 0)
+            except (TypeError, ValueError):
+                offset_x = offset_y = 0
+            # Clamp to one panel size either way: a larger stored value (the
+            # schema caps it, but config.json can be hand-edited) would only
+            # push the whole clock off-screen.
+            offset_x = max(-width, min(width, offset_x))
+            offset_y = max(-height, min(height, offset_y))
+            if offset_x or offset_y:
+                shifted = Image.new('RGB', (width, height), (0, 0, 0))
+                shifted.paste(self.display_manager.image, (offset_x, offset_y))
+                self.display_manager.image = shifted
+                self.display_manager.draw = ImageDraw.Draw(shifted)
+
             # Push the freshly rendered frame to the panel every tick. The
             # display manager's dirty-tracking skips the actual hardware swap
             # when the pixels are identical to the last push, so re-rendering
@@ -612,13 +647,13 @@ class SimpleClock(BasePlugin):
         if not super().validate_config():
             return False
 
-        # Validate timezone
+        # Validate timezone. Not fatal: _get_timezone() already warned and fell
+        # back, and failing here made core refuse to load the clock at all.
         if pytz is not None:
             try:
                 pytz.timezone(self.timezone_str)
             except Exception:
-                self.logger.error(f"Invalid timezone: {self.timezone_str}")
-                return False
+                self.logger.warning(f"Invalid timezone '{self.timezone_str}'; using the fallback zone")
         else:
             self.logger.warning("pytz not available, timezone validation skipped")
 

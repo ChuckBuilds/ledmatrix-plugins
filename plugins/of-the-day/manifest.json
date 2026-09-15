@@ -1,7 +1,7 @@
 {
   "id": "of-the-day",
   "name": "Of The Day Display",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "author": "ChuckBuilds",
   "description": "Display daily featured content like Word of the Day, Bible verses, or custom daily items. Supports multiple categories with rotating display and configurable data sources.",
   "category": "information",
@@ -21,6 +21,12 @@
     "of_the_day"
   ],
   "versions": [
+    {
+      "released": "2026-09-15",
+      "version": "1.4.6",
+      "changelog": "Today's entry now follows the configured LEDMatrix timezone instead of the Pi's system date (the system date is the fallback when the setting is missing or invalid), so the word changes at local midnight. on_config_change now calls super(), so enabling or disabling the plugin in the web UI updates self.enabled without a restart.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-14",
       "version": "1.4.5",

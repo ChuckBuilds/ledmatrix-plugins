@@ -15,6 +15,11 @@ try:
 except ImportError:
     freetype = None
 
+try:
+    import pytz
+except ImportError:  # core ships pytz; without it the clock uses system time
+    pytz = None
+
 
 class HelloWorldPlugin(BasePlugin):
     """
@@ -126,6 +131,29 @@ class HelloWorldPlugin(BasePlugin):
             self.logger.error(f"Failed to load 6x9 BDF font: {e}")
             self.bdf_font = None
 
+    def _now(self):
+        """The current time in the configured LEDMatrix timezone.
+
+        Plain datetime.now() is the Pi's system zone, which is often UTC while
+        LEDMatrix is set to the user's zone. Falls back to system time when
+        pytz or the setting is unavailable, warning once on a bad name.
+        """
+        tz_name = None
+        try:
+            config_manager = getattr(self.plugin_manager, 'config_manager', None)
+            if config_manager:
+                tz_name = config_manager.get_timezone()
+        except Exception as e:
+            self.logger.warning(f"Error getting global timezone: {e}")
+        if tz_name and pytz is not None:
+            try:
+                return datetime.now(pytz.timezone(tz_name))
+            except Exception:
+                if getattr(self, '_warned_timezone', None) != tz_name:
+                    self._warned_timezone = tz_name
+                    self.logger.warning(f"Invalid timezone '{tz_name}'; using system time")
+        return datetime.now()
+
     def update(self):
         """
         Update plugin data.
@@ -137,7 +165,7 @@ class HelloWorldPlugin(BasePlugin):
             self.last_update = time.time()
             
             if self.show_time:
-                now = datetime.now()
+                now = self._now()
                 new_time_str = now.strftime("%I:%M %p")
                 
                 # Only log if the time actually changed (reduces spam from sub-minute updates)

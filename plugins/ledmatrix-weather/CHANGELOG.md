@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.7.1] - 2026-09-15
+
+### Fixed
+- **Daily forecast days are no longer a day early east of UTC.** The day filter
+  and the day/date labels used the Pi's naive system time, but Open-Meteo
+  stamps each day at the location's midnight. On a Pi running UTC, that
+  timestamp is still the previous date for Berlin or Tokyo, so every label ran
+  one day early. Both sides now use the location's timezone, as the hourly
+  forecast already did.
+
+### Removed
+- **`display_format` is deprecated.** Nothing ever read it; the
+  current-conditions layout is configured under `customization`. It is kept
+  in the schema for compatibility and ignored, so a saved config that still
+  carries it keeps validating; it is still shown in the settings form until
+  core honours `x-display: hidden`. It and the long-unused `api_key` are no
+  longer documented in the README.
+
 ## [2.7.0] - 2026-09-11
 
 ### Added

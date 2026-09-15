@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.7] - 2026-09-15
+
+### Fixed
+- **The live renderer loads the 4x6 face at 7px**, the size 1.0.6 gave the
+  preview renderer. The clock readout on the panel was still drawn at 6px, off
+  the face's pixel grid.
+- **A bad timezone no longer blanks the clock.** An unrecognised `timezone`
+  (or city `timezone`) failed `validate_config`, and core refuses to load a
+  plugin that fails validation. It now logs a warning and falls back to the
+  LEDMatrix timezone, then system time.
+
 ## [1.0.6] - 2026-09-11
 
 ### Fixed

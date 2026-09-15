@@ -105,7 +105,7 @@ class FlightTrackerPlugin(BasePlugin):
 
         # Rate limiting and cost control for FlightAware API
         self.api_call_timestamps = []  # Track API call timestamps for rate limiting
-        self.max_api_calls_per_hour = self._fa_config('max_api_calls_per_hour', 20)
+        self.max_api_calls_per_hour = self._fa_config('max_api_calls_per_hour', 25)
         self.cache_ttl_seconds = self._fa_config('cache_ttl_hours', 12) * 3600
         self.min_callsign_length = self._fa_config('min_callsign_length', 4)
         self.daily_api_budget = self._fa_config('daily_api_budget', 60)
@@ -124,18 +124,20 @@ class FlightTrackerPlugin(BasePlugin):
         # Map background configuration
         self.map_bg_config = self.config.get('map_background', {})
         self.map_bg_enabled = self.map_bg_config.get('enabled', True)
-        self.tile_provider = self.map_bg_config.get('tile_provider', 'osm')
+        self.tile_provider = self.map_bg_config.get('tile_provider', 'carto_dark')
         self.tile_size = self.map_bg_config.get('tile_size', 256)
         # Cache tiles for 1 year by default - map tiles don't change frequently
         self.cache_ttl_hours = self.map_bg_config.get('cache_ttl_hours', 8760)
-        self.fade_intensity = self.map_bg_config.get('fade_intensity', 0.3)
+        self.fade_intensity = self.map_bg_config.get('fade_intensity', 0.4)
         self.map_brightness = self.map_bg_config.get('brightness', 1.0)
         self.map_contrast = self.map_bg_config.get('contrast', 1.0)
         self.map_saturation = self.map_bg_config.get('saturation', 1.0)
         self.disable_on_cache_error = self.map_bg_config.get('disable_on_cache_error', False)
         
-        # Custom tile server URL (for self-hosted OSM servers)
-        self.custom_tile_server = self.map_bg_config.get('custom_tile_server', None)
+        # Custom tile server URL (for self-hosted OSM servers). The default
+        # mirrors config_schema.json; an explicit empty string selects
+        # tile_provider instead.
+        self.custom_tile_server = self.map_bg_config.get('custom_tile_server', 'https://maps.chuck-builds.com')
         
         # Log tile server configuration
         if self.custom_tile_server:
@@ -187,7 +189,7 @@ class FlightTrackerPlugin(BasePlugin):
         # Display configuration — read dynamically via properties so any matrix
         # resize is picked up without restarting the plugin.
         self._display_manager_ref = display_manager
-        self.show_trails = self.config.get('show_trails', False)
+        self.show_trails = self.config.get('show_trails', True)
         self.trail_length = self.config.get('trail_length', 10)
         
         # Logging rate limiting for bounds warnings
@@ -424,7 +426,7 @@ class FlightTrackerPlugin(BasePlugin):
         # FlightAware
         self.flight_plan_enabled = self._fa_config('enabled', False)
         self.flightaware_api_key = self._fa_config('api_key', '')
-        self.max_api_calls_per_hour = self._fa_config('max_api_calls_per_hour', 20)
+        self.max_api_calls_per_hour = self._fa_config('max_api_calls_per_hour', 25)
         self.cache_ttl_seconds = self._fa_config('cache_ttl_hours', 12) * 3600
         self.min_callsign_length = self._fa_config('min_callsign_length', 4)
         self.daily_api_budget = self._fa_config('daily_api_budget', 60)
@@ -441,18 +443,18 @@ class FlightTrackerPlugin(BasePlugin):
         # Map background
         self.map_bg_config = self.config.get('map_background', {})
         self.map_bg_enabled = self.map_bg_config.get('enabled', True)
-        self.tile_provider = self.map_bg_config.get('tile_provider', 'osm')
+        self.tile_provider = self.map_bg_config.get('tile_provider', 'carto_dark')
         self.tile_size = self.map_bg_config.get('tile_size', 256)
         self.cache_ttl_hours = self.map_bg_config.get('cache_ttl_hours', 8760)
-        self.fade_intensity = self.map_bg_config.get('fade_intensity', 0.3)
+        self.fade_intensity = self.map_bg_config.get('fade_intensity', 0.4)
         self.map_brightness = self.map_bg_config.get('brightness', 1.0)
         self.map_contrast = self.map_bg_config.get('contrast', 1.0)
         self.map_saturation = self.map_bg_config.get('saturation', 1.0)
         self.disable_on_cache_error = self.map_bg_config.get('disable_on_cache_error', False)
-        self.custom_tile_server = self.map_bg_config.get('custom_tile_server', None)
+        self.custom_tile_server = self.map_bg_config.get('custom_tile_server', 'https://maps.chuck-builds.com')
 
         # Trails
-        self.show_trails = self.config.get('show_trails', False)
+        self.show_trails = self.config.get('show_trails', True)
         self.trail_length = self.config.get('trail_length', 10)
 
         # Proximity alert / overhead live-priority
@@ -3489,8 +3491,25 @@ class FlightTrackerPlugin(BasePlugin):
 
         When ``rotation_views`` is configured, each selected view becomes its own
         rotation slot (``flight_tracker_<view>``). An empty list means the plugin
-        contributes no scroll-through slots. The overhead live slot
-        (``flight_tracker_live``) is appended when proximity preemption is enabled.
+        contributes no scroll-through slots.
+
+        The overhead live slot (``flight_tracker_live``) is appended whenever
+        there is at least one other slot, even while live priority or the
+        proximity alert is off. The core reads ``plugin.modes`` once, when the
+        plugin is loaded or enabled, so a slot added later by
+        ``on_config_change`` is never registered: turning live priority on in
+        the web UI did nothing until a restart, because ``get_live_modes()``
+        named a slot the core did not know. ``display()`` and
+        ``_evaluate_proximity()`` return False for this slot unless both
+        settings are on and a flight is locked, so the rotation skips it.
+
+        With no views selected the live slot is added only while live priority
+        is on, exactly as before. An empty ``plugin.modes`` makes the core fall
+        back to the manifest's ``flight_tracker`` slot, which older configs
+        saved with no view ticked rely on to keep the legacy screen; always
+        listing the live slot there would replace that screen with one that is
+        blank unless a plane is overhead. The cost is one edge: with no views
+        selected, turning live priority on still needs a restart.
         """
         rotation_views = self.config.get('rotation_views', None)
         modes = []
@@ -3500,7 +3519,7 @@ class FlightTrackerPlugin(BasePlugin):
             for view in rotation_views:
                 if view in self._VALID_ROTATION_VIEWS:
                     modes.append(f'flight_tracker_{view}')
-        if self.proximity_enabled and self.live_priority_enabled:
+        if modes or (self.proximity_enabled and self.live_priority_enabled):
             modes.append('flight_tracker_live')
         return modes
 

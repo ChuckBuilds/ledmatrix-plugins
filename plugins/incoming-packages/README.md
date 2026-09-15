@@ -149,7 +149,7 @@ under `incoming-packages`. The full schema is
 | `scroll_enabled` | `true` | Marquee-scroll text too long to fit rather than truncating. Advanced |
 | `scroll_speed` | `5` | Frames between marquee steps; higher is slower (1–30). Advanced |
 | `scroll_separator` | `"   "` | Text inserted between marquee loops. Advanced |
-| `timezone` | `""` | Override the timezone used to decide what "today" means. Empty follows the global LEDMatrix timezone. Advanced |
+| `timezone` | `""` | Override the timezone used to decide what "today" means. Empty follows the global LEDMatrix timezone; an invalid name is logged and ignored. Advanced |
 
 Settings marked advanced sit in the collapsed **Advanced Settings** section of
 the web UI form.

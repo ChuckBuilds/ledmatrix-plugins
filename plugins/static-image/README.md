@@ -236,6 +236,11 @@ The common mistake is setting `mode` and the times but leaving `enabled` at
 If every image is scheduled out at once there is nothing eligible to draw, so
 keep at least one image unscheduled as a fallback.
 
+Windows are read in the LEDMatrix timezone from the main settings, not the
+Pi's system zone, so `08:00` means 08:00 where the panel is. The system clock
+is the fallback when that setting is missing or invalid. `date_based` rotation
+picks its day the same way.
+
 ---
 
 ## Panel Sizes

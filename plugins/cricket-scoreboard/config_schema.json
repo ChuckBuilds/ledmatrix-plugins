@@ -119,22 +119,6 @@
       "description": "Update interval for live matches (seconds)",
       "x-advanced": true
     },
-    "recent_update_interval": {
-      "type": "integer",
-      "default": 3600,
-      "minimum": 60,
-      "maximum": 86400,
-      "description": "Update interval for recent matches (seconds)",
-      "x-advanced": true
-    },
-    "upcoming_update_interval": {
-      "type": "integer",
-      "default": 3600,
-      "minimum": 60,
-      "maximum": 86400,
-      "description": "Update interval for upcoming matches (seconds)",
-      "x-advanced": true
-    },
     "series_discovery_interval": {
       "type": "integer",
       "default": 86400,
@@ -165,29 +149,10 @@
       "description": "Give live matches priority over other modes. Live matches interrupt normal rotation and are displayed immediately when available.",
       "x-advanced": true
     },
-    "show_records": {
-      "type": "boolean",
-      "default": false,
-      "description": "Show team records (played-won) when available",
-      "x-advanced": true
-    },
     "show_venue": {
       "type": "boolean",
       "default": true,
       "description": "Show the venue/ground on upcoming match cards",
-      "x-advanced": true
-    },
-    "celebration_enabled": {
-      "type": "boolean",
-      "default": true,
-      "description": "Show a celebratory takeover screen when a favorite team wins a live match"
-    },
-    "celebration_duration": {
-      "type": "integer",
-      "default": 8,
-      "minimum": 3,
-      "maximum": 30,
-      "description": "How long the win celebration stays on screen (seconds)",
       "x-advanced": true
     },
     "dynamic_duration": {
@@ -284,25 +249,46 @@
       },
       "additionalProperties": false
     },
+    "celebration_enabled": {
+      "type": "boolean",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Win Celebration (deprecated)",
+      "description": "Deprecated: ignored. There is no win-celebration screen. Kept only so configs that still carry this key keep validating."
+    },
+    "celebration_duration": {
+      "type": "integer",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Win Celebration Duration (deprecated)",
+      "description": "Deprecated: ignored. There is no win-celebration screen. Kept only so configs that still carry this key keep validating."
+    },
+    "show_records": {
+      "type": "boolean",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Show Records (deprecated)",
+      "description": "Deprecated: ignored. Team records were never drawn. Kept only so configs that still carry this key keep validating."
+    },
+    "recent_update_interval": {
+      "type": "integer",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Recent Update Interval (deprecated)",
+      "description": "Deprecated: ignored. Fetches use update_interval_seconds and live_update_interval. Kept only so configs that still carry this key keep validating."
+    },
+    "upcoming_update_interval": {
+      "type": "integer",
+      "x-advanced": true,
+      "x-display": "hidden",
+      "title": "Upcoming Update Interval (deprecated)",
+      "description": "Deprecated: ignored. Fetches use update_interval_seconds and live_update_interval. Kept only so configs that still carry this key keep validating."
+    },
     "background_service": {
       "type": "object",
-      "title": "Background Service",
-      "description": "Settings for background data fetching",
+      "title": "Network",
+      "description": "HTTP request settings",
       "properties": {
-        "enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable background service for data fetching",
-          "x-advanced": true
-        },
-        "max_workers": {
-          "type": "integer",
-          "default": 1,
-          "minimum": 1,
-          "maximum": 10,
-          "description": "Worker threads for background fetching. The service is shared process-wide, so the first plugin to start decides for everyone; raise it only if fetches are queueing.",
-          "x-advanced": true
-        },
         "request_timeout": {
           "type": "integer",
           "default": 30,
@@ -311,21 +297,33 @@
           "description": "Request timeout in seconds",
           "x-advanced": true
         },
+        "enabled": {
+          "type": "boolean",
+          "x-advanced": true,
+          "x-display": "hidden",
+          "title": "Background Service (deprecated)",
+          "description": "Deprecated: ignored. The plugin no longer uses the shared background service. Kept only so configs that still carry this key keep validating."
+        },
+        "max_workers": {
+          "type": "integer",
+          "x-advanced": true,
+          "x-display": "hidden",
+          "title": "Worker Threads (deprecated)",
+          "description": "Deprecated: ignored. The plugin no longer uses the shared background service. Kept only so configs that still carry this key keep validating."
+        },
         "max_retries": {
           "type": "integer",
-          "default": 3,
-          "minimum": 1,
-          "maximum": 10,
-          "description": "Maximum number of retries for failed requests",
-          "x-advanced": true
+          "x-advanced": true,
+          "x-display": "hidden",
+          "title": "Max Retries (deprecated)",
+          "description": "Deprecated: ignored. The plugin no longer uses the shared background service. Kept only so configs that still carry this key keep validating."
         },
         "priority": {
           "type": "integer",
-          "default": 2,
-          "minimum": 1,
-          "maximum": 5,
-          "description": "Background service priority",
-          "x-advanced": true
+          "x-advanced": true,
+          "x-display": "hidden",
+          "title": "Service Priority (deprecated)",
+          "description": "Deprecated: ignored. The plugin no longer uses the shared background service. Kept only so configs that still carry this key keep validating."
         }
       },
       "additionalProperties": false
@@ -527,20 +525,20 @@
     "upcoming_game_duration",
     "update_interval_seconds",
     "live_update_interval",
-    "recent_update_interval",
-    "upcoming_update_interval",
     "series_discovery_interval",
     "recent_games_to_show",
     "upcoming_games_to_show",
     "live_priority",
-    "show_records",
     "show_venue",
-    "celebration_enabled",
-    "celebration_duration",
     "dynamic_duration",
     "mode_durations",
     "display_modes",
     "background_service",
-    "customization"
+    "customization",
+    "celebration_enabled",
+    "celebration_duration",
+    "show_records",
+    "recent_update_interval",
+    "upcoming_update_interval"
   ]
 }

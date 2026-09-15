@@ -1,7 +1,7 @@
 {
   "id": "christmas-countdown",
   "name": "Christmas Countdown",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": "ChuckBuilds",
   "description": "Display a countdown to Christmas with a stylized Christmas tree logo and festive text",
   "category": "holiday",
@@ -17,6 +17,12 @@
     "christmas-countdown"
   ],
   "versions": [
+    {
+      "version": "2.0.1",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fix MERRY CHRISTMAS on the wrong day. days_until_christmas starts at 0 and display()'s ensure-update guard tested hasattr (always true), so a display() before the first update() drew MERRY CHRISTMAS; and the count was only recomputed every update_interval (default an hour), so it could lag midnight -- including '1 DAYS' on the 25th. display() now recomputes the count every frame (pure date arithmetic, no I/O). The date is taken in the LEDMatrix timezone setting, falling back to system time, and the README no longer claims the count follows the host's local midnight."
+    },
     {
       "version": "2.0.0",
       "released": "2026-09-07",

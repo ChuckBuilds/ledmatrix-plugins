@@ -403,9 +403,15 @@ class JellyfinNowPlayingPlugin(BasePlugin):
         if not self.enabled:
             return
 
-        # First render can happen before the core's first update() tick
+        # First render can happen before the core's first update() tick. Draw
+        # a placeholder and leave the fetch to update(): fetching here put the
+        # /Sessions request and poster download on the render thread.
         if not self._has_fetched:
-            self.update()
+            if not self.jellyfin_url or not self.api_key:
+                self._error = "Jellyfin: Set URL/API Key"  # known without a request
+            else:
+                self._render_static("Loading...", NOTHING_PLAYING_COLOR, force_clear)
+                return
 
         if self._error:
             self._render_static(self._error, ERROR_TEXT_COLOR, force_clear)

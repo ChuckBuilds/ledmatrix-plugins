@@ -1,7 +1,7 @@
 {
   "id": "tide-display",
   "name": "Tide Display",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "author": "ChuckBuilds",
   "description": "Coastal tide display with animated wave level, tide schedule, 24-hour chart, and tidal statistics. Powered by the free NOAA Tides & Currents API (US stations, no API key required).",
   "entry_point": "manager.py",
@@ -25,6 +25,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.3.2",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Compare NOAA's station-local tide times with the current time in the LEDMatrix timezone setting instead of the Pi's system zone (often UTC), which put the next-tide highlight, past-tide dimming, rising/falling direction, current level, cycle progress and the chart's now-marker hours off. Falls back to system time when no timezone is set. Also make _DEF_ELEMENT_FONT mirror the schema's font_size default of 7, so a merged-defaults config takes the default path it was written for."
+    },
     {
       "version": "1.3.1",
       "released": "2026-09-11",

@@ -170,10 +170,16 @@ class PackageProvider(ABC):
     """Fetches a normalized Snapshot of incoming-package activity."""
 
     requires_token: bool = False
+    # tzinfo that decides what "today" means. The plugin sets it from its
+    # `timezone` override or the global LEDMatrix timezone; None is system time.
+    tz = None
 
     def __init__(self, config: Dict[str, Any], logger):
         self.config = config
         self.logger = logger
+
+    def _today(self) -> date:
+        return datetime.now(self.tz).date() if self.tz is not None else date.today()
 
     @abstractmethod
     def fetch(self) -> Snapshot:
@@ -360,7 +366,7 @@ class AfterShipProvider(PackageProvider):
     def _parse(self, trackings: List[Dict[str, Any]]) -> Snapshot:
         snap = Snapshot()
         stats: Dict[str, CarrierStat] = {}
-        today = date.today()
+        today = self._today()
         for tr in trackings:
             status = _AFTERSHIP_TAG.get(tr.get("tag", ""), STATUS_IN_TRANSIT)
             if status == STATUS_DELIVERED:

@@ -17,8 +17,9 @@
 and "DAYS UNTIL WINTER OLYMPICS" on the right](../../docs/assets/olympics/hero.png)
 
 *Every image in this README is real plugin output, rendered at the true panel
-size with the clock pinned, so it reproduces exactly — including the clipped
-`DAYS UNTI` described under [Known problems](#known-problems).*
+size with the clock pinned. They were captured before the countdown fixes for
+issue #410, so the label in them is still clipped; see
+[Countdown fixes](#countdown-fixes).*
 
 A LEDMatrix plugin that displays a countdown to the next Olympics (summer or winter) with an Olympics logo. Once the Olympics starts, it automatically switches to countdown to the closing ceremony.
 
@@ -67,7 +68,12 @@ Screenshot Preview:
 
 Settings live in the plugin's tab in the web UI and in `config/config.json`
 under `olympics`. The schema sets `additionalProperties: false`, so a key that
-is not listed below will be **rejected**, not ignored. The full schema is
+is not listed below fails schema validation: the core logs a warning and flags
+the plugin as degraded in the web UI, but still loads it with that key ignored.
+`notifications_enabled`, `favorite_countries` and `webhooks` are still declared
+for that reason: they are kept for compatibility and ignored, and are still
+shown in the settings form (titled "deprecated") until core honours
+`x-display: hidden`. The full schema is
 [`config_schema.json`](config_schema.json).
 
 ### Basics
@@ -79,6 +85,7 @@ is not listed below will be **rejected**, not ignored. The full schema is
 | `update_interval` | `300` | How often to fetch fresh data in seconds (default: 5 minutes) (60–3600). |
 | `timezone` | `"UTC"` | Timezone for event times (IANA format, e.g., 'America/New_York'). |
 | `section_duration` | `10` | How long to show each section (medals, events, results) in switch mode (3–60). |
+| `medal_cycle_duration` | `3` | Seconds each country's medal card is shown before cycling to the next, in the medals section (1–60). |
 | `vegas_mode` | `"scroll"` | Vegas display mode: scroll (continuous), fixed (static block), static (pauses scroll) — one of `scroll`, `fixed`, `static`. |
 | `text_color` | `[255, 255, 255]` | RGB color for text [R, G, B] (default: white). |
 
@@ -91,6 +98,7 @@ is not listed below will be **rejected**, not ignored. The full schema is
 | `show_results` | `true` | Show recent results section. |
 | `medal_race_enabled` | `true` | Enable medal race comparison between countries. |
 | `live_alerts_enabled` | `true` | Enable priority alerts for live medal events. |
+| `live_priority` | `false` | Let a live medal final interrupt the normal rotation and take over the display (needs `live_alerts_enabled`). |
 
 ### What goes in them
 
@@ -102,14 +110,6 @@ is not listed below will be **rejected**, not ignored. The full schema is
 | `sport_filters` | *(empty)* | Filter events to specific sports (empty = all sports). |
 | `upcoming_events_count` | `5` | Maximum number of upcoming events to display (1–20). |
 | `recent_results_count` | `5` | Maximum number of recent results to display (1–20). |
-
-### Notifications
-
-| Key | Default | Notes |
-|---|---|---|
-| `notifications_enabled` | `false` | Enable webhook notifications for medal wins, records, and live finals. |
-| `favorite_countries` | *(empty)* | Countries to receive notifications for (ISO 3166-1 alpha-3, e.g., ['USA', 'CAN']). |
-| `webhooks` | *(empty)* | Webhook endpoints for notifications. |
 
 
 ### Example
@@ -126,35 +126,18 @@ is not listed below will be **rejected**, not ignored. The full schema is
 }
 ```
 
-## Known problems
+## Countdown fixes
 
-Two defects on the countdown screen, tracked in
-[issue #410](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/410).
+[Issue #410](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/410)
+reported two countdown defects; both are fixed.
 
-**The countdown is currently negative.** The plugin carries one hardcoded
-Games — Milano Cortina, opening 6 February 2026 — and the day count is a plain
-difference with no floor and nothing to roll on to. Since those Games closed,
-every install has been counting down past zero:
+- **No negative countdown.** The plugin keeps a table of known Games and
+  counts down to the next one, and the day count never drops below zero.
+- **The label fits.** When `DAYS UNTIL` or `OLYMPICS` is wider than the right
+  half of the panel, shorter wording (`DAYS TO`, `DAYS`, `GAMES`, …) is used.
 
-![Before and after the Games](../../docs/assets/olympics/countdown-state.png)
-
-**`DAYS UNTIL` is clipped below 256px.** The lines are centred in the right
-half of the panel, and at the default font the label is wider than that half,
-so it loses its last characters. Only a 256-wide panel fits it:
-
-![The countdown on four panel sizes](../../docs/assets/olympics/panel-sizes.png)
-
-At 64x32 the text also overlaps the rings.
-
-This is not a subtle clip: `check_plugin.py` fails six of its eight panel
-sizes on it, and the two that pass are the 256-wide ones.
-
-```
-[FAIL]   64x32  olympics overflow bbox=(64, 8, 87, 31)
-[FAIL]  128x32  olympics overflow bbox=(129, 8, 135, 15)
-[PASS]  256x32  olympics
-[PASS] 256x128  olympics
-```
+The images above were captured before these fixes and still show the old,
+clipped label.
 
 ## Display Behavior
 
@@ -176,8 +159,12 @@ sizes on it, and the two that pass are the 256-wide ones.
 The plugin includes dates for:
 - **Winter Olympics 2026**: Milan-Cortina (Feb 6-22, 2026)
 - **Summer Olympics 2028**: Los Angeles (July 14-30, 2028)
-- **Winter Olympics 2030**: TBD (placeholder dates)
-- **Summer Olympics 2032**: Brisbane (July 23 - Aug 8, 2032)
+
+Closing day counts as part of the Games. After the last Games in the table
+close, the plugin has nothing to count down to and skips its screen (and its
+Vegas card) until the next Games are added to `OLYMPIC_GAMES` in
+`data/olympics_api.py`. Medal, schedule and results pages are only fetched
+while a Games is on.
 
 ## Assets
 
@@ -221,9 +208,7 @@ If the logo image doesn't appear:
 - The plugin automatically adjusts text size and layout based on display dimensions
 - There is no `logo_size` setting. Earlier versions of this README suggested
   reducing one; the schema has no such key and sets `additionalProperties:
-  false`, so adding it makes the configuration invalid. The label clipping is
-  [issue #410](https://github.com/ChuckBuilds/ledmatrix-plugins/issues/410),
-  and a 256-wide panel is the only current workaround
+  false`, so adding it makes the configuration invalid
 - The plugin automatically adjusts layout based on display dimensions
 
 ## Development

@@ -72,9 +72,18 @@ def current_games(now: Optional[datetime] = None) -> Optional[Dict[str, Any]]:
     if now is None:
         now = _utcnow()
     for games in OLYMPIC_GAMES:
-        if now <= games['closing']:
+        if now < games_end(games):
             return games
     return None
+
+
+def games_end(games: Dict[str, Any]) -> datetime:
+    """The moment the Games are over: the end of closing day, not its start.
+
+    'closing' is a date at midnight, so comparing against it directly ended
+    the Games as closing day began and dropped the ceremony day entirely.
+    """
+    return games['closing'] + timedelta(days=1)
 
 # Cache configuration (in seconds)
 CACHE_DURATION = {
@@ -1060,10 +1069,13 @@ class OlympicsDataFetcher:
         opening = games['opening']
         closing = games['closing']
 
-        is_active = opening <= now <= closing
+        is_active = opening <= now < games_end(games)
 
-        # Fetch all data
-        medals = self.fetch_medal_counts()
+        # Fetch only while the Games are on. Outside them nothing shows medals
+        # (the countdown is drawn instead), and the medals page for Games that
+        # have not started has none, so an empty scrape was never cached and
+        # the page was re-fetched on every update -- every 5 minutes, all year.
+        medals = self.fetch_medal_counts() if is_active else []
         schedule = self.fetch_schedule() if is_active else []
         results = self.fetch_results() if is_active else []
 

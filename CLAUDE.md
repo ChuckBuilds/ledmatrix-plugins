@@ -7,7 +7,7 @@ This repo is the **official plugin registry + plugin source** for
 the display core. The core lives in a separate repo (`ChuckBuilds/LEDMatrix`);
 this repo ships:
 
-- `plugins/<plugin-id>/` — ~39 self-contained Python plugins the core loads
+- `plugins/<plugin-id>/` — 43 self-contained Python plugins the core loads
 - `plugins.json` — registry the in-app Plugin Store consumes (**auto-generated;
   never hand-edit**)
 - tooling/CI that keeps versions, collisions, and render safety honest
@@ -28,8 +28,11 @@ These are not general Python advice — they exist because of how *this* stack w
 1. **Bump `manifest.json` `version` on every plugin change** (semver). Add the
    new entry at the **top** of the `versions` array; keep `version` in sync with
    that top entry. The store compares manifest version to `plugins.json`
-   `latest_version`. Forget the bump → users never get the update; CI fails the PR.
-   Even README-only edits under `plugins/<id>/` (outside `test/`) count.
+   `latest_version`. Forget the bump → users never get the update. CI
+   (`scripts/check_version_bump.py`) fails the PR unless `version` is greater
+   than base, equals `versions[0].version`, and `versions[0]` is a new entry.
+   Even README-only edits under `plugins/<id>/` count (not `test/` or root
+   `test_*.py`).
 2. **Never hand-edit `plugins.json`.** Commit with the pre-commit hook
    (`cp scripts/pre-commit .git/hooks/pre-commit`) or run
    `python update_registry.py`. CI also regenerates on push to `main`.
@@ -211,12 +214,16 @@ topic 08 first.
 ```bash
 python update_registry.py                 # sync plugins.json from manifests
 python update_registry.py --dry-run
+python update_registry.py --check         # fails if plugins/ and plugins.json disagree
+python scripts/check_version_bump.py --all
 python scripts/check_module_collisions.py
 python scripts/check_team_pickers.py      # --apply regenerates ESPN enums
 ```
 
-CI: `test-plugins.yml` (bump + schema + harness), `module-collisions.yml`,
-`update-registry.yml` (push to `main`).
+CI: `test-plugins.yml` (bump + schema + harness + registry check + every
+`scripts/test_*.py`), `module-collisions.yml` ("Plugin Structure"),
+`sports-drift.yml` (lineage drift), `update-registry.yml` (push to `main`).
+Details → `docs/plugin-development/07-testing-ci-and-registry.md`.
 
 ---
 

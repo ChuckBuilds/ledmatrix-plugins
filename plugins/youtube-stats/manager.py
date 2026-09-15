@@ -244,10 +244,15 @@ class YouTubeStatsPlugin(BasePlugin):
 
             if 'items' in data and data['items']:
                 channel = data['items'][0]
+                statistics = channel.get('statistics') or {}
+                # A channel can hide its subscriber count; the API then omits
+                # subscriberCount (hiddenSubscriberCount: true). Indexing it
+                # raised KeyError, so such a channel never showed anything.
+                subscribers = statistics.get('subscriberCount')
                 stats = {
                     'title': channel['snippet']['title'],
-                    'subscribers': int(channel['statistics']['subscriberCount']),
-                    'views': int(channel['statistics']['viewCount'])
+                    'subscribers': int(subscribers) if subscribers is not None else None,
+                    'views': int(statistics.get('viewCount', 0))
                 }
 
                 # Cache the result
@@ -340,7 +345,10 @@ class YouTubeStatsPlugin(BasePlugin):
             draw.text((name_x, start_y), channel_name, font=name_font, fill=self.name_color)
 
             # Draw subscriber count (middle)
-            subs_text = f"{channel_stats['subscribers']:,} subs"
+            if channel_stats.get('subscribers') is None:
+                subs_text = "subs hidden"
+            else:
+                subs_text = f"{channel_stats['subscribers']:,} subs"
             subs_bbox = draw.textbbox((0, 0), subs_text, font=subs_font)
             subs_width = subs_bbox[2] - subs_bbox[0]
             subs_x = right_section_x + ((matrix_width - right_section_x - subs_width) // 2)
@@ -363,7 +371,7 @@ class YouTubeStatsPlugin(BasePlugin):
 
         Throttled to update_interval. The core already calls this on roughly
         that cadence, so this changes nothing for it -- it exists because
-        display() also calls update() for the first paint, and a failing fetch
+        display() used to call update() for the first paint, and a failing fetch
         leaves channel_stats empty. Without the throttle that combination
         issued one YouTube API request per rendered frame, on the render
         thread, each able to block for the full 10s timeout. The Data API's
@@ -393,9 +401,12 @@ class YouTubeStatsPlugin(BasePlugin):
         # First paint can land before the core's first update() tick. Gate on
         # whether a fetch has been ATTEMPTED, not on whether it produced data:
         # gating on the result meant a failing API was retried every frame.
+        # Draw a placeholder rather than fetching: update() owns the network,
+        # and a fetch here blocked the render thread for up to 10 s.
         if not self._has_fetched:
-            self.update()
-        
+            self._show_error_on_display("Loading", color=(140, 140, 140))
+            return
+
         if self.channel_stats:
             # Check if we need to redraw (prevent flashing)
             # Only redraw if the stats changed or force_clear is True
@@ -421,13 +432,28 @@ class YouTubeStatsPlugin(BasePlugin):
                 self.last_displayed_stats = self.channel_stats.copy()
                 self.logger.debug(f"Displayed stats for channel: {self.channel_stats.get('title')}")
         else:
+            self.last_displayed_stats = None  # redraw the stats once they arrive
             if self._api_key_error:
-                self.logger.warning(self._api_key_error)
+                self._warn_throttled(self._api_key_error)
                 self._show_error_on_display("YT: Update API Key")
             else:
-                self.logger.warning("No channel stats available to display")
+                self._warn_throttled("No channel stats available to display")
+                self._show_error_on_display("No data")
 
-    def _show_error_on_display(self, message: str) -> None:
+    def _warn_throttled(self, message: str, interval: float = 300.0) -> None:
+        """Log a warning when it changes, else at most once per interval.
+
+        display() runs every frame; logging unconditionally there wrote the
+        same WARNING many times a second for as long as stats were missing.
+        """
+        now = time.monotonic()
+        if (message != getattr(self, '_last_warning', None)
+                or now - getattr(self, '_last_warning_at', 0.0) >= interval):
+            self._last_warning = message
+            self._last_warning_at = now
+            self.logger.warning(message)
+
+    def _show_error_on_display(self, message: str, color=(255, 80, 80)) -> None:
         """Render a short error message on the LED matrix."""
         try:
             matrix_width = self.display_manager.matrix.width
@@ -441,7 +467,7 @@ class YouTubeStatsPlugin(BasePlugin):
             text_h = bbox[3] - bbox[1]
             x = (matrix_width - text_w) // 2
             y = (matrix_height - text_h) // 2
-            draw.text((x, y), message, font=font, fill=(255, 80, 80))
+            draw.text((x, y), message, font=font, fill=color)
             self.display_manager.image = image
             self.display_manager.update_display()
         except Exception as e:

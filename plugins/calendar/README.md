@@ -73,12 +73,11 @@ cd plugins/calendar
 python calendar_registration.py
 ```
 
-**Option C: Let Plugin Authenticate**
-When you first run the plugin:
-1. A browser window will open
-2. Sign in with your Google account
-3. Grant calendar read permissions
-4. Token will be saved in the plugin directory
+**The plugin never signs in by itself.** If it has no usable token (none yet, or
+a refresh fails because access was revoked or the token expired), it logs the
+problem and the panel shows **Auth needed / See web UI** instead of events.
+Complete Option A or B, then restart LEDMatrix so the plugin loads the new
+token.
 
 All authentication files (`credentials.json` and `token.pickle`) are stored in the plugin directory for complete isolation.
 
@@ -191,6 +190,10 @@ See [List of timezones](https://en.wikipedia.org/wiki/List_of_tz_database_time_z
 - Check authentication is valid
 - Review logs for API errors
 
+**The panel says "Auth needed":**
+- The plugin has no usable token. Run **Authenticate Google Calendar** in the
+  web interface (or `calendar_registration.py`), then restart LEDMatrix.
+
 **Authentication failed:**
 - Delete `token.pickle` and re-authenticate
 - Verify `credentials.json` is valid
@@ -245,11 +248,9 @@ With default settings (300s interval):
 - Keep both files secure and don't commit to git
 - The plugin automatically stores these in its own directory
 - If you delete the plugin, all authentication data is removed
-- Recommended: Add to plugin `.gitignore`:
-  ```
-  credentials.json
-  token.pickle
-  ```
+- The plugin's own `.gitignore` excludes `credentials.json`, `token.pickle` and
+  `.pkce_code_verifier` (the one-use PKCE verifier saved between the two web-UI
+  auth steps). The repository's root `.gitignore` does not cover them.
 
 ## Advanced Configuration
 

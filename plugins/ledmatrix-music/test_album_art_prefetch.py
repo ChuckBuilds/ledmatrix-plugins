@@ -27,8 +27,11 @@ def _reachable(start, limit=6):
             if not node:
                 continue
             for c in ast.walk(node):
-                if isinstance(c, ast.Call):
-                    nm = ast.unparse(c.func).split(".")[-1]
+                # Follow self.<method>() only: a bare name match sends
+                # display()'s debug_ctx.update({...}) into the plugin's update().
+                if (isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)
+                        and isinstance(c.func.value, ast.Name) and c.func.value.id == "self"):
+                    nm = c.func.attr
                     if nm in FUNCS and nm not in seen:
                         seen.add(nm)
                         nxt.add(nm)
@@ -52,15 +55,23 @@ def test_render_helper_is_pure_cpu():
 
 
 def test_the_polling_threads_prefetch_on_a_track_change():
-    """Both art-change sites must download, not just invalidate."""
-    for fn in ("_process_ytm_data_update", "_poll_music_data"):
+    """Every non-render thread that learns of a track change must download.
+
+    The download runs after track processing, outside track_info_lock -- the
+    change sites themselves only invalidate, because _process_ytm_data_update
+    is also reached from display() via activate_music_display().
+    """
+    for fn in ("_poll_music_data", "_handle_ytm_direct_update", "update"):
         assert fn in FUNCS, f"{fn} missing -- has the polling design changed?"
         body = ast.unparse(FUNCS[fn])
-        if "new_album_art_url != old_album_art_url" not in body:
-            continue
-        assert "_prefetch_album_art" in body, (
-            f"{fn} notices the album art changed but does not download it; "
-            "display() would be left to fetch on the render thread")
+        assert "_prefetch_current_album_art" in body, (
+            f"{fn} never downloads the current track's art; "
+            "the panel would show the placeholder until something else did")
+    for fn in ("_process_ytm_data_update", "activate_music_display"):
+        body = ast.unparse(FUNCS[fn])
+        assert "_prefetch" not in body, (
+            f"{fn} downloads album art, but it runs on the render thread "
+            "(display() -> activate_music_display())")
 
 
 def test_display_prefers_the_prefetched_bytes():
@@ -83,7 +94,7 @@ def _prefetch_branch():
     for node in ast.walk(FUNCS["display"]):
         if not isinstance(node, ast.If):
             continue
-        if "_album_art_bytes_url" in ast.unparse(node.test):
+        if "prefetched_url" in ast.unparse(node.test):
             return " ".join(ast.unparse(s) for s in node.body)
     return None
 
@@ -117,9 +128,21 @@ def test_the_prefetched_image_is_guarded_against_a_track_change():
         "inline fallback does, and the same race applies here")
 
 
-def test_display_keeps_an_inline_fallback():
-    """First paint has nothing prefetched; the panel must not go blank."""
-    body = ast.unparse(FUNCS["display"])
-    assert "_fetch_and_resize_image" in body, (
-        "the inline fallback was removed; before the poller catches up there "
-        "would be no art at all")
+def test_display_has_no_inline_fetch():
+    """Nothing reachable from display() may touch the network.
+
+    display() used to fall back to an inline requests.get (timeout 5) whenever
+    nothing was prefetched. That fallback is gone: update() and the poller
+    backfill the download, and display() draws the placeholder meanwhile.
+    """
+    reachable = _reachable("display") | {"display"}
+    for fn in sorted(reachable):
+        body = ast.unparse(FUNCS[fn])
+        assert not any(m in body for m in NET), \
+            f"{fn} (reachable from display()) performs network I/O"
+        # Match a call, not the text: docstrings may name connect_client().
+        connects = any(isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)
+                       and c.func.attr == "connect_client"
+                       for c in ast.walk(FUNCS[fn]))
+        assert not connects, \
+            f"{fn} (reachable from display()) connects the YTM client"
