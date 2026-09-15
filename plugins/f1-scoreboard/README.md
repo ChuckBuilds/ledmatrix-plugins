@@ -143,8 +143,20 @@ its own display modes running.
 | `dynamic_duration.enabled` | `true` | Run a scroll until its full cycle completes instead of the fixed timer |
 | `dynamic_duration.max_duration_seconds` | `120` | Hard cap even with dynamic duration |
 | `scroll.scroll_speed` | `1` | Pixels per step. With `scroll_delay` it sets the speed: `scroll_speed / scroll_delay` pixels per second (100 by default, the speed F1 has always scrolled at), snapped to the nearest speed the panel can move in whole pixels |
-| `scroll.scroll_delay` | `0.01` | Seconds per step; see `scroll.scroll_speed`. Older configs saved with `0.03` now scroll at 33.3 px/s; set `0.01` for 100 px/s |
+| `scroll.scroll_delay` | `0.01` | Seconds per step; see `scroll.scroll_speed`. The exact pair `scroll_speed` 1 / `scroll_delay` 0.03 is the default from before 1.9.0, when these settings did nothing, so it is read as the default and scrolls at 100 px/s. See the note below the table |
 | `scroll.game_card_width` | `128` | Card width in pixels (lower on multi-panel chains) |
+
+**Scroll speed and older configs.** Before 1.9.0 the scroll block was never
+read: F1 always scrolled at 100 px/s, and the web UI saved the then-default
+`scroll_speed: 1`, `scroll_delay: 0.03` into your config. From 1.9.0 the
+settings work, so that saved pair would have slowed every such install to
+33.3 px/s. Instead, **exactly `1` / `0.03` is treated as "not customised"
+and scrolls at 100 px/s**; every other pair is used as set.
+
+To scroll slower, pick any other pair. For 33.3 px/s use `scroll_speed: 0.5`
+with `scroll_delay: 0.015`; for 50 px/s, `scroll_speed: 0.5` with
+`scroll_delay: 0.01`. Both are within the allowed ranges, and the panel
+snaps the result to a speed it can move in whole pixels.
 
 ### Visual features
 

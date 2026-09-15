@@ -298,6 +298,15 @@ sd_legacy = ScrollDisplay(_DisplayManager(), {"scroll": {"scroll_speed": 1, "scr
                           _Logger(), global_config={})
 check("a config saved with the old default pair (1, 0.03) keeps 100 px/s, not 33.3",
       abs(sd_legacy._scroll_settings.requested_pixels_per_second - 100.0) < 0.01)
+# The README's advice for a slower scroll must actually work.
+sd_slow = ScrollDisplay(_DisplayManager(), {"scroll": {"scroll_speed": 0.5, "scroll_delay": 0.015}},
+                        _Logger(), global_config={})
+check("the documented slower pair (0.5, 0.015) requests 33.3 px/s",
+      abs(sd_slow._scroll_settings.requested_pixels_per_second - 100.0 / 3) < 0.01)
+for _key, _val in (("scroll_speed", 0.5), ("scroll_delay", 0.015)):
+    _spec = scroll_props[_key]
+    check(f"documented {_key}={_val} is within the schema's range",
+          _spec.get("minimum", _val) <= _val <= _spec.get("maximum", _val))
 hold = s.frame_hold if s is not None else 1
 sd.prepare_scroll_content([_img(400)])
 sd.display_scroll_frame()
