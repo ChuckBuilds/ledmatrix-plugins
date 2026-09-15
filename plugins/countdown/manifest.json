@@ -1,7 +1,7 @@
 {
   "id": "countdown",
   "name": "Countdown Display",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "author": "ChuckBuilds",
   "description": "Create and manage customizable countdowns with images. Perfect for birthdays, holidays, events, and special occasions.",
   "entry_point": "manager.py",
@@ -21,6 +21,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "3.3.1",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Make the colour settings work. Every draw_text call passed a font but no color, so the core drew all text white: font_color, name_font_color (default grey), each countdown's style.font_color / style.name_font_color, and the yellow highlight for the last 24 hours did nothing. The colours were only handed to the font manager's registration, which never draws with them. With the defaults the name line now renders in its documented grey rather than white; goldens refreshed. Countdowns are now also computed against wall-clock time in the LEDMatrix timezone setting instead of the Pi's system zone, falling back to system time when none is set."
+    },
     {
       "version": "3.3.0",
       "released": "2026-09-02",
