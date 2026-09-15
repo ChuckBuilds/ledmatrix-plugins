@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.29.2",
+  "version": "2.29.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.29.3",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Docs only: the README's display-mode section listed the generic soccer_live, soccer_recent and soccer_upcoming modes. The plugin registers a mode per league (soccer_eng.1_live and so on) and the manifest declares the 30 built-in ones; the README now lists those, explains custom-league modes, and notes that the generic names can no longer be selected."
+    },
     {
       "version": "2.29.2",
       "released": "2026-09-14",

@@ -67,6 +67,27 @@ def _resolve_font_path(path: str) -> str:
 
 logger = logging.getLogger(__name__)
 
+#: Power-play marker colour. hockey.py keeps an identical copy (POWER_PLAY_COLOR
+#: and power_play_slot) for the switch scorebug; change both together.
+POWER_PLAY_COLOR = (255, 255, 0)
+
+
+def _power_play_slot(draw, width, clock_text, clock_xy, clock_font,
+                     score_text, score_xy, score_font, pp_font):
+    """Top-left for a centred "PP" in the rows between clock and score, or None.
+
+    None means those rows cannot hold the glyphs plus their one-pixel outline
+    without touching the clock or the score -- every 32-row panel.
+    """
+    pp_box = draw.textbbox((0, 0), "PP", font=pp_font)
+    pp_w, pp_h = pp_box[2] - pp_box[0], pp_box[3] - pp_box[1]
+    top = draw.textbbox(clock_xy, clock_text, font=clock_font)[3] if clock_text else clock_xy[1]
+    bottom = draw.textbbox(score_xy, score_text, font=score_font)[1]
+    if bottom - top < pp_h + 2:
+        return None
+    return ((width - pp_w) // 2 - pp_box[0],
+            top + (bottom - top - pp_h) // 2 - pp_box[1])
+
 # Pillow compatibility: Image.Resampling.LANCZOS is available in Pillow >= 9.1
 # Fall back to Image.LANCZOS for older versions
 try:
@@ -659,10 +680,33 @@ class GameRenderer(SportsGameRendererMixin):
         status_width = draw.textlength(period_clock_text, font=self.fonts['time'])
         status_x = (self.display_width - status_width) // 2
         status_y = 1
-        self._draw_text_with_outline(draw, period_clock_text, (status_x, status_y), self.fonts['time'])
+        league = game.get('league', 'nhl')
+
+        # Power play: same rule as the switch scorebug in hockey.py -- "PP"
+        # between the clock and the score where it fits, else a coloured clock.
+        power_play = bool(game.get('power_play')) and self._show_powerplay(league)
+        pp_xy = None
+        if power_play:
+            score_text = "%s-%s" % ((game.get('away_team') or {}).get('score', '0'),
+                                    (game.get('home_team') or {}).get('score', '0'))
+            score_x = ((self.display_width - draw.textlength(score_text, font=self.fonts['score'])) // 2
+                       + self._layout_offset('score', 'x_offset'))
+            score_y = ((self.display_height // 2) - 3
+                       + self._layout_offset('score', 'y_offset'))
+            pp_xy = _power_play_slot(
+                draw, self.display_width,
+                period_clock_text, (status_x, status_y), self.fonts['time'],
+                score_text, (score_x, score_y), self.fonts['score'], self.fonts['detail'],
+            )
+        self._draw_text_with_outline(
+            draw, period_clock_text, (status_x, status_y), self.fonts['time'],
+            fill=POWER_PLAY_COLOR if power_play and pp_xy is None else None,
+        )
+        if pp_xy is not None:
+            self._draw_text_with_outline(draw, "PP", pp_xy, self.fonts['detail'],
+                                         fill=POWER_PLAY_COLOR)
 
         # Draw shots on goal (optional)
-        league = game.get('league', 'nhl')
         if self._show_shots_on_goal(league):
             shots_font = self.fonts['detail']
             home_shots = str(game.get("home_shots", "0"))
@@ -693,6 +737,21 @@ class GameRenderer(SportsGameRendererMixin):
             return bool(league_config["show_shots_on_goal"])
         defaults = self.config.get("defaults") or {}
         return bool(defaults.get("show_shots_on_goal", False))
+
+    def _show_powerplay(self, league: str) -> bool:
+        """Is the power-play marker wanted for this league?
+
+        The same ladder as _show_shots_on_goal and manager.py's adapter, whose
+        fallback for this key is True.
+        """
+        league_config = self.config.get(league) or {}
+        display_options = league_config.get("display_options") or {}
+        if "show_powerplay" in display_options:
+            return bool(display_options["show_powerplay"])
+        if "show_powerplay" in league_config:
+            return bool(league_config["show_powerplay"])
+        defaults = self.config.get("defaults") or {}
+        return bool(defaults.get("show_powerplay", True))
 
     def _draw_recent_game_status(self, draw: ImageDraw.Draw, _game: Dict) -> None:
         """Draw status elements for a recently completed hockey game.

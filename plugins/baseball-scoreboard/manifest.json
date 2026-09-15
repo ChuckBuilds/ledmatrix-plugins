@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.45.1",
+  "version": "1.45.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.45.2",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Cleanup, no behaviour change: removed get_dynamic_duration_floor(), an unused second copy of the dynamic-duration floor lookup. Nothing in the plugin or LEDMatrix called it; get_cycle_duration has always used _get_duration_floor_for_mode, which is unchanged. A new test pins the floors get_cycle_duration applies."
+    },
     {
       "version": "1.45.1",
       "released": "2026-09-14",

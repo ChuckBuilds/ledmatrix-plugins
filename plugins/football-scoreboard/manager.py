@@ -3370,52 +3370,14 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # No global fallback - return None
         return None
 
-    def get_dynamic_duration_floor(self) -> Optional[float]:
-        """
-        Get dynamic duration minimum (floor) for the current display context.
-        Checks granular settings: per-league/per-mode > per-league > None.
-
-        Returns:
-            Minimum duration in seconds, or None if not configured.
-        """
-        if not self.is_enabled:
-            return None
-
-        # If no current display context, return None
-        if not self._current_display_league or not self._current_display_mode_type:
-            return None
-
-        league = self._current_display_league
-        mode_type = self._current_display_mode_type
-
-        # Check per-league/per-mode setting first (most specific)
-        league_config = self.config.get(league, {})
-        league_dynamic = league_config.get("dynamic_duration", {})
-        league_modes = league_dynamic.get("modes", {})
-        mode_config = league_modes.get(mode_type, {})
-        if "min_duration_seconds" in mode_config:
-            try:
-                floor = float(mode_config.get("min_duration_seconds"))
-                if floor > 0:
-                    return floor
-            except (TypeError, ValueError):
-                pass
-
-        # Check per-league setting
-        if "min_duration_seconds" in league_dynamic:
-            try:
-                floor = float(league_dynamic.get("min_duration_seconds"))
-                if floor > 0:
-                    return floor
-            except (TypeError, ValueError):
-                pass
-
-        # No global fallback - return None
-        return None
-
     def _get_duration_floor_for_mode(self, mode_type: str) -> Optional[float]:
         """
         Get the minimum duration floor for a mode type across all enabled leagues.
+
+        This is the only floor lookup. A second copy, get_dynamic_duration_floor(),
+        read just the league on screen; nothing in the plugin or the core called
+        it, so it was removed rather than wired in (see
+        test_duration_floor_single_source.py).
 
         When both NFL and NCAA FB are enabled, returns the highest min_duration
         configured across the enabled leagues (most restrictive floor).

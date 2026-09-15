@@ -6,6 +6,27 @@ from PIL import Image, ImageDraw, ImageFont
 from data_sources import ESPNDataSource
 from sports import SportsCore, SportsLive
 
+#: Colour of the power-play marker (and of the clock row when there is no room
+#: for the marker). game_renderer.py keeps an identical copy for scroll cards.
+POWER_PLAY_COLOR = (255, 255, 0)
+
+
+def power_play_slot(draw, width, clock_text, clock_xy, clock_font,
+                    score_text, score_xy, score_font, pp_font):
+    """Top-left for a centred "PP" in the rows between clock and score, or None.
+
+    None means those rows cannot hold the glyphs plus their one-pixel outline
+    without touching the clock or the score -- every 32-row panel.
+    """
+    pp_box = draw.textbbox((0, 0), "PP", font=pp_font)
+    pp_w, pp_h = pp_box[2] - pp_box[0], pp_box[3] - pp_box[1]
+    top = draw.textbbox(clock_xy, clock_text, font=clock_font)[3] if clock_text else clock_xy[1]
+    bottom = draw.textbbox(score_xy, score_text, font=score_font)[1]
+    if bottom - top < pp_h + 2:
+        return None
+    return ((width - pp_w) // 2 - pp_box[0],
+            top + (bottom - top - pp_h) // 2 - pp_box[1])
+
 
 class Hockey(SportsCore):
     """Base class for hockey sports with common functionality."""
@@ -22,6 +43,9 @@ class Hockey(SportsCore):
         self.data_source = ESPNDataSource(logger)
         self.sport = "hockey"
         self.show_shots_on_goal = self.mode_config.get("show_shots_on_goal", False)
+        # True mirrors the adapter's own fallback in manager.py and the
+        # schema's defaults.show_powerplay.
+        self.show_powerplay = self.mode_config.get("show_powerplay", True)
 
     def _extract_game_details(self, game_event: Dict) -> Optional[Dict]:
         """Extract relevant game details from ESPN Hockey API response."""
@@ -238,12 +262,6 @@ class HockeyLive(Hockey, SportsLive):
             )
             status_x = (self.display_width - status_width) // 2 + self._get_layout_offset('status_text', 'x_offset')
             status_y = 1 + self._get_layout_offset('status_text', 'y_offset')  # Position at top
-            self._draw_text_with_outline(
-                draw_overlay,
-                period_clock_text,
-                (status_x, status_y),
-                self.fonts["time"],
-            )
 
             # Scores (centered, slightly above bottom) with layout offsets
             home_score = str(game.get("home_score", "0"))
@@ -254,9 +272,34 @@ class HockeyLive(Hockey, SportsLive):
             score_y = (
                 self.display_height // 2
             ) - 3 + self._get_layout_offset('score', 'y_offset')  # centered #from 14 # Position score higher
+
+            # Power play (show_powerplay): "PP" between the clock and the
+            # score where those rows can hold it, else the clock row itself
+            # turns POWER_PLAY_COLOR (32-row panels have no free row).
+            power_play = bool(self.show_powerplay and game.get("power_play"))
+            pp_font = self.fonts.get("shots") or self.fonts.get("status") or ImageFont.load_default()
+            pp_xy = None
+            if power_play:
+                pp_xy = power_play_slot(
+                    draw_overlay, self.display_width,
+                    period_clock_text, (status_x, status_y), self.fonts["time"],
+                    score_text, (score_x, score_y), self.fonts["score"], pp_font,
+                )
+
+            self._draw_text_with_outline(
+                draw_overlay,
+                period_clock_text,
+                (status_x, status_y),
+                self.fonts["time"],
+                **({"fill": POWER_PLAY_COLOR} if power_play and pp_xy is None else {}),
+            )
             self._draw_text_with_outline(
                 draw_overlay, score_text, (score_x, score_y), self.fonts["score"]
             )
+            if pp_xy is not None:
+                self._draw_text_with_outline(
+                    draw_overlay, "PP", pp_xy, pp_font, fill=POWER_PLAY_COLOR
+                )
 
             # Shots on Goal
             if self.show_shots_on_goal:

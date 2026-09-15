@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.29.3] - 2026-09-15
+
+### Documentation
+- **The README lists the display modes the plugin actually registers.** It
+  still described three generic modes (`soccer_live`, `soccer_recent`,
+  `soccer_upcoming`) that the plugin no longer registers; the manifest has
+  declared the 30 league-qualified modes since #466. The generic names
+  are noted as unselectable: `display()` still has a branch for them, but the
+  host only dispatches registered modes.
+
 ## [2.29.2] - 2026-09-14
 
 ### Fixed

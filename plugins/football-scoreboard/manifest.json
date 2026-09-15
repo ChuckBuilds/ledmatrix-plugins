@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.10.1",
+  "version": "3.10.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.10.2",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Cleanup, no behaviour change: removed get_dynamic_duration_floor(), an unused second copy of the dynamic-duration floor lookup. Nothing in the plugin or LEDMatrix called it; get_cycle_duration has always used _get_duration_floor_for_mode, which is unchanged. A new test pins the floors get_cycle_duration applies."
+    },
     {
       "version": "3.10.1",
       "released": "2026-09-14",
