@@ -173,8 +173,11 @@ def plugin_checks():
     for key in ("notifications_enabled", "favorite_countries", "webhooks"):
         spec = props.get(key, {})
         check("%s still declared (old configs validate)" % key, key in props)
-        check("%s marked deprecated and hidden, no default" % key,
-              spec.get("x-display") == "hidden" and "default" not in spec
+        # Core does not honour x-display yet, so the field still renders:
+        # the title and description must tell the user it does nothing.
+        check("%s declared deprecated (title, description, x-advanced, no default)" % key,
+              spec.get("x-display") == "hidden" and spec.get("x-advanced") is True
+              and "(deprecated)" in spec.get("title", "") and "default" not in spec
               and spec.get("description", "").startswith("Deprecated: ignored"),
               "got %r" % spec)
     import jsonschema

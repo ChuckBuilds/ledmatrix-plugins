@@ -119,7 +119,10 @@ def main():
     bg = props.get("background_service", {}).get("properties", {})
 
     def deprecated(spec):
-        return (spec.get("x-display") == "hidden" and "default" not in spec
+        # Core does not honour x-display yet, so the field still renders:
+        # the title and description must tell the user it does nothing.
+        return (spec.get("x-display") == "hidden" and spec.get("x-advanced") is True
+                and "(deprecated)" in spec.get("title", "") and "default" not in spec
                 and spec.get("description", "").startswith("Deprecated: ignored"))
 
     for key in ("celebration_enabled", "celebration_duration", "show_records",

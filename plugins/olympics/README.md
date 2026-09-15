@@ -71,7 +71,9 @@ under `olympics`. The schema sets `additionalProperties: false`, so a key that
 is not listed below fails schema validation: the core logs a warning and flags
 the plugin as degraded in the web UI, but still loads it with that key ignored.
 `notifications_enabled`, `favorite_countries` and `webhooks` are still declared
-for that reason, as deprecated settings that do nothing. The full schema is
+for that reason: they are kept for compatibility and ignored, and are still
+shown in the settings form (titled "deprecated") until core honours
+`x-display: hidden`. The full schema is
 [`config_schema.json`](config_schema.json).
 
 ### Basics

@@ -12,10 +12,11 @@
 
 ### Removed
 - **`display_format` is deprecated.** Nothing ever read it; the
-  current-conditions layout is configured under `customization`. It stays in
-  the schema, hidden, so a saved config that still carries it keeps
-  validating, and it and the long-unused `api_key` are no longer documented in
-  the README.
+  current-conditions layout is configured under `customization`. It is kept
+  in the schema for compatibility and ignored, so a saved config that still
+  carries it keeps validating; it is still shown in the settings form until
+  core honours `x-display: hidden`. It and the long-unused `api_key` are no
+  longer documented in the README.
 
 ## [2.7.0] - 2026-09-11
 
