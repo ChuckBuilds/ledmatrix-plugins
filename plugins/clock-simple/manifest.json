@@ -20,7 +20,7 @@
       "version": "1.1.1",
       "released": "2026-09-15",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "position_x and position_y now move the clock, as the README always said: they were read and never used. The whole rendered frame is shifted by the offsets and clipped at the edges; the default 0/0 renders exactly as before. The offsets are bounded to -256..256 in the schema and clamped to one panel size in code, so a large hand-edited value cannot push the clock arbitrarily far; a stored value outside -256..256 is flagged by schema validation (the plugin still loads). An unrecognised timezone string now logs a warning and falls back to the LEDMatrix timezone, then system time, instead of failing validate_config -- which made core refuse to load the plugin, so a typo blanked the clock."
+      "notes": "position_x and position_y now move the clock, as the README always said: they were read and never used. The whole rendered frame is shifted by the offsets and clipped at the edges; the default 0/0 renders exactly as before. The offsets are clamped to one panel size in code, so a large hand-edited value cannot push the clock arbitrarily far; the schema sets no limit, so any previously stored value stays valid. An unrecognised timezone string now logs a warning and falls back to the LEDMatrix timezone, then system time, instead of failing validate_config -- which made core refuse to load the plugin, so a typo blanked the clock."
     },
     {
       "version": "1.1.0",

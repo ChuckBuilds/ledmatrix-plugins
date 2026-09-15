@@ -103,8 +103,10 @@ import json  # noqa: E402
 schema = json.loads((plugin_dir / "config_schema.json").read_text(encoding="utf-8"))
 for key in ("position_x", "position_y"):
     spec = schema["properties"][key]
-    check("%s bounded in the schema (-256..256)" % key,
-          spec.get("minimum") == -256 and spec.get("maximum") == 256)
+    # No schema limit: a previously stored large value must stay valid (a
+    # tightened bound would flag existing configs degraded); code clamps.
+    check("%s has no schema bound, so stored values stay valid" % key,
+          "minimum" not in spec and "maximum" not in spec)
 _, huge = _render({"position_x": 10 ** 6, "position_y": -(10 ** 6)})
 _, edge = _render({"position_x": 128, "position_y": -32})
 check("a huge stored offset renders like one clamped to the panel size",

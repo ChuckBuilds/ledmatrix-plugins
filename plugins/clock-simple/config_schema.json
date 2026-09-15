@@ -71,17 +71,13 @@
     "position_x": {
       "type": "integer",
       "default": 0,
-      "minimum": -256,
-      "maximum": 256,
-      "description": "X position offset for clock display (pixels, -256 to 256; clamped to the panel size)",
+      "description": "X position offset for clock display (pixels; clamped to the panel size)",
       "x-advanced": true
     },
     "position_y": {
       "type": "integer",
       "default": 0,
-      "minimum": -256,
-      "maximum": 256,
-      "description": "Y position offset for clock display (pixels, -256 to 256; clamped to the panel size)",
+      "description": "Y position offset for clock display (pixels; clamped to the panel size)",
       "x-advanced": true
     },
     "customization": {
