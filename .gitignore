@@ -39,6 +39,20 @@ config_secrets.json
 # Secrets (plugin-level)
 plugins/**/config_secrets.json
 
+# OAuth artifacts plugins write beside themselves at runtime. calendar
+# (calendar_registration.py) writes the Google client file, the token, and a
+# PKCE verifier kept between the auth URL and the callback. Its own
+# plugins/calendar/.gitignore covers the first two but not the verifier, and
+# says the root file covers them -- which it didn't.
+credentials.json
+token.pickle
+token.json
+.pkce_code_verifier
+# ledmatrix-music writes its Spotify and YouTube Music tokens to
+# <plugin>/../../config/, which from a checkout of this repo is ./config/.
+/config/spotify_auth.json
+/config/ytm_auth.json
+
 # Asset backups (local working copies)
 plugins/*/assets/**/*_backup/
 

@@ -83,17 +83,17 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [Football Scoreboard](./plugins/football-scoreboard/) | NFL & NCAA Football live scores, down/distance, possession | |
-| [Hockey Scoreboard](./plugins/hockey-scoreboard/) | NHL & NCAA Hockey live scores and schedules | |
-| [Basketball Scoreboard](./plugins/basketball-scoreboard/) | NBA, NCAA & WNBA live scores and schedules | |
+| [Football Scoreboard](./plugins/football-scoreboard/) | NFL & NCAA Football live scores, down/distance, possession | <a href="./plugins/football-scoreboard/"><img src="./docs/assets/football-scoreboard/hero.png" width="240" alt="football-scoreboard on an LED panel"></a> |
+| [Hockey Scoreboard](./plugins/hockey-scoreboard/) | NHL & NCAA Hockey live scores and schedules | <a href="./plugins/hockey-scoreboard/"><img src="./docs/assets/hockey-scoreboard/hero.png" width="240" alt="hockey-scoreboard on an LED panel"></a> |
+| [Basketball Scoreboard](./plugins/basketball-scoreboard/) | NBA, NCAA & WNBA live scores and schedules | <a href="./plugins/basketball-scoreboard/"><img src="./docs/assets/basketball-scoreboard/hero.png" width="240" alt="basketball-scoreboard on an LED panel"></a> |
 | [Baseball Scoreboard](./plugins/baseball-scoreboard/) | MLB, MiLB & NCAA Baseball live scores | <a href="./plugins/baseball-scoreboard/"><img src="./docs/assets/baseball-scoreboard/hero.png" width="240" alt="baseball-scoreboard on an LED panel"></a> |
-| [Soccer Scoreboard](./plugins/soccer-scoreboard/) | Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS | |
-| [Lacrosse Scoreboard](./plugins/lacrosse-scoreboard/) | NCAA lacrosse live scores and schedules | |
+| [Soccer Scoreboard](./plugins/soccer-scoreboard/) | Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS | <a href="./plugins/soccer-scoreboard/"><img src="./docs/assets/soccer-scoreboard/hero.png" width="240" alt="soccer-scoreboard on an LED panel"></a> |
+| [Lacrosse Scoreboard](./plugins/lacrosse-scoreboard/) | NCAA lacrosse live scores and schedules | <a href="./plugins/lacrosse-scoreboard/"><img src="./docs/assets/lacrosse-scoreboard/hero.png" width="240" alt="lacrosse-scoreboard on an LED panel"></a> |
 | [Cricket Scoreboard](./plugins/cricket-scoreboard/) | Live, recent & upcoming international (Test/ODI/T20I) and major domestic cricket | <a href="./plugins/cricket-scoreboard/"><img src="./docs/assets/cricket-scoreboard/hero.png" width="240" alt="cricket-scoreboard on an LED panel"></a> |
 | [AFL Scoreboard](./plugins/afl-scoreboard/) | Australian Football League live, recent & upcoming games | <a href="./plugins/afl-scoreboard/"><img src="./docs/assets/afl-scoreboard/hero.png" width="240" alt="afl-scoreboard on an LED panel"></a> |
-| [NRL Scoreboard](./plugins/nrl-scoreboard/) | National Rugby League live, recent & upcoming games | |
+| [NRL Scoreboard](./plugins/nrl-scoreboard/) | National Rugby League live, recent & upcoming games | <a href="./plugins/nrl-scoreboard/"><img src="./docs/assets/nrl-scoreboard/hero.png" width="240" alt="nrl-scoreboard on an LED panel"></a> |
 | [F1 Scoreboard](./plugins/f1-scoreboard/) | Formula 1 race results, schedules, and standings | <a href="./plugins/f1-scoreboard/"><img src="./docs/assets/f1-scoreboard/hero.png" width="240" alt="f1-scoreboard on an LED panel"></a> |
-| [UFC Scoreboard](./plugins/ufc-scoreboard/) | UFC/MMA live fights, fighter headshots, records, odds & results &mdash; *by [LegoGuy1000](https://github.com/legoguy1000)* | |
+| [UFC Scoreboard](./plugins/ufc-scoreboard/) | UFC/MMA live fights, fighter headshots, records, odds & results &mdash; *by [LegoGuy1000](https://github.com/legoguy1000)* | <a href="./plugins/ufc-scoreboard/"><img src="./docs/assets/ufc-scoreboard/hero.png" width="240" alt="ufc-scoreboard on an LED panel"></a> |
 | [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NHL, NCAA | <a href="./plugins/odds-ticker/"><img src="./docs/assets/odds-ticker/hero.png" width="240" alt="odds-ticker on an LED panel"></a> |
 | [Masters Tournament](./plugins/masters-tournament/) | Live Masters golf leaderboard, hole tracking, player cards | <a href="./plugins/masters-tournament/"><img src="./docs/assets/masters-tournament/hero.png" width="240" alt="masters-tournament on an LED panel"></a> |
 | [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN | <a href="./plugins/nfl-draft/"><img src="./docs/assets/nfl-draft/hero.png" width="240" alt="nfl-draft on an LED panel"></a> |
@@ -144,7 +144,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [BirdNET-Go](./plugins/birdnet-go/) | Live bird detections and daily species stats from a BirdNET-Go server | <a href="./plugins/birdnet-go/"><img src="./docs/assets/birdnet-go/hero.png" width="240" alt="birdnet-go on an LED panel"></a> |
-| [MQTT Notifications](./plugins/mqtt-notifications/) | HomeAssistant notifications via MQTT | |
+| [MQTT Notifications](./plugins/mqtt-notifications/) | HomeAssistant notifications via MQTT | <a href="./plugins/mqtt-notifications/"><img src="./docs/assets/mqtt-notifications/hero.png" width="240" alt="mqtt-notifications on an LED panel"></a> |
 | [On Air Light](./plugins/on-air/) | Broadcast ON AIR tally light, triggered remotely via MQTT / Home Assistant | <a href="./plugins/on-air/"><img src="./docs/assets/on-air/hero.png" width="240" alt="on-air on an LED panel"></a> |
 
 ### Productivity (1)
@@ -165,7 +165,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 |--------|-------------|---------|
 | [Flight Tracker](./plugins/ledmatrix-flights/) | Real-time ADS-B aircraft tracking with map display | <a href="./plugins/ledmatrix-flights/"><img src="./docs/assets/ledmatrix-flights/hero.png" width="240" alt="ledmatrix-flights on an LED panel"></a> |
 | [Countdown Display](./plugins/countdown/) | Customizable countdowns for birthdays, events, holidays | <a href="./plugins/countdown/"><img src="./docs/assets/countdown/hero.png" width="240" alt="countdown on an LED panel"></a> |
-| [Election Results](./plugins/ledmatrix-elections/) | Live election results ticker with full-screen race interrupts | |
+| [Election Results](./plugins/ledmatrix-elections/) | Live election results ticker with full-screen race interrupts | <a href="./plugins/ledmatrix-elections/"><img src="./docs/assets/ledmatrix-elections/hero.png" width="240" alt="ledmatrix-elections on an LED panel"></a> |
 
 ### Holiday (1)
 
@@ -177,7 +177,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [YouTube Stats](./plugins/youtube-stats/) | Channel subscriber count, total views | |
+| [YouTube Stats](./plugins/youtube-stats/) | Channel subscriber count, total views | <a href="./plugins/youtube-stats/"><img src="./docs/assets/youtube-stats/hero.png" width="240" alt="youtube-stats on an LED panel"></a> |
 
 ### Text (1)
 

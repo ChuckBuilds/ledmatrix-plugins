@@ -22,6 +22,14 @@ This check fails when a plugin's deferred import targets a sibling top-level
 module whose name also exists as a top-level module in another plugin. The fix
 is to give that module a plugin-unique name (e.g. ``election_data_model.py``).
 
+A top-level *package* is a module name too: a deferred ``import data.teams``
+resolves ``data`` the same way, so a subdirectory holding ``.py`` files counts
+as a collision candidate alongside the ``*.py`` files (test and tooling
+directories excepted).
+
+A file that cannot be parsed fails the check. Treating it as import-free would
+report "OK" for exactly the file the check could not read.
+
 Usage:
     python scripts/check_module_collisions.py
 """
@@ -37,12 +45,24 @@ from typing import Dict, List, Set, Tuple
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PLUGINS_DIR = REPO_ROOT / "plugins"
 
+# Subdirectories that hold .py files but are never imported by the plugin at
+# runtime: its own tests and developer tooling.
+NON_RUNTIME_DIRS = {"test", "tests", "scripts", "__pycache__"}
+
+# A run that inspects fewer plugins than this is not looking at the plugin tree.
+MIN_PLAUSIBLE_PLUGINS = 20
+
+
+class UnparseableFile(Exception):
+    """A plugin file the checker could not parse, so could not vouch for."""
+
 
 def _top_level_modules(plugin_dir: Path, entry_stem: str) -> Set[str]:
-    """Bare-importable top-level module names for a plugin.
+    """Bare-importable top-level module and package names for a plugin.
 
-    Excludes the entry point (loaded as ``plugin_<id>``, never bare-imported)
-    and test files (not shipped on the import path at runtime).
+    Excludes the entry point (loaded as ``plugin_<id>``, never bare-imported),
+    test files (not shipped on the import path at runtime), and test/tooling
+    directories.
     """
     mods: Set[str] = set()
     for py in plugin_dir.glob("*.py"):
@@ -50,6 +70,11 @@ def _top_level_modules(plugin_dir: Path, entry_stem: str) -> Set[str]:
         if stem == entry_stem or stem.startswith("test_") or stem == "conftest":
             continue
         mods.add(stem)
+    for sub in plugin_dir.iterdir():
+        if (sub.is_dir() and sub.name not in NON_RUNTIME_DIRS
+                and not sub.name.startswith(".") and sub.name.isidentifier()
+                and any(sub.rglob("*.py"))):
+            mods.add(sub.name)
     return mods
 
 
@@ -79,11 +104,13 @@ def _deferred_imports_in_file(path: Path, treat_all_as_deferred: bool) -> Set[st
     imported lazily). In top-level files, only imports nested inside a function
     or method body are deferred; module-level imports there run during entry-point
     load and are safe.
+
+    Raises UnparseableFile when the file cannot be read or parsed.
     """
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    except (SyntaxError, UnicodeDecodeError):
-        return set()
+    except (SyntaxError, UnicodeDecodeError, ValueError, OSError) as e:
+        raise UnparseableFile(f"{type(e).__name__}: {e}") from e
 
     found: Set[str] = set()
 
@@ -117,15 +144,20 @@ def _deferred_imports_in_file(path: Path, treat_all_as_deferred: bool) -> Set[st
     return found
 
 
-def main() -> int:
+def find_problems(plugins_dir: Path):
+    """Scan `plugins_dir`.
+
+    Returns (violations, unparseable, owners, plugin_count, files_scanned):
+    violations are (plugin, module_name, source_file) and unparseable are
+    (source_file, error).
+    """
     plugin_dirs = sorted(
-        p for p in PLUGINS_DIR.iterdir()
+        p for p in plugins_dir.iterdir()
         if p.is_dir() and (p / "manifest.json").is_file()
     )
 
-    # Map every bare-importable top-level module name to the plugins that ship it.
+    # Map every bare-importable top-level name to the plugins that ship it.
     owners: Dict[str, Set[str]] = {}
-    entry_stems: Dict[str, str] = {}
     tops: Dict[str, Set[str]] = {}
     for pdir in plugin_dirs:
         pid = pdir.name
@@ -134,20 +166,22 @@ def main() -> int:
         except (json.JSONDecodeError, OSError):
             manifest = {}
         entry_stem = Path(manifest.get("entry_point", "manager.py")).stem
-        entry_stems[pid] = entry_stem
         mods = _top_level_modules(pdir, entry_stem)
         tops[pid] = mods
         for m in mods:
             owners.setdefault(m, set()).add(pid)
 
-    violations: List[Tuple[str, str, str]] = []  # (plugin, module_name, source_file)
+    violations: List[Tuple[str, str, str]] = []
+    unparseable: List[Tuple[str, str]] = []
+    files_scanned = 0
     for pdir in plugin_dirs:
         pid = pdir.name
         sibling_tops = tops[pid]
-        sub_dirs = _subpackage_dirs(pdir)
 
         scan: List[Tuple[Path, bool]] = []
-        for sub in sub_dirs:
+        for sub in _subpackage_dirs(pdir):
+            if NON_RUNTIME_DIRS & set(sub.relative_to(pdir).parts):
+                continue
             for py in sub.rglob("*.py"):
                 scan.append((py, True))   # subpackage file: all imports deferred
         for py in pdir.glob("*.py"):
@@ -155,13 +189,38 @@ def main() -> int:
                 continue
             scan.append((py, False))      # top-level file: only func-scoped deferred
 
-        for py, treat_all in scan:
-            for name in _deferred_imports_in_file(py, treat_all):
+        for py, treat_all in dict.fromkeys(scan):
+            rel = str(py.relative_to(plugins_dir))
+            files_scanned += 1
+            try:
+                names = _deferred_imports_in_file(py, treat_all)
+            except UnparseableFile as e:
+                unparseable.append((rel, str(e)))
+                continue
+            for name in names:
                 # Only a hazard if it targets a sibling top-level module whose
                 # name is shared with at least one other plugin.
                 if name in sibling_tops and len(owners.get(name, set())) > 1:
-                    rel = py.relative_to(PLUGINS_DIR)
-                    violations.append((pid, name, str(rel)))
+                    violations.append((pid, name, rel))
+
+    return violations, unparseable, owners, len(plugin_dirs), files_scanned
+
+
+def main(plugins_dir: Path = PLUGINS_DIR, min_plugins: int = MIN_PLAUSIBLE_PLUGINS) -> int:
+    violations, unparseable, owners, n_plugins, n_files = find_problems(plugins_dir)
+    failed = False
+
+    if n_plugins < min_plugins:
+        print(f"FAIL only {n_plugins} plugins found under {plugins_dir}; the check "
+              f"is not looking at the plugin tree")
+        failed = True
+
+    if unparseable:
+        print("Plugin files that could not be parsed (so could not be checked):\n")
+        for src, err in sorted(unparseable):
+            print(f"  FAIL {src}: {err}")
+        print()
+        failed = True
 
     if violations:
         print("Cross-plugin module collision via deferred import detected:\n")
@@ -174,9 +233,12 @@ def main() -> int:
             "plugin's same-named module and fail to load. Rename the module to a\n"
             "plugin-unique name (e.g. '<plugin>_<module>.py') and update its imports."
         )
-        return 1
+        failed = True
 
-    print(f"OK: no cross-plugin deferred-import collisions across {len(plugin_dirs)} plugins.")
+    if failed:
+        return 1
+    print(f"OK: no cross-plugin deferred-import collisions across {n_plugins} plugins "
+          f"({n_files} files parsed).")
     return 0
 
 

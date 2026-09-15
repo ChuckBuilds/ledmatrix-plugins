@@ -30,6 +30,7 @@ Run: <core-venv>/bin/python scripts/test_property_order_coverage.py
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -81,14 +82,20 @@ def main():
     print("\nthe form really does drop what the order omits")
     # Not a claim about the template -- render it and look.
     core = None
-    for candidate in (Path("/home/rackpi/projects/LEDMatrix"),
-                      REPO.parent / "LEDMatrix"):
+    # LEDMATRIX_CORE first: CI checks the core out at $GITHUB_WORKSPACE/core,
+    # which neither fallback matches, so the render half never ran there.
+    env = os.environ.get("LEDMATRIX_CORE")
+    for candidate in ((Path(env),) if env else ()) + (
+            Path("/home/rackpi/projects/LEDMatrix"),
+            REPO.parent / "LEDMatrix"):
         if (candidate / "web_interface" / "templates" / "v3" / "partials"
                 / "plugin_config.html").exists():
             core = candidate
             break
+    skipped = False
     if core is None:
         print("  SKIP  no LEDMatrix core checkout found (set LEDMATRIX_CORE)")
+        skipped = True
     else:
         import re
         from jinja2 import DictLoader, Environment
@@ -114,7 +121,11 @@ def main():
 
     print("\n%s" % ("FAILED: %d" % len(failures) if failures
                     else "All checks passed"))
-    return 1 if failures else 0
+    if failures:
+        return 1
+    # Exit 2 when the render half could not run, so CI reports a skip rather
+    # than a pass that only covered half the guard.
+    return 2 if skipped else 0
 
 
 if __name__ == "__main__":
