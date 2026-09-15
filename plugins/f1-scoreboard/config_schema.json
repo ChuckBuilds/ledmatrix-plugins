@@ -550,7 +550,7 @@
           "default": 1,
           "minimum": 0.01,
           "maximum": 10,
-          "description": "Pixels per scroll step. The speed is scroll_speed / scroll_delay pixels per second (100 by default)."
+          "description": "Pixels per scroll step. The speed is scroll_speed / scroll_delay pixels per second (100 by default). The exact pair 1 / 0.03 (the default before 1.9.0) is treated as the default and scrolls at 100 px/s; to scroll slower, use another pair, e.g. 0.5 / 0.015 for 33.3 px/s."
         },
         "scroll_delay": {
           "x-advanced": true,
@@ -559,7 +559,7 @@
           "default": 0.01,
           "minimum": 0.001,
           "maximum": 0.1,
-          "description": "Seconds per scroll step; lower is faster. See Scroll Speed."
+          "description": "Seconds per scroll step; lower is faster. See Scroll Speed: a saved 1 / 0.03 pair still scrolls at 100 px/s."
         }
       },
       "additionalProperties": false
