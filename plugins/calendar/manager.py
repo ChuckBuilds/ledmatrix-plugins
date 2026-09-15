@@ -20,7 +20,7 @@ import os
 import logging
 import time
 import pickle
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from PIL import Image, ImageDraw, ImageFont
 
@@ -28,7 +28,6 @@ from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
 
 # Google Calendar imports
 try:
-    from google_auth_oauthlib.flow import InstalledAppFlow
     from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
     import pytz
@@ -162,23 +161,6 @@ class CalendarPlugin(BasePlugin):
     def _load_fonts(self):
         """Load fonts from font manager or fallback to default."""
         try:
-            # Try to get fonts from font manager
-            if hasattr(self.plugin_manager, 'font_manager') and self.plugin_manager.font_manager:
-                font_manager = self.plugin_manager.font_manager
-                try:
-                    datetime_font_obj = font_manager.get_manager_font(
-                        self.plugin_id, f"{self.plugin_id}.datetime"
-                    )
-                    title_font_obj = font_manager.get_manager_font(
-                        self.plugin_id, f"{self.plugin_id}.title"
-                    )
-                    if datetime_font_obj and title_font_obj:
-                        self.datetime_font = datetime_font_obj
-                        self.title_font = title_font_obj
-                        return
-                except Exception:
-                    pass
-
             # Get customization settings from config
             customization = self.config.get('customization', {})
             datetime_settings = customization.get('datetime_text', {})
@@ -359,15 +341,18 @@ class CalendarPlugin(BasePlugin):
                     self.logger.error("Please run the authentication script from the web interface or place credentials.json in the plugin directory")
                     return False
                 
-                try:
-                    flow = InstalledAppFlow.from_client_secrets_file(
-                        self.credentials_file, self.SCOPES)
-                    creds = flow.run_local_server(port=0)
-                    self.logger.info("Obtained new credentials")
-                except Exception as e:
-                    self.logger.error(f"Error getting new credentials: {e}")
-                    self.logger.error("Make sure credentials.json is valid and Google Calendar API is enabled")
-                    return False
+                # Never start an interactive OAuth flow here. This runs at plugin
+                # load on a headless Pi: InstalledAppFlow.run_local_server()
+                # waits for a browser callback that never comes, with no
+                # timeout. Sign-in belongs to the two-step web action in
+                # calendar_registration.py; until it has run, display() shows
+                # "Auth needed".
+                self.logger.error(
+                    "No valid Google Calendar token. Authenticate from the web "
+                    "interface (Authenticate Google Calendar) or run "
+                    "calendar_registration.py, then restart LEDMatrix."
+                )
+                return False
             
             # Save credentials
             try:
@@ -386,35 +371,6 @@ class CalendarPlugin(BasePlugin):
         except Exception as e:
             self.logger.error(f"Error building calendar service: {e}")
             return False
-
-    def get_calendars(self) -> List[Dict[str, Any]]:
-        """Return available Google calendars for UI selection widgets."""
-        if not self.service:
-            return []
-
-        try:
-            calendars = []
-            page_token = None
-            while True:
-                response = self.service.calendarList().list(
-                    pageToken=page_token
-                ).execute()
-                calendars.extend(response.get("items", []))
-                page_token = response.get("nextPageToken")
-                if not page_token:
-                    break
-            return [
-                {
-                    "id": cal.get("id", ""),
-                    "summary": cal.get("summary", "Unnamed Calendar"),
-                    "primary": cal.get("primary", False),
-                }
-                for cal in calendars
-                if cal.get("id")
-            ]
-        except Exception:
-            self.logger.exception("Failed to fetch calendar list")
-            return []
 
     def update(self) -> None:
         """
@@ -440,15 +396,12 @@ class CalendarPlugin(BasePlugin):
             # Fetch events from all configured calendars
             all_events = []
             
-            # Compute time_min once so all calendars use the same boundary
-            if self.timezone and pytz:
-                local_now = datetime.now(self.timezone)
-                start_of_today = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
-                time_min = start_of_today.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
-            else:
-                time_min = datetime.utcnow().replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                ).isoformat() + 'Z'
+            # Compute time_min once so all calendars use the same boundary.
+            # timeMin filters on an event's END time, so "now" still returns
+            # events in progress (and today's all-day events) while dropping
+            # ones already over. Start-of-today let finished events use up
+            # max_events and push upcoming ones off the list.
+            time_min = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
             for calendar_id in self.calendars:
                 try:
@@ -504,9 +457,12 @@ class CalendarPlugin(BasePlugin):
             self.display_manager.clear()
         
         if not self.events:
-            self._display_no_events()
+            if getattr(self, 'service', None) is None:
+                self._display_auth_needed()
+            else:
+                self._display_no_events()
             return
-        
+
         try:
             # Safety check - ensure events list is not empty
             if not self.events or len(self.events) == 0:
@@ -772,6 +728,38 @@ class CalendarPlugin(BasePlugin):
         y_pos = (height - text_height) // 2
 
         draw.text((x_pos, y_pos), message, font=self.datetime_font, fill=(220, 220, 220))
+        self.display_manager.update_display()
+
+    def _display_auth_needed(self):
+        """Shown when there is no usable Google token.
+
+        The plugin never starts a sign-in itself (see _authenticate); this
+        points at the web UI's Authenticate Google Calendar action instead of
+        a "No Events" that looks like an empty calendar.
+        """
+        width, height = self._fresh_frame()
+        draw = self.display_manager.draw
+
+        # Ensure font is loaded
+        if self.datetime_font is None:
+            self._load_fonts()
+
+        lines = ["Auth needed", "See web UI"]
+        boxes = [draw.textbbox((0, 0), line, font=self.datetime_font) for line in lines]
+        # textbbox can under-measure the 1-bit ink by a couple of pixels, so
+        # leave a margin before deciding a line fits.
+        if any(b[2] - b[0] > width - 4 for b in boxes):
+            # Narrow panel: keep the message whole rather than clip it.
+            lines = ["Auth", "needed"]
+            boxes = [draw.textbbox((0, 0), line, font=self.datetime_font) for line in lines]
+        line_h = max(b[3] - b[1] for b in boxes)
+        gap = 2
+        y = (height - (line_h * len(lines) + gap)) // 2
+        for line, box in zip(lines, boxes):
+            x = max(0, (width - (box[2] - box[0])) // 2)
+            # Offset by the glyph bearing so the ink, not the origin, is centred.
+            draw.text((x - box[0], y - box[1]), line, font=self.datetime_font, fill=(255, 170, 0))
+            y += line_h + gap
         self.display_manager.update_display()
 
     def _display_error(self):
