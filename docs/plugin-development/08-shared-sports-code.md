@@ -77,6 +77,20 @@ the core actually ships:
   ships a unified version — `sports.py` / `scroll_display.py` / 
   `game_renderer.py` themselves.
 
+### Helper copies guarded against core's `sports_helpers`
+
+Core's `src/common/sports_helpers.py` (ChuckBuilds/LEDMatrix#583) promotes the
+helpers every `sports.py` carries verbatim (`_clamp_window`, `_clamp_seconds`,
+`_logo_needs_refresh`, the window constants, and the `SportsCore` methods
+`_mode_customization`, `_setting_int`, `_reset_dwell_on_reentry`,
+`_next_switch_index`, `_spread_weighted_order`, `_odds_color`,
+`_upcoming_date_and_time_text`). `scripts/check_sports_helpers_parity.py`
+compares each plugin copy with core's as a docstring-stripped AST and fails on
+any difference, so a fix to one side has to land on both. It skips (exit 2)
+until core ships the module. A copy that is absent is fine: once a plugin
+floors `ledmatrix_min_version` on the release that ships `sports_helpers`, it
+may delete its copies and inherit `SportsHelpersMixin` (the sunset rule below).
+
 ## Device-wide settings: read them from the core, not a copy
 
 Cross-cutting settings are the other half of this problem. `self.config` is

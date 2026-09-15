@@ -44,7 +44,7 @@ modules present in 3.0.0 are always there and need no entry. Versions come
 from the release tags in the LEDMatrix repo (first tag whose tree contains the
 file), regenerated with::
 
-    for t in v3.0.0 v3.1.0 v3.2.0 v3.3.0 v3.3.1; do
+    for t in v3.0.0 v3.1.0 v3.2.0 v3.3.0 v3.3.1 v3.4.0; do
         git ls-tree -r --name-only $t -- src | grep '\\.py$' > $t.txt; done
     # then diff consecutive lists
 
@@ -112,12 +112,16 @@ MODULE_FIRST_VERSION = {
     "src.common.sports_card": "3.3.0",
     "src.common.sports_game_renderer": "3.3.0",
     "src.common.sports_shared": "3.3.0",
-    # on core main, in no tagged release yet
-    "src.auto_update_setup": None,
-    "src.common.font_layout": None,
-    "src.common.path_safety": None,
-    "src.common.scroll_config": None,
-    "src.display_geometry": None,
+    # v3.4.0
+    "src.auto_update_setup": "3.4.0",
+    "src.common.font_layout": "3.4.0",
+    "src.common.path_safety": "3.4.0",
+    "src.common.scroll_config": "3.4.0",
+    "src.display_geometry": "3.4.0",  # core #580
+    # on core main, in no tagged release yet. When the next release is
+    # tagged, set each None entry here to that tag -- the test's
+    # tag-verification section insists on it once the tag is in its list.
+    "src.common.sports_helpers": None,  # core #583
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
@@ -128,7 +132,8 @@ MODULE_FIRST_VERSION = {
 #: releases is therefore satisfied by the reported version.
 #:
 #: Facts from the published tags: v3.3.0 (bc2dbf38) and v3.3.1 (32d637a4)
-#: both report "3.3.0" and both contain ``sports_shared``; v3.3.1 adds no
+#: both report "3.3.0" and both contain ``sports_shared``; v3.4.0 (9e3f184d)
+#: reports "3.4.0" and needs no entry. v3.3.1 adds no
 #: ``src`` module, so no table entry names 3.3.1 and this mapping is
 #: currently inert. It stays because it is true (the tag test checks it).
 #: Entries describe published tags, so they are permanent.

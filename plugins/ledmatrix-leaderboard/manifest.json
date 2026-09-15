@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.3.7",
+  "version": "1.4.0",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -29,8 +29,14 @@
   ],
   "config_schema": "config_schema.json",
   "requirements_file": "requirements.txt",
-  "min_ledmatrix_version": "2.0.0",
+  "min_ledmatrix_version": "3.4.0",
   "versions": [
+    {
+      "version": "1.4.0",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Requires LEDMatrix core 3.4.0 or newer, because the leaderboard uses the new scroll frame pacing. Since #462 (2026-09-07) display() passes frame_hold to display_manager.set_scrolling_state(), an argument core 3.3.x does not have, so on those cores every frame raised TypeError and the leaderboard stayed blank. The manifest still admitted any core from 2.0.0, so the store kept offering it there. The floor is now 3.4.0 (min_ledmatrix_version, versions[0] and compatible_versions), so the store refuses the install on an older core and asks the user to update LEDMatrix first. A copy already installed on a 3.3.x core stays broken until that core is updated. No code change."
+    },
     {
       "version": "1.3.7",
       "released": "2026-09-07",
@@ -115,8 +121,8 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-03",
+  "last_updated": "2026-09-15",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.4.0"
   ]
 }

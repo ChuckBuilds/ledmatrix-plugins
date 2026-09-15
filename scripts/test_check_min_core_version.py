@@ -98,8 +98,14 @@ check("modules that predate the plugin system are never reported",
                    "from src.logo_downloader import LogoDownloader\n"},
           floor("2.0.0")) == [])
 check("an unreleased module is reported whatever the floor",
-      len(run({"m.py": "from src.common import scroll_config\n"},
+      len(run({"m.py": "from src.common import sports_helpers\n"},
               floor("9.9.9"))) == 1)
+check("a 3.4.0 module is reported under a 3.3.0 floor",
+      len(run({"m.py": "from src.common import scroll_config\n"},
+              floor("3.3.0"))) == 1)
+check("a 3.4.0 floor clears a 3.4.0 module",
+      run({"m.py": "from src.common import scroll_config\n"},
+          floor("3.4.0")) == [])
 check("imports inside functions are still imports",
       len(run({"m.py": "def f():\n    " + SHARED})) == 1)
 check("a relative import named like core is ignored",
@@ -200,7 +206,7 @@ def tree(ref):
     return set(out.stdout.split()) if out.returncode == 0 else None
 
 
-tags = ["3.0.0", "3.1.0", "3.2.0", "3.3.0", "3.3.1"]
+tags = ["3.0.0", "3.1.0", "3.2.0", "3.3.0", "3.3.1", "3.4.0"]
 trees = {t: tree(f"v{t}") for t in tags} if core and os.path.isdir(core) else {}
 if not trees or any(v is None for v in trees.values()):
     print("  SKIP  LEDMATRIX_CORE is not a core git checkout with release tags")

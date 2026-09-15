@@ -109,6 +109,21 @@ def main():
             # The loop only sorts keys into tiers, so append an emitter to see
             # which keys it actually considered.
             block = match.group(1) + "|{{ tiers.basic }}{{ tiers.advanced }}|"
+            # The loop may call macros defined elsewhere in the template (core
+            # #585's prop_is_hidden). Prepend the ones it -- or they -- call;
+            # a definition renders nothing, so the emitter is unchanged.
+            macros = {m.group(1): m.group(0) for m in re.finditer(
+                r"\{%-?\s*macro\s+(\w+)\s*\(.*?\{%-?\s*endmacro\s*-?%\}",
+                source, re.S)}
+            wanted, frontier = [], [match.group(1)]
+            while frontier:
+                text = frontier.pop()
+                for name, body in macros.items():
+                    if name not in wanted and re.search(
+                            r"\b%s\s*\(" % re.escape(name), text):
+                        wanted.append(name)
+                        frontier.append(body)
+            block = "".join(macros[n] for n in wanted) + block
             env = Environment(loader=DictLoader({'f': block}), autoescape=True)
             schema = {'properties': {'shown': {'type': 'string'},
                                      'hidden': {'type': 'string'}},

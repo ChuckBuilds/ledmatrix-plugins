@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-stocks",
   "name": "Stock & Crypto Ticker",
-  "version": "2.9.1",
+  "version": "2.10.0",
   "description": "Displays stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies. Supports scroll and switch display modes.",
   "author": "LEDMatrix Team",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",
@@ -17,10 +17,9 @@
   ],
   "icon": "fas fa-chart-line",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.4.0"
   ],
-  "min_ledmatrix_version": "2.0.0",
-  "max_ledmatrix_version": "3.0.0",
+  "min_ledmatrix_version": "3.4.0",
   "requires": {
     "python": ">=3.9"
   },
@@ -39,6 +38,18 @@
     }
   ],
   "versions": [
+    {
+      "version": "2.10.0",
+      "released": "2026-09-15",
+      "notes": "Requires LEDMatrix core 3.4.0 or newer, because the ticker uses the new scroll frame pacing. Since 2.9.1 the scroll mode passes frame_hold to display_manager.set_scrolling_state(), an argument core 3.3.x does not have, so on those cores every scroll frame raised TypeError and the ticker stayed blank. The manifest still admitted any core from 2.0.0, so the store kept offering it there. The floor is now 3.4.0 (min_ledmatrix_version, versions[0] and compatible_versions), so the store refuses the install on an older core and asks the user to update LEDMatrix first. A copy already installed on a 3.3.x core stays broken until that core is updated. Also drops max_ledmatrix_version 3.0.0, which nothing reads and which contradicted a 3.x floor. No code change.",
+      "ledmatrix_min_version": "3.4.0"
+    },
+    {
+      "version": "2.9.1",
+      "released": "2026-09-07",
+      "notes": "Scroll speed is resolved through the core's shared scroll resolver (src.common.scroll_config) when the core has it, which snaps the speed to one the panel can draw in whole pixels, and the frame hold it reports is passed to set_scrolling_state() each time scrolling starts, so slow speeds stay crisp (#462). Cores without the resolver keep the previous speed arithmetic. This entry was missing when 2.9.1 shipped. Note that the frame_hold argument needs core 3.4.0; 2.10.0 raises the floor to match.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "version": "2.9.0",
       "released": "2026-09-03",
@@ -122,7 +133,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-03",
+  "last_updated": "2026-09-15",
   "stars": 0,
   "downloads": 0,
   "verified": true,
