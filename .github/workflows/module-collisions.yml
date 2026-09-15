@@ -1,14 +1,15 @@
 name: Plugin Structure
 
-# Two structural checks that both scan ALL plugins, because either problem can
-# arrive with a newly added plugin rather than a changed one.
+# Structural checks that scan ALL plugins, because each problem can arrive with
+# a newly added plugin rather than a changed one. None needs the core checkout;
+# guards that do run in test-plugins.yml.
 #
 # 1. Module collisions — fails when a plugin's deferred import (subpackage file
-#    or function-scoped import) targets a sibling top-level module whose name is
-#    also shipped by another plugin. The core loads plugin modules by bare name
-#    on sys.path and isolates them after the entry point loads, so such a
-#    deferred import can bind a different plugin's same-named module and fail
-#    to load.
+#    or function-scoped import) targets a sibling top-level module or package
+#    whose name is also shipped by another plugin. The core loads plugin modules
+#    by bare name on sys.path and isolates them after the entry point loads, so
+#    such a deferred import can bind a different plugin's same-named module and
+#    fail to load. An unparseable plugin file also fails.
 #
 # 2. Scroll adoption — fails when a plugin's scroll_display.py also defines the
 #    fallback implementation it is supposed to import from
@@ -16,9 +17,15 @@ name: Plugin Structure
 #    concatenated, carrying ~2,000 lines nothing referenced, and that dead copy
 #    is what hid the missing separator-icon constants that broke scroll mode.
 #
-# 3. Pixel-perfect text -- fails when a Draw() that renders text leaves PIL's
+# 3. Sports display() contract and scroll-mode reachability -- a display() that
+#    returns None, or a scroll setting whose renderer nothing calls.
+#
+# 4. Pixel-perfect text -- fails when a Draw() that renders text leaves PIL's
 #    fontmode at the anti-aliasing default. An LED panel has no partial
 #    brightness, so the grey fringe just smears the glyph.
+#
+# 5. Repo docs/config consistency -- the root README's preview column matches
+#    docs/assets, and config_secrets.template.json lists every x-secret field.
 
 on:
   pull_request:
@@ -31,6 +38,14 @@ on:
       - 'scripts/test_check_sports_display_contract.py'
       - 'scripts/test_pixel_perfect_text.py'
       - 'scripts/test_scroll_mode_is_reachable.py'
+      - 'scripts/test_check_module_collisions.py'
+      # README preview column vs docs/assets/<id>/hero.png on disk.
+      - 'README.md'
+      - 'docs/assets/**'
+      - 'scripts/update_readme_previews.py'
+      - 'config_secrets.template.json'
+      - 'scripts/check_secrets_template.py'
+      - 'scripts/test_check_secrets_template.py'
       # Without this, a PR that only edits this workflow matches no path and
       # the workflow never runs against its own change.
       - '.github/workflows/module-collisions.yml'
@@ -46,6 +61,11 @@ jobs:
           python-version: '3.12'
       - name: Check for cross-plugin module collisions
         run: python scripts/check_module_collisions.py
+      # Its own regression suite: the gate reports by absence, and it used to
+      # read an unparseable file as "no imports", i.e. clean.
+      - name: Test the module-collision gate
+        if: always()
+        run: python scripts/test_check_module_collisions.py
       # Runs even when the collision check fails, so one PR surfaces both.
       - name: Check scroll adoption does not inline the fallback
         if: always()
@@ -82,3 +102,17 @@ jobs:
       - name: Check text draws are 1-bit (no anti-aliasing)
         if: always()
         run: python scripts/test_pixel_perfect_text.py
+      # The root README's Preview column is generated from which
+      # docs/assets/<id>/hero.png files exist. Nothing ran --check, so ten rows
+      # sat blank for weeks after their images landed.
+      # (render_docs_assets.py --check is not run here: it re-renders every
+      # shot list through the core renderer; see docs 07 for why.)
+      - name: Check README plugin previews are current
+        if: always()
+        run: python scripts/update_readme_previews.py --check
+      # Every x-secret schema field needs a placeholder in the root
+      # config_secrets.template.json, namespaced by plugin id the way the core
+      # stores it, so the template stays a complete list of what to fill in.
+      - name: Check the secrets template covers every x-secret field
+        if: always()
+        run: python scripts/check_secrets_template.py
