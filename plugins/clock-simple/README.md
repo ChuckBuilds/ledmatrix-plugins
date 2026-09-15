@@ -154,6 +154,9 @@ Leave it unset on a normal install. Set it only when you want this clock to
 show a *different* zone from the rest of your board — a second clock for a
 remote office, for instance.
 
+An unrecognised name is not fatal: the plugin logs a warning and falls back to
+the global LEDMatrix timezone, then to the host's system time.
+
 ### `time_format`
 
 `12h` (the default) draws `3:07` with a separate `PM` marker that you can
@@ -202,7 +205,9 @@ shrink-to-fit behaviour below most visible.
 Pixel offsets applied to the whole clock, both defaulting to `0`. Positive `x`
 moves right, positive `y` moves down. These are for nudging the layout on a
 panel where it sits slightly wrong — for centring, leave them alone, since the
-clock already centres itself on the panel it is given.
+clock already centres itself on the panel it is given. The finished frame is
+shifted as a whole, so anything pushed past an edge is clipped rather than
+re-laid out. Negative values move left and up.
 
 ---
 
