@@ -73,14 +73,6 @@
           "description": "Delay between scroll frames (seconds)",
           "x-advanced": true
         },
-        "target_fps": {
-          "type": "integer",
-          "default": 120,
-          "minimum": 30,
-          "maximum": 200,
-          "description": "Target frames per second",
-          "x-advanced": true
-        },
         "loop": {
           "type": "boolean",
           "default": true,
