@@ -97,7 +97,7 @@ check(f"set_scrolling_state(True, frame_hold={hold}) while a frame is drawn (hol
       hold > 1 and (True, hold) in dm.calls)
 dm.calls.clear()
 m.scroll_helper.is_scroll_complete = lambda: True
-m.is_scroll_complete()
+m.is_scroll_complete()  # pylint: disable=no-value-for-parameter  (ufc's takes no args; f1's same-named one does)
 check("released when the scroll completes", bool(dm.calls) and dm.calls[-1][0] is False)
 
 if failures:
