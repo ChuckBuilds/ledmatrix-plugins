@@ -1,7 +1,7 @@
 {
   "id": "hello-world",
   "name": "Hello World",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": "ChuckBuilds",
   "description": "A simple test plugin that displays a customizable message",
   "entry_point": "manager.py",
@@ -16,6 +16,12 @@
     "hello-world"
   ],
   "versions": [
+    {
+      "version": "1.1.2",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The clock now shows the configured LEDMatrix timezone instead of the Pi's system time, falling back to system time when the setting is missing or invalid."
+    },
     {
       "version": "1.1.1",
       "released": "2026-09-05",
