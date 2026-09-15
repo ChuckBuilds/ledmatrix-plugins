@@ -25,8 +25,9 @@ on:
         default: false
 
 env:
-  # The core repo provides the harness (scripts/check_plugin.py). Point these at
-  # the fork/branch where the harness lives until it is merged upstream.
+  # The core repo provides the harness (scripts/check_plugin.py), the manifest
+  # schema, and the imports several guards need. The harness is on core main;
+  # override these only to test against an unmerged core branch.
   CORE_REPO: ChuckBuilds/LEDMatrix
   CORE_REF: main
 
@@ -46,6 +47,10 @@ jobs:
           repository: ${{ env.CORE_REPO }}
           ref: ${{ env.CORE_REF }}
           path: core
+          # Full history with tags. test_check_min_core_version.py compares its
+          # module table against core release tags; with the default depth of 1
+          # there are none, and that whole section silently skipped in CI.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
