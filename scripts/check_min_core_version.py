@@ -113,10 +113,14 @@ MODULE_FIRST_VERSION = {
     "src.common.sports_game_renderer": "3.3.0",
     # v3.3.1 (but see REPORTED_AS: that release reports itself as 3.3.0)
     "src.common.sports_shared": "3.3.1",
-    # on core main, in no tagged release yet
+    # on core main, in no tagged release yet. Once v3.4.0 is tagged (planned
+    # at core 814c21de, which contains all of these), every entry set to None
+    # here becomes "3.4.0" -- and the test's tag-verification section will
+    # then insist on it.
     "src.common.font_layout": None,
     "src.common.path_safety": None,
     "src.common.scroll_config": None,
+    "src.display_geometry": None,  # core #580
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
