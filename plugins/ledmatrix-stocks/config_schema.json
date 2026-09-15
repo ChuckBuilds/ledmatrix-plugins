@@ -182,7 +182,7 @@
           "x-advanced": true,
           "x-display": "hidden",
           "type": "string",
-          "description": "Deprecated — no longer used: the layout is fixed. Kept for backward compatibility with existing configs.",
+          "description": "Deprecated: ignored. The layout is fixed. Kept for backward compatibility with existing configs.",
           "title": "Display Format (deprecated)"
         }
       },
@@ -237,7 +237,7 @@
           "x-advanced": true,
           "x-display": "hidden",
           "type": "string",
-          "description": "Deprecated — no longer used: the layout is fixed. Kept for backward compatibility with existing configs.",
+          "description": "Deprecated: ignored. The layout is fixed. Kept for backward compatibility with existing configs.",
           "title": "Display Format (deprecated)"
         }
       },

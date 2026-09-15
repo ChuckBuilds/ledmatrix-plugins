@@ -54,7 +54,7 @@
           "x-advanced": true,
           "x-display": "hidden",
           "type": "number",
-          "description": "Deprecated — no longer used: nothing reads it, so it never changed the scroll speed. Kept for backward compatibility with existing configs.",
+          "description": "Deprecated: ignored. Nothing reads it, so it never changed the scroll speed. Kept for backward compatibility with existing configs.",
           "title": "Target FPS (deprecated)"
         },
         "font_size": {
@@ -173,7 +173,7 @@
               "x-advanced": true,
               "x-display": "hidden",
               "type": "boolean",
-              "description": "Deprecated — no longer used: feeds are fetched in update(). Kept for backward compatibility with existing configs.",
+              "description": "Deprecated: ignored. Feeds are fetched in update(). Kept for backward compatibility with existing configs.",
               "title": "Enabled (deprecated)"
             },
             "request_timeout": {
@@ -188,14 +188,14 @@
               "x-advanced": true,
               "x-display": "hidden",
               "type": "integer",
-              "description": "Deprecated — no longer used: each feed is requested once per update. Kept for backward compatibility with existing configs.",
+              "description": "Deprecated: ignored. Each feed is requested once per update. Kept for backward compatibility with existing configs.",
               "title": "Max Retries (deprecated)"
             },
             "priority": {
               "x-advanced": true,
               "x-display": "hidden",
               "type": "integer",
-              "description": "Deprecated — no longer used. Kept for backward compatibility with existing configs.",
+              "description": "Deprecated: ignored. Kept for backward compatibility with existing configs.",
               "title": "Priority (deprecated)"
             }
           },

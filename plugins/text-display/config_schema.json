@@ -71,7 +71,7 @@
       "x-advanced": true,
       "x-display": "hidden",
       "type": "number",
-      "description": "Deprecated — no longer used: nothing reads it, so it never changed the scroll speed. Kept for backward compatibility with existing configs.",
+      "description": "Deprecated: ignored. Nothing reads it, so it never changed the scroll speed. Kept for backward compatibility with existing configs.",
       "title": "Target FPS (deprecated)"
     },
     "scroll_loop": {
