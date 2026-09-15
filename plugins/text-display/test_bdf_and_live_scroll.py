@@ -90,6 +90,8 @@ def test_bdf_renders():
               f"the .bdf itself loaded, not a fallback (path {getattr(font, 'path', None)!r})")
         plugin.display()
         check(display.image.getbbox() is not None, "display() drew the text")
+        check(display.calls[-1:] == [(False, 1)],
+              f"static text releases the scroll state (calls {display.calls})")
 
 
 def test_live_speed_edit_re_resolves():

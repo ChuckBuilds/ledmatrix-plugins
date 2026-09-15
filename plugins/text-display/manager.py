@@ -571,6 +571,7 @@ class TextDisplayPlugin(BasePlugin):
                         self.display_manager.update_display()
                 else:
                     # Fallback: static text if cache creation failed
+                    self.display_manager.set_scrolling_state(False)
                     img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                     draw = ImageDraw.Draw(img)
                     draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
@@ -583,7 +584,10 @@ class TextDisplayPlugin(BasePlugin):
                     self.display_manager.image = img
                     self.display_manager.update_display()
             else:
-                # Static text (centered)
+                # Static text (centered). Not scrolling: release the scroll
+                # state and its frame hold so the text is presented every
+                # refresh and deferred work can run.
+                self.display_manager.set_scrolling_state(False)
                 img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                 draw = ImageDraw.Draw(img)
                 draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
