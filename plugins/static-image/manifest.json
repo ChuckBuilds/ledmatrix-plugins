@@ -1,7 +1,7 @@
 {
   "id": "static-image",
   "name": "Static Image Display",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "author": "ChuckBuilds",
   "description": "Display static images on your LED matrix with automatic scaling, aspect ratio preservation, and transparency support. Perfect for logos, artwork, or custom graphics.",
   "entry_point": "manager.py",
@@ -18,6 +18,12 @@
     "static_image"
   ],
   "versions": [
+    {
+      "version": "1.1.3",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Saving any setting in the web UI no longer empties the image list. on_config_change re-read only image_config.images, so the top-level images list the upload widget writes was dropped on every save (the panel then showed \"Image Error\"), and background_color, fit_to_display, preserve_aspect_ratio and image_rotation_interval were not refreshed. __init__ and on_config_change now share one _load_config(). Per-image schedules and date_based rotation now use the configured LEDMatrix timezone instead of the Pi's system zone, falling back to system time when the setting is missing or invalid."
+    },
     {
       "version": "1.1.2",
       "released": "2026-09-14",

@@ -25,6 +25,11 @@ from pathlib import Path
 
 from src.plugin_system.base_plugin import BasePlugin
 
+try:
+    import pytz
+except ImportError:  # pragma: no cover - core ships pytz; fall back to system time
+    pytz = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -46,8 +51,63 @@ class StaticImagePlugin(BasePlugin):
                  display_manager, cache_manager, plugin_manager):
         """Initialize the static image plugin."""
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
-        
-        # Configuration
+
+        self._load_config(config)
+
+        # Rotation state
+        self.current_image_index = 0
+        self.last_rotation_time = time.time()
+
+        # Setup rotation
+        self._setup_rotation()
+
+        # State
+        self.current_image = None
+        self.image_loaded = False
+        self.image_path = None  # Will be set by _get_next_image()
+        self.last_update_time = 0
+
+        # Animation state for GIFs
+        self.is_animated = False
+        self.current_frame_index = 0
+        self.last_frame_time = 0.0
+        self.gif_frames: List[Image.Image] = []
+        self.gif_frame_delays: List[int] = []
+
+        # Per-image rotation timing
+        self.current_image_start_time = 0.0
+
+        # Check if any configured images are GIFs (for enable_scrolling attribute)
+        # Set as regular attribute (not property) to match stock ticker plugin pattern
+        has_gif_images = False
+        if self.images_list:
+            for img_info in self.images_list:
+                img_path = img_info.get('path', '') if isinstance(img_info, dict) else str(img_info)
+                if img_path and img_path.lower().endswith('.gif'):
+                    has_gif_images = True
+                    break
+
+        # Load initial image
+        self._load_current_image()
+
+        # Store value to set in on_enable (after plugin registration)
+        self._enable_scrolling_value = has_gif_images or self.is_animated or (self.image_path and self.image_path.lower().endswith('.gif'))
+
+        self.logger.info("Static image plugin initialized with %d image(s), rotation: %s", len(self.images_list), self.rotation_mode)
+
+        # Register fonts
+        self._register_fonts()
+
+    def _load_config(self, config: Dict[str, Any]) -> None:
+        """Read every config-derived setting.
+
+        Shared by __init__ and on_config_change. on_config_change used to
+        re-read only image_config.images, so the top-level `images` list the
+        web UI's upload widget writes was dropped on every save (the panel
+        then showed "Image Error"), and background_color, fit_to_display,
+        preserve_aspect_ratio and image_rotation_interval kept their old values.
+        """
+        config = config or {}
         self.fit_to_display = config.get('fit_to_display', True)
         self.preserve_aspect_ratio = config.get('preserve_aspect_ratio', True)
         # Handle background_color - can be list or tuple from JSON
@@ -138,51 +198,38 @@ class StaticImagePlugin(BasePlugin):
         else:
             self.logger.warning(f"Images is unexpected type {type(images_raw)}, defaulting to empty list")
             self.images_list = []
-        
-        # Rotation state
-        self.current_image_index = 0
-        self.last_rotation_time = time.time()
-        
-        # Setup rotation
-        self._setup_rotation()
-        
-        # State
-        self.current_image = None
-        self.image_loaded = False
-        self.image_path = None  # Will be set by _get_next_image()
-        self.last_update_time = 0
-        
-        # Animation state for GIFs
-        self.is_animated = False
-        self.current_frame_index = 0
-        self.last_frame_time = 0.0
-        self.gif_frames: List[Image.Image] = []
-        self.gif_frame_delays: List[int] = []
-        
-        # Per-image rotation timing
-        self.current_image_start_time = 0.0
-        self.image_rotation_interval = config.get('image_rotation_interval', config.get('display_duration', 15.0))
-        
-        # Check if any configured images are GIFs (for enable_scrolling attribute)
-        # Set as regular attribute (not property) to match stock ticker plugin pattern
-        has_gif_images = False
-        if self.images_list:
-            for img_info in self.images_list:
-                img_path = img_info.get('path', '') if isinstance(img_info, dict) else str(img_info)
-                if img_path and img_path.lower().endswith('.gif'):
-                    has_gif_images = True
-                    break
-        
-        # Load initial image
-        self._load_current_image()
-        
-        # Store value to set in on_enable (after plugin registration)
-        self._enable_scrolling_value = has_gif_images or self.is_animated or (self.image_path and self.image_path.lower().endswith('.gif'))
-        
-        self.logger.info("Static image plugin initialized with %d image(s), rotation: %s", len(self.images_list), self.rotation_mode)
 
-        # Register fonts
-        self._register_fonts()
+        self.image_rotation_interval = config.get('image_rotation_interval', config.get('display_duration', 15.0))
+
+    def _get_global_timezone(self) -> Optional[str]:
+        """The configured LEDMatrix timezone, or None when it can't be read."""
+        try:
+            if hasattr(self.plugin_manager, 'config_manager') and self.plugin_manager.config_manager:
+                return self.plugin_manager.config_manager.get_timezone()
+            if hasattr(self.cache_manager, 'config_manager') and self.cache_manager.config_manager:
+                return self.cache_manager.config_manager.get_timezone()
+        except Exception as e:
+            self.logger.warning(f"Error getting global timezone: {e}")
+        return None
+
+    def _now(self) -> datetime.datetime:
+        """Wall-clock time in the configured LEDMatrix timezone.
+
+        Schedules are written in the user's local time. The Pi's system zone
+        is often UTC while LEDMatrix is set to the user's zone, so naive
+        datetime.now() put every window hours off. Falls back to system time
+        when pytz or the setting is unavailable, warning once on a bad name.
+        """
+        tz_name = self._get_global_timezone()
+        if tz_name and pytz is not None:
+            try:
+                return datetime.datetime.now(pytz.timezone(tz_name))
+            except Exception:
+                if getattr(self, '_warned_timezone', None) != tz_name:
+                    self._warned_timezone = tz_name
+                    self.logger.warning(
+                        "Invalid timezone '%s'; schedules use system time", tz_name)
+        return datetime.datetime.now()
 
     def _normalize_image_config(self, image_config: Any) -> Dict[str, Any]:
         """Normalize image configuration structure for backward compatibility."""
@@ -631,10 +678,10 @@ class StaticImagePlugin(BasePlugin):
         if mode == 'always':
             return True
         
-        # Get current time
+        # Get current time, in the configured LEDMatrix timezone
         from datetime import datetime
-        now = datetime.now()
-        current_time = now.time()
+        now = self._now()
+        current_time = now.time().replace(tzinfo=None)
         current_day = now.strftime('%A').lower()  # monday, tuesday, etc.
         
         if mode == 'time_range':
@@ -767,7 +814,7 @@ class StaticImagePlugin(BasePlugin):
             # image. This was a stub returning available_images[0], so the
             # option looked like broken rotation rather than an unimplemented
             # one. Same day-of-year indexing of-the-day uses.
-            day_of_year = datetime.date.today().timetuple().tm_yday
+            day_of_year = self._now().timetuple().tm_yday
             image_info = available_images[(day_of_year - 1) % len(available_images)]
             self.current_image_index = next(
                 (i for i, img in enumerate(self.images_list) if img == image_info), 0
@@ -1136,24 +1183,23 @@ class StaticImagePlugin(BasePlugin):
         """Called after plugin configuration has been updated via the web API."""
         super().on_config_change(new_config)
         
-        # Update image configuration
-        old_images_count = len(self.images_list)
+        old_images = list(self.images_list)
         old_rotation_mode = self.rotation_mode
-        
-        raw_image_config = self.config.get('image_config', {}) or {}
-        self.image_config = self._normalize_image_config(raw_image_config)
-        self.rotation_mode = self.image_config.get('rotation_mode', 'sequential')
-        self.rotation_settings = self.config.get('rotation_settings', {})
-        self.images_list = self.image_config.get('images', [])
-        
+        old_render = (self.fit_to_display, self.preserve_aspect_ratio, self.background_color)
+
+        # Same parsing as __init__, so the top-level `images` list survives a save
+        self._load_config(self.config)
+
         # Reinitialize rotation
         self._setup_rotation()
-        
-        # Reload image if configuration changed
-        if len(self.images_list) != old_images_count or self.rotation_mode != old_rotation_mode:
+
+        if self.images_list != old_images or self.rotation_mode != old_rotation_mode:
             self.current_image_index = 0  # Reset index
             self._load_current_image()
             self.logger.info(f"Config updated: {len(self.images_list)} images, rotation: {self.rotation_mode}")
+        elif (self.fit_to_display, self.preserve_aspect_ratio, self.background_color) != old_render:
+            # Same image, new scaling/background: re-render it in place
+            self.reload_image()
     
     def get_info(self) -> Dict[str, Any]:
         """Return plugin info for web UI."""
